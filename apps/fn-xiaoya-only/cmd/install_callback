@@ -2,4 +2,37 @@
 
 ### This script is called after the user installs the application.
 
+DATA_DIR="${TRIM_PKGVAR}/alist/data"
+mkdir -p "$DATA_DIR"
+
+# guestpass.txt — 小雅密码
+echo -n "${xiaoya_pass}" > "${DATA_DIR}/guestpass.txt"
+
+# 115_cookie.txt
+echo -n "${pan115_cookie}" > "${DATA_DIR}/115_cookie.txt"
+
+# 115_key.txt
+echo -n "${pan115_key}" > "${DATA_DIR}/115_key.txt"
+
+# ali2115.txt
+cat > "${DATA_DIR}/ali2115.txt" <<EOF
+purge_ali_temp=true
+cookie="${ali_cookie}"
+purge_pan115_temp=true
+dir_id=0
+EOF
+
+# quark_cookie.txt
+echo -n "${quark_cookie}" > "${DATA_DIR}/quark_cookie.txt"
+
+# emby_config.txt
+cat > "${DATA_DIR}/emby_config.txt" <<EOF
+dev_dri=no
+mode=host
+image=amilys
+media_dir=${emby_media_path}
+resilio=no
+version=4.9.0.42
+EOF
+
 exit 0
