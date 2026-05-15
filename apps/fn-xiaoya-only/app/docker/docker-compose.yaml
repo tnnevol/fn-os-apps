@@ -1,0 +1,42 @@
+services:
+  xiaoya:
+    image: xiaoyaliu/alist:latest
+    container_name: xiaoya
+    volumes:
+      - ${TRIM_PKGVAR}/alist/data:/data
+      - ${TRIM_PKGVAR}/alist/opt/alist/data:/opt/alist/data
+      - ${TRIM_PKGVAR}/alist/www/data:/www/data
+    ports:
+      - "5678:80"
+      - "2345:2345"
+    command: /opt/alist/alist server --no-prefix
+    restart: always
+      
+  xiaoya-aliyuntvtoken_connector:
+    image: ddsderek/xiaoya-glue:aliyuntvtoken_connector
+    container_name: xiaoya-aliyuntvtoken_connector
+    environment:
+      - TZ=Asia/Shanghai
+      - LANG=C.UTF-8
+      - GPG_KEY=7169605F62C751356D054A26A821E680E5FA6305
+      - PYTHON_VERSION=3.12.12
+      - PYTHON_SHA256=fb85a13414b028c49ba18bbd523c2d055a30b56b18b92ce454ea2c51edc656c4
+    restart: always
+    network_mode: host
+
+  115cleaner:
+    image: ddsderek/xiaoya-115cleaner:latest
+    container_name: xiaoya-115cleaner
+    volumes:
+      - ${TRIM_PKGVAR}/alist/data:/data
+    environment:
+      - TZ=Asia/Shanghai
+      - LANG=zh_CN.UTF-8
+      - PS1=\[\e[32m\][\[\e[m\]\[\e[36m\]\u \[\e[m\]\[\e[37m\]@ \[\e[m\]\[\e[34m\]\h\[\e[m\]\[\e[32m\]]\[\e[m\] \[\e[37;35m\]in\[\e[m\] \[\e[33m\]\w\[\e[m\] \[\e[32m\][\[\e[m\]\[\e[37m\]\d\[\e[m\] \[\e[m\]\[\e[37m\]\t\[\e[m\]\[\e[32m\]]\[\e[m\] \n\[\e[1;31m\]$ \[\e[0m\]
+    depends_on:
+      - xiaoya
+    restart: always
+
+volumes:
+  xiaoya:
+  115cleaner:

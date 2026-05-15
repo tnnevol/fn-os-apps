@@ -1,0 +1,13 @@
+{
+    ".url": {
+        "fn-xiaoya-only.Application": {
+            "title": "小雅",
+            "icon": "images/icon_{0}.png",
+            "type": "url",
+            "protocol": "",
+            "port": "5344",
+            "url": "/",
+            "allUsers": false
+        }
+    }
+}

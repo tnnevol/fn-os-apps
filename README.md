@@ -7,11 +7,11 @@
 ```
 .
 ├── apps/
-│   └── fn-reader/                  # 阅读 - 在线电子书阅读器
+│   ├── fn-reader/                  # 阅读 - 在线电子书阅读器
+│   └── fn-xiaoya-only/             # 小雅 - 网盘聚合工具
 │       ├── manifest                # 应用清单
 │       ├── ICON.PNG / ICON_256.PNG # 应用包图标
-│       ├── logo.png                # 应用 Logo
-│       └── fn-reader.fpk           # 打包产物（已忽略）
+│       └── fn-xiaoya-only.fpk      # 打包产物（已忽略）
 ├── .gitignore
 └── README.md
 ```
@@ -21,6 +21,7 @@
 | 应用 | 显示名称 | 版本 | 说明 |
 |------|----------|------|------|
 | [fn-reader](apps/fn-reader/) | 阅读 | 3.2.13 | 开源在线电子书阅读器，支持多种格式、书架管理、阅读进度同步、全文搜索、主题定制 |
+| [fn-xiaoya-only](apps/fn-xiaoya-only/) | 小雅 | 1.0.0 | 基于 Alist 的网盘聚合工具，支持多网盘挂载、在线播放、WebDAV、目录索引 |
 
 ## 快速开始：创建新应用
 

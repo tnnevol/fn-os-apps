@@ -1,0 +1,12 @@
+appname               = fn-xiaoya-only
+version               = 1.0.0
+display_name          = 小雅
+desc                  = 小雅网盘是一个基于 Alist 的个人网盘工具，支持多种云存储聚合挂载、在线播放、文件管理等功能。
+arch                  = x86_64
+source                = thirdparty
+maintainer            = xiaoyaLL
+maintainer_url        = https://github.com/NAKION/xiaoya
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol
+desktop_uidir         = ui
+desktop_applaunchname = fn-xiaoya-only.Application

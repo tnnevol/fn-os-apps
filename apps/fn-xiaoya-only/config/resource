@@ -1,0 +1,38 @@
+{
+    "docker-project":
+    {
+        "projects":
+        [
+            {
+                "name": "fn-xiaoya-only",
+                "path": "docker"
+            }
+        ]
+    },
+    "data-share":
+    {
+        "shares":
+        [
+            {
+                "name": "fn-xiaoya-only",
+                "permission":
+                {
+                    "rw":
+                    [
+                        "docker-fn-xiaoya-only"
+                    ]
+                }
+            },
+            {
+                "name": "fn-xiaoya-only/data",
+                "permission":
+                {
+                    "rw":
+                    [
+                        "docker-fn-xiaoya-only"
+                    ]
+                }
+            }
+        ]
+    }
+}
