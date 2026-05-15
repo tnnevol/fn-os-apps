@@ -9,5 +9,5 @@ maintainer_url        = https://github.com/xiaoyaLL
 distributor           = tnnevol
 distributor_url       = https://github.com/tnnevol
 desktop_uidir         = ui
-desktop_applaunchname = fn-xiaoya-only.Application
+desktop_applaunchname = fn-xiaoya-only.main
 disable_authorization_path = true
