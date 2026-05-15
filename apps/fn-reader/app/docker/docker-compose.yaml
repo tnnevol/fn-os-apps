@@ -1,0 +1,25 @@
+version: "3.8"
+
+services:
+  reader:
+    container_name: fn-reader
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - READER_APP_USERLIMIT=${user_limit:-20}
+      - READER_APP_USERBOOKLIMIT=${user_book_limit:-200000}
+      - READER_APP_CACHECHAPTERCONTENT=${cache_chapter_content:-true}
+      - READER_APP_SECURE=${secure:-true}
+      - READER_APP_SECUREKEY=${secure_key}
+    image: hectorqin/reader:latest
+    labels:
+      createdBy: Apps
+    ports:
+      - "4396:8080"
+    restart: always
+    volumes:
+      - ${TRIM_PKGVAR}/storage:/storage
+      - ${TRIM_PKGVAR}/logs:/logs

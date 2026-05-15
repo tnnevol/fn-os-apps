@@ -1,0 +1,12 @@
+#!/bin/bash
+
+### This script is called after the user upgrades the application.
+
+echo "========== [reader] upgrade_callback start =========="
+env | grep '^TRIM_' | sort
+echo "---------------------------------------------------"
+echo "[reader] log_path=${log_path:-not set}"
+echo "[reader] storage_path=${storage_path:-not set}"
+echo "==================================================="
+
+exit 0

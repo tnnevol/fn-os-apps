@@ -1,0 +1,76 @@
+[
+    {
+        "stepTitle": "阅读 基础配置",
+        "items": [
+            {
+                "type": "text",
+                "field": "user_limit",
+                "label": "最大用户数量限制",
+                "helpText": "设置阅读应用允许注册的最大用户数量",
+                "initValue": "20",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请输入最大用户数量"
+                    },
+                    {
+                        "pattern": "^[0-9]+$",
+                        "message": "必须为正整数"
+                    }
+                ]
+            },
+            {
+                "type": "text",
+                "field": "user_book_limit",
+                "label": "用户书籍数量限制",
+                "helpText": "设置每个用户可导入的书籍数量上限",
+                "initValue": "200000",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请输入书籍数量限制"
+                    },
+                    {
+                        "pattern": "^[0-9]+$",
+                        "message": "必须为正整数"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "stepTitle": "阅读 安全与缓存配置",
+        "items": [
+            {
+                "type": "switch",
+                "field": "cache_chapter_content",
+                "label": "缓存章节内容",
+                "helpText": "是否缓存章节内容以加速阅读体验",
+                "initValue": "true"
+            },
+            {
+                "type": "switch",
+                "field": "secure",
+                "label": "启用安全验证",
+                "helpText": "开启后访问阅读需要安全密钥验证",
+                "initValue": "true"
+            },
+            {
+                "type": "password",
+                "field": "secure_key",
+                "label": "安全密钥",
+                "helpText": "用于安全验证的密钥，建议设置强密码",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请输入安全密钥"
+                    },
+                    {
+                        "min": 6,
+                        "message": "安全密钥长度不能少于6位"
+                    }
+                ]
+            }
+        ]
+    }
+]

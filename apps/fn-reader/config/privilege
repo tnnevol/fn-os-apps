@@ -1,0 +1,8 @@
+{
+    "defaults":
+    {
+        "run-as": "package"
+    },
+    "username": "docker-fn-reader",
+    "groupname": "docker-fn-reader"
+}

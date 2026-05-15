@@ -1,0 +1,9 @@
+#!/bin/bash
+
+### This script is called after the user installs the application.
+
+echo "========== [reader] install_callback start =========="
+env | grep '^TRIM_' | sort
+echo "==================================================="
+
+exit 0

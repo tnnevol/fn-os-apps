@@ -1,0 +1,38 @@
+{
+    "docker-project":
+    {
+        "projects":
+        [
+            {
+                "name": "fn-reader",
+                "path": "docker"
+            }
+        ]
+    },
+    "data-share":
+    {
+        "shares":
+        [
+            {
+                "name": "fn-reader",
+                "permission":
+                {
+                    "rw":
+                    [
+                        "docker-fn-reader"
+                    ]
+                }
+            },
+            {
+                "name": "fn-reader/data",
+                "permission":
+                {
+                    "rw":
+                    [
+                        "docker-fn-reader"
+                    ]
+                }
+            }
+        ]
+    }
+}

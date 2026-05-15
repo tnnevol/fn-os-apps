@@ -1,0 +1,9 @@
+#!/bin/bash
+
+### This script is called before the user upgrades the application.
+
+echo "========== [reader] upgrade_init start =========="
+env | grep '^TRIM_' | sort
+echo "==================================================="
+
+exit 0

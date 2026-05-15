@@ -1,0 +1,13 @@
+{
+    ".url": {
+        "fn-reader.Application": {
+            "title": "阅读",
+            "icon": "images/icon_{0}.png",
+            "type": "url",
+            "protocol": "",
+            "port": "4396",
+            "url": "/",
+            "allUsers": false
+        }
+    }
+}

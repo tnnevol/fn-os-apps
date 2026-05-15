@@ -1,0 +1,9 @@
+#!/bin/bash
+
+### This script is called after the user uninstalls the application.
+
+echo "========== [reader] uninstall_callback start =========="
+env | grep '^TRIM_' | sort
+echo "==================================================="
+
+exit 0
