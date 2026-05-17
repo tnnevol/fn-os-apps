@@ -1,0 +1,13 @@
+appname               = fn-bitwarden
+version               = 1.0.0
+display_name          = Bitwarden
+desc                  = Bitwarden 是一款开源密码管理器，可安全存储网站登录信息、信用卡、安全笔记等。
+arch                  = x86_64
+source                = thirdparty
+maintainer            = bitwarden
+maintainer_url        = https://bitwarden.com
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol
+desktop_uidir         = ui
+desktop_applaunchname = fn-bitwarden.main
+disable_authorization_path = true

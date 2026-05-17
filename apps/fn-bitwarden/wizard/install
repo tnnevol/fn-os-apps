@@ -1,0 +1,49 @@
+[
+    {
+        "stepTitle": "Bitwarden 基础配置",
+        "items": [
+            {
+                "type": "text",
+                "field": "DOMAIN",
+                "label": "域名",
+                "initValue": "",
+                "helpText": "Bitwarden 服务器的域名地址，如 https://bitwarden.example.com。留空则使用 IP 访问。配置域名后可启用完整功能（如邮件通知、外部访问等）。",
+                "rules": [
+                    {
+                        "pattern": "^(https?://.*)?$",
+                        "message": "域名格式不正确，需以 http:// 或 https:// 开头，或留空"
+                    }
+                ]
+            },
+            {
+                "type": "switch",
+                "field": "WEB_VAULT_ENABLED",
+                "label": "启用 Web 管理界面",
+                "initValue": "true",
+                "helpText": "开启后可通过浏览器管理密码。如果仅使用客户端连接，可关闭此项以节省资源。"
+            },
+            {
+                "type": "text",
+                "field": "APP_PORT",
+                "label": "访问端口",
+                "initValue": "40031",
+                "helpText": "Bitwarden 服务的访问端口号。",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请输入端口号"
+                    },
+                    {
+                        "pattern": "^[0-9]+$",
+                        "message": "端口号必须是数字"
+                    },
+                    {
+                        "min": 1,
+                        "max": 5,
+                        "message": "端口号范围为 1-65535"
+                    }
+                ]
+            }
+        ]
+    }
+]
