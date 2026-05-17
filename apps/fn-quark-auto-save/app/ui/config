@@ -1,13 +1,13 @@
 {
-    ".url": {
-        "fn-quark-auto-save.Application": {
-            "title": "fn-quark-auto-save",
-            "icon": "images/icon_{0}.png",
-            "type": "url",
-            "protocol": "",
-            "port": "${APP_PORT}",
-            "url": "/",
-            "allUsers": false
-        }
+  ".url": {
+    "fn-quark-auto-save.Application": {
+      "title": "夸克转存",
+      "icon": "images/icon_{0}.png",
+      "type": "url",
+      "protocol": "",
+      "port": "${APP_PORT}",
+      "url": "/",
+      "allUsers": false
     }
+  }
 }

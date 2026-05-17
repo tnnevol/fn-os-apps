@@ -1,13 +1,13 @@
 {
-    ".url": {
-        "fn-new-api.Application": {
-            "title": "New API",
-            "icon": "images/icon_{0}.png",
-            "type": "url",
-            "protocol": "",
-            "port": "${APP_PORT}",
-            "url": "/",
-            "allUsers": false
-        }
+  ".url": {
+    "fn-new-api.Application": {
+      "title": "new api",
+      "icon": "images/icon_{0}.png",
+      "type": "url",
+      "protocol": "",
+      "port": "${APP_PORT}",
+      "url": "/",
+      "allUsers": false
     }
+  }
 }

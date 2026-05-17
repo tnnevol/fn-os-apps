@@ -23,7 +23,7 @@
                 "type": "text",
                 "field": "APP_PORT",
                 "label": "访问端口",
-                "initValue": "3000",
+                "initValue": "3800",
                 "helpText": "New API 服务的访问端口号（主机端口）。",
                 "rules": [
                     {
