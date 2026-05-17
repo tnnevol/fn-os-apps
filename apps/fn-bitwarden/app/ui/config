@@ -4,7 +4,7 @@
       "title": "Bitwarden",
       "icon": "images/icon_{0}.png",
       "type": "url",
-      "port": "8088",
+      "port": "${APP_PORT}",
       "url": "/",
       "allUsers": false
     }
