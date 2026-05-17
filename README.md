@@ -18,8 +18,8 @@
 
 | 应用 | 显示名称 | 版本 | 说明 |
 |------|----------|------|------|
-| [fn-reader](apps/fn-reader/) | 阅读 | 3.2.14 | 开源在线电子书阅读器，支持多种格式、书架管理、阅读进度同步、全文搜索、主题定制 |
-| [fn-xiaoya-only](apps/fn-xiaoya-only/) | 小雅 | 1.1.1 | 基于 Alist 的网盘聚合工具，支持多网盘挂载、在线播放、WebDAV、目录索引 |
+| [fn-reader](https://github.com/tnnevol/fn-os-apps/releases/tag/fn-reader/v3.2.14) | 阅读 | 3.2.14 | 开源在线电子书阅读器，支持多种格式、书架管理、阅读进度同步、全文搜索、主题定制 |
+| [fn-xiaoya-only](https://github.com/tnnevol/fn-os-apps/releases/tag/fn-xiaoya-only/v1.1.1) | 小雅 | 1.1.1 | 基于 Alist 的网盘聚合工具，支持多网盘挂载、在线播放、WebDAV、目录索引 |
 
 ## 测试与安装
 

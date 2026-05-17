@@ -52,9 +52,12 @@ jobs:
           sed -i "s/^version *= *.*/version               = $VERSION/" "$MANIFEST"
           echo "  manifest: $APP $OLD_VER → $VERSION"
 
-          # 同步更新 README 中的应用版本（只匹配已上架应用表格行）
+          # 同步更新 README 中的版本和 Release 链接
           if [ -f "README.md" ]; then
-            sed -i "s_\(${APP}\].*| .*\) | ${OLD_VER} |_\1 | ${VERSION} |_" README.md
+            # 更新 Release URL 中的 tag 版本
+            sed -i "s|releases/tag/${APP}/v${OLD_VER}|releases/tag/${APP}/v${VERSION}|" README.md
+            # 更新表格中的版本号
+            sed -i "s/| ${OLD_VER} |/| ${VERSION} |/" README.md
             echo "  README: $APP $OLD_VER → $VERSION"
           fi
 
