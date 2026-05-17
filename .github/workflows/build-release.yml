@@ -189,14 +189,6 @@ jobs:
 
           ENDNOTES
 
-          if [ -n "$PREV_TAG" ]; then
-            echo "### 提交记录" >> RELEASE_NOTES.md
-            echo "" >> RELEASE_NOTES.md
-            git log --pretty=format:"- %s (%h)" "${PREV_TAG}..${TAG}" -- "apps/$APP/" >> RELEASE_NOTES.md
-            echo "" >> RELEASE_NOTES.md
-            echo "" >> RELEASE_NOTES.md
-          fi
-
           cat >> RELEASE_NOTES.md << 'ENDINSTALL'
           ## 🛠 安装方式
 
@@ -207,9 +199,13 @@ jobs:
           ENDINSTALL
 
           echo "" >> RELEASE_NOTES.md
-          echo "## 📝 完整提交记录" >> RELEASE_NOTES.md
+          echo "## 📝 提交记录" >> RELEASE_NOTES.md
           echo "" >> RELEASE_NOTES.md
-          git log --pretty=format:"- %s [%h](https://github.com/${{ github.repository }}/commit/%H)" -- "apps/$APP/" >> RELEASE_NOTES.md
+          if [ -n "$PREV_TAG" ]; then
+            git log --pretty=format:"- %s [%h](https://github.com/${{ github.repository }}/commit/%H)" "${PREV_TAG}..${TAG}" -- "apps/$APP/" >> RELEASE_NOTES.md
+          else
+            git log --pretty=format:"- %s [%h](https://github.com/${{ github.repository }}/commit/%H)" -- "apps/$APP/" >> RELEASE_NOTES.md
+          fi
           echo "" >> RELEASE_NOTES.md
           echo "" >> RELEASE_NOTES.md
 
