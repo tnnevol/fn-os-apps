@@ -9,4 +9,4 @@ maintainer_url        = https://github.com/Cp0204/quark-auto-save
 distributor           = tnnevol
 distributor_url       = https://github.com/tnnevol
 desktop_uidir         = ui
-desktop_applaunchname = fn-quark-auto-save.Application
+desktop_applaunchname = quark-auto-save.Application
