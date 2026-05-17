@@ -11,7 +11,8 @@
 │   ├── fn-xiaoya-only/             # 小雅 - 网盘聚合工具
 │   ├── fn-bitwarden/               # Bitwarden - 密码管理器
 │   ├── fn-mysql-8_4_9/             # MySQL - 关系型数据库
-│   └── fn-halo/                    # Halo - 建站系统
+│   ├── fn-halo/                    # Halo - 建站系统
+│   └── quark-auto-save/            # 夸克转存 - 夸克网盘自动化工具
 ├── .github/workflows/              # CI: FPK 构建与 Release 发布
 ├── .gitignore
 └── README.md
@@ -26,6 +27,7 @@
 | [fn-bitwarden](https://github.com/tnnevol/fn-os-apps/releases/latest) | Bitwarden | 开源密码管理器，安全存储网站登录信息、信用卡、安全笔记等 |
 | [fn-mysql-8_4_9](https://github.com/tnnevol/fn-os-apps/releases/latest) | MySQL | 开源关系型数据库管理系统，固定版本 8.4.9，支持 utf8mb4 字符集 |
 | [fn-halo](https://github.com/tnnevol/fn-os-apps/releases/latest) | Halo | 简洁高效的开源建站系统，支持博客、知识库、企业官网等多种场景 |
+| [quark-auto-save](https://github.com/tnnevol/fn-os-apps/releases/latest) | 夸克转存 | 夸克网盘签到、自动转存、命名整理、推送提醒和刷新媒体库自动化工具 |
 
 ## 测试与安装
 
