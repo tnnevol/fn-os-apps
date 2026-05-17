@@ -174,7 +174,7 @@ jobs:
           |------|------|
           | 架构 | ${ARCH} |
           | 最低 fnOS | ${OS_MIN} |
-          | 文件名 | ${APP}.fpk |
+          | 文件名 | ${APP}-v${VERSION}.fpk |
 
           ## ✨ 更新内容
 
