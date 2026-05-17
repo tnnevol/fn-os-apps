@@ -64,6 +64,7 @@ jobs:
             git push origin main
           else
             echo "No version changes to commit"
+          fi
 
   # 构建 FPK 包
   build:
