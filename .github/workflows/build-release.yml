@@ -198,7 +198,11 @@ jobs:
           ENDINSTALL
 
           echo "" >> RELEASE_NOTES.md
-          echo "**完整提交记录**: https://github.com/${{ github.repository }}/commits/${TAG}" >> RELEASE_NOTES.md
+          echo "## 📝 完整提交记录" >> RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+          git log --pretty=format:"- %s [%h](https://github.com/${{ github.repository }}/commit/%H)" -- "apps/$APP/" >> RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
