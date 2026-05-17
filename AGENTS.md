@@ -29,6 +29,24 @@ apps/<appname>/
 
 ## 常用开发流程
 
+### 创建新应用
+
+```bash
+# 在 apps 目录下创建 Docker 应用（推荐）
+cd apps
+fnpack create <appname> --template docker
+```
+
+创建后需手动编辑：
+- `manifest` — 应用标识、版本号、显示名称、描述、架构等
+- `app/docker/docker-compose.yaml` — 容器镜像、端口映射、数据卷
+- `app/ui/config` — 桌面入口配置（JSON 格式）
+- `cmd/main` — 容器启停与状态检查脚本
+- `config/privilege` — 运行权限（username/groupname 使用 `docker-<appname>`）
+- `config/resource` — 资源限制
+- `wizard/install` — 安装向导（如需用户输入密码等参数）
+- 替换 `ICON.PNG`（64x64）和 `ICON_256.PNG`（256x256）
+
 ### 修改应用配置
 
 直接编辑对应 `apps/<appname>/` 下的文件，常见修改：
