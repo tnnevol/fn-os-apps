@@ -1,0 +1,185 @@
+[
+    {
+        "stepTitle": "Pansou 基础配置",
+        "items": [
+            {
+                "type": "text",
+                "field": "PAN_HOST_PORT",
+                "label": "Pansou 映射端口",
+                "initValue": "8007",
+                "helpText": "Pansou 服务在 NAS 上的访问端口号。",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请输入端口号"
+                    },
+                    {
+                        "pattern": "^[0-9]+$",
+                        "message": "端口号必须是数字"
+                    }
+                ]
+            },
+            {
+                "type": "text",
+                "field": "PAN_PORT",
+                "label": "Pansou 内部端口",
+                "initValue": "8888",
+                "helpText": "Pansou 容器内部服务端口号。"
+            }
+        ]
+    },
+    {
+        "stepTitle": "Pansou 缓存配置",
+        "items": [
+            {
+                "type": "switch",
+                "field": "CACHE_ENABLED",
+                "label": "启用缓存",
+                "initValue": "true",
+                "helpText": "开启缓存以提升搜索性能。"
+            },
+            {
+                "type": "text",
+                "field": "CACHE_MAX_SIZE",
+                "label": "缓存最大条数",
+                "initValue": "100",
+                "helpText": "缓存中最多保存的搜索条目数。"
+            },
+            {
+                "type": "text",
+                "field": "CACHE_TTL",
+                "label": "缓存过期时间(秒)",
+                "initValue": "60",
+                "helpText": "缓存条目的过期时间，单位为秒。"
+            }
+        ]
+    },
+    {
+        "stepTitle": "Pansou 异步配置",
+        "items": [
+            {
+                "type": "switch",
+                "field": "ASYNC_PLUGIN_ENABLED",
+                "label": "启用异步",
+                "initValue": "true",
+                "helpText": "开启异步模式以加速搜索。"
+            },
+            {
+                "type": "text",
+                "field": "ASYNC_RESPONSE_TIMEOUT",
+                "label": "异步超时(秒)",
+                "initValue": "4",
+                "helpText": "异步请求的超时时间，单位为秒。"
+            },
+            {
+                "type": "text",
+                "field": "ASYNC_MAX_BACKGROUND_WORKERS",
+                "label": "异步工作线程数",
+                "initValue": "20",
+                "helpText": "后台异步工作线程的最大数量。"
+            },
+            {
+                "type": "text",
+                "field": "ASYNC_MAX_BACKGROUND_TASKS",
+                "label": "异步任务队列大小",
+                "initValue": "100",
+                "helpText": "后台异步任务队列的最大数量。"
+            },
+            {
+                "type": "text",
+                "field": "ASYNC_CACHE_TTL_HOURS",
+                "label": "异步缓存过期时间(小时)",
+                "initValue": "1",
+                "helpText": "异步缓存的过期时间，单位为小时。"
+            }
+        ]
+    },
+    {
+        "stepTitle": "Pansou 认证配置",
+        "items": [
+            {
+                "type": "switch",
+                "field": "AUTH_ENABLED",
+                "label": "启用认证",
+                "initValue": "false",
+                "helpText": "开启后需要用户名密码才能访问 Pansou。"
+            },
+            {
+                "type": "text",
+                "field": "AUTH_USERS",
+                "label": "认证用户",
+                "initValue": "admin:admin123,user:pass456",
+                "helpText": "格式为 用户名:密码，多个用户以逗号分隔。仅在启用认证时生效。"
+            },
+            {
+                "type": "text",
+                "field": "AUTH_TOKEN_EXPIRY",
+                "label": "Token 过期时间(小时)",
+                "initValue": "24",
+                "helpText": "登录 Token 的过期时间，单位为小时。"
+            },
+            {
+                "type": "password",
+                "field": "AUTH_JWT_SECRET",
+                "label": "JWT Secret",
+                "initValue": "",
+                "helpText": "JWT Token 签名密钥，建议留空使用系统默认。"
+            }
+        ]
+    },
+    {
+        "stepTitle": "Quark Auto Save 配置",
+        "items": [
+            {
+                "type": "text",
+                "field": "WEBUI_USERNAME",
+                "label": "管理用户名",
+                "initValue": "admin",
+                "helpText": "Quark Auto Save WebUI 的管理员用户名。",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请输入用户名"
+                    }
+                ]
+            },
+            {
+                "type": "password",
+                "field": "WEBUI_PASSWORD",
+                "label": "管理密码",
+                "initValue": "",
+                "helpText": "Quark Auto Save WebUI 的管理员密码。",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请输入密码"
+                    }
+                ]
+            },
+            {
+                "type": "text",
+                "field": "APP_PORT",
+                "label": "访问端口",
+                "initValue": "8015",
+                "helpText": "Quark Auto Save 服务的访问端口号。",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请输入端口号"
+                    },
+                    {
+                        "pattern": "^[0-9]+$",
+                        "message": "端口号必须是数字"
+                    }
+                ]
+            },
+            {
+                "type": "text",
+                "field": "PLUGIN_FLAGS",
+                "label": "插件禁用标志",
+                "initValue": "-smartstrm,-alist_strm,-alist_strm_gen,-aria2,-plex,-fnv,-alist_sync",
+                "helpText": "要禁用的插件列表，以逗号分隔。以 - 开头表示禁用该插件。"
+            }
+        ]
+    }
+]

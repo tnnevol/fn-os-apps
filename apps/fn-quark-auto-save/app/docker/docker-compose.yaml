@@ -1,29 +1,63 @@
 services:
-    quark-auto-save:
-        container_name: fn-quark-auto-save
-        deploy:
-            resources:
-                limits:
-                    cpus: "${CPU_LIMIT}"
-                    memory: "${MEMORY_LIMIT}"
-        environment:
-            - WEBUI_USERNAME=${WEBUI_USERNAME}
-            - WEBUI_PASSWORD=${WEBUI_PASSWORD}
-            - PORT=${APP_PORT}
-        healthcheck:
-            interval: ${HEALTHCHECK_INTERVAL}
-            retries: ${HEALTHCHECK_RETRIES}
-            start_period: ${HEALTHCHECK_START_PERIOD}
-            test:
-                - CMD
-                - curl
-                - -f
-                - http://localhost:${APP_PORT}
-            timeout: 5s
-        image: cp0204/quark-auto-save:latest
-        ports:
-            - "${APP_PORT}:5005"
-        restart: always
-        volumes:
-            - ${TRIM_PKGVAR}/config:/app/config
-            - ${TRIM_PKGVAR}/media:/media
+  pansou:
+    image: ghcr.io/fish2018/pansou:latest
+    container_name: pansou
+    restart: always
+    ports:
+      - "${PAN_HOST_PORT}:${PAN_PORT}"
+    environment:
+      - PORT=${PAN_PORT}
+      - CHANNELS=tgsearchers6,Aliyun_4K_Movies,bdbdndn11,yunpanx,bsbdbfjfjff,yp123pan,sbsbsnsqq,yunpanxunlei,tianyifc,BaiduCloudDisk,txtyzy,peccxinpd,gotopan,PanjClub,kkxlzy,baicaoZY,MCPH01,MCPH02,MCPH03,bdwpzhpd,ysxb48,jdjdn1111,yggpan,MCPH086,zaihuayun,Q66Share,ucwpzy,shareAliyun,alyp_1,dianyingshare,Quark_Movies,XiangxiuNBB,ydypzyfx,ucquark,xx123pan,yingshifenxiang123,zyfb123,tyypzhpd,tianyirigeng,cloudtianyi,hdhhd21,Lsp115,oneonefivewpfx,qixingzhenren,taoxgzy,Channel_Shares_115,tyysypzypd,vip115hot,wp123zy,yunpan139,yunpan189,yunpanuc,yydf_hzl,leoziyuan,Q_dongman,yoyokuakeduanju,TG654TG,WFYSFX02,QukanMovie,yeqingjie_GJG666,movielover8888_film3,Baidu_netdisk,D_wusun,FLMdongtianfudi,KaiPanshare,QQZYDAPP,rjyxfx,PikPak_Share_Channel,btzhi,newproductsourcing,cctv1211,duan_ju,QuarkFree,yunpanNB,kkdj001,xxzlzn,pxyunpanxunlei,jxwpzy,kuakedongman,liangxingzhinan,xiangnikanj,solidsexydoll,guoman4K,zdqxm,kduanju,cilidianying,CBduanju,SharePanFilms,dzsgx,BooksRealm,Oscar_4Kmovies,douerpan,baidu_yppan,Q_jilupian,Netdisk_Movies,yunpanquark,ammmziyuan,ciliziyuanku,cili8888,jzmm_123pan,Q_dianying,domgmingapk,dianying4k,q_dianshiju,tgbokee,ucshare,godupan,gokuapan,gimy115,WFYSFX03,peccxin,Movie888035,xlwpzy,zyywpzy,wydwpzy,gimy100,ucshare,gimy115iso
+      - ENABLED_PLUGINS=hunhepan,jikepan,panwiki,pansearch,panta,qupansou,hdr4k,pan666,susu,thepiratebay,wanou,xuexizhinan,panyq,zhizhen,labi,muou,ouge,shandian,duoduo,huban,cyg,erxiao,miaoso,fox4k,pianku,clmao,wuji,cldi,xiaozhang,libvio,leijing,xb6v,xys,ddys,hdmoli,yuhuage,u3c3,javdb,clxiong,jutoushe,sdso,xiaoji,xdyh,haisou,bixin,djgou,nyaa,xinjuc,aikanzy,qupanshe,xdpan,discourse,yunsou,qqpd,ahhhhfs,nsgame,gying,quark4k,quarksoo,sousou,ash,weibo,feikuai,kkmao,alupan,ypfxw,mikuclub,daishudj,dyyj,meitizy,jsnoteclub,mizixing,lou1,yiove,zxzj,qingying,kkv,yulinshufa
+      - CACHE_ENABLED=${CACHE_ENABLED}
+      - CACHE_PATH=/app/cache
+      - CACHE_MAX_SIZE=${CACHE_MAX_SIZE}
+      - CACHE_TTL=${CACHE_TTL}
+      - ASYNC_PLUGIN_ENABLED=${ASYNC_PLUGIN_ENABLED}
+      - ASYNC_RESPONSE_TIMEOUT=${ASYNC_RESPONSE_TIMEOUT}
+      - ASYNC_MAX_BACKGROUND_WORKERS=${ASYNC_MAX_BACKGROUND_WORKERS}
+      - ASYNC_MAX_BACKGROUND_TASKS=${ASYNC_MAX_BACKGROUND_TASKS}
+      - ASYNC_CACHE_TTL_HOURS=${ASYNC_CACHE_TTL_HOURS}
+      - AUTH_ENABLED=${AUTH_ENABLED}
+      - AUTH_USERS=${AUTH_USERS}
+      - AUTH_TOKEN_EXPIRY=${AUTH_TOKEN_EXPIRY}
+      - AUTH_JWT_SECRET=${AUTH_JWT_SECRET}
+      # 如果需要代理，取消下面的注释并设置代理地址
+      # - PROXY=socks5://proxy:7897
+    volumes:
+      - ${TRIM_PKGVAR}/pansou-cache:/app/cache
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:${PAN_PORT}/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # 如果需要代理，取消下面的注释
+  # proxy:
+  #   image: ghcr.io/snail007/goproxy:latest
+  #   container_name: pansou-proxy
+  #   restart: unless-stopped
+  #   command: /proxy socks -p :7897
+  #   networks:
+  #     - pansou-network
+
+  quark-auto-save:
+    image: cp0204/quark-auto-save:latest
+    container_name: quark-auto-save
+    ports:
+      - "${APP_PORT}:5005"
+    restart: always
+    environment:
+      WEBUI_USERNAME: '${WEBUI_USERNAME}'
+      WEBUI_PASSWORD: '${WEBUI_PASSWORD}'
+      PLUGIN_FLAGS: '${PLUGIN_FLAGS}'
+    volumes:
+      - ${TRIM_PKGVAR}/quark-auto-save/config:/app/config
+      - ${TRIM_PKGVAR}/quark-auto-save/media:/media
+
+volumes:
+  pansou-cache:
+    name: pansou-cache
+  quark-auto-save:
+    name: quark-auto-save
