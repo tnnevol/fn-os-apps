@@ -1,0 +1,32 @@
+services:
+    halo:
+        command:
+            - --spring.r2dbc.url=r2dbc:pool:${DB_TYPE}://${DB_HOST}
+            - --spring.r2dbc.username=${DB_USERNAME}
+            - --spring.r2dbc.password=${DB_PASSWORD}
+            - --spring.sql.init.platform=${DB_TYPE}
+            - --halo.external-url=${HALO_EXTERNAL_URL}
+        container_name: fn-halo
+        deploy:
+            resources:
+                limits:
+                    cpus: "${CPU_LIMIT}"
+                    memory: "${MEMORY_LIMIT}"
+        environment:
+            - JVM_OPTS=
+        healthcheck:
+            interval: ${HEALTHCHECK_INTERVAL}
+            retries: ${HEALTHCHECK_RETRIES}
+            start_period: ${HEALTHCHECK_START_PERIOD}
+            test:
+                - CMD
+                - curl
+                - -f
+                - http://localhost:8090/actuator/health/readiness
+            timeout: 5s
+        image: registry.fit2cloud.com/halo/halo-pro:2.23
+        ports:
+            - "${APP_PORT}:8090"
+        restart: always
+        volumes:
+            - ${TRIM_PKGVAR}/data:/root/.halo2

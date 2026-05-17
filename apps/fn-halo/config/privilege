@@ -1,0 +1,8 @@
+{
+    "defaults":
+    {
+        "run-as": "package"
+    },
+    "username": "docker-fn-halo",
+    "groupname": "docker-fn-halo"
+}

@@ -1,0 +1,38 @@
+{
+    "docker-project":
+    {
+        "projects":
+        [
+            {
+                "name": "fn-halo",
+                "path": "docker"
+            }
+        ]
+    },
+    "data-share":
+    {
+        "shares":
+        [
+            {
+                "name": "fn-halo",
+                "permission":
+                {
+                    "rw":
+                    [
+                        "docker-fn-halo"
+                    ]
+                }
+            },
+            {
+                "name": "fn-halo/halo2",
+                "permission":
+                {
+                    "rw":
+                    [
+                        "docker-fn-halo"
+                    ]
+                }
+            }
+        ]
+    }
+}

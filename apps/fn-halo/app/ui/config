@@ -1,0 +1,13 @@
+{
+    ".url": {
+        "fn-halo.Application": {
+            "title": "Halo",
+            "icon": "images/icon_{0}.png",
+            "type": "url",
+            "protocol": "http",
+            "port": "${APP_PORT}",
+            "url": "/",
+            "allUsers": false
+        }
+    }
+}
