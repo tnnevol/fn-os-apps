@@ -1,0 +1,195 @@
+name: Build FPK & Release
+
+on:
+  push:
+    branches: [main]
+    tags:
+      - '*'
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+# 从 tag 中提取目标应用名和版本号
+# fn-xiaoya-only/v1.2.0 → app=fn-xiaoya-only, version=1.2.0
+# v1.0.0 → app=all (不做处理)
+jobs:
+  # 统一升级应用版本（仅特定应用 tag 推送时）
+  bump-version:
+    if: ${{ contains(github.ref_name, '/') }}
+    runs-on: ubuntu-latest
+    outputs:
+      target-app: ${{ steps.parse.outputs.app }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: parse
+        name: Parse tag
+        run: |
+          TAG="${{ github.ref_name }}"
+          APP="${TAG%%/*}"
+          VERSION="${TAG#*/}"
+          echo "app=$APP" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Bump manifest version
+        run: |
+          APP="${{ steps.parse.outputs.app }}"
+          VERSION="${{ steps.parse.outputs.version }}"
+          VERSION="${VERSION#v}"  # 去掉 v 前缀
+          MANIFEST="apps/$APP/manifest"
+
+          if [ ! -f "$MANIFEST" ]; then
+            echo "ERROR: manifest not found for $APP"
+            exit 1
+          fi
+
+          OLD_VER=$(grep '^version' "$MANIFEST" | sed 's/.*= *//')
+          sed -i "s/^version *= *.*/version               = $VERSION/" "$MANIFEST"
+          echo "  $APP: $OLD_VER → $VERSION"
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout main
+          git pull origin main
+          git add apps/*/manifest
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(${{ steps.parse.outputs.app }}): bump version to ${{ github.ref_name }} [skip ci]"
+            git push origin main
+          else
+            echo "No version changes to commit"
+
+  # 构建 FPK 包
+  build:
+    if: ${{ contains(github.ref_name, '/') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Parse tag
+        id: parse
+        run: |
+          TAG="${{ github.ref_name }}"
+          APP="${TAG%%/*}"
+          VERSION="${TAG#*/}"
+          VERSION="${VERSION#v}"
+          echo "app=$APP" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Verify app exists
+        run: |
+          if [ ! -d "apps/${{ steps.parse.outputs.app }}" ]; then
+            echo "ERROR: apps/${{ steps.parse.outputs.app }} does not exist"
+            exit 1
+          fi
+
+      - name: Install fnpack
+        run: |
+          curl -fsSL https://static2.fnnas.com/fnpack/fnpack-1.2.1-linux-amd64 -o fnpack
+          chmod +x fnpack
+          sudo mv fnpack /usr/local/bin/fnpack
+
+      - name: Verify fnpack
+        run: fnpack --help
+
+      - name: Override manifest version with tag
+        working-directory: apps/${{ steps.parse.outputs.app }}
+        run: |
+          VERSION="${{ steps.parse.outputs.version }}"
+          sed -i "s/^version *= *.*/version               = $VERSION/" manifest
+          echo "Override version to $VERSION"
+
+      - name: Build FPK
+        working-directory: apps/${{ steps.parse.outputs.app }}
+        run: |
+          fnpack build
+
+      - name: Verify FPK
+        id: verify
+        working-directory: apps/${{ steps.parse.outputs.app }}
+        run: |
+          FPK=$(ls *.fpk 2>/dev/null | head -1)
+          if [ -z "$FPK" ]; then
+            echo "ERROR: No .fpk file generated"
+            exit 1
+          fi
+          echo "fpk=$FPK" >> "$GITHUB_OUTPUT"
+          echo "Generated: $FPK"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.parse.outputs.app }}-${{ steps.parse.outputs.version }}
+          path: apps/${{ steps.parse.outputs.app }}/${{ steps.verify.outputs.fpk }}
+          retention-days: 30
+
+  # 创建 GitHub Release
+  release:
+    needs: build
+    if: ${{ contains(github.ref_name, '/') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Generate release notes
+        run: |
+          TAG="${{ github.ref_name }}"
+          APP="${TAG%%/*}"
+          VERSION="${TAG#*/}"
+          VERSION="${VERSION#v}"
+
+          echo "# Release ${TAG}" > RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+
+          echo "## Updated Apps" >> RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+          if [ -f "apps/$APP/manifest" ]; then
+            DISPLAY_NAME=$(grep '^display_name' "apps/$APP/manifest" | sed 's/.*= *//')
+            echo "- **${DISPLAY_NAME}** (\`${APP}\`) → v${VERSION}" >> RELEASE_NOTES.md
+          fi
+          echo "" >> RELEASE_NOTES.md
+
+          # Changes
+          PREV_TAG=$(git tag --sort=-version:refname | grep "^${APP}/" | awk -v tag="$TAG" 'found{print;exit} $0==tag{found=1}')
+          if [ -n "$PREV_TAG" ]; then
+            echo "## Changes" >> RELEASE_NOTES.md
+            echo "" >> RELEASE_NOTES.md
+            git log --pretty=format:"- %s (%h)" "${PREV_TAG}..${TAG}" -- "apps/$APP/" >> RELEASE_NOTES.md
+            echo "" >> RELEASE_NOTES.md
+            echo "" >> RELEASE_NOTES.md
+          fi
+
+          echo "## Downloads" >> RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+          for dir in */; do
+            for fpk in "$dir"*.fpk; do
+              if [ -f "$fpk" ]; then
+                echo "- \`$(basename "$fpk")\`" >> RELEASE_NOTES.md
+              fi
+            done
+          done
+
+          echo "" >> RELEASE_NOTES.md
+          echo "**Full Changelog**: https://github.com/${{ github.repository }}/commits/${TAG}" >> RELEASE_NOTES.md
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          body_path: RELEASE_NOTES.md
+          files: |
+            **/*.fpk
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-rc') || contains(github.ref_name, '-beta') || contains(github.ref_name, '-alpha') }}
