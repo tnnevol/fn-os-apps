@@ -1,7 +1,7 @@
 services:
   mysql:
     image: mysql:8.4.9
-    container_name: fn-mysql-8.4.9
+    container_name: fn-mysql-8_4_9
     environment:
       - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
     volumes:

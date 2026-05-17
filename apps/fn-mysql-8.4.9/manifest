@@ -1,7 +1,7 @@
 appname               = fn-mysql-8.4.9
 version               = 1.0.0
 display_name          = MySQL
-desc                  = MySQL 是全球最流行的开源关系型数据库管理系统，广泛应用于 Web 应用、数据仓库和企业级系统。
+desc                  = MySQL 是全球最流行的开源关系型数据库管理系统，广泛应用于 Web 应用、数据仓库和企业级系统。本应用固定版本为 MySQL 8.4.9。
 arch                  = x86_64
 source                = thirdparty
 maintainer            = Oracle
