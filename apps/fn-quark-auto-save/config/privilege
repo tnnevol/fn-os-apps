@@ -1,0 +1,38 @@
+{
+    "docker-project":
+    {
+        "projects":
+        [
+            {
+                "name": "fn-quark-auto-save",
+                "path": "docker"
+            }
+        ]
+    },
+    "data-share":
+    {
+        "shares":
+        [
+            {
+                "name": "fn-quark-auto-save/config",
+                "permission":
+                {
+                    "rw":
+                    [
+                        "docker-fn-quark-auto-save"
+                    ]
+                }
+            },
+            {
+                "name": "fn-quark-auto-save/media",
+                "permission":
+                {
+                    "rw":
+                    [
+                        "docker-fn-quark-auto-save"
+                    ]
+                }
+            }
+        ]
+    }
+}

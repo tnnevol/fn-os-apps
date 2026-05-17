@@ -1,0 +1,29 @@
+services:
+    quark-auto-save:
+        container_name: fn-quark-auto-save
+        deploy:
+            resources:
+                limits:
+                    cpus: "${CPU_LIMIT}"
+                    memory: "${MEMORY_LIMIT}"
+        environment:
+            - WEBUI_USERNAME=${WEBUI_USERNAME}
+            - WEBUI_PASSWORD=${WEBUI_PASSWORD}
+            - PORT=${APP_PORT}
+        healthcheck:
+            interval: ${HEALTHCHECK_INTERVAL}
+            retries: ${HEALTHCHECK_RETRIES}
+            start_period: ${HEALTHCHECK_START_PERIOD}
+            test:
+                - CMD
+                - curl
+                - -f
+                - http://localhost:${APP_PORT}
+            timeout: 5s
+        image: cp0204/quark-auto-save:latest
+        ports:
+            - "${APP_PORT}:5005"
+        restart: always
+        volumes:
+            - ${TRIM_PKGVAR}/config:/app/config
+            - ${TRIM_PKGVAR}/media:/media

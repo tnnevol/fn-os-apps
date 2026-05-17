@@ -1,0 +1,12 @@
+appname               = fn-quark-auto-save
+version               = 1.0.0
+display_name          = Quark Auto Save
+desc                  = 夸克网盘签到、自动转存、命名整理、推送提醒和刷新媒体库自动化工具
+arch                  = x86_64
+source                = thirdparty
+maintainer            = Cp0204
+maintainer_url        = https://github.com/Cp0204/quark-auto-save
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol
+desktop_uidir         = ui
+desktop_applaunchname = fn-quark-auto-save.Application

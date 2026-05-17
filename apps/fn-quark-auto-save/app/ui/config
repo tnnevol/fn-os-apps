@@ -1,0 +1,13 @@
+{
+    ".url": {
+        "fn-quark-auto-save.Application": {
+            "title": "fn-quark-auto-save",
+            "icon": "images/icon_{0}.png",
+            "type": "url",
+            "protocol": "",
+            "port": "8080",
+            "url": "/",
+            "allUsers": false
+        }
+    }
+}
