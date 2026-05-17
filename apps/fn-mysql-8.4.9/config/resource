@@ -1,0 +1,38 @@
+{
+    "docker-project":
+    {
+        "projects":
+        [
+            {
+                "name": "fn-mysql-8.4.9",
+                "path": "docker"
+            }
+        ]
+    },
+    "data-share":
+    {
+        "shares":
+        [
+            {
+                "name": "fn-mysql-8.4.9",
+                "permission":
+                {
+                    "rw":
+                    [
+                        "docker-fn-mysql-8.4.9"
+                    ]
+                }
+            },
+            {
+                "name": "fn-mysql-8.4.9/data",
+                "permission":
+                {
+                    "rw":
+                    [
+                        "docker-fn-mysql-8.4.9"
+                    ]
+                }
+            }
+        ]
+    }
+}

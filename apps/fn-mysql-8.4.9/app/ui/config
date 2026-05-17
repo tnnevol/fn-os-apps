@@ -1,0 +1,13 @@
+{
+    ".url": {
+        "fn-mysql-8.4.9.Application": {
+            "title": "MySQL",
+            "icon": "images/icon_{0}.png",
+            "type": "url",
+            "protocol": "http",
+            "port": "${ADMINER_PORT}",
+            "url": "/",
+            "allUsers": false
+        }
+    }
+}

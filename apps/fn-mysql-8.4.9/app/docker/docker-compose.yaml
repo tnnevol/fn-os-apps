@@ -1,0 +1,17 @@
+services:
+  mysql:
+    image: mysql:8.4.9
+    container_name: fn-mysql-8.4.9
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+    volumes:
+      - ${TRIM_PKGVAR}/data:/var/lib/mysql
+      - ${TRIM_PKGVAR}/conf/my.cnf:/etc/my.cnf
+      - ${TRIM_PKGVAR}/log:/var/log/mysql
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - "${APP_PORT}:3306"
+    restart: always
+    command:
+            - --mysql-native-password=on

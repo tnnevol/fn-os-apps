@@ -1,0 +1,8 @@
+{
+    "defaults":
+    {
+        "run-as": "package"
+    },
+    "username": "docker-fn-mysql-8.4.9",
+    "groupname": "docker-fn-mysql-8.4.9"
+}
