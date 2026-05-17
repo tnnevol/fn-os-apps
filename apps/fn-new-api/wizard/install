@@ -35,13 +35,6 @@
                         "message": "端口号必须是数字"
                     }
                 ]
-            },
-            {
-                "type": "password",
-                "field": "SESSION_SECRET",
-                "label": "Session Secret",
-                "initValue": "",
-                "helpText": "用于多节点会话加密的密钥。单节点可留空使用默认值。"
             }
         ]
     }
