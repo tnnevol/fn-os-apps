@@ -1,13 +1,13 @@
 [
     {
-        "stepTitle": "Pansou 基础配置",
+        "stepTitle": "Pansou 配置",
         "items": [
             {
                 "type": "text",
-                "field": "PAN_HOST_PORT",
-                "label": "Pansou 映射端口",
+                "field": "PAN_PORT",
+                "label": "Pansou 端口",
                 "initValue": "8007",
-                "helpText": "Pansou 服务在 NAS 上的访问端口号。",
+                "helpText": "Pansou 服务的访问端口号（主机端口与容器端口相同）。",
                 "rules": [
                     {
                         "required": true,
@@ -19,18 +19,6 @@
                     }
                 ]
             },
-            {
-                "type": "text",
-                "field": "PAN_PORT",
-                "label": "Pansou 内部端口",
-                "initValue": "8888",
-                "helpText": "Pansou 容器内部服务端口号。"
-            }
-        ]
-    },
-    {
-        "stepTitle": "Pansou 缓存配置",
-        "items": [
             {
                 "type": "switch",
                 "field": "CACHE_ENABLED",
