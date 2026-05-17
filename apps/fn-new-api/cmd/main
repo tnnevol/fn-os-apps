@@ -18,8 +18,18 @@ is_docker_running () {
 
 case $1 in
 start)
-    # run start command. exit 0 if success, exit 1 if failed
-    # do nothing, docker application will be started by appcenter
+    COMPOSE_DIR=$(dirname "$FILE_PATH")
+    EXPECTED_CONTAINERS=$(grep "container_name:" "$FILE_PATH" | awk '{print $2}')
+    NEED_RECREATE=false
+    for c in $EXPECTED_CONTAINERS; do
+        if ! docker inspect "$c" &>/dev/null; then
+            NEED_RECREATE=true
+            break
+        fi
+    done
+    if [ "$NEED_RECREATE" = true ]; then
+        docker compose -f "$FILE_PATH" up -d
+    fi
     exit 0
     ;;
 stop)
