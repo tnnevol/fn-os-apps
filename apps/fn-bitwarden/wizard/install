@@ -7,7 +7,7 @@
                 "field": "DOMAIN",
                 "label": "域名",
                 "initValue": "",
-                "helpText": "Bitwarden 服务器的域名地址，如 https://bitwarden.example.com。留空则使用 IP 访问。配置域名后可启用完整功能（如邮件通知、外部访问等）。",
+                "helpText": "Bitwarden 服务器的域名地址，如 https://bitwarden.example.com。留空则使用 IP 访问。",
                 "rules": [
                     {
                         "pattern": "^(https?://.*)?$",

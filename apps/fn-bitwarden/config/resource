@@ -1,1 +1,38 @@
-{}
+{
+    "docker-project":
+    {
+        "projects":
+        [
+            {
+                "name": "fn-bitwarden",
+                "path": "docker"
+            }
+        ]
+    },
+    "data-share":
+    {
+        "shares":
+        [
+            {
+                "name": "fn-bitwarden",
+                "permission":
+                {
+                    "rw":
+                    [
+                        "docker-fn-bitwarden"
+                    ]
+                }
+            },
+            {
+                "name": "fn-bitwarden/data",
+                "permission":
+                {
+                    "rw":
+                    [
+                        "docker-fn-bitwarden"
+                    ]
+                }
+            }
+        ]
+    }
+}

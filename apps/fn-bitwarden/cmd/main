@@ -29,7 +29,7 @@ stop)
     ;;
 status)
     # check application status command. exit 0 if running, exit 3 if not running
-    # check first container by default, you cound modify it by yourself
+    # check first container by default, you cound modify it by yourself 
     if is_docker_running; then
         exit 0
     else

@@ -9,5 +9,5 @@ maintainer_url        = https://bitwarden.com
 distributor           = tnnevol
 distributor_url       = https://github.com/tnnevol
 desktop_uidir         = ui
-desktop_applaunchname = fn-bitwarden.main
+desktop_applaunchname = fn-bitwarden.Application
 disable_authorization_path = true

@@ -1,12 +1,13 @@
 {
-  ".url": {
-    "fn-bitwarden.main": {
-      "title": "Bitwarden",
-      "icon": "images/icon_{0}.png",
-      "type": "url",
-      "port": "${APP_PORT}",
-      "url": "/",
-      "allUsers": false
+    ".url": {
+        "fn-bitwarden.Application": {
+            "title": "Bitwarden",
+            "icon": "images/icon_{0}.png",
+            "type": "url",
+            "protocol": "http",
+            "port": "${APP_PORT}",
+            "url": "/",
+            "allUsers": false
+        }
     }
-  }
 }
