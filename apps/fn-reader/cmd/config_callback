@@ -2,18 +2,4 @@
 
 ### This script is called after the user change environment variables in application setting page.
 
-echo "========== [reader] config_callback start =========="
-env | grep '^TRIM_' | sort
-echo "==================================================="
-
-# 配置变更后无需修改 docker-compose.yaml 文件
-# docker-compose.yaml 中已使用 ${VAR} 环境变量占位符，
-# 应用中心执行 compose 时会自动用当前环境变量替换
-
-# 如果应用正在运行，重启容器使新环境变量生效
-COMPOSE_FILE="${TRIM_APPDEST}/docker/docker-compose.yaml"
-if [ -f "$COMPOSE_FILE" ]; then
-    cd "$(dirname "$COMPOSE_FILE")" || exit 0
-    docker compose ps -q reader > /dev/null 2>&1 && docker compose restart reader
-fi
 exit 0
