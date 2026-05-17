@@ -18,12 +18,12 @@
 
 ## 已上架应用
 
-| 应用 | 显示名称 | 版本 | 说明 |
-|------|----------|------|------|
-| [fn-reader](https://github.com/tnnevol/fn-os-apps/releases/tag/fn-reader/v3.2.14) | 阅读 | 3.2.14 | 开源在线电子书阅读器，支持多种格式、书架管理、阅读进度同步、全文搜索、主题定制 |
-| [fn-xiaoya-only](https://github.com/tnnevol/fn-os-apps/releases/tag/fn-xiaoya-only/v1.1.1) | 小雅 | 1.1.1 | 基于 Alist 的网盘聚合工具，支持多网盘挂载、在线播放、WebDAV、目录索引 |
-| [fn-bitwarden](https://github.com/tnnevol/fn-os-apps/releases/tag/fn-bitwarden/v1.0.0) | Bitwarden | 1.0.1 | 开源密码管理器，安全存储网站登录信息、信用卡、安全笔记等 |
-| [fn-mysql-8_4_9](https://github.com/tnnevol/fn-os-apps/releases/tag/fn-mysql-8_4_9/v1.0.1) | MySQL | 1.0.1 | 开源关系型数据库管理系统，固定版本 8.4.9，支持 utf8mb4 字符集 |
+| 应用 | 显示名称 | 说明 |
+|------|----------|------|
+| [fn-reader](https://github.com/tnnevol/fn-os-apps/releases/latest) | 阅读 | 开源在线电子书阅读器，支持多种格式、书架管理、阅读进度同步、全文搜索、主题定制 |
+| [fn-xiaoya-only](https://github.com/tnnevol/fn-os-apps/releases/latest) | 小雅 | 基于 Alist 的网盘聚合工具，支持多网盘挂载、在线播放、WebDAV、目录索引 |
+| [fn-bitwarden](https://github.com/tnnevol/fn-os-apps/releases/latest) | Bitwarden | 开源密码管理器，安全存储网站登录信息、信用卡、安全笔记等 |
+| [fn-mysql-8_4_9](https://github.com/tnnevol/fn-os-apps/releases/latest) | MySQL | 开源关系型数据库管理系统，固定版本 8.4.9，支持 utf8mb4 字符集 |
 
 ## 测试与安装
 
