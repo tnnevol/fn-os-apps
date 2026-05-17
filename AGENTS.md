@@ -67,6 +67,12 @@ appcenter-cli install-local
 
 ### 版本发布
 
+应用升级只需按规则推送 tag，无需手动改版本号。
+
+**以下文件由 CI 自动更新：**
+- `manifest` — `version` 字段
+- `README.md` — 已上架应用表格中的版本号和 Release 链接
+
 ```bash
 # 提交代码
 git add apps/<appname>/
