@@ -150,39 +150,51 @@ jobs:
           VERSION="${TAG#*/}"
           VERSION="${VERSION#v}"
 
-          echo "# Release ${TAG}" > RELEASE_NOTES.md
-          echo "" >> RELEASE_NOTES.md
-
-          echo "## Updated Apps" >> RELEASE_NOTES.md
-          echo "" >> RELEASE_NOTES.md
+          # 从 manifest 读取应用信息
           if [ -f "apps/$APP/manifest" ]; then
             DISPLAY_NAME=$(grep '^display_name' "apps/$APP/manifest" | sed 's/.*= *//')
-            echo "- **${DISPLAY_NAME}** (\`${APP}\`) → v${VERSION}" >> RELEASE_NOTES.md
+            ARCH=$(grep '^arch' "apps/$APP/manifest" | sed 's/.*= *//')
+            OS_MIN=$(grep '^os_min_version' "apps/$APP/manifest" | sed 's/.*= *//')
+            DESC=$(grep '^desc' "apps/$APP/manifest" | sed 's/.*= *//' | head -c 120)
           fi
-          echo "" >> RELEASE_NOTES.md
 
-          # Changes
+          # 获取上一个 tag
           PREV_TAG=$(git tag --sort=-version:refname | grep "^${APP}/" | awk -v tag="$TAG" 'found{print;exit} $0==tag{found=1}')
+
+          cat > RELEASE_NOTES.md << ENDNOTES
+          # 📦 ${DISPLAY_NAME} v${VERSION}
+
+          > ${DESC}
+
+          | 项目 | 信息 |
+          |------|------|
+          | 架构 | ${ARCH} |
+          | 最低 fnOS | ${OS_MIN} |
+          | 文件名 | ${APP}.fpk |
+
+          ## ✨ 更新内容
+
+          ENDNOTES
+
           if [ -n "$PREV_TAG" ]; then
-            echo "## Changes" >> RELEASE_NOTES.md
+            echo "### 提交记录" >> RELEASE_NOTES.md
             echo "" >> RELEASE_NOTES.md
             git log --pretty=format:"- %s (%h)" "${PREV_TAG}..${TAG}" -- "apps/$APP/" >> RELEASE_NOTES.md
             echo "" >> RELEASE_NOTES.md
             echo "" >> RELEASE_NOTES.md
           fi
 
-          echo "## Downloads" >> RELEASE_NOTES.md
-          echo "" >> RELEASE_NOTES.md
-          for dir in */; do
-            for fpk in "$dir"*.fpk; do
-              if [ -f "$fpk" ]; then
-                echo "- \`$(basename "$fpk")\`" >> RELEASE_NOTES.md
-              fi
-            done
-          done
+          cat >> RELEASE_NOTES.md << 'ENDINSTALL'
+          ## 🛠 安装方式
+
+          1. 下载上方的 `.fpk` 安装包
+          2. 打开飞牛 fnOS 应用中心
+          3. 点击右上角 **+** 按钮，选择 **本地安装**
+          4. 选择下载好的 `.fpk` 文件完成安装
+          ENDINSTALL
 
           echo "" >> RELEASE_NOTES.md
-          echo "**Full Changelog**: https://github.com/${{ github.repository }}/commits/${TAG}" >> RELEASE_NOTES.md
+          echo "**完整提交记录**: https://github.com/${{ github.repository }}/commits/${TAG}" >> RELEASE_NOTES.md
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
