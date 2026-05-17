@@ -111,23 +111,26 @@ jobs:
         run: |
           fnpack build
 
-      - name: Verify FPK
-        id: verify
+      - name: Rename FPK with version
         working-directory: apps/${{ steps.parse.outputs.app }}
         run: |
-          FPK=$(ls *.fpk 2>/dev/null | head -1)
-          if [ -z "$FPK" ]; then
+          APP="${{ steps.parse.outputs.app }}"
+          VERSION="${{ steps.parse.outputs.version }}"
+          ORIGINAL_FPK=$(ls *.fpk 2>/dev/null | head -1)
+          if [ -z "$ORIGINAL_FPK" ]; then
             echo "ERROR: No .fpk file generated"
             exit 1
           fi
-          echo "fpk=$FPK" >> "$GITHUB_OUTPUT"
-          echo "Generated: $FPK"
+          VERSIONED_FPK="${APP}-v${VERSION}.fpk"
+          mv "$ORIGINAL_FPK" "$VERSIONED_FPK"
+          echo "Renamed: $ORIGINAL_FPK → $VERSIONED_FPK"
+          echo "fpk=$VERSIONED_FPK" >> "$GITHUB_OUTPUT"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.parse.outputs.app }}-${{ steps.parse.outputs.version }}
-          path: apps/${{ steps.parse.outputs.app }}/${{ steps.verify.outputs.fpk }}
+          path: apps/${{ steps.parse.outputs.app }}/*.fpk
           retention-days: 30
 
   # 创建 GitHub Release
