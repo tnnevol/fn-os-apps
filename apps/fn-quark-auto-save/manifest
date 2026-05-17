@@ -10,3 +10,4 @@ distributor           = tnnevol
 distributor_url       = https://github.com/tnnevol
 desktop_uidir         = ui
 desktop_applaunchname = fn-quark-auto-save.Application
+disable_authorization_path = true
