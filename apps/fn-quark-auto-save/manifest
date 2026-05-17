@@ -1,5 +1,5 @@
 appname               = fn-quark-auto-save
-version               = 1.0.0
+version               = 1.0.1
 display_name          = Quark Auto Save
 desc                  = 夸克网盘签到、自动转存、命名整理、推送提醒和刷新媒体库自动化工具
 arch                  = x86_64
