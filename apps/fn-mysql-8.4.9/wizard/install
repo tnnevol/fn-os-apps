@@ -36,23 +36,6 @@
                         "message": "端口号必须是数字"
                     }
                 ]
-            },
-            {
-                "type": "text",
-                "field": "ADMINER_PORT",
-                "label": "Adminer 管理端口",
-                "initValue": "8081",
-                "helpText": "Adminer Web 管理界面的映射端口。",
-                "rules": [
-                    {
-                        "required": true,
-                        "message": "请输入端口号"
-                    },
-                    {
-                        "pattern": "^[0-9]+$",
-                        "message": "端口号必须是数字"
-                    }
-                ]
             }
         ]
     }

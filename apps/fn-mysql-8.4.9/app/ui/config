@@ -5,7 +5,7 @@
             "icon": "images/icon_{0}.png",
             "type": "url",
             "protocol": "http",
-            "port": "${ADMINER_PORT}",
+            "port": "${APP_PORT}",
             "url": "/",
             "allUsers": false
         }
