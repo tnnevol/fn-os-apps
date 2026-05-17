@@ -154,8 +154,9 @@ jobs:
           if [ -f "apps/$APP/manifest" ]; then
             DISPLAY_NAME=$(grep '^display_name' "apps/$APP/manifest" | sed 's/.*= *//')
             ARCH=$(grep '^arch' "apps/$APP/manifest" | sed 's/.*= *//')
-            OS_MIN=$(grep '^os_min_version' "apps/$APP/manifest" | sed 's/.*= *//')
-            DESC=$(grep '^desc' "apps/$APP/manifest" | sed 's/.*= *//' | head -c 120)
+            OS_MIN=$(grep '^os_min_version' "apps/$APP/manifest" | sed 's/.*= *//' || echo "未指定")
+            if [ -z "$OS_MIN" ]; then OS_MIN="未指定"; fi
+            DESC=$(grep '^desc' "apps/$APP/manifest" | sed 's/.*= *//')
           fi
 
           # 获取上一个 tag
