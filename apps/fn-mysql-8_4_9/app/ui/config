@@ -1,6 +1,6 @@
 {
     ".url": {
-        "fn-mysql-8.4.9.Application": {
+        "fn-mysql-8_4_9.Application": {
             "title": "MySQL",
             "icon": "images/icon_{0}.png",
             "type": "url",
