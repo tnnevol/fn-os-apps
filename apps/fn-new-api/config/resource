@@ -1,0 +1,38 @@
+{
+    "docker-project":
+    {
+        "projects":
+        [
+            {
+                "name": "fn-new-api",
+                "path": "docker"
+            }
+        ]
+    },
+    "data-share":
+    {
+        "shares":
+        [
+            {
+                "name": "fn-new-api",
+                "permission":
+                {
+                    "rw":
+                    [
+                        "docker-fn-new-api"
+                    ]
+                }
+            },
+            {
+                "name": "fn-new-api/data",
+                "permission":
+                {
+                    "rw":
+                    [
+                        "docker-fn-new-api"
+                    ]
+                }
+            }
+        ]
+    }
+}

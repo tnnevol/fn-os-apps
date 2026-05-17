@@ -1,0 +1,8 @@
+{
+    "defaults":
+    {
+        "run-as": "package"
+    },
+    "username": "docker-fn-new-api",
+    "groupname": "docker-fn-new-api"
+}
