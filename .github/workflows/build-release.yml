@@ -2,11 +2,8 @@ name: Build FPK & Release
 
 on:
   push:
-    branches: [main]
     tags:
       - '**'
-  pull_request:
-    branches: [main]
 
 permissions:
   contents: write
@@ -17,7 +14,6 @@ permissions:
 jobs:
   # 统一升级应用版本（仅特定应用 tag 推送时）
   bump-version:
-    if: ${{ contains(github.ref_name, '/') }}
     runs-on: ubuntu-latest
     outputs:
       target-app: ${{ steps.parse.outputs.app }}
@@ -77,7 +73,6 @@ jobs:
 
   # 构建 FPK 包
   build:
-    if: ${{ contains(github.ref_name, '/') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -145,7 +140,6 @@ jobs:
   # 创建 GitHub Release
   release:
     needs: build
-    if: ${{ contains(github.ref_name, '/') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
