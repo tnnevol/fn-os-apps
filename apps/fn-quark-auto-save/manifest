@@ -1,5 +1,5 @@
 appname               = 夸克转存
-version               = 1.0.2
+version               = 1.0.3
 display_name          = 夸克转存
 desc                  = 夸克网盘签到、自动转存、命名整理、推送提醒和刷新媒体库自动化工具
 arch                  = x86_64
