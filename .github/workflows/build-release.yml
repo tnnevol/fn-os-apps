@@ -36,7 +36,7 @@ jobs:
           echo "app=$APP" >> "$GITHUB_OUTPUT"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
-      - name: Bump manifest version
+      - name: Bump manifest and README versions
         run: |
           APP="${{ steps.parse.outputs.app }}"
           VERSION="${{ steps.parse.outputs.version }}"
@@ -50,7 +50,13 @@ jobs:
 
           OLD_VER=$(grep '^version' "$MANIFEST" | sed 's/.*= *//')
           sed -i "s/^version *= *.*/version               = $VERSION/" "$MANIFEST"
-          echo "  $APP: $OLD_VER → $VERSION"
+          echo "  manifest: $APP $OLD_VER → $VERSION"
+
+          # 同步更新 README 中的应用版本
+          if [ -f "README.md" ]; then
+            sed -i "/${APP}/s/| [0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]* |/ ${VERSION} |/" README.md
+            echo "  README: $APP version → $VERSION"
+          fi
 
       - name: Commit and push
         run: |
@@ -58,7 +64,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git checkout main
           git pull origin main
-          git add apps/*/manifest
+          git add apps/*/manifest README.md
           if ! git diff --cached --quiet; then
             git commit -m "chore(${{ steps.parse.outputs.app }}): bump version to ${{ github.ref_name }} [skip ci]"
             git push origin main
