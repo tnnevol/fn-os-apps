@@ -9,5 +9,5 @@ maintainer_url        = https://www.mysql.com
 distributor           = tnnevol
 distributor_url       = https://github.com/tnnevol
 desktop_uidir         = ui
-desktop_applaunchname = fn-mysql-8_4_9.Application
 disable_authorization_path = true
+
