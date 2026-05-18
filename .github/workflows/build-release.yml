@@ -3,58 +3,44 @@ name: Build FPK & Release
 on:
   push:
     tags:
-      - '**'
+      - 'v*'
 
 permissions:
   contents: write
 
-# 从 tag 中提取目标应用名和版本号
-# fn-xiaoya-only/v1.2.0 → app=fn-xiaoya-only, version=1.2.0
-# v1.0.0 → app=all (不做处理)
+# 统一版本管理：推送 v4.0.0 等 tag 时，构建所有应用
 jobs:
-  # 统一升级应用版本（仅特定应用 tag 推送时）
+  # 更新所有应用的 manifest 版本号和 README.md 中的版本信息
   bump-version:
     runs-on: ubuntu-latest
-    outputs:
-      target-app: ${{ steps.parse.outputs.app }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - id: parse
-        name: Parse tag
-        run: |
-          TAG="${{ github.ref_name }}"
-          APP="${TAG%%/*}"
-          VERSION="${TAG#*/}"
-          echo "app=$APP" >> "$GITHUB_OUTPUT"
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-
       - name: Bump manifest and README versions
         run: |
-          APP="${{ steps.parse.outputs.app }}"
-          VERSION="${{ steps.parse.outputs.version }}"
-          VERSION="${VERSION#v}"  # 去掉 v 前缀
-          MANIFEST="apps/$APP/manifest"
+          TAG="${{ github.ref_name }}"
+          VERSION="${TAG#v}"
 
-          if [ ! -f "$MANIFEST" ]; then
-            echo "ERROR: manifest not found for $APP"
-            exit 1
-          fi
+          for dir in apps/*/; do
+            app="${dir%/}"
+            app="${app#apps/}"
+            MANIFEST="apps/$app/manifest"
+            if [ -f "$MANIFEST" ]; then
+              OLD_VER=$(grep '^version' "$MANIFEST" | sed 's/.*= *//')
+              sed -i "s/^version *= *.*/version               = $VERSION/" "$MANIFEST"
+              echo "  $app: $OLD_VER → $VERSION"
+            fi
+          done
 
-          OLD_VER=$(grep '^version' "$MANIFEST" | sed 's/.*= *//')
-          sed -i "s/^version *= *.*/version               = $VERSION/" "$MANIFEST"
-          echo "  manifest: $APP $OLD_VER → $VERSION"
-
-          # 同步更新 README 中的版本和 Release 链接
+          # 更新 README.md 中的 Release 链接
           if [ -f "README.md" ]; then
-            # 更新 Release URL 中的 tag 版本
-            sed -i "s|releases/tag/${APP}/v${OLD_VER}|releases/tag/${APP}/v${VERSION}|" README.md
-            # 更新表格中的版本号
-            sed -i "s/| ${OLD_VER} |/| ${VERSION} |/" README.md
-            echo "  README: $APP $OLD_VER → $VERSION"
+            sed -i "s|releases/tag/[^)]*|releases/tag/${TAG}|" README.md
+            # 更新 README.md 中的 Tag 示例
+            sed -i "s|git tag v[0-9][0-9.]*|git tag ${TAG}|" README.md
+            echo "  README.md: updated"
           fi
 
       - name: Commit and push
@@ -65,34 +51,45 @@ jobs:
           git pull origin main
           git add apps/*/manifest README.md
           if ! git diff --cached --quiet; then
-            git commit -m "chore(${{ steps.parse.outputs.app }}): bump version to ${{ github.ref_name }} [skip ci]"
+            git commit -m "chore: bump all app versions to ${{ github.ref_name }} [skip ci]"
             git push origin main
           else
             echo "No version changes to commit"
           fi
 
-  # 构建 FPK 包
-  build:
+  # 动态发现 apps/ 目录下的所有应用
+  discover:
     runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
       - uses: actions/checkout@v4
 
-      - name: Parse tag
-        id: parse
+      - id: set-matrix
         run: |
-          TAG="${{ github.ref_name }}"
-          APP="${TAG%%/*}"
-          VERSION="${TAG#*/}"
-          VERSION="${VERSION#v}"
-          echo "app=$APP" >> "$GITHUB_OUTPUT"
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          APPS_JSON=""
+          APPS_LIST=""
+          for dir in apps/*/; do
+            app="${dir%/}"
+            app="${app#apps/}"
+            APPS_JSON="${APPS_JSON}${APPS_JSON:+,}\"${app}\""
+            APPS_LIST="${APPS_LIST}${APPS_LIST:+ }${app}"
+          done
+          echo "matrix=[${APPS_JSON}]" >> "$GITHUB_OUTPUT"
+          echo "apps_space=${APPS_LIST}" >> "$GITHUB_OUTPUT"
 
-      - name: Verify app exists
-        run: |
-          if [ ! -d "apps/${{ steps.parse.outputs.app }}" ]; then
-            echo "ERROR: apps/${{ steps.parse.outputs.app }} does not exist"
-            exit 1
-          fi
+  # 构建所有应用的 FPK 包
+  build:
+    needs: [bump-version, discover]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        app: ${{ fromJson(needs.discover.outputs.matrix) }}
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
 
       - name: Install fnpack
         run: |
@@ -104,42 +101,42 @@ jobs:
         run: fnpack --help
 
       - name: Override manifest version with tag
-        working-directory: apps/${{ steps.parse.outputs.app }}
+        working-directory: apps/${{ matrix.app }}
         run: |
-          VERSION="${{ steps.parse.outputs.version }}"
+          VERSION="${{ github.ref_name }}"
+          VERSION="${VERSION#v}"
           sed -i "s/^version *= *.*/version               = $VERSION/" manifest
           echo "Override version to $VERSION"
 
       - name: Build FPK
-        working-directory: apps/${{ steps.parse.outputs.app }}
-        run: |
-          fnpack build
+        working-directory: apps/${{ matrix.app }}
+        run: fnpack build
 
       - name: Rename FPK with version
-        working-directory: apps/${{ steps.parse.outputs.app }}
+        working-directory: apps/${{ matrix.app }}
+        id: rename
         run: |
-          APP="${{ steps.parse.outputs.app }}"
-          VERSION="${{ steps.parse.outputs.version }}"
+          APP="${{ matrix.app }}"
+          VERSION="${{ github.ref_name }}"
           ORIGINAL_FPK=$(ls *.fpk 2>/dev/null | head -1)
           if [ -z "$ORIGINAL_FPK" ]; then
             echo "ERROR: No .fpk file generated"
             exit 1
           fi
-          VERSIONED_FPK="${APP}-v${VERSION}.fpk"
+          VERSIONED_FPK="${APP}-${VERSION}.fpk"
           mv "$ORIGINAL_FPK" "$VERSIONED_FPK"
-          echo "Renamed: $ORIGINAL_FPK → $VERSIONED_FPK"
           echo "fpk=$VERSIONED_FPK" >> "$GITHUB_OUTPUT"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ steps.parse.outputs.app }}-${{ steps.parse.outputs.version }}
-          path: apps/${{ steps.parse.outputs.app }}/*.fpk
+          name: ${{ matrix.app }}
+          path: apps/${{ matrix.app }}/*.fpk
           retention-days: 30
 
   # 创建 GitHub Release
   release:
-    needs: build
+    needs: [discover, build]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -152,62 +149,37 @@ jobs:
       - name: Generate release notes
         run: |
           TAG="${{ github.ref_name }}"
-          APP="${TAG%%/*}"
-          VERSION="${TAG#*/}"
-          VERSION="${VERSION#v}"
-
-          # 从 manifest 读取应用信息
-          if [ -f "apps/$APP/manifest" ]; then
-            DISPLAY_NAME=$(grep '^display_name' "apps/$APP/manifest" | sed 's/.*= *//')
-            ARCH=$(grep '^arch' "apps/$APP/manifest" | sed 's/.*= *//')
-            OS_MIN=$(grep '^os_min_version' "apps/$APP/manifest" | sed 's/.*= *//' || echo "未指定")
-            if [ -z "$OS_MIN" ]; then OS_MIN="未指定"; fi
-            DESC=$(grep '^desc' "apps/$APP/manifest" | sed 's/.*= *//')
-          fi
+          VERSION="${TAG#v}"
 
           # 获取上一个 tag
-          PREV_TAG=$(git tag --sort=-version:refname | grep "^${APP}/" | awk -v tag="$TAG" 'found{print;exit} $0==tag{found=1}')
+          PREV_TAG=$(git tag --sort=-version:refname | grep "^v" | awk -v tag="$TAG" 'found{print;exit} $0==tag{found=1}')
 
-          cat > RELEASE_NOTES.md << ENDNOTES
-          # 📦 ${DISPLAY_NAME} v${VERSION}
+          printf '# 📦 fnOS Apps v%s\n\n| 应用 | 安装包 |\n|------|----------|\n' "$VERSION" > RELEASE_NOTES.md
 
-          > ${DESC}
+          for APP in ${{ needs.discover.outputs.apps_space }}; do
+            if [ -f "apps/$APP/manifest" ]; then
+              DISPLAY_NAME=$(grep '^display_name' "apps/$APP/manifest" | sed 's/.*= *//')
+            else
+              DISPLAY_NAME="$APP"
+            fi
+            printf '| **%s** (`%s`) | %s-%s.fpk |\n' "$DISPLAY_NAME" "$APP" "$APP" "$TAG" >> RELEASE_NOTES.md
+          done
 
-          | 项目 | 信息 |
-          |------|------|
-          | 架构 | ${ARCH} |
-          | 最低 fnOS | ${OS_MIN} |
-          | 文件名 | ${APP}-v${VERSION}.fpk |
+          printf '\n## 🛠 安装方式\n\n1. 下载上方对应的 `.fpk` 安装包\n2. 打开飞牛 fnOS 应用中心\n3. 点击右上角 **+** 按钮，选择 **本地安装**\n4. 选择下载好的 `.fpk` 文件完成安装\n' >> RELEASE_NOTES.md
 
-          ## ✨ 更新内容
-
-          ENDNOTES
-
-          cat >> RELEASE_NOTES.md << 'ENDINSTALL'
-          ## 🛠 安装方式
-
-          1. 下载上方的 `.fpk` 安装包
-          2. 打开飞牛 fnOS 应用中心
-          3. 点击右上角 **+** 按钮，选择 **本地安装**
-          4. 选择下载好的 `.fpk` 文件完成安装
-          ENDINSTALL
-
-          echo "" >> RELEASE_NOTES.md
-          echo "## 📝 提交记录" >> RELEASE_NOTES.md
-          echo "" >> RELEASE_NOTES.md
+          printf '\n## 📝 提交记录\n\n' >> RELEASE_NOTES.md
           if [ -n "$PREV_TAG" ]; then
-            git log --pretty=format:"- %s [%h](https://github.com/${{ github.repository }}/commit/%H)" "${PREV_TAG}..${TAG}" -- "apps/$APP/" >> RELEASE_NOTES.md
+            git log --pretty=format:"- %s [%h](https://github.com/${{ github.repository }}/commit/%H)" "${PREV_TAG}..${TAG}" >> RELEASE_NOTES.md
           else
-            git log --pretty=format:"- %s [%h](https://github.com/${{ github.repository }}/commit/%H)" -- "apps/$APP/" >> RELEASE_NOTES.md
+            git log --pretty=format:"- %s [%h](https://github.com/${{ github.repository }}/commit/%H)" >> RELEASE_NOTES.md
           fi
-          echo "" >> RELEASE_NOTES.md
-          echo "" >> RELEASE_NOTES.md
+          printf '\n' >> RELEASE_NOTES.md
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
-          name: Release ${{ github.ref_name }}
+          name: "Release ${{ github.ref_name }}"
           body_path: RELEASE_NOTES.md
           files: |
             **/*.fpk

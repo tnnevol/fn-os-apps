@@ -76,43 +76,41 @@ appcenter-cli stop <appname>
 
 ## 版本发布
 
-通过 GitHub Actions 自动完成版本升级、FPK 构建和 Release 发布。
+通过 GitHub Actions 自动完成 FPK 构建和 Release 发布。所有应用共享同一版本号。
 
 ### Tag 命名规范
 
 ```
-<应用目录名>/v<版本号>
+v<版本号>
 ```
 
-| Tag 示例 | 触发应用 | 版本 |
-|----------|----------|------|
-| `fn-xiaoya-only/v1.2.0` | 小雅 | 1.2.0 |
-| `fn-reader/v3.3.0` | 阅读 | 3.3.0 |
+| Tag 示例 | 版本 |
+|----------|------|
+| `v4.0.0` | 4.0.0 |
+| `v4.1.0-rc1` | 4.1.0-rc1（预发布） |
 
 ### 发布步骤
 
 1. **代码变更并推送**
 
 ```bash
-git add apps/fn-xiaoya-only/
-git commit -m "feat: 新增功能"
+git add apps/
+git commit -m "feat: 更新多个应用"
 git push origin main
 ```
 
 2. **推送版本 Tag 触发发布**
 
 ```bash
-git tag fn-xiaoya-only/v1.2.0
-git push origin fn-xiaoya-only/v1.2.0
+git tag v4.0.0
+git push origin v4.0.0
 ```
 
-3. **GitHub Actions 自动执行**（3 个 job 并行）
+3. **GitHub Actions 自动执行**
 
-- **bump-version** — 更新 manifest 版本 → 提交到 main
-- **build** — 安装 fnpack → 构建 FPK → 重命名为 `fn-xiaoya-only-v1.2.0.fpk`
-- **release** — 生成中文 Release 文案 → 创建 GitHub Release 附带 FPK
-
-> 每个应用独立发版，互不影响。
+- **discover** — 扫描 `apps/` 目录，收集所有应用名
+- **build** — 为每个应用并行构建 FPK，文件名格式 `<app>-v4.0.0.fpk`
+- **release** — 生成中文 Release 文案 → 创建 GitHub Release，附带所有 `.fpk` 包
 
 ## 上架应用
 
