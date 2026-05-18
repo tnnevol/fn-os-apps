@@ -4,8 +4,6 @@
 DATA_DIR="${TRIM_PKGVAR}"
 # start command
 CMD="${TRIM_APPDEST}/bin/openlist restart --data ${DATA_DIR}"
-# admin panel command
-ADMIN_CMD="${TRIM_APPDEST}/bin/openlist-manager"
 
 status() {
     # Check if openlist server process exists
@@ -21,7 +19,6 @@ start_process() {
     fi
 
     ${CMD} &
-    ${ADMIN_CMD} &
 
     return 0
 }
@@ -29,12 +26,6 @@ start_process() {
 stop_process() {
     # Stop openlist using its own stop command
     ${TRIM_APPDEST}/bin/openlist stop 2>/dev/null
-
-    # Fallback: kill by process name if stop command fails
-    sleep 1
-    if status; then
-        pkill -f "openlist-manager" 2>/dev/null
-    fi
 
     return 0
 }

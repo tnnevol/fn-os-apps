@@ -8,7 +8,4 @@ if [ -f "$OPENLIST_BIN" ]; then
     $OPENLIST_BIN stop 2>/dev/null
 fi
 
-# Stop openlist-manager via process name
-pkill -f "openlist-manager" 2>/dev/null
-
 exit 0

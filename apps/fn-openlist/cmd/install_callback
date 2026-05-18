@@ -1,14 +1,11 @@
 #!/bin/bash
 
 ### This script is called after the application is installed.
-### Download, extract OpenList binary, apply wizard configuration.
+### Download, extract OpenList binary.
 
 set -e
 
-DATA_DIR="${TRIM_PKGVAR}"
 BIN_DIR="${TRIM_APPDEST}/bin"
-OPENLIST_BIN="${BIN_DIR}/openlist"
-CONFIG_FILE="${DATA_DIR}/config.json"
 
 # Download and extract OpenList latest binary via pipe
 OPENLIST_URL="https://gh-proxy.com/https://github.com/OpenListTeam/OpenList/releases/latest/download/openlist-linux-musl-amd64.tar.gz"
@@ -24,39 +21,7 @@ else
     exit 1
 fi
 
-chmod +x "${OPENLIST_BIN}"
-echo "OpenList installed to ${OPENLIST_BIN}"
-
-# Copy openlist-manager binary (bundled in fpk)
-if [ -f "${TRIM_APPDEST}/app/bin/openlist-manager" ]; then
-    cp "${TRIM_APPDEST}/app/bin/openlist-manager" "${BIN_DIR}/openlist-manager"
-    chmod +x "${BIN_DIR}/openlist-manager"
-    echo "OpenList manager installed"
-fi
-
-# Apply port from wizard - let openlist create default config first, then modify
-if [ -n "$wizard_port" ]; then
-    echo "Starting openlist to generate default config..."
-    $OPENLIST_BIN server --data "$DATA_DIR" &
-    # Wait for config file to be created
-    sleep 3
-    if [ -f "$CONFIG_FILE" ]; then
-        echo "Setting http_port to ${wizard_port} in ${CONFIG_FILE}"
-        sed -i "s/\"http_port\": [0-9]*/\"http_port\": $wizard_port/" "$CONFIG_FILE"
-    else
-        echo "Config file not found after start: ${CONFIG_FILE}"
-    fi
-else
-    echo "wizard_port not set, using default port 5244"
-    $OPENLIST_BIN server --data "$DATA_DIR" &
-fi
-
-# Set admin password from wizard
-if [ -n "$wizard_admin_pass" ]; then
-    echo "Setting admin password..."
-    $OPENLIST_BIN admin set "$wizard_admin_pass" 2>&1 || true
-    # Restart to apply password
-    $OPENLIST_BIN restart 2>&1 || true
-fi
+chmod +x "${BIN_DIR}/openlist"
+echo "OpenList installed to ${BIN_DIR}/openlist"
 
 exit 0
