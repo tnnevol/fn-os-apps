@@ -1,15 +1,38 @@
 #!/bin/bash
 
+BIN_DIR="${TRIM_APPDEST}/bin"
 # data directory for OpenList
-DATA_DIR="${TRIM_PKGVAR}"
+DATA_DIR="${TRIM_PKGVAR}/data"
+# log file
+LOG_FILE="${TRIM_PKGVAR}/info.log"
+# pid file
+PID_FILE="${TRIM_PKGVAR}/app.pid"
 # start command
-CMD="${TRIM_APPDEST}/bin/openlist restart --data ${DATA_DIR}"
+CMD="${BIN_DIR}/openlist server --data ${DATA_DIR}"
+
+log_msg() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "${LOG_FILE}"
+}
+
+check_process() {
+    local pid=$1
+    if kill -0 "${pid}" 2>/dev/null; then
+        return 0
+    else
+        return 1
+    fi
+}
 
 status() {
-    # Check if openlist server process exists
-    if pgrep -f "openlist" > /dev/null 2>&1; then
-        return 0
+    if [ -f "${PID_FILE}" ]; then
+        pid=$(head -n 1 "${PID_FILE}" | tr -d '[:space:]')
+        if check_process "${pid}"; then
+            return 0
+        else
+            rm -f "${PID_FILE}"
+        fi
     fi
+
     return 1
 }
 
@@ -18,14 +41,48 @@ start_process() {
         return 0
     fi
 
-    ${CMD} &
+    log_msg "Starting OpenList ..."
 
+    mkdir -p "${DATA_DIR}"
+
+    bash -c "${CMD}" >> "${LOG_FILE}" 2>&1 &
+    printf "%s" "$!" > "${PID_FILE}"
+
+    log_msg "OpenList started with pid $!"
     return 0
 }
 
 stop_process() {
-    # Stop openlist using its own stop command
-    ${TRIM_APPDEST}/bin/openlist stop 2>/dev/null
+    log_msg "Stopping OpenList ..."
+
+    if [ -r "${PID_FILE}" ]; then
+        pid=$(head -n 1 "${PID_FILE}" | tr -d '[:space:]')
+
+        log_msg "pid=${pid}"
+        if ! check_process "${pid}"; then
+            rm -f "${PID_FILE}"
+            log_msg "remove pid file"
+            return
+        fi
+
+        log_msg "send TERM signal to PID:${pid}..."
+        kill -TERM ${pid} >> "${LOG_FILE}" 2>&1
+
+        local count=0
+        while check_process "${pid}" && [ $count -lt 10 ]; do
+            sleep 1
+            count=$((count + 1))
+            log_msg "waiting process terminal... (${count}s/10s)"
+        done
+
+        if check_process "${pid}"; then
+            log_msg "send KILL signal to PID:${pid}..."
+            kill -KILL "${pid}"
+            sleep 1
+        fi
+
+        rm -f "${PID_FILE}"
+    fi
 
     return 0
 }

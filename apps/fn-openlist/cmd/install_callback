@@ -6,6 +6,7 @@
 set -e
 
 BIN_DIR="${TRIM_APPDEST}/bin"
+DATA_DIR="${TRIM_PKGVAR}/data"
 
 # Download and extract OpenList latest binary via pipe
 OPENLIST_URL="https://gh-proxy.com/https://github.com/OpenListTeam/OpenList/releases/latest/download/openlist-linux-musl-amd64.tar.gz"
@@ -23,5 +24,16 @@ fi
 
 chmod +x "${BIN_DIR}/openlist"
 echo "OpenList installed to ${BIN_DIR}/openlist"
+
+# Copy default config to data directory
+mkdir -p "${DATA_DIR}"
+if [ -f "${BIN_DIR}/temp/config.json" ]; then
+    cp "${BIN_DIR}/temp/config.json" "${DATA_DIR}/config.json"
+    # Replace environment variable placeholders with real values
+    sed -i "s|\${TRIM_PKGVAR}|${TRIM_PKGVAR}|g" "${DATA_DIR}/config.json"
+    # wizard_port should be a number, not a string — remove surrounding quotes
+    sed -i "s|\"http_port\": \"[0-9]*\"|\"http_port\": ${wizard_port}|g" "${DATA_DIR}/config.json"
+    echo "Default config copied to ${DATA_DIR}/config.json"
+fi
 
 exit 0
