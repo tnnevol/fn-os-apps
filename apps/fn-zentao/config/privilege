@@ -1,0 +1,8 @@
+{
+    "defaults":
+    {
+        "run-as": "package"
+    },
+    "username": "docker-fn-zentao",
+    "groupname": "docker-fn-zentao"
+}

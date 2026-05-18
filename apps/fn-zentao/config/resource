@@ -1,0 +1,38 @@
+{
+    "docker-project":
+    {
+        "projects":
+        [
+            {
+                "name": "fn-zentao",
+                "path": "docker"
+            }
+        ]
+    },
+    "data-share":
+    {
+        "shares":
+        [
+            {
+                "name": "fn-zentao",
+                "permission":
+                {
+                    "rw":
+                    [
+                        "docker-fn-zentao"
+                    ]
+                }
+            },
+            {
+                "name": "fn-zentao/data",
+                "permission":
+                {
+                    "rw":
+                    [
+                        "docker-fn-zentao"
+                    ]
+                }
+            }
+        ]
+    }
+}
