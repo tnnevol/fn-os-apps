@@ -1,20 +1,48 @@
 #!/bin/bash
 
 ### This script is called after the application is installed.
+### Download, extract OpenList binary, apply wizard configuration.
+
+set -e
 
 DATA_DIR="${TRIM_PKGVAR}"
-OPENLIST_BIN="${TRIM_APPDEST}/server/openlist"
-CONFIG_FILE="$DATA_DIR/config.json"
+BIN_DIR="${TRIM_APPDEST}/server"
+OPENLIST_BIN="${BIN_DIR}/openlist"
+CONFIG_FILE="${DATA_DIR}/config.json"
+
+# Download and extract OpenList latest binary via pipe
+OPENLIST_URL="https://gh-proxy.com/https://github.com/OpenListTeam/OpenList/releases/latest/download/openlist-linux-musl-amd64.tar.gz"
+
+echo "Downloading OpenList latest..."
+
+if command -v curl >/dev/null 2>&1; then
+    curl -fsSL "${OPENLIST_URL}" | tar -xz -C "${BIN_DIR}" openlist
+elif command -v wget >/dev/null 2>&1; then
+    wget -q -O - "${OPENLIST_URL}" | tar -xz -C "${BIN_DIR}" openlist
+else
+    echo "No curl or wget found, cannot download OpenList"
+    exit 1
+fi
+
+chmod +x "${OPENLIST_BIN}"
+echo "OpenList installed to ${OPENLIST_BIN}"
+
+# Copy openlist-manager binary (bundled in fpk)
+if [ -f "${TRIM_APPDEST}/app/server/openlist-manager" ]; then
+    cp "${TRIM_APPDEST}/app/server/openlist-manager" "${BIN_DIR}/openlist-manager"
+    chmod +x "${BIN_DIR}/openlist-manager"
+    echo "OpenList manager installed"
+fi
 
 # Apply port from wizard
 if [ -n "$wizard_port" ] && [ -f "$CONFIG_FILE" ]; then
     sed -i "s/\"http_port\": [0-9]*/\"http_port\": $wizard_port/" "$CONFIG_FILE"
 fi
 
-# Set admin password from wizard
+# Set admin password from wizard and restart
 if [ -n "$wizard_admin_pass" ] && [ -f "$OPENLIST_BIN" ]; then
     $OPENLIST_BIN admin set "$wizard_admin_pass" --data "$DATA_DIR" 2>/dev/null
-    $OPENLIST_BIN restart 2>/dev/null
+    $OPENLIST_BIN restart --data "$DATA_DIR" 2>/dev/null
 fi
 
 exit 0

@@ -1,49 +1,6 @@
 #!/bin/bash
 
 ### This script is called before the user installs the application.
-
-set -e
-
-APP_DIR="${TRIM_APPDEST}"
-BIN_DIR="${APP_DIR}/server"
-
-# Download and extract OpenList latest binary via pipe (no temp file needed)
-OPENLIST_URL="https://gh-proxy.com/https://github.com/OpenListTeam/OpenList/releases/latest/download/openlist-linux-musl-amd64.tar.gz"
-
-echo "Downloading OpenList latest..."
-
-download_and_extract() {
-    local url="$1"
-    if command -v curl >/dev/null 2>&1; then
-        curl -fsSL "${url}" | tar -xz -C "${BIN_DIR}" openlist 2>/dev/null
-    elif command -v wget >/dev/null 2>&1; then
-        wget -q -O - "${url}" | tar -xz -C "${BIN_DIR}" openlist 2>/dev/null
-    else
-        echo "No curl or wget found, cannot download OpenList"
-        return 1
-    fi
-}
-
-if ! download_and_extract "${OPENLIST_URL}" 2>/dev/null; then
-    echo "Mirror failed, trying GitHub directly..."
-    OPENLIST_URL="https://github.com/OpenListTeam/OpenList/releases/latest/download/openlist-linux-musl-amd64.tar.gz"
-    if ! download_and_extract "${OPENLIST_URL}"; then
-        echo "Failed to download OpenList from all sources"
-        exit 1
-    fi
-fi
-
-# Make binary executable
-chmod +x "${BIN_DIR}/openlist"
-
-# Copy openlist-manager binary (bundled in fpk)
-if [ -f "${TRIM_APPDEST}/app/server/openlist-manager" ]; then
-    cp "${TRIM_APPDEST}/app/server/openlist-manager" "${BIN_DIR}/openlist-manager"
-    chmod +x "${BIN_DIR}/openlist-manager"
-    echo "OpenList manager installed to ${BIN_DIR}/openlist-manager"
-fi
-
-echo "OpenList latest installed to ${BIN_DIR}/openlist"
-echo "OpenList installation completed"
+### No download needed here - directories are not ready yet.
 
 exit 0
