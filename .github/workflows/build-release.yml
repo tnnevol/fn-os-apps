@@ -166,7 +166,7 @@ jobs:
             printf '| **%s** (`%s`) | %s-%s.fpk |\n' "$DISPLAY_NAME" "$APP" "$APP" "$TAG" >> RELEASE_NOTES.md
           done
 
-          printf '\n## 🛠 安装方式\n\n1. 下载上方对应的 `.fpk` 安装包\n2. 打开飞牛 fnOS 应用中心\n3. 点击右上角 **+** 按钮，选择 **本地安装**\n4. 选择下载好的 `.fpk` 文件完成安装\n' >> RELEASE_NOTES.md
+          printf '\n## 🛠 安装方式\n\n1. 下载上方对应的 `.fpk` 安装包\n2. 打开飞牛 fnOS 应用中心\n3. 点击左下角 **手动安装** 按钮\n4. 选择下载好的 `.fpk` 文件完成安装\n' >> RELEASE_NOTES.md
 
           printf '\n## 📝 提交记录\n\n' >> RELEASE_NOTES.md
           if [ -n "$PREV_TAG" ]; then
