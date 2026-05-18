@@ -2,38 +2,19 @@
 
 ### This script is called after the application is installed.
 
-LOG_FILE="${TRIM_PKGVAR}/log/log.log"
-
-log_msg() {
-    mkdir -p "$(dirname "${LOG_FILE}")"
-    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "${LOG_FILE}"
-}
-
 DATA_DIR="${TRIM_PKGVAR}"
 OPENLIST_BIN="${TRIM_APPDEST}/server/openlist"
 CONFIG_FILE="$DATA_DIR/config.json"
 
 # Apply port from wizard
 if [ -n "$wizard_port" ] && [ -f "$CONFIG_FILE" ]; then
-    log_msg "Setting http_port to $wizard_port in config.json..."
-    # Use sed to replace the http_port value
     sed -i "s/\"http_port\": [0-9]*/\"http_port\": $wizard_port/" "$CONFIG_FILE"
-    log_msg "http_port set to $wizard_port"
 fi
 
 # Set admin password from wizard
 if [ -n "$wizard_admin_pass" ] && [ -f "$OPENLIST_BIN" ]; then
-    log_msg "Setting up admin password..."
-    $OPENLIST_BIN admin set "$wizard_admin_pass" --data "$DATA_DIR" 2>&1 | while read line; do
-        log_msg "admin set: $line"
-    done
-
-    # Restart openlist to apply changes
-    log_msg "Restarting OpenList..."
+    $OPENLIST_BIN admin set "$wizard_admin_pass" --data "$DATA_DIR" 2>/dev/null
     $OPENLIST_BIN restart 2>/dev/null
-    log_msg "Admin password setup complete, OpenList restarted"
-else
-    log_msg "No admin password from wizard, using default admin account"
 fi
 
 exit 0

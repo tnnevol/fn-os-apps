@@ -2,21 +2,10 @@
 
 ### This script is called before the user uninstalls the application.
 
-LOG_FILE="${TRIM_PKGVAR}/log/log.log"
-
-log_msg() {
-    mkdir -p "$(dirname ${LOG_FILE})"
-    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> ${LOG_FILE}
-}
-
-log_msg "Starting OpenList uninstall..."
-
 # Stop OpenList gracefully
 OPENLIST_BIN="${TRIM_APPDEST}/server/openlist"
 if [ -f "$OPENLIST_BIN" ]; then
-    log_msg "Stopping OpenList service..."
     $OPENLIST_BIN stop 2>/dev/null
-    log_msg "OpenList service stopped"
 fi
 
 # Stop openlist-manager via PID
@@ -24,14 +13,10 @@ MGR_PID="${TRIM_PKGVAR}/mgr.pid"
 if [ -f "$MGR_PID" ]; then
     pid=$(head -n 1 "$MGR_PID" | tr -d '[:space:]')
     if kill -0 "$pid" 2>/dev/null; then
-        log_msg "Stopping manager (pid=$pid)..."
         kill -TERM "$pid" 2>/dev/null
         sleep 1
         kill -0 "$pid" 2>/dev/null && kill -9 "$pid" 2>/dev/null
-        log_msg "Manager stopped"
     fi
 fi
-
-log_msg "OpenList uninstall preparation complete"
 
 exit 0
