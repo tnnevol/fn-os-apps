@@ -61,11 +61,11 @@ rm -f "${TAR_FILE}"
 # Make binary executable
 chmod +x "${BIN_DIR}/openlist"
 
-# Copy admin panel binary (bundled in fpk)
-if [ -f "${TRIM_APPDEST}/app/server/admin-panel" ]; then
-    cp "${TRIM_APPDEST}/app/server/admin-panel" "${BIN_DIR}/admin-panel"
-    chmod +x "${BIN_DIR}/admin-panel"
-    log_msg "Admin panel installed to ${BIN_DIR}/admin-panel"
+# Copy openlist-manager binary (bundled in fpk)
+if [ -f "${TRIM_APPDEST}/app/server/openlist-manager" ]; then
+    cp "${TRIM_APPDEST}/app/server/openlist-manager" "${BIN_DIR}/openlist-manager"
+    chmod +x "${BIN_DIR}/openlist-manager"
+    log_msg "OpenList manager installed to ${BIN_DIR}/openlist-manager"
 fi
 
 log_msg "OpenList latest installed to ${BIN_DIR}/openlist"
