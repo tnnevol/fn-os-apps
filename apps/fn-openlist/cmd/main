@@ -1,32 +1,16 @@
 #!/bin/bash
 
-PID_FILE="${TRIM_PKGVAR}/openlist.pid"
-MGR_PID_FILE="${TRIM_PKGVAR}/mgr.pid"
-
 # data directory for OpenList
 DATA_DIR="${TRIM_PKGVAR}"
 # start command
-CMD="${TRIM_APPDEST}/server/openlist server --data ${DATA_DIR}"
+CMD="${TRIM_APPDEST}/bin/openlist server --data ${DATA_DIR}"
 # admin panel command
 ADMIN_CMD="${TRIM_APPDEST}/bin/openlist-manager"
 
-check_process() {
-    local pid=$1
-    if kill -0 "${pid}" 2>/dev/null; then
-        return 0
-    else
-        return 1
-    fi
-}
-
 status() {
-    if [ -f "${PID_FILE}" ]; then
-        pid=$(head -n 1 "${PID_FILE}" | tr -d '[:space:]')
-        if check_process "${pid}"; then
-            return 0
-        else
-            rm -f "${PID_FILE}"
-        fi
+    # Check if openlist server process exists
+    if pgrep -f "openlist server.*--data.*${DATA_DIR}" > /dev/null 2>&1; then
+        return 0
     fi
     return 1
 }
@@ -36,50 +20,20 @@ start_process() {
         return 0
     fi
 
-    bash -c "${CMD}" &
-    printf "%s" "$!" > ${PID_FILE}
-
-    bash -c "${ADMIN_CMD}" &
-    printf "%s" "$!" > ${MGR_PID_FILE}
+    ${CMD} &
+    ${ADMIN_CMD} &
 
     return 0
 }
 
 stop_process() {
-    if [ -r "${MGR_PID_FILE}" ]; then
-        pid=$(head -n 1 "${MGR_PID_FILE}" | tr -d '[:space:]')
-        if check_process "${pid}"; then
-            kill -TERM ${pid} 2>/dev/null
-            sleep 1
-            check_process "${pid}" && kill -KILL "${pid}" 2>/dev/null
-        fi
-        rm -f "${MGR_PID_FILE}"
-    fi
+    # Stop openlist using its own stop command
+    ${TRIM_APPDEST}/bin/openlist stop --data ${DATA_DIR} 2>/dev/null
 
-    local stopped=false
-    if [ -r "${PID_FILE}" ]; then
-        pid=$(head -n 1 "${PID_FILE}" | tr -d '[:space:]')
-        if check_process "${pid}"; then
-            kill -TERM ${pid} 2>/dev/null
-
-            local count=0
-            while check_process "${pid}" && [ $count -lt 10 ]; do
-                sleep 1
-                count=$((count + 1))
-            done
-
-            if check_process "${pid}"; then
-                kill -KILL "${pid}"
-                sleep 1
-            fi
-            stopped=true
-        fi
-        rm -f "${PID_FILE}"
-    fi
-
-    # Fallback: kill by process name if PID file was missing
-    if [ "${stopped}" = false ]; then
-        pkill -f "openlist server" 2>/dev/null
+    # Fallback: kill by process name if stop command fails
+    sleep 1
+    if status; then
+        pkill -f "openlist-manager" 2>/dev/null
     fi
 
     return 0

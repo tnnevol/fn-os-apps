@@ -13,11 +13,11 @@ import (
 const adminPort = "5245"
 
 func handleStatus(w http.ResponseWriter, r *http.Request) {
-	pid, running := openlist.GetPID()
+	pid := openlist.GetPID()
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]any{
 		"version":    openlist.Version(),
-		"running":    running,
+		"running":    pid > 0,
 		"pid":        pid,
 		"upgrading":  openlist.IsUpgrading(),
 		"data_dir":   openlist.DataDir(),

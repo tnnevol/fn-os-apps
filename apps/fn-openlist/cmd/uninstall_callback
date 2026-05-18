@@ -11,9 +11,4 @@ else
     echo "Keeping application data for future reinstallation."
 fi
 
-# Clean up PID files
-PKGVAR="${TRIM_PKGVAR:-/var/apps/fn-openlist/var}"
-rm -f "${PKGVAR}/openlist.pid"
-rm -f "${PKGVAR}/mgr.pid"
-
 exit 0

@@ -5,18 +5,10 @@
 # Stop OpenList gracefully
 OPENLIST_BIN="${TRIM_APPDEST}/bin/openlist"
 if [ -f "$OPENLIST_BIN" ]; then
-    $OPENLIST_BIN stop 2>/dev/null
+    $OPENLIST_BIN stop --data "${TRIM_PKGVAR}" 2>/dev/null
 fi
 
-# Stop openlist-manager via PID
-MGR_PID="${TRIM_PKGVAR}/mgr.pid"
-if [ -f "$MGR_PID" ]; then
-    pid=$(head -n 1 "$MGR_PID" | tr -d '[:space:]')
-    if kill -0 "$pid" 2>/dev/null; then
-        kill -TERM "$pid" 2>/dev/null
-        sleep 1
-        kill -0 "$pid" 2>/dev/null && kill -9 "$pid" 2>/dev/null
-    fi
-fi
+# Stop openlist-manager via process name
+pkill -f "openlist-manager" 2>/dev/null
 
 exit 0

@@ -34,15 +34,29 @@ if [ -f "${TRIM_APPDEST}/app/bin/openlist-manager" ]; then
     echo "OpenList manager installed"
 fi
 
-# Apply port from wizard
-if [ -n "$wizard_port" ] && [ -f "$CONFIG_FILE" ]; then
-    sed -i "s/\"http_port\": [0-9]*/\"http_port\": $wizard_port/" "$CONFIG_FILE"
+# Apply port from wizard - let openlist create default config first, then modify
+if [ -n "$wizard_port" ]; then
+    echo "Starting openlist to generate default config..."
+    $OPENLIST_BIN server --data "$DATA_DIR" &
+    # Wait for config file to be created
+    sleep 3
+    if [ -f "$CONFIG_FILE" ]; then
+        echo "Setting http_port to ${wizard_port} in ${CONFIG_FILE}"
+        sed -i "s/\"http_port\": [0-9]*/\"http_port\": $wizard_port/" "$CONFIG_FILE"
+    else
+        echo "Config file not found after start: ${CONFIG_FILE}"
+    fi
+else
+    echo "wizard_port not set, using default port 5244"
+    $OPENLIST_BIN server --data "$DATA_DIR" &
 fi
 
-# Set admin password from wizard and restart
-if [ -n "$wizard_admin_pass" ] && [ -f "$OPENLIST_BIN" ]; then
-    $OPENLIST_BIN admin set "$wizard_admin_pass" --data "$DATA_DIR" 2>/dev/null
-    $OPENLIST_BIN restart --data "$DATA_DIR" 2>/dev/null
+# Set admin password from wizard
+if [ -n "$wizard_admin_pass" ]; then
+    echo "Setting admin password..."
+    $OPENLIST_BIN admin set "$wizard_admin_pass" --data "$DATA_DIR" 2>&1 || true
+    # Restart to apply password
+    $OPENLIST_BIN restart --data "$DATA_DIR" 2>&1 || true
 fi
 
 exit 0

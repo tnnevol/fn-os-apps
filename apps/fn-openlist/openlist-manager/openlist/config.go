@@ -34,10 +34,6 @@ func LogFile() string {
 	return VarDir() + "/log/log.log"
 }
 
-func PidFile() string {
-	return VarDir() + "/app.pid"
-}
-
 // ReadConfigPort reads the http_port from data/config.json
 func ReadConfigPort() int {
 	configPath := filepath.Join(DataDir(), "config.json")
