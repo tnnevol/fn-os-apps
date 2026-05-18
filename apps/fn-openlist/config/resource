@@ -1,0 +1,18 @@
+{
+    "data-share":
+    {
+        "shares":
+        [
+            {
+                "name": "fn-openlist/data",
+                "permission":
+                {
+                    "rw":
+                    [
+                        "fn-openlist"
+                    ]
+                }
+            }
+        ]
+    }
+}

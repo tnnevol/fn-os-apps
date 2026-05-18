@@ -1,0 +1,74 @@
+#!/bin/bash
+
+### This script is called before the user installs the application.
+
+set -e
+
+APP_DIR="${TRIM_APPDEST}"
+BIN_DIR="${APP_DIR}/server"
+LOG_FILE="${TRIM_PKGVAR}/info.log"
+
+log_msg() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "${LOG_FILE}"
+}
+
+log_msg "Starting OpenList installation..."
+
+# Create binary directory
+mkdir -p "${BIN_DIR}"
+
+# Download OpenList latest binary
+OPENLIST_URL="https://github.com/OpenListTeam/OpenList/releases/latest/download/openlist-linux-amd64.tar.gz"
+TAR_FILE="/tmp/openlist-latest.tar.gz"
+
+log_msg "Downloading OpenList latest..."
+
+if command -v curl >/dev/null 2>&1; then
+    curl -fsSL -o "${TAR_FILE}" "${OPENLIST_URL}" || {
+        log_msg "Primary URL failed, trying mirror..."
+        OPENLIST_URL="https://gh-proxy.com/${OPENLIST_URL}"
+        curl -fsSL -o "${TAR_FILE}" "${OPENLIST_URL}" || {
+            log_msg "Failed to download OpenList from all sources"
+            exit 1
+        }
+    }
+elif command -v wget >/dev/null 2>&1; then
+    wget -q -O "${TAR_FILE}" "${OPENLIST_URL}" || {
+        log_msg "Primary URL failed, trying mirror..."
+        OPENLIST_URL="https://gh-proxy.com/${OPENLIST_URL}"
+        wget -q -O "${TAR_FILE}" "${OPENLIST_URL}" || {
+            log_msg "Failed to download OpenList from all sources"
+            exit 1
+        }
+    }
+else
+    log_msg "No curl or wget found, cannot download OpenList"
+    exit 1
+fi
+
+log_msg "Extracting OpenList binary..."
+tar -xzf "${TAR_FILE}" -C "${BIN_DIR}" openlist 2>/dev/null || {
+    tar -xzf "${TAR_FILE}" -C "${BIN_DIR}" 2>/dev/null || {
+        log_msg "Failed to extract OpenList archive"
+        rm -f "${TAR_FILE}"
+        exit 1
+    }
+}
+
+# Clean up
+rm -f "${TAR_FILE}"
+
+# Make binary executable
+chmod +x "${BIN_DIR}/openlist"
+
+# Copy admin panel binary (bundled in fpk)
+if [ -f "${TRIM_APPDEST}/app/server/admin-panel" ]; then
+    cp "${TRIM_APPDEST}/app/server/admin-panel" "${BIN_DIR}/admin-panel"
+    chmod +x "${BIN_DIR}/admin-panel"
+    log_msg "Admin panel installed to ${BIN_DIR}/admin-panel"
+fi
+
+log_msg "OpenList latest installed to ${BIN_DIR}/openlist"
+log_msg "OpenList installation completed"
+
+exit 0

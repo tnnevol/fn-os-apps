@@ -1,0 +1,118 @@
+#!/bin/bash
+
+LOG_FILE="${TRIM_PKGVAR}/info.log"
+PID_FILE="${TRIM_PKGVAR}/app.pid"
+ADMIN_PID_FILE="${TRIM_PKGVAR}/admin.pid"
+
+# data directory for OpenList
+DATA_DIR="${TRIM_DATA_SHARE_PATHS%%:*}"
+# start command
+CMD="DATA_DIR=${DATA_DIR} ${TRIM_APPDEST}/server/openlist server --port 5244"
+# admin panel command
+ADMIN_CMD="${TRIM_APPDEST}/server/admin-panel"
+
+log_msg() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> ${LOG_FILE}
+}
+
+check_process() {
+    local pid=$1
+    if kill -0 "${pid}" 2>/dev/null; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+status() {
+    if [ -f "${PID_FILE}" ]; then
+        pid=$(head -n 1 "${PID_FILE}" | tr -d '[:space:]')
+        if check_process "${pid}"; then
+            return 0
+        else
+            rm -f "${PID_FILE}"
+        fi
+    fi
+    return 1
+}
+
+start_process() {
+    if status; then
+        return 0
+    fi
+
+    log_msg "Starting OpenList ..."
+    bash -c "${CMD}" >> ${LOG_FILE} 2>&1 &
+    printf "%s" "$!" > ${PID_FILE}
+    log_msg "OpenList started (pid=$!)"
+
+    log_msg "Starting Admin Panel ..."
+    bash -c "${ADMIN_CMD}" >> ${LOG_FILE} 2>&1 &
+    printf "%s" "$!" > ${ADMIN_PID_FILE}
+    log_msg "Admin Panel started (pid=$!)"
+
+    return 0
+}
+
+stop_process() {
+    log_msg "Stopping Admin Panel ..."
+    if [ -r "${ADMIN_PID_FILE}" ]; then
+        pid=$(head -n 1 "${ADMIN_PID_FILE}" | tr -d '[:space:]')
+        if check_process "${pid}"; then
+            kill -TERM ${pid} 2>/dev/null
+            sleep 1
+            check_process "${pid}" && kill -KILL "${pid}" 2>/dev/null
+        fi
+        rm -f "${ADMIN_PID_FILE}"
+    fi
+
+    log_msg "Stopping OpenList ..."
+    if [ -r "${PID_FILE}" ]; then
+        pid=$(head -n 1 "${PID_FILE}" | tr -d '[:space:]')
+        log_msg "pid=${pid}"
+        if ! check_process "${pid}"; then
+            rm -f "${PID_FILE}"
+            return
+        fi
+
+        log_msg "send TERM signal to PID:${pid}..."
+        kill -TERM ${pid} >> ${LOG_FILE} 2>&1
+
+        local count=0
+        while check_process "${pid}" && [ $count -lt 10 ]; do
+            sleep 1
+            count=$((count + 1))
+            log_msg "waiting process terminal... (${count}s/10s)"
+        done
+
+        if check_process "${pid}"; then
+            log_msg "send KILL signal to PID:${pid}..."
+            kill -KILL "${pid}"
+            sleep 1
+        else
+            log_msg "process killed... "
+        fi
+        rm -f "${PID_FILE}"
+    fi
+
+    return 0
+}
+
+case $1 in
+start)
+    start_process
+    ;;
+stop)
+    stop_process
+    ;;
+status)
+    if status; then
+        exit 0
+    else
+        exit 3
+    fi
+    ;;
+*)
+    exit 1
+    ;;
+esac

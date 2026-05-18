@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenList 管理面板</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; padding: 2rem; }
+        .container { max-width: 720px; margin: 0 auto; }
+        h1 { font-size: 1.5rem; margin-bottom: 0.5rem; color: #38bdf8; }
+        .subtitle { color: #94a3b8; margin-bottom: 2rem; font-size: 0.875rem; }
+        .card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 1.5rem; margin-bottom: 1rem; }
+        .card-title { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; margin-bottom: 0.75rem; }
+        .status-row { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; }
+        .status-label { color: #94a3b8; }
+        .status-value { font-weight: 600; }
+        .badge { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; }
+        .badge-green { background: #064e3b; color: #34d399; }
+        .badge-red { background: #450a0a; color: #f87171; }
+        .badge-yellow { background: #422006; color: #fbbf24; }
+        .btn { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1.25rem; border: none; border-radius: 8px; font-size: 0.875rem; font-weight: 500; cursor: pointer; transition: opacity 0.2s; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-primary { background: #0284c7; color: white; }
+        .btn-primary:hover:not(:disabled) { background: #0369a1; }
+        .btn-outline { background: transparent; border: 1px solid #475569; color: #e2e8f0; }
+        .btn-outline:hover:not(:disabled) { background: #334155; }
+        .btn-group { display: flex; gap: 0.5rem; margin-top: 1rem; }
+        .input { background: #0f172a; border: 1px solid #475569; border-radius: 8px; padding: 0.5rem 0.75rem; color: #e2e8f0; font-size: 0.875rem; width: 200px; }
+        .input:focus { outline: none; border-color: #38bdf8; }
+        .log-box { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 1rem; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.75rem; max-height: 300px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; color: #94a3b8; }
+        .toast { position: fixed; top: 1rem; right: 1rem; padding: 0.75rem 1.25rem; border-radius: 8px; font-size: 0.875rem; animation: slideIn 0.3s ease; z-index: 100; }
+        .toast-success { background: #064e3b; color: #34d399; border: 1px solid #059669; }
+        .toast-error { background: #450a0a; color: #f87171; border: 1px solid #dc2626; }
+        .toast-info { background: #0c4a6e; color: #38bdf8; border: 1px solid #0284c7; }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid transparent; border-top-color: currentColor; border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>OpenList 管理面板</h1>
+        <p class="subtitle">管理 OpenList 版本和运行状态</p>
+
+        <div class="card">
+            <div class="card-title">运行状态</div>
+            <div class="status-row">
+                <span class="status-label">当前版本</span>
+                <span class="status-value" id="version">加载中...</span>
+            </div>
+            <div class="status-row">
+                <span class="status-label">运行状态</span>
+                <span id="running"><span class="badge badge-yellow">检测中</span></span>
+            </div>
+            <div class="status-row">
+                <span class="status-label">数据目录</span>
+                <span class="status-value" id="dataDir">-</span>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">版本管理</div>
+            <div class="btn-group">
+                <button class="btn btn-primary" id="btnUpgradeLatest" onclick="upgrade('latest')">
+                    升级到最新版
+                </button>
+                <input class="input" id="versionInput" placeholder="指定版本号 (如 4.1.0)">
+                <button class="btn btn-outline" id="btnUpgradeVersion" onclick="upgradeVersion()">
+                    安装指定版本
+                </button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">运行日志</div>
+            <button class="btn btn-outline" onclick="loadLog()" style="margin-bottom: 0.75rem;">刷新日志</button>
+            <div class="log-box" id="logBox">点击刷新日志查看...</div>
+        </div>
+    </div>
+
+    <script>
+        function toast(msg, type) {
+            const t = document.createElement('div');
+            t.className = 'toast toast-' + (type || 'info');
+            t.textContent = msg;
+            document.body.appendChild(t);
+            setTimeout(() => t.remove(), 3000);
+        }
+
+        async function loadStatus() {
+            try {
+                const r = await fetch('/api/status');
+                const d = await r.json();
+                document.getElementById('version').textContent = d.version;
+                document.getElementById('dataDir').textContent = d.data_dir || '-';
+                const badge = d.running
+                    ? '<span class="badge badge-green">运行中</span>'
+                    : '<span class="badge badge-red">已停止</span>';
+                document.getElementById('running').innerHTML = badge;
+            } catch(e) {
+                document.getElementById('version').textContent = '获取失败';
+            }
+        }
+
+        async function upgrade(version) {
+            const btn = document.getElementById('btnUpgradeLatest');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> 升级中...';
+            toast('开始升级 ' + (version || '最新版'), 'info');
+
+            try {
+                const r = await fetch('/api/upgrade', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({version: version})
+                });
+                await r.json();
+                toast('升级任务已提交，请等待完成', 'success');
+                setTimeout(loadStatus, 5000);
+            } catch(e) {
+                toast('升级请求失败: ' + e.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '升级到最新版';
+            }
+        }
+
+        async function upgradeVersion() {
+            const v = document.getElementById('versionInput').value.trim();
+            if (!v) { toast('请输入版本号', 'error'); return; }
+            const btn = document.getElementById('btnUpgradeVersion');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> 升级中...';
+            toast('开始安装版本 ' + v, 'info');
+
+            try {
+                const r = await fetch('/api/upgrade', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({version: v})
+                });
+                await r.json();
+                toast('升级任务已提交，请等待完成', 'success');
+                setTimeout(loadStatus, 5000);
+            } catch(e) {
+                toast('升级请求失败: ' + e.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '安装指定版本';
+            }
+        }
+
+        async function loadLog() {
+            try {
+                const r = await fetch('/api/log');
+                const text = await r.text();
+                const box = document.getElementById('logBox');
+                box.textContent = text || '暂无日志';
+                box.scrollTop = box.scrollHeight;
+            } catch(e) {
+                document.getElementById('logBox').textContent = '日志获取失败';
+            }
+        }
+
+        loadStatus();
+    </script>
+</body>
+</html>
