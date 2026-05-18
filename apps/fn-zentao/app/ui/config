@@ -6,7 +6,7 @@
       "type": "url",
       "protocol": "",
       "port": "${ZENTAO_HTTP_PORT}",
-      "url": "/zentao/",
+      "url": "/",
       "allUsers": false
     }
   }

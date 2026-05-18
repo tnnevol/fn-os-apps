@@ -2,11 +2,6 @@
 services:
     zentao:
         container_name: fn-zentao
-        deploy:
-            resources:
-                limits:
-                    cpus: ${CPUS}
-                    memory: ${MEMORY_LIMIT}
         environment:
             - MYSQL_INTERNAL=true
         image: hub.zentao.net/app/zentao:22.1

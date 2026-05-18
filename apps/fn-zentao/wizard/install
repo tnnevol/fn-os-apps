@@ -18,52 +18,6 @@
                         "message": "端口号必须是数字"
                     }
                 ]
-            },
-            {
-                "type": "select",
-                "field": "CPUS",
-                "label": "CPU 限制",
-                "initValue": "2",
-                "helpText": "禅道容器可使用的 CPU 核心数上限。",
-                "options": [
-                    {
-                        "label": "1 核",
-                        "value": "1"
-                    },
-                    {
-                        "label": "2 核",
-                        "value": "2"
-                    },
-                    {
-                        "label": "4 核",
-                        "value": "4"
-                    }
-                ]
-            },
-            {
-                "type": "select",
-                "field": "MEMORY_LIMIT",
-                "label": "内存限制",
-                "initValue": "2G",
-                "helpText": "禅道容器可使用的内存上限。",
-                "options": [
-                    {
-                        "label": "1G",
-                        "value": "1G"
-                    },
-                    {
-                        "label": "2G",
-                        "value": "2G"
-                    },
-                    {
-                        "label": "4G",
-                        "value": "4G"
-                    },
-                    {
-                        "label": "8G",
-                        "value": "8G"
-                    }
-                ]
             }
         ]
     }
