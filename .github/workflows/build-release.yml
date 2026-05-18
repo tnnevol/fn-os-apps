@@ -62,6 +62,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
+      apps_space: ${{ steps.set-matrix.outputs.apps_space }}
     steps:
       - uses: actions/checkout@v4
 
@@ -171,7 +172,7 @@ jobs:
           if [ -n "$PREV_TAG" ]; then
             git log --pretty=format:"- %s [%h](https://github.com/${{ github.repository }}/commit/%H)" "${PREV_TAG}..${TAG}" >> RELEASE_NOTES.md
           else
-            git log --pretty=format:"- %s [%h](https://github.com/${{ github.repository }}/commit/%H)" >> RELEASE_NOTES.md
+            git log --pretty=format:"- %s [%h](https://github.com/${{ github.repository }}/commit/%H)" --max-count=20 >> RELEASE_NOTES.md
           fi
           printf '\n' >> RELEASE_NOTES.md
 
