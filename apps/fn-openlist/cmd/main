@@ -7,7 +7,7 @@ ADMIN_PID_FILE="${TRIM_PKGVAR}/admin.pid"
 # data directory for OpenList
 DATA_DIR="${TRIM_DATA_SHARE_PATHS%%:*}"
 # start command
-CMD="DATA_DIR=${DATA_DIR} ${TRIM_APPDEST}/server/openlist server --port 5244"
+CMD="${TRIM_APPDEST}/server/openlist server --port 5244 --data ${DATA_DIR}"
 # admin panel command
 ADMIN_CMD="${TRIM_APPDEST}/server/admin-panel"
 
