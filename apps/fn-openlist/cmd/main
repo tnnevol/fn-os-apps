@@ -5,7 +5,7 @@ PID_FILE="${TRIM_PKGVAR}/openlist.pid"
 MGR_PID_FILE="${TRIM_PKGVAR}/mgr.pid"
 
 # data directory for OpenList
-DATA_DIR="${TRIM_DATA_SHARE_PATHS%%:*}"
+DATA_DIR="${TRIM_PKGVAR}"
 # start command
 CMD="${TRIM_APPDEST}/server/openlist server --data ${DATA_DIR}"
 # admin panel command

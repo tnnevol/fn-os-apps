@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
-	"strings"
 )
 
 func ServerDir() string {
@@ -16,11 +15,11 @@ func ServerDir() string {
 }
 
 func DataDir() string {
-	dataShares := os.Getenv("TRIM_DATA_SHARE_PATHS")
-	if dataShares != "" {
-		return strings.Split(dataShares, ":")[0]
+	pkgVar := os.Getenv("TRIM_PKGVAR")
+	if pkgVar == "" {
+		pkgVar = "/var/apps/fn-openlist/var"
 	}
-	return ""
+	return pkgVar
 }
 
 func VarDir() string {

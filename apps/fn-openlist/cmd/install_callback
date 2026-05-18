@@ -8,7 +8,7 @@ log_msg() {
     echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "${LOG_FILE}"
 }
 
-DATA_DIR="${TRIM_DATA_SHARE_PATHS%%:*}"
+DATA_DIR="${TRIM_PKGVAR}"
 OPENLIST_BIN="${TRIM_APPDEST}/server/openlist"
 CONFIG_FILE="$DATA_DIR/config.json"
 
