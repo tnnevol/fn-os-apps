@@ -38,8 +38,8 @@ if [ -f "${TRIM_APPDEST}/temp/config.json" ]; then
     echo "DEBUG: Replacing \${TRIM_PKGVAR} with ${TRIM_PKGVAR}"
     sed -i "s|\${TRIM_PKGVAR}|${TRIM_PKGVAR}|g" "${DATA_DIR}/config.json"
     # wizard_port should be a number, not a string — remove surrounding quotes
-    echo "DEBUG: Replacing http_port string with number: ${wizard_port}"
-    sed -i "s|\"http_port\": \"[0-9]*\"|\"http_port\": ${wizard_port}|g" "${DATA_DIR}/config.json"
+    echo "DEBUG: Replacing \"\${wizard_port}\" with number: ${wizard_port}"
+    sed -i "s|\"\${wizard_port}\"|${wizard_port}|g" "${DATA_DIR}/config.json"
     echo "DEBUG: Final config content:"
     cat "${DATA_DIR}/config.json"
     echo "Default config copied to ${DATA_DIR}/config.json"
