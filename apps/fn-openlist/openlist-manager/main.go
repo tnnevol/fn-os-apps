@@ -16,11 +16,11 @@ func handleStatus(w http.ResponseWriter, r *http.Request) {
 	pid, running := openlist.GetPID()
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]any{
-		"version":   openlist.Version(),
-		"running":   running,
-		"pid":       pid,
-		"upgrading": openlist.IsUpgrading(),
-		"data_dir":  openlist.DataDir(),
+		"version":    openlist.Version(),
+		"running":    running,
+		"pid":        pid,
+		"upgrading":  openlist.IsUpgrading(),
+		"data_dir":   openlist.DataDir(),
 		"server_dir": openlist.ServerDir(),
 	})
 }
@@ -76,6 +76,33 @@ func handleRestart(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"status": "restarting"})
 }
 
+func handleAdminInfo(w http.ResponseWriter, r *http.Request) {
+	info, err := openlist.AdminInfo()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"info": info})
+}
+
+func handleResetPassword(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	password, err := openlist.ResetPassword()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"password": password})
+}
+
 func handleIndex(w http.ResponseWriter, r *http.Request) {
 	tmpl, err := template.ParseFiles("templates/index.html")
 	if err != nil {
@@ -91,6 +118,8 @@ func main() {
 	http.HandleFunc("/api/upgrade", handleUpgrade)
 	http.HandleFunc("/api/log", handleLog)
 	http.HandleFunc("/api/restart", handleRestart)
+	http.HandleFunc("/api/admin/info", handleAdminInfo)
+	http.HandleFunc("/api/admin/reset", handleResetPassword)
 
 	fmt.Printf("Admin panel listening on :%s\n", adminPort)
 	if err := http.ListenAndServe(":"+adminPort, nil); err != nil {

@@ -86,6 +86,22 @@
         </div>
 
         <div class="card">
+            <div class="card-title">管理员密码</div>
+            <div class="status-row">
+                <span class="status-label">当前密码</span>
+                <span class="status-value" id="adminPassword">点击获取</span>
+            </div>
+            <div class="btn-group">
+                <button class="btn btn-outline" id="btnGetPassword" onclick="getAdminPassword()">
+                    获取密码
+                </button>
+                <button class="btn btn-primary" id="btnResetPassword" onclick="resetPassword()">
+                    重置密码
+                </button>
+            </div>
+        </div>
+
+        <div class="card">
             <div class="card-title">运行日志</div>
             <button class="btn btn-outline" onclick="loadLog()" style="margin-bottom: 0.75rem;">刷新日志</button>
             <div class="log-box" id="logBox">点击刷新日志查看...</div>
@@ -193,6 +209,44 @@
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = '重启服务';
+            }
+        }
+
+        async function getAdminPassword() {
+            const btn = document.getElementById('btnGetPassword');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span>';
+
+            try {
+                const r = await fetch('/api/admin/info');
+                const d = await r.json();
+                document.getElementById('adminPassword').textContent = d.info || '获取失败';
+                toast('密码已获取', 'success');
+            } catch(e) {
+                document.getElementById('adminPassword').textContent = '获取失败: ' + e.message;
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '获取密码';
+            }
+        }
+
+        async function resetPassword() {
+            if (!confirm('确定要重置管理员密码吗？')) return;
+
+            const btn = document.getElementById('btnResetPassword');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> 重置中...';
+
+            try {
+                const r = await fetch('/api/admin/reset', { method: 'POST' });
+                const d = await r.json();
+                document.getElementById('adminPassword').textContent = d.password;
+                toast('密码已重置，请妥善保存', 'success');
+            } catch(e) {
+                toast('重置失败: ' + e.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '重置密码';
             }
         }
 
