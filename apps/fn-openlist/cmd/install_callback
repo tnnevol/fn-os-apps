@@ -2,7 +2,7 @@
 
 ### This script is called after the application is installed.
 
-LOG_FILE="${TRIM_PKGVAR}/info.log"
+LOG_FILE="${TRIM_PKGVAR}/log/log.log"
 
 log_msg() {
     echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "${LOG_FILE}"

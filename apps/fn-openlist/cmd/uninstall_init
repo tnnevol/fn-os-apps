@@ -2,7 +2,7 @@
 
 ### This script is called before the user uninstalls the application.
 
-LOG_FILE="${TRIM_PKGVAR}/info.log"
+LOG_FILE="${TRIM_PKGVAR}/log/log.log"
 
 log_msg() {
     echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> ${LOG_FILE}

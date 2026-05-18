@@ -1,6 +1,6 @@
 #!/bin/bash
 
-LOG_FILE="${TRIM_PKGVAR}/info.log"
+LOG_FILE="${TRIM_PKGVAR}/log/log.log"
 PID_FILE="${TRIM_PKGVAR}/openlist.pid"
 MGR_PID_FILE="${TRIM_PKGVAR}/mgr.pid"
 

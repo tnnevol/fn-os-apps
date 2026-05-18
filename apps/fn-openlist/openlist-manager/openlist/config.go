@@ -31,7 +31,7 @@ func VarDir() string {
 }
 
 func LogFile() string {
-	return VarDir() + "/info.log"
+	return VarDir() + "/log/log.log"
 }
 
 func PidFile() string {

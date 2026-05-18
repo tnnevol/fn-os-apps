@@ -6,7 +6,7 @@ set -e
 
 APP_DIR="${TRIM_APPDEST}"
 BIN_DIR="${APP_DIR}/server"
-LOG_FILE="${TRIM_PKGVAR}/info.log"
+LOG_FILE="${TRIM_PKGVAR}/log/log.log"
 
 log_msg() {
     echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "${LOG_FILE}"
@@ -19,7 +19,7 @@ mkdir -p "${BIN_DIR}"
 
 # Download OpenList latest binary
 OPENLIST_URL="https://github.com/OpenListTeam/OpenList/releases/latest/download/openlist-linux-amd64.tar.gz"
-TAR_FILE="/tmp/openlist-latest.tar.gz"
+TAR_FILE="${TRIM_PKGTMP}/openlist-latest.tar.gz"
 
 log_msg "Downloading OpenList latest..."
 
