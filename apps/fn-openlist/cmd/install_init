@@ -6,13 +6,6 @@ set -e
 
 APP_DIR="${TRIM_APPDEST}"
 BIN_DIR="${APP_DIR}/server"
-LOG_FILE="${TRIM_PKGVAR}/log/log.log"
-
-log_msg() {
-    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "${LOG_FILE}"
-}
-
-log_msg "Starting OpenList installation..."
 
 # Create binary directory
 mkdir -p "${BIN_DIR}"
@@ -21,35 +14,35 @@ mkdir -p "${BIN_DIR}"
 OPENLIST_URL="https://github.com/OpenListTeam/OpenList/releases/latest/download/openlist-linux-amd64.tar.gz"
 TAR_FILE="${TRIM_PKGTMP}/openlist-latest.tar.gz"
 
-log_msg "Downloading OpenList latest..."
+echo "Downloading OpenList latest..."
 
 if command -v curl >/dev/null 2>&1; then
     curl -fsSL -o "${TAR_FILE}" "${OPENLIST_URL}" || {
-        log_msg "Primary URL failed, trying mirror..."
+        echo "Primary URL failed, trying mirror..."
         OPENLIST_URL="https://gh-proxy.com/${OPENLIST_URL}"
         curl -fsSL -o "${TAR_FILE}" "${OPENLIST_URL}" || {
-            log_msg "Failed to download OpenList from all sources"
+            echo "Failed to download OpenList from all sources"
             exit 1
         }
     }
 elif command -v wget >/dev/null 2>&1; then
     wget -q -O "${TAR_FILE}" "${OPENLIST_URL}" || {
-        log_msg "Primary URL failed, trying mirror..."
+        echo "Primary URL failed, trying mirror..."
         OPENLIST_URL="https://gh-proxy.com/${OPENLIST_URL}"
         wget -q -O "${TAR_FILE}" "${OPENLIST_URL}" || {
-            log_msg "Failed to download OpenList from all sources"
+            echo "Failed to download OpenList from all sources"
             exit 1
         }
     }
 else
-    log_msg "No curl or wget found, cannot download OpenList"
+    echo "No curl or wget found, cannot download OpenList"
     exit 1
 fi
 
-log_msg "Extracting OpenList binary..."
+echo "Extracting OpenList binary..."
 tar -xzf "${TAR_FILE}" -C "${BIN_DIR}" openlist 2>/dev/null || {
     tar -xzf "${TAR_FILE}" -C "${BIN_DIR}" 2>/dev/null || {
-        log_msg "Failed to extract OpenList archive"
+        echo "Failed to extract OpenList archive"
         rm -f "${TAR_FILE}"
         exit 1
     }
@@ -65,10 +58,10 @@ chmod +x "${BIN_DIR}/openlist"
 if [ -f "${TRIM_APPDEST}/app/server/openlist-manager" ]; then
     cp "${TRIM_APPDEST}/app/server/openlist-manager" "${BIN_DIR}/openlist-manager"
     chmod +x "${BIN_DIR}/openlist-manager"
-    log_msg "OpenList manager installed to ${BIN_DIR}/openlist-manager"
+    echo "OpenList manager installed to ${BIN_DIR}/openlist-manager"
 fi
 
-log_msg "OpenList latest installed to ${BIN_DIR}/openlist"
-log_msg "OpenList installation completed"
+echo "OpenList latest installed to ${BIN_DIR}/openlist"
+echo "OpenList installation completed"
 
 exit 0

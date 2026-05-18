@@ -12,6 +12,7 @@ CMD="${TRIM_APPDEST}/server/openlist server --data ${DATA_DIR}"
 ADMIN_CMD="${TRIM_APPDEST}/server/openlist-manager"
 
 log_msg() {
+    mkdir -p "$(dirname ${LOG_FILE})"
     echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> ${LOG_FILE}
 }
 

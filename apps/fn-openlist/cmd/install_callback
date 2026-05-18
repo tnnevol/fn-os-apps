@@ -5,6 +5,7 @@
 LOG_FILE="${TRIM_PKGVAR}/log/log.log"
 
 log_msg() {
+    mkdir -p "$(dirname "${LOG_FILE}")"
     echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "${LOG_FILE}"
 }
 
