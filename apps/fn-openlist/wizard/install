@@ -3,23 +3,10 @@
         "stepTitle": "OpenList 管理员配置",
         "items": [
             {
-                "type": "text",
-                "field": "wizard_admin_user",
-                "label": "管理员用户名",
-                "helpText": "设置 OpenList 管理员账户的用户名",
-                "initValue": "admin",
-                "rules": [
-                    {
-                        "required": true,
-                        "message": "请输入管理员用户名"
-                    }
-                ]
-            },
-            {
                 "type": "password",
                 "field": "wizard_admin_pass",
                 "label": "管理员密码",
-                "helpText": "设置 OpenList 管理员账户的登录密码",
+                "helpText": "设置 OpenList admin 管理员账户的登录密码",
                 "rules": [
                     {
                         "required": true,

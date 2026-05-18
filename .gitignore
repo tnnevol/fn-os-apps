@@ -1,6 +1,9 @@
 # fnOS 打包产物
 *.fpk
 
+# 编译产物（本地开发生成）
+apps/fn-openlist/app/server/openlist-manager
+
 # Claude Code 配置
 .claude/
 

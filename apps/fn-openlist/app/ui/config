@@ -12,7 +12,7 @@
         "fn-openlist.admin": {
             "title": "OpenList 管理",
             "icon": "images/icon_{0}.png",
-            "type": "url",
+            "type": "iframe",
             "protocol": "http",
             "port": "5245",
             "url": "/",

@@ -8,22 +8,25 @@ log_msg() {
     echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "${LOG_FILE}"
 }
 
-# Set up admin account from wizard
-if [ -n "$wizard_admin_user" ] && [ -n "$wizard_admin_pass" ]; then
-    log_msg "Setting up admin account: $wizard_admin_user"
+# Set up admin password from wizard
+if [ -n "$wizard_admin_pass" ]; then
+    log_msg "Setting up admin password..."
     OPENLIST_BIN="${TRIM_APPDEST}/server/openlist"
     if [ -f "$OPENLIST_BIN" ]; then
         DATA_DIR="${TRIM_DATA_SHARE_PATHS%%:*}"
-        mkdir -p "$DATA_DIR"
-        $OPENLIST_BIN admin set "$wizard_admin_user" "$wizard_admin_pass" --data "$DATA_DIR" 2>&1 | while read line; do
+        $OPENLIST_BIN admin set "$wizard_admin_pass" --data "$DATA_DIR" 2>&1 | while read line; do
             log_msg "admin set: $line"
         done
-        log_msg "Admin account setup complete"
+
+        # Restart openlist to apply changes
+        log_msg "Restarting OpenList..."
+        $OPENLIST_BIN restart 2>/dev/null
+        log_msg "Admin password setup complete, OpenList restarted"
     else
         log_msg "ERROR: openlist binary not found, skipping admin setup"
     fi
 else
-    log_msg "No admin credentials from wizard, using default admin account"
+    log_msg "No admin password from wizard, using default admin account"
 fi
 
 exit 0

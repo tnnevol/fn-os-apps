@@ -24,7 +24,7 @@ func ResetPassword() (string, error) {
 	binPath := filepath.Join(ServerDir(), "openlist")
 	password := randomPassword(12)
 
-	cmd := exec.Command(binPath, "admin", "set", "admin", password)
+	cmd := exec.Command(binPath, "admin", "set", password)
 	cmd.Dir = ServerDir()
 	out, err := cmd.CombinedOutput()
 	if err != nil {
