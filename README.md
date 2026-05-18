@@ -13,7 +13,8 @@
 │   ├── fn-mysql-8_4_9/             # MySQL - 关系型数据库
 │   ├── fn-halo/                    # Halo - 建站系统
 │   ├── fn-quark-auto-save/            # 夸克转存 - 夸克网盘自动化工具
-│   └── fn-new-api/                    # New API - AI API 管理平台
+│   ├── fn-new-api/                    # New API - AI API 管理平台
+│   └── fn-zentao/                    # 禅道项目管理 - 项目管理软件
 ├── .github/workflows/              # CI: FPK 构建与 Release 发布
 ├── .gitignore
 └── README.md
@@ -30,6 +31,7 @@
 | [fn-halo](https://github.com/tnnevol/fn-os-apps/releases/latest) | Halo | 简洁高效的开源建站系统，支持博客、知识库、企业官网等多种场景 |
 | [fn-quark-auto-save](https://github.com/tnnevol/fn-os-apps/releases/latest) | 夸克转存 | 夸克网盘签到、自动转存、命名整理、推送提醒和刷新媒体库自动化工具 |
 | [fn-new-api](https://github.com/tnnevol/fn-os-apps/releases/latest) | New API | 新一代 AI API 管理与分发平台，支持多模型接入、令牌管理、配额控制等功能 |
+| [fn-zentao](https://github.com/tnnevol/fn-os-apps/releases/latest) | 禅道项目管理 | 国产开源项目管理软件，基于敏捷和 Scrum 理念，包含产品管理、项目管理、质量管理等模块 |
 
 ## 测试与安装
 
