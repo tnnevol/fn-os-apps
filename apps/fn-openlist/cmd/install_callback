@@ -6,7 +6,7 @@
 set -e
 
 DATA_DIR="${TRIM_PKGVAR}"
-BIN_DIR="${TRIM_APPDEST}/server"
+BIN_DIR="${TRIM_APPDEST}/bin"
 OPENLIST_BIN="${BIN_DIR}/openlist"
 CONFIG_FILE="${DATA_DIR}/config.json"
 
@@ -28,8 +28,8 @@ chmod +x "${OPENLIST_BIN}"
 echo "OpenList installed to ${OPENLIST_BIN}"
 
 # Copy openlist-manager binary (bundled in fpk)
-if [ -f "${TRIM_APPDEST}/app/server/openlist-manager" ]; then
-    cp "${TRIM_APPDEST}/app/server/openlist-manager" "${BIN_DIR}/openlist-manager"
+if [ -f "${TRIM_APPDEST}/app/bin/openlist-manager" ]; then
+    cp "${TRIM_APPDEST}/app/bin/openlist-manager" "${BIN_DIR}/openlist-manager"
     chmod +x "${BIN_DIR}/openlist-manager"
     echo "OpenList manager installed"
 fi

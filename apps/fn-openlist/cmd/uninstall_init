@@ -3,7 +3,7 @@
 ### This script is called before the user uninstalls the application.
 
 # Stop OpenList gracefully
-OPENLIST_BIN="${TRIM_APPDEST}/server/openlist"
+OPENLIST_BIN="${TRIM_APPDEST}/bin/openlist"
 if [ -f "$OPENLIST_BIN" ]; then
     $OPENLIST_BIN stop 2>/dev/null
 fi

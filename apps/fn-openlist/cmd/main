@@ -8,7 +8,7 @@ DATA_DIR="${TRIM_PKGVAR}"
 # start command
 CMD="${TRIM_APPDEST}/server/openlist server --data ${DATA_DIR}"
 # admin panel command
-ADMIN_CMD="${TRIM_APPDEST}/server/openlist-manager"
+ADMIN_CMD="${TRIM_APPDEST}/bin/openlist-manager"
 
 check_process() {
     local pid=$1

@@ -2,7 +2,7 @@
 *.fpk
 
 # 编译产物（本地开发生成）
-apps/fn-openlist/app/server/openlist-manager
+apps/fn-openlist/app/bin/openlist-manager
 
 # Claude Code 配置
 .claude/

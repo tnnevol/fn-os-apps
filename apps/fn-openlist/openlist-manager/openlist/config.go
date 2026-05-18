@@ -11,7 +11,7 @@ func ServerDir() string {
 	if appDest == "" {
 		appDest = "/var/apps/fn-openlist/target"
 	}
-	return appDest + "/server"
+	return appDest + "/bin"
 }
 
 func DataDir() string {
