@@ -2,13 +2,4 @@
 
 ### This script is called after the user uninstalls the application.
 
-if [ "$wizard_data_action" = "delete" ]; then
-    echo "Deleting application data..."
-    rm -rf "${TRIM_PKGVAR:?}"
-    rm -rf "${TRIM_PKGHOME:?}"
-    echo "Application data deleted."
-else
-    echo "Keeping application data for future reinstallation."
-fi
-
 exit 0

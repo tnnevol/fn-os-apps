@@ -3,13 +3,13 @@
 # data directory for OpenList
 DATA_DIR="${TRIM_PKGVAR}"
 # start command
-CMD="${TRIM_APPDEST}/bin/openlist server --data ${DATA_DIR}"
+CMD="${TRIM_APPDEST}/bin/openlist restart --data ${DATA_DIR}"
 # admin panel command
 ADMIN_CMD="${TRIM_APPDEST}/bin/openlist-manager"
 
 status() {
     # Check if openlist server process exists
-    if pgrep -f "openlist server.*--data.*${DATA_DIR}" > /dev/null 2>&1; then
+    if pgrep -f "openlist" > /dev/null 2>&1; then
         return 0
     fi
     return 1
@@ -28,7 +28,7 @@ start_process() {
 
 stop_process() {
     # Stop openlist using its own stop command
-    ${TRIM_APPDEST}/bin/openlist stop --data ${DATA_DIR} 2>/dev/null
+    ${TRIM_APPDEST}/bin/openlist stop 2>/dev/null
 
     # Fallback: kill by process name if stop command fails
     sleep 1
