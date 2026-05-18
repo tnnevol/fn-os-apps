@@ -51,6 +51,12 @@ fnpack create <appname> --template docker
 | 运行权限 | `config/privilege` |
 | 生命周期脚本 | `cmd/` |
 
+### 卸载开发流程
+
+为应用添加 `wizard/uninstall` 向导，让用户在卸载时选择保留或删除数据，并在 `cmd/uninstall_callback` 中根据 `wizard_data_action` 环境变量执行对应逻辑。
+
+具体表单项类型和脚本流程参见 `fnnas-docs` skill 中的**用户向导**文档。
+
 ### 本地测试
 
 需要在飞牛 fnOS 设备上执行：
