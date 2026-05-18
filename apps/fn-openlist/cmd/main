@@ -1,6 +1,5 @@
 #!/bin/bash
 
-LOG_FILE="${TRIM_PKGVAR}/log/log.log"
 PID_FILE="${TRIM_PKGVAR}/openlist.pid"
 MGR_PID_FILE="${TRIM_PKGVAR}/mgr.pid"
 
@@ -10,11 +9,6 @@ DATA_DIR="${TRIM_PKGVAR}"
 CMD="${TRIM_APPDEST}/server/openlist server --data ${DATA_DIR}"
 # admin panel command
 ADMIN_CMD="${TRIM_APPDEST}/server/openlist-manager"
-
-log_msg() {
-    mkdir -p "$(dirname ${LOG_FILE})"
-    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> ${LOG_FILE}
-}
 
 check_process() {
     local pid=$1
@@ -42,21 +36,16 @@ start_process() {
         return 0
     fi
 
-    log_msg "Starting OpenList ..."
-    bash -c "${CMD}" >> ${LOG_FILE} 2>&1 &
+    bash -c "${CMD}" &
     printf "%s" "$!" > ${PID_FILE}
-    log_msg "OpenList started (pid=$!)"
 
-    log_msg "Starting Admin Panel ..."
-    bash -c "${ADMIN_CMD}" >> ${LOG_FILE} 2>&1 &
+    bash -c "${ADMIN_CMD}" &
     printf "%s" "$!" > ${MGR_PID_FILE}
-    log_msg "Admin Panel started (pid=$!)"
 
     return 0
 }
 
 stop_process() {
-    log_msg "Stopping Admin Panel ..."
     if [ -r "${MGR_PID_FILE}" ]; then
         pid=$(head -n 1 "${MGR_PID_FILE}" | tr -d '[:space:]')
         if check_process "${pid}"; then
@@ -67,28 +56,21 @@ stop_process() {
         rm -f "${MGR_PID_FILE}"
     fi
 
-    log_msg "Stopping OpenList ..."
     local stopped=false
     if [ -r "${PID_FILE}" ]; then
         pid=$(head -n 1 "${PID_FILE}" | tr -d '[:space:]')
-        log_msg "pid=${pid}"
         if check_process "${pid}"; then
-            log_msg "send TERM signal to PID:${pid}..."
-            kill -TERM ${pid} >> ${LOG_FILE} 2>&1
+            kill -TERM ${pid} 2>/dev/null
 
             local count=0
             while check_process "${pid}" && [ $count -lt 10 ]; do
                 sleep 1
                 count=$((count + 1))
-                log_msg "waiting process terminal... (${count}s/10s)"
             done
 
             if check_process "${pid}"; then
-                log_msg "send KILL signal to PID:${pid}..."
                 kill -KILL "${pid}"
                 sleep 1
-            else
-                log_msg "process killed... "
             fi
             stopped=true
         fi
@@ -97,8 +79,7 @@ stop_process() {
 
     # Fallback: kill by process name if PID file was missing
     if [ "${stopped}" = false ]; then
-        log_msg "PID file missing, trying to stop by process name..."
-        pkill -f "openlist server" 2>/dev/null && log_msg "OpenList stopped by process name"
+        pkill -f "openlist server" 2>/dev/null
     fi
 
     return 0

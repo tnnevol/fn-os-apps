@@ -7,49 +7,31 @@ set -e
 APP_DIR="${TRIM_APPDEST}"
 BIN_DIR="${APP_DIR}/server"
 
-# Create binary directory
-mkdir -p "${BIN_DIR}"
-
-# Download OpenList latest binary
-OPENLIST_URL="https://github.com/OpenListTeam/OpenList/releases/latest/download/openlist-linux-amd64.tar.gz"
-TAR_FILE="${TRIM_PKGTMP}/openlist-latest.tar.gz"
+# Download and extract OpenList latest binary via pipe (no temp file needed)
+OPENLIST_URL="https://gh-proxy.com/https://github.com/OpenListTeam/OpenList/releases/latest/download/openlist-linux-musl-amd64.tar.gz"
 
 echo "Downloading OpenList latest..."
 
-if command -v curl >/dev/null 2>&1; then
-    curl -fsSL -o "${TAR_FILE}" "${OPENLIST_URL}" || {
-        echo "Primary URL failed, trying mirror..."
-        OPENLIST_URL="https://gh-proxy.com/${OPENLIST_URL}"
-        curl -fsSL -o "${TAR_FILE}" "${OPENLIST_URL}" || {
-            echo "Failed to download OpenList from all sources"
-            exit 1
-        }
-    }
-elif command -v wget >/dev/null 2>&1; then
-    wget -q -O "${TAR_FILE}" "${OPENLIST_URL}" || {
-        echo "Primary URL failed, trying mirror..."
-        OPENLIST_URL="https://gh-proxy.com/${OPENLIST_URL}"
-        wget -q -O "${TAR_FILE}" "${OPENLIST_URL}" || {
-            echo "Failed to download OpenList from all sources"
-            exit 1
-        }
-    }
-else
-    echo "No curl or wget found, cannot download OpenList"
-    exit 1
-fi
-
-echo "Extracting OpenList binary..."
-tar -xzf "${TAR_FILE}" -C "${BIN_DIR}" openlist 2>/dev/null || {
-    tar -xzf "${TAR_FILE}" -C "${BIN_DIR}" 2>/dev/null || {
-        echo "Failed to extract OpenList archive"
-        rm -f "${TAR_FILE}"
-        exit 1
-    }
+download_and_extract() {
+    local url="$1"
+    if command -v curl >/dev/null 2>&1; then
+        curl -fsSL "${url}" | tar -xz -C "${BIN_DIR}" openlist 2>/dev/null
+    elif command -v wget >/dev/null 2>&1; then
+        wget -q -O - "${url}" | tar -xz -C "${BIN_DIR}" openlist 2>/dev/null
+    else
+        echo "No curl or wget found, cannot download OpenList"
+        return 1
+    fi
 }
 
-# Clean up
-rm -f "${TAR_FILE}"
+if ! download_and_extract "${OPENLIST_URL}" 2>/dev/null; then
+    echo "Mirror failed, trying GitHub directly..."
+    OPENLIST_URL="https://github.com/OpenListTeam/OpenList/releases/latest/download/openlist-linux-musl-amd64.tar.gz"
+    if ! download_and_extract "${OPENLIST_URL}"; then
+        echo "Failed to download OpenList from all sources"
+        exit 1
+    fi
+fi
 
 # Make binary executable
 chmod +x "${BIN_DIR}/openlist"
