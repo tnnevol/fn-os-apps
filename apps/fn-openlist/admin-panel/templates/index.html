@@ -54,6 +54,10 @@
                 <span id="running"><span class="badge badge-yellow">检测中</span></span>
             </div>
             <div class="status-row">
+                <span class="status-label">进程 PID</span>
+                <span class="status-value" id="pid">-</span>
+            </div>
+            <div class="status-row">
                 <span class="status-label">数据目录</span>
                 <span class="status-value" id="dataDir">-</span>
             </div>
@@ -68,6 +72,15 @@
                 <input class="input" id="versionInput" placeholder="指定版本号 (如 4.1.0)">
                 <button class="btn btn-outline" id="btnUpgradeVersion" onclick="upgradeVersion()">
                     安装指定版本
+                </button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">进程控制</div>
+            <div class="btn-group">
+                <button class="btn btn-outline" id="btnRestart" onclick="restart()">
+                    重启服务
                 </button>
             </div>
         </div>
@@ -94,6 +107,7 @@
                 const d = await r.json();
                 document.getElementById('version').textContent = d.version;
                 document.getElementById('dataDir').textContent = d.data_dir || '-';
+                document.getElementById('pid').textContent = d.pid > 0 ? d.pid : '-';
                 const badge = d.running
                     ? '<span class="badge badge-green">运行中</span>'
                     : '<span class="badge badge-red">已停止</span>';
@@ -160,6 +174,25 @@
                 box.scrollTop = box.scrollHeight;
             } catch(e) {
                 document.getElementById('logBox').textContent = '日志获取失败';
+            }
+        }
+
+        async function restart() {
+            const btn = document.getElementById('btnRestart');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> 重启中...';
+            toast('正在重启 OpenList', 'info');
+
+            try {
+                const r = await fetch('/api/restart', { method: 'POST' });
+                await r.json();
+                toast('重启命令已发送', 'success');
+                setTimeout(loadStatus, 3000);
+            } catch(e) {
+                toast('重启失败: ' + e.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '重启服务';
             }
         }
 

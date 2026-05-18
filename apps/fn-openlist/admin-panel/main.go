@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 )
@@ -15,16 +16,17 @@ import (
 const adminPort = "5245"
 
 var (
-	installing bool
-	mu         sync.Mutex
+	upgrading bool
+	mu        sync.Mutex
 )
 
 type Status struct {
-	Version     string `json:"version"`
-	Running     bool   `json:"running"`
-	Installing  bool   `json:"installing"`
-	DataDir     string `json:"data_dir"`
-	ServerBin   string `json:"server_bin"`
+	Version    string `json:"version"`
+	Running    bool   `json:"running"`
+	PID        int    `json:"pid"`
+	Upgrading  bool   `json:"upgrading"`
+	DataDir    string `json:"data_dir"`
+	ServerDir  string `json:"server_dir"`
 }
 
 func getServerDir() string {
@@ -43,10 +45,18 @@ func getDataDir() string {
 	return ""
 }
 
+func getVarDir() string {
+	pkgVar := os.Getenv("TRIM_PKGVAR")
+	if pkgVar == "" {
+		pkgVar = "/var/apps/fn-openlist/var"
+	}
+	return pkgVar
+}
+
 func getOpenListVersion() string {
 	serverDir := getServerDir()
 	binPath := filepath.Join(serverDir, "openlist")
-	cmd := exec.Command(binPath, "--version")
+	cmd := exec.Command(binPath, "version")
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return "unknown"
@@ -54,37 +64,85 @@ func getOpenListVersion() string {
 	return strings.TrimSpace(string(out))
 }
 
-func isRunning() bool {
-	pkgVar := os.Getenv("TRIM_PKGVAR")
-	if pkgVar == "" {
-		pkgVar = "/var/apps/fn-openlist/var"
-	}
-	pidFile := filepath.Join(pkgVar, "app.pid")
-
+func getOpenListPID() (int, bool) {
+	pidFile := filepath.Join(getVarDir(), "app.pid")
 	data, err := os.ReadFile(pidFile)
 	if err != nil {
-		return false
+		return 0, false
 	}
-	pid := strings.TrimSpace(string(data))
-	if pid == "" {
-		return false
+	pid, err := strconv.Atoi(strings.TrimSpace(string(data)))
+	if err != nil || pid <= 0 {
+		return 0, false
 	}
 
-	cmd := exec.Command("kill", "-0", pid)
-	return cmd.Run() == nil
+	// Verify process exists
+	proc, err := os.FindProcess(pid)
+	if err != nil {
+		return 0, false
+	}
+	// On Unix, FindProcess always succeeds, so check via signal
+	err = proc.Signal(os.Signal(nil))
+	if err != nil {
+		os.Remove(pidFile)
+		return 0, false
+	}
+	return pid, true
+}
+
+func stopOpenList() error {
+	pid, running := getOpenListPID()
+	if !running {
+		return nil
+	}
+
+	proc, _ := os.FindProcess(pid)
+	// Graceful stop
+	proc.Signal(os.Interrupt)
+
+	// Wait up to 10 seconds
+	for i := 0; i < 10; i++ {
+		if proc.Signal(os.Signal(nil)) != nil {
+			return nil
+		}
+	}
+
+	// Force kill
+	proc.Kill()
+	return nil
+}
+
+func startOpenList() error {
+	serverDir := getServerDir()
+	dataDir := getDataDir()
+	binPath := filepath.Join(serverDir, "openlist")
+
+	cmd := exec.Command(binPath, "server", "--port", "5244", "--data", dataDir)
+	cmd.Dir = serverDir
+	cmd.Stdout = nil
+	cmd.Stderr = nil
+
+	err := cmd.Start()
+	if err != nil {
+		return fmt.Errorf("start failed: %w", err)
+	}
+
+	// Write PID file
+	pidFile := filepath.Join(getVarDir(), "app.pid")
+	os.WriteFile(pidFile, []byte(strconv.Itoa(cmd.Process.Pid)), 0644)
+	return nil
 }
 
 func doUpgrade(version string) error {
 	mu.Lock()
-	if installing {
+	if upgrading {
 		mu.Unlock()
 		return fmt.Errorf("upgrade in progress")
 	}
-	installing = true
+	upgrading = true
 	mu.Unlock()
 	defer func() {
 		mu.Lock()
-		installing = false
+		upgrading = false
 		mu.Unlock()
 	}()
 
@@ -98,56 +156,51 @@ func doUpgrade(version string) error {
 		url = fmt.Sprintf("https://github.com/OpenListTeam/OpenList/releases/download/v%s/openlist-linux-amd64.tar.gz", version)
 	}
 
-	// Download using curl
 	tarFile := "/tmp/openlist-upgrade.tar.gz"
+
 	dlCmd := exec.Command("curl", "-fsSL", "-o", tarFile, url)
 	if out, err := dlCmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("download failed: %s (%s)", err, string(out))
 	}
 
+	// Stop OpenList before replacing binary
+	if err := stopOpenList(); err != nil {
+		return fmt.Errorf("stop failed: %w", err)
+	}
+
 	// Extract
 	extCmd := exec.Command("tar", "-xzf", tarFile, "-C", serverDir, "openlist")
 	if err := extCmd.Run(); err != nil {
-		// Try without path filter
 		extCmd = exec.Command("tar", "-xzf", tarFile, "-C", serverDir)
 		if err := extCmd.Run(); err != nil {
 			os.Remove(tarFile)
-			return fmt.Errorf("extract failed: %s", err)
+			return fmt.Errorf("extract failed: %w", err)
 		}
 	}
 	os.Remove(tarFile)
 
-	// Make executable
 	binPath := filepath.Join(serverDir, "openlist")
 	os.Chmod(binPath, 0755)
 
-	// Restart OpenList (send signal to main script)
-	pkgVar := os.Getenv("TRIM_PKGVAR")
-	if pkgVar == "" {
-		pkgVar = "/var/apps/fn-openlist/var"
-	}
-	pidFile := filepath.Join(pkgVar, "app.pid")
-	data, err := os.ReadFile(pidFile)
-	if err == nil {
-		pid := strings.TrimSpace(string(data))
-		if pid != "" {
-			exec.Command("kill", "-TERM", pid).Run()
-		}
+	// Restart OpenList
+	if err := startOpenList(); err != nil {
+		return fmt.Errorf("restart failed: %w", err)
 	}
 
 	return nil
 }
 
 func handleStatus(w http.ResponseWriter, r *http.Request) {
+	pid, running := getOpenListPID()
 	w.Header().Set("Content-Type", "application/json")
-	status := Status{
-		Version:    getOpenListVersion(),
-		Running:    isRunning(),
-		Installing: installing,
-		DataDir:    getDataDir(),
-		ServerBin:  getServerDir(),
-	}
-	json.NewEncoder(w).Encode(status)
+	json.NewEncoder(w).Encode(Status{
+		Version:   getOpenListVersion(),
+		Running:   running,
+		PID:       pid,
+		Upgrading: upgrading,
+		DataDir:   getDataDir(),
+		ServerDir: getServerDir(),
+	})
 }
 
 func handleUpgrade(w http.ResponseWriter, r *http.Request) {
@@ -176,11 +229,7 @@ func handleUpgrade(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleLog(w http.ResponseWriter, r *http.Request) {
-	pkgVar := os.Getenv("TRIM_PKGVAR")
-	if pkgVar == "" {
-		pkgVar = "/var/apps/fn-openlist/var"
-	}
-	logFile := filepath.Join(pkgVar, "info.log")
+	logFile := filepath.Join(getVarDir(), "info.log")
 
 	data, err := os.ReadFile(logFile)
 	if err != nil {
@@ -190,6 +239,26 @@ func handleLog(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "text/plain")
 	w.Write(data)
+}
+
+func handleRestart(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	go func() {
+		if err := stopOpenList(); err != nil {
+			fmt.Fprintf(os.Stderr, "stop error: %v\n", err)
+			return
+		}
+		if err := startOpenList(); err != nil {
+			fmt.Fprintf(os.Stderr, "start error: %v\n", err)
+		}
+	}()
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"status": "restarting"})
 }
 
 func handleIndex(w http.ResponseWriter, r *http.Request) {
@@ -206,6 +275,7 @@ func main() {
 	http.HandleFunc("/api/status", handleStatus)
 	http.HandleFunc("/api/upgrade", handleUpgrade)
 	http.HandleFunc("/api/log", handleLog)
+	http.HandleFunc("/api/restart", handleRestart)
 
 	fmt.Printf("Admin panel listening on :%s\n", adminPort)
 	if err := http.ListenAndServe(":"+adminPort, nil); err != nil {
