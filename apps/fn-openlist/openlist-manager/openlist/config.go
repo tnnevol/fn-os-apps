@@ -1,7 +1,9 @@
 package openlist
 
 import (
+	"encoding/json"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -35,4 +37,23 @@ func LogFile() string {
 
 func PidFile() string {
 	return VarDir() + "/app.pid"
+}
+
+// ReadConfigPort reads the http_port from data/config.json
+func ReadConfigPort() int {
+	configPath := filepath.Join(DataDir(), "config.json")
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		return 0
+	}
+
+	var cfg struct {
+		Scheme struct {
+			HTTPPort int `json:"http_port"`
+		} `json:"scheme"`
+	}
+	if err := json.Unmarshal(data, &cfg); err != nil {
+		return 0
+	}
+	return cfg.Scheme.HTTPPort
 }

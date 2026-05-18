@@ -61,7 +61,12 @@ func Stop() error {
 func Start() error {
 	binPath := filepath.Join(ServerDir(), "openlist")
 
-	cmd := exec.Command(binPath, "server", "--port", "5244", "--data", DataDir())
+	port := ReadConfigPort()
+	if port <= 0 {
+		port = 5244
+	}
+
+	cmd := exec.Command(binPath, "server", "--port", strconv.Itoa(port), "--data", DataDir())
 	cmd.Dir = ServerDir()
 
 	if err := cmd.Start(); err != nil {
