@@ -1,5 +1,5 @@
 appname               = fn-new-api
-version               = 1.0.3
+version               = 1.0.4
 display_name          = New API
 desc                  = 新一代 AI API 管理与分发平台，支持多模型接入、令牌管理、配额控制等功能
 arch                  = x86_64
