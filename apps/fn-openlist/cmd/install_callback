@@ -54,9 +54,9 @@ fi
 # Set admin password from wizard
 if [ -n "$wizard_admin_pass" ]; then
     echo "Setting admin password..."
-    $OPENLIST_BIN admin set "$wizard_admin_pass" --data "$DATA_DIR" 2>&1 || true
+    $OPENLIST_BIN admin set "$wizard_admin_pass" 2>&1 || true
     # Restart to apply password
-    $OPENLIST_BIN restart --data "$DATA_DIR" 2>&1 || true
+    $OPENLIST_BIN restart 2>&1 || true
 fi
 
 exit 0
