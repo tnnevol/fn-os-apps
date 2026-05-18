@@ -1,5 +1,29 @@
 #!/bin/bash
 
-### This script is called after the user installs the application.
+### This script is called after the application is installed.
+
+LOG_FILE="${TRIM_PKGVAR}/info.log"
+
+log_msg() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "${LOG_FILE}"
+}
+
+# Set up admin account from wizard
+if [ -n "$wizard_admin_user" ] && [ -n "$wizard_admin_pass" ]; then
+    log_msg "Setting up admin account: $wizard_admin_user"
+    OPENLIST_BIN="${TRIM_APPDEST}/server/openlist"
+    if [ -f "$OPENLIST_BIN" ]; then
+        DATA_DIR="${TRIM_DATA_SHARE_PATHS%%:*}"
+        mkdir -p "$DATA_DIR"
+        $OPENLIST_BIN admin set "$wizard_admin_user" "$wizard_admin_pass" --data "$DATA_DIR" 2>&1 | while read line; do
+            log_msg "admin set: $line"
+        done
+        log_msg "Admin account setup complete"
+    else
+        log_msg "ERROR: openlist binary not found, skipping admin setup"
+    fi
+else
+    log_msg "No admin credentials from wizard, using default admin account"
+fi
 
 exit 0
