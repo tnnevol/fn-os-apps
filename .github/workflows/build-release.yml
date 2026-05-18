@@ -109,6 +109,14 @@ jobs:
           sed -i "s/^version *= *.*/version               = $VERSION/" manifest
           echo "Override version to $VERSION"
 
+      - name: Build Go manager (fn-openlist only)
+        if: matrix.app == 'fn-openlist'
+        working-directory: apps/${{ matrix.app }}
+        run: |
+          apt-get update && apt-get install -y golang-go
+          cd openlist-manager
+          GOOS=linux GOARCH=amd64 go build -o ../app/server/openlist-manager .
+
       - name: Build FPK
         working-directory: apps/${{ matrix.app }}
         run: fnpack build
