@@ -40,7 +40,7 @@ export default defineNuxtModule({
 
       console.log("[openlist] starting openlist server...");
       const child = spawn(bin, ["server", "--data", dataDir], {
-        cwd: bin,
+        cwd: dataDir,
         detached: true,
         stdio: "ignore",
       });
