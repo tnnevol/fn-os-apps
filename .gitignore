@@ -22,3 +22,6 @@ desktop.ini
 # 环境变量文件（可能包含密钥）
 .env
 .env.*
+
+# 临时脚本
+tmp/
