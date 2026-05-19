@@ -15,7 +15,7 @@
           <PasswordCard />
         </el-col>
         <el-col :xs="24" :sm="24" :md="12">
-          <BackupCard @restored="loadStatus" />
+          <BackupCard />
         </el-col>
       </el-row>
     </el-main>

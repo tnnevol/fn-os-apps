@@ -1,12 +1,12 @@
 <template>
   <el-card>
     <template #header>更新 OpenList</template>
-    <div class="flex flex-wrap items-center gap-2">
+    <div class="flex items-center gap-2">
       <el-select
         v-model="selectedVersion"
         placeholder="最新版本"
         clearable
-        class="w-[140px] md:w-[160px]"
+        style="width: 140px; flex-shrink: 0"
       >
         <el-option
           v-for="v in availableVersions"
@@ -17,10 +17,10 @@
       </el-select>
       <el-input
         v-model="mirrorUrl"
-        placeholder="镜像地址（留空使用默认代理）"
-        class="w-full sm:w-[280px] md:w-[320px]"
+        placeholder="镜像地址，留空默认 https://ghproxy.net/"
+        style="flex: 1; min-width: 0"
       />
-      <el-button type="primary" :loading="updating" @click="handleUpdate">
+      <el-button type="primary" :loading="updating" @click="handleUpdate" style="flex-shrink: 0">
         {{ selectedVersion && selectedVersion !== availableVersions[0] ? `安装 ${selectedVersion}` : "检查并更新" }}
       </el-button>
     </div>
