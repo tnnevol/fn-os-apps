@@ -1,10 +1,35 @@
 {
   "version": 1,
   "skills": {
+    "element-plus-vue3": {
+      "source": "teachingai/full-stack-skills",
+      "sourceType": "github",
+      "computedHash": "0acf3c0b425ce99717598652d912da9b0df28950ea55a37fca3e6db097ee8f2a"
+    },
     "nuxt": {
       "source": "antfu/skills",
       "sourceType": "github",
       "computedHash": "9e8237ec92083db9a6f4c77d5e5bf4b1d9873d670671235bc75455ee1ca39c74"
+    },
+    "unocss": {
+      "source": "antfu/skills",
+      "sourceType": "github",
+      "computedHash": "4b7a9f7b89994d5aef70b9d55cb7f65d6e80cea437d5786cd33bb5cf7231c7c4"
+    },
+    "vite": {
+      "source": "antfu/skills",
+      "sourceType": "github",
+      "computedHash": "867ff66238f3152e9c494339ad08dc432dd0df5bcf5cc7a00b61a72b580eb908"
+    },
+    "vue": {
+      "source": "antfu/skills",
+      "sourceType": "github",
+      "computedHash": "9c241141e07e836e4f0537c63e8f929fba3767c2997250be38e699f19b75e3f2"
+    },
+    "web-design-guidelines": {
+      "source": "antfu/skills",
+      "sourceType": "github",
+      "computedHash": "65a2e7d85753383ae0f88df15475d58b9e39723e9c4bb6891421d6144a85f79c"
     }
   }
 }

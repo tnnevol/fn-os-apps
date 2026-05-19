@@ -2,7 +2,10 @@
 *.fpk
 
 # Nuxt 构建产物
-apps/fn-openlist/app/server/.output/
+apps/fn-openlist/app/server
+
+# OpenList 二进制
+apps/fn-openlist/app/bin
 
 # Claude Code 配置
 .claude/
