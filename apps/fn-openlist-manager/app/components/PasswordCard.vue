@@ -2,59 +2,74 @@
   <el-card>
     <template #header>密码管理</template>
     <div class="flex flex-col gap-2">
-      <el-button @click="handleRandomPassword" :loading="loading">
+      <div class="flex items-center gap-2">
+        <el-input v-model="customPassword" placeholder="自定义密码" clearable style="flex: 1; min-width: 0" />
+        <el-button type="warning" @click="handleSetPassword" :loading="setting">
+          设置密码
+        </el-button>
+      </div>
+      <el-button @click="handleRandomPassword" :loading="generating">
         随机生成密码
       </el-button>
-      <el-input v-model="customPassword" placeholder="自定义密码" clearable />
-      <el-button type="warning" @click="handleSetPassword" :loading="loading">
-        设置密码
-      </el-button>
     </div>
-    <el-alert v-if="randomPassword" type="success" :closable="false" class="mt-2">
-      新密码: <strong>{{ randomPassword }}</strong>
+    <el-alert v-if="generatedPassword" type="success" :closable="false" class="mt-2" show-icon>
+      <template #default>
+        <div class="flex items-center gap-2">
+          <span>新密码: <strong>{{ generatedPassword }}</strong></span>
+          <el-button type="primary" link size="small" @click="copyPassword">复制</el-button>
+        </div>
+      </template>
     </el-alert>
   </el-card>
 </template>
 
 <script setup lang="ts">
-const loading = ref(false);
+const setting = ref(false);
+const generating = ref(false);
 const customPassword = ref("");
-const randomPassword = ref("");
+const generatedPassword = ref("");
 
 async function handleRandomPassword() {
-  loading.value = true;
+  generating.value = true;
   try {
     const res = await $fetch("/api/openlist/password", {
       method: "POST",
       body: { action: "random" },
     });
-    randomPassword.value = (res as any).password;
-    ElMessage.success("密码已随机生成");
+    generatedPassword.value = (res as any).password;
   } catch (e: any) {
     ElMessage.error(e?.data?.message || "生成密码失败");
   } finally {
-    loading.value = false;
+    generating.value = false;
   }
 }
 
 async function handleSetPassword() {
-  const pwd = customPassword.value;
+  const pwd = customPassword.value.trim();
   if (!pwd) {
     ElMessage.warning("请输入密码");
     return;
   }
-  loading.value = true;
+  setting.value = true;
   try {
     await $fetch("/api/openlist/password", {
       method: "POST",
       body: { action: "set", password: pwd },
     });
     ElMessage.success("密码已设置");
-    customPassword.value = "";
   } catch (e: any) {
     ElMessage.error(e?.data?.message || "设置密码失败");
   } finally {
-    loading.value = false;
+    setting.value = false;
+  }
+}
+
+async function copyPassword() {
+  try {
+    await navigator.clipboard.writeText(generatedPassword.value);
+    ElMessage.success("已复制到剪贴板");
+  } catch {
+    ElMessage.error("复制失败");
   }
 }
 </script>

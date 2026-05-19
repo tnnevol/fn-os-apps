@@ -1,22 +1,23 @@
-import { join } from "node:path";
+import { resolve } from "node:path";
 
 function getAppDest(): string {
-  return process.env.TRIM_APPDEST || join(process.cwd(), "../fn-openlist/app");
+  if (process.env.TRIM_APPDEST) return process.env.TRIM_APPDEST;
+  return resolve(process.cwd(), "../fn-openlist/app");
 }
 
 export function getOpenlistBin(): string {
-  return join(getAppDest(), "bin/openlist");
+  return resolve(getAppDest(), "bin/openlist");
 }
 
 export function getDataDir(): string {
   if (process.env.TRIM_PKGVAR) {
-    return join(process.env.TRIM_PKGVAR, "data");
+    return resolve(process.env.TRIM_PKGVAR, "data");
   }
-  return join(getAppDest(), "bin/data");
+  return resolve(getAppDest(), "bin/data");
 }
 
 export function getConfigPath(): string {
-  return join(getDataDir(), "config.json");
+  return resolve(getDataDir(), "config.json");
 }
 
 export function runOpenlist(...args: string[]): Promise<string> {
