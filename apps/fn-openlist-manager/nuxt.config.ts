@@ -8,7 +8,15 @@ const outputBase = resolve(_dir, "../fn-openlist/app/server");
 export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
   devtools: { enabled: true },
-  modules: ["@element-plus/nuxt"],
+  modules: ["@element-plus/nuxt", "@unocss/nuxt", "@vueuse/nuxt"],
+  css: ["~/assets/css/element-dark.css"],
+  app: {
+    head: {
+      link: [
+        { rel: "icon", type: "image/png", href: "/image.png" },
+      ],
+    },
+  },
   nitro: {
     output: {
       dir: outputBase,
