@@ -17,6 +17,6 @@ export default defineNuxtConfig({
     },
   },
   runtimeConfig: {
-    appDest: process.env.TRIM_APPDEST ?? resolve(_dir, "../fn-openlist/app"),
+    devMode: !process.env.TRIM_APPDEST,
   },
 });
