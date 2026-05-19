@@ -41,11 +41,9 @@ export default defineNuxtModule({
       console.log("[openlist] starting openlist server...");
       const child = spawn(bin, ["server", "--data", dataDir], {
         cwd: dataDir,
-        detached: true,
         stdio: "ignore",
       });
 
-      child.unref();
       console.log("[openlist] started with pid:", child.pid);
     });
   },
