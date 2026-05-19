@@ -1,6 +1,9 @@
 # fnOS 打包产物
 *.fpk
 
+# Nuxt 构建产物
+apps/fn-openlist/app/server/.output/
+
 # Claude Code 配置
 .claude/
 
