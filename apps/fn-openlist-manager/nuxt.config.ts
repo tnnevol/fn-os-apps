@@ -12,7 +12,6 @@ export default defineNuxtConfig({
     "@element-plus/nuxt",
     "@unocss/nuxt",
     "@vueuse/nuxt",
-    "./modules/start-openlist",
   ],
   css: ["~/assets/css/element-dark.css"],
   app: {
