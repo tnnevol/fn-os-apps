@@ -25,26 +25,18 @@ fi
 chmod +x "${BIN_DIR}/openlist"
 echo "OpenList installed to ${BIN_DIR}/openlist"
 
-# Copy default config to data directory
-echo "DEBUG: TRIM_APPDEST=${TRIM_APPDEST}, DATA_DIR=${DATA_DIR}"
-echo "DEBUG: TRIM_PKGVAR=${TRIM_PKGVAR}, wizard_port=${wizard_port}"
-mkdir -p "${DATA_DIR}"
-echo "DEBUG: DATA_DIR created at ${DATA_DIR}"
-if [ -f "${TRIM_APPDEST}/temp/config.json" ]; then
-    echo "DEBUG: Found config template at ${TRIM_APPDEST}/temp/config.json"
-    cp "${TRIM_APPDEST}/temp/config.json" "${DATA_DIR}/config.json"
-    echo "DEBUG: Copied config.json to ${DATA_DIR}/config.json"
-    # Replace environment variable placeholders with real values
-    echo "DEBUG: Replacing \${TRIM_PKGVAR} with ${TRIM_PKGVAR}"
-    sed -i "s|\${TRIM_PKGVAR}|${TRIM_PKGVAR}|g" "${DATA_DIR}/config.json"
-    # wizard_port should be a number, not a string — remove surrounding quotes
-    echo "DEBUG: Replacing \"\${wizard_port}\" with number: ${wizard_port}"
-    sed -i "s|\"\${wizard_port}\"|${wizard_port}|g" "${DATA_DIR}/config.json"
-    echo "DEBUG: Final config content:"
-    cat "${DATA_DIR}/config.json"
-    echo "Default config copied to ${DATA_DIR}/config.json"
-else
-    echo "DEBUG: Config template NOT found at ${TRIM_APPDEST}/temp/config.json"
+# Create data directory and set admin password
+if [ -n "${wizard_password}" ]; then
+    echo "Setting admin password..."
+    "${BIN_DIR}/openlist" admin set "${wizard_password}" --data "${DATA_DIR}"
+    echo "Admin password set successfully"
+fi
+
+# Update http_port in config.json
+CONFIG_FILE="${DATA_DIR}/config.json"
+if [ -f "${CONFIG_FILE}" ] && [ -n "${wizard_port}" ]; then
+    sed -i "s/\"scheme\":\s*{\"http_port\":[0-9]*/\"scheme\":{\"http_port\":${wizard_port}/g" "${CONFIG_FILE}"
+    echo "Updated http_port to ${wizard_port} in config.json"
 fi
 
 exit 0

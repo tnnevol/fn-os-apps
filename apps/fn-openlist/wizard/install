@@ -18,6 +18,18 @@
                         "message": "端口号必须为正整数"
                     }
                 ]
+            },
+            {
+                "type": "password",
+                "field": "wizard_password",
+                "label": "管理员密码",
+                "helpText": "设置 OpenList 管理员账户的初始密码",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请输入管理员密码"
+                    }
+                ]
             }
         ]
     }
