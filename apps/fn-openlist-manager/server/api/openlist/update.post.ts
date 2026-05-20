@@ -5,6 +5,7 @@ import { join } from "node:path";
 import {
   createWriteStream,
   existsSync,
+  mkdirSync,
   readFileSync,
   writeFileSync,
 } from "node:fs";
@@ -122,6 +123,7 @@ export default defineEventHandler(async (event) => {
           }
         }
 
+        mkdirSync(join(bin, ".."), { recursive: true });
         await execAsync(
           `mv "${tmpDir}/openlist" "${bin}" && chmod +x "${bin}"`,
         );
