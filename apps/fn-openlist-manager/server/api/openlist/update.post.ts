@@ -111,6 +111,7 @@ export default defineEventHandler(async (event) => {
         // Replace binary
         // Kill running process via pid file
         const dataDir = getDataDir();
+        mkdirSync(dataDir, { recursive: true });
         const pidPath = `${dataDir}/openlist.pid`;
         if (existsSync(pidPath)) {
           const pid = readFileSync(pidPath, "utf-8").trim();
