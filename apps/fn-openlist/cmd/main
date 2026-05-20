@@ -1,14 +1,13 @@
 #!/bin/bash
 
-BIN_DIR="${TRIM_APPDEST}/bin"
-# data directory for OpenList
-DATA_DIR="${TRIM_PKGVAR}/data"
+# server entry for OpenList (Nitro build output)
+SERVER_ENTRY="${TRIM_APPDEST}/server/index.mjs"
 # log file
 LOG_FILE="${TRIM_PKGVAR}/info.log"
 # pid file
 PID_FILE="${TRIM_PKGVAR}/app.pid"
 # start command
-CMD="${BIN_DIR}/openlist server --data ${DATA_DIR}"
+CMD="node ${SERVER_ENTRY}"
 
 log_msg() {
     echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "${LOG_FILE}"
@@ -42,8 +41,6 @@ start_process() {
     fi
 
     log_msg "Starting OpenList ..."
-
-    mkdir -p "${DATA_DIR}"
 
     bash -c "${CMD}" >> "${LOG_FILE}" 2>&1 &
     printf "%s" "$!" > "${PID_FILE}"
