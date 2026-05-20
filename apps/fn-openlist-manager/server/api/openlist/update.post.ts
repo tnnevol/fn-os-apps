@@ -1,12 +1,22 @@
-import { getOpenlistBin } from "../../utils/openlist";
+import { getOpenlistBin, getDataDir } from "../../utils/openlist";
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
 import { join } from "node:path";
-import { createWriteStream } from "node:fs";
+import {
+  createWriteStream,
+  existsSync,
+  readFileSync,
+  writeFileSync,
+} from "node:fs";
+import { spawn } from "node:child_process";
 
 const execAsync = promisify(exec);
 
-async function downloadWithProgress(url: string, dest: string, onProgress: (pct: number) => void) {
+async function downloadWithProgress(
+  url: string,
+  dest: string,
+  onProgress: (pct: number) => void,
+) {
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`下载失败: HTTP ${response.status}`);
@@ -42,7 +52,12 @@ export default defineEventHandler(async (event) => {
   const body = await readBody(event);
   const bin = getOpenlistBin();
 
-  const arch = process.arch === "arm64" ? "arm64" : process.arch === "x64" ? "amd64" : "amd64";
+  const arch =
+    process.arch === "arm64"
+      ? "arm64"
+      : process.arch === "x64"
+        ? "amd64"
+        : "amd64";
   const isLinux = process.platform === "linux";
   const target = isLinux ? `linux-musl-${arch}` : `darwin-${arch}`;
 
@@ -52,7 +67,7 @@ export default defineEventHandler(async (event) => {
   let targetVersion = body.version?.replace(/^v/, "");
   if (!targetVersion) {
     const { stdout } = await execAsync(
-      `curl -sL "https://github.com/OpenListTeam/OpenList/releases" | grep -oE 'tag/v[0-9]+\\.[0-9]+\\.[0-9]+' | sed 's/tag\\///' | head -1`
+      `curl -sL "https://github.com/OpenListTeam/OpenList/releases" | grep -oE 'tag/v[0-9]+\\.[0-9]+\\.[0-9]+' | sed 's/tag\\///' | head -1`,
     );
     targetVersion = stdout.trim().replace(/^v/, "");
   }
@@ -93,16 +108,43 @@ export default defineEventHandler(async (event) => {
         push({ step: "extract", percent: 100 });
 
         // Replace binary
-        await execAsync(`mv "${tmpDir}/openlist" "${bin}" && chmod +x "${bin}"`);
+        // Kill running process via pid file
+        const dataDir = getDataDir();
+        const pidPath = `${dataDir}/openlist.pid`;
+        if (existsSync(pidPath)) {
+          const pid = readFileSync(pidPath, "utf-8").trim();
+          if (pid) {
+            try {
+              process.kill(Number(pid));
+            } catch {
+              /* ignore */
+            }
+          }
+        }
+
+        await execAsync(
+          `mv "${tmpDir}/openlist" "${bin}" && chmod +x "${bin}"`,
+        );
         push({ step: "install", percent: 100 });
 
         // Cleanup
         await execAsync(`rm -f "${tarPath}"`);
 
+        // Restart with spawn to get real pid
+        const child = spawn(bin, ["server", "--data", dataDir], {
+          cwd: dataDir,
+          stdio: "ignore",
+        });
+        writeFileSync(pidPath, String(child.pid));
+
         // Get version
         const { stdout } = await execAsync(`${bin} version`);
-        const verLine = stdout.split("\n").find(l => l.startsWith("Version:"));
-        const newVersion = verLine ? verLine.split(":")[1]?.trim() ?? "unknown" : "unknown";
+        const verLine = stdout
+          .split("\n")
+          .find((l) => l.startsWith("Version:"));
+        const newVersion = verLine
+          ? (verLine.split(":")[1]?.trim() ?? "unknown")
+          : "unknown";
 
         push({ event: "done", version: newVersion });
       } catch (error: any) {

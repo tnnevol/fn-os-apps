@@ -1,6 +1,6 @@
 import { defineNuxtModule, createResolver } from "@nuxt/kit";
 import { spawn } from "node:child_process";
-import { existsSync, mkdirSync } from "node:fs";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 
 export default defineNuxtModule({
   meta: {
@@ -45,6 +45,7 @@ export default defineNuxtModule({
       });
 
       console.log("[openlist] started with pid:", child.pid);
+      writeFileSync(`${dataDir}/openlist.pid`, String(child.pid));
     });
   },
 });
