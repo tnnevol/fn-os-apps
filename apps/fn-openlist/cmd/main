@@ -85,6 +85,23 @@ stop_process() {
         rm -f "${PID_FILE}"
     fi
 
+    # Kill openlist binary process via data/openlist.pid
+    DATA_DIR="${TRIM_PKGVAR}/data"
+    OPENLIST_PID_FILE="${DATA_DIR}/openlist.pid"
+    if [ -f "${OPENLIST_PID_FILE}" ]; then
+        openlist_pid=$(head -n 1 "${OPENLIST_PID_FILE}" | tr -d '[:space:]')
+        if check_process "${openlist_pid}"; then
+            log_msg "kill openlist binary PID:${openlist_pid}..."
+            kill -TERM "${openlist_pid}" 2>/dev/null
+            sleep 2
+            if check_process "${openlist_pid}"; then
+                kill -KILL "${openlist_pid}" 2>/dev/null
+                sleep 1
+            fi
+        fi
+        rm -f "${OPENLIST_PID_FILE}"
+    fi
+
     return 0
 }
 
