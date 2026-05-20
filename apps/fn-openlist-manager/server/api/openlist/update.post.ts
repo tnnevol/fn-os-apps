@@ -1,7 +1,7 @@
 import { getOpenlistBin, getDataDir } from "../../utils/openlist";
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
-import { join } from "node:path";
+import { join, dirname } from "node:path";
 import {
   createWriteStream,
   existsSync,
@@ -123,7 +123,7 @@ export default defineEventHandler(async (event) => {
           }
         }
 
-        mkdirSync(join(bin, ".."), { recursive: true });
+        mkdirSync(dirname(bin), { recursive: true });
         await execAsync(
           `mv "${tmpDir}/openlist" "${bin}" && chmod +x "${bin}"`,
         );
