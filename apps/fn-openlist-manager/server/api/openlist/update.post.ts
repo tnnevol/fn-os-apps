@@ -97,7 +97,8 @@ export default defineEventHandler(async (event) => {
 
         // Verify
         const { stdout: fileType } = await execAsync(`file "${tarPath}"`);
-        const { stdout: fileSize } = await execAsync(`stat -c%s "${tarPath}"`);
+        const statFlag = process.env.TRIM_APPNAME ? "-c%s" : "-f%z";
+        const { stdout: fileSize } = await execAsync(`stat ${statFlag} "${tarPath}"`);
         if (!fileType.includes("gzip") || Number(fileSize) < 102400) {
           throw new Error("下载文件无效，可能下载到了错误页面");
         }
