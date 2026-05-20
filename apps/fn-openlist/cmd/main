@@ -9,6 +9,9 @@ SERVER_ENTRY="${TRIM_APPDEST}/server/index.mjs"
 LOG_FILE="${TRIM_PKGVAR}/info.log"
 # pid file
 PID_FILE="${TRIM_PKGVAR}/app.pid"
+# Kill openlist binary process via data/openlist.pid
+DATA_DIR="${TRIM_PKGVAR}/data"
+OPENLIST_PID_FILE="${DATA_DIR}/openlist.pid"
 # start command
 CMD="node ${SERVER_ENTRY}"
 
@@ -85,9 +88,6 @@ stop_process() {
         rm -f "${PID_FILE}"
     fi
 
-    # Kill openlist binary process via data/openlist.pid
-    DATA_DIR="${TRIM_PKGVAR}/data"
-    OPENLIST_PID_FILE="${DATA_DIR}/openlist.pid"
     if [ -f "${OPENLIST_PID_FILE}" ]; then
         openlist_pid=$(head -n 1 "${OPENLIST_PID_FILE}" | tr -d '[:space:]')
         if check_process "${openlist_pid}"; then
