@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Configure Node.js v22 environment
+export PATH=/var/apps/nodejs_v22/target/bin:$PATH
+
 # server entry for OpenList (Nitro build output)
 SERVER_ENTRY="${TRIM_APPDEST}/server/index.mjs"
 # log file
@@ -40,6 +43,7 @@ start_process() {
         return 0
     fi
 
+    log_msg "Node version: $(node -v 2>&1)"
     log_msg "Starting OpenList ..."
 
     PORT="${wizard_admin_port}" bash -c "${CMD}" >> "${LOG_FILE}" 2>&1 &

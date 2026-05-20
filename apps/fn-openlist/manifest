@@ -12,4 +12,5 @@ os_min_version        = 0.9.27
 desktop_uidir         = ui
 desktop_applaunchname = fn-openlist.main
 service_port          = 5244
+install_dep_apps      = nodejs_v22
 checkport             = true
