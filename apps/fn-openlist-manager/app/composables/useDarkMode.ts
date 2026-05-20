@@ -1,5 +1,8 @@
 export default function useDarkMode() {
-  const isDark = useLocalStorage("dark-mode", false);
+  const prefersDark = import.meta.client
+    ? window.matchMedia("(prefers-color-scheme: dark)").matches
+    : false;
+  const isDark = useLocalStorage("dark-mode", prefersDark);
 
   useHead({
     htmlAttrs: {
@@ -7,7 +10,6 @@ export default function useDarkMode() {
     },
   });
 
-  // Sync class to html element for Element Plus dark theme
   if (import.meta.client) {
     watch(
       isDark,
