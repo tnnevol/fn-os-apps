@@ -8,6 +8,8 @@ set -e
 BIN_DIR="${TRIM_APPDEST}/bin"
 DATA_DIR="${TRIM_PKGVAR}/data"
 
+mkdir -p "${BIN_DIR}"
+
 # Download and extract OpenList latest binary via pipe
 OPENLIST_URL="https://gh-proxy.com/https://github.com/OpenListTeam/OpenList/releases/latest/download/openlist-linux-musl-amd64.tar.gz"
 
