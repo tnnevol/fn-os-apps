@@ -20,6 +20,23 @@
                 ]
             },
             {
+                "type": "text",
+                "field": "wizard_admin_port",
+                "label": "管理端端口",
+                "helpText": "设置 OpenList 管理服务监听的端口号",
+                "initValue": "5245",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请输入管理端端口"
+                    },
+                    {
+                        "pattern": "^[0-9]+$",
+                        "message": "端口号必须为正整数"
+                    }
+                ]
+            },
+            {
                 "type": "password",
                 "field": "wizard_password",
                 "label": "管理员密码",

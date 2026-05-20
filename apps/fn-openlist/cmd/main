@@ -42,7 +42,7 @@ start_process() {
 
     log_msg "Starting OpenList ..."
 
-    bash -c "${CMD}" >> "${LOG_FILE}" 2>&1 &
+    PORT="${wizard_admin_port}" bash -c "${CMD}" >> "${LOG_FILE}" 2>&1 &
     printf "%s" "$!" > "${PID_FILE}"
 
     log_msg "OpenList started with pid $!"
