@@ -4,7 +4,7 @@
 
     <el-main class="max-w-[1200px] mx-auto px-4 py-5 md:px-6 md:py-6 overflow-x-hidden">
       <!-- 状态卡片 -->
-      <StatusCard :status="status" class="mb-4 md:mb-5" />
+      <StatusCard :status="status" class="mb-4 md:mb-5" @updated="loadStatus" />
 
       <!-- 更新 -->
       <UpdateCard class="mb-4 md:mb-5" @updated="loadStatus" />

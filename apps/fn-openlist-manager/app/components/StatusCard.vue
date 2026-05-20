@@ -1,6 +1,21 @@
 <template>
   <el-card>
-    <template #header>系统状态</template>
+    <template #header>
+      <div class="flex items-center justify-between">
+        <span>系统状态</span>
+        <div class="flex gap-2">
+          <el-button size="small" type="success" @click="handleStart" :loading="loading" :disabled="status.running">
+            启动
+          </el-button>
+          <el-button size="small" type="danger" @click="handleStop" :loading="loading" :disabled="!status.running">
+            停止
+          </el-button>
+          <el-button size="small" @click="handleRestart" :loading="loading">
+            重启
+          </el-button>
+        </div>
+      </div>
+    </template>
     <el-descriptions :column="isMobile ? 1 : 2" border>
       <el-descriptions-item label="版本">{{ status.version }}</el-descriptions-item>
       <el-descriptions-item label="运行状态">
@@ -13,9 +28,53 @@
 </template>
 
 <script setup lang="ts">
-defineProps<{
+const props = defineProps<{
   status: { version: string; running: boolean };
 }>();
 
+const emit = defineEmits<{
+  (e: "updated"): void;
+}>();
+
 const isMobile = useMediaQuery("(max-width: 767px)");
+const loading = ref(false);
+
+async function handleStart() {
+  loading.value = true;
+  try {
+    await $fetch("/api/openlist/start", { method: "POST" });
+    ElMessage.success("openlist 已启动");
+    emit("updated");
+  } catch (e: any) {
+    ElMessage.error(e?.data?.message || "启动失败");
+  } finally {
+    loading.value = false;
+  }
+}
+
+async function handleStop() {
+  loading.value = true;
+  try {
+    await $fetch("/api/openlist/stop", { method: "POST" });
+    ElMessage.success("openlist 已停止");
+    emit("updated");
+  } catch (e: any) {
+    ElMessage.error(e?.data?.message || "停止失败");
+  } finally {
+    loading.value = false;
+  }
+}
+
+async function handleRestart() {
+  loading.value = true;
+  try {
+    await $fetch("/api/openlist/restart", { method: "POST" });
+    ElMessage.success("openlist 已重启");
+    emit("updated");
+  } catch (e: any) {
+    ElMessage.error(e?.data?.message || "重启失败");
+  } finally {
+    loading.value = false;
+  }
+}
 </script>
