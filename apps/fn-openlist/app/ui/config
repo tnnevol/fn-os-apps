@@ -1,22 +1,22 @@
 {
-    ".url": {
-        "fn-openlist.main": {
-            "title": "OpenList",
-            "icon": "images/icon_{0}.png",
-            "type": "url",
-            "protocol": "http",
-            "port": "${wizard_port}",
-            "url": "/",
-            "allUsers": false
-        },
-        "fn-openlist.admin": {
-            "title": "OpenList 管理",
-            "icon": "images/icon_{0}.png",
-            "type": "url",
-            "protocol": "http",
-            "port": "${wizard_admin_port}",
-            "url": "/",
-            "allUsers": false
-        }
+  ".url": {
+    "fn-openlist.main": {
+      "title": "OpenList",
+      "icon": "images/icon_{0}.png",
+      "type": "url",
+      "protocol": "http",
+      "port": "${wizard_port}",
+      "url": "/",
+      "allUsers": false
+    },
+    "fn-openlist.admin": {
+      "title": "OpenList 管理",
+      "icon": "images/icon_{0}.png",
+      "type": "iframe",
+      "protocol": "http",
+      "port": "${wizard_admin_port}",
+      "url": "/",
+      "allUsers": false
     }
+  }
 }
