@@ -80,14 +80,10 @@ jobs:
           echo "matrix=[${APPS_JSON}]" >> "$GITHUB_OUTPUT"
           echo "apps_space=${APPS_LIST}" >> "$GITHUB_OUTPUT"
 
-  # 构建所有应用的 FPK 包
-  build:
-    needs: [bump-version, discover]
+  # 构建 Nuxt 项目（仅 fn-openlist，非 matrix）
+  build-nuxt:
+    needs: [bump-version]
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        app: ${{ fromJson(needs.discover.outputs.matrix) }}
-      fail-fast: false
     steps:
       - uses: actions/checkout@v4
         with:
@@ -109,6 +105,43 @@ jobs:
           cache: pnpm
           cache-dependency-path: apps/fn-openlist-manager/pnpm-lock.yaml
 
+      - name: Build Nuxt project
+        working-directory: apps/fn-openlist-manager
+        run: |
+          pnpm install
+          pnpm build
+
+      - name: Upload Nuxt output
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuxt-output
+          path: apps/fn-openlist/app/server/
+          retention-days: 1
+
+  # 构建所有应用的 FPK 包
+  build:
+    needs: [bump-version, discover, build-nuxt]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        app: ${{ fromJson(needs.discover.outputs.matrix) }}
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Pull latest bump-version changes
+        run: git fetch origin main && git merge origin/main
+
+      - name: Download Nuxt output (fn-openlist only)
+        if: matrix.app == 'fn-openlist'
+        uses: actions/download-artifact@v4
+        with:
+          name: nuxt-output
+          path: apps/fn-openlist/app/server/
+
       - name: Install fnpack
         run: |
           curl -fsSL https://static2.fnnas.com/fnpack/fnpack-1.2.1-linux-amd64 -o fnpack
@@ -129,13 +162,6 @@ jobs:
           VERSION="${VERSION#v}"
           sed -i "s/^version *= *.*/version               = $VERSION/" manifest
           echo "Override version to $VERSION"
-
-      - name: Build Nuxt manager (fn-openlist only)
-        if: matrix.app == 'fn-openlist'
-        working-directory: apps/fn-openlist-manager
-        run: |
-          pnpm install
-          pnpm build
 
       - name: Build FPK
         working-directory: apps/${{ matrix.app }}
