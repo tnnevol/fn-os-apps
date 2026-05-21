@@ -104,7 +104,7 @@ git push origin main
 2. **推送版本 Tag 触发发布**
 
 ```bash
-git tag v4.0.1
+git tag v4.0.2
 git push origin v4.0.0
 ```
 

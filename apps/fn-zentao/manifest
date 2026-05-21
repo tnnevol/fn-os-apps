@@ -1,5 +1,5 @@
 appname               = fn-zentao
-version               = 4.0.1
+version               = 4.0.2
 display_name          = 禅道
 desc                  = 禅道是第一款国产的开源项目管理软件，基于敏捷和 Scrum 理念，包含产品管理、项目管理、质量管理、文档管理、办公管理和资产管理等模块
 arch                  = x86_64
