@@ -7,13 +7,8 @@ set -e
 
 BIN_DIR="${TRIM_APPDEST}/bin"
 
-# Only create local data directory for SQLite mode
-if [ "${wizard_storage_type}" = "local" ]; then
-    DATA_DIR="${TRIM_PKGVAR}/data"
-    mkdir -p "${BIN_DIR}" "${DATA_DIR}"
-else
-    mkdir -p "${BIN_DIR}"
-fi
+# Always create data directory for assets (uploads, avatars) regardless of storage type
+mkdir -p "${BIN_DIR}" "${TRIM_PKGVAR}/data"
 
 # Get latest Memos version tag via gh-proxy mirror
 LATEST_TAG=$(curl -fsSL "https://gh-proxy.com/https://api.github.com/repos/usememos/memos/releases/latest" \
