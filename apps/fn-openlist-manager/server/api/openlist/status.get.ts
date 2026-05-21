@@ -1,4 +1,4 @@
-import { getOpenlistBin, getDataDir } from "../../utils/openlist";
+import { getOpenlistBin, getDataDir, getConfigPath } from "../../utils/openlist";
 import { existsSync, readFileSync, unlinkSync } from "node:fs";
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
@@ -27,6 +27,19 @@ function checkPidFile(): boolean {
   }
 }
 
+function getPort(): number {
+  try {
+    const configPath = getConfigPath();
+    if (existsSync(configPath)) {
+      const cfg = JSON.parse(readFileSync(configPath, "utf-8"));
+      return cfg.scheme?.http_port ?? 5244;
+    }
+  } catch {
+    // ignore
+  }
+  return 5244;
+}
+
 export default defineEventHandler(async () => {
   const bin = getOpenlistBin();
 
@@ -42,5 +55,6 @@ export default defineEventHandler(async () => {
   return {
     version,
     running: checkPidFile(),
+    port: getPort(),
   };
 });
