@@ -1,11 +1,11 @@
-import { getDataDir } from "../../utils/openlist";
+import { getOpenlistDataDir } from "../../utils/openlist";
 import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 
 export default defineEventHandler(async (event) => {
-  const dataDir = getDataDir();
-  const logFile = join(dataDir, "log", "log.log");
+  const openlistDataDir = getOpenlistDataDir();
+  const logFile = join(openlistDataDir, "log", "log.log");
 
   if (!existsSync(logFile)) {
     setHeader(event, "Content-Type", "text/event-stream");

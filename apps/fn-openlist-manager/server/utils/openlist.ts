@@ -12,9 +12,6 @@ export function getOpenlistBin(): string {
 }
 
 export function getDataDir(): string {
-  if (process.env.TRIM_PKGVAR) {
-    return resolve(process.env.TRIM_PKGVAR, "data");
-  }
   return resolve(getAppDest(), process.env.TRIM_PKGVAR || "bin");
 }
 
@@ -23,7 +20,7 @@ export function getOpenlistDataDir(): string {
 }
 
 export function getConfigPath(): string {
-  return resolve(getDataDir(), "config.json");
+  return resolve(getOpenlistDataDir(), "config.json");
 }
 
 export function runOpenlist(...args: string[]): Promise<string> {
