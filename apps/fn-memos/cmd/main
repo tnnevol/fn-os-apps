@@ -3,12 +3,23 @@
 LOG_FILE="${TRIM_PKGVAR}/info.log"
 PID_FILE="${TRIM_PKGVAR}/app.pid"
 
-# Memos binary path and data directory
+# Memos binary path
 MEMOS_BIN="${TRIM_APPDEST}/bin/memos"
-DATA_DIR="${TRIM_PKGVAR}/data"
 MEMOS_PORT="${wizard_port:-5230}"
 
-CMD="${MEMOS_BIN} --port ${MEMOS_PORT} --data ${DATA_DIR}"
+# Build start command based on storage type
+case "${wizard_storage_type}" in
+    mysql)
+        CMD="${MEMOS_BIN} --port ${MEMOS_PORT} --driver mysql --dsn \"${wizard_dsn}\""
+        ;;
+    postgres)
+        CMD="${MEMOS_BIN} --port ${MEMOS_PORT} --driver postgres --dsn \"${wizard_dsn}\""
+        ;;
+    *)
+        DATA_DIR="${TRIM_PKGVAR}/data"
+        CMD="${MEMOS_BIN} --port ${MEMOS_PORT} --data ${DATA_DIR}"
+        ;;
+esac
 
 log_msg() {
     echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "${LOG_FILE}"
@@ -19,7 +30,7 @@ start_process() {
         return 0
     fi
 
-    log_msg "Starting Memos ..."
+    log_msg "Starting Memos (storage: ${wizard_storage_type:-local}) ..."
     bash -c "${CMD}" >> "${LOG_FILE}" 2>&1 &
     printf "%s" "$!" > "${PID_FILE}"
     log_msg "Memos started with pid $!"

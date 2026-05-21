@@ -15,7 +15,8 @@
 │   ├── fn-quark-auto-save/         # 夸克转存 - 夸克网盘自动化工具
 │   ├── fn-new-api/                 # New API - AI API 管理平台
 │   ├── fn-zentao/                  # 禅道项目管理 - 项目管理软件
-│   └── fn-openlist/                # OpenList - 文件列表管理工具
+│   ├── fn-openlist/                # OpenList - 文件列表管理工具
+│   └── fn-memos/                   # Memos - 自托管笔记
 ├── .github/workflows/              # CI: FPK 构建与 Release 发布
 ├── .gitignore
 └── README.md
@@ -34,6 +35,7 @@
 | [fn-new-api](https://github.com/tnnevol/fn-os-apps/releases/latest) | New API | 新一代 AI API 管理与分发平台，支持多模型接入、令牌管理、配额控制等功能 |
 | [fn-zentao](https://github.com/tnnevol/fn-os-apps/releases/latest) | 禅道项目管理 | 国产开源项目管理软件，基于敏捷和 Scrum 理念，包含产品管理、项目管理、质量管理等模块 |
 | [fn-openlist](https://github.com/tnnevol/fn-os-apps/releases/latest) | OpenList | 文件列表管理工具，支持多种云存储协议的文件浏览和管理 |
+| [fn-memos](https://github.com/tnnevol/fn-os-apps/releases/latest) | Memos | 轻量级自托管笔记工具，支持 Markdown 编写、标签管理、多端同步 |
 
 ## 测试与安装
 
@@ -132,7 +134,7 @@ git push origin v4.0.0
 | `version` | 是 | 版本号，格式 `x[.y[.z]][-build]` | `3.2.14` |
 | `display_name` | 是 | 显示名称 | `阅读` |
 | `desc` | 是 | 应用描述（支持 HTML） | 功能说明 |
-| `arch` | 是 | 架构 | `x86_64` |
+| `platform` | 是 | 架构，`x86` / `arm` / `all` | `x86` |
 | `source` | 是 | 应用来源 | `thirdparty` |
 | `maintainer` | - | 原始维护者 | GitHub ID |
 | `maintainer_url` | - | 原始项目地址 | URL |

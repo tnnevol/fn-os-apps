@@ -18,6 +18,40 @@
                         "message": "端口号必须为正整数"
                     }
                 ]
+            },
+            {
+                "type": "select",
+                "field": "wizard_storage_type",
+                "label": "数据存储方式",
+                "initValue": "local",
+                "options": [
+                    {
+                        "label": "本地 SQLite（默认，无需额外配置）",
+                        "value": "local"
+                    },
+                    {
+                        "label": "MySQL",
+                        "value": "mysql"
+                    },
+                    {
+                        "label": "PostgreSQL",
+                        "value": "postgres"
+                    }
+                ],
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请选择数据存储方式"
+                    }
+                ]
+            },
+            {
+                "type": "text",
+                "field": "wizard_dsn",
+                "label": "数据库连接字符串（DSN）",
+                "helpText": "本地 SQLite 模式留空即可。MySQL 格式：user:password@tcp(host:port)/dbname，例如 root:123456@tcp(127.0.0.1:3306)/memos。PostgreSQL 格式：postgres://user:password@host:port/dbname?sslmode=disable，例如 postgres://memos:123456@127.0.0.1:5432/memos?sslmode=disable",
+                "initValue": "",
+                "rules": []
             }
         ]
     }

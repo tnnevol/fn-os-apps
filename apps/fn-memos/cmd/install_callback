@@ -6,14 +6,31 @@
 set -e
 
 BIN_DIR="${TRIM_APPDEST}/bin"
-DATA_DIR="${TRIM_PKGVAR}/data"
 
-mkdir -p "${BIN_DIR}" "${DATA_DIR}"
+# Only create local data directory for SQLite mode
+if [ "${wizard_storage_type}" = "local" ]; then
+    DATA_DIR="${TRIM_PKGVAR}/data"
+    mkdir -p "${BIN_DIR}" "${DATA_DIR}"
+else
+    mkdir -p "${BIN_DIR}"
+fi
 
-# Download Memos latest binary via gh-proxy mirror
-MEMOS_URL="https://gh-proxy.com/https://github.com/usememos/memos/releases/latest/download/memos-linux-amd64.tar.gz"
+# Get latest Memos version tag via gh-proxy mirror
+LATEST_TAG=$(curl -fsSL "https://gh-proxy.com/https://api.github.com/repos/usememos/memos/releases/latest" \
+    | grep '"tag_name"' \
+    | sed 's/.*"v\([^"]*\)".*/\1/')
 
-echo "Downloading Memos latest..."
+if [ -z "${LATEST_TAG}" ]; then
+    echo "Failed to get latest Memos version"
+    exit 1
+fi
+
+echo "Memos latest version: ${LATEST_TAG}"
+
+# Download Memos binary via gh-proxy mirror
+MEMOS_URL="https://gh-proxy.com/https://github.com/usememos/memos/releases/latest/download/memos_${LATEST_TAG}_linux_amd64.tar.gz"
+
+echo "Downloading Memos ${LATEST_TAG}..."
 
 if command -v curl >/dev/null 2>&1; then
     curl -fsSL "${MEMOS_URL}" | tar -xz -C "${BIN_DIR}" memos
