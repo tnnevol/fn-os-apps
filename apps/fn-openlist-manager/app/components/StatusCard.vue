@@ -4,7 +4,7 @@
       <div class="flex items-center justify-between">
         <span>系统状态</span>
         <div class="flex gap-2">
-          <el-button size="small" type="primary" :disabled="!status.running" @click="handleOpen" :loading="loading">
+          <el-button size="small" type="primary" :disabled="!status.running || !status.port" @click="handleOpen" :loading="loading">
             打开
           </el-button>
           <el-button size="small" type="success" @click="handleStart" :loading="loading" :disabled="status.running">
@@ -21,7 +21,7 @@
     </template>
     <el-descriptions :column="isMobile ? 1 : 2" border>
       <el-descriptions-item label="版本">{{ status.version }}</el-descriptions-item>
-      <el-descriptions-item label="端口">{{ status.port }}</el-descriptions-item>
+      <el-descriptions-item label="端口">{{ status.port ?? "--" }}</el-descriptions-item>
       <el-descriptions-item label="运行状态">
         <el-tag :type="status.running ? 'success' : 'danger'">
           {{ status.running ? "运行中" : "未运行" }}
@@ -33,7 +33,7 @@
 
 <script setup lang="ts">
 const props = defineProps<{
-  status: { version: string; running: boolean; port: number };
+  status: { version: string; running: boolean; port: number | null };
 }>();
 
 const emit = defineEmits<{
@@ -44,6 +44,7 @@ const isMobile = useMediaQuery("(max-width: 767px)");
 const loading = ref(false);
 
 function handleOpen() {
+  if (!props.status.port) return;
   const protocol = window.location.protocol === "https:" ? "https" : "http";
   const host = window.location.hostname;
   window.open(`${protocol}://${host}:${props.status.port}`, "_blank");

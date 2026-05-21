@@ -2,26 +2,20 @@
   <el-card>
     <template #header>更新 OpenList</template>
     <div class="flex items-center gap-2">
-      <el-select
+      <el-autocomplete
         v-model="selectedVersion"
-        placeholder="最新版本"
+        :fetch-suggestions="fetchSuggestions"
+        placeholder="输入版本号或留空安装 latest"
         clearable
         style="width: 140px; flex-shrink: 0"
-      >
-        <el-option
-          v-for="v in availableVersions"
-          :key="v"
-          :label="v === availableVersions[0] ? `${v} (最新)` : v"
-          :value="v"
-        />
-      </el-select>
+      />
       <el-input
         v-model="mirrorUrl"
         placeholder="镜像地址，留空默认 https://ghproxy.net/"
         style="flex: 1; min-width: 0"
       />
       <el-button type="primary" :loading="updating" @click="handleUpdate" style="flex-shrink: 0">
-        {{ selectedVersion && selectedVersion !== availableVersions[0] ? `安装 ${selectedVersion}` : "检查并更新" }}
+        {{ selectedVersion ? `安装 ${selectedVersion}` : "安装 latest" }}
       </el-button>
     </div>
     <div v-if="updating" class="mt-4">
@@ -43,7 +37,7 @@ const emit = defineEmits<{
   (e: "updated"): void;
 }>();
 
-const selectedVersion = ref("");
+const selectedVersion = ref("latest");
 const availableVersions = ref<string[]>([]);
 const mirrorUrl = ref("");
 const updating = ref(false);
@@ -72,12 +66,19 @@ async function fetchVersions() {
     const params = mirrorUrl.value ? { mirror: mirrorUrl.value } : {};
     const res = await $fetch("/api/openlist/versions", { query: params });
     availableVersions.value = (res as any).versions || [];
-    if (availableVersions.value.length > 0) {
-      selectedVersion.value = "";
-    }
   } catch {
     // ignore
   }
+}
+
+function fetchSuggestions(query: string, cb: (items: { value: string }[]) => void) {
+  const suggestions = availableVersions.value.filter((v) =>
+    !query || v.toLowerCase().includes(query.toLowerCase())
+  );
+  const items = suggestions.length > 0
+    ? suggestions.map((v) => ({ value: v }))
+    : [{ value: "latest" }];
+  cb(items);
 }
 
 watch(mirrorUrl, () => {
@@ -89,11 +90,15 @@ async function handleUpdate() {
   progressPercent.value = 0;
   progressStep.value = "";
 
+  const version = selectedVersion.value && selectedVersion.value !== "latest"
+    ? selectedVersion.value
+    : undefined;
+
   try {
     const response = await fetch("/api/openlist/update", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ mirror: mirrorUrl.value || undefined, version: selectedVersion.value || undefined }),
+      body: JSON.stringify({ mirror: mirrorUrl.value || undefined, version }),
     });
 
     const reader = response.body?.getReader();
@@ -117,11 +122,11 @@ async function handleUpdate() {
         if (data.event === "done") {
           progressStep.value = "done";
           progressPercent.value = 100;
-          ElMessage.success(`更新成功，当前版本: ${data.version}`);
+          ElMessage.success(`安装成功，当前版本: ${data.version}`);
           emit("updated");
         } else if (data.event === "error") {
           progressStep.value = "error";
-          ElMessage.error(data.message || "更新失败");
+          ElMessage.error(data.message || "安装失败");
         } else if (data.step) {
           progressStep.value = data.step;
           progressPercent.value = data.percent ?? 0;
@@ -130,7 +135,7 @@ async function handleUpdate() {
     }
   } catch (e: any) {
     progressStep.value = "error";
-    ElMessage.error(e?.message || "更新失败");
+    ElMessage.error(e?.message || "安装失败");
   } finally {
     updating.value = false;
   }

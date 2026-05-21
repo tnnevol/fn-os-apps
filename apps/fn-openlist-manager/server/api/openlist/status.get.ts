@@ -1,4 +1,8 @@
-import { getOpenlistBin, getDataDir, getConfigPath } from "../../utils/openlist";
+import {
+  getOpenlistBin,
+  getDataDir,
+  getConfigPath,
+} from "../../utils/openlist";
 import { existsSync, readFileSync, unlinkSync } from "node:fs";
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
@@ -27,17 +31,17 @@ function checkPidFile(): boolean {
   }
 }
 
-function getPort(): number {
+function getPort(): number | null {
   try {
     const configPath = getConfigPath();
     if (existsSync(configPath)) {
       const cfg = JSON.parse(readFileSync(configPath, "utf-8"));
-      return cfg.scheme?.http_port ?? 5244;
+      return cfg.scheme?.http_port ?? null;
     }
   } catch {
     // ignore
   }
-  return 5244;
+  return null;
 }
 
 export default defineEventHandler(async () => {
@@ -45,8 +49,8 @@ export default defineEventHandler(async () => {
 
   let version = "unknown";
   try {
-    const raw = await execAsync(`${bin} version`).then(r => r.stdout);
-    const line = raw.split("\n").find(l => l.startsWith("Version:"));
+    const raw = await execAsync(`${bin} version`).then((r) => r.stdout);
+    const line = raw.split("\n").find((l) => l.startsWith("Version:"));
     version = line?.split(":")[1]?.trim() ?? "unknown";
   } catch {
     // version command may fail if binary not present

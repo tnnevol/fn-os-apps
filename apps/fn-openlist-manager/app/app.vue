@@ -23,13 +23,13 @@
 </template>
 
 <script setup lang="ts">
-const status = ref({ version: "加载中...", running: false, port: 0 });
+const status = ref({ version: "加载中...", running: false, port: null as number | null });
 
 async function loadStatus() {
   try {
     status.value = await $fetch("/api/openlist/status");
   } catch {
-    status.value = { version: "加载失败", running: false, port: 0 };
+    status.value = { version: "加载失败", running: false, port: null };
   }
 }
 
