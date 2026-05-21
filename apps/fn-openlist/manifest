@@ -1,5 +1,5 @@
 appname               = fn-openlist
-version               = 4.0.5
+version               = 4.0.6
 display_name          = OpenList
 desc                  = OpenList 是一款强大的文件列表管理工具，支持多种云存储协议的文件浏览和管理。
 platform             = x86
