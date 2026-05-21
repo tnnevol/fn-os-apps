@@ -92,6 +92,16 @@ jobs:
         with:
           ref: main
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: apps/fn-openlist-manager/pnpm-lock.yaml
+
+      - name: Install pnpm
+        run: corepack enable
+
       - name: Install fnpack
         run: |
           curl -fsSL https://static2.fnnas.com/fnpack/fnpack-1.2.1-linux-amd64 -o fnpack
@@ -109,13 +119,12 @@ jobs:
           sed -i "s/^version *= *.*/version               = $VERSION/" manifest
           echo "Override version to $VERSION"
 
-      # - name: Build Go manager (fn-openlist only)
-      #   if: matrix.app == 'fn-openlist'
-      #   working-directory: apps/${{ matrix.app }}
-      #   run: |
-      #     apt-get update && apt-get install -y golang-go
-      #     cd openlist-manager
-      #     GOOS=linux GOARCH=amd64 go build -o ../app/server/openlist-manager .
+      - name: Build Nuxt manager (fn-openlist only)
+        if: matrix.app == 'fn-openlist'
+        working-directory: apps/fn-openlist-manager
+        run: |
+          pnpm install
+          pnpm build
 
       - name: Build FPK
         working-directory: apps/${{ matrix.app }}
@@ -190,7 +199,6 @@ jobs:
           tag_name: ${{ github.ref_name }}
           name: "Release ${{ github.ref_name }}"
           body_path: RELEASE_NOTES.md
-          files: |
-            **/*.fpk
+          files: "**/*.fpk"
           draft: false
           prerelease: ${{ contains(github.ref_name, '-rc') || contains(github.ref_name, '-beta') || contains(github.ref_name, '-alpha') }}
