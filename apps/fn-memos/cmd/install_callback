@@ -22,7 +22,7 @@ fi
 echo "Memos latest version: ${LATEST_TAG}"
 
 # Download Memos binary via gh-proxy mirror
-MEMOS_URL="https://gh-proxy.com/https://github.com/usememos/memos/releases/latest/download/memos_${LATEST_TAG}_linux_amd64.tar.gz"
+MEMOS_URL="https://github.com/usememos/memos/releases/latest/download/memos_${LATEST_TAG}_linux_amd64.tar.gz"
 
 echo "Downloading Memos ${LATEST_TAG}..."
 
