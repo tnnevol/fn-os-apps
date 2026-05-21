@@ -54,7 +54,7 @@
             },
             {
                 "type": "tips",
-                "helpText": "本地 SQLite 模式 DSN 留空即可。<br/>MySQL 格式：<code>user:password@tcp(host:port)/dbname</code>，例如 <code>root:123456@tcp(127.0.0.1:3306)/memos</code><br/>PostgreSQL 格式：<code>postgres://user:password@host:port/dbname?sslmode=disable</code>，例如 <code>postgres://memos:123456@127.0.0.1:5432/memos?sslmode=disable</code><br/>注意：密码中包含 @ : / 等特殊字符时需进行 URL 编码，例如 @ → <code>%40</code>，即 p@ssword 应写为 p%40ssword"
+                "helpText": "本地 SQLite 模式 DSN 留空即可。<br/>MySQL 格式：<code>user:password@tcp(host:port)/dbname</code><br/>PostgreSQL 格式：<code>postgres://user:password@host:port/dbname?sslmode=disable</code><br/><strong>密码中不可包含以下字符：</strong> @ ( ) : / \\ — 如包含请修改数据库用户密码"
             }
         ]
     }
