@@ -4,7 +4,7 @@
 ### Try to download latest Memos binary; if GitHub is unreachable, keep bundled version.
 
 BIN_DIR="${TRIM_APPDEST}/bin"
-mkdir -p "${BIN_DIR}" "${TRIM_PKGVAR}/data"
+mkdir -p "${TRIM_PKGVAR}/data"
 
 # Try to get latest version by scraping the GitHub releases page
 LATEST_TAG=$(curl -fsSL --connect-timeout 5 --max-time 10 \
@@ -16,30 +16,62 @@ LATEST_TAG=$(curl -fsSL --connect-timeout 5 --max-time 10 \
 if [ -z "${LATEST_TAG}" ]; then
     # GitHub unreachable or parsing failed — use bundled binary
     echo "GitHub unreachable, keeping bundled Memos binary"
+    chmod +x "${BIN_DIR}/memos"
     exit 0
 fi
 
 echo "Memos latest version: ${LATEST_TAG}"
 
-# Download Memos binary via gh-proxy mirror
+# Check current installed version
+CURRENT_VERSION=""
+if [ -x "${BIN_DIR}/memos" ]; then
+    CURRENT_VERSION=$("${BIN_DIR}/memos" version 2>/dev/null || true)
+fi
+
+echo "Current version: ${CURRENT_VERSION:-not installed}"
+
+# Align version format (strip leading 'v' from LATEST_TAG)
+LATEST_VER="${LATEST_TAG#v}"
+
+# Compare versions - skip download if local version >= latest version
+if [ -n "${CURRENT_VERSION}" ]; then
+    HIGHER=$(printf '%s\n%s\n' "${CURRENT_VERSION}" "${LATEST_VER}" | sort -V | tail -n1)
+    if [ "${HIGHER}" = "${CURRENT_VERSION}" ]; then
+        echo "Local version ${CURRENT_VERSION} >= latest ${LATEST_VER}, skipping download"
+        exit 0
+    fi
+fi
+
+# Download to temp directory first, then move to bin
 MEMOS_URL="https://github.com/usememos/memos/releases/latest/download/memos_${LATEST_TAG}_linux_amd64.tar.gz"
+TEMP_DIR="${TRIM_PKGTMP}"
 
 echo "Downloading Memos ${LATEST_TAG}..."
 
+download_and_install() {
+    local tmp_bin="${TEMP_DIR}/memos"
+    rm -f "${tmp_bin}"
+
+    if [ "$1" = "curl" ]; then
+        curl -fsSL --connect-timeout 5 --max-time 60 "${MEMOS_URL}" 2>/dev/null | tar -xz -C "${TEMP_DIR}" memos
+    elif [ "$1" = "wget" ]; then
+        wget -q --timeout=60 -O - "${MEMOS_URL}" 2>/dev/null | tar -xz -C "${TEMP_DIR}" memos
+    fi
+
+    if [ -x "${tmp_bin}" ]; then
+        mv "${tmp_bin}" "${BIN_DIR}/memos"
+        chmod +x "${BIN_DIR}/memos"
+        echo "Memos updated to ${LATEST_TAG}"
+        rm -rf "${tmp_bin}"
+        return 0
+    fi
+    return 1
+}
+
 if command -v curl >/dev/null 2>&1; then
-    if curl -fsSL --connect-timeout 5 --max-time 60 "${MEMOS_URL}" 2>/dev/null | tar -xz -C "${BIN_DIR}" memos; then
-        chmod +x "${BIN_DIR}/memos"
-        echo "Memos updated to ${LATEST_TAG}"
-    else
-        echo "Download failed, keeping bundled Memos binary"
-    fi
+    download_and_install curl || echo "Download failed, keeping bundled Memos binary"
 elif command -v wget >/dev/null 2>&1; then
-    if wget -q --timeout=60 -O - "${MEMOS_URL}" 2>/dev/null | tar -xz -C "${BIN_DIR}" memos; then
-        chmod +x "${BIN_DIR}/memos"
-        echo "Memos updated to ${LATEST_TAG}"
-    else
-        echo "Download failed, keeping bundled Memos binary"
-    fi
+    download_and_install wget || echo "Download failed, keeping bundled Memos binary"
 else
     echo "No curl or wget found, keeping bundled Memos binary"
 fi
