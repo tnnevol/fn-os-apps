@@ -119,9 +119,12 @@ jobs:
         run: fnpack --help
 
       - name: Override manifest version with tag
-        if: hashFiles('apps/${{ matrix.app }}/manifest') != ''
         working-directory: apps/${{ matrix.app }}
         run: |
+          if [ ! -f manifest ]; then
+            echo "No manifest file, skipping"
+            exit 0
+          fi
           VERSION="${{ github.ref_name }}"
           VERSION="${VERSION#v}"
           sed -i "s/^version *= *.*/version               = $VERSION/" manifest
