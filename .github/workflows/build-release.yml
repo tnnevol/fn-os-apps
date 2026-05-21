@@ -122,9 +122,25 @@ jobs:
           path: apps/fn-openlist/app/server/
           retention-days: 1
 
+  # 下载 fnpack 并作为 artifact 共享
+  setup-fnpack:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install fnpack
+        run: |
+          curl -fsSL https://static2.fnnas.com/fnpack/fnpack-1.2.1-linux-amd64 -o fnpack
+          chmod +x fnpack
+
+      - name: Upload fnpack artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: fnpack
+          path: fnpack
+          retention-days: 1
+
   # 构建所有应用的 FPK 包
   build:
-    needs: [bump-version, discover, build-nuxt]
+    needs: [bump-version, discover, build-nuxt, setup-fnpack]
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -147,13 +163,15 @@ jobs:
           path: apps/fn-openlist/app/server/
 
       - name: Install fnpack
+        uses: actions/download-artifact@v4
+        with:
+          name: fnpack
+          path: .
+
+      - name: Make fnpack executable
         run: |
-          curl -fsSL https://static2.fnnas.com/fnpack/fnpack-1.2.1-linux-amd64 -o fnpack
           chmod +x fnpack
           sudo mv fnpack /usr/local/bin/fnpack
-
-      - name: Verify fnpack
-        run: fnpack --help
 
       - name: Override manifest version with tag
         working-directory: apps/${{ matrix.app }}
