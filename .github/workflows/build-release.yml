@@ -119,6 +119,7 @@ jobs:
         run: fnpack --help
 
       - name: Override manifest version with tag
+        if: hashFiles('apps/${{ matrix.app }}/manifest') != ''
         working-directory: apps/${{ matrix.app }}
         run: |
           VERSION="${{ github.ref_name }}"
