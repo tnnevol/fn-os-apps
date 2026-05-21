@@ -47,11 +47,12 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git checkout main
-          git pull origin main
           git add apps/*/manifest README.md
           if ! git diff --cached --quiet; then
             git commit -m "chore: bump all app versions to ${{ github.ref_name }} [skip ci]"
+            git checkout main
+            git pull origin main
+            git merge --ff-only FETCH_HEAD || git merge --no-edit FETCH_HEAD
             git push origin main
           else
             echo "No version changes to commit"
