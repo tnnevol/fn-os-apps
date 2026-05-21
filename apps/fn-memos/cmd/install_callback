@@ -1,21 +1,22 @@
 #!/bin/bash
 
 ### This script is called after the application is installed.
-### Download Memos binary.
-
-set -e
+### Try to download latest Memos binary; if GitHub is unreachable, keep bundled version.
 
 BIN_DIR="${TRIM_APPDEST}/bin"
 mkdir -p "${BIN_DIR}" "${TRIM_PKGVAR}/data"
 
-# Get latest version by scraping the GitHub releases page (avoids unauthenticated API rate limits)
-LATEST_TAG=$(curl -fsSL "https://github.com/usememos/memos/releases/latest" \
+# Try to get latest version by scraping the GitHub releases page
+LATEST_TAG=$(curl -fsSL --connect-timeout 5 --max-time 10 \
+    "https://github.com/usememos/memos/releases/latest" \
+    2>/dev/null \
     | grep -oP '/releases/tag/v\K[0-9]+\.[0-9]+\.[0-9]+' \
     | head -1)
 
 if [ -z "${LATEST_TAG}" ]; then
-    echo "Failed to resolve Memos latest version"
-    exit 1
+    # GitHub unreachable or parsing failed — use bundled binary
+    echo "GitHub unreachable, keeping bundled Memos binary"
+    exit 0
 fi
 
 echo "Memos latest version: ${LATEST_TAG}"
@@ -26,15 +27,21 @@ MEMOS_URL="https://gh-proxy.com/https://github.com/usememos/memos/releases/lates
 echo "Downloading Memos ${LATEST_TAG}..."
 
 if command -v curl >/dev/null 2>&1; then
-    curl -fsSL "${MEMOS_URL}" | tar -xz -C "${BIN_DIR}" memos
+    if curl -fsSL --connect-timeout 5 --max-time 60 "${MEMOS_URL}" 2>/dev/null | tar -xz -C "${BIN_DIR}" memos; then
+        chmod +x "${BIN_DIR}/memos"
+        echo "Memos updated to ${LATEST_TAG}"
+    else
+        echo "Download failed, keeping bundled Memos binary"
+    fi
 elif command -v wget >/dev/null 2>&1; then
-    wget -q -O - "${MEMOS_URL}" | tar -xz -C "${BIN_DIR}" memos
+    if wget -q --timeout=60 -O - "${MEMOS_URL}" 2>/dev/null | tar -xz -C "${BIN_DIR}" memos; then
+        chmod +x "${BIN_DIR}/memos"
+        echo "Memos updated to ${LATEST_TAG}"
+    else
+        echo "Download failed, keeping bundled Memos binary"
+    fi
 else
-    echo "No curl or wget found, cannot download Memos"
-    exit 1
+    echo "No curl or wget found, keeping bundled Memos binary"
 fi
-
-chmod +x "${BIN_DIR}/memos"
-echo "Memos installed to ${BIN_DIR}/memos"
 
 exit 0
