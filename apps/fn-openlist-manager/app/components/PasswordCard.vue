@@ -9,7 +9,7 @@
           clearable
           style="flex: 1; min-width: 0"
         />
-        <el-button type="primary" @click="handleSetPassword" :loading="setting">
+        <el-button type="primary" @click="handleSetPassword" :loading="setting" :disabled="!customPassword.trim()">
           设置密码
         </el-button>
       </div>
@@ -22,7 +22,7 @@
       </el-button>
     </div>
     <el-alert
-      v-if="generatedPassword"
+      v-if="displayPassword"
       type="success"
       :closable="false"
       class="mt-2!"
@@ -31,7 +31,7 @@
       <template #default>
         <div class="flex items-center gap-2">
           <span
-            >新密码: <strong>{{ generatedPassword }}</strong></span
+            >新密码: <strong>{{ displayPassword }}</strong></span
           >
           <el-button type="primary" link size="small" @click="copyPassword"
             >复制</el-button
@@ -46,7 +46,7 @@
 const setting = ref(false);
 const generating = ref(false);
 const customPassword = ref("");
-const generatedPassword = ref("");
+const displayPassword = ref("");
 
 async function handleRandomPassword() {
   generating.value = true;
@@ -55,9 +55,25 @@ async function handleRandomPassword() {
       method: "POST",
       body: { action: "random" },
     });
-    generatedPassword.value = (res as any).password;
+    const pwd = (res as any).password;
+    await ElMessageBox.confirm(
+      `是否使用随机密码：${pwd}`,
+      "确认使用",
+      {
+        confirmButtonText: "确认使用",
+        cancelButtonText: "取消",
+        type: "warning",
+      },
+    );
+    await $fetch("/api/openlist/password", {
+      method: "POST",
+      body: { action: "set", password: pwd },
+    });
+    displayPassword.value = pwd;
+    ElMessage.success("密码已设置");
   } catch (e: any) {
-    ElMessage.error(e?.data?.message || "生成密码失败");
+    if (e === "cancel") return;
+    ElMessage.error(e?.data?.message || "操作失败");
   } finally {
     generating.value = false;
   }
@@ -85,7 +101,7 @@ async function handleSetPassword() {
 
 async function copyPassword() {
   try {
-    await navigator.clipboard.writeText(generatedPassword.value);
+    await navigator.clipboard.writeText(displayPassword.value);
     ElMessage.success("已复制到剪贴板");
   } catch {
     ElMessage.error("复制失败");
