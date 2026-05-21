@@ -100,7 +100,7 @@ jobs:
           cache-dependency-path: apps/fn-openlist-manager/pnpm-lock.yaml
 
       - name: Install pnpm
-        run: corepack enable
+        run: npm install -g pnpm
 
       - name: Install fnpack
         run: |
