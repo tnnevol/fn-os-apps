@@ -74,6 +74,10 @@ jobs:
           for dir in apps/*/; do
             app="${dir%/}"
             app="${app#apps/}"
+            if [ ! -f "apps/$app/manifest" ]; then
+              echo "Skipping $app (no manifest)"
+              continue
+            fi
             APPS_JSON="${APPS_JSON}${APPS_JSON:+,}\"${app}\""
             APPS_LIST="${APPS_LIST}${APPS_LIST:+ }${app}"
           done
@@ -154,10 +158,6 @@ jobs:
       - name: Override manifest version with tag
         working-directory: apps/${{ matrix.app }}
         run: |
-          if [ ! -f manifest ]; then
-            echo "No manifest file, skipping"
-            exit 0
-          fi
           VERSION="${{ github.ref_name }}"
           VERSION="${VERSION#v}"
           sed -i "s/^version *= *.*/version               = $VERSION/" manifest
