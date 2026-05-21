@@ -236,6 +236,14 @@ jobs:
           tag_name: ${{ github.ref_name }}
           name: "Release ${{ github.ref_name }}"
           body_path: RELEASE_NOTES.md
-          files: "**/*.fpk"
           draft: false
           prerelease: ${{ contains(github.ref_name, '-rc') || contains(github.ref_name, '-beta') || contains(github.ref_name, '-alpha') }}
+
+      - name: Upload FPK files serially
+        run: |
+          for fpk in **/*.fpk; do
+            echo "Uploading $fpk ..."
+            gh release upload ${{ github.ref_name }} "$fpk" --clobber
+          done
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
