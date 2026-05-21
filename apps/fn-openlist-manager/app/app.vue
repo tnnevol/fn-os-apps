@@ -10,7 +10,7 @@
       <UpdateCard class="mb-4 md:mb-5" @updated="loadStatus" />
 
       <!-- 密码管理 & 配置备份 -->
-      <el-row :gutter="20">
+      <el-row :gutter="20" class="mb-4 md:mb-5">
         <el-col :xs="24" :sm="24" :md="12">
           <PasswordCard />
         </el-col>
@@ -18,6 +18,9 @@
           <BackupCard />
         </el-col>
       </el-row>
+
+      <!-- 运行日志 -->
+      <LogCard />
     </el-main>
   </div>
 </template>
