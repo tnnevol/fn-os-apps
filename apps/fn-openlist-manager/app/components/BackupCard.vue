@@ -1,7 +1,7 @@
 <template>
   <el-card>
     <template #header>配置备份</template>
-    <el-button type="success" @click="handleBackup" :loading="loading">
+    <el-button type="primary" @click="handleBackup" :loading="loading">
       立即备份
     </el-button>
   </el-card>

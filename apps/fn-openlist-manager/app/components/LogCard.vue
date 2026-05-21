@@ -3,7 +3,7 @@
     <template #header>
       <div class="flex items-center justify-between">
         <span>运行日志</span>
-        <el-button size="small" :type="connected ? 'success' : 'info'" @click="handleToggle">
+        <el-button size="small" :type="connected ? 'danger' : 'primary'" @click="handleToggle">
           {{ connected ? "停止" : "开始" }}
         </el-button>
       </div>

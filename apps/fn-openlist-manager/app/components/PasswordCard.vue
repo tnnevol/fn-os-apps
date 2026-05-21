@@ -3,20 +3,39 @@
     <template #header>密码管理</template>
     <div class="flex flex-col gap-2">
       <div class="flex items-center gap-2">
-        <el-input v-model="customPassword" placeholder="自定义密码" clearable style="flex: 1; min-width: 0" />
-        <el-button type="warning" @click="handleSetPassword" :loading="setting">
+        <el-input
+          v-model="customPassword"
+          placeholder="自定义密码"
+          clearable
+          style="flex: 1; min-width: 0"
+        />
+        <el-button type="primary" @click="handleSetPassword" :loading="setting">
           设置密码
         </el-button>
       </div>
-      <el-button @click="handleRandomPassword" :loading="generating">
+      <el-button
+        type="success"
+        @click="handleRandomPassword"
+        :loading="generating"
+      >
         随机生成密码
       </el-button>
     </div>
-    <el-alert v-if="generatedPassword" type="success" :closable="false" class="mt-2" show-icon>
+    <el-alert
+      v-if="generatedPassword"
+      type="success"
+      :closable="false"
+      class="mt-2!"
+      show-icon
+    >
       <template #default>
         <div class="flex items-center gap-2">
-          <span>新密码: <strong>{{ generatedPassword }}</strong></span>
-          <el-button type="primary" link size="small" @click="copyPassword">复制</el-button>
+          <span
+            >新密码: <strong>{{ generatedPassword }}</strong></span
+          >
+          <el-button type="primary" link size="small" @click="copyPassword"
+            >复制</el-button
+          >
         </div>
       </template>
     </el-alert>
