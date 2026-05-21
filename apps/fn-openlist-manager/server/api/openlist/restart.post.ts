@@ -1,10 +1,15 @@
-import { getOpenlistBin, getDataDir } from "../../utils/openlist";
+import {
+  getOpenlistBin,
+  getDataDir,
+  getOpenlistDataDir,
+} from "../../utils/openlist";
 import { existsSync, readFileSync, writeFileSync, unlinkSync } from "node:fs";
 import { spawn } from "node:child_process";
 
 export default defineEventHandler(() => {
   const bin = getOpenlistBin();
   const dataDir = getDataDir();
+  const openlistDataDir = getOpenlistDataDir();
   const pidFile = `${dataDir}/openlist.pid`;
 
   // Stop existing
@@ -13,14 +18,16 @@ export default defineEventHandler(() => {
     if (pid) {
       try {
         process.kill(Number(pid));
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     }
     unlinkSync(pidFile);
   }
 
   // Start
-  const child = spawn(bin, ["server", "--data", dataDir], {
-    cwd: dataDir,
+  const child = spawn(bin, ["server", "--data", openlistDataDir], {
+    cwd: openlistDataDir,
     stdio: "ignore",
   });
 

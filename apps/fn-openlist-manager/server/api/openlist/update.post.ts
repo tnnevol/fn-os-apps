@@ -1,4 +1,8 @@
-import { getOpenlistBin, getDataDir } from "../../utils/openlist";
+import {
+  getOpenlistBin,
+  getDataDir,
+  getOpenlistDataDir,
+} from "../../utils/openlist";
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
 import { join, dirname } from "node:path";
@@ -98,7 +102,9 @@ export default defineEventHandler(async (event) => {
         // Verify
         const { stdout: fileType } = await execAsync(`file "${tarPath}"`);
         const statFlag = process.env.TRIM_APPNAME ? "-c%s" : "-f%z";
-        const { stdout: fileSize } = await execAsync(`stat ${statFlag} "${tarPath}"`);
+        const { stdout: fileSize } = await execAsync(
+          `stat ${statFlag} "${tarPath}"`,
+        );
         if (!fileType.includes("gzip") || Number(fileSize) < 102400) {
           throw new Error("下载文件无效，可能下载到了错误页面");
         }
@@ -112,7 +118,7 @@ export default defineEventHandler(async (event) => {
         // Replace binary
         // Kill running process via pid file
         const dataDir = getDataDir();
-        mkdirSync(dataDir, { recursive: true });
+        const openlistDataDir = getOpenlistDataDir();
         const pidPath = `${dataDir}/openlist.pid`;
         if (existsSync(pidPath)) {
           const pid = readFileSync(pidPath, "utf-8").trim();
@@ -135,8 +141,8 @@ export default defineEventHandler(async (event) => {
         await execAsync(`rm -f "${tarPath}"`);
 
         // Restart with spawn to get real pid
-        const child = spawn(bin, ["server", "--data", dataDir], {
-          cwd: dataDir,
+        const child = spawn(bin, ["server", "--data", openlistDataDir], {
+          cwd: openlistDataDir,
           stdio: "ignore",
         });
         writeFileSync(pidPath, String(child.pid));

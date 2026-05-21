@@ -1,10 +1,15 @@
-import { getOpenlistBin, getDataDir } from "../../utils/openlist";
+import {
+  getOpenlistBin,
+  getDataDir,
+  getOpenlistDataDir,
+} from "../../utils/openlist";
 import { existsSync, readFileSync, writeFileSync, unlinkSync } from "node:fs";
 import { spawn } from "node:child_process";
 
 export default defineEventHandler(() => {
   const bin = getOpenlistBin();
   const dataDir = getDataDir();
+  const openlistDataDir = getOpenlistDataDir();
   const pidFile = `${dataDir}/openlist.pid`;
 
   // Check if already running
@@ -14,12 +19,14 @@ export default defineEventHandler(() => {
       try {
         process.kill(Number(pid), 0);
         return { success: false, message: "openlist 已在运行中" };
-      } catch { /* stale pid, clean up */ }
+      } catch {
+        /* stale pid, clean up */
+      }
     }
   }
 
-  const child = spawn(bin, ["server", "--data", dataDir], {
-    cwd: dataDir,
+  const child = spawn(bin, ["server", "--data", openlistDataDir], {
+    cwd: openlistDataDir,
     stdio: "ignore",
   });
 

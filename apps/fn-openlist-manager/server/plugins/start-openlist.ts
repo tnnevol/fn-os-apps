@@ -2,7 +2,11 @@ import { spawn } from "node:child_process";
 import { existsSync, mkdirSync, writeFileSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { defineNitroPlugin } from "nitropack/runtime";
-import { getOpenlistBin, getDataDir } from "../utils/openlist";
+import {
+  getOpenlistBin,
+  getDataDir,
+  getOpenlistDataDir,
+} from "../utils/openlist";
 
 function checkProcess(pid: number): boolean {
   try {
@@ -16,6 +20,7 @@ function checkProcess(pid: number): boolean {
 export default defineNitroPlugin(async (_nitroApp) => {
   const bin = getOpenlistBin();
   const dataDir = getDataDir();
+  const openlistDataDir = getOpenlistDataDir();
   const pidPath = join(dataDir, "openlist.pid");
 
   if (!existsSync(bin)) {
@@ -31,11 +36,11 @@ export default defineNitroPlugin(async (_nitroApp) => {
     }
   }
 
-  mkdirSync(dataDir, { recursive: true });
+  mkdirSync(openlistDataDir, { recursive: true });
 
   console.log("[openlist] starting openlist server...");
-  const child = spawn(bin, ["server", "--data", dataDir], {
-    cwd: dataDir,
+  const child = spawn(bin, ["server", "--data", openlistDataDir], {
+    cwd: openlistDataDir,
     stdio: "ignore",
   });
 

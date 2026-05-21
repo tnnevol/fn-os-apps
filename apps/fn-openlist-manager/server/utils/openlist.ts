@@ -1,8 +1,10 @@
 import { resolve } from "node:path";
 
 function getAppDest(): string {
-  if (process.env.TRIM_APPDEST) return process.env.TRIM_APPDEST;
-  return resolve(process.cwd(), "../fn-openlist/app");
+  return resolve(
+    process.cwd(),
+    process.env.TRIM_APPDEST || "../fn-openlist/app",
+  );
 }
 
 export function getOpenlistBin(): string {
@@ -13,7 +15,11 @@ export function getDataDir(): string {
   if (process.env.TRIM_PKGVAR) {
     return resolve(process.env.TRIM_PKGVAR, "data");
   }
-  return resolve(getAppDest(), "bin/data");
+  return resolve(getAppDest(), process.env.TRIM_PKGVAR || "bin");
+}
+
+export function getOpenlistDataDir(): string {
+  return resolve(getDataDir(), "data");
 }
 
 export function getConfigPath(): string {

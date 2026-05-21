@@ -9,9 +9,7 @@ SERVER_ENTRY="${TRIM_APPDEST}/server/index.mjs"
 LOG_FILE="${TRIM_PKGVAR}/info.log"
 # pid file
 PID_FILE="${TRIM_PKGVAR}/app.pid"
-# Kill openlist binary process via data/openlist.pid
-DATA_DIR="${TRIM_PKGVAR}/data"
-OPENLIST_PID_FILE="${DATA_DIR}/openlist.pid"
+OPENLIST_PID_FILE="${TRIM_PKGVAR}/openlist.pid"
 # start command
 CMD="node ${SERVER_ENTRY}"
 

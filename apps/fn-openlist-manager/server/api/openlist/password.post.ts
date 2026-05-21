@@ -1,4 +1,8 @@
-import { getOpenlistBin, getDataDir } from "../../utils/openlist";
+import {
+  getOpenlistBin,
+  getDataDir,
+  getOpenlistDataDir,
+} from "../../utils/openlist";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { dirname } from "node:path";
@@ -10,6 +14,7 @@ export default defineEventHandler(async (event) => {
   const bin = getOpenlistBin();
   const binDir = dirname(bin);
   const dataDir = getDataDir();
+  const openlistDataDir = getOpenlistDataDir();
   console.log("dataDir", dataDir);
 
   if (action === "random") {
@@ -17,9 +22,9 @@ export default defineEventHandler(async (event) => {
     try {
       const { stdout } = await execFileAsync(
         bin,
-        ["admin", "random", "--data", dataDir],
+        ["admin", "random", "--data", openlistDataDir],
         {
-          cwd: binDir,
+          cwd: openlistDataDir,
         },
       );
       console.log("[password] stdout:", stdout);
@@ -33,11 +38,22 @@ export default defineEventHandler(async (event) => {
   }
 
   if (action === "set" && password) {
-    console.log("[password] set bin:", bin, "dir:", binDir, "pwd:", password);
+    console.log(
+      "[password] set bin:",
+      bin,
+      "dir:",
+      openlistDataDir,
+      "pwd:",
+      password,
+    );
     try {
-      await execFileAsync(bin, ["admin", "set", password, "--data", dataDir], {
-        cwd: binDir,
-      });
+      await execFileAsync(
+        bin,
+        ["admin", "set", password, "--data", openlistDataDir],
+        {
+          cwd: openlistDataDir,
+        },
+      );
       return { success: true };
     } catch (error: any) {
       console.error("[password] set error:", error);
