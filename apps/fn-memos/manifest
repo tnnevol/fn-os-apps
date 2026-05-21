@@ -1,0 +1,15 @@
+appname               = fn-memos
+version               = 0.1.0
+display_name          = Memos
+desc                  = Memos 是一款轻量级、自托管的笔记工具，支持 Markdown 编写、标签管理和多端同步。
+platform             = x86
+source                = thirdparty
+maintainer            = Memos Team
+maintainer_url        = https://usememos.com
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-memos.main
+service_port          = 5230
+checkport             = true

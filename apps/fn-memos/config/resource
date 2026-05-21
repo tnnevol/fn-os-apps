@@ -1,0 +1,18 @@
+{
+    "data-share":
+    {
+        "shares":
+        [
+            {
+                "name": "fn-memos/data",
+                "permission":
+                {
+                    "rw":
+                    [
+                        "fn-memos"
+                    ]
+                }
+            }
+        ]
+    }
+}

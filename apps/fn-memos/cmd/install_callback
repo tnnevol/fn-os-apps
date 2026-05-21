@@ -1,0 +1,30 @@
+#!/bin/bash
+
+### This script is called after the application is installed.
+### Download Memos binary.
+
+set -e
+
+BIN_DIR="${TRIM_APPDEST}/bin"
+DATA_DIR="${TRIM_PKGVAR}/data"
+
+mkdir -p "${BIN_DIR}" "${DATA_DIR}"
+
+# Download Memos latest binary via gh-proxy mirror
+MEMOS_URL="https://gh-proxy.com/https://github.com/usememos/memos/releases/latest/download/memos-linux-amd64.tar.gz"
+
+echo "Downloading Memos latest..."
+
+if command -v curl >/dev/null 2>&1; then
+    curl -fsSL "${MEMOS_URL}" | tar -xz -C "${BIN_DIR}" memos
+elif command -v wget >/dev/null 2>&1; then
+    wget -q -O - "${MEMOS_URL}" | tar -xz -C "${BIN_DIR}" memos
+else
+    echo "No curl or wget found, cannot download Memos"
+    exit 1
+fi
+
+chmod +x "${BIN_DIR}/memos"
+echo "Memos installed to ${BIN_DIR}/memos"
+
+exit 0

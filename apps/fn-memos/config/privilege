@@ -1,0 +1,8 @@
+{
+    "defaults":
+    {
+        "run-as": "package"
+    },
+    "username": "fn-memos",
+    "groupname": "fn-memos"
+}

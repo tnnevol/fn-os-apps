@@ -1,0 +1,22 @@
+#!/bin/bash
+
+### This script is called after the user uninstalls the application.
+
+if [ "${wizard_data_action}" = "delete" ]; then
+    DATA_DIR="${TRIM_PKGVAR}/data"
+    LOG_FILE="${TRIM_PKGVAR}/info.log"
+
+    if [ -d "${DATA_DIR}" ]; then
+        rm -rf "${DATA_DIR}"
+        echo "Removed data directory: ${DATA_DIR}"
+    fi
+
+    if [ -f "${LOG_FILE}" ]; then
+        rm -f "${LOG_FILE}"
+        echo "Removed log file: ${LOG_FILE}"
+    fi
+
+    echo "Memos data cleaned."
+fi
+
+exit 0
