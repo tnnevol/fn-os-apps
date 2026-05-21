@@ -50,10 +50,8 @@ jobs:
           git add apps/*/manifest README.md
           if ! git diff --cached --quiet; then
             git commit -m "chore: bump all app versions to ${{ github.ref_name }} [skip ci]"
-            git checkout main
-            git pull origin main
-            git merge --ff-only FETCH_HEAD || git merge --no-edit FETCH_HEAD
-            git push origin main
+            # Push detached HEAD directly to main to avoid losing the commit
+            git push origin HEAD:main
           else
             echo "No version changes to commit"
           fi
