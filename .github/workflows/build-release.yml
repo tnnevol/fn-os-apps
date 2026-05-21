@@ -97,15 +97,15 @@ jobs:
       - name: Pull latest bump-version changes
         run: git fetch origin main && git merge origin/main
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: pnpm
           cache-dependency-path: apps/fn-openlist-manager/pnpm-lock.yaml
-
-      - name: Install pnpm
-        run: npm install -g pnpm
 
       - name: Install fnpack
         run: |
