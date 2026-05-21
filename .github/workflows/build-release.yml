@@ -138,6 +138,9 @@ jobs:
           path: fnpack
           retention-days: 1
 
+      - name: Verify fnpack
+        run: ./fnpack --help
+
   # 构建所有应用的 FPK 包
   build:
     needs: [bump-version, discover, build-nuxt, setup-fnpack]
