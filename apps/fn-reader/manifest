@@ -1,5 +1,5 @@
 appname               = fn-reader
-version               = 4.0.2
+version               = 4.0.4
 display_name          = 阅读
 service_port          = 4396
 desc                  = 阅读 是一款开源的在线电子书阅读器，支持多种格式，提供书架管理、阅读进度同步、全文搜索、阅读主题定制等功能。
