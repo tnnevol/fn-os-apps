@@ -1,13 +1,13 @@
 {
-    ".url": {
-        "fn-memos.main": {
-            "title": "Memos",
-            "icon": "images/icon_{0}.png",
-            "type": "iframe",
-            "protocol": "http",
-            "port": "${wizard_port}",
-            "url": "/",
-            "allUsers": true
-        }
+  ".url": {
+    "fn-memos.main": {
+      "title": "Memos",
+      "icon": "images/icon_{0}.png",
+      "type": "iframe",
+      "protocol": "http",
+      "port": "${wizard_port}",
+      "url": "/",
+      "allUsers": false
     }
+  }
 }
