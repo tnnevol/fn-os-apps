@@ -1,6 +1,8 @@
 <template>
   <el-card>
-    <template #header>密码管理</template>
+    <template #header>
+      <span><span class="card-icon password"><el-icon><Lock /></el-icon></span>密码管理</span>
+    </template>
     <div class="flex flex-col gap-2">
       <div class="flex items-center gap-2">
         <el-input
@@ -9,16 +11,16 @@
           clearable
           style="flex: 1; min-width: 0"
         />
-        <el-button type="primary" @click="handleSetPassword" :loading="setting" :disabled="!customPassword.trim()">
-          设置密码
+        <el-button type="warning" @click="handleSetPassword" :loading="setting" :disabled="!customPassword.trim()">
+          设置
         </el-button>
       </div>
       <el-button
-        type="success"
+        type="warning"
         @click="handleRandomPassword"
         :loading="generating"
       >
-        随机生成密码
+        随机生成
       </el-button>
     </div>
     <el-alert
@@ -30,12 +32,8 @@
     >
       <template #default>
         <div class="flex items-center gap-2">
-          <span
-            >新密码: <strong>{{ displayPassword }}</strong></span
-          >
-          <el-button type="primary" link size="small" @click="copyPassword"
-            >复制</el-button
-          >
+          <span>新密码: <strong>{{ displayPassword }}</strong></span>
+          <el-button type="warning" link size="small" @click="copyPassword">复制</el-button>
         </div>
       </template>
     </el-alert>
@@ -43,6 +41,8 @@
 </template>
 
 <script setup lang="ts">
+import { Lock } from "@element-plus/icons-vue";
+
 const setting = ref(false);
 const generating = ref(false);
 const customPassword = ref("");

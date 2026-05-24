@@ -70,7 +70,7 @@ export default defineEventHandler(async (event) => {
 
   // Resolve version
   let targetVersion = body.version?.replace(/^v/, "");
-  if (!targetVersion) {
+  if (!targetVersion || targetVersion === "latest") {
     const { stdout } = await execAsync(
       `curl -sL "https://github.com/OpenListTeam/OpenList/releases" | grep -oE 'tag/v[0-9]+\\.[0-9]+\\.[0-9]+' | sed 's/tag\\///' | head -1`,
     );

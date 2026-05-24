@@ -1,32 +1,41 @@
 <template>
-  <div class="min-h-screen bg-[#f5f7fa] dark:bg-[#0a0a0a] overflow-x-hidden transition-colors">
+  <div class="app-layout">
     <AppHeader />
 
-    <el-main class="max-w-[1200px] mx-auto px-4 py-5 md:px-6 md:py-6 overflow-x-hidden">
-      <!-- 状态卡片 -->
-      <StatusCard :status="status" class="mb-4 md:mb-5" @updated="loadStatus" />
+    <div class="app-main">
+      <!-- 紧凑状态条 -->
+      <StatusBar :status="status" @updated="loadStatus" />
 
-      <!-- 更新 -->
-      <UpdateCard class="mb-4 md:mb-5" @updated="loadStatus" />
+      <!-- 内容区域：左侧面板 + 右侧日志 -->
+      <div class="content-area">
+        <!-- 左侧面板栈 -->
+        <div class="panel-stack">
+          <div class="panel-card">
+            <UpdateCard @updated="loadStatus" />
+          </div>
+          <div class="panel-card">
+            <PasswordCard />
+          </div>
+          <div class="panel-card">
+            <BackupCard />
+          </div>
+        </div>
 
-      <!-- 密码管理 & 配置备份 -->
-      <el-row :gutter="20" class="mb-4 md:mb-5">
-        <el-col :xs="24" :sm="24" :md="12">
-          <PasswordCard />
-        </el-col>
-        <el-col :xs="24" :sm="24" :md="12">
-          <BackupCard />
-        </el-col>
-      </el-row>
-
-      <!-- 运行日志 -->
-      <LogCard />
-    </el-main>
+        <!-- 右侧日志区域 -->
+        <div class="log-area">
+          <LogCard />
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-const status = ref({ version: "加载中...", running: false, port: null as number | null });
+const status = ref({
+  version: "加载中...",
+  running: false,
+  port: null as number | null,
+});
 
 async function loadStatus() {
   try {

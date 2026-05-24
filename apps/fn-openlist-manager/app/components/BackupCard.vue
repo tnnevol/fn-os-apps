@@ -1,13 +1,17 @@
 <template>
   <el-card>
-    <template #header>配置备份</template>
-    <el-button type="primary" @click="handleBackup" :loading="loading">
+    <template #header>
+      <span><span class="card-icon backup"><el-icon><Document /></el-icon></span>配置备份</span>
+    </template>
+    <el-button type="success" @click="handleBackup" :loading="loading" style="width: 100%">
       立即备份
     </el-button>
   </el-card>
 </template>
 
 <script setup lang="ts">
+import { Document } from "@element-plus/icons-vue";
+
 const loading = ref(false);
 
 async function handleBackup() {

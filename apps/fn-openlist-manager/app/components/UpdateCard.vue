@@ -1,31 +1,43 @@
 <template>
   <el-card>
-    <template #header>更新 OpenList</template>
+    <template #header>
+      <span
+        ><span class="card-icon update"
+          ><el-icon><Download /></el-icon></span
+        >更新 OpenList</span
+      >
+    </template>
     <div class="flex items-center gap-2">
       <el-autocomplete
         v-model="selectedVersion"
         :fetch-suggestions="fetchSuggestions"
-        placeholder="输入版本号或留空安装 latest"
+        placeholder="版本号或留空装 latest"
         clearable
-        style="width: 140px; flex-shrink: 0"
       />
-      <el-input
-        v-model="mirrorUrl"
-        placeholder="镜像地址，留空默认 https://ghproxy.net/"
-        style="flex: 1; min-width: 0"
-      />
-      <el-button type="primary" :loading="updating" @click="handleUpdate" style="flex-shrink: 0">
-        {{ selectedVersion ? `安装 ${selectedVersion}` : "安装 latest" }}
+      <el-button
+        type="primary"
+        size="small"
+        :loading="updating"
+        @click="handleUpdate"
+      >
+        安装
       </el-button>
     </div>
-    <div v-if="updating" class="mt-4">
+    <div class="mt-2">
+      <el-input
+        v-model="mirrorUrl"
+        placeholder="镜像地址，留空默认"
+        size="small"
+      />
+    </div>
+    <div v-if="updating" class="mt-2">
       <el-progress
         :percentage="progressPercent"
-        :stroke-width="18"
+        :stroke-width="12"
         :text-inside="true"
         :status="progressStatus"
       />
-      <div class="mt-2 text-xs text-center text-[#909399]">
+      <div class="mt-1 text-center text-xs text-muted">
         {{ progressStepText }}
       </div>
     </div>
@@ -33,22 +45,40 @@
 </template>
 
 <script setup lang="ts">
+import { Download } from "@element-plus/icons-vue";
+
 const emit = defineEmits<{
   (e: "updated"): void;
 }>();
 
-const selectedVersion = ref("latest");
-const availableVersions = ref<string[]>([]);
+const selectedVersion = ref("");
 const mirrorUrl = ref("");
 const updating = ref(false);
 const progressPercent = ref(0);
 const progressStep = ref("");
 
-const progressStatus = computed<"success" | "exception" | "warning" | "">(() => {
-  if (progressStep.value === "done") return "success";
-  if (progressStep.value === "error") return "exception";
-  return "";
-});
+const availableVersions = ref<string[]>([]);
+
+async function fetchVersions() {
+  try {
+    const params = mirrorUrl.value ? { mirror: mirrorUrl.value } : {};
+    const res = await $fetch("/api/openlist/versions", { query: params });
+    const versions = (res as any).versions || [];
+    versions[0] = "latest";
+    availableVersions.value = versions;
+    selectedVersion.value = availableVersions.value[0] ?? "latest";
+  } catch {
+    // ignore
+  }
+}
+
+const progressStatus = computed<"success" | "exception" | "warning" | "">(
+  () => {
+    if (progressStep.value === "done") return "success";
+    if (progressStep.value === "error") return "exception";
+    return "";
+  },
+);
 
 const progressStepText = computed(() => {
   const map: Record<string, string> = {
@@ -61,38 +91,36 @@ const progressStepText = computed(() => {
   return map[progressStep.value] || "准备中...";
 });
 
-async function fetchVersions() {
-  try {
-    const params = mirrorUrl.value ? { mirror: mirrorUrl.value } : {};
-    const res = await $fetch("/api/openlist/versions", { query: params });
-    availableVersions.value = (res as any).versions || [];
-  } catch {
-    // ignore
+interface VersionItem {
+  value: string;
+}
+
+function fetchSuggestions(query: string, cb: (items: VersionItem[]) => void) {
+  if (!availableVersions.value.length) {
+    cb([{ value: "latest" }]);
+    return;
   }
-}
 
-function fetchSuggestions(query: string, cb: (items: { value: string }[]) => void) {
-  const suggestions = availableVersions.value.filter((v) =>
-    !query || v.toLowerCase().includes(query.toLowerCase())
+  // 聚焦未输入时显示全部，打字时按关键字过滤
+  const allItems = availableVersions.value.map((v) => ({ value: v }));
+  if (!query || query === selectedVersion.value) {
+    cb(allItems);
+    return;
+  }
+
+  const q = query.toLowerCase();
+  const filtered = allItems.filter((item) =>
+    item.value.toLowerCase().includes(q),
   );
-  const items = suggestions.length > 0
-    ? suggestions.map((v) => ({ value: v }))
-    : [{ value: "latest" }];
-  cb(items);
+  cb(filtered.length ? filtered : [{ value: "latest" }]);
 }
-
-watch(mirrorUrl, () => {
-  fetchVersions();
-});
 
 async function handleUpdate() {
   updating.value = true;
   progressPercent.value = 0;
   progressStep.value = "";
 
-  const version = selectedVersion.value && selectedVersion.value !== "latest"
-    ? selectedVersion.value
-    : undefined;
+  const version = selectedVersion.value || undefined;
 
   try {
     const response = await fetch("/api/openlist/update", {
@@ -140,6 +168,10 @@ async function handleUpdate() {
     updating.value = false;
   }
 }
+
+watch(mirrorUrl, () => {
+  fetchVersions();
+});
 
 onMounted(() => {
   fetchVersions();

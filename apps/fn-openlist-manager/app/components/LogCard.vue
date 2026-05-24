@@ -1,111 +1,99 @@
 <template>
-  <el-card>
-    <template #header>
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <el-badge :type="connected ? 'success' : 'info'" is-dot>
-            <span>运行日志</span>
-          </el-badge>
-          <span v-if="allLines.length" class="text-xs text-gray-400"
-            >{{ allLines.length }} 行</span
-          >
-        </div>
-        <el-button size="small" @click="fullscreen = true">
+  <div class="log-area">
+    <div class="log-header">
+      <div class="log-header-title">
+        <span class="dot" :class="connected ? 'active' : 'inactive'"></span>
+        运行日志
+        <span v-if="allLines.length" class="text-xs" style="color: var(--ol-log-muted)">{{ allLines.length }} 行</span>
+      </div>
+      <div class="log-search">
+        <el-input v-model="searchText" placeholder="搜索..." clearable size="small" style="width: 150px">
+          <template #prefix><el-icon><Search /></el-icon></template>
+          <template #suffix>
+            <span v-if="searchText" class="text-xs" style="color: var(--ol-log-muted)">{{ filteredLines.length }}/{{ allLines.length }}</span>
+          </template>
+        </el-input>
+        <el-button class="log-icon-btn" :type="connected ? 'danger' : 'primary'" size="small" @click="handleToggle">
+          <el-icon><component :is="connected ? VideoPause : VideoPlay" /></el-icon>
+        </el-button>
+        <el-button class="log-icon-btn" size="small" @click="fullscreen = true">
           <el-icon><FullScreen /></el-icon>
         </el-button>
       </div>
-    </template>
-    <div class="flex items-center gap-2 mt-2!">
-      <el-input
-        v-model="searchText"
-        placeholder="搜索日志..."
-        clearable
-        prefix-icon="Search"
-        class="flex-1"
-      >
-        <template #suffix>
-          <span v-if="searchText" class="text-xs text-gray-400"
-            >{{ filteredLines.length }} / {{ allLines.length }}</span
-          >
-        </template>
-      </el-input>
-      <el-button :type="connected ? 'danger' : 'primary'" @click="handleToggle">
-        {{ connected ? "停止" : "开始" }}
-      </el-button>
     </div>
-    <LogViewer
-      ref="logViewerRef"
-      class="mt-2!"
-      :filtered-lines="filteredLines"
-      :search-text="searchText"
-      :highlight-match="highlightMatch"
-      :has-data="allLines.length > 0"
-      @scroll="onScroll"
-    />
-  </el-card>
+    <div ref="logBodyRef" class="log-body">
+      <template v-if="displayLines.length">
+        <div v-for="item in filteredLines" :key="item.originalIndex" class="log-line">
+          <span class="log-num">{{ item.originalIndex + 1 }}</span>
+          <span class="log-text" v-if="searchText" v-html="highlightMatch(item.line)" />
+          <span class="log-text" v-else v-html="ansiToHtml(item.line)" />
+        </div>
+      </template>
+      <div v-else-if="allLines.length" class="log-empty">无匹配结果</div>
+      <div v-else class="log-empty">暂无日志，点击「开始」连接</div>
+    </div>
+  </div>
 
   <el-dialog
     v-model="fullscreen"
     title="运行日志"
-    fullscreen
+    :append-to-body="true"
     :close-on-click-modal="false"
     destroy-on-close
-    class="log-fullcreen-dialog"
+    fullscreen
+    class="log-fullscreen-dialog"
   >
-    <template #header>
-      <el-badge :type="connected ? 'success' : 'info'" is-dot>
-        <span class="text-lg font-medium">运行日志</span>
-      </el-badge>
+    <template #header="{ close, titleId, titleClass }">
+      <div class="log-fullscreen-header">
+        <div class="log-fullscreen-header-left">
+          <span :id="titleId" :class="titleClass">运行日志</span>
+          <span class="dot log-fullscreen-dot" :class="connected ? 'active' : 'inactive'"></span>
+          <span v-if="allLines.length" class="log-fullscreen-line-count">{{ allLines.length }} 行</span>
+        </div>
+        <el-icon class="log-fullscreen-close-btn" @click="close"><Minus /></el-icon>
+      </div>
     </template>
-    <div class="flex flex-col h-full">
-      <div class="flex items-center gap-2 mb-3">
-        <el-input
-          v-model="searchText"
-          placeholder="搜索日志..."
-          size="default"
-          clearable
-          prefix-icon="Search"
-          class="flex-1"
-        >
+    <div class="log-fullscreen-body">
+      <div class="log-fullscreen-toolbar">
+        <el-input v-model="searchText" placeholder="搜索..." clearable class="log-fullscreen-search" size="small">
+          <template #prefix><el-icon><Search /></el-icon></template>
           <template #suffix>
-            <span v-if="searchText" class="text-xs text-gray-400"
-              >{{ filteredLines.length }} / {{ allLines.length }}</span
-            >
+            <span v-if="searchText" class="text-xs" style="color: var(--ol-log-muted)">{{ filteredLines.length }}/{{ allLines.length }}</span>
           </template>
         </el-input>
-        <el-button
-          :type="connected ? 'danger' : 'primary'"
-          @click="handleToggle"
-        >
-          {{ connected ? "停止" : "开始" }}
+        <el-button class="log-icon-btn" :type="connected ? 'danger' : 'primary'" size="small" @click="handleToggle">
+          <el-icon><component :is="connected ? VideoPause : VideoPlay" /></el-icon>
         </el-button>
       </div>
-      <LogViewer
-        ref="logViewerRefFull"
-        :filtered-lines="filteredLines"
-        :search-text="searchText"
-        :highlight-match="highlightMatch"
-        :has-data="allLines.length > 0"
-        height-class="flex-1 min-h-0"
-        @scroll="onScrollFull"
-      />
+      <div ref="logBodyFullRef" class="log-fullscreen-content">
+        <template v-if="displayLines.length">
+          <div v-for="item in filteredLines" :key="item.originalIndex" class="log-line">
+            <span class="log-num">{{ item.originalIndex + 1 }}</span>
+            <span class="log-text" v-if="searchText" v-html="highlightMatch(item.line)" />
+            <span class="log-text" v-else v-html="ansiToHtml(item.line)" />
+          </div>
+        </template>
+        <div v-else-if="allLines.length" class="log-empty">无匹配结果</div>
+        <div v-else class="log-empty">暂无日志</div>
+      </div>
     </div>
   </el-dialog>
 </template>
 
 <script setup lang="ts">
-import { FullScreen } from "@element-plus/icons-vue";
+import { Search, VideoPlay, VideoPause, FullScreen, Minus } from "@element-plus/icons-vue";
 
 const connected = ref(false);
-const isAtBottom = ref(true);
-const isAtBottomFull = ref(true);
 const searchText = ref("");
 const fullscreen = ref(false);
 const allLines = ref<string[]>([]);
 let eventSource: EventSource | null = null;
 const MAX_LINES = 500;
-const logViewerRef = ref();
-const logViewerRefFull = ref();
+const logBodyRef = ref<HTMLElement>();
+const logBodyFullRef = ref<HTMLElement>();
+
+const autoScroll = ref(true);
+const autoScrollFull = ref(true);
 
 const displayLines = computed(() => allLines.value.slice(-MAX_LINES));
 
@@ -113,7 +101,7 @@ const filteredLines = computed(() => {
   const lines = displayLines.value;
   const keyword = searchText.value.trim();
   if (!keyword) {
-    return lines.map((line, index) => ({ originalIndex: index, line }));
+    return lines.map((line, i) => ({ originalIndex: i, line }));
   }
   const lower = keyword.toLowerCase();
   const startIdx = allLines.value.length - lines.length;
@@ -129,52 +117,85 @@ function escapeHtml(text: string): string {
     .replace(/>/g, "&gt;");
 }
 
+const ANSI_STYLES: Record<string, string> = {
+  "36": "color: #56b6c2",
+  "33": "color: #e2a855",
+  "31": "color: #e8655a",
+  "32": "color: #38b586",
+  "1;36": "color: #56b6c2; font-weight: 600",
+  "1;33": "color: #e2a855; font-weight: 600",
+  "1;31": "color: #e8655a; font-weight: 600",
+  "1;32": "color: #38b586; font-weight: 600",
+};
+
+function ansiToHtml(line: string): string {
+  let html = "";
+  let currentStyle = "";
+  let remaining = escapeHtml(line);
+
+  while (remaining) {
+    const match = remaining.match(/\x1b\[(\d+(;\d+)*)m/);
+    if (!match || match.index === undefined) {
+      html += currentStyle ? `<span style="${currentStyle}">${remaining}</span>` : remaining;
+      break;
+    }
+
+    const prefix = remaining.slice(0, match.index);
+    if (prefix) {
+      html += currentStyle ? `<span style="${currentStyle}">${prefix}</span>` : prefix;
+    }
+
+    const code = match[1];
+    if (code && code !== "0" && ANSI_STYLES[code]) {
+      currentStyle = ANSI_STYLES[code];
+    }
+
+    remaining = remaining.slice(match.index + match[0].length);
+  }
+
+  return html;
+}
+
 function highlightMatch(line: string): string {
+  let html = ansiToHtml(line);
   const keyword = searchText.value.trim();
-  if (!keyword) return escapeHtml(line);
-  const escaped = escapeHtml(line);
+  if (!keyword) return html;
   const regex = new RegExp(
     `(${keyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`,
-    "gi",
+    "gi"
   );
-  return escaped.replace(
+  return html.replace(
     regex,
-    '<mark class="bg-yellow-500/50 text-white px-0.5 rounded">$1</mark>',
+    '<mark style="background: rgba(234, 179, 8, 0.35); color: #fff; padding: 0 2px; border-radius: 2px">$1</mark>'
   );
-}
-
-function onScroll(payload: {
-  scrollTop: number;
-  scrollHeight: number;
-  clientHeight: number;
-}) {
-  isAtBottom.value =
-    payload.scrollTop + payload.clientHeight >= payload.scrollHeight - 10;
-}
-
-function onScrollFull(payload: {
-  scrollTop: number;
-  scrollHeight: number;
-  clientHeight: number;
-}) {
-  isAtBottomFull.value =
-    payload.scrollTop + payload.clientHeight >= payload.scrollHeight - 10;
 }
 
 function scrollToBottom() {
-  if (isAtBottom.value && logViewerRef.value) {
+  if (autoScroll.value && logBodyRef.value) {
     requestAnimationFrame(() => {
-      logViewerRef.value?.scrollToBottom();
+      logBodyRef.value!.scrollTop = logBodyRef.value!.scrollHeight;
     });
   }
 }
 
 function scrollToBottomFull() {
-  if (isAtBottomFull.value && logViewerRefFull.value) {
+  if (autoScrollFull.value && logBodyFullRef.value) {
     requestAnimationFrame(() => {
-      logViewerRefFull.value?.scrollToBottom();
+      logBodyFullRef.value!.scrollTop = logBodyFullRef.value!.scrollHeight;
     });
   }
+}
+
+function onScroll() {
+  if (!logBodyRef.value) return;
+  const el = logBodyRef.value;
+  autoScroll.value = el.scrollTop + el.clientHeight >= el.scrollHeight - 10;
+}
+
+function onScrollFull() {
+  if (!logBodyFullRef.value) return;
+  const el = logBodyFullRef.value;
+  autoScrollFull.value = el.scrollTop + el.clientHeight >= el.scrollHeight - 10;
 }
 
 function handleToggle() {
@@ -227,35 +248,12 @@ function disconnect() {
 onUnmounted(() => {
   disconnect();
 });
-</script>
 
-<style>
-.log-fullcreen-dialog.el-dialog {
-  margin: 0 !important;
-  width: 100vw !important;
-  height: 100vh !important;
-  max-width: 100vw !important;
-  max-height: 100vh !important;
-  display: flex !important;
-  flex-direction: column !important;
-  padding: 0 !important;
-}
-.log-fullcreen-dialog.el-dialog.is-fullscreen {
-  margin: 0 !important;
-}
-.log-fullcreen-dialog .el-dialog__header {
-  padding: 12px 16px !important;
-  margin: 0 !important;
-  border-bottom: 1px solid var(--el-border-color-light);
-  flex-shrink: 0 !important;
-}
-.log-fullcreen-dialog .el-dialog__body {
-  display: flex !important;
-  flex-direction: column !important;
-  padding: 16px !important;
-  flex: 1 !important;
-  overflow: hidden !important;
-  min-height: 0 !important;
-  height: auto !important;
-}
-</style>
+// Attach scroll listeners after mount
+onMounted(() => {
+  nextTick(() => {
+    logBodyRef.value?.addEventListener("scroll", onScroll);
+    logBodyFullRef.value?.addEventListener("scroll", onScrollFull);
+  });
+});
+</script>
