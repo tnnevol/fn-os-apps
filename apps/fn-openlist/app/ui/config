@@ -8,15 +8,6 @@
       "port": "${wizard_admin_port}",
       "url": "/",
       "allUsers": false
-    },
-    "fn-openlist.web": {
-      "title": "OpenList",
-      "icon": "images/icon_{0}.png",
-      "type": "url",
-      "protocol": "http",
-      "port": "${wizard_port}",
-      "url": "/",
-      "allUsers": false
     }
   }
 }
