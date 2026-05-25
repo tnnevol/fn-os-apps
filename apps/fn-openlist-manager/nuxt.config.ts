@@ -13,7 +13,7 @@ export default defineNuxtConfig({
     "@unocss/nuxt",
     "@vueuse/nuxt",
   ],
-  css: ["~/assets/css/element-dark.css"],
+  css: ["~/assets/css/element-light.scss", "~/assets/css/element-dark.scss"],
   app: {
     head: {
       link: [{ rel: "icon", type: "image/png", href: "/image.png" }],
