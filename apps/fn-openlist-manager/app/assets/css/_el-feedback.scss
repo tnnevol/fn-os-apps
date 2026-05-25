@@ -1,0 +1,81 @@
+.el-alert {
+  border-radius: 10px !important;
+  border: none !important;
+  box-shadow: var(--ol-neu-shadow-inset-sm) !important;
+}
+
+.el-dialog {
+  border-radius: 16px !important;
+  box-shadow: var(--ol-neu-shadow-lg) !important;
+  background: var(--ol-surface) !important;
+
+  &__header {
+    border-bottom: none !important;
+  }
+
+  &__body {
+    color: var(--ol-text-primary) !important;
+  }
+}
+
+/* --- Fullscreen Log Dialog --- */
+.log-fullscreen-dialog.el-dialog {
+  margin: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  width: 100vw !important;
+  max-width: 100vw !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+
+  &.el-overlay-dialog {
+    display: block !important;
+  }
+
+  .el-overlay {
+    background: transparent !important;
+  }
+
+  .el-dialog__header {
+    background: var(--ol-log-bg) !important;
+    border-bottom: 1px solid var(--ol-log-border) !important;
+    padding: 10px 16px !important;
+    margin-right: 0 !important;
+  }
+
+  .el-dialog__headerbtn {
+    display: none !important;
+  }
+
+  .el-dialog__body {
+    padding: 0 !important;
+    background: var(--ol-log-bg) !important;
+    color: var(--ol-log-text) !important;
+    height: calc(100vh - 56px);
+  }
+}
+
+.el-message-box {
+  border-radius: 16px !important;
+  box-shadow: var(--ol-neu-shadow) !important;
+  background: var(--ol-surface) !important;
+
+  &__header {
+    border-bottom: none !important;
+  }
+
+  &__title {
+    color: var(--ol-text-primary) !important;
+  }
+
+  &__content {
+    color: var(--ol-text-regular) !important;
+  }
+}
+
+.el-message {
+  border-radius: 10px !important;
+  box-shadow: var(--ol-neu-shadow) !important;
+  border: none !important;
+}

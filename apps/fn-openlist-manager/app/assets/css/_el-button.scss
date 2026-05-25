@@ -1,0 +1,202 @@
+.el-button {
+  border: none !important;
+  border-radius: 12px !important;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  transition: all 0.2s ease !important;
+
+  &--default {
+    padding: 8px 22px !important;
+    font-size: 14px !important;
+    height: 38px !important;
+    min-height: 38px !important;
+    line-height: 1 !important;
+    background: var(--ol-surface) !important;
+    color: var(--ol-text-primary) !important;
+    box-shadow:
+      4px 4px 10px var(--ol-neu-dark),
+      -4px -4px 10px var(--ol-neu-light),
+      inset 0 1px 0 rgba(255, 255, 255, 0.6) !important;
+
+    &:hover:not(.is-disabled) {
+      box-shadow:
+        5px 5px 14px var(--ol-neu-dark),
+        -5px -5px 14px var(--ol-neu-light),
+        inset 0 1px 0 rgba(255, 255, 255, 0.6) !important;
+      transform: translateY(-1px);
+    }
+  }
+
+  &--small {
+    padding: 5px 12px !important;
+    font-size: 12px !important;
+    height: 26px !important;
+    min-height: 26px !important;
+    line-height: 1 !important;
+  }
+
+  &--large {
+    padding: 12px 28px !important;
+    font-size: 14px !important;
+    height: 44px !important;
+    min-height: 44px !important;
+    line-height: 1 !important;
+  }
+
+  /* 中屏适配 */
+  @media (min-width: 640px) {
+    &--default {
+      height: 34px !important;
+      min-height: 34px !important;
+      padding: 6px 18px !important;
+    }
+    &--small {
+      height: 30px !important;
+      min-height: 30px !important;
+      padding: 5px 14px !important;
+    }
+  }
+
+  /* 大屏适配 */
+  @media (min-width: 768px) {
+    &--default {
+      height: 38px !important;
+      min-height: 38px !important;
+      padding: 8px 22px !important;
+    }
+    &--small {
+      height: 32px !important;
+      min-height: 32px !important;
+      padding: 6px 16px !important;
+      font-size: 13px !important;
+    }
+  }
+
+  /* Primary — 薰衣草紫拟态 */
+  &--primary {
+    background: linear-gradient(135deg, #8b7ff5, #7366e8) !important;
+    color: #fff !important;
+    box-shadow:
+      4px 4px 10px rgba(80, 50, 180, 0.28),
+      -4px -4px 10px rgba(190, 180, 255, 0.15),
+      inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
+
+    &:hover:not(.is-disabled):not(.is-loading) {
+      background: linear-gradient(135deg, #9488f5, #7c6ef0) !important;
+      box-shadow:
+        6px 6px 16px rgba(80, 50, 180, 0.35),
+        -5px -5px 12px rgba(190, 180, 255, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+      transform: translateY(-1px);
+    }
+
+    &:active:not(.is-disabled) {
+      background: linear-gradient(135deg, #6a5cd8, #5e50c8) !important;
+      box-shadow:
+        inset 3px 3px 8px rgba(50, 30, 140, 0.4),
+        inset -2px -2px 6px rgba(160, 150, 255, 0.1) !important;
+    }
+  }
+
+  /* Success — 薄荷绿拟态 */
+  &--success {
+    background: linear-gradient(135deg, #48c496, #34a87e) !important;
+    color: #fff !important;
+    box-shadow:
+      4px 4px 10px rgba(30, 120, 80, 0.22),
+      -4px -4px 10px rgba(140, 240, 200, 0.12),
+      inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
+
+    &:hover:not(.is-disabled):not(.is-loading) {
+      background: linear-gradient(135deg, #52c99e, #3db88a) !important;
+      box-shadow:
+        6px 6px 16px rgba(30, 120, 80, 0.32),
+        -5px -5px 12px rgba(140, 240, 200, 0.18),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+      transform: translateY(-1px);
+    }
+
+    &:active:not(.is-disabled) {
+      background: linear-gradient(135deg, #2e9a72, #288a66) !important;
+      box-shadow:
+        inset 3px 3px 8px rgba(25, 100, 70, 0.38),
+        inset -2px -2px 6px rgba(130, 230, 190, 0.08) !important;
+    }
+  }
+
+  /* Danger — 珊瑚红拟态 */
+  &--danger {
+    background: linear-gradient(135deg, #f07066, #e8584d) !important;
+    color: #fff !important;
+    box-shadow:
+      4px 4px 10px rgba(170, 40, 40, 0.22),
+      -4px -4px 10px rgba(255, 180, 170, 0.12),
+      inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
+
+    &:hover:not(.is-disabled):not(.is-loading) {
+      background: linear-gradient(135deg, #f08078, #e8655a) !important;
+      box-shadow:
+        6px 6px 16px rgba(170, 40, 40, 0.32),
+        -5px -5px 12px rgba(255, 180, 170, 0.18),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+      transform: translateY(-1px);
+    }
+
+    &:active:not(.is-disabled) {
+      background: linear-gradient(135deg, #d84840, #cc4038) !important;
+      box-shadow:
+        inset 3px 3px 8px rgba(150, 35, 35, 0.38),
+        inset -2px -2px 6px rgba(255, 160, 150, 0.08) !important;
+    }
+  }
+
+  /* Warning — 蜜糖琥珀拟态 */
+  &--warning {
+    background: linear-gradient(135deg, #e2a855, #d09030) !important;
+    color: #fff !important;
+    box-shadow:
+      4px 4px 10px rgba(150, 100, 20, 0.22),
+      -4px -4px 10px rgba(255, 230, 170, 0.12),
+      inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
+
+    &:hover:not(.is-disabled):not(.is-loading) {
+      background: linear-gradient(135deg, #e2a855, #d8a048) !important;
+      box-shadow:
+        6px 6px 16px rgba(150, 100, 20, 0.32),
+        -5px -5px 12px rgba(255, 230, 170, 0.18),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+      transform: translateY(-1px);
+    }
+
+    &:active:not(.is-disabled) {
+      background: linear-gradient(135deg, #c08028, #b07820) !important;
+      box-shadow:
+        inset 3px 3px 8px rgba(130, 85, 15, 0.38),
+        inset -2px -2px 6px rgba(255, 220, 140, 0.08) !important;
+    }
+  }
+
+  &.is-disabled,
+  &.is-disabled:hover {
+    box-shadow:
+      inset 2px 2px 5px var(--ol-neu-dark),
+      inset -2px -2px 5px var(--ol-neu-light) !important;
+    opacity: 0.4 !important;
+    transform: none !important;
+  }
+
+  .el-icon {
+    margin-right: 0 !important;
+  }
+
+  &.is-link {
+    background: transparent !important;
+    box-shadow: none !important;
+    min-height: auto !important;
+    padding: 4px 8px !important;
+
+    &:hover:not(.is-disabled) {
+      transform: none !important;
+    }
+  }
+}

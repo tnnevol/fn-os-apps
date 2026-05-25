@@ -7,7 +7,7 @@
       <StatusBar :status="status" @updated="loadStatus" />
 
       <!-- 内容区域：左侧面板 + 右侧日志 -->
-      <div class="content-area">
+      <div class="content-area flex-1 flex flex-row lt-sm:flex-col gap-3 px-5 pt-3 pb-4 overflow-hidden lt-sm:overflow-y-auto min-h-0 bg-[var(--ol-bg)]">
         <!-- 左侧面板栈 -->
         <div class="panel-stack">
           <div class="panel-card">

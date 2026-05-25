@@ -1,0 +1,55 @@
+.el-tag {
+  border-radius: 6px !important;
+  border: none !important;
+  box-shadow: var(--ol-neu-shadow-sm) !important;
+}
+
+.el-descriptions {
+  border-radius: 12px !important;
+  overflow: hidden !important;
+
+  &__table {
+    border-radius: 12px !important;
+    overflow: hidden !important;
+  }
+
+  &__label {
+    color: var(--ol-text-secondary) !important;
+  }
+
+  &__content {
+    color: var(--ol-text-primary) !important;
+  }
+}
+
+.el-progress {
+  height: 18px !important;
+
+  &-bar {
+    &__outer {
+      border-radius: 8px !important;
+      background: var(--ol-surface) !important;
+      box-shadow: var(--ol-neu-shadow-inset-sm) !important;
+      height: 18px !important;
+      overflow: hidden;
+    }
+
+    &__inner {
+      border-radius: 8px !important;
+      background: linear-gradient(135deg, #8b7ff5, #7366e8) !important;
+      box-shadow: 0 0 8px rgba(124, 110, 240, 0.35) !important;
+      transition: width 0.3s ease !important;
+    }
+  }
+
+  &__text {
+    color: var(--ol-text-primary) !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    min-width: 42px !important;
+  }
+}
+
+.el-badge__content.is-dot {
+  border-radius: 50% !important;
+}

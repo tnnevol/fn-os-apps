@@ -1,0 +1,51 @@
+@import "element-plus/theme-chalk/dark/css-vars.css";
+
+:root {
+  /* ===== 拟态基础色板 ===== */
+  --ol-bg: #e4e9f0;
+  --ol-surface: #e4e9f0;
+  --ol-border: rgba(0, 0, 0, 0.04);
+
+  /* 拟态阴影 */
+  --ol-neu-light: #ffffff;
+  --ol-neu-dark: #b8bcc4;
+  --ol-neu-shadow: 6px 6px 14px var(--ol-neu-dark), -6px -6px 14px var(--ol-neu-light);
+  --ol-neu-shadow-sm: 3px 3px 8px var(--ol-neu-dark), -3px -3px 8px var(--ol-neu-light);
+  --ol-neu-shadow-lg: 8px 8px 18px var(--ol-neu-dark), -8px -8px 18px var(--ol-neu-light);
+  --ol-neu-shadow-inset: inset 3px 3px 6px var(--ol-neu-dark), inset -3px -3px 6px var(--ol-neu-light);
+  --ol-neu-shadow-inset-sm: inset 2px 2px 4px var(--ol-neu-dark), inset -2px -2px 4px var(--ol-neu-light);
+  --ol-neu-shadow-pressed: inset 4px 4px 10px var(--ol-neu-dark), inset -4px -4px 10px var(--ol-neu-light);
+
+  /* 状态色 */
+  --ol-accent: #7c6ef0;
+  --ol-accent-light: rgba(124, 110, 240, 0.1);
+  --ol-success: #38b586;
+  --ol-success-light: rgba(56, 181, 134, 0.1);
+  --ol-danger: #e8655a;
+  --ol-danger-light: rgba(232, 101, 90, 0.1);
+  --ol-warning: #d4943a;
+  --ol-warning-light: rgba(212, 148, 58, 0.1);
+
+  /* 文字色 */
+  --ol-text-primary: #303133;
+  --ol-text-regular: #606266;
+  --ol-text-secondary: #909399;
+  --ol-text-placeholder: #b0b5bd;
+
+  /* 布局 */
+  --ol-header-bg: #e4e9f0;
+  --ol-header-shadow: var(--ol-neu-shadow-sm);
+  --ol-card-radius: 14px;
+  --ol-card-shadow: var(--ol-neu-shadow);
+  --ol-card-shadow-hover: 8px 8px 18px var(--ol-neu-dark), -8px -8px 18px var(--ol-neu-light);
+  --ol-sidebar-w: 280px;
+
+  /* 日志 — 亮色模式 */
+  --ol-log-bg: #e8ecf1;
+  --ol-log-surface: #e4e9f0;
+  --ol-log-text: #303133;
+  --ol-log-muted: #909399;
+  --ol-log-highlight: #7c6ef0;
+  --ol-log-line-hover: rgba(0, 0, 0, 0.04);
+  --ol-log-border: rgba(0, 0, 0, 0.08);
+}

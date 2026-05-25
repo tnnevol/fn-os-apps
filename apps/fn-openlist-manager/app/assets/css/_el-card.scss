@@ -1,0 +1,23 @@
+.el-card {
+  border-radius: var(--ol-card-radius) !important;
+  border: none !important;
+  box-shadow: var(--ol-neu-shadow) !important;
+  background: var(--ol-surface) !important;
+  transition: box-shadow 0.2s ease !important;
+
+  &:hover {
+    box-shadow: var(--ol-card-shadow-hover) !important;
+  }
+
+  &__header {
+    border-bottom: none !important;
+    padding: 14px 20px 4px !important;
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--ol-text-primary) !important;
+  }
+
+  &__body {
+    padding: 12px 20px 16px !important;
+  }
+}

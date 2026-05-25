@@ -1,0 +1,83 @@
+.el-input {
+  &__wrapper {
+    border-radius: 8px !important;
+    background: var(--ol-surface) !important;
+    box-shadow: var(--ol-neu-shadow-inset-sm) !important;
+    border: none !important;
+    padding: 0 12px !important;
+  }
+
+  &__inner {
+    color: var(--ol-text-primary) !important;
+
+    &::placeholder {
+      color: var(--ol-text-placeholder) !important;
+    }
+  }
+}
+
+/* 小屏适配 input 高度 */
+@media (max-width: 639px) {
+  .el-input {
+    &__wrapper {
+      height: 26px !important;
+      line-height: 26px !important;
+      font-size: 12px !important;
+    }
+    &__inner {
+      height: 26px !important;
+      line-height: 26px !important;
+      font-size: 12px !important;
+    }
+  }
+
+  .el-autocomplete {
+    height: 26px !important;
+  }
+}
+
+/* 中屏适配 */
+@media (min-width: 640px) {
+  .el-input {
+    &__wrapper {
+      height: 30px !important;
+      line-height: 30px !important;
+      font-size: 13px !important;
+    }
+    &__inner {
+      height: 30px !important;
+      line-height: 30px !important;
+      font-size: 13px !important;
+    }
+  }
+
+  .el-autocomplete {
+    height: 30px !important;
+  }
+}
+
+/* 大屏适配 */
+@media (min-width: 768px) {
+  .el-input {
+    &__wrapper {
+      height: 34px !important;
+      line-height: 34px !important;
+      font-size: 14px !important;
+    }
+    &__inner {
+      height: 34px !important;
+      line-height: 34px !important;
+      font-size: 14px !important;
+    }
+  }
+
+  .el-autocomplete {
+    height: 34px !important;
+  }
+}
+
+.el-autocomplete-suggestion {
+  border-radius: 10px !important;
+  box-shadow: var(--ol-neu-shadow) !important;
+  border: none !important;
+}

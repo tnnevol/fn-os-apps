@@ -13,10 +13,12 @@
         :fetch-suggestions="fetchSuggestions"
         placeholder="版本号或留空装 latest"
         clearable
+        :size="controlSize"
+        class="w-full sm:!w-auto"
       />
       <el-button
         type="primary"
-        size="small"
+        :size="controlSize"
         :loading="updating"
         @click="handleUpdate"
       >
@@ -27,7 +29,7 @@
       <el-input
         v-model="mirrorUrl"
         placeholder="镜像地址，留空默认"
-        size="small"
+        :size="controlSize"
       />
     </div>
     <div v-if="updating" class="mt-2">
@@ -46,10 +48,14 @@
 
 <script setup lang="ts">
 import { Download } from "@element-plus/icons-vue";
+import { useWindowSize } from "@vueuse/core";
 
 const emit = defineEmits<{
   (e: "updated"): void;
 }>();
+
+const { width } = useWindowSize();
+const controlSize = computed(() => width.value >= 768 ? "default" : "small" as const);
 
 const selectedVersion = ref("");
 const mirrorUrl = ref("");

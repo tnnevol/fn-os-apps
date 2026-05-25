@@ -3,7 +3,7 @@
     <template #header>
       <span><span class="card-icon backup"><el-icon><Document /></el-icon></span>配置备份</span>
     </template>
-    <el-button type="success" @click="handleBackup" :loading="loading" style="width: 100%">
+    <el-button type="success" :size="btnSize" @click="handleBackup" :loading="loading" style="width: 100%">
       立即备份
     </el-button>
   </el-card>
@@ -11,8 +11,12 @@
 
 <script setup lang="ts">
 import { Document } from "@element-plus/icons-vue";
+import { useWindowSize } from "@vueuse/core";
 
 const loading = ref(false);
+
+const { width } = useWindowSize();
+const btnSize = computed(() => width.value >= 768 ? "default" : "small" as const);
 
 async function handleBackup() {
   loading.value = true;

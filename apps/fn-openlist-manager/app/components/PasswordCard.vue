@@ -11,11 +11,12 @@
           clearable
           style="flex: 1; min-width: 0"
         />
-        <el-button type="warning" @click="handleSetPassword" :loading="setting" :disabled="!customPassword.trim()">
+        <el-button :size="btnSize" type="warning" @click="handleSetPassword" :loading="setting" :disabled="!customPassword.trim()">
           设置
         </el-button>
       </div>
       <el-button
+        :size="btnSize"
         type="warning"
         @click="handleRandomPassword"
         :loading="generating"
@@ -42,11 +43,15 @@
 
 <script setup lang="ts">
 import { Lock } from "@element-plus/icons-vue";
+import { useWindowSize } from "@vueuse/core";
 
 const setting = ref(false);
 const generating = ref(false);
 const customPassword = ref("");
 const displayPassword = ref("");
+
+const { width } = useWindowSize();
+const btnSize = computed(() => width.value >= 768 ? "default" : "small" as const);
 
 async function handleRandomPassword() {
   generating.value = true;

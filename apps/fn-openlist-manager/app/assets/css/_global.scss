@@ -1,0 +1,24 @@
+html, body {
+  height: 100vh;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--ol-bg);
+  color: var(--ol-text-primary);
+}
+
+/* Utility */
+.mt-1 { margin-top: 4px; }
+.mt-2 { margin-top: 8px; }
+.text-xs { font-size: 11px; }
+.text-muted { color: var(--ol-text-placeholder); }
+.text-center { text-align: center; }
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.gap-2 { gap: 8px; }
+.flex-1 { flex: 1; min-width: 0; }

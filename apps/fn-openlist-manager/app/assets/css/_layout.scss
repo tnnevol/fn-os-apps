@@ -1,0 +1,223 @@
+/* ===== Layout: header + main, one-screen ===== */
+.app-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  height: 48px;
+  flex-shrink: 0;
+  background: var(--ol-header-bg);
+  box-shadow: var(--ol-neu-shadow-sm);
+  position: relative;
+  z-index: 100;
+}
+
+.logo-area {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px;
+  border-radius: 12px;
+  background: var(--ol-surface);
+  box-shadow: var(--ol-neu-shadow-inset-sm);
+
+  img {
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+  }
+}
+
+.logo-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: var(--ol-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 700;
+  font-size: 12px;
+  box-shadow: 2px 2px 5px rgba(80, 50, 180, 0.18);
+}
+
+.app-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0;
+  text-shadow:
+    -2px -2px 3px rgba(255, 255, 255, 0.9),
+    2px 2px 4px rgba(160, 165, 175, 0.35);
+}
+
+.theme-toggle {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ol-text-regular);
+  cursor: pointer;
+  transition: background 0.2s;
+  padding: 0;
+
+  &:hover {
+    background: var(--ol-accent-light);
+  }
+}
+
+.app-main {
+  height: calc(100vh - 48px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Status bar — compact horizontal strip */
+.status-bar {
+  background: var(--ol-surface);
+  box-shadow: 0 2px 6px var(--ol-neu-dark);
+  flex-shrink: 0;
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+  white-space: nowrap;
+
+  .el-icon {
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 5px;
+    box-shadow: var(--ol-neu-shadow-inset-sm);
+    flex-shrink: 0;
+
+    svg {
+      width: 14px;
+      height: 14px;
+    }
+  }
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+
+  &.running {
+    background: var(--ol-success);
+    box-shadow: 0 0 6px var(--ol-success);
+    animation: pulse-dot 2s ease-in-out infinite;
+  }
+
+  &.stopped {
+    background: var(--ol-danger);
+  }
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.status-label {
+  font-size: 12px;
+  color: var(--ol-text-secondary);
+}
+
+.status-value {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* Content area: split into left (panels) + right (log) */
+/* Responsive layout handled by UnoCSS classes in template: flex-col on small, lg:flex-row on large */
+
+/* Left side — stacked panels */
+.panel-stack {
+  flex: 0 0 var(--ol-sidebar-w);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow-y: auto;
+  min-width: 240px;
+  padding: 4px;
+  margin: -4px;
+  border-radius: calc(var(--ol-card-radius) + 4px);
+  background: var(--ol-bg);
+
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: var(--ol-neu-dark);
+    border-radius: 2px;
+  }
+}
+
+.panel-card {
+  border-radius: var(--ol-card-radius);
+  background: transparent;
+  border: none !important;
+
+  .el-card {
+    box-shadow: var(--ol-neu-shadow) !important;
+    border-radius: var(--ol-card-radius) !important;
+
+    &:hover {
+      box-shadow: var(--ol-card-shadow-hover) !important;
+    }
+  }
+}
+
+.card-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: #fff;
+  vertical-align: middle;
+  margin-right: 6px;
+  box-shadow: var(--ol-neu-shadow-inset-sm);
+
+  &.update { background: linear-gradient(135deg, #7c6ef0, #9488f5); }
+  &.password { background: linear-gradient(135deg, #d4943a, #e2a855); }
+  &.backup { background: linear-gradient(135deg, #38b586, #52c99e); }
+}
+
+/* Responsive: handled by UnoCSS utility classes in templates */
+@media (max-width: 639px) {
+  .panel-stack {
+    flex: 0 0 auto;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .panel-card .el-card {
+    box-shadow: var(--ol-neu-shadow-sm) !important;
+  }
+}
