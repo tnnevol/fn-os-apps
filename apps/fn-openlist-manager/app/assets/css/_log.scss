@@ -95,6 +95,11 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  width: 26px !important;
+  height: 26px !important;
+  min-width: 26px !important;
+  min-height: 26px !important;
+  border-radius: 8px !important;
 
   .el-icon {
     width: 14px;
@@ -102,6 +107,12 @@
   }
 
   @media (min-width: 640px) {
+    width: 30px !important;
+    height: 30px !important;
+    min-width: 30px !important;
+    min-height: 30px !important;
+    border-radius: 9px !important;
+
     .el-icon {
       width: 16px;
       height: 16px;
@@ -109,40 +120,16 @@
   }
 
   @media (min-width: 768px) {
+    width: 34px !important;
+    height: 34px !important;
+    min-width: 34px !important;
+    min-height: 34px !important;
+    border-radius: 10px !important;
+
     .el-icon {
       width: 18px;
       height: 18px;
     }
-  }
-
-  &.el-button--primary .el-icon,
-  &.el-button--danger .el-icon {
-    color: #fff !important;
-  }
-
-  &.el-button--success {
-    background: linear-gradient(135deg, #66c070, #4db858) !important;
-    color: #fff !important;
-    box-shadow:
-      3px 3px 8px rgba(40, 170, 50, 0.22),
-      -3px -3px 8px rgba(170, 255, 180, 0.12),
-      inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
-
-    &:hover:not(.is-disabled) {
-      background: linear-gradient(135deg, #78d080, #5ac068) !important;
-      box-shadow:
-        5px 5px 12px rgba(40, 170, 50, 0.32),
-        -4px -4px 10px rgba(170, 255, 180, 0.18),
-        inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
-    }
-
-    .el-icon {
-      color: #fff !important;
-    }
-  }
-
-  &:not(.el-button--primary):not(.el-button--danger):not(.el-button--success) .el-icon {
-    color: var(--ol-log-text) !important;
   }
 }
 
@@ -224,11 +211,11 @@
   cursor: pointer;
   color: #fff !important;
   fill: #fff !important;
-  background: linear-gradient(135deg, #66c070, #4db858) !important;
+  background: linear-gradient(145deg, #72cc7a, #50b860) !important;
   box-shadow:
-    3px 3px 8px rgba(40, 170, 50, 0.22),
-    -3px -3px 8px rgba(170, 255, 180, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
+    4px 4px 10px rgba(30, 130, 40, 0.3),
+    -2px -2px 8px rgba(180, 255, 190, 0.2),
+    inset 0 1px 2px rgba(255, 255, 255, 0.3) !important;
   transition: all 0.2s ease;
   flex-shrink: 0;
 
@@ -238,22 +225,22 @@
   }
 
   &:hover {
-    background: linear-gradient(135deg, #78d080, #5ac068) !important;
+    background: linear-gradient(145deg, #80d488, #5cc468) !important;
     color: #fff !important;
     box-shadow:
-      5px 5px 12px rgba(40, 170, 50, 0.32),
-      -4px -4px 10px rgba(170, 255, 180, 0.18),
-      inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
-    transform: translateY(-1px);
+      5px 5px 14px rgba(30, 130, 40, 0.38),
+      -3px -3px 10px rgba(180, 255, 190, 0.25),
+      inset 0 1px 2px rgba(255, 255, 255, 0.35) !important;
+    transform: translateY(-2px);
   }
 
   &:active {
-    background: linear-gradient(135deg, #40a048, #389940) !important;
+    background: linear-gradient(145deg, #40a050, #389048) !important;
     color: #fff !important;
     box-shadow:
-      inset 2px 2px 6px rgba(35, 150, 45, 0.38),
-      inset -1px -1px 4px rgba(150, 255, 160, 0.08) !important;
-    transform: translateY(0);
+      inset 3px 3px 8px rgba(20, 100, 55, 0.4),
+      inset -2px -2px 6px rgba(140, 240, 170, 0.08) !important;
+    transform: translateY(1px);
   }
 }
 

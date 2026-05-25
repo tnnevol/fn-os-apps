@@ -13,10 +13,10 @@
             <span v-if="searchText" class="text-xs" style="color: var(--ol-log-muted)">{{ filteredLines.length }}/{{ allLines.length }}</span>
           </template>
         </el-input>
-        <el-button class="log-icon-btn h-26px w-26px min-h-26px rounded-8px sm:h-30px sm:w-30px sm:min-h-30px sm:rounded-9px md:h-34px md:w-34px md:min-h-34px md:rounded-10px" :type="connected ? 'danger' : 'primary'" :size="controlSize" @click="handleToggle">
+        <el-button class="log-icon-btn" :type="connected ? 'danger' : 'primary'" :size="controlSize" @click="handleToggle">
           <el-icon><component :is="connected ? VideoPause : VideoPlay" /></el-icon>
         </el-button>
-        <el-button class="log-icon-btn log-fullscreen-btn h-26px w-26px min-h-26px rounded-8px sm:h-30px sm:w-30px sm:min-h-30px sm:rounded-9px md:h-34px md:w-34px md:min-h-34px md:rounded-10px" type="success" :size="controlSize" @click="fullscreen = true">
+        <el-button class="log-icon-btn log-fullscreen-btn" type="success" :size="controlSize" @click="fullscreen = true">
           <el-icon><FullScreen /></el-icon>
         </el-button>
       </div>
@@ -61,7 +61,7 @@
             <span v-if="searchText" class="text-xs" style="color: var(--ol-log-muted)">{{ filteredLines.length }}/{{ allLines.length }}</span>
           </template>
         </el-input>
-        <el-button class="log-icon-btn h-26px w-26px min-h-26px rounded-8px sm:h-30px sm:w-30px sm:min-h-30px sm:rounded-9px md:h-34px md:w-34px md:min-h-34px md:rounded-10px" :type="connected ? 'danger' : 'primary'" :size="controlSize" @click="handleToggle">
+        <el-button class="log-icon-btn" :type="connected ? 'danger' : 'primary'" :size="controlSize" @click="handleToggle">
           <el-icon><component :is="connected ? VideoPause : VideoPlay" /></el-icon>
         </el-button>
       </div>

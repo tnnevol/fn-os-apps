@@ -62,18 +62,56 @@
   width: 28px;
   height: 28px;
   border: none;
-  background: transparent;
-  border-radius: 50%;
+  border-radius: 8px;
+  background: var(--ol-surface);
+  box-shadow:
+    3px 3px 6px var(--ol-neu-dark),
+    -3px -3px 6px var(--ol-neu-light),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--ol-text-regular);
   cursor: pointer;
-  transition: background 0.2s;
+  transition: all 0.2s;
   padding: 0;
 
+  svg {
+    width: 14px;
+    height: 14px;
+  }
+
   &:hover {
-    background: var(--ol-accent-light);
+    box-shadow:
+      4px 4px 10px var(--ol-neu-dark),
+      -4px -4px 10px var(--ol-neu-light),
+      inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    box-shadow:
+      inset 2px 2px 4px var(--ol-neu-dark),
+      inset -2px -2px 4px var(--ol-neu-light);
+    transform: translateY(0);
+  }
+}
+
+html.dark .theme-toggle {
+  box-shadow: var(--ol-neu-shadow-inset);
+
+  &:hover {
+    box-shadow:
+      4px 4px 10px var(--ol-neu-dark),
+      -4px -4px 10px var(--ol-neu-light),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    box-shadow:
+      inset 3px 3px 6px var(--ol-neu-dark),
+      inset -3px -3px 6px var(--ol-neu-light);
   }
 }
 
