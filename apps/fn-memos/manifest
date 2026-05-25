@@ -1,5 +1,5 @@
 appname               = fn-memos
-version               = 4.0.6
+version               = 4.1.0
 display_name          = Memos
 desc                  = Memos 是一款轻量级、自托管的笔记工具，支持 Markdown 编写、标签管理和多端同步。
 platform             = x86

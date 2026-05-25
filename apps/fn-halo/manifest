@@ -1,5 +1,5 @@
 appname               = fn-halo
-version               = 4.0.6
+version               = 4.1.0
 display_name          = Halo
 desc                  = Halo 是一个简洁、高效的开源建站系统，支持博客、知识库、企业官网等多种场景。
 platform             = x86
