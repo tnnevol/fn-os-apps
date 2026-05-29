@@ -4,28 +4,66 @@
       <div class="log-header-title">
         <span class="dot" :class="connected ? 'active' : 'inactive'"></span>
         运行日志
-        <span v-if="allLines.length" class="text-xs" style="color: var(--ol-log-muted)">{{ allLines.length }} 行</span>
+        <span
+          v-if="allLines.length"
+          class="text-xs"
+          style="color: var(--ol-log-muted)"
+          >{{ allLines.length }} 行</span
+        >
       </div>
       <div class="log-search">
-        <el-input v-model="searchText" placeholder="搜索..." clearable :size="controlSize" style="width: 150px">
-          <template #prefix><el-icon><Search /></el-icon></template>
+        <el-input
+          v-model="searchText"
+          placeholder="搜索..."
+          clearable
+          :size="controlSize"
+          style="width: 150px"
+        >
+          <template #prefix
+            ><el-icon><Search /></el-icon
+          ></template>
           <template #suffix>
-            <span v-if="searchText" class="text-xs" style="color: var(--ol-log-muted)">{{ filteredLines.length }}/{{ allLines.length }}</span>
+            <span
+              v-if="searchText"
+              class="text-xs"
+              style="color: var(--ol-log-muted)"
+              >{{ filteredLines.length }}/{{ allLines.length }}</span
+            >
           </template>
         </el-input>
-        <el-button class="log-icon-btn" :type="connected ? 'danger' : 'primary'" :size="controlSize" @click="handleToggle">
-          <el-icon><component :is="connected ? VideoPause : VideoPlay" /></el-icon>
+        <el-button
+          class="log-icon-btn"
+          :type="connected ? 'danger' : 'primary'"
+          :size="controlSize"
+          @click="handleToggle"
+        >
+          <el-icon
+            ><component :is="connected ? VideoPause : VideoPlay"
+          /></el-icon>
         </el-button>
-        <el-button class="log-icon-btn log-fullscreen-btn" type="success" :size="controlSize" @click="fullscreen = true">
+        <el-button
+          class="log-icon-btn log-fullscreen-btn"
+          type="success"
+          :size="controlSize"
+          @click="fullscreen = true"
+        >
           <el-icon><FullScreen /></el-icon>
         </el-button>
       </div>
     </div>
     <div ref="logBodyRef" class="log-body">
       <template v-if="displayLines.length">
-        <div v-for="item in filteredLines" :key="item.originalIndex" class="log-line">
+        <div
+          v-for="item in filteredLines"
+          :key="item.originalIndex"
+          class="log-line"
+        >
           <span class="log-num">{{ item.originalIndex + 1 }}</span>
-          <span class="log-text" v-if="searchText" v-html="highlightMatch(item.line)" />
+          <span
+            class="log-text"
+            v-if="searchText"
+            v-html="highlightMatch(item.line)"
+          />
           <span class="log-text" v-else v-html="ansiToHtml(item.line)" />
         </div>
       </template>
@@ -47,29 +85,64 @@
       <div class="log-fullscreen-header">
         <div class="log-fullscreen-header-left">
           <span :id="titleId" :class="titleClass">运行日志</span>
-          <span class="dot log-fullscreen-dot" :class="connected ? 'active' : 'inactive'"></span>
-          <span v-if="allLines.length" class="log-fullscreen-line-count">{{ allLines.length }} 行</span>
+          <span
+            class="dot log-fullscreen-dot"
+            :class="connected ? 'active' : 'inactive'"
+          ></span>
+          <span v-if="allLines.length" class="log-fullscreen-line-count"
+            >{{ allLines.length }} 行</span
+          >
         </div>
-        <el-icon class="log-fullscreen-close-btn" @click="close"><Minus /></el-icon>
+        <el-icon class="log-fullscreen-close-btn" @click="close"
+          ><Minus
+        /></el-icon>
       </div>
     </template>
     <div class="log-fullscreen-body">
       <div class="log-fullscreen-toolbar">
-        <el-input v-model="searchText" placeholder="搜索..." clearable class="log-fullscreen-search" :size="controlSize">
-          <template #prefix><el-icon><Search /></el-icon></template>
+        <el-input
+          v-model="searchText"
+          placeholder="搜索..."
+          clearable
+          class="log-fullscreen-search"
+          :size="controlSize"
+        >
+          <template #prefix
+            ><el-icon><Search /></el-icon
+          ></template>
           <template #suffix>
-            <span v-if="searchText" class="text-xs" style="color: var(--ol-log-muted)">{{ filteredLines.length }}/{{ allLines.length }}</span>
+            <span
+              v-if="searchText"
+              class="text-xs"
+              style="color: var(--ol-log-muted)"
+              >{{ filteredLines.length }}/{{ allLines.length }}</span
+            >
           </template>
         </el-input>
-        <el-button class="log-icon-btn" :type="connected ? 'danger' : 'primary'" :size="controlSize" @click="handleToggle">
-          <el-icon><component :is="connected ? VideoPause : VideoPlay" /></el-icon>
+        <el-button
+          class="log-icon-btn"
+          :type="connected ? 'danger' : 'primary'"
+          :size="controlSize"
+          @click="handleToggle"
+        >
+          <el-icon
+            ><component :is="connected ? VideoPause : VideoPlay"
+          /></el-icon>
         </el-button>
       </div>
       <div ref="logBodyFullRef" class="log-fullscreen-content">
         <template v-if="displayLines.length">
-          <div v-for="item in filteredLines" :key="item.originalIndex" class="log-line">
+          <div
+            v-for="item in filteredLines"
+            :key="item.originalIndex"
+            class="log-line"
+          >
             <span class="log-num">{{ item.originalIndex + 1 }}</span>
-            <span class="log-text" v-if="searchText" v-html="highlightMatch(item.line)" />
+            <span
+              class="log-text"
+              v-if="searchText"
+              v-html="highlightMatch(item.line)"
+            />
             <span class="log-text" v-else v-html="ansiToHtml(item.line)" />
           </div>
         </template>
@@ -81,15 +154,21 @@
 </template>
 
 <script setup lang="ts">
-import { Search, VideoPlay, VideoPause, FullScreen, Minus } from "@element-plus/icons-vue";
+import {
+  Search,
+  VideoPlay,
+  VideoPause,
+  FullScreen,
+  Minus,
+} from "@element-plus/icons-vue";
 import { useWindowSize } from "@vueuse/core";
 
 const connected = ref(false);
 const searchText = ref("");
 const fullscreen = ref(false);
 const allLines = ref<string[]>([]);
-let eventSource: EventSource | null = null;
-const MAX_LINES = 500;
+let ws: WebSocket | null = null;
+const MAX_LINES = 200;
 const logBodyRef = ref<HTMLElement>();
 const logBodyFullRef = ref<HTMLElement>();
 
@@ -97,7 +176,9 @@ const autoScroll = ref(true);
 const autoScrollFull = ref(true);
 
 const { width } = useWindowSize();
-const controlSize = computed(() => width.value >= 768 ? "default" : "small" as const);
+const controlSize = computed(() =>
+  width.value >= 768 ? "default" : ("small" as const),
+);
 
 const displayLines = computed(() => allLines.value.slice(-MAX_LINES));
 
@@ -140,13 +221,17 @@ function ansiToHtml(line: string): string {
   while (remaining) {
     const match = remaining.match(/\x1b\[(\d+(;\d+)*)m/);
     if (!match || match.index === undefined) {
-      html += currentStyle ? `<span style="${currentStyle}">${remaining}</span>` : remaining;
+      html += currentStyle
+        ? `<span style="${currentStyle}">${remaining}</span>`
+        : remaining;
       break;
     }
 
     const prefix = remaining.slice(0, match.index);
     if (prefix) {
-      html += currentStyle ? `<span style="${currentStyle}">${prefix}</span>` : prefix;
+      html += currentStyle
+        ? `<span style="${currentStyle}">${prefix}</span>`
+        : prefix;
     }
 
     const code = match[1];
@@ -166,11 +251,11 @@ function highlightMatch(line: string): string {
   if (!keyword) return html;
   const regex = new RegExp(
     `(${keyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`,
-    "gi"
+    "gi",
   );
   return html.replace(
     regex,
-    '<mark style="background: rgba(234, 179, 8, 0.35); color: #fff; padding: 0 2px; border-radius: 2px">$1</mark>'
+    '<mark style="background: rgba(234, 179, 8, 0.35); color: #fff; padding: 0 2px; border-radius: 2px">$1</mark>',
   );
 }
 
@@ -212,9 +297,21 @@ function handleToggle() {
 
 function connect() {
   allLines.value = [];
-  eventSource = new EventSource("/api/openlist/logs");
 
-  eventSource.onmessage = (e) => {
+  // 开发环境连接独立 WebSocket 服务器
+  const isDev = window.location.port === "3000";
+  let wsUrl: string;
+
+  if (isDev) {
+    wsUrl = `ws://localhost:3001/ws/logs`;
+  } else {
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    wsUrl = `${protocol}//${window.location.host}/api/openlist/logs`;
+  }
+
+  ws = new WebSocket(wsUrl);
+
+  ws.onmessage = (e) => {
     try {
       const data = JSON.parse(e.data);
       if (data.lines) {
@@ -234,7 +331,11 @@ function connect() {
     }
   };
 
-  eventSource.onerror = () => {
+  ws.onerror = () => {
+    disconnect();
+  };
+
+  ws.onclose = () => {
     disconnect();
   };
 
@@ -242,9 +343,9 @@ function connect() {
 }
 
 function disconnect() {
-  if (eventSource) {
-    eventSource.close();
-    eventSource = null;
+  if (ws) {
+    ws.close();
+    ws = null;
   }
   connected.value = false;
 }
