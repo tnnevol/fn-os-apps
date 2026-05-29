@@ -90,7 +90,7 @@ export default defineNitroPlugin((nitroApp: any) => {
     },
   );
 
-  const WS_PORT = 3001;
+  const WS_PORT = (Number(process.env.wizard_admin_port) || 3000) + 1;
   wsServer.listen(WS_PORT, () => {
     console.log(`[WS Plugin] WebSocket server listening on port ${WS_PORT}`);
   });

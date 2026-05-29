@@ -22,6 +22,7 @@
   "devDependencies": {
     "@nuxt/kit": "^4.4.6",
     "@types/node": "^25.9.0",
+    "@types/ws": "^8.18.1",
     "@unocss/nuxt": "^66.6.8",
     "sass": "^1.100.0",
     "unocss": "^66.6.8"
