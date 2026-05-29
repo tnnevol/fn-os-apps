@@ -163,6 +163,10 @@ import {
 } from "@element-plus/icons-vue";
 import { useWindowSize } from "@vueuse/core";
 
+const props = defineProps<{
+  wsPort?: number;
+}>();
+
 const connected = ref(false);
 const searchText = ref("");
 const fullscreen = ref(false);
@@ -298,16 +302,9 @@ function handleToggle() {
 function connect() {
   allLines.value = [];
 
-  // 开发环境连接独立 WebSocket 服务器
-  const isDev = window.location.port === "3000";
-  let wsUrl: string;
-
-  if (isDev) {
-    wsUrl = `ws://localhost:3001/ws/logs`;
-  } else {
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    wsUrl = `${protocol}//${window.location.host}/api/openlist/logs`;
-  }
+  // 使用从接口获取的 WebSocket 端口
+  const wsPort = props.wsPort || 3001;
+  const wsUrl = `ws://localhost:${wsPort}/ws/logs`;
 
   ws = new WebSocket(wsUrl);
 

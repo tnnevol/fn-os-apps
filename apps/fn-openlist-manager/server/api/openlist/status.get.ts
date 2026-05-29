@@ -56,9 +56,13 @@ export default defineEventHandler(async () => {
     // version command may fail if binary not present
   }
 
+  const adminPort = Number(process.env.wizard_admin_port) || 3000;
+  const wsPort = adminPort + 1;
+
   return {
     version,
     running: checkPidFile(),
     port: getPort(),
+    wsPort,
   };
 });
