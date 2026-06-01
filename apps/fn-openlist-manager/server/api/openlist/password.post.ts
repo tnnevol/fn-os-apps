@@ -18,23 +18,17 @@ export default defineEventHandler(async (event) => {
   console.log("dataDir", dataDir);
 
   if (action === "random") {
-    console.log("[password] bin:", bin, "dir:", binDir);
-    try {
-      const { stdout } = await execFileAsync(
-        bin,
-        ["admin", "random", "--data", openlistDataDir],
-        {
-          cwd: openlistDataDir,
-        },
-      );
-      console.log("[password] stdout:", stdout);
-      const match = stdout.match(/password:\s*(\S+)/);
-      console.log("[password] match:", match);
-      return { password: match?.[1] || stdout.trim() };
-    } catch (error: any) {
-      console.error("[password] error:", error);
-      throw createError({ statusCode: 500, message: error.message });
+    // 在前端生成随机密码
+    const length = 16;
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
+    let password = "";
+    
+    for (let i = 0; i < length; i++) {
+      const randomIndex = Math.floor(Math.random() * chars.length);
+      password += chars[randomIndex];
     }
+    
+    return { password };
   }
 
   if (action === "set" && password) {
