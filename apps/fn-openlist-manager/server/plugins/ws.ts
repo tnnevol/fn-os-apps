@@ -84,6 +84,8 @@ function downloadWithCurl(
     // -L: 跟随重定向
     // --max-time: 总超时 5 分钟
     // --connect-timeout: 连接超时 30s
+    // -f: 失败时不输出 HTML 错误页面
+    // -S: 显示错误信息
     const args = [
       "-L",
       url,
@@ -94,6 +96,8 @@ function downloadWithCurl(
       "300",
       "--connect-timeout",
       "30",
+      "-f", // 失败时返回错误码而不是HTML
+      "-S", // 显示错误
     ];
     const curl = spawn("curl", args);
 
@@ -224,13 +228,36 @@ async function handleUpdateConnection(ws: WebSocket, url: URL) {
     const tmpDir = process.env.TRIM_PKGTMP || "/tmp";
     const tarPath = join(tmpDir, "openlist.tar.gz");
 
-    // 下载（使用 curl，自带进度和超时控制）
-    await downloadWithCurl(
-      downloadUrl,
-      tarPath,
-      (pct) => send({ step: "download", percent: pct }),
-      abortController.signal,
-    );
+    // 尝试下载（如果使用代理失败，则不使用代理重试）
+    let downloadSuccess = false;
+    try {
+      await downloadWithCurl(
+        downloadUrl,
+        tarPath,
+        (pct) => send({ step: "download", percent: pct }),
+        abortController.signal,
+      );
+      downloadSuccess = true;
+    } catch (err: any) {
+      console.log("[WS] Download with mirror failed, retrying without mirror");
+      // 如果使用了代理且下载失败，尝试不用代理直接下载
+      if (mirror && mirror !== "") {
+        const directUrl =
+          targetVersion === "latest"
+            ? `https://github.com/OpenListTeam/OpenList/releases/latest/download/openlist-${target}.tar.gz`
+            : `https://github.com/OpenListTeam/OpenList/releases/download/v${targetVersion}/openlist-${target}.tar.gz`;
+
+        await downloadWithCurl(
+          directUrl,
+          tarPath,
+          (pct) => send({ step: "download", percent: pct }),
+          abortController.signal,
+        );
+        downloadSuccess = true;
+      } else {
+        throw err;
+      }
+    }
 
     send({ step: "download", percent: 100 });
 
