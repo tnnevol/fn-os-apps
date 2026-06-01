@@ -217,9 +217,10 @@ async function handleUpdateConnection(ws: WebSocket, url: URL) {
     }
 
     // 构建下载链接，latest 时不添加 'v' 前缀
-    const downloadUrl = targetVersion === "latest"
-      ? `${mirror}https://github.com/OpenListTeam/OpenList/releases/latest/download/openlist-${target}.tar.gz`
-      : `${mirror}https://github.com/OpenListTeam/OpenList/releases/download/v${targetVersion}/openlist-${target}.tar.gz`;
+    const downloadUrl =
+      targetVersion === "latest"
+        ? `${mirror}https://github.com/OpenListTeam/OpenList/releases/latest/download/openlist-${target}.tar.gz`
+        : `${mirror}https://github.com/OpenListTeam/OpenList/releases/download/v${targetVersion}/openlist-${target}.tar.gz`;
     const tmpDir = process.env.TRIM_PKGTMP || "/tmp";
     const tarPath = join(tmpDir, "openlist.tar.gz");
 
@@ -233,17 +234,37 @@ async function handleUpdateConnection(ws: WebSocket, url: URL) {
 
     send({ step: "download", percent: 100 });
 
-    // 验证
-    const { stdout: fileType } = await execAsync(`file "${tarPath}"`, {
-      timeout: 10000,
-    });
-    const statFlag = process.env.TRIM_APPNAME ? "-c%s" : "-f%z";
-    const { stdout: fileSize } = await execAsync(
-      `stat ${statFlag} "${tarPath}"`,
-      { timeout: 10000 },
-    );
-    if (!fileType.includes("gzip") || Number(fileSize) < 102400) {
-      throw new Error("下载文件无效，可能下载到了错误页面");
+    // 验证文件
+    console.log(`[WS] Verifying downloaded file: ${tarPath}`);
+
+    try {
+      // 先检查文件大小
+      const statFlag = process.env.TRIM_APPNAME ? "-c%s" : "-f%z";
+      const { stdout: fileSize } = await execAsync(
+        `stat ${statFlag} "${tarPath}"`,
+        { timeout: 10000 },
+      );
+      console.log(`[WS] File size: ${fileSize.trim()} bytes`);
+
+      // 如果文件太小，直接报错
+      if (Number(fileSize.trim()) < 102400) {
+        throw new Error(
+          `下载文件太小 (${fileSize.trim()} bytes)，可能下载失败`,
+        );
+      }
+
+      // 检查文件类型
+      const { stdout: fileType } = await execAsync(`file "${tarPath}"`, {
+        timeout: 10000,
+      });
+      console.log(`[WS] File type: ${fileType.trim()}`);
+
+      // 尝试解压验证（如果失败会抛出错误）
+      await execAsync(`tar tzf "${tarPath}" | head -1`, { timeout: 10000 });
+      console.log("[WS] File validation passed");
+    } catch (err: any) {
+      console.error("[WS] File validation failed:", err.message);
+      throw new Error(`下载文件验证失败: ${err.message}`);
     }
 
     send({ step: "extract", percent: 0 });
