@@ -12,6 +12,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { join, dirname } from "node:path";
+import { defineNitroPlugin } from "nitropack/runtime";
 import {
   getOpenlistDataDir,
   getOpenlistBin,

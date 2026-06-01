@@ -54,6 +54,10 @@ const emit = defineEmits<{
   (e: "updated"): void;
 }>();
 
+const props = defineProps<{
+  wsPort?: number;
+}>();
+
 const { width } = useWindowSize();
 const controlSize = computed(() =>
   width.value >= 768 ? "default" : ("small" as const),
@@ -132,8 +136,8 @@ async function handleUpdate() {
   let ws: WebSocket | null = null;
 
   try {
-    // 构建 WebSocket URL
-    const wsPort = 3001; // 从状态接口获取或使用默认值
+    // 使用从接口获取的 WebSocket 端口
+    const wsPort = props.wsPort || 3001;
     const params = new URLSearchParams();
     if (mirrorUrl.value) params.set("mirror", mirrorUrl.value);
     if (version) params.set("version", version);

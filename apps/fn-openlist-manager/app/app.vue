@@ -13,7 +13,7 @@
         <!-- 左侧面板栈 -->
         <div class="panel-stack">
           <div class="panel-card">
-            <UpdateCard @updated="loadStatus" />
+            <UpdateCard :ws-port="status.wsPort" @updated="loadStatus" />
           </div>
           <div class="panel-card">
             <PasswordCard />

@@ -56,8 +56,10 @@ export default defineEventHandler(async () => {
     // version command may fail if binary not present
   }
 
-  const adminPort = Number(process.env.wizard_admin_port) || 3000;
-  const wsPort = adminPort + 1;
+  // WebSocket 端口使用 wizard_admin_port + 1，如果没有设置则使用 3001
+  const wsPort = Number(process.env.wizard_admin_port)
+    ? Number(process.env.wizard_admin_port) + 1
+    : 3001;
 
   return {
     version,
