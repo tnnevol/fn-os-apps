@@ -184,6 +184,9 @@ const controlSize = computed(() =>
   width.value >= 768 ? "default" : ("small" as const),
 );
 
+// 获取当前主机名
+const localIp = useLocalIp();
+
 const displayLines = computed(() => allLines.value.slice(-MAX_LINES));
 
 const filteredLines = computed(() => {
@@ -304,7 +307,7 @@ function connect() {
 
   // 使用从接口获取的 WebSocket 端口
   const wsPort = props.wsPort || 3001;
-  const wsUrl = `ws://localhost:${wsPort}/ws/logs`;
+  const wsUrl = `ws://${localIp}:${wsPort}/ws/logs`;
 
   ws = new WebSocket(wsUrl);
 
