@@ -194,24 +194,32 @@ async function handleUpdateConnection(ws: WebSocket, url: URL) {
     // 解析版本
     let targetVersion = version;
     if (!targetVersion || targetVersion === "latest") {
-      // 使用 GitHub API 获取最新版本，比解析 HTML 页面更可靠
-      const { stdout } = await execAsync(
-        `curl -sL --max-time 30 \
-          -H "Accept: application/vnd.github.v3+json" \
-          "https://api.github.com/repos/OpenListTeam/OpenList/releases/latest" | \
-          grep -o '"tag_name": *"[^"]*"' | \
-          head -1 | \
-          sed 's/.*"v\\([0-9.]*\\)".*/\\1/'`,
-        { timeout: 35000 },
-      );
-      targetVersion = stdout.trim();
+      // 尝试使用 GitHub API，失败则使用默认版本
+      try {
+        const { stdout } = await execAsync(
+          `curl -sL --max-time 15 \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/OpenListTeam/OpenList/releases/latest" | \
+            grep '"tag_name"' | \
+            head -1 | \
+            sed 's/.*"v\\([0-9.]*\\)".*/\\1/'`,
+          { timeout: 20000 },
+        );
+        targetVersion = stdout.trim();
+      } catch {
+        console.log("[WS] Failed to fetch latest version from GitHub API");
+      }
     }
 
     if (!targetVersion) {
-      throw new Error("无法解析目标版本");
+      // 如果无法获取版本号，使用 latest 让 GitHub 自动重定向
+      targetVersion = "latest";
     }
 
-    const downloadUrl = `${mirror}https://github.com/OpenListTeam/OpenList/releases/download/v${targetVersion}/openlist-${target}.tar.gz`;
+    // 构建下载链接，latest 时不添加 'v' 前缀
+    const downloadUrl = targetVersion === "latest"
+      ? `${mirror}https://github.com/OpenListTeam/OpenList/releases/latest/download/openlist-${target}.tar.gz`
+      : `${mirror}https://github.com/OpenListTeam/OpenList/releases/download/v${targetVersion}/openlist-${target}.tar.gz`;
     const tmpDir = process.env.TRIM_PKGTMP || "/tmp";
     const tarPath = join(tmpDir, "openlist.tar.gz");
 
