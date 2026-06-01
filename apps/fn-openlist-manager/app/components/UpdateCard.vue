@@ -71,6 +71,9 @@ const progressStep = ref("");
 
 const availableVersions = ref<string[]>([]);
 
+// 获取局域网 IP
+const localIp = useLocalIp();
+
 async function fetchVersions() {
   try {
     const params = mirrorUrl.value ? { mirror: mirrorUrl.value } : {};
@@ -142,7 +145,8 @@ async function handleUpdate() {
     if (mirrorUrl.value) params.set("mirror", mirrorUrl.value);
     if (version) params.set("version", version);
 
-    const wsUrl = `ws://localhost:${wsPort}/ws/update?${params.toString()}`;
+    // 使用局域网 IP 而不是 localhost，支持从其他设备访问
+    const wsUrl = `ws://${localIp}:${wsPort}/ws/update?${params.toString()}`;
 
     ws = new WebSocket(wsUrl);
 
