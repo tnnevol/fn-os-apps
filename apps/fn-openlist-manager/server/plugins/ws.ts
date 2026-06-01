@@ -164,14 +164,17 @@ async function handleUpdateConnection(ws: WebSocket, url: URL) {
   });
 
   // 超时保护（10分钟）
-  const timeout = setTimeout(() => {
-    if (clientConnected) {
-      console.log("[WS] Update timeout");
-      send({ event: "error", message: "更新超时（10分钟）" });
-      abortController.abort();
-      ws.close();
-    }
-  }, 10 * 60 * 1000);
+  const timeout = setTimeout(
+    () => {
+      if (clientConnected) {
+        console.log("[WS] Update timeout");
+        send({ event: "error", message: "更新超时（10分钟）" });
+        abortController.abort();
+        ws.close();
+      }
+    },
+    10 * 60 * 1000,
+  );
 
   try {
     const bin = getOpenlistBin();
@@ -213,7 +216,9 @@ async function handleUpdateConnection(ws: WebSocket, url: URL) {
     send({ step: "download", percent: 100 });
 
     // 验证
-    const { stdout: fileType } = await execAsync(`file "${tarPath}"`, { timeout: 10000 });
+    const { stdout: fileType } = await execAsync(`file "${tarPath}"`, {
+      timeout: 10000,
+    });
     const statFlag = process.env.TRIM_APPNAME ? "-c%s" : "-f%z";
     const { stdout: fileSize } = await execAsync(
       `stat ${statFlag} "${tarPath}"`,
@@ -226,7 +231,9 @@ async function handleUpdateConnection(ws: WebSocket, url: URL) {
     send({ step: "extract", percent: 0 });
 
     // 解压
-    await execAsync(`tar xzf "${tarPath}" -C "${tmpDir}" openlist`, { timeout: 60000 });
+    await execAsync(`tar xzf "${tarPath}" -C "${tmpDir}" openlist`, {
+      timeout: 60000,
+    });
     send({ step: "extract", percent: 100 });
 
     // 替换二进制
@@ -245,7 +252,9 @@ async function handleUpdateConnection(ws: WebSocket, url: URL) {
     }
 
     mkdirSync(dirname(bin), { recursive: true });
-    await execAsync(`mv "${tmpDir}/openlist" "${bin}" && chmod +x "${bin}"`, { timeout: 30000 });
+    await execAsync(`mv "${tmpDir}/openlist" "${bin}" && chmod +x "${bin}"`, {
+      timeout: 30000,
+    });
     send({ step: "install", percent: 100 });
 
     // 清理
@@ -267,7 +276,10 @@ async function handleUpdateConnection(ws: WebSocket, url: URL) {
 
     send({ event: "done", version: newVersion });
   } catch (error: any) {
-    if (error.message !== "下载已取消") {
+    // 忽略客户端断开或主动取消导致的错误
+    const isAbort =
+      error.name === "AbortError" || error.message === "下载已取消";
+    if (!isAbort && clientConnected) {
       console.error("[WS] Update error:", error);
       send({ event: "error", message: error.message });
     }
