@@ -2,10 +2,223 @@ import { createServer } from "node:http";
 import type { IncomingMessage } from "node:http";
 import type { Socket } from "node:net";
 import { WebSocketServer, WebSocket } from "ws";
-import { spawn } from "node:child_process";
-import { existsSync } from "node:fs";
-import { join } from "node:path";
-import { getOpenlistDataDir } from "../utils/openlist";
+import { spawn, exec } from "node:child_process";
+import { promisify } from "node:util";
+import {
+  existsSync,
+  createWriteStream,
+  mkdirSync,
+  readFileSync,
+  writeFileSync,
+} from "node:fs";
+import { join, dirname } from "node:path";
+import {
+  getOpenlistDataDir,
+  getOpenlistBin,
+  getDataDir,
+} from "../utils/openlist";
+
+const execAsync = promisify(exec);
+
+// 处理日志连接
+function handleLogConnection(ws: WebSocket) {
+  const openlistDataDir = getOpenlistDataDir();
+  const logFile = join(openlistDataDir, "log", "log.log");
+
+  // 如果日志文件不存在,发送空数据并关闭连接
+  if (!existsSync(logFile)) {
+    ws.send(JSON.stringify({ lines: [] }));
+    ws.close();
+    return;
+  }
+
+  // 先发送最后 200 行
+  let buffer = "";
+  const head = spawn("tail", ["-n", "200", logFile]);
+  head.stdout.on("data", (chunk: Buffer) => {
+    buffer += chunk.toString();
+  });
+
+  head.on("close", () => {
+    if (ws.readyState === WebSocket.OPEN) {
+      const lines = buffer.split("\n").filter(Boolean);
+      ws.send(JSON.stringify({ lines }));
+    }
+  });
+
+  // 然后通过 tail -f 跟踪新行
+  let lineBuffer = "";
+  const tail = spawn("tail", ["-f", logFile]);
+
+  const sendLine = (line: string) => {
+    if (line.trim() && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ line }));
+    }
+  };
+
+  tail.stdout.on("data", (chunk: Buffer) => {
+    lineBuffer += chunk.toString();
+    const lines = lineBuffer.split("\n");
+    lineBuffer = lines.pop() || "";
+    lines.forEach(sendLine);
+  });
+
+  // 连接关闭时清理
+  ws.on("close", () => {
+    console.log("[WS] Client disconnected");
+    tail.kill();
+    head.kill();
+  });
+
+  ws.on("error", (error) => {
+    console.error("[WS] Error:", error);
+    tail.kill();
+    head.kill();
+  });
+}
+
+// 下载文件并带进度
+async function downloadWithProgress(
+  url: string,
+  dest: string,
+  onProgress: (pct: number) => void,
+) {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`下载失败: HTTP ${response.status}`);
+  }
+
+  const contentLength = Number(response.headers.get("content-length") || 0);
+  let received = 0;
+
+  const writer = createWriteStream(dest);
+  const reader = response.body?.getReader();
+
+  if (!reader) {
+    throw new Error("无法读取响应流");
+  }
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    received += value.length;
+    if (contentLength > 0) {
+      onProgress(Math.round((received / contentLength) * 100));
+    }
+    writer.write(value);
+  }
+
+  return new Promise<void>((resolve) => {
+    writer.end(() => resolve());
+  });
+}
+
+// 处理更新连接
+async function handleUpdateConnection(ws: WebSocket, url: URL) {
+  console.log("[WS] Update connection received");
+
+  // 解析 URL 参数
+  const mirror = url.searchParams.get("mirror") || "https://ghproxy.net/";
+  const version = url.searchParams.get("version")?.replace(/^v/, "") || "";
+
+  const send = (data: any) => {
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify(data));
+    }
+  };
+
+  try {
+    const bin = getOpenlistBin();
+    const arch =
+      process.arch === "arm64"
+        ? "arm64"
+        : process.arch === "x64"
+          ? "amd64"
+          : "amd64";
+    const isLinux = process.platform === "linux";
+    const target = isLinux ? `linux-musl-${arch}` : `darwin-${arch}`;
+
+    // 解析版本
+    let targetVersion = version;
+    if (!targetVersion || targetVersion === "latest") {
+      const { stdout } = await execAsync(
+        `curl -sL "https://github.com/OpenListTeam/OpenList/releases" | grep -oE 'tag/v[0-9]+\\.[0-9]+\\.[0-9]+' | sed 's/tag\\///' | head -1`,
+      );
+      targetVersion = stdout.trim().replace(/^v/, "");
+    }
+
+    const downloadUrl = `${mirror}https://github.com/OpenListTeam/OpenList/releases/download/v${targetVersion}/openlist-${target}.tar.gz`;
+    const tmpDir = process.env.TRIM_PKGTMP || "/tmp";
+    const tarPath = join(tmpDir, "openlist.tar.gz");
+
+    // 下载
+    await downloadWithProgress(downloadUrl, tarPath, (pct) => {
+      send({ step: "download", percent: pct });
+    });
+
+    send({ step: "download", percent: 100 });
+
+    // 验证
+    const { stdout: fileType } = await execAsync(`file "${tarPath}"`);
+    const statFlag = process.env.TRIM_APPNAME ? "-c%s" : "-f%z";
+    const { stdout: fileSize } = await execAsync(
+      `stat ${statFlag} "${tarPath}"`,
+    );
+    if (!fileType.includes("gzip") || Number(fileSize) < 102400) {
+      throw new Error("下载文件无效，可能下载到了错误页面");
+    }
+
+    send({ step: "extract", percent: 0 });
+
+    // 解压
+    await execAsync(`tar xzf "${tarPath}" -C "${tmpDir}" openlist`);
+    send({ step: "extract", percent: 100 });
+
+    // 替换二进制
+    const dataDir = getDataDir();
+    const openlistDataDir = getOpenlistDataDir();
+    const pidPath = `${dataDir}/openlist.pid`;
+    if (existsSync(pidPath)) {
+      const pid = readFileSync(pidPath, "utf-8").trim();
+      if (pid) {
+        try {
+          process.kill(Number(pid));
+        } catch {
+          /* ignore */
+        }
+      }
+    }
+
+    mkdirSync(dirname(bin), { recursive: true });
+    await execAsync(`mv "${tmpDir}/openlist" "${bin}" && chmod +x "${bin}"`);
+    send({ step: "install", percent: 100 });
+
+    // 清理
+    await execAsync(`rm -f "${tarPath}"`);
+
+    // 重启
+    const child = spawn(bin, ["server", "--data", openlistDataDir], {
+      cwd: openlistDataDir,
+      stdio: "ignore",
+    });
+    writeFileSync(pidPath, String(child.pid));
+
+    // 获取版本
+    const { stdout } = await execAsync(`${bin} version`);
+    const verLine = stdout.split("\n").find((l) => l.startsWith("Version:"));
+    const newVersion = verLine
+      ? (verLine.split(":")[1]?.trim() ?? "unknown")
+      : "unknown";
+
+    send({ event: "done", version: newVersion });
+  } catch (error: any) {
+    console.error("[WS] Update error:", error);
+    send({ event: "error", message: error.message });
+  } finally {
+    ws.close();
+  }
+}
 
 export default defineNitroPlugin((nitroApp: any) => {
   console.log("[WS Plugin] Initializing WebSocket server...");
@@ -13,62 +226,19 @@ export default defineNitroPlugin((nitroApp: any) => {
   // 创建 WebSocket 服务器
   const wss = new WebSocketServer({ noServer: true });
 
-  wss.on("connection", (ws: WebSocket) => {
+  wss.on("connection", (ws: WebSocket, request: IncomingMessage) => {
     console.log("[WS] Client connected");
 
-    const openlistDataDir = getOpenlistDataDir();
-    const logFile = join(openlistDataDir, "log", "log.log");
+    const url = new URL(request.url || "", `http://${request.headers.host}`);
 
-    // 如果日志文件不存在,发送空数据并关闭连接
-    if (!existsSync(logFile)) {
-      ws.send(JSON.stringify({ lines: [] }));
+    // 根据路径区分日志和更新
+    if (url.pathname === "/ws/logs") {
+      handleLogConnection(ws);
+    } else if (url.pathname === "/ws/update") {
+      handleUpdateConnection(ws, url);
+    } else {
       ws.close();
-      return;
     }
-
-    // 先发送最后 200 行
-    let buffer = "";
-    const head = spawn("tail", ["-n", "200", logFile]);
-    head.stdout.on("data", (chunk: Buffer) => {
-      buffer += chunk.toString();
-    });
-
-    head.on("close", () => {
-      if (ws.readyState === WebSocket.OPEN) {
-        const lines = buffer.split("\n").filter(Boolean);
-        ws.send(JSON.stringify({ lines }));
-      }
-    });
-
-    // 然后通过 tail -f 跟踪新行
-    let lineBuffer = "";
-    const tail = spawn("tail", ["-f", logFile]);
-
-    const sendLine = (line: string) => {
-      if (line.trim() && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({ line }));
-      }
-    };
-
-    tail.stdout.on("data", (chunk: Buffer) => {
-      lineBuffer += chunk.toString();
-      const lines = lineBuffer.split("\n");
-      lineBuffer = lines.pop() || "";
-      lines.forEach(sendLine);
-    });
-
-    // 连接关闭时清理
-    ws.on("close", () => {
-      console.log("[WS] Client disconnected");
-      tail.kill();
-      head.kill();
-    });
-
-    ws.on("error", (error) => {
-      console.error("[WS] Error:", error);
-      tail.kill();
-      head.kill();
-    });
   });
 
   // 创建独立的 HTTP 服务器处理 WebSocket
@@ -79,7 +249,7 @@ export default defineNitroPlugin((nitroApp: any) => {
     (request: IncomingMessage, socket: Socket, head: Buffer) => {
       const url = new URL(request.url || "", `http://${request.headers.host}`);
 
-      if (url.pathname === "/ws/logs") {
+      if (url.pathname === "/ws/logs" || url.pathname === "/ws/update") {
         console.log("[WS] Upgrade request for", url.pathname);
         wss.handleUpgrade(request, socket, head, (ws) => {
           wss.emit("connection", ws, request);

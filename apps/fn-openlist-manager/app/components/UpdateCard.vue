@@ -55,7 +55,9 @@ const emit = defineEmits<{
 }>();
 
 const { width } = useWindowSize();
-const controlSize = computed(() => width.value >= 768 ? "default" : "small" as const);
+const controlSize = computed(() =>
+  width.value >= 768 ? "default" : ("small" as const),
+);
 
 const selectedVersion = ref("");
 const mirrorUrl = ref("");
@@ -127,31 +129,22 @@ async function handleUpdate() {
   progressStep.value = "";
 
   const version = selectedVersion.value || undefined;
+  let ws: WebSocket | null = null;
 
   try {
-    const response = await fetch("/api/openlist/update", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ mirror: mirrorUrl.value || undefined, version }),
-    });
+    // 构建 WebSocket URL
+    const wsPort = 3001; // 从状态接口获取或使用默认值
+    const params = new URLSearchParams();
+    if (mirrorUrl.value) params.set("mirror", mirrorUrl.value);
+    if (version) params.set("version", version);
 
-    const reader = response.body?.getReader();
-    if (!reader) throw new Error("无法读取响应");
+    const wsUrl = `ws://localhost:${wsPort}/ws/update?${params.toString()}`;
 
-    const decoder = new TextDecoder();
-    let buffer = "";
+    ws = new WebSocket(wsUrl);
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split("\n");
-      buffer = lines.pop() || "";
-
-      for (const line of lines) {
-        if (!line.startsWith("data:")) continue;
-        const data = JSON.parse(line.slice(5));
+    ws.onmessage = (e) => {
+      try {
+        const data = JSON.parse(e.data);
 
         if (data.event === "done") {
           progressStep.value = "done";
@@ -165,12 +158,22 @@ async function handleUpdate() {
           progressStep.value = data.step;
           progressPercent.value = data.percent ?? 0;
         }
+      } catch {
+        // ignore malformed JSON
       }
-    }
+    };
+
+    ws.onerror = () => {
+      progressStep.value = "error";
+      ElMessage.error("WebSocket 连接失败");
+    };
+
+    ws.onclose = () => {
+      updating.value = false;
+    };
   } catch (e: any) {
     progressStep.value = "error";
     ElMessage.error(e?.message || "安装失败");
-  } finally {
     updating.value = false;
   }
 }
