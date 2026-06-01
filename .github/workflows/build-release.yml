@@ -50,10 +50,13 @@ jobs:
           git add apps/*/manifest README.md
           if ! git diff --cached --quiet; then
             git commit -m "chore: bump all app versions to ${{ github.ref_name }} [skip ci]"
-            # Push detached HEAD directly to main to avoid losing the commit
+            # 推送代码和 tag 到 main 分支
             git push origin HEAD:main
+            git push origin ${{ github.ref_name }}
           else
             echo "No version changes to commit"
+            # 即使没有代码变更，也要推送 tag
+            git push origin ${{ github.ref_name }} || true
           fi
 
   # 动态发现 apps/ 目录下的所有应用
