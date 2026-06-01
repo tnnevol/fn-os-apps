@@ -78,19 +78,21 @@ function handleLogConnection(ws: WebSocket) {
   });
 }
 
-// 下载文件并带进度
+// 下载文件并带进度（含节流和取消支持）
 async function downloadWithProgress(
   url: string,
   dest: string,
   onProgress: (pct: number) => void,
+  signal: AbortSignal,
 ) {
-  const response = await fetch(url);
+  const response = await fetch(url, { signal });
   if (!response.ok) {
     throw new Error(`下载失败: HTTP ${response.status}`);
   }
 
   const contentLength = Number(response.headers.get("content-length") || 0);
   let received = 0;
+  let lastPercent = -1;
 
   const writer = createWriteStream(dest);
   const reader = response.body?.getReader();
@@ -99,15 +101,31 @@ async function downloadWithProgress(
     throw new Error("无法读取响应流");
   }
 
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
+  try {
+    while (true) {
+      if (signal.aborted) {
+        reader.cancel();
+        writer.close();
+        throw new Error("下载已取消");
+      }
 
-    received += value.length;
-    if (contentLength > 0) {
-      onProgress(Math.round((received / contentLength) * 100));
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      received += value.length;
+      if (contentLength > 0) {
+        const pct = Math.round((received / contentLength) * 100);
+        // 节流：每变化 1% 才回调一次
+        if (pct !== lastPercent) {
+          lastPercent = pct;
+          onProgress(pct);
+        }
+      }
+      writer.write(value);
     }
-    writer.write(value);
+  } catch (err: any) {
+    writer.close();
+    throw err;
   }
 
   return new Promise<void>((resolve) => {
@@ -123,11 +141,37 @@ async function handleUpdateConnection(ws: WebSocket, url: URL) {
   const mirror = url.searchParams.get("mirror") || "https://ghproxy.net/";
   const version = url.searchParams.get("version")?.replace(/^v/, "") || "";
 
+  // 用于取消下载的 AbortController
+  const abortController = new AbortController();
+  let clientConnected = true;
+
   const send = (data: any) => {
     if (ws.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify(data));
     }
   };
+
+  // 监听客户端断开，取消下载
+  ws.on("close", () => {
+    console.log("[WS] Update client disconnected");
+    clientConnected = false;
+    abortController.abort();
+  });
+
+  ws.on("error", () => {
+    clientConnected = false;
+    abortController.abort();
+  });
+
+  // 超时保护（10分钟）
+  const timeout = setTimeout(() => {
+    if (clientConnected) {
+      console.log("[WS] Update timeout");
+      send({ event: "error", message: "更新超时（10分钟）" });
+      abortController.abort();
+      ws.close();
+    }
+  }, 10 * 60 * 1000);
 
   try {
     const bin = getOpenlistBin();
@@ -144,27 +188,36 @@ async function handleUpdateConnection(ws: WebSocket, url: URL) {
     let targetVersion = version;
     if (!targetVersion || targetVersion === "latest") {
       const { stdout } = await execAsync(
-        `curl -sL "https://github.com/OpenListTeam/OpenList/releases" | grep -oE 'tag/v[0-9]+\\.[0-9]+\\.[0-9]+' | sed 's/tag\\///' | head -1`,
+        `curl -sL --max-time 30 "https://github.com/OpenListTeam/OpenList/releases" | grep -oE 'tag/v[0-9]+\\.[0-9]+\\.[0-9]+' | sed 's/tag\\///' | head -1`,
+        { timeout: 35000 },
       );
       targetVersion = stdout.trim().replace(/^v/, "");
+    }
+
+    if (!targetVersion) {
+      throw new Error("无法解析目标版本");
     }
 
     const downloadUrl = `${mirror}https://github.com/OpenListTeam/OpenList/releases/download/v${targetVersion}/openlist-${target}.tar.gz`;
     const tmpDir = process.env.TRIM_PKGTMP || "/tmp";
     const tarPath = join(tmpDir, "openlist.tar.gz");
 
-    // 下载
-    await downloadWithProgress(downloadUrl, tarPath, (pct) => {
-      send({ step: "download", percent: pct });
-    });
+    // 下载（带节流和取消支持）
+    await downloadWithProgress(
+      downloadUrl,
+      tarPath,
+      (pct) => send({ step: "download", percent: pct }),
+      abortController.signal,
+    );
 
     send({ step: "download", percent: 100 });
 
     // 验证
-    const { stdout: fileType } = await execAsync(`file "${tarPath}"`);
+    const { stdout: fileType } = await execAsync(`file "${tarPath}"`, { timeout: 10000 });
     const statFlag = process.env.TRIM_APPNAME ? "-c%s" : "-f%z";
     const { stdout: fileSize } = await execAsync(
       `stat ${statFlag} "${tarPath}"`,
+      { timeout: 10000 },
     );
     if (!fileType.includes("gzip") || Number(fileSize) < 102400) {
       throw new Error("下载文件无效，可能下载到了错误页面");
@@ -173,7 +226,7 @@ async function handleUpdateConnection(ws: WebSocket, url: URL) {
     send({ step: "extract", percent: 0 });
 
     // 解压
-    await execAsync(`tar xzf "${tarPath}" -C "${tmpDir}" openlist`);
+    await execAsync(`tar xzf "${tarPath}" -C "${tmpDir}" openlist`, { timeout: 60000 });
     send({ step: "extract", percent: 100 });
 
     // 替换二进制
@@ -192,11 +245,11 @@ async function handleUpdateConnection(ws: WebSocket, url: URL) {
     }
 
     mkdirSync(dirname(bin), { recursive: true });
-    await execAsync(`mv "${tmpDir}/openlist" "${bin}" && chmod +x "${bin}"`);
+    await execAsync(`mv "${tmpDir}/openlist" "${bin}" && chmod +x "${bin}"`, { timeout: 30000 });
     send({ step: "install", percent: 100 });
 
     // 清理
-    await execAsync(`rm -f "${tarPath}"`);
+    await execAsync(`rm -f "${tarPath}"`, { timeout: 10000 });
 
     // 重启
     const child = spawn(bin, ["server", "--data", openlistDataDir], {
@@ -206,7 +259,7 @@ async function handleUpdateConnection(ws: WebSocket, url: URL) {
     writeFileSync(pidPath, String(child.pid));
 
     // 获取版本
-    const { stdout } = await execAsync(`${bin} version`);
+    const { stdout } = await execAsync(`${bin} version`, { timeout: 10000 });
     const verLine = stdout.split("\n").find((l) => l.startsWith("Version:"));
     const newVersion = verLine
       ? (verLine.split(":")[1]?.trim() ?? "unknown")
@@ -214,9 +267,12 @@ async function handleUpdateConnection(ws: WebSocket, url: URL) {
 
     send({ event: "done", version: newVersion });
   } catch (error: any) {
-    console.error("[WS] Update error:", error);
-    send({ event: "error", message: error.message });
+    if (error.message !== "下载已取消") {
+      console.error("[WS] Update error:", error);
+      send({ event: "error", message: error.message });
+    }
   } finally {
+    clearTimeout(timeout);
     ws.close();
   }
 }
