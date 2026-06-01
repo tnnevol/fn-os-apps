@@ -194,11 +194,17 @@ async function handleUpdateConnection(ws: WebSocket, url: URL) {
     // 解析版本
     let targetVersion = version;
     if (!targetVersion || targetVersion === "latest") {
+      // 使用 GitHub API 获取最新版本，比解析 HTML 页面更可靠
       const { stdout } = await execAsync(
-        `curl -sL --max-time 30 "https://github.com/OpenListTeam/OpenList/releases" | grep -oE 'tag/v[0-9]+\\.[0-9]+\\.[0-9]+' | sed 's/tag\\///' | head -1`,
+        `curl -sL --max-time 30 \
+          -H "Accept: application/vnd.github.v3+json" \
+          "https://api.github.com/repos/OpenListTeam/OpenList/releases/latest" | \
+          grep -o '"tag_name": *"[^"]*"' | \
+          head -1 | \
+          sed 's/.*"v\\([0-9.]*\\)".*/\\1/'`,
         { timeout: 35000 },
       );
-      targetVersion = stdout.trim().replace(/^v/, "");
+      targetVersion = stdout.trim();
     }
 
     if (!targetVersion) {
