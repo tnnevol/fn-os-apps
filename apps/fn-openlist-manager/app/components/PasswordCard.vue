@@ -1,7 +1,11 @@
 <template>
   <el-card>
     <template #header>
-      <span><span class="card-icon password"><el-icon><Lock /></el-icon></span>密码管理</span>
+      <span
+        ><span class="card-icon password"
+          ><el-icon><Lock /></el-icon></span
+        >密码管理</span
+      >
     </template>
     <div class="flex flex-col gap-2">
       <div class="flex items-center gap-2">
@@ -11,7 +15,13 @@
           clearable
           style="flex: 1; min-width: 0"
         />
-        <el-button :size="btnSize" type="warning" @click="handleSetPassword" :loading="setting" :disabled="!customPassword.trim()">
+        <el-button
+          :size="btnSize"
+          type="warning"
+          @click="handleSetPassword"
+          :loading="setting"
+          :disabled="!customPassword.trim()"
+        >
           设置
         </el-button>
       </div>
@@ -33,8 +43,12 @@
     >
       <template #default>
         <div class="flex items-center gap-2">
-          <span>新密码: <strong>{{ displayPassword }}</strong></span>
-          <el-button type="warning" link size="small" @click="copyPassword">复制</el-button>
+          <span
+            >新密码: <strong>{{ displayPassword }}</strong></span
+          >
+          <el-button type="warning" link size="small" @click="copyPassword"
+            >复制</el-button
+          >
         </div>
       </template>
     </el-alert>
@@ -51,25 +65,33 @@ const customPassword = ref("");
 const displayPassword = ref("");
 
 const { width } = useWindowSize();
-const btnSize = computed(() => width.value >= 768 ? "default" : "small" as const);
+const btnSize = computed(() =>
+  width.value >= 768 ? "default" : ("small" as const),
+);
 
 async function handleRandomPassword() {
-  generating.value = true;
   try {
+    // 先生成随机密码并显示
     const res = await $fetch("/api/openlist/password", {
       method: "POST",
       body: { action: "random" },
     });
     const pwd = (res as any).password;
+
+    // 弹框确认是否使用该密码
     await ElMessageBox.confirm(
-      `是否使用随机密码：${pwd}`,
-      "确认使用",
+      `新密码：<strong style="color: #409eff; font-size: 16px;">${pwd}</strong>`,
+      "确认使用随机密码",
       {
         confirmButtonText: "确认使用",
         cancelButtonText: "取消",
         type: "warning",
+        dangerouslyUseHTMLString: true,
       },
     );
+
+    // 用户确认后，调用设置密码接口
+    setting.value = true;
     await $fetch("/api/openlist/password", {
       method: "POST",
       body: { action: "set", password: pwd },
@@ -81,6 +103,7 @@ async function handleRandomPassword() {
     ElMessage.error(e?.data?.message || "操作失败");
   } finally {
     generating.value = false;
+    setting.value = false;
   }
 }
 
