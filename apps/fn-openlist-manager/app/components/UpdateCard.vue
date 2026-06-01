@@ -71,7 +71,7 @@ const progressStep = ref("");
 
 const availableVersions = ref<string[]>([]);
 
-// 获取局域网 IP
+// 获取当前主机名（自动适配浏览器/服务端环境）
 const localIp = useLocalIp();
 
 async function fetchVersions() {
