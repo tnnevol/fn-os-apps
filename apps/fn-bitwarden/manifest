@@ -1,5 +1,5 @@
 appname               = fn-bitwarden
-version               = 4.1.1
+version               = 4.1.2
 display_name          = Bitwarden
 desc                  = Bitwarden 是一款开源密码管理器，可安全存储网站登录信息、信用卡、安全笔记等。
 platform             = x86
