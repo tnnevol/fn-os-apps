@@ -4,13 +4,7 @@ import type { Socket } from "node:net";
 import { WebSocketServer, WebSocket } from "ws";
 import { spawn, exec } from "node:child_process";
 import { promisify } from "node:util";
-import {
-  existsSync,
-  createWriteStream,
-  mkdirSync,
-  readFileSync,
-  writeFileSync,
-} from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { defineNitroPlugin } from "nitropack/runtime";
 import {
@@ -78,58 +72,68 @@ function handleLogConnection(ws: WebSocket) {
   });
 }
 
-// 下载文件并带进度（含节流和取消支持）
-async function downloadWithProgress(
+// 使用 curl 下载文件（自带进度、超时、取消支持）
+function downloadWithCurl(
   url: string,
   dest: string,
   onProgress: (pct: number) => void,
   signal: AbortSignal,
-) {
-  const response = await fetch(url, { signal });
-  if (!response.ok) {
-    throw new Error(`下载失败: HTTP ${response.status}`);
-  }
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    // --progress-bar: 输出进度百分比
+    // -L: 跟随重定向
+    // --max-time: 总超时 5 分钟
+    // --connect-timeout: 连接超时 30s
+    const args = [
+      "-L",
+      url,
+      "-o",
+      dest,
+      "--progress-bar",
+      "--max-time",
+      "300",
+      "--connect-timeout",
+      "30",
+    ];
+    const curl = spawn("curl", args);
 
-  const contentLength = Number(response.headers.get("content-length") || 0);
-  let received = 0;
-  let lastPercent = -1;
+    // 监听取消信号
+    const onAbort = () => {
+      curl.kill();
+      reject(new Error("下载已取消"));
+    };
+    signal.addEventListener("abort", onAbort, { once: true });
 
-  const writer = createWriteStream(dest);
-  const reader = response.body?.getReader();
-
-  if (!reader) {
-    throw new Error("无法读取响应流");
-  }
-
-  try {
-    while (true) {
-      if (signal.aborted) {
-        reader.cancel();
-        writer.close();
-        throw new Error("下载已取消");
-      }
-
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      received += value.length;
-      if (contentLength > 0) {
-        const pct = Math.round((received / contentLength) * 100);
-        // 节流：每变化 1% 才回调一次
-        if (pct !== lastPercent) {
+    // curl 的 stderr 输出进度信息，格式如：
+    //   45 1000M   45  450M    0:00:10  0:00:04 --:--:--  50.0M
+    //  百分比   总大小  已下载  总时间    已用时间   速度
+    let lastPercent = -1;
+    curl.stderr.on("data", (chunk: Buffer) => {
+      const text = chunk.toString();
+      // 匹配进度百分比（行首的数字）
+      const match = text.match(/^\s*(\d{1,3})/);
+      if (match) {
+        const pct = parseInt(match[1]!, 10);
+        if (!isNaN(pct) && pct !== lastPercent && pct <= 100) {
           lastPercent = pct;
           onProgress(pct);
         }
       }
-      writer.write(value);
-    }
-  } catch (err: any) {
-    writer.close();
-    throw err;
-  }
+    });
 
-  return new Promise<void>((resolve) => {
-    writer.end(() => resolve());
+    curl.on("close", (code) => {
+      signal.removeEventListener("abort", onAbort);
+      if (code === 0) {
+        resolve();
+      } else if (!signal.aborted) {
+        reject(new Error(`curl 下载失败，退出码: ${code}`));
+      }
+    });
+
+    curl.on("error", (err) => {
+      signal.removeEventListener("abort", onAbort);
+      reject(err);
+    });
   });
 }
 
@@ -205,8 +209,8 @@ async function handleUpdateConnection(ws: WebSocket, url: URL) {
     const tmpDir = process.env.TRIM_PKGTMP || "/tmp";
     const tarPath = join(tmpDir, "openlist.tar.gz");
 
-    // 下载（带节流和取消支持）
-    await downloadWithProgress(
+    // 下载（使用 curl，自带进度和超时控制）
+    await downloadWithCurl(
       downloadUrl,
       tarPath,
       (pct) => send({ step: "download", percent: pct }),
