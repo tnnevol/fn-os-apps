@@ -146,7 +146,10 @@ async function handleUpdateConnection(ws: WebSocket, url: URL) {
   console.log("[WS] Update connection received");
 
   // 解析 URL 参数
-  const mirror = url.searchParams.get("mirror") || "https://ghproxy.net/";
+  const userMirror = url.searchParams.get("mirror");
+  // 备选镜像代理列表
+  const mirrorList = ["https://gh-proxy.com/", "https://ghproxy.net/"];
+  const mirrors = userMirror ? [userMirror] : mirrorList;
   const version = url.searchParams.get("version")?.replace(/^v/, "") || "";
 
   // 用于取消下载的 AbortController
@@ -220,42 +223,38 @@ async function handleUpdateConnection(ws: WebSocket, url: URL) {
       targetVersion = "latest";
     }
 
-    // 构建下载链接，latest 时不添加 'v' 前缀
-    const downloadUrl =
-      targetVersion === "latest"
-        ? `${mirror}https://github.com/OpenListTeam/OpenList/releases/latest/download/openlist-${target}.tar.gz`
-        : `${mirror}https://github.com/OpenListTeam/OpenList/releases/download/v${targetVersion}/openlist-${target}.tar.gz`;
     const tmpDir = process.env.TRIM_PKGTMP || "/tmp";
     const tarPath = join(tmpDir, "openlist.tar.gz");
 
-    // 尝试下载（如果使用代理失败，则不使用代理重试）
-    let downloadSuccess = false;
-    try {
-      await downloadWithCurl(
-        downloadUrl,
-        tarPath,
-        (pct) => send({ step: "download", percent: pct }),
-        abortController.signal,
-      );
-      downloadSuccess = true;
-    } catch (err: any) {
-      console.log("[WS] Download with mirror failed, retrying without mirror");
-      // 如果使用了代理且下载失败，尝试不用代理直接下载
-      if (mirror && mirror !== "") {
-        const directUrl =
-          targetVersion === "latest"
-            ? `https://github.com/OpenListTeam/OpenList/releases/latest/download/openlist-${target}.tar.gz`
-            : `https://github.com/OpenListTeam/OpenList/releases/download/v${targetVersion}/openlist-${target}.tar.gz`;
+    // 尝试使用多个镜像代理下载
+    let lastError: Error | null = null;
 
+    for (let i = 0; i < mirrors.length; i++) {
+      const mirror = mirrors[i];
+      // 构建下载链接
+      const downloadUrl =
+        targetVersion === "latest"
+          ? `${mirror}https://github.com/OpenListTeam/OpenList/releases/latest/download/openlist-${target}.tar.gz`
+          : `${mirror}https://github.com/OpenListTeam/OpenList/releases/download/v${targetVersion}/openlist-${target}.tar.gz`;
+
+      try {
+        console.log(`[WS] Trying mirror ${i + 1}/${mirrors.length}: ${mirror}`);
         await downloadWithCurl(
-          directUrl,
+          downloadUrl,
           tarPath,
           (pct) => send({ step: "download", percent: pct }),
           abortController.signal,
         );
-        downloadSuccess = true;
-      } else {
-        throw err;
+        console.log("[WS] Download successful");
+        lastError = null;
+        break;
+      } catch (err: any) {
+        console.log(`[WS] Mirror ${i + 1} failed:`, err.message);
+        lastError = err;
+        // 如果是最后一个镜像，抛出错误
+        if (i === mirrors.length - 1) {
+          throw new Error(`所有镜像代理均不可用: ${err.message}`);
+        }
       }
     }
 
