@@ -10,11 +10,11 @@ DATADIR="${TRIM_PKGVAR}/data"
 LOG_FILE="${TRIM_PKGVAR}/log/mysqld.log"
 
 LOG() {
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> "${TRIM_TEMP_LOGFILE:-/dev/null}"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> "${TRIM_PKGVAR}/log/main.log"
 }
 
 ERROR_EXIT() {
-    echo "Error: $1" >> "${TRIM_TEMP_LOGFILE:-/dev/null}"
+    echo "Error: $1" > "${TRIM_TEMP_LOGFILE:-/dev/null}"
     exit 1
 }
 

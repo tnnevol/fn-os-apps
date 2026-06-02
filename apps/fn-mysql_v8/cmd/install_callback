@@ -6,7 +6,7 @@
 set -e
 
 LOG() {
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >&2
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> "${TRIM_PKGVAR}/log/install.log"
 }
 
 ERROR_EXIT() {
