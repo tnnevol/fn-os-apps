@@ -6,11 +6,11 @@ MYSQLD="/usr/sbin/mysqld"
 MYSQL_CONF="${TRIM_PKGETC}/my.cnf"
 PID_FILE="${TRIM_PKGVAR}/run/mysqld.pid"
 SOCK_FILE="${TRIM_PKGVAR}/run/mysqld.sock"
-DATADIR="${TRIM_PKGVAR}/data"
+DATADIR="${TRIM_PKGHOME}/data"
 LOG_FILE="${TRIM_PKGVAR}/log/mysqld.log"
 
 LOG() {
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> "${TRIM_PKGVAR}/log/main.log"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >&2
 }
 
 ERROR_EXIT() {

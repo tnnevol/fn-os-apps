@@ -23,14 +23,16 @@ fi
 if [ "$wizard_data_action" = "delete" ]; then
     LOG "删除应用数据..."
     
-    # 删除数据目录
-    rm -rf "${TRIM_PKGVAR:?}/data"
-    rm -rf "${TRIM_PKGVAR:?}/log"
-    rm -rf "${TRIM_PKGVAR:?}/run"
-    rm -rf "${TRIM_PKGVAR:?}/tmp"
+    # 删除用户数据目录 (TRIM_PKGHOME)
+    rm -rf "${TRIM_PKGHOME:?}/data"
     
-    # 删除配置文件
-    rm -rf "${TRIM_PKGETC:?}"
+    # 删除运行时目录 (TRIM_PKGVAR)
+    rm -rf "${TRIM_PKGVAR:?}/run"
+    rm -rf "${TRIM_PKGVAR:?}/log"
+    
+    # 删除配置文件 (TRIM_PKGETC)
+    rm -rf "${TRIM_PKGETC:?}/my.cnf"
+    rm -rf "${TRIM_PKGETC:?}/install.log"
     
     # 删除符号链接
     rm -f /usr/local/bin/mysql
@@ -40,7 +42,7 @@ if [ "$wizard_data_action" = "delete" ]; then
     LOG "应用数据已删除"
 else
     LOG "保留应用数据以供将来重新安装"
-    LOG "数据位置: ${TRIM_PKGVAR}/data"
+    LOG "数据位置: ${TRIM_PKGHOME}/data"
 fi
 
 # 清理安装时提取的临时文件（如果存在）

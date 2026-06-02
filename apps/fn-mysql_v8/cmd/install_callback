@@ -6,7 +6,7 @@
 set -e
 
 LOG() {
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> "${TRIM_PKGVAR}/log/install.log"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >&2
 }
 
 ERROR_EXIT() {
@@ -23,10 +23,10 @@ fi
 LOG "开始安装 MySQL 8.4.9..."
 
 # 创建必要的目录
-DATADIR="${TRIM_PKGVAR}/data"
+DATADIR="${TRIM_PKGHOME}/data"
 RUNDIR="${TRIM_PKGVAR}/run"
 LOGDIR="${TRIM_PKGVAR}/log"
-TMPDIR="${TRIM_PKGVAR}/tmp"
+TMPDIR="${TRIM_PKGTMP}/tmp"
 
 mkdir -p "$DATADIR"
 mkdir -p "$RUNDIR"
