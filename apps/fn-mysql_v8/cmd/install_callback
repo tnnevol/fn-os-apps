@@ -148,6 +148,7 @@ if [ -n "$MYSQL_ROOT_PASSWORD" ]; then
         --pid-file="${RUNDIR}/mysqld-init.pid" \
         --skip-networking \
         --user="$TRIM_USERNAME" \
+        --secure-file-priv= \
         >> "${TRIM_TEMP_LOGFILE:-/dev/null}" 2>&1 &
     
     TEMP_PID=$!
