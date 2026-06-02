@@ -5,7 +5,7 @@
 set -e
 
 LOG() {
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> "${TRIM_TEMP_LOGFILE:-/dev/null}"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >&2
 }
 
 # 停止 MySQL 服务（如果还在运行）
@@ -32,7 +32,6 @@ if [ "$wizard_data_action" = "delete" ]; then
     
     # 删除配置文件 (TRIM_PKGETC)
     rm -rf "${TRIM_PKGETC:?}/my.cnf"
-    rm -rf "${TRIM_PKGETC:?}/install.log"
     
     # 删除符号链接
     rm -f /usr/local/bin/mysql
