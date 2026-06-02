@@ -7,6 +7,8 @@ apps/fn-openlist/app/server
 # OpenList 二进制
 apps/fn-openlist/app/bin
 
+apps/fn-mysql_v8/app/server/mysql-community-server-core_8.4.9-1debian12_amd64.deb
+
 # Claude Code 配置
 .claude/
 .agents/

@@ -1,0 +1,177 @@
+#!/bin/bash
+
+### MySQL 8.4.9 生命周期管理脚本
+
+MYSQLD="/usr/sbin/mysqld"
+MYSQL_CONF="${TRIM_PKGETC}/my.cnf"
+PID_FILE="${TRIM_PKGVAR}/run/mysqld.pid"
+SOCK_FILE="${TRIM_PKGVAR}/run/mysqld.sock"
+DATADIR="${TRIM_PKGVAR}/data"
+LOG_FILE="${TRIM_PKGVAR}/log/mysqld.log"
+
+LOG() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> "${TRIM_TEMP_LOGFILE:-/dev/null}"
+}
+
+ERROR_EXIT() {
+    echo "Error: $1" >> "${TRIM_TEMP_LOGFILE:-/dev/null}"
+    exit 1
+}
+
+# 检查进程是否在运行
+check_process() {
+    local pid=$1
+    if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+# 获取 MySQL PID
+get_mysql_pid() {
+    if [ -f "$PID_FILE" ]; then
+        local pid=$(cat "$PID_FILE" 2>/dev/null | tr -d '[:space:]')
+        if [ -n "$pid" ]; then
+            echo "$pid"
+            return 0
+        fi
+    fi
+    
+    # 尝试通过 socket 查找
+    if [ -S "$SOCK_FILE" ]; then
+        local pid=$(lsof -t "$SOCK_FILE" 2>/dev/null | head -n 1)
+        if [ -n "$pid" ]; then
+            echo "$pid"
+            return 0
+        fi
+    fi
+    
+    return 1
+}
+
+case $1 in
+start)
+    # 检查必要目录是否存在
+    if [ ! -d "$DATADIR" ]; then
+        ERROR_EXIT "数据目录不存在: $DATADIR"
+    fi
+    
+    if [ ! -f "$MYSQL_CONF" ]; then
+        ERROR_EXIT "配置文件不存在: $MYSQL_CONF"
+    fi
+    
+    # 检查是否已经在运行
+    if PID=$(get_mysql_pid); then
+        if check_process "$PID"; then
+            LOG "MySQL 已经在运行 (PID: $PID)"
+            exit 0
+        else
+            # 清理过期 PID 文件
+            LOG "清理过期的 PID 文件"
+            rm -f "$PID_FILE"
+        fi
+    fi
+    
+    # 确保 run 目录存在
+    mkdir -p "${TRIM_PKGVAR}/run"
+    mkdir -p "${TRIM_PKGVAR}/log"
+    
+    LOG "启动 MySQL 8.4.9..."
+    
+    # 启动 MySQL
+    "$MYSQLD" \
+        --defaults-file="$MYSQL_CONF" \
+        --user="$TRIM_USERNAME" \
+        >> "$LOG_FILE" 2>&1 &
+    
+    MYSQL_PID=$!
+    LOG "MySQL 进程已启动 (PID: $MYSQL_PID)"
+    
+    # 等待 MySQL 就绪（最多等待 30 秒）
+    WAIT_COUNT=0
+    MAX_WAIT=30
+    
+    while [ $WAIT_COUNT -lt $MAX_WAIT ]; do
+        # 检查 socket 是否创建
+        if [ -S "$SOCK_FILE" ]; then
+            # 尝试连接
+            if /usr/bin/mysql --socket="$SOCK_FILE" -u root -e "SELECT 1;" >/dev/null 2>&1; then
+                LOG "MySQL 启动成功并已就绪"
+                exit 0
+            fi
+        fi
+        
+        # 检查进程是否还在运行
+        if ! check_process $MYSQL_PID; then
+            ERROR_EXIT "MySQL 进程异常退出，请查看日志: $LOG_FILE"
+        fi
+        
+        sleep 1
+        WAIT_COUNT=$((WAIT_COUNT + 1))
+    done
+    
+    ERROR_EXIT "MySQL 启动超时（${MAX_WAIT}秒），请查看日志: $LOG_FILE"
+    ;;
+
+stop)
+    LOG "停止 MySQL..."
+    
+    if PID=$(get_mysql_pid); then
+        if check_process "$PID"; then
+            LOG "发送 TERM 信号到 PID: $PID"
+            kill -TERM "$PID"
+            
+            # 等待进程退出（最多 10 秒）
+            COUNT=0
+            while check_process "$PID" && [ $COUNT -lt 10 ]; do
+                sleep 1
+                COUNT=$((COUNT + 1))
+            done
+            
+            # 如果还在运行，强制杀死
+            if check_process "$PID"; then
+                LOG "发送 KILL 信号到 PID: $PID"
+                kill -KILL "$PID"
+                sleep 1
+            fi
+            
+            LOG "MySQL 已停止"
+        else
+            LOG "MySQL 进程不存在 (PID: $PID)"
+        fi
+        
+        # 清理 PID 文件
+        rm -f "$PID_FILE"
+    else
+        LOG "未找到 MySQL PID 文件"
+    fi
+    
+    # 清理 socket 文件
+    rm -f "$SOCK_FILE"
+    
+    exit 0
+    ;;
+
+status)
+    if PID=$(get_mysql_pid); then
+        if check_process "$PID"; then
+            LOG "MySQL 正在运行 (PID: $PID)"
+            exit 0
+        else
+            # 进程不存在，清理过期文件
+            rm -f "$PID_FILE" "$SOCK_FILE"
+            LOG "MySQL 未运行（存在过期 PID 文件）"
+            exit 3
+        fi
+    else
+        LOG "MySQL 未运行"
+        exit 3
+    fi
+    ;;
+
+*)
+    echo "Usage: $0 {start|stop|status}"
+    exit 1
+    ;;
+esac

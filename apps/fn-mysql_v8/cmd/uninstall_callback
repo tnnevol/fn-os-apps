@@ -1,0 +1,51 @@
+#!/bin/bash
+
+### This script is called after the user uninstalls the application.
+
+set -e
+
+LOG() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> "${TRIM_TEMP_LOGFILE:-/dev/null}"
+}
+
+# 停止 MySQL 服务（如果还在运行）
+if [ -f "${TRIM_PKGVAR}/run/mysqld.pid" ]; then
+    PID=$(cat "${TRIM_PKGVAR}/run/mysqld.pid" 2>/dev/null)
+    if [ -n "$PID" ] && kill -0 "$PID" 2>/dev/null; then
+        LOG "停止运行中的 MySQL 服务..."
+        kill -TERM "$PID" 2>/dev/null || true
+        sleep 2
+        kill -KILL "$PID" 2>/dev/null || true
+    fi
+fi
+
+# 根据用户选择处理数据
+if [ "$wizard_data_action" = "delete" ]; then
+    LOG "删除应用数据..."
+    
+    # 删除数据目录
+    rm -rf "${TRIM_PKGVAR:?}/data"
+    rm -rf "${TRIM_PKGVAR:?}/log"
+    rm -rf "${TRIM_PKGVAR:?}/run"
+    rm -rf "${TRIM_PKGVAR:?}/tmp"
+    
+    # 删除配置文件
+    rm -rf "${TRIM_PKGETC:?}"
+    
+    # 删除符号链接
+    rm -f /usr/local/bin/mysql
+    rm -f /usr/local/bin/mysqldump
+    rm -f /usr/local/bin/mysqladmin
+    
+    LOG "应用数据已删除"
+else
+    LOG "保留应用数据以供将来重新安装"
+    LOG "数据位置: ${TRIM_PKGVAR}/data"
+fi
+
+# 清理安装时提取的临时文件（如果存在）
+if [ -d "${TRIM_PKGTMP}/mysql_extract" ]; then
+    rm -rf "${TRIM_PKGTMP}/mysql_extract"
+fi
+
+exit 0
