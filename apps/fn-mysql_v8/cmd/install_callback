@@ -6,11 +6,11 @@
 set -e
 
 LOG() {
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> "${TRIM_TEMP_LOGFILE:-/dev/null}"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >&2
 }
 
 ERROR_EXIT() {
-    echo "Error: $1" >> "${TRIM_TEMP_LOGFILE:-/dev/null}"
+    echo "Error: $1" > "${TRIM_TEMP_LOGFILE:-/dev/null}"
     exit 1
 }
 
@@ -128,7 +128,7 @@ else
         --datadir="$DATADIR" \
         --user="$TRIM_USERNAME" \
         --basedir=/usr \
-        >> "${TRIM_TEMP_LOGFILE:-/dev/null}" 2>&1
+        2>&1 | tee -a "${LOGDIR}/init.log" >&2
     
     if [ $? -ne 0 ]; then
         ERROR_EXIT "MySQL 数据目录初始化失败"
@@ -149,7 +149,7 @@ if [ -n "$MYSQL_ROOT_PASSWORD" ]; then
         --skip-networking \
         --user="$TRIM_USERNAME" \
         --secure-file-priv= \
-        >> "${TRIM_TEMP_LOGFILE:-/dev/null}" 2>&1 &
+        >> "${LOGDIR}/init.log" 2>&1 &
     
     TEMP_PID=$!
     
@@ -173,7 +173,7 @@ if [ -n "$MYSQL_ROOT_PASSWORD" ]; then
         -u root \
         --connect-expired-password \
         -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '${MYSQL_ROOT_PASSWORD}'; FLUSH PRIVILEGES;" \
-        >> "${TRIM_TEMP_LOGFILE:-/dev/null}" 2>&1
+        2>&1 | tee -a "${LOGDIR}/init.log" >&2
     
     if [ $? -ne 0 ]; then
         kill $TEMP_PID 2>/dev/null
