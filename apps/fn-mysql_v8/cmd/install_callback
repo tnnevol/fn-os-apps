@@ -15,7 +15,7 @@ ERROR_EXIT() {
 }
 
 # 检查 deb 包是否存在
-DEB_FILE="${TRIM_APPDEST}/mysql-community-server-core_8.4.9-1debian12_amd64.deb"
+DEB_FILE="${TRIM_APPDEST}/server/mysql-community-server-core_8.4.9-1debian12_amd64.deb"
 if [ ! -f "$DEB_FILE" ]; then
     ERROR_EXIT "MySQL deb 包不存在: $DEB_FILE"
 fi
