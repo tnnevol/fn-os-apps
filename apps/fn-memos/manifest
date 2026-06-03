@@ -14,3 +14,4 @@ desktop_applaunchname = fn-memos.main
 service_port          = 5230
 disable_authorization_path = true
 checkport             = true
+changelog             = 去除安装中自动升级业务；新增升级面板
