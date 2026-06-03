@@ -78,11 +78,20 @@ if [ ! -x "${MYSQLD}" ]; then
     # 2c. Clean up extracted debs
     rm -rf "${BUNDLE_DIR}"
 
-    # 2d. Remove the bundle tar to free disk space (~488MB)
+    # 2d. Copy etc/ configuration files to TRIM_PKGETC
+    if [ -d "${SERVER_DIR}/etc/mysql" ]; then
+        log "Copying MySQL configuration files to ${TRIM_PKGETC} ..."
+        mkdir -p "${TRIM_PKGETC}"
+        cp -r "${SERVER_DIR}/etc/mysql/"* "${TRIM_PKGETC}/"
+        rm -rf "${SERVER_DIR}/etc"
+        log "Configuration files copied successfully"
+    fi
+
+    # 2e. Remove the bundle tar to free disk space (~488MB)
     log "Removing deb bundle tar to free disk space ..."
     rm -f "${DEB_BUNDLE}"
 
-    # 2e. Ensure plugin directory is accessible
+    # 2f. Ensure plugin directory is accessible
     if [ -d "${SERVER_DIR}/usr/lib/mysql/plugin" ]; then
         log "MySQL plugin directory found"
     elif [ -d "${SERVER_DIR}/usr/lib/x86_64-linux-gnu/mysql/plugin" ]; then
@@ -92,9 +101,9 @@ if [ ! -x "${MYSQLD}" ]; then
         log "Linked plugin directory"
     fi
 
-    # 2f. Verify mysqld binary
+    # 2g. Verify mysqld binary
     if [ ! -x "${MYSQLD}" ]; then
-        user_error "MySQL 安装失败：mysqld 可执行文件未找到，请重试。"
+        user_error "MySQL 安装失败:mysqld 可执行文件未找到,请重试。"
         exit 1
     fi
 
