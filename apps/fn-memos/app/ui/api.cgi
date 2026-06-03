@@ -133,10 +133,12 @@ do_upgrade() {
 restart_app() {
     local version_msg="${1:-}"
     local PID_FILE="/var/apps/fn-memos/var/app.pid"
-    local MAIN_SCRIPT="/var/apps/fn-memos/cmd/main"
     local MEMOS_BIN="/var/apps/fn-memos/target/bin/memos"
+    local MEMOS_PORT="5230"
+    local DATA_DIR="/var/apps/fn-memos/var/data"
+    local INFO_LOG="/var/apps/fn-memos/var/info.log"
 
-    # --- Stop: read PID, send TERM then KILL ---
+    # --- Stop: 参考 cmd/main stop_process ---
     log "stopping memos process"
 
     if [ -r "$PID_FILE" ]; then
@@ -152,6 +154,7 @@ restart_app() {
             while kill -0 "$pid" 2>/dev/null && [ $count -lt 10 ]; do
                 sleep 1
                 count=$((count + 1))
+                log "waiting process terminal... (${count}s/10s)"
             done
 
             if kill -0 "$pid" 2>/dev/null; then
@@ -169,33 +172,28 @@ restart_app() {
 
     sleep 1
 
-    # --- Start: use main script to get correct env (port, storage, dsn) ---
-    log "starting memos via cmd/main"
+    # --- Start: 参考 cmd/main start_process ---
+    log "starting memos process"
 
-    if [ -x "$MAIN_SCRIPT" ]; then
-        "$MAIN_SCRIPT" start
-        sleep 3
-    else
-        log "main script not found, fallback to direct start"
-        "$MEMOS_BIN" --port 5230 --data "/var/apps/fn-memos/var/data" >> "/var/apps/fn-memos/var/info.log" 2>&1 &
-        sleep 2
-    fi
+    local CMD="${MEMOS_BIN} --port ${MEMOS_PORT} --data ${DATA_DIR}"
+
+    bash -c "${CMD}" >> "${INFO_LOG}" 2>&1 &
+    local new_pid=$!
+    printf "%s" "$new_pid" > "$PID_FILE"
+    log "memos started with pid $new_pid"
+
+    sleep 3
 
     # --- Verify ---
-    if [ -r "$PID_FILE" ]; then
-        local new_pid
-        new_pid=$(head -n 1 "$PID_FILE" | tr -d '[:space:]')
-        if [ -n "$new_pid" ] && kill -0 "$new_pid" 2>/dev/null; then
-            if [ -n "$version_msg" ]; then
-                output_json "{\"success\":true,\"message\":\"$version_msg\\nMemos 服务已重启（PID: $new_pid）。\"}"
-            else
-                output_json "{\"success\":true,\"message\":\"Memos 服务已重启（PID: $new_pid）。\"}"
-            fi
-            return
+    if kill -0 "$new_pid" 2>/dev/null; then
+        if [ -n "$version_msg" ]; then
+            output_json "{\"success\":true,\"message\":\"$version_msg\\nMemos 服务已重启（PID: $new_pid）。\"}"
+        else
+            output_json "{\"success\":true,\"message\":\"Memos 服务已重启（PID: $new_pid）。\"}"
         fi
+    else
+        output_json '{"success":false,"message":"Memos 启动失败，请查看日志。"}'
     fi
-
-    output_json '{"success":false,"message":"Memos 启动失败，请查看日志。"}'
 }
 
 REQUEST_METHOD="${REQUEST_METHOD:-GET}"
