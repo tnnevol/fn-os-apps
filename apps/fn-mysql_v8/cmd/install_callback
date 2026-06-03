@@ -137,6 +137,10 @@ port                    = ${MYSQL_PORT}
 socket                  = ${SOCKET_FILE}
 mysqlx                  = 0
 
+# Connection & DNS
+host-cache-size         = 0
+skip-name-resolve
+
 # Paths
 datadir                 = ${DATADIR}
 basedir                 = ${SERVER_DIR}/usr
