@@ -8,6 +8,14 @@
       "port": "${wizard_port}",
       "url": "/",
       "allUsers": false
+    },
+    "fn-memos.upgrade": {
+      "title": "Memos 升级管理",
+      "icon": "images/icon_{0}.png",
+      "type": "iframe",
+      "protocol": "http",
+      "url": "/cgi/ThirdParty/fn-memos/upgrade.cgi/",
+      "allUsers": false
     }
   }
 }

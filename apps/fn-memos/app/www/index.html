@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memos 升级管理</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: #f5f7fa;
+            color: #333;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            max-width: 520px;
+            width: 100%;
+            padding: 32px;
+        }
+        h1 {
+            font-size: 22px;
+            font-weight: 600;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        h1::before {
+            content: "";
+            display: inline-block;
+            width: 4px;
+            height: 22px;
+            background: #4a90d9;
+            border-radius: 2px;
+        }
+        .info-card {
+            background: #f8fafc;
+            border: 1px solid #e8ecf1;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+        }
+        .info-row + .info-row {
+            border-top: 1px solid #e8ecf1;
+        }
+        .info-label {
+            color: #666;
+            font-size: 14px;
+        }
+        .info-value {
+            font-weight: 500;
+            font-size: 14px;
+        }
+        .info-value.current { color: #4a90d9; }
+        .info-value.latest { color: #52c41a; }
+        .info-value.loading { color: #999; }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 10px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background: #4a90d9;
+            color: #fff;
+        }
+        .btn-primary:hover { background: #3a7bc8; }
+        .btn-primary:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .btn-check {
+            background: #f0f5ff;
+            color: #4a90d9;
+            border: 1px solid #d6e4ff;
+        }
+        .btn-check:hover { background: #e6f0ff; }
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+        .status {
+            margin-top: 16px;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .status.info { background: #e6f7ff; color: #0050b3; border: 1px solid #91d5ff; }
+        .status.success { background: #f6ffed; color: #389e0d; border: 1px solid #b7eb8f; }
+        .status.error { background: #fff2f0; color: #cf1322; border: 1px solid #ffa39e; }
+        .status.loading { background: #fffbe6; color: #d48806; border: 1px solid #ffe58f; }
+        .spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid #e8ecf1;
+            border-top-color: #4a90d9;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .badge-upgrade { background: #fff3e0; color: #e65100; }
+        .badge-latest { background: #e8f5e9; color: #2e7d32; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Memos 升级管理</h1>
+
+        <div class="info-card">
+            <div class="info-row">
+                <span class="info-label">当前版本</span>
+                <span class="info-value current" id="currentVersion">
+                    <span class="spinner"></span> 检测中...
+                </span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">最新版本</span>
+                <span class="info-value latest" id="latestVersion">
+                    <span class="spinner"></span> 检测中...
+                </span>
+            </div>
+            <div class="info-row" id="statusRow" style="display:none;">
+                <span class="info-label">状态</span>
+                <span id="upgradeStatus"></span>
+            </div>
+        </div>
+
+        <div class="btn-group">
+            <button class="btn btn-check" id="checkBtn" onclick="checkVersion()">
+                检查更新
+            </button>
+            <button class="btn btn-primary" id="upgradeBtn" onclick="doUpgrade()" disabled>
+                升级 Memos
+            </button>
+        </div>
+
+        <div class="status" id="logArea" style="display:none;"></div>
+    </div>
+
+    <script>
+        let hasUpdate = false;
+
+        async function checkVersion() {
+            const checkBtn = document.getElementById('checkBtn');
+            const currentEl = document.getElementById('currentVersion');
+            const latestEl = document.getElementById('latestVersion');
+            const statusRow = document.getElementById('statusRow');
+            const upgradeBtn = document.getElementById('upgradeBtn');
+            const logArea = document.getElementById('logArea');
+
+            checkBtn.disabled = true;
+            checkBtn.innerHTML = '<span class="spinner"></span> 检查中...';
+            logArea.style.display = 'none';
+            statusRow.style.display = 'none';
+
+            try {
+                const res = await fetch('upgrade.cgi?action=check', { method: 'POST' });
+                const data = await res.json();
+
+                currentEl.textContent = data.current_version || '未检测到';
+                latestEl.textContent = data.latest_version || '无法获取';
+
+                if (data.has_update) {
+                    hasUpdate = true;
+                    upgradeBtn.disabled = false;
+                    statusRow.style.display = 'flex';
+                    document.getElementById('upgradeStatus').innerHTML =
+                        '<span class="badge badge-upgrade">可升级</span>';
+                } else if (data.current_version && data.latest_version) {
+                    hasUpdate = false;
+                    upgradeBtn.disabled = true;
+                    statusRow.style.display = 'flex';
+                    document.getElementById('upgradeStatus').innerHTML =
+                        '<span class="badge badge-latest">已是最新</span>';
+                } else {
+                    upgradeBtn.disabled = true;
+                }
+            } catch (e) {
+                currentEl.textContent = '检测失败';
+                latestEl.textContent = '检测失败';
+                logArea.style.display = 'block';
+                logArea.className = 'status error';
+                logArea.textContent = '请求失败: ' + e.message;
+            }
+
+            checkBtn.disabled = false;
+            checkBtn.innerHTML = '检查更新';
+        }
+
+        async function doUpgrade() {
+            if (!confirm('确定要升级 Memos 到最新版本吗？\n升级过程中服务会短暂不可用。')) return;
+
+            const upgradeBtn = document.getElementById('upgradeBtn');
+            const checkBtn = document.getElementById('checkBtn');
+            const logArea = document.getElementById('logArea');
+
+            upgradeBtn.disabled = true;
+            upgradeBtn.innerHTML = '<span class="spinner"></span> 升级中...';
+            checkBtn.disabled = true;
+            logArea.style.display = 'block';
+            logArea.className = 'status loading';
+            logArea.textContent = '正在下载并升级 Memos，请稍候...';
+
+            try {
+                const res = await fetch('upgrade.cgi?action=upgrade', { method: 'POST' });
+                const data = await res.json();
+
+                if (data.success) {
+                    logArea.className = 'status success';
+                    logArea.textContent = data.message || '升级成功！请刷新页面查看新版本号。';
+                    setTimeout(() => checkVersion(), 1500);
+                } else {
+                    logArea.className = 'status error';
+                    logArea.textContent = data.message || '升级失败';
+                    upgradeBtn.disabled = false;
+                    upgradeBtn.innerHTML = '升级 Memos';
+                }
+            } catch (e) {
+                logArea.className = 'status error';
+                logArea.textContent = '请求失败: ' + e.message;
+                upgradeBtn.disabled = false;
+                upgradeBtn.innerHTML = '升级 Memos';
+            }
+
+            checkBtn.disabled = false;
+        }
+
+        // Auto check on page load
+        checkVersion();
+    </script>
+</body>
+</html>
