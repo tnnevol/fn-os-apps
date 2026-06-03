@@ -63,8 +63,8 @@ start_process() {
         count=$((count + 1))
 
         # Check if process is still alive
-        if ! kill -0 "${mysqld_pid}" 2>/dev/null; then
-            user_error "MySQL 启动失败，请查看应用日志了解详情。"
+        if ! check_process "${mysqld_pid}"; then
+            user_error "MySQL 启动失败,请查看应用日志了解详情。"
             rm -f "${PID_FILE}"
             return 1
         fi
@@ -88,61 +88,71 @@ start_process() {
 stop_process() {
     log_msg "Stopping MySQL ..."
 
-    if [ -f "${PID_FILE}" ]; then
-        local pid
+    if [ -r "${PID_FILE}" ]; then
         pid=$(head -n 1 "${PID_FILE}" | tr -d '[:space:]')
-        if kill -0 "${pid}" 2>/dev/null; then
-            # Graceful shutdown via mysqladmin
-            if [ -n "${MYSQL_ROOT_PASSWORD}" ] && \
-               [ -f "${TRIM_PKGETC}/.root_password_set" ]; then
-                sudo -u "${TRIM_USERNAME}" "${MYSQLADMIN}" \
-                    --socket="${SOCKET_FILE}" \
-                    -u root -p"${MYSQL_ROOT_PASSWORD}" \
-                    shutdown >> "${LOG_FILE}" 2>&1
-            else
-                sudo -u "${TRIM_USERNAME}" "${MYSQLADMIN}" \
-                    --socket="${SOCKET_FILE}" \
-                    -u root \
-                    shutdown >> "${LOG_FILE}" 2>&1
-            fi
+        
+        log_msg "pid=${pid}"
+        if ! check_process "${pid}"; then
+            # process not exist, delete pidfile
+            rm -f "${PID_FILE}"
+            log_msg "remove pid file 1"
+            return
         fi
-    fi
 
-    # Wait up to 30 seconds for graceful shutdown
-    if [ -f "${PID_FILE}" ]; then
-        local pid
-        pid=$(head -n 1 "${PID_FILE}" | tr -d '[:space:]')
+        # Graceful shutdown via mysqladmin (MySQL specific)
+        if [ -n "${MYSQL_ROOT_PASSWORD}" ] && \
+           [ -f "${TRIM_PKGETC}/.root_password_set" ]; then
+            sudo -u "${TRIM_USERNAME}" "${MYSQLADMIN}" \
+                --socket="${SOCKET_FILE}" \
+                -u root -p"${MYSQL_ROOT_PASSWORD}" \
+                shutdown >> "${LOG_FILE}" 2>&1
+        else
+            sudo -u "${TRIM_USERNAME}" "${MYSQLADMIN}" \
+                --socket="${SOCKET_FILE}" \
+                -u root \
+                shutdown >> "${LOG_FILE}" 2>&1
+        fi
+
         local count=0
-        while kill -0 "${pid}" 2>/dev/null && [ $count -lt 30 ]; do
+        while check_process "${pid}" && [ $count -lt 10 ]; do
             sleep 1
             count=$((count + 1))
-            log_msg "Waiting for MySQL to stop... (${count}s/30s)"
+            log_msg "waiting process terminal... (${count}s/10s)"
         done
 
-        # Force kill if still running
-        if kill -0 "${pid}" 2>/dev/null; then
-            log_msg "MySQL did not stop gracefully, sending SIGKILL ..."
-            kill -KILL "${pid}" >> "${LOG_FILE}" 2>&1
-            sleep 2
+        if check_process "${pid}"; then
+            log_msg "send KILL signal to PID:${pid}..."
+            kill -KILL "${pid}"
+            sleep 1
+            rm -f "${PID_FILE}"
+        else
+            log_msg "process killed... "
         fi
-        rm -f "${PID_FILE}"
     fi
 
-    log_msg "MySQL stopped"
     return 0
+}
+
+check_process() {
+    local pid=$1
+    if kill -0 "${pid}" 2>/dev/null; then
+        return 0  # process exist
+    else
+        return 1  # process not exist
+    fi
 }
 
 status() {
     if [ -f "${PID_FILE}" ]; then
-        local pid
         pid=$(head -n 1 "${PID_FILE}" | tr -d '[:space:]')
-        if kill -0 "${pid}" 2>/dev/null; then
+        if check_process "${pid}"; then
             return 0
         else
-            # Stale PID file
+            # Process is not running but pidfile exists - clean it up
             rm -f "${PID_FILE}"
-        fi
+        fi    
     fi
+
     return 1
 }
 
