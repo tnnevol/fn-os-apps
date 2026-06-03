@@ -131,32 +131,71 @@ do_upgrade() {
 }
 
 restart_app() {
-    log "restarting memos app"
-    local main_script="/var/apps/fn-memos/cmd/main"
     local version_msg="${1:-}"
+    local PID_FILE="/var/apps/fn-memos/var/app.pid"
+    local MAIN_SCRIPT="/var/apps/fn-memos/cmd/main"
+    local MEMOS_BIN="/var/apps/fn-memos/target/bin/memos"
 
-    if [ ! -x "$main_script" ]; then
-        log "main script not found at $main_script"
-        output_json "{\"success\":false,\"message\":\"未找到应用主脚本。\"}"
-        return
-    fi
+    # --- Stop: read PID, send TERM then KILL ---
+    log "stopping memos process"
 
-    # Stop then start
-    "$main_script" stop
-    sleep 2
-    "$main_script" start
-    sleep 3
+    if [ -r "$PID_FILE" ]; then
+        local pid
+        pid=$(head -n 1 "$PID_FILE" | tr -d '[:space:]')
+        log "pid from file: $pid"
 
-    # Check status
-    if "$main_script" status; then
-        if [ -n "$version_msg" ]; then
-            output_json "{\"success\":true,\"message\":\"$version_msg\\nMemos 服务已重启。\"}"
-        else
-            output_json '{"success":true,"message":"Memos 服务已重启。"}'
+        if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+            log "send TERM to PID:${pid}"
+            kill -TERM "$pid" 2>/dev/null
+
+            local count=0
+            while kill -0 "$pid" 2>/dev/null && [ $count -lt 10 ]; do
+                sleep 1
+                count=$((count + 1))
+            done
+
+            if kill -0 "$pid" 2>/dev/null; then
+                log "send KILL to PID:${pid}"
+                kill -KILL "$pid" 2>/dev/null
+                sleep 1
+            fi
         fi
+
+        rm -f "$PID_FILE"
+        log "pid file removed"
     else
-        output_json '{"success":false,"message":"Memos 重启失败，请手动重启应用。"}'
+        log "pid file not found"
     fi
+
+    sleep 1
+
+    # --- Start: use main script to get correct env (port, storage, dsn) ---
+    log "starting memos via cmd/main"
+
+    if [ -x "$MAIN_SCRIPT" ]; then
+        "$MAIN_SCRIPT" start
+        sleep 3
+    else
+        log "main script not found, fallback to direct start"
+        "$MEMOS_BIN" --port 5230 --data "/var/apps/fn-memos/var/data" >> "/var/apps/fn-memos/var/info.log" 2>&1 &
+        sleep 2
+    fi
+
+    # --- Verify ---
+    if [ -r "$PID_FILE" ]; then
+        local new_pid
+        new_pid=$(head -n 1 "$PID_FILE" | tr -d '[:space:]')
+        if [ -n "$new_pid" ] && kill -0 "$new_pid" 2>/dev/null; then
+            if [ -n "$version_msg" ]; then
+                output_json "{\"success\":true,\"message\":\"$version_msg\\nMemos 服务已重启（PID: $new_pid）。\"}"
+            else
+                output_json "{\"success\":true,\"message\":\"Memos 服务已重启（PID: $new_pid）。\"}"
+            fi
+            return
+        fi
+    fi
+
+    output_json '{"success":false,"message":"Memos 启动失败，请查看日志。"}'
 }
 
 REQUEST_METHOD="${REQUEST_METHOD:-GET}"
