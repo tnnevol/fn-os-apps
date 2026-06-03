@@ -7,9 +7,9 @@
 #       提供版本检查和二进制升级接口
 # ============================================================
 
-BIN_DIR="${TRIM_APPDEST}/bin"
+BIN_DIR="/var/apps/fn-memos/target/bin"
 MEMOS_BIN="${BIN_DIR}/memos"
-TEMP_DIR="${TRIM_PKGTMP:-/tmp/fn-memos-upgrade}"
+TEMP_DIR="/var/apps/fn-memos/tmp"
 
 export PATH="/usr/local/bin:/usr/bin:/bin"
 

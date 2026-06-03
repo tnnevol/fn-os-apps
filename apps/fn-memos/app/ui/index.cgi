@@ -3,7 +3,7 @@
 echo "Content-Type: text/html; charset=utf-8"
 echo ""
 
-HTML_PATH="${TRIM_APPDEST}/www/index.html"
+HTML_PATH="/var/apps/fn-memos/target/www/index.html"
 
 if [ ! -f "$HTML_PATH" ]; then
     echo "<h1>错误：index.html 不存在</h1>"
