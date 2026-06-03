@@ -179,6 +179,7 @@ if [ -n "${MYSQL_ROOT_PASSWORD}" ]; then
     # Start temporary MySQL instance to set password
     "${MYSQLD}" \
         --defaults-file="${CNF_FILE}" \
+        --user="${TRIM_USERNAME}" \
         --port=0 \
         --skip-networking &
     TEMP_PID=$!
