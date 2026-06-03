@@ -125,34 +125,6 @@ h1::before {
   margin-top: 20px;
 }
 
-.status {
-  margin-top: 16px;
-  padding: 12px;
-  border-radius: 6px;
-  font-size: 13px;
-  line-height: 1.6;
-  white-space: pre-wrap;
-  word-break: break-all;
-}
-
-.status.success {
-  background: #f6ffed;
-  color: #389e0d;
-  border: 1px solid #b7eb8f;
-}
-
-.status.error {
-  background: #fff2f0;
-  color: #cf1322;
-  border: 1px solid #ffa39e;
-}
-
-.status.loading {
-  background: #fffbe6;
-  color: #d48806;
-  border: 1px solid #ffe58f;
-}
-
 .spinner {
   display: inline-block;
   width: 14px;
@@ -250,4 +222,30 @@ h1::before {
 
 .btn-default:hover {
   background: #e8e8e8;
+}
+
+/* Log panel */
+
+.log-panel {
+  margin-top: 20px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-family: "SF Mono", "Fira Code", "Cascadia Code", Consolas, monospace;
+  line-height: 1.7;
+  background: #1e1e1e;
+  color: #d4d4d4;
+  max-height: 280px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.log-panel::-webkit-scrollbar {
+  width: 6px;
+}
+
+.log-panel::-webkit-scrollbar-thumb {
+  background: #555;
+  border-radius: 3px;
 }

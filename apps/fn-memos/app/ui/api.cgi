@@ -128,6 +128,30 @@ do_upgrade() {
     fi
 }
 
+restart_app() {
+    log "restarting memos app"
+    local main_script="/var/apps/fn-memos/cmd/main"
+
+    if [ ! -x "$main_script" ]; then
+        log "main script not found at $main_script"
+        output_json '{"success":false,"message":"未找到应用主脚本。"}'
+        return
+    fi
+
+    # Stop then start
+    "$main_script" stop
+    sleep 2
+    "$main_script" start
+    sleep 3
+
+    # Check status
+    if "$main_script" status; then
+        output_json '{"success":true,"message":"Memos 服务已重启。"}'
+    else
+        output_json '{"success":false,"message":"Memos 重启失败，请手动重启应用。"}'
+    fi
+}
+
 REQUEST_METHOD="${REQUEST_METHOD:-GET}"
 ACTION=""
 
@@ -151,6 +175,9 @@ case "$ACTION" in
         ;;
     upgrade)
         do_upgrade
+        ;;
+    restart)
+        restart_app
         ;;
     *)
         output_json '{"error":"unknown action"}'
