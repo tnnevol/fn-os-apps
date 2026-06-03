@@ -121,8 +121,9 @@ do_upgrade() {
         chmod +x "$MEMOS_BIN"
         rm -rf "$TEMP_DIR"
 
-        log "binary replaced successfully"
-        output_json "{\"success\":true,\"message\":\"Memos 已成功升级至 ${latest} 版本。请前往应用中心重启应用以使新版本生效。\"}"
+        # 替换成功后自动重启
+        log "binary replaced, auto restarting..."
+        restart_app "${latest}"
     else
         log "downloaded binary not executable"
         rm -rf "$TEMP_DIR"
@@ -131,7 +132,8 @@ do_upgrade() {
 }
 
 restart_app() {
-    log "restart_app called"
+    local new_version="${1:-}"
+    log "restart_app called (target version: ${new_version:-current})"
 
     local PID_FILE="/var/apps/fn-memos/var/app.pid"
     local CNF_FILE="/var/apps/fn-memos/target/wizard/install.cnf"
@@ -206,7 +208,11 @@ restart_app() {
 
     # --- Verify ---
     if kill -0 "$new_pid" 2>/dev/null; then
-        output_json "{\"success\":true,\"message\":\"Memos 服务已重启（PID: $new_pid）。\"}"
+        if [ -n "$new_version" ]; then
+            output_json "{\"success\":true,\"message\":\"Memos 已成功升级至 ${new_version} 版本并重启。\"}"
+        else
+            output_json "{\"success\":true,\"message\":\"Memos 服务已重启（PID: $new_pid）。\"}"
+        fi
     else
         output_json '{"success":false,"message":"Memos 启动失败，请查看日志。"}'
     fi

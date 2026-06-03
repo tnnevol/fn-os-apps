@@ -132,7 +132,7 @@
   function doUpgrade() {
     createDialog(
       "确认升级",
-      "确定要将 Memos 升级到最新版本吗？\n升级完成后需前往应用中心重启应用。",
+      "确定要将 Memos 升级到最新版本吗？\n升级完成后将自动重启服务。",
       {
         icon: "⬆️",
         buttons: [
