@@ -10,7 +10,7 @@ maintainer            = hectorqin
 maintainer_url        = https://github.com/hectorqin/reader
 distributor           = tnnevol
 
-distributor_url       = https://github.com/tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
 desktop_uidir         = ui
 desktop_applaunchname = fn-reader.Application
 disable_authorization_path = true
