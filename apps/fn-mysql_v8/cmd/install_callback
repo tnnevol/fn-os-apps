@@ -10,7 +10,8 @@ SERVER_DIR="${TRIM_APPDEST}/server"
 MYSQLD="${SERVER_DIR}/usr/sbin/mysqld"
 MYSQL_CLIENT="${SERVER_DIR}/usr/bin/mysql"
 DATADIR="${TRIM_PKGHOME}/data"
-CNF_FILE="${TRIM_PKGETC}/my.cnf"
+CNF_FILE="${TRIM_PKGETC}/mysql.cnf"
+MYSQLD_CNF_FILE="${TRIM_PKGETC}/mysql.conf.d/mysqld.cnf"
 SOCKET_FILE="${TRIM_PKGVAR}/mysql.sock"
 MYSQL_PORT="${APP_PORT:-3306}"
 
@@ -78,46 +79,12 @@ if [ ! -x "${MYSQLD}" ]; then
     # 2c. Clean up extracted debs
     rm -rf "${BUNDLE_DIR}"
 
-    # 2d. Copy etc/ configuration files to TRIM_PKGETC and override
+    # 2d. Copy etc/ configuration files to TRIM_PKGETC
     if [ -d "${SERVER_DIR}/etc/mysql" ]; then
         log "Copying MySQL configuration files to ${TRIM_PKGETC} ..."
-        mkdir -p "${TRIM_PKGETC}/mysql.conf.d"
         cp -r "${SERVER_DIR}/etc/mysql/"* "${TRIM_PKGETC}/"
         rm -rf "${SERVER_DIR}/etc"
-        
-        # Override mysql.cnf with correct includedir paths
-        cat > "${TRIM_PKGETC}/mysql.cnf" << 'EOF'
-# MySQL Server configuration file.
-# Managed by fn-mysql_v8 application
-
-# Include additional configuration directories
-!includedir ${TRIM_PKGETC}/conf.d/
-!includedir ${TRIM_PKGETC}/mysql.conf.d/
-EOF
-        # Replace variables in mysql.cnf
-        sed -i "s|\${TRIM_PKGETC}|${TRIM_PKGETC}|g" "${TRIM_PKGETC}/mysql.cnf"
-        
-        # Override mysqld.cnf with correct paths
-        cat > "${TRIM_PKGETC}/mysql.conf.d/mysqld.cnf" << EOF
-[mysqld]
-# Basic MySQL server configuration
-# Managed by fn-mysql_v8 application
-
-# Runtime files
-pid-file        = ${TRIM_PKGVAR}/run/mysqld.pid
-socket          = ${TRIM_PKGVAR}/mysql.sock
-
-# Data directory
-datadir         = ${TRIM_PKGHOME}/data
-
-# Error log
-log-error       = ${TRIM_PKGVAR}/error.log
-
-# Slow query log (optional)
-slow-query-log-file = ${TRIM_PKGVAR}/slow.log
-EOF
-        
-        log "Configuration files updated with fnOS paths"
+        log "Configuration files copied successfully"
     fi
 
     # 2e. Remove the bundle tar to free disk space (~488MB)
@@ -145,9 +112,24 @@ else
     log "MySQL binaries already installed, skipping extraction"
 fi
 
-# ─── Step 3: Create MySQL configuration file ────────────────────────────────
-log "Creating MySQL configuration ..."
+# ─── Step 3: Override MySQL configuration files ─────────────────────────────
+log "Overriding MySQL configuration files ..."
+
+# Override mysql.cnf (entry point with includedir)
 cat > "${CNF_FILE}" << EOF
+# MySQL Server configuration file.
+# Managed by fn-mysql_v8 application
+
+[client]
+socket                  = ${SOCKET_FILE}
+
+!includedir ${TRIM_PKGETC}/conf.d/
+!includedir ${TRIM_PKGETC}/mysql.conf.d/
+EOF
+log "Configuration written to ${CNF_FILE}"
+
+# Override mysqld.cnf (mysqld server configuration)
+cat > "${MYSQLD_CNF_FILE}" << EOF
 [mysqld]
 # Network
 bind-address            = 0.0.0.0
@@ -173,11 +155,9 @@ collation-server        = utf8mb4_unicode_ci
 
 # Compatibility (MySQL 8.4 native password support)
 mysql-native-password   = on
-
-[client]
-socket                  = ${SOCKET_FILE}
 EOF
-log "Configuration written to ${CNF_FILE}"
+
+log "Configuration written to ${MYSQLD_CNF_FILE}"
 
 # ─── Step 4: Set ownership and permissions ───────────────────────────────────
 log "Setting ownership and permissions ..."
