@@ -51,8 +51,7 @@ start_process() {
     "${MYSQLD}" \
         --defaults-file="${CNF_FILE}" \
         --port="${MYSQL_PORT}" \
-        --user="${TRIM_USERNAME}" \
-        >> "${LOG_FILE}" 2>&1 &
+        --user="${TRIM_USERNAME}" &
     local mysqld_pid=$!
     printf "%s" "${mysqld_pid}" > "${PID_FILE}"
     log_msg "mysqld started with PID=${mysqld_pid}, port=${MYSQL_PORT}"
