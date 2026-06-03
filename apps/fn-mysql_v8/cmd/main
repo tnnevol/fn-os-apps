@@ -8,7 +8,7 @@ MYSQLD="${TRIM_APPDEST}/server/usr/sbin/mysqld"
 MYSQL_CLIENT="${TRIM_APPDEST}/server/usr/bin/mysql"
 MYSQLADMIN="${TRIM_APPDEST}/server/usr/bin/mysqladmin"
 DATADIR="${TRIM_PKGHOME}/data"
-CNF_FILE="${TRIM_PKGETC}/my.cnf"
+CNF_FILE="${TRIM_PKGETC}/mysql.cnf"
 MYSQL_PORT="${APP_PORT:-3306}"
 
 log_msg() {
@@ -47,7 +47,7 @@ start_process() {
     # Ensure runtime directory exists
     mkdir -p "${TRIM_PKGVAR}/run"
 
-    # Start mysqld (script runs as root; --user in my.cnf or cmd drops privileges)
+    # Start mysqld (script runs as root; --user in mysql.cnf or cmd drops privileges)
     "${MYSQLD}" \
         --defaults-file="${CNF_FILE}" \
         --port="${MYSQL_PORT}" \
