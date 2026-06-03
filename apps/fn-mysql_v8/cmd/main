@@ -1,198 +1,193 @@
 #!/bin/bash
 
-### MySQL 8.4.9 生命周期管理脚本
+LOG_FILE="${TRIM_PKGVAR}/info.log"
+PID_FILE="${TRIM_PKGVAR}/mysqld.pid"
+SOCKET_FILE="${TRIM_PKGVAR}/mysql.sock"
 
 MYSQLD="${TRIM_APPDEST}/server/usr/sbin/mysqld"
 MYSQL_CLIENT="${TRIM_APPDEST}/server/usr/bin/mysql"
-MYSQL_CONF="${TRIM_PKGETC}/mysql/my.cnf"
-PID_FILE="${TRIM_PKGVAR}/run/mysqld.pid"
-SOCK_FILE="${TRIM_PKGVAR}/run/mysqld.sock"
+MYSQLADMIN="${TRIM_APPDEST}/server/usr/bin/mysqladmin"
 DATADIR="${TRIM_PKGHOME}/data"
+CNF_FILE="${TRIM_PKGETC}/my.cnf"
+MYSQL_PORT="${APP_PORT:-3306}"
 
-LOG() {
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >&2
+log_msg() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "${LOG_FILE}"
 }
 
-ERROR_EXIT() {
-    echo "Error: $1" > "${TRIM_TEMP_LOGFILE:-/dev/null}"
-    exit 1
+user_error() {
+    echo "$1" > "${TRIM_TEMP_LOGFILE}"
+    log_msg "USER ERROR: $1"
 }
 
-# 检查进程是否在运行
-check_process() {
-    local pid=$1
-    if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+start_process() {
+    if status; then
+        log_msg "MySQL is already running"
         return 0
-    else
+    fi
+
+    log_msg "Starting MySQL v8 on port ${MYSQL_PORT} ..."
+
+    # Pre-flight checks
+    if [ ! -x "${MYSQLD}" ]; then
+        user_error "MySQL 服务程序未找到，请重新安装应用。"
         return 1
     fi
+
+    if [ ! -d "${DATADIR}/mysql" ]; then
+        user_error "MySQL 数据库未初始化，安装过程可能未成功完成，请尝试卸载后重新安装。"
+        return 1
+    fi
+
+    if [ ! -f "${CNF_FILE}" ]; then
+        user_error "MySQL 配置文件丢失，请尝试卸载后重新安装。"
+        return 1
+    fi
+
+    # Ensure runtime directory exists
+    mkdir -p "${TRIM_PKGVAR}/run"
+
+    # Start mysqld (script runs as root; --user in my.cnf or cmd drops privileges)
+    "${MYSQLD}" \
+        --defaults-file="${CNF_FILE}" \
+        --port="${MYSQL_PORT}" \
+        --user="${TRIM_USERNAME}" \
+        >> "${LOG_FILE}" 2>&1 &
+    local mysqld_pid=$!
+    printf "%s" "${mysqld_pid}" > "${PID_FILE}"
+    log_msg "mysqld started with PID=${mysqld_pid}, port=${MYSQL_PORT}"
+
+    # Wait up to 30 seconds for MySQL to become ready
+    local count=0
+    while [ $count -lt 30 ]; do
+        sleep 1
+        count=$((count + 1))
+
+        # Check if process is still alive
+        if ! kill -0 "${mysqld_pid}" 2>/dev/null; then
+            user_error "MySQL 启动失败，请查看应用日志了解详情。"
+            rm -f "${PID_FILE}"
+            return 1
+        fi
+
+        # Try to connect via socket (as root through sudo to app user)
+        if sudo -u "${TRIM_USERNAME}" "${MYSQL_CLIENT}" \
+            --socket="${SOCKET_FILE}" -u root \
+            -e "SELECT 1" >/dev/null 2>&1; then
+            log_msg "MySQL is ready after ${count}s"
+
+            # First boot: set root password and optionally create remote user
+            if [ -n "${MYSQL_ROOT_PASSWORD}" ] && \
+               [ ! -f "${TRIM_PKGETC}/.root_password_set" ]; then
+                local SQL="ALTER USER 'root'@'localhost' IDENTIFIED BY '${MYSQL_ROOT_PASSWORD}';"
+                if [ "${MYSQL_REMOTE_ACCESS}" = "any" ]; then
+                    SQL="${SQL}
+                    CREATE USER 'root'@'%' IDENTIFIED BY '${MYSQL_ROOT_PASSWORD}';
+                    GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION;"
+                    log_msg "Setting root password and enabling remote access ..."
+                else
+                    log_msg "Setting root password (localhost only) ..."
+                fi
+                SQL="${SQL} FLUSH PRIVILEGES;"
+
+                sudo -u "${TRIM_USERNAME}" "${MYSQL_CLIENT}" \
+                    --socket="${SOCKET_FILE}" -u root \
+                    -e "${SQL}" \
+                    >> "${LOG_FILE}" 2>&1
+                if [ $? -eq 0 ]; then
+                    touch "${TRIM_PKGETC}/.root_password_set"
+                    log_msg "Root password configured successfully"
+                else
+                    log_msg "WARNING: Failed to configure root password"
+                fi
+            fi
+            return 0
+        fi
+    done
+
+    # Timeout
+    user_error "MySQL 启动超时（30秒），请检查端口 ${MYSQL_PORT} 是否被占用，或查看应用日志。"
+    kill -TERM "${mysqld_pid}" 2>/dev/null
+    rm -f "${PID_FILE}"
+    return 1
 }
 
-# 获取 MySQL PID
-get_mysql_pid() {
-    if [ -f "$PID_FILE" ]; then
-        local pid=$(cat "$PID_FILE" 2>/dev/null | tr -d '[:space:]')
-        if [ -n "$pid" ]; then
-            echo "$pid"
-            return 0
+stop_process() {
+    log_msg "Stopping MySQL ..."
+
+    if [ -f "${PID_FILE}" ]; then
+        local pid
+        pid=$(head -n 1 "${PID_FILE}" | tr -d '[:space:]')
+        if kill -0 "${pid}" 2>/dev/null; then
+            # Graceful shutdown via mysqladmin
+            if [ -n "${MYSQL_ROOT_PASSWORD}" ] && \
+               [ -f "${TRIM_PKGETC}/.root_password_set" ]; then
+                sudo -u "${TRIM_USERNAME}" "${MYSQLADMIN}" \
+                    --socket="${SOCKET_FILE}" \
+                    -u root -p"${MYSQL_ROOT_PASSWORD}" \
+                    shutdown >> "${LOG_FILE}" 2>&1
+            else
+                sudo -u "${TRIM_USERNAME}" "${MYSQLADMIN}" \
+                    --socket="${SOCKET_FILE}" \
+                    -u root \
+                    shutdown >> "${LOG_FILE}" 2>&1
+            fi
         fi
     fi
-    
-    # 尝试通过 socket 查找
-    if [ -S "$SOCK_FILE" ]; then
-        local pid=$(lsof -t "$SOCK_FILE" 2>/dev/null | head -n 1)
-        if [ -n "$pid" ]; then
-            echo "$pid"
+
+    # Wait up to 30 seconds for graceful shutdown
+    if [ -f "${PID_FILE}" ]; then
+        local pid
+        pid=$(head -n 1 "${PID_FILE}" | tr -d '[:space:]')
+        local count=0
+        while kill -0 "${pid}" 2>/dev/null && [ $count -lt 30 ]; do
+            sleep 1
+            count=$((count + 1))
+            log_msg "Waiting for MySQL to stop... (${count}s/30s)"
+        done
+
+        # Force kill if still running
+        if kill -0 "${pid}" 2>/dev/null; then
+            log_msg "MySQL did not stop gracefully, sending SIGKILL ..."
+            kill -KILL "${pid}" >> "${LOG_FILE}" 2>&1
+            sleep 2
+        fi
+        rm -f "${PID_FILE}"
+    fi
+
+    log_msg "MySQL stopped"
+    return 0
+}
+
+status() {
+    if [ -f "${PID_FILE}" ]; then
+        local pid
+        pid=$(head -n 1 "${PID_FILE}" | tr -d '[:space:]')
+        if kill -0 "${pid}" 2>/dev/null; then
             return 0
+        else
+            # Stale PID file
+            rm -f "${PID_FILE}"
         fi
     fi
-    
     return 1
 }
 
 case $1 in
 start)
-    # 检查必要目录是否存在
-    if [ ! -d "$DATADIR" ]; then
-        ERROR_EXIT "数据目录不存在: $DATADIR"
-    fi
-    
-    if [ ! -f "$MYSQL_CONF" ]; then
-        ERROR_EXIT "配置文件不存在: $MYSQL_CONF"
-    fi
-    
-    # 检查是否已经在运行
-    if PID=$(get_mysql_pid); then
-        if check_process "$PID"; then
-            LOG "MySQL 已经在运行 (PID: $PID)"
-            exit 0
-        else
-            # 清理过期 PID 文件
-            LOG "清理过期的 PID 文件"
-            rm -f "$PID_FILE"
-        fi
-    fi
-    
-    # 确保 run 目录存在
-    mkdir -p "${TRIM_PKGVAR}/run"
-    mkdir -p "${TRIM_PKGVAR}/log"
-    
-    LOG "启动 MySQL 8.4.9..."
-    
-    # 确保数据目录和日志目录存在
-    mkdir -p "$DATADIR"
-    mkdir -p "${TRIM_PKGVAR}/run"
-    mkdir -p "${TRIM_PKGVAR}/log"
-    
-    LOG "mysqld: $MYSQLD"
-    LOG "配置文件: $MYSQL_CONF"
-    LOG "数据目录: $DATADIR"
-    LOG "PID 文件: $PID_FILE"
-    LOG "Socket 文件: $SOCK_FILE"
-    
-    # 启动 MySQL（Debian 12 下使用 root 运行，不指定 --user）
-    # 直接输出到 stderr，让飞牛框架捕获日志
-    "$MYSQLD" \
-        --defaults-file="$MYSQL_CONF" \
-        2>&1 | while read -r line; do LOG "[mysqld] $line"; done &
-    
-    MYSQL_PID=$!
-    LOG "MySQL 进程已启动 (PID: $MYSQL_PID)"
-    
-    # 等待 MySQL 就绪（最多等待 30 秒）
-    WAIT_COUNT=0
-    MAX_WAIT=30
-    
-    while [ $WAIT_COUNT -lt $MAX_WAIT ]; do
-        # 检查 socket 是否创建
-        if [ -S "$SOCK_FILE" ]; then
-            # 尝试连接
-            if "$MYSQL_CLIENT" --socket="$SOCK_FILE" -u root -e "SELECT 1;" >/dev/null 2>&1; then
-                LOG "MySQL 启动成功并已就绪"
-                exit 0
-            else
-                LOG "等待 MySQL 就绪... ($((WAIT_COUNT + 1))/${MAX_WAIT})"
-            fi
-        else
-            LOG "等待 Socket 文件创建... ($((WAIT_COUNT + 1))/${MAX_WAIT})"
-        fi
-        
-        # 检查进程是否还在运行
-        if ! check_process $MYSQL_PID; then
-            LOG "MySQL 进程异常退出，退出码: $?"
-            ERROR_EXIT "MySQL 进程异常退出"
-        fi
-        
-        sleep 1
-        WAIT_COUNT=$((WAIT_COUNT + 1))
-    done
-    
-    LOG "MySQL 启动超时，查看日志:"
-    ERROR_EXIT "MySQL 启动超时（${MAX_WAIT}秒）"
+    start_process
     ;;
-
 stop)
-    LOG "停止 MySQL..."
-    
-    if PID=$(get_mysql_pid); then
-        if check_process "$PID"; then
-            LOG "发送 TERM 信号到 PID: $PID"
-            kill -TERM "$PID" 2>/dev/null || true
-            
-            # 等待进程退出（最多 10 秒）
-            COUNT=0
-            while check_process "$PID" && [ $COUNT -lt 10 ]; do
-                sleep 1
-                COUNT=$((COUNT + 1))
-            done
-            
-            # 如果还在运行，强制杀死
-            if check_process "$PID"; then
-                LOG "发送 KILL 信号到 PID: $PID"
-                kill -KILL "$PID" 2>/dev/null || true
-                sleep 1
-            fi
-            
-            LOG "MySQL 已停止"
-        else
-            LOG "MySQL 进程不存在 (PID: $PID)"
-        fi
-        
-        # 清理 PID 文件
-        rm -f "$PID_FILE"
-    else
-        LOG "未找到 MySQL PID 文件"
-    fi
-    
-    # 清理 socket 文件
-    rm -f "$SOCK_FILE"
-    
-    # 清理临时文件
-    rm -f "${TRIM_PKGVAR}/run/mysqld-init.sock" 2>/dev/null || true
-    rm -f "${TRIM_PKGVAR}/run/mysqld-init.pid" 2>/dev/null || true
-    
-    exit 0
+    stop_process
     ;;
-
 status)
-    if PID=$(get_mysql_pid); then
-        if check_process "$PID"; then
-            LOG "MySQL 正在运行 (PID: $PID)"
-            exit 0
-        else
-            # 进程不存在，清理过期文件
-            rm -f "$PID_FILE" "$SOCK_FILE"
-            LOG "MySQL 未运行（存在过期 PID 文件）"
-            exit 3
-        fi
+    if status; then
+        exit 0
     else
-        LOG "MySQL 未运行"
         exit 3
     fi
     ;;
-
 *)
-    echo "Usage: $0 {start|stop|status}"
     exit 1
     ;;
 esac

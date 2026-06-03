@@ -4,33 +4,35 @@
         "items": [
             {
                 "type": "tips",
-                "helpText": "您即将卸载 MySQL。请选择如何处理应用数据："
+                "helpText": "您即将卸载 MySQL 数据库应用。请选择如何处理应用数据："
             },
             {
                 "type": "radio",
                 "field": "wizard_data_action",
-                "label": "数据保留选项",
+                "label": "数据处理方式",
                 "initValue": "keep",
                 "options": [
                     {
-                        "label": "保留数据(推荐) - 将来重新安装时可恢复",
-                        "value": "keep"
+                        "label": "保留数据（推荐）",
+                        "value": "keep",
+                        "helpText": "保留所有数据库数据，将来重新安装时可恢复"
                     },
                     {
-                        "label": "删除所有数据 - 此操作不可恢复!",
-                        "value": "delete"
+                        "label": "删除所有数据",
+                        "value": "delete",
+                        "helpText": "永久删除所有数据库数据，此操作不可恢复！"
                     }
                 ],
                 "rules": [
                     {
                         "required": true,
-                        "message": "请选择数据保留选项"
+                        "message": "请选择数据处理方式"
                     }
                 ]
             },
             {
                 "type": "tips",
-                "helpText": "<strong>警告:</strong> 选择删除数据后,所有数据库数据将永久丢失,无法恢复。"
+                "helpText": "<strong>⚠️ 警告：</strong> 如果选择「删除所有数据」，所有数据库、表和数据将<b style='color: #ff4d4f;'>永久丢失</b>，无法恢复！"
             }
         ]
     }

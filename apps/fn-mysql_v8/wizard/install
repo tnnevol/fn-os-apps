@@ -3,11 +3,15 @@
         "stepTitle": "MySQL 基础配置",
         "items": [
             {
-                "type": "text",
+                "type": "tips",
+                "helpText": "MySQL 8.4.9 原生版将在安装时自动解压并初始化数据库引擎，请配置以下参数。安装完成后可通过编辑配置文件进行更多高级调优。"
+            },
+            {
+                "type": "password",
                 "field": "MYSQL_ROOT_PASSWORD",
                 "label": "Root 密码",
                 "initValue": "",
-                "helpText": "MySQL root 用户的密码,必填。",
+                "helpText": "MySQL root 用户的密码，请牢记此密码。",
                 "rules": [
                     {
                         "required": true,
@@ -24,8 +28,8 @@
                 "type": "text",
                 "field": "APP_PORT",
                 "label": "MySQL 端口",
-                "initValue": "33306",
-                "helpText": "MySQL 服务的映射端口。",
+                "initValue": "3306",
+                "helpText": "MySQL 服务监听端口，请确保该端口未被占用。",
                 "rules": [
                     {
                         "required": true,
@@ -34,7 +38,23 @@
                     {
                         "pattern": "^[0-9]+$",
                         "message": "端口号必须是数字"
+                    },
+                    {
+                        "min": 1,
+                        "max": 5,
+                        "message": "端口号范围 1-65535"
                     }
+                ]
+            },
+            {
+                "type": "select",
+                "field": "MYSQL_REMOTE_ACCESS",
+                "label": "允许连接来源",
+                "initValue": "any",
+                "helpText": "选择允许哪些主机连接 MySQL。选择“任意远程主机”将创建 root@% 用户。如需更细粒度控制，请安装后手动编辑配置文件：/volx/@appconf/fn-mysql_v8/my.cnf",
+                "options": [
+                    { "label": "仅本机（localhost）", "value": "localhost" },
+                    { "label": "任意远程主机", "value": "any" }
                 ]
             }
         ]

@@ -2,17 +2,11 @@
 
 ### This script is called after the user uninstalls the application.
 
-set -e
-
-LOG() {
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >&2
-}
-
 # 停止 MySQL 服务（如果还在运行）
-if [ -f "${TRIM_PKGVAR}/run/mysqld.pid" ]; then
-    PID=$(cat "${TRIM_PKGVAR}/run/mysqld.pid" 2>/dev/null)
+if [ -f "${TRIM_PKGVAR}/mysqld.pid" ]; then
+    PID=$(cat "${TRIM_PKGVAR}/mysqld.pid" 2>/dev/null)
     if [ -n "$PID" ] && kill -0 "$PID" 2>/dev/null; then
-        LOG "停止运行中的 MySQL 服务..."
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] 停止运行中的 MySQL 服务..." >&2
         kill -TERM "$PID" 2>/dev/null || true
         sleep 2
         kill -KILL "$PID" 2>/dev/null || true
@@ -21,27 +15,21 @@ fi
 
 # 根据用户选择处理数据
 if [ "$wizard_data_action" = "delete" ]; then
-    LOG "删除应用数据..."
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] 删除 MySQL 应用数据 ..." >&2
     
-    # 删除用户数据目录 (TRIM_PKGHOME)
-    rm -rf "${TRIM_PKGHOME:?}/data"
+    # 删除数据目录 (TRIM_PKGHOME)
+    rm -rf "${TRIM_PKGHOME:?}"
     
     # 删除运行时目录 (TRIM_PKGVAR)
-    rm -rf "${TRIM_PKGVAR:?}/run"
-    rm -rf "${TRIM_PKGVAR:?}/log"
+    rm -rf "${TRIM_PKGVAR:?}"
     
     # 删除配置文件 (TRIM_PKGETC)
-    rm -rf "${TRIM_PKGETC:?}/mysql"
+    rm -rf "${TRIM_PKGETC:?}"
     
-    LOG "应用数据已删除"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] 所有 MySQL 数据已删除。" >&2
 else
-    LOG "保留应用数据以供将来重新安装"
-    LOG "数据位置: ${TRIM_PKGHOME}/data"
-fi
-
-# 清理安装时提取的临时文件（如果存在）
-if [ -d "${TRIM_PKGTMP}/mysql_extract" ]; then
-    rm -rf "${TRIM_PKGTMP}/mysql_extract"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] 保留 MySQL 数据以供将来重新安装。" >&2
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] 数据位置: ${TRIM_PKGHOME}" >&2
 fi
 
 exit 0
