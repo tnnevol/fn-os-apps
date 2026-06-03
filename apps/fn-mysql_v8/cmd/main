@@ -1,6 +1,6 @@
 #!/bin/bash
 
-LOG_FILE="${TRIM_PKGVAR}/info.log"
+LOG_FILE="${TRIM_PKGVAR}/app.log"
 PID_FILE="${TRIM_PKGVAR}/mysqld.pid"
 SOCKET_FILE="${TRIM_PKGVAR}/mysql.sock"
 
