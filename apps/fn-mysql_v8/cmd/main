@@ -51,38 +51,11 @@ start_process() {
     "${MYSQLD}" \
         --defaults-file="${CNF_FILE}" \
         --port="${MYSQL_PORT}" \
-        --user="${TRIM_USERNAME}" &
+        --user="${TRIM_USERNAME}" >> "${LOG_FILE}" 2>&1 &
     local mysqld_pid=$!
     printf "%s" "${mysqld_pid}" > "${PID_FILE}"
     log_msg "mysqld started with PID=${mysqld_pid}, port=${MYSQL_PORT}"
-
-    # Wait up to 30 seconds for MySQL to become ready
-    local count=0
-    while [ $count -lt 30 ]; do
-        sleep 1
-        count=$((count + 1))
-
-        # Check if process is still alive
-        if ! check_process "${mysqld_pid}"; then
-            user_error "MySQL 启动失败,请查看应用日志了解详情。"
-            rm -f "${PID_FILE}"
-            return 1
-        fi
-
-        # Try to connect via socket (as root through sudo to app user)
-        if sudo -u "${TRIM_USERNAME}" "${MYSQL_CLIENT}" \
-            --socket="${SOCKET_FILE}" -u root \
-            -e "SELECT 1" >/dev/null 2>&1; then
-            log_msg "MySQL is ready after ${count}s"
-            return 0
-        fi
-    done
-
-    # Timeout
-    user_error "MySQL 启动超时（30秒），请检查端口 ${MYSQL_PORT} 是否被占用，或查看应用日志。"
-    kill -TERM "${mysqld_pid}" 2>/dev/null
-    rm -f "${PID_FILE}"
-    return 1
+    return 0
 }
 
 stop_process() {
