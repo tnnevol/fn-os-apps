@@ -75,32 +75,6 @@ start_process() {
             --socket="${SOCKET_FILE}" -u root \
             -e "SELECT 1" >/dev/null 2>&1; then
             log_msg "MySQL is ready after ${count}s"
-
-            # First boot: set root password and optionally create remote user
-            if [ -n "${MYSQL_ROOT_PASSWORD}" ] && \
-               [ ! -f "${TRIM_PKGETC}/.root_password_set" ]; then
-                local SQL="ALTER USER 'root'@'localhost' IDENTIFIED BY '${MYSQL_ROOT_PASSWORD}';"
-                if [ "${MYSQL_REMOTE_ACCESS}" = "any" ]; then
-                    SQL="${SQL}
-                    CREATE USER 'root'@'%' IDENTIFIED BY '${MYSQL_ROOT_PASSWORD}';
-                    GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION;"
-                    log_msg "Setting root password and enabling remote access ..."
-                else
-                    log_msg "Setting root password (localhost only) ..."
-                fi
-                SQL="${SQL} FLUSH PRIVILEGES;"
-
-                sudo -u "${TRIM_USERNAME}" "${MYSQL_CLIENT}" \
-                    --socket="${SOCKET_FILE}" -u root \
-                    -e "${SQL}" \
-                    >> "${LOG_FILE}" 2>&1
-                if [ $? -eq 0 ]; then
-                    touch "${TRIM_PKGETC}/.root_password_set"
-                    log_msg "Root password configured successfully"
-                else
-                    log_msg "WARNING: Failed to configure root password"
-                fi
-            fi
             return 0
         fi
     done

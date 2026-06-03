@@ -158,8 +158,7 @@ if [ ! -d "${DATADIR}/mysql" ]; then
     "${MYSQLD}" \
         --defaults-file="${CNF_FILE}" \
         --user="${TRIM_USERNAME}" \
-        --initialize-insecure \
-        >> "${TRIM_PKGVAR}/info.log" 2>&1
+        --initialize-insecure
 
     if [ $? -ne 0 ]; then
         user_error "MySQL 数据库初始化失败，请查看应用日志了解详情。"
@@ -171,6 +170,56 @@ if [ ! -d "${DATADIR}/mysql" ]; then
     log "MySQL database initialized successfully"
 else
     log "MySQL data directory already initialized, skipping"
+fi
+
+# ─── Step 6: Set root password and remote access (if wizard provided) ────────
+if [ -n "${MYSQL_ROOT_PASSWORD}" ]; then
+    log "Setting root password ..."
+
+    # Start temporary MySQL instance to set password
+    "${MYSQLD}" \
+        --defaults-file="${CNF_FILE}" \
+        --port=0 \
+        --skip-networking &
+    TEMP_PID=$!
+
+    # Wait for MySQL to start
+    sleep 5
+
+    # Check if process is still running
+    if ! kill -0 $TEMP_PID 2>/dev/null; then
+        user_error "MySQL 临时实例启动失败，无法设置密码。"
+        exit 1
+    fi
+
+    # Set root password and optionally enable remote access
+    SQL="ALTER USER 'root'@'localhost' IDENTIFIED BY '${MYSQL_ROOT_PASSWORD}';"
+    
+    if [ "${MYSQL_REMOTE_ACCESS}" = "any" ]; then
+        SQL="${SQL}
+        CREATE USER 'root'@'%' IDENTIFIED BY '${MYSQL_ROOT_PASSWORD}';
+        GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION;"
+        log "Enabling remote access (root@%) ..."
+    else
+        log "Remote access disabled (localhost only)"
+    fi
+    
+    SQL="${SQL} FLUSH PRIVILEGES;"
+
+    # Execute SQL
+    "${MYSQL_CLIENT}" \
+        --socket="${SOCKET_FILE}" -u root \
+        -e "${SQL}"
+
+    if [ $? -eq 0 ]; then
+        log "Root password configured successfully"
+    else
+        log "WARNING: Failed to configure root password"
+    fi
+
+    # Stop temporary instance
+    kill $TEMP_PID 2>/dev/null
+    wait $TEMP_PID 2>/dev/null
 fi
 
 log "MySQL ${MYSQL_VERSION} Native installation completed!"
