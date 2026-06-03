@@ -11,6 +11,7 @@
 │   ├── fn-xiaoya-only/             # 小雅 - 网盘聚合工具
 │   ├── fn-bitwarden/               # Bitwarden - 密码管理器
 │   ├── fn-mysql-8_4_9/             # MySQL - 关系型数据库
+│   ├── fn-mysql_v8/                # MySQL v8 - 关系型数据库(原生应用)
 │   ├── fn-halo/                    # Halo - 建站系统
 │   ├── fn-quark-auto-save/         # 夸克转存 - 夸克网盘自动化工具
 │   ├── fn-new-api/                 # New API - AI API 管理平台
@@ -24,18 +25,19 @@
 
 ## 已上架应用
 
-| 应用 | 显示名称 | 说明 |
-|------|----------|------|
-| [fn-reader](https://github.com/tnnevol/fn-os-apps/releases/latest) | 阅读 | 开源在线电子书阅读器，支持多种格式、书架管理、阅读进度同步、全文搜索、主题定制 |
-| [fn-xiaoya-only](https://github.com/tnnevol/fn-os-apps/releases/latest) | 小雅 | 基于 Alist 的网盘聚合工具，支持多网盘挂载、在线播放、WebDAV、目录索引 |
-| [fn-bitwarden](https://github.com/tnnevol/fn-os-apps/releases/latest) | Bitwarden | 开源密码管理器，安全存储网站登录信息、信用卡、安全笔记等 |
-| [fn-mysql-8_4_9](https://github.com/tnnevol/fn-os-apps/releases/latest) | MySQL | 开源关系型数据库管理系统，固定版本 8.4.9，支持 utf8mb4 字符集 |
-| [fn-halo](https://github.com/tnnevol/fn-os-apps/releases/latest) | Halo | 简洁高效的开源建站系统，支持博客、知识库、企业官网等多种场景 |
-| [fn-quark-auto-save](https://github.com/tnnevol/fn-os-apps/releases/latest) | 夸克转存 | 夸克网盘签到、自动转存、命名整理、推送提醒和刷新媒体库自动化工具 |
-| [fn-new-api](https://github.com/tnnevol/fn-os-apps/releases/latest) | New API | 新一代 AI API 管理与分发平台，支持多模型接入、令牌管理、配额控制等功能 |
-| [fn-zentao](https://github.com/tnnevol/fn-os-apps/releases/latest) | 禅道项目管理 | 国产开源项目管理软件，基于敏捷和 Scrum 理念，包含产品管理、项目管理、质量管理等模块 |
-| [fn-openlist](https://github.com/tnnevol/fn-os-apps/releases/latest) | OpenList | 文件列表管理工具，支持多种云存储协议的文件浏览和管理 |
-| [fn-memos](https://github.com/tnnevol/fn-os-apps/releases/latest) | Memos | 轻量级自托管笔记工具，支持 Markdown 编写、标签管理、多端同步 |
+| 应用                                                                        | 显示名称     | 说明                                                                                |
+| --------------------------------------------------------------------------- | ------------ | ----------------------------------------------------------------------------------- |
+| [fn-reader](https://github.com/tnnevol/fn-os-apps/releases/latest)          | 阅读         | 开源在线电子书阅读器，支持多种格式、书架管理、阅读进度同步、全文搜索、主题定制      |
+| [fn-xiaoya-only](https://github.com/tnnevol/fn-os-apps/releases/latest)     | 小雅         | 基于 Alist 的网盘聚合工具，支持多网盘挂载、在线播放、WebDAV、目录索引               |
+| [fn-bitwarden](https://github.com/tnnevol/fn-os-apps/releases/latest)       | Bitwarden    | 开源密码管理器，安全存储网站登录信息、信用卡、安全笔记等                            |
+| [fn-mysql-8_4_9](https://github.com/tnnevol/fn-os-apps/releases/latest)     | MySQL        | 开源关系型数据库管理系统，固定版本 8.4.9，支持 utf8mb4 字符集                       |
+| [fn-mysql_v8](https://github.com/tnnevol/fn-os-apps/releases/latest)        | MySQL v8     | MySQL 8.4.9 原生应用，非 Docker 容器化部署，支持远程访问配置和 DNS 优化             |
+| [fn-halo](https://github.com/tnnevol/fn-os-apps/releases/latest)            | Halo         | 简洁高效的开源建站系统，支持博客、知识库、企业官网等多种场景                        |
+| [fn-quark-auto-save](https://github.com/tnnevol/fn-os-apps/releases/latest) | 夸克转存     | 夸克网盘签到、自动转存、命名整理、推送提醒和刷新媒体库自动化工具                    |
+| [fn-new-api](https://github.com/tnnevol/fn-os-apps/releases/latest)         | New API      | 新一代 AI API 管理与分发平台，支持多模型接入、令牌管理、配额控制等功能              |
+| [fn-zentao](https://github.com/tnnevol/fn-os-apps/releases/latest)          | 禅道项目管理 | 国产开源项目管理软件，基于敏捷和 Scrum 理念，包含产品管理、项目管理、质量管理等模块 |
+| [fn-openlist](https://github.com/tnnevol/fn-os-apps/releases/latest)        | OpenList     | 文件列表管理工具，支持多种云存储协议的文件浏览和管理                                |
+| [fn-memos](https://github.com/tnnevol/fn-os-apps/releases/latest)           | Memos        | 轻量级自托管笔记工具，支持 Markdown 编写、标签管理、多端同步                        |
 
 ## 测试与安装
 
@@ -88,9 +90,9 @@ appcenter-cli stop <appname>
 v<版本号>
 ```
 
-| Tag 示例 | 版本 |
-|----------|------|
-| `v4.0.0` | 4.0.0 |
+| Tag 示例     | 版本                |
+| ------------ | ------------------- |
+| `v4.0.0`     | 4.0.0               |
 | `v4.1.0-rc1` | 4.1.0-rc1（预发布） |
 
 ### 发布步骤
@@ -128,23 +130,23 @@ git push origin v4.0.0
 
 ## manifest 字段参考
 
-| 字段 | 必填 | 说明 | 示例 |
-|------|------|------|------|
-| `appname` | 是 | 应用唯一标识 | `fn-reader` |
-| `version` | 是 | 版本号，格式 `x[.y[.z]][-build]` | `3.2.14` |
-| `display_name` | 是 | 显示名称 | `阅读` |
-| `desc` | 是 | 应用描述（支持 HTML） | 功能说明 |
-| `platform` | 是 | 架构，`x86` / `arm` / `all` | `x86` |
-| `source` | 是 | 应用来源 | `thirdparty` |
-| `maintainer` | - | 原始维护者 | GitHub ID |
-| `maintainer_url` | - | 原始项目地址 | URL |
-| `distributor` | - | 分发者 | GitHub ID |
-| `distributor_url` | - | 分发者主页 | URL |
-| `service_port` | - | 服务端口 | `4396` |
-| `os_min_version` | - | 最低 fnOS 版本 | `0.9.27` |
-| `desktop_uidir` | - | UI 目录名 | `ui` |
-| `desktop_applaunchname` | - | 桌面启动项 | `<appname>.Application` |
-| `disable_authorization_path` | - | 禁用目录授权 | `true` |
+| 字段                         | 必填 | 说明                             | 示例                    |
+| ---------------------------- | ---- | -------------------------------- | ----------------------- |
+| `appname`                    | 是   | 应用唯一标识                     | `fn-reader`             |
+| `version`                    | 是   | 版本号，格式 `x[.y[.z]][-build]` | `3.2.14`                |
+| `display_name`               | 是   | 显示名称                         | `阅读`                  |
+| `desc`                       | 是   | 应用描述（支持 HTML）            | 功能说明                |
+| `platform`                   | 是   | 架构，`x86` / `arm` / `all`      | `x86`                   |
+| `source`                     | 是   | 应用来源                         | `thirdparty`            |
+| `maintainer`                 | -    | 原始维护者                       | GitHub ID               |
+| `maintainer_url`             | -    | 原始项目地址                     | URL                     |
+| `distributor`                | -    | 分发者                           | GitHub ID               |
+| `distributor_url`            | -    | 分发者主页                       | URL                     |
+| `service_port`               | -    | 服务端口                         | `4396`                  |
+| `os_min_version`             | -    | 最低 fnOS 版本                   | `0.9.27`                |
+| `desktop_uidir`              | -    | UI 目录名                        | `ui`                    |
+| `desktop_applaunchname`      | -    | 桌面启动项                       | `<appname>.Application` |
+| `disable_authorization_path` | -    | 禁用目录授权                     | `true`                  |
 
 ## 开发资源
 
