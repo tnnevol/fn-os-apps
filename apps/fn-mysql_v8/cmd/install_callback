@@ -78,13 +78,46 @@ if [ ! -x "${MYSQLD}" ]; then
     # 2c. Clean up extracted debs
     rm -rf "${BUNDLE_DIR}"
 
-    # 2d. Copy etc/ configuration files to TRIM_PKGETC
+    # 2d. Copy etc/ configuration files to TRIM_PKGETC and override
     if [ -d "${SERVER_DIR}/etc/mysql" ]; then
         log "Copying MySQL configuration files to ${TRIM_PKGETC} ..."
-        mkdir -p "${TRIM_PKGETC}"
+        mkdir -p "${TRIM_PKGETC}/mysql.conf.d"
         cp -r "${SERVER_DIR}/etc/mysql/"* "${TRIM_PKGETC}/"
         rm -rf "${SERVER_DIR}/etc"
-        log "Configuration files copied successfully"
+        
+        # Override mysql.cnf with correct includedir paths
+        cat > "${TRIM_PKGETC}/mysql.cnf" << 'EOF'
+# MySQL Server configuration file.
+# Managed by fn-mysql_v8 application
+
+# Include additional configuration directories
+!includedir ${TRIM_PKGETC}/conf.d/
+!includedir ${TRIM_PKGETC}/mysql.conf.d/
+EOF
+        # Replace variables in mysql.cnf
+        sed -i "s|\${TRIM_PKGETC}|${TRIM_PKGETC}|g" "${TRIM_PKGETC}/mysql.cnf"
+        
+        # Override mysqld.cnf with correct paths
+        cat > "${TRIM_PKGETC}/mysql.conf.d/mysqld.cnf" << EOF
+[mysqld]
+# Basic MySQL server configuration
+# Managed by fn-mysql_v8 application
+
+# Runtime files
+pid-file        = ${TRIM_PKGVAR}/run/mysqld.pid
+socket          = ${TRIM_PKGVAR}/mysql.sock
+
+# Data directory
+datadir         = ${TRIM_PKGHOME}/data
+
+# Error log
+log-error       = ${TRIM_PKGVAR}/error.log
+
+# Slow query log (optional)
+slow-query-log-file = ${TRIM_PKGVAR}/slow.log
+EOF
+        
+        log "Configuration files updated with fnOS paths"
     fi
 
     # 2e. Remove the bundle tar to free disk space (~488MB)
