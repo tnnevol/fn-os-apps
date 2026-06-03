@@ -120,7 +120,9 @@ do_upgrade() {
         mv "$tmp_bin" "$MEMOS_BIN"
         chmod +x "$MEMOS_BIN"
         rm -rf "$TEMP_DIR"
-        output_json "{\"success\":true,\"message\":\"Memos 已成功升级至 ${latest} 版本。\"}"
+
+        # 升级后重启应用
+        restart_app "Memos 已成功升级至 ${latest} 版本。"
     else
         log "downloaded binary not executable"
         rm -rf "$TEMP_DIR"
@@ -131,10 +133,11 @@ do_upgrade() {
 restart_app() {
     log "restarting memos app"
     local main_script="/var/apps/fn-memos/cmd/main"
+    local version_msg="${1:-}"
 
     if [ ! -x "$main_script" ]; then
         log "main script not found at $main_script"
-        output_json '{"success":false,"message":"未找到应用主脚本。"}'
+        output_json "{\"success\":false,\"message\":\"未找到应用主脚本。\"}"
         return
     fi
 
@@ -146,7 +149,11 @@ restart_app() {
 
     # Check status
     if "$main_script" status; then
-        output_json '{"success":true,"message":"Memos 服务已重启。"}'
+        if [ -n "$version_msg" ]; then
+            output_json "{\"success\":true,\"message\":\"$version_msg\\nMemos 服务已重启。\"}"
+        else
+            output_json '{"success":true,"message":"Memos 服务已重启。"}'
+        fi
     else
         output_json '{"success":false,"message":"Memos 重启失败，请手动重启应用。"}'
     fi

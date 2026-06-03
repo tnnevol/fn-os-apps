@@ -1,10 +1,9 @@
 (function () {
   "use strict";
 
-  const API = "/cgi/ThirdParty/fn-memos/api.cgi";
-  let hasUpdate = false;
+  var API = "/cgi/ThirdParty/fn-memos/api.cgi";
 
-  // --- Dialog component ---
+  // --- Dialog ---
 
   function createDialog(title, body, options) {
     var existing = document.getElementById("memosDialog");
@@ -73,7 +72,7 @@
     area.scrollTop = area.scrollHeight;
   }
 
-  // --- API calls ---
+  // --- API ---
 
   async function api(action) {
     try {
@@ -112,12 +111,10 @@
     var upgradeBtn = $("upgradeBtn");
 
     if (data.has_update) {
-      hasUpdate = true;
       upgradeBtn.disabled = false;
       statusRow.style.display = "flex";
       setEl("upgradeStatus", '<span class="badge badge-upgrade">可升级</span>');
     } else if (data.current_version && data.latest_version) {
-      hasUpdate = false;
       upgradeBtn.disabled = true;
       statusRow.style.display = "flex";
       setEl(
@@ -132,7 +129,7 @@
     setEl("checkBtn", "检查更新");
   }
 
-  async function doUpgrade() {
+  function doUpgrade() {
     createDialog(
       "确认升级",
       "确定要将 Memos 升级到最新版本吗？\n升级完成后将自动重启服务。",
@@ -149,9 +146,8 @@
   async function performUpgrade() {
     var upgradeBtn = $("upgradeBtn");
     var checkBtn = $("checkBtn");
-
-    // Clear log area
     var logArea = $("logArea");
+
     logArea.style.display = "block";
     logArea.textContent = "";
 
@@ -161,48 +157,23 @@
 
     log("开始升级流程...");
 
+    // 服务端已包含：下载 → 替换 → 授权 → 重启
     var data = await api("upgrade");
 
     if (data.success) {
-      log(data.message || "升级成功！");
-      log("正在重启 Memos 服务...");
-
-      // 调用重启
-      var restartData = await api("restart");
-
-      if (restartData.success) {
-        log(restartData.message || "重启完成！");
-        createDialog("升级完成", "Memos 已成功升级并重启！", {
-          icon: "✅",
-          buttons: [
-            {
-              label: "确定",
-              class: "btn-primary",
-              action: function () {
-                checkVersion();
-              },
-            },
-          ],
-        });
-      } else {
-        log("重启失败: " + (restartData.message || "未知错误"));
-        createDialog(
-          "升级成功但重启失败",
-          data.message + "\n\n" + (restartData.message || "请手动重启应用。"),
+      log(data.message || "升级并重启完成！");
+      createDialog("升级完成", data.message || "Memos 已成功升级并重启！", {
+        icon: "✅",
+        buttons: [
           {
-            icon: "⚠️",
-            buttons: [
-              {
-                label: "确定",
-                class: "btn-default",
-                action: function () {
-                  checkVersion();
-                },
-              },
-            ],
+            label: "确定",
+            class: "btn-primary",
+            action: function () {
+              checkVersion();
+            },
           },
-        );
-      }
+        ],
+      });
     } else {
       log("升级失败: " + (data.message || "未知错误"));
       createDialog("升级失败", data.message || "升级失败，请重试。", {
