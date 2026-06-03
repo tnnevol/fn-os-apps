@@ -1,9 +1,10 @@
 #!/bin/bash
 
 ### This script is called after the user installs the application.
-### 安装 MySQL 8.4.9 从 deb 包
+### 安装 MySQL 8.4.9 从 deb bundle tar 包
 
-set -e
+# 注意：不要使用 set -e，否则错误会被隐藏
+# set -e
 
 LOG() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >&2
@@ -14,10 +15,10 @@ ERROR_EXIT() {
     exit 1
 }
 
-# 检查 deb 包是否存在
-DEB_FILE="${TRIM_APPDEST}/server/mysql-community-server-core_8.4.9-1debian12_amd64.deb"
-if [ ! -f "$DEB_FILE" ]; then
-    ERROR_EXIT "MySQL deb 包不存在: $DEB_FILE"
+# 检查 bundle tar 包是否存在
+BUNDLE_TAR="${TRIM_APPDEST}/server/mysql-server_8.4.9-1debian12_amd64.deb-bundle.tar"
+if [ ! -f "$BUNDLE_TAR" ]; then
+    ERROR_EXIT "MySQL bundle tar 包不存在: $BUNDLE_TAR"
 fi
 
 LOG "开始安装 MySQL 8.4.9..."
@@ -27,94 +28,156 @@ DATADIR="${TRIM_PKGHOME}/data"
 RUNDIR="${TRIM_PKGVAR}/run"
 LOGDIR="${TRIM_PKGVAR}/log"
 TMPDIR="${TRIM_PKGTMP}/tmp"
+SERVER_DIR="${TRIM_APPDEST}/server"
 
 mkdir -p "$DATADIR"
 mkdir -p "$RUNDIR"
 mkdir -p "$LOGDIR"
 mkdir -p "$TMPDIR"
 
-# 预解压 deb 包到临时目录
+# 解压 bundle tar 到临时目录
 EXTRACT_DIR="${TRIM_PKGTMP}/mysql_extract"
 mkdir -p "$EXTRACT_DIR"
 
-LOG "提取 deb 包..."
+LOG "解压 bundle tar 包..."
+tar -xf "$BUNDLE_TAR" -C "$EXTRACT_DIR" 2>/dev/null
+
+# 查看解压后的文件
+LOG "解压后的文件列表:"
+ls -la "$EXTRACT_DIR" >&2
+find "$EXTRACT_DIR" -name "*.deb" >&2
+
+LOG "提取 deb 包完成，开始安装..."
+
+# 安装必要的 deb 包到 server 目录（按依赖顺序）
 cd "$EXTRACT_DIR"
 
-# 提取 deb 包内容（使用精确文件名）
-ar x "$DEB_FILE"
+# 安装函数：提取 deb 包到指定目录
+install_deb() {
+    local deb_file=$1
+    local target_dir=$2
+    local temp_dir="${TRIM_PKGTMP}/deb_temp"
+    
+    LOG "安装 $(basename $deb_file)..."
+    
+    mkdir -p "$temp_dir"
+    cd "$temp_dir"
+    
+    # 提取 deb 包（使用完整路径）
+    ar x "${EXTRACT_DIR}/${deb_file}"
+    
+    # 获取 data.tar.* 的精确文件名
+    local data_archive=$(ls -1 data.tar.* 2>/dev/null | head -n 1)
+    if [ -z "$data_archive" ]; then
+        ERROR_EXIT "未找到 data.tar 归档文件: $deb_file"
+    fi
+    
+    # 根据后缀选择解压方式
+    case "$data_archive" in
+        *.tar.xz)
+            tar -xJf "$data_archive" -C "$target_dir"
+            ;;
+        *.tar.gz)
+            tar -xzf "$data_archive" -C "$target_dir"
+            ;;
+        *.tar.bz2)
+            tar -xjf "$data_archive" -C "$target_dir"
+            ;;
+        *.tar)
+            tar -xf "$data_archive" -C "$target_dir"
+            ;;
+        *)
+            ERROR_EXIT "不支持的归档格式: $data_archive"
+            ;;
+    esac
+    
+    # 清理临时目录
+    rm -rf "$temp_dir"
+    cd "$EXTRACT_DIR"
+}
 
-# 获取 data.tar.* 的精确文件名
-DATA_ARCHIVE=$(ls -1 data.tar.* 2>/dev/null | head -n 1)
-if [ -z "$DATA_ARCHIVE" ]; then
-    ERROR_EXIT "未找到 data.tar 归档文件"
+# 1. mysql-common（基础配置和 etc 文件）
+install_deb "mysql-common_8.4.9-1debian12_amd64.deb" "$SERVER_DIR"
+
+# 将 etc 文件复制到 TRIM_PKGETC
+if [ -d "${SERVER_DIR}/etc" ]; then
+    mkdir -p "${TRIM_PKGETC}/mysql"
+    # 复制 mysql 配置目录
+    cp -r ${SERVER_DIR}/etc/mysql/* "${TRIM_PKGETC}/mysql/"
+    
+    # MySQL 8.4.9 使用 my.cnf.fallback，需要复制为 my.cnf
+    if [ -f "${TRIM_PKGETC}/mysql/my.cnf.fallback" ]; then
+        cp "${TRIM_PKGETC}/mysql/my.cnf.fallback" "${TRIM_PKGETC}/mysql/my.cnf"
+        LOG "已将 my.cnf.fallback 复制为 my.cnf"
+    fi
+    
+    rm -rf "${SERVER_DIR}/etc"
 fi
 
-LOG "解压 $DATA_ARCHIVE..."
+# 修改 MySQL 配置文件，追加应用所需配置
+MYSQL_CONF="${TRIM_PKGETC}/mysql/my.cnf"
+if [ -f "$MYSQL_CONF" ]; then
+    # 修改 includedir 路径为应用配置目录
+    sed -i "s|!includedir /etc/mysql/conf.d/|!includedir ${TRIM_PKGETC}/mysql/conf.d/|g" "$MYSQL_CONF"
+    
+    # 追加应用配置
+    cat >> "$MYSQL_CONF" << EOF
 
-# 根据后缀选择解压方式
-case "$DATA_ARCHIVE" in
-    *.tar.xz)
-        tar -xJf "$DATA_ARCHIVE" -C /
-        ;;
-    *.tar.gz)
-        tar -xzf "$DATA_ARCHIVE" -C /
-        ;;
-    *.tar.bz2)
-        tar -xjf "$DATA_ARCHIVE" -C /
-        ;;
-    *.tar)
-        tar -xf "$DATA_ARCHIVE" -C /
-        ;;
-    *)
-        ERROR_EXIT "不支持的归档格式: $DATA_ARCHIVE"
-        ;;
-esac
-
-LOG "MySQL 二进制文件安装完成"
-
-# 清理临时文件
-rm -rf "$EXTRACT_DIR"
-
-# 创建 MySQL 配置文件
-MYSQL_CONF="${TRIM_PKGETC}/my.cnf"
-cat > "$MYSQL_CONF" << 'EOF'
 [mysqld]
 # 数据目录
-datadir=__DATADIR__
+datadir=${DATADIR}
 # Socket 文件
-socket=__RUNDIR__/mysqld.sock
+socket=${RUNDIR}/mysqld.sock
 # PID 文件
-pid-file=__RUNDIR__/mysqld.pid
+pid-file=${RUNDIR}/mysqld.pid
 # 端口
-port=__PORT__
+port=${APP_PORT}
 # 日志
-log-error=__LOGDIR__/mysqld.log
+log-error=${LOGDIR}/mysqld.log
 # 临时目录
-tmpdir=__TMPDIR__
-# 禁用 secure-file-priv 限制
+tmpdir=${TMPDIR}
+# 允许任意 IP 导入导出
 secure-file-priv =
 # 字符集
 character-set-server=utf8mb4
 collation-server=utf8mb4_unicode_ci
-# 绑定地址（允许远程访问）
+# 监听所有地址
 bind-address=0.0.0.0
-# 认证插件（兼容旧客户端）
+# 默认认证插件（兼容旧客户端）
 default-authentication-plugin=mysql_native_password
+# 基础目录
+basedir=${SERVER_DIR}/usr
 EOF
+    LOG "MySQL 配置文件已更新: $MYSQL_CONF"
+else
+    ERROR_EXIT "MySQL 配置文件不存在: $MYSQL_CONF"
+fi
 
-# 替换占位符
-sed -i "s|__DATADIR__|${DATADIR}|g" "$MYSQL_CONF"
-sed -i "s|__RUNDIR__|${RUNDIR}|g" "$MYSQL_CONF"
-sed -i "s|__PORT__|${APP_PORT:-33306}|g" "$MYSQL_CONF"
-sed -i "s|__LOGDIR__|${LOGDIR}|g" "$MYSQL_CONF"
-sed -i "s|__TMPDIR__|${TMPDIR}|g" "$MYSQL_CONF"
+# 2. libmysqlclient24（客户端库）
+install_deb "libmysqlclient24_8.4.9-1debian12_amd64.deb" "$SERVER_DIR"
 
-LOG "MySQL 配置文件已创建: $MYSQL_CONF"
+# 3. mysql-community-client-plugins（客户端插件）
+install_deb "mysql-community-client-plugins_8.4.9-1debian12_amd64.deb" "$SERVER_DIR"
+
+# 4. mysql-community-client-core（客户端核心，包含 mysql、mysqldump）
+install_deb "mysql-community-client-core_8.4.9-1debian12_amd64.deb" "$SERVER_DIR"
+
+# 5. mysql-community-client（完整客户端工具）
+install_deb "mysql-community-client_8.4.9-1debian12_amd64.deb" "$SERVER_DIR"
+
+# 6. mysql-community-server-core（服务器核心）
+install_deb "mysql-community-server-core_8.4.9-1debian12_amd64.deb" "$SERVER_DIR"
+
+LOG "MySQL 组件安装完成"
+
+# 清理临时文件
+rm -rf "$EXTRACT_DIR"
+rm -f "$BUNDLE_TAR"
 
 # 初始化 MySQL 数据目录
-MYSQLD="/usr/sbin/mysqld"
+MYSQLD="${SERVER_DIR}/usr/sbin/mysqld"
 if [ ! -f "$MYSQLD" ]; then
-    ERROR_EXIT "mysqld 可执行文件未找到"
+    ERROR_EXIT "mysqld 可执行文件未找到: $MYSQLD"
 fi
 
 LOG "初始化 MySQL 数据目录..."
@@ -123,14 +186,63 @@ LOG "初始化 MySQL 数据目录..."
 if [ -f "${DATADIR}/ibdata1" ]; then
     LOG "数据目录已初始化，跳过初始化步骤"
 else
-    # 初始化数据库
-    "$MYSQLD" --initialize-insecure \
-        --datadir="$DATADIR" \
-        --user="$TRIM_USERNAME" \
-        --basedir=/usr \
-        2>&1 | tee -a "${LOGDIR}/init.log" >&2
+    LOG "开始初始化数据目录..."
+    LOG "mysqld 路径: $MYSQLD"
+    LOG "配置文件: $MYSQL_CONF"
+    LOG "数据目录: $DATADIR"
+    LOG "运行用户: $TRIM_USERNAME"
     
-    if [ $? -ne 0 ]; then
+    # 检查 mysqld 是否可执行
+    if [ ! -x "$MYSQLD" ]; then
+        LOG "mysqld 不可执行，检查依赖:"
+        ldd "$MYSQLD" 2>&1 | grep "not found" >&2
+        ERROR_EXIT "mysqld 不可执行或缺少依赖"
+    fi
+    
+    # 检查动态库依赖
+    LOG "检查 mysqld 动态库依赖:"
+    MISSING_LIBS=$(ldd "$MYSQLD" 2>&1 | grep "not found")
+    if [ -n "$MISSING_LIBS" ]; then
+        LOG "发现缺失的库:"
+        echo "$MISSING_LIBS" >&2
+    else
+        LOG "所有依赖库正常"
+    fi
+    
+    # 检查数据目录权限
+    LOG "检查数据目录权限:"
+    ls -ld "$DATADIR" >&2
+    ls -la "$(dirname $DATADIR)" >&2
+    
+    # 尝试手动执行 mysqld --version 确认能运行
+    LOG "测试 mysqld 版本:"
+    "$MYSQLD" --version 2>&1
+    
+    # 检查配置文件内容
+    LOG "配置文件内容:"
+    cat "$MYSQL_CONF" >&2
+    
+    # 初始化数据目录（Debian 12 下使用 root 运行，不指定 --user）
+    LOG "执行初始化命令..."
+    
+    # 使用后台进程 + 等待，确保退出码正确
+    "$MYSQLD" \
+        --defaults-file="$MYSQL_CONF" \
+        --initialize-insecure 2>&1 | while IFS= read -r line; do
+        echo "[init] $line" >&2
+    done &
+    
+    # 获取子进程 PID
+    INIT_PID=$!
+    
+    # 等待进程完成
+    wait $INIT_PID 2>/dev/null
+    
+    # 获取退出码
+    INIT_EXIT_CODE=$?
+    
+    if [ $INIT_EXIT_CODE -ne 0 ]; then
+        LOG "初始化失败，退出码: $INIT_EXIT_CODE"
         ERROR_EXIT "MySQL 数据目录初始化失败"
     fi
     
@@ -141,43 +253,30 @@ fi
 if [ -n "$MYSQL_ROOT_PASSWORD" ]; then
     LOG "设置 root 密码..."
     
-    # 启动临时 MySQL 实例（socket only）
+    # 创建初始化 SQL 文件
+    INIT_SQL="${TRIM_PKGTMP}/init_root_password.sql"
+    cat > "$INIT_SQL" << EOF
+ALTER USER 'root'@'localhost' IDENTIFIED BY '${MYSQL_ROOT_PASSWORD}';
+FLUSH PRIVILEGES;
+EOF
+    
+    # 启动临时 MySQL 实例（使用 init-file 设置密码）
+    # 注意：配置文件中已有 socket、pid-file、port，这里只需覆盖端口为 0
+    LOG "启动临时 MySQL 实例设置密码..."
     "$MYSQLD" \
-        --datadir="$DATADIR" \
-        --socket="${RUNDIR}/mysqld-init.sock" \
-        --pid-file="${RUNDIR}/mysqld-init.pid" \
-        --skip-networking \
-        --user="$TRIM_USERNAME" \
-        --secure-file-priv= \
-        >> "${LOGDIR}/init.log" 2>&1 &
+        --defaults-file="$MYSQL_CONF" \
+        --port=0 \
+        --init-file="$INIT_SQL" \
+        2>&1 | while read -r line; do LOG "[temp-mysql] $line"; done &
     
     TEMP_PID=$!
     
-    # 等待 socket 创建
-    sleep 3
+    # 等待 MySQL 启动并执行 init-file
+    sleep 5
     
-    # 检查 socket 是否存在
-    if [ ! -S "${RUNDIR}/mysqld-init.sock" ]; then
-        kill $TEMP_PID 2>/dev/null
-        ERROR_EXIT "MySQL 临时实例启动失败，socket 未创建"
-    fi
-    
-    # 设置 root 密码
-    MYSQL_CLIENT="/usr/bin/mysql"
-    if [ ! -f "$MYSQL_CLIENT" ]; then
-        MYSQL_CLIENT="/usr/bin/mysql.client"
-    fi
-    
-    "$MYSQL_CLIENT" \
-        --socket="${RUNDIR}/mysqld-init.sock" \
-        -u root \
-        --connect-expired-password \
-        -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '${MYSQL_ROOT_PASSWORD}'; FLUSH PRIVILEGES;" \
-        2>&1 | tee -a "${LOGDIR}/init.log" >&2
-    
-    if [ $? -ne 0 ]; then
-        kill $TEMP_PID 2>/dev/null
-        ERROR_EXIT "设置 root 密码失败"
+    # 检查进程是否还在运行
+    if ! kill -0 $TEMP_PID 2>/dev/null; then
+        ERROR_EXIT "MySQL 临时实例启动失败"
     fi
     
     # 停止临时实例
@@ -185,19 +284,10 @@ if [ -n "$MYSQL_ROOT_PASSWORD" ]; then
     wait $TEMP_PID 2>/dev/null
     
     # 清理临时文件
-    rm -f "${RUNDIR}/mysqld-init.sock" "${RUNDIR}/mysqld-init.pid"
+    rm -f "$INIT_SQL"
     
     LOG "root 密码设置成功"
 fi
-
-# 创建符号链接到 /usr/local/bin（方便命令行使用）
-LINK_DIR="/usr/local/bin"
-for cmd in mysql mysqldump mysqladmin; do
-    SRC="/usr/bin/${cmd}"
-    if [ -f "$SRC" ]; then
-        ln -sf "$SRC" "${LINK_DIR}/${cmd}" 2>/dev/null || true
-    fi
-done
 
 LOG "MySQL 8.4.9 安装完成"
 

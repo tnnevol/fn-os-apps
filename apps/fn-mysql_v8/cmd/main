@@ -2,12 +2,12 @@
 
 ### MySQL 8.4.9 生命周期管理脚本
 
-MYSQLD="/usr/sbin/mysqld"
-MYSQL_CONF="${TRIM_PKGETC}/my.cnf"
+MYSQLD="${TRIM_APPDEST}/server/usr/sbin/mysqld"
+MYSQL_CLIENT="${TRIM_APPDEST}/server/usr/bin/mysql"
+MYSQL_CONF="${TRIM_PKGETC}/mysql/my.cnf"
 PID_FILE="${TRIM_PKGVAR}/run/mysqld.pid"
 SOCK_FILE="${TRIM_PKGVAR}/run/mysqld.sock"
 DATADIR="${TRIM_PKGHOME}/data"
-LOG_FILE="${TRIM_PKGVAR}/log/mysqld.log"
 
 LOG() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >&2
@@ -79,11 +79,22 @@ start)
     
     LOG "启动 MySQL 8.4.9..."
     
-    # 启动 MySQL
+    # 确保数据目录和日志目录存在
+    mkdir -p "$DATADIR"
+    mkdir -p "${TRIM_PKGVAR}/run"
+    mkdir -p "${TRIM_PKGVAR}/log"
+    
+    LOG "mysqld: $MYSQLD"
+    LOG "配置文件: $MYSQL_CONF"
+    LOG "数据目录: $DATADIR"
+    LOG "PID 文件: $PID_FILE"
+    LOG "Socket 文件: $SOCK_FILE"
+    
+    # 启动 MySQL（Debian 12 下使用 root 运行，不指定 --user）
+    # 直接输出到 stderr，让飞牛框架捕获日志
     "$MYSQLD" \
         --defaults-file="$MYSQL_CONF" \
-        --user="$TRIM_USERNAME" \
-        >> "$LOG_FILE" 2>&1 &
+        2>&1 | while read -r line; do LOG "[mysqld] $line"; done &
     
     MYSQL_PID=$!
     LOG "MySQL 进程已启动 (PID: $MYSQL_PID)"
@@ -96,22 +107,28 @@ start)
         # 检查 socket 是否创建
         if [ -S "$SOCK_FILE" ]; then
             # 尝试连接
-            if /usr/bin/mysql --socket="$SOCK_FILE" -u root -e "SELECT 1;" >/dev/null 2>&1; then
+            if "$MYSQL_CLIENT" --socket="$SOCK_FILE" -u root -e "SELECT 1;" >/dev/null 2>&1; then
                 LOG "MySQL 启动成功并已就绪"
                 exit 0
+            else
+                LOG "等待 MySQL 就绪... ($((WAIT_COUNT + 1))/${MAX_WAIT})"
             fi
+        else
+            LOG "等待 Socket 文件创建... ($((WAIT_COUNT + 1))/${MAX_WAIT})"
         fi
         
         # 检查进程是否还在运行
         if ! check_process $MYSQL_PID; then
-            ERROR_EXIT "MySQL 进程异常退出，请查看日志: $LOG_FILE"
+            LOG "MySQL 进程异常退出，退出码: $?"
+            ERROR_EXIT "MySQL 进程异常退出"
         fi
         
         sleep 1
         WAIT_COUNT=$((WAIT_COUNT + 1))
     done
     
-    ERROR_EXIT "MySQL 启动超时（${MAX_WAIT}秒），请查看日志: $LOG_FILE"
+    LOG "MySQL 启动超时，查看日志:"
+    ERROR_EXIT "MySQL 启动超时（${MAX_WAIT}秒）"
     ;;
 
 stop)
@@ -120,7 +137,7 @@ stop)
     if PID=$(get_mysql_pid); then
         if check_process "$PID"; then
             LOG "发送 TERM 信号到 PID: $PID"
-            kill -TERM "$PID"
+            kill -TERM "$PID" 2>/dev/null || true
             
             # 等待进程退出（最多 10 秒）
             COUNT=0
@@ -132,7 +149,7 @@ stop)
             # 如果还在运行，强制杀死
             if check_process "$PID"; then
                 LOG "发送 KILL 信号到 PID: $PID"
-                kill -KILL "$PID"
+                kill -KILL "$PID" 2>/dev/null || true
                 sleep 1
             fi
             
@@ -149,6 +166,10 @@ stop)
     
     # 清理 socket 文件
     rm -f "$SOCK_FILE"
+    
+    # 清理临时文件
+    rm -f "${TRIM_PKGVAR}/run/mysqld-init.sock" 2>/dev/null || true
+    rm -f "${TRIM_PKGVAR}/run/mysqld-init.pid" 2>/dev/null || true
     
     exit 0
     ;;

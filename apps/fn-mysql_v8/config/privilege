@@ -1,8 +1,7 @@
 {
-    "defaults":
-    {
+    "defaults": {
         "run-as": "root"
     },
-    "username": "docker-mysql_v8",
-    "groupname": "docker-mysql_v8"
+    "username": "fn-mysql_v8",
+    "groupname": "fn-mysql_v8"
 }

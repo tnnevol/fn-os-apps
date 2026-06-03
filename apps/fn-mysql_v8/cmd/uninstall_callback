@@ -31,12 +31,7 @@ if [ "$wizard_data_action" = "delete" ]; then
     rm -rf "${TRIM_PKGVAR:?}/log"
     
     # 删除配置文件 (TRIM_PKGETC)
-    rm -rf "${TRIM_PKGETC:?}/my.cnf"
-    
-    # 删除符号链接
-    rm -f /usr/local/bin/mysql
-    rm -f /usr/local/bin/mysqldump
-    rm -f /usr/local/bin/mysqladmin
+    rm -rf "${TRIM_PKGETC:?}/mysql"
     
     LOG "应用数据已删除"
 else

@@ -1,9 +1,10 @@
 {
   "usr-local-linker": {
-    "targets": [
-      "/usr/bin/mysql",
-      "/usr/bin/mysqldump",
-      "/usr/bin/mysqladmin"
+    "bin": [
+      "server/usr/bin/mysql",
+      "server/usr/bin/mysqldump",
+      "server/usr/bin/mysqladmin",
+      "server/usr/sbin/mysqld"
     ]
   }
 }
