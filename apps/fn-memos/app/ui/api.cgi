@@ -10,8 +10,18 @@
 BIN_DIR="/var/apps/fn-memos/target/bin"
 MEMOS_BIN="${BIN_DIR}/memos"
 TEMP_DIR="/var/apps/fn-memos/tmp"
+TEMP_DIR_FALLBACK="${TEMP_DIR}/fn-memos-upgrade"
+LOG_FILE="/var/apps/fn-memos/var/upgrade.log"
 
 export PATH="/usr/local/bin:/usr/bin:/bin"
+
+# 全局 stderr 重定向到 /dev/null，避免任何错误输出污染 CGI 响应
+exec 2>/dev/null
+
+log() {
+    mkdir -p "$(dirname "$LOG_FILE")" 2>/dev/null
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" >> "$LOG_FILE" 2>/dev/null
+}
 
 output_json() {
     echo "Content-Type: application/json; charset=utf-8"
@@ -20,9 +30,10 @@ output_json() {
 }
 
 get_current_version() {
-    if [ -x "$MEMOS_BIN" ]; then
-        "$MEMOS_BIN" version 2>/dev/null || echo ""
+    if [ -f "$MEMOS_BIN" ] && [ -x "$MEMOS_BIN" ]; then
+        "$MEMOS_BIN" version || echo ""
     else
+        log "memos binary not found at $MEMOS_BIN"
         echo ""
     fi
 }
@@ -30,16 +41,18 @@ get_current_version() {
 get_latest_version() {
     curl -fsSL --connect-timeout 5 --max-time 10 \
         "https://github.com/usememos/memos/releases/latest" \
-        2>/dev/null \
         | grep -oP '/releases/tag/v\K[0-9]+\.[0-9]+\.[0-9]+' \
         | head -1
 }
 
 check_update() {
+    log "check_update called"
     local current latest has_update="false"
 
     current=$(get_current_version)
     latest=$(get_latest_version)
+
+    log "current=$current latest=$latest"
 
     if [ -n "$current" ] && [ -n "$latest" ]; then
         local higher
@@ -53,7 +66,18 @@ check_update() {
 }
 
 do_upgrade() {
-    mkdir -p "$TEMP_DIR"
+    log "do_upgrade called"
+
+    # 优先使用应用 tmp 目录，无权限时回退到 /tmp
+    if ! mkdir -p "$TEMP_DIR" 2>/dev/null; then
+        log "cannot write to $TEMP_DIR, trying fallback"
+        TEMP_DIR="$TEMP_DIR_FALLBACK"
+        if ! mkdir -p "$TEMP_DIR" 2>/dev/null; then
+            log "failed to create any temp dir"
+            output_json '{"success":false,"message":"无法创建临时目录。"}'
+            return
+        fi
+    fi
 
     local latest
     latest=$(get_latest_version)
@@ -80,21 +104,25 @@ do_upgrade() {
 
     rm -f "$tmp_bin"
 
+    log "downloading from $memos_url"
+
     if command -v curl >/dev/null 2>&1; then
-        curl -fsSL --connect-timeout 5 --max-time 120 "$memos_url" 2>/dev/null | tar -xz -C "$TEMP_DIR" memos
+        curl -fsSL --connect-timeout 5 --max-time 120 "$memos_url" | tar -xz -C "$TEMP_DIR" memos
     elif command -v wget >/dev/null 2>&1; then
-        wget -q --timeout=120 -O - "$memos_url" 2>/dev/null | tar -xz -C "$TEMP_DIR" memos
+        wget -q --timeout=120 -O - "$memos_url" | tar -xz -C "$TEMP_DIR" memos
     else
         output_json '{"success":false,"message":"系统未安装 curl 或 wget，无法下载。"}'
         return
     fi
 
     if [ -x "$tmp_bin" ]; then
+        log "replacing memos binary, new version: $latest"
         mv "$tmp_bin" "$MEMOS_BIN"
         chmod +x "$MEMOS_BIN"
         rm -rf "$TEMP_DIR"
         output_json "{\"success\":true,\"message\":\"Memos 已成功升级至 ${latest} 版本。\"}"
     else
+        log "downloaded binary not executable"
         rm -rf "$TEMP_DIR"
         output_json '{"success":false,"message":"下载的文件无效，升级失败。当前版本保持不变。"}'
     fi
@@ -114,6 +142,8 @@ fi
 if [ -z "$ACTION" ]; then
     ACTION=$(echo "${QUERY_STRING}" | sed -n 's/.*action=\([^&]*\).*/\1/p')
 fi
+
+log "request: method=$REQUEST_METHOD action=$ACTION"
 
 case "$ACTION" in
     check)

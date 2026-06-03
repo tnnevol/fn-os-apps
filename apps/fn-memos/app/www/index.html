@@ -233,7 +233,10 @@
         statusRow.style.display = "none";
 
         try {
-          const res = await fetch("api.cgi?action=check", { method: "POST" });
+          const res = await fetch(
+            "/cgi/ThirdParty/fn-memos/api.cgi?action=check",
+            { method: "POST" },
+          );
           const data = await res.json();
 
           currentEl.textContent = data.current_version || "未检测到";
@@ -286,9 +289,12 @@
         logArea.textContent = "正在下载并升级 Memos，请稍候...";
 
         try {
-          const res = await fetch("api.cgi?action=upgrade", {
-            method: "POST",
-          });
+          const res = await fetch(
+            "/cgi/ThirdParty/fn-memos/api.cgi?action=upgrade",
+            {
+              method: "POST",
+            },
+          );
           const data = await res.json();
 
           if (data.success) {

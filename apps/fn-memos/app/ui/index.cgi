@@ -3,6 +3,8 @@
 echo "Content-Type: text/html; charset=utf-8"
 echo ""
 
+exec 2>/dev/null
+
 HTML_PATH="/var/apps/fn-memos/target/www/index.html"
 
 if [ ! -f "$HTML_PATH" ]; then
