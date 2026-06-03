@@ -132,7 +132,7 @@
   function doUpgrade() {
     createDialog(
       "确认升级",
-      "确定要将 Memos 升级到最新版本吗？\n升级完成后将自动重启服务。",
+      "确定要将 Memos 升级到最新版本吗？\n升级完成后需前往应用中心重启应用。",
       {
         icon: "⬆️",
         buttons: [
@@ -157,12 +157,12 @@
 
     log("开始升级流程...");
 
-    // 服务端已包含：下载 → 替换 → 授权 → 重启
+    // 服务端已包含：下载 → 替换 → 授权
     var data = await api("upgrade");
 
     if (data.success) {
-      log(data.message || "升级并重启完成！");
-      createDialog("升级完成", data.message || "Memos 已成功升级并重启！", {
+      log(data.message || "升级完成！");
+      createDialog("升级完成", data.message, {
         icon: "✅",
         buttons: [
           {

@@ -121,8 +121,8 @@ do_upgrade() {
         chmod +x "$MEMOS_BIN"
         rm -rf "$TEMP_DIR"
 
-        # 升级后重启应用
-        restart_app "Memos 已成功升级至 ${latest} 版本。"
+        log "binary replaced successfully"
+        output_json "{\"success\":true,\"message\":\"Memos 已成功升级至 ${latest} 版本。请前往应用中心重启应用以使新版本生效。\"}"
     else
         log "downloaded binary not executable"
         rm -rf "$TEMP_DIR"
@@ -131,15 +131,24 @@ do_upgrade() {
 }
 
 restart_app() {
-    local version_msg="${1:-}"
+    log "restart_app called"
+
     local PID_FILE="/var/apps/fn-memos/var/app.pid"
-    local MEMOS_BIN="/var/apps/fn-memos/target/bin/memos"
-    local MEMOS_PORT="5230"
+    local CNF_FILE="/var/apps/fn-memos/target/wizard/install.cnf"
     local DATA_DIR="/var/apps/fn-memos/var/data"
     local INFO_LOG="/var/apps/fn-memos/var/info.log"
 
+    # 读取安装时持久化的配置
+    local MEMOS_PORT="5230"
+    local MEMOS_STORAGE="local"
+    local MEMOS_DSN=""
+
+    if [ -r "$CNF_FILE" ]; then
+        . "$CNF_FILE"
+    fi
+
     # --- Stop: 参考 cmd/main stop_process ---
-    log "stopping memos process"
+    log "stopping memos process (PID_FILE=$PID_FILE)"
 
     if [ -r "$PID_FILE" ]; then
         local pid
@@ -173,24 +182,31 @@ restart_app() {
     sleep 1
 
     # --- Start: 参考 cmd/main start_process ---
-    log "starting memos process"
+    log "starting memos process (port=$MEMOS_PORT, storage=$MEMOS_STORAGE)"
 
-    local CMD="${MEMOS_BIN} --port ${MEMOS_PORT} --data ${DATA_DIR}"
+    local CMD
+    case "$MEMOS_STORAGE" in
+        mysql)
+            CMD="${MEMOS_BIN} --port ${MEMOS_PORT} --data ${DATA_DIR} --driver mysql --dsn \"${MEMOS_DSN}\""
+            ;;
+        postgres)
+            CMD="${MEMOS_BIN} --port ${MEMOS_PORT} --data ${DATA_DIR} --driver postgres --dsn \"${MEMOS_DSN}\""
+            ;;
+        *)
+            CMD="${MEMOS_BIN} --port ${MEMOS_PORT} --data ${DATA_DIR}"
+            ;;
+    esac
 
     bash -c "${CMD}" >> "${INFO_LOG}" 2>&1 &
     local new_pid=$!
     printf "%s" "$new_pid" > "$PID_FILE"
-    log "memos started with pid $new_pid"
+    log "memos started with pid $new_pid: $CMD"
 
     sleep 3
 
     # --- Verify ---
     if kill -0 "$new_pid" 2>/dev/null; then
-        if [ -n "$version_msg" ]; then
-            output_json "{\"success\":true,\"message\":\"$version_msg\\nMemos 服务已重启（PID: $new_pid）。\"}"
-        else
-            output_json "{\"success\":true,\"message\":\"Memos 服务已重启（PID: $new_pid）。\"}"
-        fi
+        output_json "{\"success\":true,\"message\":\"Memos 服务已重启（PID: $new_pid）。\"}"
     else
         output_json '{"success":false,"message":"Memos 启动失败，请查看日志。"}'
     fi
