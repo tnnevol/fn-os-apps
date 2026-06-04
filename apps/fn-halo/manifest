@@ -9,6 +9,7 @@ maintainer            = halo
 maintainer_url        = https://www.halo.run
 distributor           = tnnevol
 distributor_url       = https://github.com/tnnevol/fn-os-apps
+changelog             = 升级 Halo 至 2.24；start 时自动重建缺失容器；移除安装向导资源限制配置
 desktop_uidir         = ui
 desktop_applaunchname = fn-halo.Application
 disable_authorization_path = true
