@@ -2,28 +2,57 @@
 
 FILE_PATH="${TRIM_APPDEST}/docker/docker-compose.yaml"
 
-is_docker_running () {
-    DOCKER_NAME=""
-
+# 获取 compose 文件中定义的所有容器名
+get_compose_containers() {
     if [ -f "$FILE_PATH" ]; then
-        DOCKER_NAME=$(cat $FILE_PATH | grep "container_name" | awk -F ':' '{print $2}' | xargs)
-        echo "DOCKER_NAME is set to: $DOCKER_NAME"
+        grep "container_name:" "$FILE_PATH" | awk -F ':' '{print $2}' | xargs
     fi
+}
+
+# 检查指定容器是否存在（不管运行状态）
+container_exists() {
+    docker inspect "$1" &>/dev/null
+}
+
+is_docker_running() {
+    local DOCKER_NAME
+    DOCKER_NAME=$(get_compose_containers | awk '{print $1}')
 
     if [ -n "$DOCKER_NAME" ]; then
-        docker inspect $DOCKER_NAME | grep -q "\"Status\": \"running\"," || exit 1
-        return
+        docker inspect "$DOCKER_NAME" 2>/dev/null | grep -q "\"Status\": \"running\"," || return 1
+        return 0
     fi
+    return 1
+}
+
+# 确保 compose 中缺失的容器已创建（不启动）
+ensure_containers_created() {
+    local MISSING=0
+    for CONTAINER in $(get_compose_containers); do
+        if ! container_exists "$CONTAINER"; then
+            MISSING=1
+            break
+        fi
+    done
+
+    if [ "$MISSING" -eq 1 ]; then
+        cd "$(dirname "$FILE_PATH")"
+        docker compose create 2>&1
+        if [ $? -ne 0 ]; then
+            echo "Docker compose 创建容器失败" > "${TRIM_TEMP_LOGFILE}"
+            return 1
+        fi
+    fi
+    return 0
 }
 
 case $1 in
 start)
-    # run start command. exit 0 if success, exit 1 if failed
+    ensure_containers_created || exit 1
     # do nothing, docker application will be started by appcenter
     exit 0
     ;;
 stop)
-    # run stop command. exit 0 if success, exit 1 if failed
     # do nothing, docker application will be stopped by appcenter
     exit 0
     ;;
