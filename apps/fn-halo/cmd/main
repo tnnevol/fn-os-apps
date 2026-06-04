@@ -18,6 +18,7 @@ is_docker_running() {
     local DOCKER_NAME
     DOCKER_NAME=$(get_compose_containers | awk '{print $1}')
 
+    echo "[DEBUG] is_docker_running: checking container $DOCKER_NAME"
     if [ -n "$DOCKER_NAME" ]; then
         docker inspect "$DOCKER_NAME" 2>/dev/null | grep -q "\"Status\": \"running\"," || return 1
         return 0
@@ -27,45 +28,60 @@ is_docker_running() {
 
 # 确保 compose 中缺失的容器已创建（不启动）
 ensure_containers_created() {
+    local CONTAINERS
+    CONTAINERS=$(get_compose_containers)
+    echo "[DEBUG] ensure_containers_created: compose containers = $CONTAINERS"
+
     local MISSING=0
-    for CONTAINER in $(get_compose_containers); do
-        if ! container_exists "$CONTAINER"; then
+    for CONTAINER in $CONTAINERS; do
+        if container_exists "$CONTAINER"; then
+            echo "[DEBUG] container $CONTAINER exists"
+        else
+            echo "[DEBUG] container $CONTAINER MISSING"
             MISSING=1
-            break
         fi
     done
 
     if [ "$MISSING" -eq 1 ]; then
         cd "$(dirname "$FILE_PATH")"
-        docker compose create 2>&1
+        echo "[DEBUG] running: docker compose up -d --no-start"
+        docker compose up -d --no-start 2>&1
         if [ $? -ne 0 ]; then
+            echo "[DEBUG] docker compose up -d --no-start FAILED"
             echo "Docker compose 创建容器失败" > "${TRIM_TEMP_LOGFILE}"
             return 1
         fi
+        echo "[DEBUG] docker compose up -d --no-start OK"
     fi
     return 0
 }
 
 case $1 in
 start)
+    echo "[DEBUG] cmd/main called with action: $1"
     ensure_containers_created || exit 1
-    # do nothing, docker application will be started by appcenter
+    echo "[DEBUG] start completed, exiting 0"
     exit 0
     ;;
 stop)
+    echo "[DEBUG] cmd/main called with action: $1"
     # do nothing, docker application will be stopped by appcenter
     exit 0
     ;;
 status)
+    echo "[DEBUG] cmd/main called with action: $1"
     # check application status command. exit 0 if running, exit 3 if not running
-    # check first container by default, you cound modify it by yourself 
+    # check first container by default, you cound modify it by yourself
     if is_docker_running; then
+        echo "[DEBUG] container is running"
         exit 0
     else
+        echo "[DEBUG] container is NOT running"
         exit 3
     fi
     ;;
 *)
+    echo "[DEBUG] cmd/main called with unknown action: $1"
     exit 1
     ;;
 esac
