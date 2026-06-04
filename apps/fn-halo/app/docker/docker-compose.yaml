@@ -7,11 +7,6 @@ services:
             - --spring.sql.init.platform=${DB_TYPE}
             - --halo.external-url=${HALO_EXTERNAL_URL}
         container_name: fn-halo
-        deploy:
-            resources:
-                limits:
-                    cpus: "${CPU_LIMIT}"
-                    memory: "${MEMORY_LIMIT}"
         environment:
             - JVM_OPTS=
         healthcheck:
@@ -24,7 +19,7 @@ services:
                 - -f
                 - http://localhost:8090/actuator/health/readiness
             timeout: 5s
-        image: registry.fit2cloud.com/halo/halo-pro:2.23
+        image: registry.fit2cloud.com/halo/halo-pro:2.24
         ports:
             - "${APP_PORT}:8090"
         restart: always

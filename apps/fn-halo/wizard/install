@@ -65,61 +65,6 @@
         ]
     },
     {
-        "stepTitle": "资源限制",
-        "items": [
-            {
-                "type": "select",
-                "field": "CPU_LIMIT",
-                "label": "CPU 核心数",
-                "initValue": "2",
-                "helpText": "Halo 容器可使用的 CPU 核心数上限。",
-                "options": [
-                    {
-                        "label": "1 核",
-                        "value": "1"
-                    },
-                    {
-                        "label": "2 核",
-                        "value": "2"
-                    },
-                    {
-                        "label": "4 核",
-                        "value": "4"
-                    }
-                ]
-            },
-            {
-                "type": "select",
-                "field": "MEMORY_LIMIT",
-                "label": "内存限制",
-                "initValue": "1536M",
-                "helpText": "Halo 容器可使用的内存上限。",
-                "options": [
-                    {
-                        "label": "512M",
-                        "value": "512M"
-                    },
-                    {
-                        "label": "1G",
-                        "value": "1G"
-                    },
-                    {
-                        "label": "1536M",
-                        "value": "1536M"
-                    },
-                    {
-                        "label": "2G",
-                        "value": "2G"
-                    },
-                    {
-                        "label": "4G",
-                        "value": "4G"
-                    }
-                ]
-            }
-        ]
-    },
-    {
         "stepTitle": "健康检查配置",
         "items": [
             {
