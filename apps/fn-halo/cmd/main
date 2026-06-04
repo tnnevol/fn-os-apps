@@ -9,6 +9,11 @@ get_compose_containers() {
     fi
 }
 
+# 获取 compose 项目名（取第一个容器名）
+get_compose_project_name() {
+    get_compose_containers | awk '{print $1}'
+}
+
 # 检查指定容器是否存在（不管运行状态）
 container_exists() {
     docker inspect "$1" &>/dev/null
@@ -48,8 +53,10 @@ ensure_containers_created() {
     fi
 
     cd "$(dirname "$FILE_PATH")"
-    echo "[DEBUG] running: docker compose -p fn-halo up -d"
-    docker compose -p fn-halo up -d 2>&1
+    local PROJECT_NAME
+    PROJECT_NAME=$(get_compose_project_name)
+    echo "[DEBUG] running: docker compose -p $PROJECT_NAME up -d"
+    docker compose -p "$PROJECT_NAME" up -d 2>&1
     if [ $? -ne 0 ]; then
         echo "[DEBUG] docker compose up -d FAILED"
         echo "Docker compose 创建容器失败" > "${TRIM_TEMP_LOGFILE}"
@@ -62,8 +69,6 @@ ensure_containers_created() {
 case $1 in
 start)
     echo "[DEBUG] cmd/main called with action: $1"
-    ensure_containers_created || exit 1
-    echo "[DEBUG] start completed, exiting 0"
     exit 0
     ;;
 stop)
