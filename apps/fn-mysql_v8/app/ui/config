@@ -1,14 +1,1 @@
-{
-    ".url": {
-        "fn-mysql_v8.Application": {
-            "title": "fn-mysql_v8",
-            "icon": "images/icon_{0}.png",
-            "type": "url",
-            "protocol": "",
-            "port": "${APP_PORT}",
-            "url": "/",
-            "allUsers": false,
-            "noDisplay": true
-        }
-    }
-}
+{}

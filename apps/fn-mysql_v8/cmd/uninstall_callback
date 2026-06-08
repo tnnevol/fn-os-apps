@@ -3,8 +3,8 @@
 ### This script is called after the user uninstalls the application.
 
 # 停止 MySQL 服务（如果还在运行）
-if [ -f "${TRIM_PKGVAR}/mysqld.pid" ]; then
-    PID=$(cat "${TRIM_PKGVAR}/mysqld.pid" 2>/dev/null)
+if [ -f "${TRIM_PKGVAR}/app.pid" ]; then
+    PID=$(cat "${TRIM_PKGVAR}/app.pid" 2>/dev/null)
     if [ -n "$PID" ] && kill -0 "$PID" 2>/dev/null; then
         echo "[$(date '+%Y-%m-%d %H:%M:%S')] 停止运行中的 MySQL 服务..." >&2
         kill -TERM "$PID" 2>/dev/null || true

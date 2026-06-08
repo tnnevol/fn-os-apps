@@ -9,6 +9,7 @@ DEB_BUNDLE="${TRIM_APPDEST}/server/mysql-server_${MYSQL_VERSION}-1debian12_amd64
 SERVER_DIR="${TRIM_APPDEST}/server"
 MYSQLD="${SERVER_DIR}/usr/sbin/mysqld"
 MYSQL_CLIENT="${SERVER_DIR}/usr/bin/mysql"
+MYSQLADMIN="${SERVER_DIR}/usr/bin/mysqladmin"
 DATADIR="${TRIM_PKGHOME}/data"
 CNF_FILE="${TRIM_PKGETC}/mysql.cnf"
 MYSQLD_CNF_FILE="${TRIM_PKGETC}/mysql.conf.d/mysqld.cnf"
@@ -147,7 +148,7 @@ basedir                 = ${SERVER_DIR}/usr
 pid-file                = ${TRIM_PKGVAR}/run/mysqld.pid
 log-error               = ${TRIM_PKGVAR}/error.log
 slow-query-log-file     = ${TRIM_PKGVAR}/slow.log
-secure-file-priv        =
+secure-file-priv        = ${TRIM_PKGVAR}/
 
 # Performance
 innodb-buffer-pool-size = 128M
@@ -219,29 +220,36 @@ if [ -n "${MYSQL_ROOT_PASSWORD}" ]; then
         exit 1
     fi
 
-    # Set root password and optionally enable remote access
-    SQL="ALTER USER 'root'@'localhost' IDENTIFIED BY '${MYSQL_ROOT_PASSWORD}';"
-    
-    if [ "${MYSQL_REMOTE_ACCESS}" = "any" ]; then
-        SQL="${SQL}
-        CREATE USER 'root'@'%' IDENTIFIED BY '${MYSQL_ROOT_PASSWORD}';
-        GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION;"
-        log "Enabling remote access (root@%) ..."
-    else
-        log "Remote access disabled (localhost only)"
-    fi
-    
-    SQL="${SQL} FLUSH PRIVILEGES;"
+    # Escape single quotes in password for safe SQL embedding
+    ESCAPED_PASSWORD="${MYSQL_ROOT_PASSWORD//\'/\'\'\'}"
 
-    # Execute SQL
-    "${MYSQL_CLIENT}" \
-        --socket="${SOCKET_FILE}" -u root \
-        -e "${SQL}"
+    # Set root@localhost password via mysqladmin (avoids SQL injection)
+    "${MYSQLADMIN}" \
+        --socket="${SOCKET_FILE}" \
+        -u root \
+        password "${MYSQL_ROOT_PASSWORD}"
 
     if [ $? -eq 0 ]; then
         log "Root password configured successfully"
     else
         log "WARNING: Failed to configure root password"
+    fi
+
+    # Optionally create root@% for remote access
+    if [ "${MYSQL_REMOTE_ACCESS}" = "any" ]; then
+        log "Enabling remote access (root@%) ..."
+        "${MYSQL_CLIENT}" \
+            --socket="${SOCKET_FILE}" \
+            -u root -p"${MYSQL_ROOT_PASSWORD}" \
+            -e "CREATE USER 'root'@'%' IDENTIFIED BY '${ESCAPED_PASSWORD}'; GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION; FLUSH PRIVILEGES;"
+
+        if [ $? -eq 0 ]; then
+            log "Remote access enabled successfully"
+        else
+            log "WARNING: Failed to enable remote access"
+        fi
+    else
+        log "Remote access disabled (localhost only)"
     fi
 
     # Stop temporary instance

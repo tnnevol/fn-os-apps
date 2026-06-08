@@ -50,7 +50,7 @@
                 "type": "select",
                 "field": "MYSQL_REMOTE_ACCESS",
                 "label": "允许连接来源",
-                "initValue": "any",
+                "initValue": "localhost",
                 "helpText": "选择允许哪些主机连接 MySQL。选择“任意远程主机”将创建 root@% 用户。如需更细粒度控制，请安装后手动编辑配置文件：/volx/@appconf/fn-mysql_v8/mysql.cnf",
                 "options": [
                     { "label": "仅本机（localhost）", "value": "localhost" },
