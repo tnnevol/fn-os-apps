@@ -1,18 +1,26 @@
 .el-select-dropdown {
   border-radius: 12px !important;
-  box-shadow: var(--ol-neu-shadow) !important;
-  border: none !important;
+  box-shadow: var(--ol-glass-shadow-elevated) !important;
+  border: 1px solid var(--ol-glass-border-strong) !important;
+  background: var(--ol-glass-bg-heavy) !important;
+  backdrop-filter: var(--ol-glass-blur-heavy);
+  -webkit-backdrop-filter: var(--ol-glass-blur-heavy);
 }
 
 .el-popper {
   border-radius: 12px !important;
-  box-shadow: var(--ol-neu-shadow) !important;
-  border: none !important;
+  box-shadow: var(--ol-glass-shadow-elevated) !important;
+  border: 1px solid var(--ol-glass-border-strong) !important;
+  background: var(--ol-glass-bg-heavy) !important;
+  backdrop-filter: var(--ol-glass-blur-heavy);
+  -webkit-backdrop-filter: var(--ol-glass-blur-heavy);
 }
 
 .el-header {
   background: var(--ol-header-bg) !important;
-  box-shadow: var(--ol-header-shadow) !important;
+  backdrop-filter: var(--ol-glass-blur);
+  -webkit-backdrop-filter: var(--ol-glass-blur);
+  border-bottom: 1px solid var(--ol-header-border);
   color: var(--ol-text-primary) !important;
 }
 

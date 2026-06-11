@@ -1,0 +1,96 @@
+.el-alert {
+  border-radius: var(--ol-radius-sm) !important;
+  border: 1px solid var(--ol-glass-border) !important;
+  box-shadow: var(--ol-glass-shadow) !important;
+  background: var(--ol-glass-bg) !important;
+  backdrop-filter: var(--ol-glass-blur-sm);
+  -webkit-backdrop-filter: var(--ol-glass-blur-sm);
+}
+
+.el-dialog {
+  border-radius: var(--ol-radius-xl) !important;
+  box-shadow: var(--ol-glass-shadow-elevated), 0 1px 0 var(--ol-glass-border-strong) inset !important;
+  background: var(--ol-glass-bg-heavy) !important;
+  backdrop-filter: var(--ol-glass-blur-heavy);
+  -webkit-backdrop-filter: var(--ol-glass-blur-heavy);
+  border: 1px solid var(--ol-glass-border) !important;
+  animation: ol-dialog-in 0.28s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  overflow: hidden;
+
+  &__header {
+    border-bottom: none !important;
+    padding: 22px 22px 0 !important;
+  }
+
+  &__title {
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    letter-spacing: -0.01em !important;
+    color: var(--ol-text-primary) !important;
+  }
+
+  &__body {
+    color: var(--ol-text-primary) !important;
+    padding: 10px 22px 22px !important;
+    font-size: 13px;
+    line-height: 1.55;
+  }
+
+  &__footer {
+    padding: 0 22px 20px !important;
+
+    .el-button {
+      min-width: 80px;
+    }
+  }
+}
+
+@keyframes ol-dialog-in {
+  from { opacity: 0; transform: scale(0.92) translateY(16px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+
+
+/* MessageBox — deep glass */
+.el-message-box {
+  border-radius: var(--ol-radius-xl) !important;
+  box-shadow: var(--ol-glass-shadow-elevated), 0 1px 0 var(--ol-glass-border-strong) inset !important;
+  background: var(--ol-glass-bg-heavy) !important;
+  backdrop-filter: var(--ol-glass-blur-heavy);
+  -webkit-backdrop-filter: var(--ol-glass-blur-heavy);
+  border: 1px solid var(--ol-glass-border) !important;
+
+  &__header {
+    border-bottom: none !important;
+  }
+
+  &__title {
+    color: var(--ol-text-primary) !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+  }
+
+  &__content {
+    color: var(--ol-text-regular) !important;
+    font-size: 13px;
+    line-height: 1.55;
+  }
+}
+
+/* Toast — glass style */
+.el-message {
+  border-radius: var(--ol-radius-md) !important;
+  box-shadow: var(--ol-glass-shadow-elevated) !important;
+  border: 1px solid var(--ol-glass-border) !important;
+  background: var(--ol-glass-bg-heavy) !important;
+  backdrop-filter: var(--ol-glass-blur-heavy);
+  -webkit-backdrop-filter: var(--ol-glass-blur-heavy);
+}
+
+/* Overlay backdrop — blurred */
+.el-overlay {
+  background: rgba(0, 0, 0, 0.30) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}

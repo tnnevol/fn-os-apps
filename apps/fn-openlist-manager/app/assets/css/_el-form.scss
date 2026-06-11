@@ -1,18 +1,31 @@
 .el-input {
   &__wrapper {
-    border-radius: 8px !important;
-    background: var(--ol-surface) !important;
-    box-shadow: var(--ol-neu-shadow-inset-sm) !important;
-    border: none !important;
+    border-radius: 10px !important;
+    background: var(--ol-glass-bg) !important;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: none !important;
+    border: 1px solid var(--ol-glass-border) !important;
     padding: 0 12px !important;
+    transition: border-color 0.15s, box-shadow 0.15s !important;
+
+    &:hover {
+      border-color: var(--ol-glass-border-strong) !important;
+    }
   }
 
   &__inner {
     color: var(--ol-text-primary) !important;
+    font-size: 12px;
 
     &::placeholder {
       color: var(--ol-text-placeholder) !important;
     }
+  }
+
+  &.is-focus &__wrapper {
+    border-color: var(--ol-accent) !important;
+    box-shadow: 0 0 0 3px var(--ol-accent-light) !important;
   }
 }
 
@@ -20,19 +33,18 @@
 @media (max-width: 639px) {
   .el-input {
     &__wrapper {
-      height: 26px !important;
-      line-height: 26px !important;
-      font-size: 12px !important;
+      height: 28px !important;
+      line-height: 28px !important;
     }
     &__inner {
-      height: 26px !important;
-      line-height: 26px !important;
+      height: 28px !important;
+      line-height: 28px !important;
       font-size: 12px !important;
     }
   }
 
   .el-autocomplete {
-    height: 26px !important;
+    height: 28px !important;
   }
 }
 
@@ -40,19 +52,18 @@
 @media (min-width: 640px) {
   .el-input {
     &__wrapper {
-      height: 30px !important;
-      line-height: 30px !important;
-      font-size: 13px !important;
+      height: 32px !important;
+      line-height: 32px !important;
     }
     &__inner {
-      height: 30px !important;
-      line-height: 30px !important;
+      height: 32px !important;
+      line-height: 32px !important;
       font-size: 13px !important;
     }
   }
 
   .el-autocomplete {
-    height: 30px !important;
+    height: 32px !important;
   }
 }
 
@@ -62,12 +73,11 @@
     &__wrapper {
       height: 34px !important;
       line-height: 34px !important;
-      font-size: 14px !important;
     }
     &__inner {
       height: 34px !important;
       line-height: 34px !important;
-      font-size: 14px !important;
+      font-size: 13px !important;
     }
   }
 
@@ -78,6 +88,9 @@
 
 .el-autocomplete-suggestion {
   border-radius: 10px !important;
-  box-shadow: var(--ol-neu-shadow) !important;
-  border: none !important;
+  box-shadow: var(--ol-glass-shadow-elevated) !important;
+  border: 1px solid var(--ol-glass-border-strong) !important;
+  background: var(--ol-glass-bg-heavy) !important;
+  backdrop-filter: var(--ol-glass-blur-heavy);
+  -webkit-backdrop-filter: var(--ol-glass-blur-heavy);
 }

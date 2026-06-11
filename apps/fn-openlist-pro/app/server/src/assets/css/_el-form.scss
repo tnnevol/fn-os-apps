@@ -1,0 +1,98 @@
+.el-input {
+  &__wrapper {
+    border-radius: var(--ol-radius-sm) !important;
+    background: var(--ol-glass-bg) !important;
+    backdrop-filter: var(--ol-glass-blur-sm);
+    -webkit-backdrop-filter: var(--ol-glass-blur-sm);
+    box-shadow: none !important;
+    border: 1px solid var(--ol-glass-border) !important;
+    padding: 0 12px !important;
+    transition: border-color 0.15s, box-shadow 0.15s, background 0.15s !important;
+
+    &:hover {
+      border-color: var(--ol-glass-border-strong) !important;
+    }
+  }
+
+  &__inner {
+    color: var(--ol-text-primary) !important;
+    font-family: var(--ol-font-sans);
+    font-size: 12px;
+
+    &::placeholder {
+      color: var(--ol-text-placeholder) !important;
+    }
+  }
+
+  &.is-focus &__wrapper {
+    border-color: var(--ol-accent) !important;
+    box-shadow: 0 0 0 3px var(--ol-accent-light) !important;
+    background: var(--ol-glass-bg-medium) !important;
+  }
+}
+
+/* Small screen input height */
+@media (max-width: 639px) {
+  .el-input {
+    &__wrapper {
+      height: 28px !important;
+      line-height: 28px !important;
+    }
+    &__inner {
+      height: 28px !important;
+      line-height: 28px !important;
+      font-size: 12px !important;
+    }
+  }
+
+  .el-autocomplete {
+    height: 28px !important;
+  }
+}
+
+/* Medium screen */
+@media (min-width: 640px) {
+  .el-input {
+    &__wrapper {
+      height: 32px !important;
+      line-height: 32px !important;
+    }
+    &__inner {
+      height: 32px !important;
+      line-height: 32px !important;
+      font-size: 13px !important;
+    }
+  }
+
+  .el-autocomplete {
+    height: 32px !important;
+  }
+}
+
+/* Large screen */
+@media (min-width: 768px) {
+  .el-input {
+    &__wrapper {
+      height: 34px !important;
+      line-height: 34px !important;
+    }
+    &__inner {
+      height: 34px !important;
+      line-height: 34px !important;
+      font-size: 13px !important;
+    }
+  }
+
+  .el-autocomplete {
+    height: 34px !important;
+  }
+}
+
+.el-autocomplete-suggestion {
+  border-radius: var(--ol-radius-sm) !important;
+  box-shadow: var(--ol-glass-shadow-elevated) !important;
+  border: 1px solid var(--ol-glass-border) !important;
+  background: var(--ol-glass-bg-heavy) !important;
+  backdrop-filter: var(--ol-glass-blur-heavy);
+  -webkit-backdrop-filter: var(--ol-glass-blur-heavy);
+}

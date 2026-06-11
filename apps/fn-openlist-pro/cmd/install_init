@@ -1,0 +1,6 @@
+#!/bin/bash
+
+### This script is called before the user installs the application.
+### No download needed here - directories are not ready yet.
+
+exit 0

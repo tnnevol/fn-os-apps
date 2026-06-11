@@ -71,7 +71,19 @@ const btnSize = computed(() =>
 
 async function handleRandomPassword() {
   try {
-    // 先生成随机密码并显示
+    // 先弹框询问是否生成随机密码
+    await ElMessageBox.confirm(
+      "将为管理员账号生成一个新的随机密码，生成后您可以选择是否使用该密码。是否继续？",
+      "生成随机密码",
+      {
+        confirmButtonText: "生成密码",
+        cancelButtonText: "取消",
+        type: "info",
+      },
+    );
+
+    generating.value = true;
+    // 调用接口生成随机密码
     const res = await $fetch("/api/openlist/password", {
       method: "POST",
       body: { action: "random" },
@@ -80,7 +92,7 @@ async function handleRandomPassword() {
 
     // 弹框确认是否使用该密码
     await ElMessageBox.confirm(
-      `新密码：<strong style="color: #409eff; font-size: 16px;">${pwd}</strong>`,
+      `生成的新密码：<strong style="color: #409eff; font-size: 16px;">${pwd}</strong><br/><br/>是否确认使用此密码？`,
       "确认使用随机密码",
       {
         confirmButtonText: "确认使用",

@@ -1,0 +1,104 @@
+#!/bin/bash
+
+PID_FILE="${TRIM_PKGVAR}/app.pid"
+
+# OpenList binary and data paths
+OPENLIST_BIN="${TRIM_APPDEST}/bin/openlist"
+DATA_DIR="${TRIM_PKGVAR}/data"
+
+log_msg() {
+    echo "main: $(date '+%Y-%m-%d %H:%M:%S') - $1" >&2
+}
+
+check_process() {
+    local pid=$1
+    if kill -0 "${pid}" 2>/dev/null; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+status() {
+    # Check main app (openlist binary)
+    if [ -f "${PID_FILE}" ]; then
+        pid=$(head -n 1 "${PID_FILE}" | tr -d '[:space:]')
+        if check_process "${pid}"; then
+            return 0
+        else
+            rm -f "${PID_FILE}"
+        fi
+    fi
+
+    return 1
+}
+
+start_process() {
+    if status; then
+        return 0
+    fi
+
+    log_msg "Starting OpenList ..."
+    mkdir -p "${DATA_DIR}" 2>/dev/null
+
+    "${OPENLIST_BIN}" server --data "${DATA_DIR}" >> /dev/null 2>&1 &
+    local new_pid=$!
+    printf "%s" "$new_pid" > "${PID_FILE}"
+
+    log_msg "OpenList started with pid $new_pid"
+    return 0
+}
+
+stop_process() {
+    log_msg "Stopping OpenList ..."
+
+    if [ -f "${PID_FILE}" ]; then
+        pid=$(head -n 1 "${PID_FILE}" | tr -d '[:space:]')
+
+        log_msg "pid=${pid}"
+        if ! check_process "${pid}"; then
+            rm -f "${PID_FILE}"
+            log_msg "remove pid file (process not running)"
+            return 0
+        fi
+
+        log_msg "send TERM signal to PID:${pid}..."
+        kill -TERM ${pid} 2>/dev/null
+
+        local count=0
+        while check_process "${pid}" && [ $count -lt 10 ]; do
+            sleep 1
+            count=$((count + 1))
+            log_msg "waiting process terminal... (${count}s/10s)"
+        done
+
+        if check_process "${pid}"; then
+            log_msg "send KILL signal to PID:${pid}..."
+            kill -KILL "${pid}"
+            sleep 1
+        fi
+
+        rm -f "${PID_FILE}"
+    fi
+
+    return 0
+}
+
+case $1 in
+start)
+    start_process
+    ;;
+stop)
+    stop_process
+    ;;
+status)
+    if status; then
+        exit 0
+    else
+        exit 3
+    fi
+    ;;
+*)
+    exit 1
+    ;;
+esac

@@ -1,0 +1,7 @@
+#!/bin/bash
+
+### This script is called before the user uninstalls the application.
+
+# Stop OpenList gracefully
+
+exit 0

@@ -1,196 +1,111 @@
 .el-button {
   border: none !important;
-  border-radius: 12px !important;
+  border-radius: 10px !important;
   font-weight: 500;
-  letter-spacing: 0.02em;
-  transition: all 0.2s ease !important;
+  letter-spacing: 0.01em;
+  transition: all 0.18s ease !important;
 
   &--default {
-    padding: 8px 22px !important;
-    font-size: 14px !important;
-    height: 38px !important;
-    min-height: 38px !important;
+    padding: 6px 14px !important;
+    font-size: 12px !important;
+    height: 32px !important;
+    min-height: 32px !important;
     line-height: 1 !important;
-    background: var(--ol-surface) !important;
+    background: var(--ol-glass-bg) !important;
+    backdrop-filter: var(--ol-glass-blur);
+    -webkit-backdrop-filter: var(--ol-glass-blur);
     color: var(--ol-text-primary) !important;
-    box-shadow:
-      5px 5px 12px var(--ol-neu-dark),
-      -3px -3px 10px var(--ol-neu-light),
-      inset 0 1px 2px rgba(255, 255, 255, 0.5) !important;
+    border: 1px solid var(--ol-glass-border) !important;
+    box-shadow: var(--ol-glass-shadow) !important;
 
     &:hover:not(.is-disabled) {
-      box-shadow:
-        6px 6px 16px var(--ol-neu-dark),
-        -4px -4px 12px var(--ol-neu-light),
-        inset 0 1px 2px rgba(255, 255, 255, 0.5) !important;
-      transform: translateY(-2px);
+      background: var(--ol-glass-bg-solid) !important;
+      box-shadow: var(--ol-glass-shadow-hover) !important;
     }
   }
 
   &--small {
-    padding: 5px 12px !important;
+    padding: 4px 10px !important;
     font-size: 12px !important;
-    height: 26px !important;
-    min-height: 26px !important;
+    height: 28px !important;
+    min-height: 28px !important;
     line-height: 1 !important;
   }
 
   &--large {
-    padding: 12px 28px !important;
+    padding: 10px 24px !important;
     font-size: 14px !important;
-    height: 44px !important;
-    min-height: 44px !important;
+    height: 42px !important;
+    min-height: 42px !important;
     line-height: 1 !important;
   }
 
-  /* 中屏适配 */
-  @media (min-width: 640px) {
-    &--default {
-      height: 34px !important;
-      min-height: 34px !important;
-      padding: 6px 18px !important;
-    }
-    &--small {
-      height: 30px !important;
-      min-height: 30px !important;
-      padding: 5px 14px !important;
-    }
-  }
-
-  /* 大屏适配 */
-  @media (min-width: 768px) {
-    &--default {
-      height: 38px !important;
-      min-height: 38px !important;
-      padding: 8px 22px !important;
-    }
-    &--small {
-      height: 32px !important;
-      min-height: 32px !important;
-      padding: 6px 16px !important;
-      font-size: 13px !important;
-    }
-  }
-
-  /* Primary — 薰衣草紫拟态 */
+  /* Primary — Apple Blue */
   &--primary {
-    background: linear-gradient(145deg, #9a8ff7, #7a6ee0) !important;
+    background: var(--ol-accent) !important;
     color: #fff !important;
-    border-radius: 12px !important;
-    box-shadow:
-      5px 5px 15px rgba(60, 30, 150, 0.35),
-      -3px -3px 10px rgba(200, 190, 255, 0.25),
-      inset 0 1px 2px rgba(255, 255, 255, 0.3) !important;
+    box-shadow: 0 2px 8px rgba(0, 122, 255, 0.2) !important;
 
     &:hover:not(.is-disabled):not(.is-loading) {
-      background: linear-gradient(145deg, #a498f7, #8478e8) !important;
-      box-shadow:
-        6px 6px 18px rgba(60, 30, 150, 0.4),
-        -4px -4px 12px rgba(200, 190, 255, 0.3),
-        inset 0 1px 2px rgba(255, 255, 255, 0.35) !important;
-      transform: translateY(-2px);
+      background: var(--ol-accent-hover) !important;
+      box-shadow: 0 4px 12px rgba(0, 122, 255, 0.28) !important;
     }
 
     &:active:not(.is-disabled) {
-      background: linear-gradient(145deg, #7060d0, #6558c0) !important;
-      box-shadow:
-        inset 3px 3px 8px rgba(40, 20, 120, 0.45),
-        inset -2px -2px 6px rgba(170, 160, 255, 0.1) !important;
-      transform: translateY(1px);
+      transform: scale(0.96);
     }
   }
 
-  /* Success — 薄荷绿拟态 */
+  /* Success — Apple Green */
   &--success {
-    background: linear-gradient(145deg, #72cc7a, #50b860) !important;
+    background: var(--ol-success) !important;
     color: #fff !important;
-    border-radius: 12px !important;
-    box-shadow:
-      5px 5px 15px rgba(30, 130, 40, 0.3),
-      -3px -3px 10px rgba(180, 255, 190, 0.22),
-      inset 0 1px 2px rgba(255, 255, 255, 0.3) !important;
+    box-shadow: 0 2px 8px rgba(52, 199, 89, 0.2) !important;
 
     &:hover:not(.is-disabled):not(.is-loading) {
-      background: linear-gradient(145deg, #80d488, #5cc468) !important;
-      box-shadow:
-        6px 6px 18px rgba(30, 130, 40, 0.38),
-        -4px -4px 12px rgba(180, 255, 190, 0.28),
-        inset 0 1px 2px rgba(255, 255, 255, 0.35) !important;
-      transform: translateY(-2px);
+      background: #2db84e !important;
     }
 
     &:active:not(.is-disabled) {
-      background: linear-gradient(145deg, #40a050, #389048) !important;
-      box-shadow:
-        inset 3px 3px 8px rgba(20, 100, 55, 0.4),
-        inset -2px -2px 6px rgba(140, 240, 170, 0.08) !important;
-      transform: translateY(1px);
+      transform: scale(0.96);
     }
   }
 
-  /* Danger — 珊瑚红拟态 */
+  /* Danger — Apple Red */
   &--danger {
-    background: linear-gradient(145deg, #f07a70, #e05848) !important;
+    background: var(--ol-danger) !important;
     color: #fff !important;
-    border-radius: 12px !important;
-    box-shadow:
-      5px 5px 15px rgba(140, 30, 30, 0.3),
-      -3px -3px 10px rgba(255, 190, 180, 0.22),
-      inset 0 1px 2px rgba(255, 255, 255, 0.3) !important;
+    box-shadow: 0 2px 8px rgba(255, 59, 48, 0.2) !important;
 
     &:hover:not(.is-disabled):not(.is-loading) {
-      background: linear-gradient(145deg, #f48880, #e86454) !important;
-      box-shadow:
-        6px 6px 18px rgba(140, 30, 30, 0.38),
-        -4px -4px 12px rgba(255, 190, 180, 0.28),
-        inset 0 1px 2px rgba(255, 255, 255, 0.35) !important;
-      transform: translateY(-2px);
+      background: #e6342a !important;
     }
 
     &:active:not(.is-disabled) {
-      background: linear-gradient(145deg, #d04840, #c04038) !important;
-      box-shadow:
-        inset 3px 3px 8px rgba(120, 25, 25, 0.4),
-        inset -2px -2px 6px rgba(255, 170, 160, 0.08) !important;
-      transform: translateY(1px);
+      transform: scale(0.96);
     }
   }
 
-  /* Warning — 蜜糖琥珀拟态 */
+  /* Warning — Apple Orange */
   &--warning {
-    background: linear-gradient(145deg, #e4b060, #d09838) !important;
+    background: var(--ol-warning) !important;
     color: #fff !important;
-    border-radius: 12px !important;
-    box-shadow:
-      5px 5px 15px rgba(120, 80, 15, 0.3),
-      -3px -3px 10px rgba(255, 235, 180, 0.22),
-      inset 0 1px 2px rgba(255, 255, 255, 0.3) !important;
+    box-shadow: 0 2px 8px rgba(255, 149, 0, 0.2) !important;
 
     &:hover:not(.is-disabled):not(.is-loading) {
-      background: linear-gradient(145deg, #e8b868, #d8a044) !important;
-      box-shadow:
-        6px 6px 18px rgba(120, 80, 15, 0.38),
-        -4px -4px 12px rgba(255, 235, 180, 0.28),
-        inset 0 1px 2px rgba(255, 255, 255, 0.35) !important;
-      transform: translateY(-2px);
+      background: #e68600 !important;
     }
 
     &:active:not(.is-disabled) {
-      background: linear-gradient(145deg, #b88830, #a87828) !important;
-      box-shadow:
-        inset 3px 3px 8px rgba(100, 70, 10, 0.4),
-        inset -2px -2px 6px rgba(255, 225, 150, 0.08) !important;
-      transform: translateY(1px);
+      transform: scale(0.96);
     }
   }
 
   &.is-disabled,
   &.is-disabled:hover {
-    box-shadow:
-      inset 3px 3px 8px var(--ol-neu-dark),
-      inset -3px -3px 8px var(--ol-neu-light) !important;
-    opacity: 0.45 !important;
+    opacity: 0.35 !important;
     transform: none !important;
+    box-shadow: none !important;
   }
 
   .el-icon {

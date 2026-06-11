@@ -1,13 +1,19 @@
 .el-alert {
   border-radius: 10px !important;
-  border: none !important;
-  box-shadow: var(--ol-neu-shadow-inset-sm) !important;
+  border: 1px solid var(--ol-glass-border) !important;
+  box-shadow: var(--ol-glass-shadow) !important;
+  background: var(--ol-glass-bg) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 .el-dialog {
-  border-radius: 16px !important;
-  box-shadow: var(--ol-neu-shadow-lg) !important;
-  background: var(--ol-surface) !important;
+  border-radius: var(--ol-card-radius) !important;
+  box-shadow: var(--ol-glass-shadow-elevated) !important;
+  background: var(--ol-glass-bg-heavy) !important;
+  backdrop-filter: var(--ol-glass-blur-heavy);
+  -webkit-backdrop-filter: var(--ol-glass-blur-heavy);
+  border: 1px solid var(--ol-glass-border-strong) !important;
 
   &__header {
     border-bottom: none !important;
@@ -34,13 +40,15 @@
   }
 
   .el-overlay {
-    background: transparent !important;
+    background: var(--ol-bg) !important;
   }
 
   .el-dialog__header {
-    background: var(--ol-log-bg) !important;
+    background: var(--ol-glass-bg) !important;
+    backdrop-filter: var(--ol-glass-blur);
+    -webkit-backdrop-filter: var(--ol-glass-blur);
     border-bottom: 1px solid var(--ol-log-border) !important;
-    padding: 10px 16px !important;
+    padding: 12px 20px !important;
     margin-right: 0 !important;
   }
 
@@ -50,16 +58,19 @@
 
   .el-dialog__body {
     padding: 0 !important;
-    background: var(--ol-log-bg) !important;
-    color: var(--ol-log-text) !important;
-    height: calc(100vh - 56px);
+    background: var(--ol-bg) !important;
+    color: var(--ol-text-primary) !important;
+    height: calc(100vh - 60px);
   }
 }
 
 .el-message-box {
-  border-radius: 16px !important;
-  box-shadow: var(--ol-neu-shadow) !important;
-  background: var(--ol-surface) !important;
+  border-radius: var(--ol-card-radius) !important;
+  box-shadow: var(--ol-glass-shadow-elevated) !important;
+  background: var(--ol-glass-bg-heavy) !important;
+  backdrop-filter: var(--ol-glass-blur-heavy);
+  -webkit-backdrop-filter: var(--ol-glass-blur-heavy);
+  border: 1px solid var(--ol-glass-border-strong) !important;
 
   &__header {
     border-bottom: none !important;
@@ -75,7 +86,10 @@
 }
 
 .el-message {
-  border-radius: 10px !important;
-  box-shadow: var(--ol-neu-shadow) !important;
-  border: none !important;
+  border-radius: var(--ol-card-radius) !important;
+  box-shadow: var(--ol-glass-shadow-elevated) !important;
+  border: 1px solid var(--ol-glass-border-strong) !important;
+  background: var(--ol-glass-bg-heavy) !important;
+  backdrop-filter: var(--ol-glass-blur-heavy);
+  -webkit-backdrop-filter: var(--ol-glass-blur-heavy);
 }

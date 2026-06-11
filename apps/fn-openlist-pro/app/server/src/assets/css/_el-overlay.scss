@@ -1,0 +1,30 @@
+.el-select-dropdown {
+  border-radius: var(--ol-radius-sm) !important;
+  box-shadow: var(--ol-glass-shadow-elevated) !important;
+  border: 1px solid var(--ol-glass-border) !important;
+  background: var(--ol-glass-bg-heavy) !important;
+  backdrop-filter: var(--ol-glass-blur-heavy);
+  -webkit-backdrop-filter: var(--ol-glass-blur-heavy);
+}
+
+.el-popper {
+  border-radius: var(--ol-radius-sm) !important;
+  box-shadow: var(--ol-glass-shadow-elevated) !important;
+  border: 1px solid var(--ol-glass-border) !important;
+  background: var(--ol-glass-bg-heavy) !important;
+  backdrop-filter: var(--ol-glass-blur-heavy);
+  -webkit-backdrop-filter: var(--ol-glass-blur-heavy);
+  color: var(--ol-text-primary) !important;
+}
+
+.el-header {
+  background: var(--ol-glass-bg-medium) !important;
+  backdrop-filter: var(--ol-glass-blur);
+  -webkit-backdrop-filter: var(--ol-glass-blur);
+  border-bottom: 1px solid var(--ol-glass-border);
+  color: var(--ol-text-primary) !important;
+}
+
+.el-main {
+  background: transparent !important;
+}

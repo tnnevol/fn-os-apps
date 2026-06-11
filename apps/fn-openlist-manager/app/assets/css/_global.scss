@@ -10,6 +10,38 @@ body {
   color: var(--ol-text-primary);
 }
 
+/* ===== Animated Mesh Background ===== */
+.app-layout::before,
+.app-layout::after {
+  content: '';
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(100px);
+  z-index: 0;
+  pointer-events: none;
+  will-change: transform;
+}
+.app-layout::before {
+  width: 700px; height: 700px;
+  background: var(--ol-mesh-1);
+  top: -15%; left: -10%;
+  animation: ol-blob-1 22s ease-in-out infinite alternate;
+}
+.app-layout::after {
+  width: 550px; height: 550px;
+  background: var(--ol-mesh-2);
+  bottom: -20%; right: -10%;
+  animation: ol-blob-2 28s ease-in-out infinite alternate;
+}
+@keyframes ol-blob-1 {
+  0% { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(90px, 70px) scale(1.12); }
+}
+@keyframes ol-blob-2 {
+  0% { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(-70px, -90px) scale(1.08); }
+}
+
 /* Utility */
 .mt-1 { margin-top: 4px; }
 .mt-2 { margin-top: 8px; }

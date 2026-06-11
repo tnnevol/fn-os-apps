@@ -1,0 +1,129 @@
+.el-button {
+  border: none !important;
+  border-radius: var(--ol-radius-sm) !important;
+  font-family: var(--ol-font-sans);
+  font-weight: 500;
+  font-size: 12px !important;
+  letter-spacing: 0.01em;
+  transition: all 0.18s ease !important;
+  white-space: nowrap;
+  line-height: 1 !important;
+
+  &:active:not(.is-disabled):not(.is-loading) {
+    transform: scale(0.96);
+  }
+
+  &--default {
+    padding: 0 14px !important;
+    height: 32px !important;
+    min-height: 32px !important;
+  }
+
+  &--small {
+    padding: 0 10px !important;
+    height: 28px !important;
+    min-height: 28px !important;
+  }
+
+  &--large {
+    padding: 0 24px !important;
+    font-size: 14px !important;
+    height: 42px !important;
+    min-height: 42px !important;
+  }
+
+  /* Primary — Apple Blue */
+  &--primary {
+    background: var(--ol-accent) !important;
+    color: #fff !important;
+    box-shadow: none !important;
+
+    &:hover:not(.is-disabled):not(.is-loading) {
+      background: var(--ol-accent-hover) !important;
+      box-shadow: 0 2px 12px rgba(0,122,255,0.30) !important;
+    }
+  }
+
+  /* Success — Apple Green */
+  &--success {
+    background: var(--ol-success) !important;
+    color: #fff !important;
+    box-shadow: none !important;
+
+    &:hover:not(.is-disabled):not(.is-loading) {
+      background: #2db84e !important;
+      box-shadow: 0 2px 12px rgba(52,199,89,0.30) !important;
+    }
+  }
+
+  /* Danger — Apple Red */
+  &--danger {
+    background: var(--ol-danger) !important;
+    color: #fff !important;
+    box-shadow: none !important;
+
+    &:hover:not(.is-disabled):not(.is-loading) {
+      background: #e6342a !important;
+      box-shadow: 0 2px 12px rgba(255,59,48,0.30) !important;
+    }
+  }
+
+  /* Warning — Apple Orange */
+  &--warning {
+    background: var(--ol-warning) !important;
+    color: #fff !important;
+    box-shadow: none !important;
+
+    &:hover:not(.is-disabled):not(.is-loading) {
+      background: #e68600 !important;
+      box-shadow: 0 2px 12px rgba(255,149,0,0.30) !important;
+    }
+  }
+
+  /* Default/Glass button — truly translucent */
+  &--default:not(.el-button--primary):not(.el-button--success):not(.el-button--danger):not(.el-button--warning) {
+    background: var(--ol-glass-bg) !important;
+    backdrop-filter: var(--ol-glass-blur-sm);
+    -webkit-backdrop-filter: var(--ol-glass-blur-sm);
+    border: 1px solid var(--ol-glass-border) !important;
+    color: var(--ol-text-primary) !important;
+    box-shadow: var(--ol-glass-shadow) !important;
+
+    &:hover:not(.is-disabled):not(.is-loading) {
+      background: var(--ol-glass-bg-medium) !important;
+      border-color: var(--ol-glass-border-strong) !important;
+      box-shadow: var(--ol-glass-shadow-hover) !important;
+    }
+  }
+
+  &.is-disabled,
+  &.is-disabled:hover {
+    opacity: 0.35 !important;
+    cursor: not-allowed !important;
+    pointer-events: none !important;
+    transform: none !important;
+    box-shadow: none !important;
+  }
+
+  html.dark &.is-disabled {
+    opacity: 0.25 !important;
+  }
+
+  .el-icon {
+    margin-right: 0 !important;
+    width: 13px;
+    height: 13px;
+    flex-shrink: 0;
+  }
+
+  &.is-link {
+    background: transparent !important;
+    box-shadow: none !important;
+    min-height: auto !important;
+    padding: 4px 8px !important;
+
+    &:hover:not(.is-disabled) {
+      transform: none !important;
+    }
+  }
+}

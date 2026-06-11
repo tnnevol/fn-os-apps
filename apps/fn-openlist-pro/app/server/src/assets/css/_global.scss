@@ -1,0 +1,100 @@
+html, body {
+  height: 100vh;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  font-family: var(--ol-font-sans);
+  font-size: 13px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background: var(--ol-bg);
+  color: var(--ol-text-primary);
+}
+
+/* ===== Animated Mesh Background — 4 vivid blobs ===== */
+.app-layout {
+  position: relative;
+  z-index: 1;
+}
+
+/* Two blobs via ::before / ::after */
+.app-layout::before,
+.app-layout::after {
+  content: '';
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(80px);
+  z-index: 0;
+  pointer-events: none;
+  will-change: transform;
+  opacity: 0.9;
+}
+.app-layout::before {
+  width: 800px; height: 800px;
+  background: var(--ol-mesh-a);
+  top: -20%; left: -15%;
+  animation: ol-blob-1 20s ease-in-out infinite alternate;
+}
+.app-layout::after {
+  width: 650px; height: 650px;
+  background: var(--ol-mesh-b);
+  bottom: -25%; right: -15%;
+  animation: ol-blob-2 26s ease-in-out infinite alternate;
+}
+
+/* Two additional blobs via dedicated elements */
+.mesh-blob-c,
+.mesh-blob-d {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(80px);
+  z-index: 0;
+  pointer-events: none;
+  will-change: transform;
+  opacity: 0.9;
+}
+.mesh-blob-c {
+  width: 550px; height: 550px;
+  background: var(--ol-mesh-c);
+  top: 15%; right: 20%;
+  animation: ol-blob-3 22s ease-in-out infinite alternate;
+}
+.mesh-blob-d {
+  width: 500px; height: 500px;
+  background: var(--ol-mesh-d);
+  top: 55%; left: 10%;
+  animation: ol-blob-4 30s ease-in-out infinite alternate;
+}
+
+@keyframes ol-blob-1 {
+  0%   { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(100px, 80px) scale(1.14); }
+}
+@keyframes ol-blob-2 {
+  0%   { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(-80px, -100px) scale(1.10); }
+}
+@keyframes ol-blob-3 {
+  0%   { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(-60px, 70px) scale(0.90); }
+}
+@keyframes ol-blob-4 {
+  0%   { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(80px, -60px) scale(1.06); }
+}
+
+/* Utility */
+.mt-1 { margin-top: 4px; }
+.mt-2 { margin-top: 8px; }
+.text-xs { font-size: 11px; }
+.text-muted { color: var(--ol-text-placeholder); }
+.text-center { text-align: center; }
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.gap-2 { gap: 8px; }
+.flex-1 { flex: 1; min-width: 0; }
