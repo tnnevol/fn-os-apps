@@ -26,6 +26,7 @@
       </div>
     </div>
     <div class="status-actions">
+      <slot name="actions" />
       <el-button
         :size="btnSize"
         type="primary"

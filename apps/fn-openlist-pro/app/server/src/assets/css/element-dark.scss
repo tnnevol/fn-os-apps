@@ -7,8 +7,11 @@ html.dark .el-select-dropdown {
   background: var(--ol-glass-bg-heavy) !important;
 }
 
+html.dark .el-tooltip,
 html.dark .el-popper {
-  background: var(--ol-glass-bg-heavy) !important;
+  background: var(--ol-glass-bg-solid) !important;
+  backdrop-filter: var(--ol-glass-blur-lg) !important;
+  -webkit-backdrop-filter: var(--ol-glass-blur-lg) !important;
 }
 
 html.dark .el-autocomplete-suggestion {

@@ -26,22 +26,22 @@ body {
   content: '';
   position: fixed;
   border-radius: 50%;
-  filter: blur(80px);
+  filter: blur(100px);
   z-index: 0;
   pointer-events: none;
-  will-change: transform;
-  opacity: 0.9;
+  will-change: transform, opacity;
+  opacity: 1;
 }
 .app-layout::before {
-  width: 800px; height: 800px;
+  width: 1000px; height: 1000px;
   background: var(--ol-mesh-a);
-  top: -20%; left: -15%;
+  top: -25%; left: -20%;
   animation: ol-blob-1 20s ease-in-out infinite alternate;
 }
 .app-layout::after {
-  width: 650px; height: 650px;
+  width: 850px; height: 850px;
   background: var(--ol-mesh-b);
-  bottom: -25%; right: -15%;
+  bottom: -30%; right: -20%;
   animation: ol-blob-2 26s ease-in-out infinite alternate;
 }
 
@@ -50,40 +50,56 @@ body {
 .mesh-blob-d {
   position: fixed;
   border-radius: 50%;
-  filter: blur(80px);
+  filter: blur(100px);
   z-index: 0;
   pointer-events: none;
-  will-change: transform;
-  opacity: 0.9;
+  will-change: transform, opacity;
+  opacity: 1;
 }
 .mesh-blob-c {
-  width: 550px; height: 550px;
+  width: 700px; height: 700px;
   background: var(--ol-mesh-c);
-  top: 15%; right: 20%;
-  animation: ol-blob-3 22s ease-in-out infinite alternate;
+  top: 10%; right: 15%;
+  animation: ol-blob-3 22s ease-in-out infinite alternate,
+             ol-blob-breathe 8s ease-in-out infinite;
 }
 .mesh-blob-d {
-  width: 500px; height: 500px;
+  width: 650px; height: 650px;
   background: var(--ol-mesh-d);
-  top: 55%; left: 10%;
-  animation: ol-blob-4 30s ease-in-out infinite alternate;
+  top: 50%; left: 5%;
+  animation: ol-blob-4 30s ease-in-out infinite alternate,
+             ol-blob-breathe 10s ease-in-out infinite reverse;
 }
 
 @keyframes ol-blob-1 {
-  0%   { transform: translate(0, 0) scale(1); }
-  100% { transform: translate(100px, 80px) scale(1.14); }
+  0%   { transform: translate(0, 0) scale(1) rotate(0deg); }
+  33%  { transform: translate(80px, 60px) scale(1.08) rotate(5deg); }
+  66%  { transform: translate(50px, 120px) scale(1.12) rotate(-3deg); }
+  100% { transform: translate(140px, 100px) scale(1.16) rotate(8deg); }
 }
 @keyframes ol-blob-2 {
-  0%   { transform: translate(0, 0) scale(1); }
-  100% { transform: translate(-80px, -100px) scale(1.10); }
+  0%   { transform: translate(0, 0) scale(1) rotate(0deg); }
+  33%  { transform: translate(-70px, -80px) scale(1.06) rotate(-5deg); }
+  66%  { transform: translate(-50px, -120px) scale(1.10) rotate(6deg); }
+  100% { transform: translate(-110px, -140px) scale(1.14) rotate(-8deg); }
 }
 @keyframes ol-blob-3 {
-  0%   { transform: translate(0, 0) scale(1); }
-  100% { transform: translate(-60px, 70px) scale(0.90); }
+  0%   { transform: translate(0, 0) scale(1) rotate(0deg); }
+  33%  { transform: translate(-60px, 50px) scale(0.92) rotate(-6deg); }
+  66%  { transform: translate(-30px, 80px) scale(0.86) rotate(5deg); }
+  100% { transform: translate(-80px, 100px) scale(0.88) rotate(-10deg); }
 }
 @keyframes ol-blob-4 {
-  0%   { transform: translate(0, 0) scale(1); }
-  100% { transform: translate(80px, -60px) scale(1.06); }
+  0%   { transform: translate(0, 0) scale(1) rotate(0deg); }
+  33%  { transform: translate(70px, -50px) scale(1.05) rotate(6deg); }
+  66%  { transform: translate(100px, -70px) scale(1.08) rotate(-5deg); }
+  100% { transform: translate(120px, -90px) scale(1.10) rotate(10deg); }
+}
+
+/* Shared breathing pulse — makes mesh colors fade in/out organically */
+@keyframes ol-blob-breathe {
+  0%, 100% { opacity: 0.60; }
+  50%      { opacity: 1; }
 }
 
 /* Utility */

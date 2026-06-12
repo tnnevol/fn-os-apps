@@ -14,7 +14,65 @@
   backdrop-filter: var(--ol-glass-blur-heavy);
   -webkit-backdrop-filter: var(--ol-glass-blur-heavy);
   border: 1px solid var(--ol-glass-border) !important;
-  animation: ol-dialog-in 0.28s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  animation: ol-dialog-in 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+
+  &__header {
+    border-bottom: none !important;
+    padding: 24px 24px 0 !important;
+    background: transparent !important;
+  }
+
+  &__title {
+    font-size: 17px !important;
+    font-weight: 600 !important;
+    letter-spacing: -0.015em !important;
+    color: var(--ol-text-primary) !important;
+  }
+
+  &__body {
+    color: var(--ol-text-primary) !important;
+    padding: 12px 24px 24px !important;
+    font-size: 14px;
+    line-height: 1.6;
+    letter-spacing: -0.005em;
+  }
+
+  &__footer {
+    padding: 0 24px 24px !important;
+    border-top: none !important;
+
+    .el-button {
+      min-width: 86px;
+      border-radius: var(--ol-radius-md) !important;
+    }
+  }
+
+  &__close {
+    color: var(--ol-text-regular) !important;
+
+    &:hover {
+      color: var(--ol-text-primary) !important;
+    }
+  }
+}
+
+@keyframes ol-dialog-in {
+  from { opacity: 0; transform: scale(0.94) translateY(12px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+
+
+/* MessageBox — deep glass with Apple precision */
+.el-message-box {
+  border-radius: var(--ol-radius-xl) !important;
+  box-shadow: var(--ol-glass-shadow-elevated), 0 1px 0 var(--ol-glass-border-strong) inset !important;
+  background: var(--ol-glass-bg-heavy) !important;
+  backdrop-filter: var(--ol-glass-blur-heavy);
+  -webkit-backdrop-filter: var(--ol-glass-blur-heavy);
+  border: 1px solid var(--ol-glass-border) !important;
+  animation: ol-dialog-in 0.28s cubic-bezier(0.16, 1, 0.3, 1);
   overflow: hidden;
 
   &__header {
@@ -23,74 +81,50 @@
   }
 
   &__title {
-    font-size: 16px !important;
+    color: var(--ol-text-primary) !important;
+    font-size: 17px !important;
     font-weight: 600 !important;
-    letter-spacing: -0.01em !important;
-    color: var(--ol-text-primary) !important;
-  }
-
-  &__body {
-    color: var(--ol-text-primary) !important;
-    padding: 10px 22px 22px !important;
-    font-size: 13px;
-    line-height: 1.55;
-  }
-
-  &__footer {
-    padding: 0 22px 20px !important;
-
-    .el-button {
-      min-width: 80px;
-    }
-  }
-}
-
-@keyframes ol-dialog-in {
-  from { opacity: 0; transform: scale(0.92) translateY(16px); }
-  to   { opacity: 1; transform: scale(1) translateY(0); }
-}
-
-
-
-/* MessageBox — deep glass */
-.el-message-box {
-  border-radius: var(--ol-radius-xl) !important;
-  box-shadow: var(--ol-glass-shadow-elevated), 0 1px 0 var(--ol-glass-border-strong) inset !important;
-  background: var(--ol-glass-bg-heavy) !important;
-  backdrop-filter: var(--ol-glass-blur-heavy);
-  -webkit-backdrop-filter: var(--ol-glass-blur-heavy);
-  border: 1px solid var(--ol-glass-border) !important;
-
-  &__header {
-    border-bottom: none !important;
-  }
-
-  &__title {
-    color: var(--ol-text-primary) !important;
-    font-size: 16px !important;
-    font-weight: 600 !important;
+    letter-spacing: -0.015em !important;
   }
 
   &__content {
     color: var(--ol-text-regular) !important;
-    font-size: 13px;
-    line-height: 1.55;
+    font-size: 14px;
+    line-height: 1.6;
+    letter-spacing: -0.005em;
+    padding: 10px 22px 22px !important;
+  }
+
+  &__btns {
+    padding: 0 22px 20px !important;
+
+    .el-button {
+      min-width: 86px;
+      border-radius: var(--ol-radius-md) !important;
+    }
   }
 }
 
-/* Toast — glass style */
+/* Toast — glass style with Apple polish */
 .el-message {
   border-radius: var(--ol-radius-md) !important;
-  box-shadow: var(--ol-glass-shadow-elevated) !important;
+  box-shadow: var(--ol-glass-shadow-elevated), 0 1px 0 var(--ol-glass-border-inset) inset !important;
   border: 1px solid var(--ol-glass-border) !important;
   background: var(--ol-glass-bg-heavy) !important;
   backdrop-filter: var(--ol-glass-blur-heavy);
   -webkit-backdrop-filter: var(--ol-glass-blur-heavy);
+  padding: 12px 16px !important;
+
+  &__content {
+    color: var(--ol-text-primary) !important;
+    font-size: 13px !important;
+    letter-spacing: -0.005em !important;
+  }
 }
 
-/* Overlay backdrop — blurred */
+/* Overlay backdrop — Apple-style blurred dim */
 .el-overlay {
-  background: rgba(0, 0, 0, 0.30) !important;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: rgba(0, 0, 0, 0.25) !important;
+  backdrop-filter: blur(12px) saturate(150%);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
 }
