@@ -46,7 +46,7 @@ if [ ! -x "${MYSQLD}" ]; then
 
     # 2a. Extract the outer tar (only needed debs, skip debug/test/dev)
     log "Extracting deb packages ..."
-    tar -xf "${DEB_BUNDLE}" -C "${BUNDLE_DIR}" \
+    tar --warning=no-unknown-keyword -xf "${DEB_BUNDLE}" -C "${BUNDLE_DIR}" \
         --exclude='*debug*' \
         --exclude='*test*' \
         --exclude='*dev*'
@@ -56,25 +56,7 @@ if [ ! -x "${MYSQLD}" ]; then
     for deb_file in "${BUNDLE_DIR}"/*.deb; do
         pkg_name=$(basename "${deb_file}" | cut -d_ -f1)
         log "  -> ${pkg_name}"
-
-        TMPDIR_DEB="${TRIM_PKGTMP}/deb-extract"
-        mkdir -p "${TMPDIR_DEB}"
-
-        # Find exact data archive member name (e.g. data.tar.xz, data.tar.zst)
-        DATA_MEMBER=$(ar t "${deb_file}" | grep '^data\.tar\.')
-        if [ -z "${DATA_MEMBER}" ]; then
-            log "  WARNING: no data archive found in ${pkg_name}, skipping"
-            rm -rf "${TMPDIR_DEB}"
-            continue
-        fi
-
-        # Extract inner data archive
-        ar p "${deb_file}" "${DATA_MEMBER}" > "${TMPDIR_DEB}/${DATA_MEMBER}"
-
-        # Extract to server/ directory (preserves ./usr/... paths)
-        tar -xf "${TMPDIR_DEB}/${DATA_MEMBER}" -C "${SERVER_DIR}"
-
-        rm -rf "${TMPDIR_DEB}"
+        dpkg-deb -x "${deb_file}" "${SERVER_DIR}"
     done
 
     # 2c. Clean up extracted debs
@@ -223,16 +205,21 @@ if [ -n "${MYSQL_ROOT_PASSWORD}" ]; then
     # Escape single quotes in password for safe SQL embedding
     ESCAPED_PASSWORD="${MYSQL_ROOT_PASSWORD//\'/\'\'\'}"
 
-    # Set root@localhost password via mysqladmin (avoids SQL injection)
-    "${MYSQLADMIN}" \
-        --socket="${SOCKET_FILE}" \
-        -u root \
-        password "${MYSQL_ROOT_PASSWORD}"
+    # Check if root password is already set (empty password check)
+    if "${MYSQLADMIN}" --socket="${SOCKET_FILE}" -u root --skip-password ping >/dev/null 2>&1; then
+        # Empty password — set new password
+        "${MYSQLADMIN}" \
+            --socket="${SOCKET_FILE}" \
+            -u root \
+            password "${MYSQL_ROOT_PASSWORD}"
 
-    if [ $? -eq 0 ]; then
-        log "Root password configured successfully"
+        if [ $? -eq 0 ]; then
+            log "Root password configured successfully"
+        else
+            log "WARNING: Failed to configure root password"
+        fi
     else
-        log "WARNING: Failed to configure root password"
+        log "Root password already set, skipping"
     fi
 
     # Optionally create root@% for remote access
@@ -241,7 +228,7 @@ if [ -n "${MYSQL_ROOT_PASSWORD}" ]; then
         "${MYSQL_CLIENT}" \
             --socket="${SOCKET_FILE}" \
             -u root -p"${MYSQL_ROOT_PASSWORD}" \
-            -e "CREATE USER 'root'@'%' IDENTIFIED BY '${ESCAPED_PASSWORD}'; GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION; FLUSH PRIVILEGES;"
+            -e "CREATE USER IF NOT EXISTS 'root'@'%' IDENTIFIED BY '${ESCAPED_PASSWORD}'; ALTER USER 'root'@'%' IDENTIFIED BY '${ESCAPED_PASSWORD}'; GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION; FLUSH PRIVILEGES;"
 
         if [ $? -eq 0 ]; then
             log "Remote access enabled successfully"
