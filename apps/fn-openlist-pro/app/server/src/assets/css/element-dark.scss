@@ -14,8 +14,14 @@ html.dark .el-popper {
   -webkit-backdrop-filter: var(--ol-glass-blur-lg) !important;
 }
 
+html.dark .el-autocomplete__popper.el-popper {
+  background: rgba(72, 72, 74, 0.88) !important;
+  backdrop-filter: var(--ol-glass-blur-heavy) !important;
+  -webkit-backdrop-filter: var(--ol-glass-blur-heavy) !important;
+}
+
 html.dark .el-autocomplete-suggestion {
-  background: var(--ol-glass-bg-heavy) !important;
+  background: rgba(72, 72, 74, 0.88) !important;
 }
 
 /* 暗黑模式下 logo 区域 */

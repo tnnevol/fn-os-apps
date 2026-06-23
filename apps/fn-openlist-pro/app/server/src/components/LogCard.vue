@@ -222,7 +222,9 @@ function ansiToHtml(line: string): string {
     }
 
     const code = match[1];
-    if (code && code !== "0" && ANSI_STYLES[code]) {
+    if (code === "0" || !ANSI_STYLES[code]) {
+      currentStyle = "";
+    } else {
       currentStyle = ANSI_STYLES[code];
     }
 
@@ -319,5 +321,6 @@ onMounted(() => {
     logBodyRef.value?.addEventListener("scroll", onScroll);
     logBodyFullRef.value?.addEventListener("scroll", onScrollFull);
   });
+  connect();
 });
 </script>

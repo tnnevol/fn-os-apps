@@ -128,45 +128,39 @@ async function handleUpdate() {
   progressStep.value = "";
 
   const version = selectedVersion.value || undefined;
+  const body: Record<string, string> = {};
+  if (mirrorUrl.value) body.mirror = mirrorUrl.value;
+  if (version) body.version = version;
 
-  try {
-    const body: Record<string, string> = {};
-    if (mirrorUrl.value) body.mirror = mirrorUrl.value;
-    if (version) body.version = version;
+  // Fire-and-forget: install is long-running, don't await the response
+  apiFetch("install", { method: "POST", body }).catch(() => {});
 
-    await apiFetch("install", { method: "POST", body });
-
-    // Poll for progress
-    pollTimer = setInterval(async () => {
-      try {
-        const data = await apiFetch("install_progress");
-        if (data.done) {
-          clearInterval(pollTimer!);
-          pollTimer = null;
-          progressStep.value = "done";
-          progressPercent.value = 100;
-          ElMessage.success(`安装成功，当前版本: ${data.version}`);
-          emit("updated");
-          updating.value = false;
-        } else if (data.error) {
-          clearInterval(pollTimer!);
-          pollTimer = null;
-          progressStep.value = "error";
-          ElMessage.error(data.error || "安装失败");
-          updating.value = false;
-        } else if (data.step) {
-          progressStep.value = data.step;
-          progressPercent.value = data.percent ?? 0;
-        }
-      } catch {
-        // retry next interval
+  // Poll for progress
+  pollTimer = setInterval(async () => {
+    try {
+      const data = await apiFetch("install_progress");
+      if (data.done) {
+        clearInterval(pollTimer!);
+        pollTimer = null;
+        progressStep.value = "done";
+        progressPercent.value = 100;
+        ElMessage.success(`安装成功，当前版本: ${data.version}`);
+        emit("updated");
+        updating.value = false;
+      } else if (data.error) {
+        clearInterval(pollTimer!);
+        pollTimer = null;
+        progressStep.value = "error";
+        ElMessage.error(data.error || "安装失败");
+        updating.value = false;
+      } else if (data.step) {
+        progressStep.value = data.step;
+        progressPercent.value = data.percent ?? 0;
       }
-    }, 1500);
-  } catch (e: any) {
-    progressStep.value = "error";
-    ElMessage.error(e?.message || "安装失败");
-    updating.value = false;
-  }
+    } catch {
+      // retry next interval
+    }
+  }, 1500);
 }
 
 watch(mirrorUrl, () => {

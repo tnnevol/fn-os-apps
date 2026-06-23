@@ -13,9 +13,9 @@
 
   /* Glass surfaces — truly translucent, not opaque */
   --ol-glass-bg: rgba(255, 255, 255, 0.45);
-  --ol-glass-bg-medium: rgba(255, 255, 255, 0.60);
-  --ol-glass-bg-solid: rgba(255, 255, 255, 0.78);
-  --ol-glass-bg-heavy: rgba(255, 255, 255, 0.92);
+  --ol-glass-bg-medium: rgba(255, 255, 255, 0.58);
+  --ol-glass-bg-solid: rgba(255, 255, 255, 0.70);
+  --ol-glass-bg-heavy: rgba(255, 255, 255, 0.80);
 
   /* Glass borders — inner light reflection */
   --ol-glass-border: rgba(255, 255, 255, 0.7);
@@ -85,17 +85,17 @@
 html.dark {
   --ol-bg: #000000;
 
-  /* Mesh — more vivid in dark */
-  --ol-mesh-a: rgba(88, 86, 214, 0.48);
-  --ol-mesh-b: rgba(0, 100, 255, 0.44);
-  --ol-mesh-c: rgba(255, 45, 85, 0.36);
-  --ol-mesh-d: rgba(48, 209, 88, 0.30);
+  /* Mesh — more vivid in dark, but restrained */
+  --ol-mesh-a: rgba(88, 86, 214, 0.38);
+  --ol-mesh-b: rgba(0, 100, 255, 0.34);
+  --ol-mesh-c: rgba(255, 45, 85, 0.28);
+  --ol-mesh-d: rgba(48, 209, 88, 0.22);
 
   /* Glass surfaces — dark */
   --ol-glass-bg: rgba(44, 44, 46, 0.35);
-  --ol-glass-bg-medium: rgba(44, 44, 46, 0.50);
-  --ol-glass-bg-solid: rgba(58, 58, 60, 0.68);
-  --ol-glass-bg-heavy: rgba(72, 72, 74, 0.88);
+  --ol-glass-bg-medium: rgba(44, 44, 46, 0.48);
+  --ol-glass-bg-solid: rgba(58, 58, 60, 0.62);
+  --ol-glass-bg-heavy: rgba(66, 66, 68, 0.78);
 
   /* Glass borders — dark */
   --ol-glass-border: rgba(255, 255, 255, 0.12);

@@ -89,10 +89,45 @@
 }
 
 .el-autocomplete-suggestion {
+  /* 毛玻璃样式由外层 .el-autocomplete__popper 处理，此处只保留布局和滚动条样式 */
   border-radius: var(--ol-radius-sm) !important;
-  box-shadow: var(--ol-glass-shadow-elevated) !important;
-  border: 1px solid var(--ol-glass-border) !important;
-  background: var(--ol-glass-bg-heavy) !important;
-  backdrop-filter: var(--ol-glass-blur-heavy);
-  -webkit-backdrop-filter: var(--ol-glass-blur-heavy);
+
+  &__wrap {
+    max-height: 240px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--ol-glass-border) transparent;
+
+    &::-webkit-scrollbar {
+      width: 4px;
+    }
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: var(--ol-glass-border);
+      border-radius: 2px;
+    }
+  }
+
+  li {
+    padding: 0 15px !important;
+    color: var(--ol-text-primary) !important;
+    font-size: 13px !important;
+    margin: 2px 4px !important;
+    border-radius: var(--ol-radius-sm) !important;
+    transition: all 0.15s ease !important;
+    cursor: pointer !important;
+
+    &:hover,
+    &.highlighted {
+      background: var(--ol-glass-bg-medium) !important;
+      color: var(--ol-text-primary) !important;
+    }
+
+    &:active {
+      background: var(--ol-glass-bg-solid) !important;
+      color: var(--ol-text-primary) !important;
+    }
+  }
 }

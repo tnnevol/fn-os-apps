@@ -24,6 +24,7 @@
   flex-shrink: 0;
   background: var(--ol-glass-bg);
   backdrop-filter: var(--ol-glass-blur-sm);
+  -webkit-backdrop-filter: var(--ol-glass-blur-sm);
 }
 
 .log-header-title {
@@ -242,16 +243,16 @@
 .log-fullscreen-dialog.el-dialog {
   margin: 20px !important;
   border-radius: var(--ol-radius-xl) !important;
-  box-shadow: var(--ol-shadow-elevated) !important;
+  box-shadow: var(--ol-glass-shadow-elevated) !important;
   padding: 0 !important;
   width: calc(100vw - 40px) !important;
   max-width: calc(100vw - 40px) !important;
   height: calc(100vh - 40px) !important;
   max-height: calc(100vh - 40px) !important;
   animation: dialog-in 0.28s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
-  background: var(--ol-glass-heavy) !important;
-  backdrop-filter: var(--ol-glass-blur-xl);
-  -webkit-backdrop-filter: var(--ol-glass-blur-xl);
+  background: var(--ol-glass-bg-heavy) !important;
+  backdrop-filter: var(--ol-glass-blur-heavy);
+  -webkit-backdrop-filter: var(--ol-glass-blur-heavy);
   border: 1px solid var(--ol-glass-border) !important;
   overflow: hidden !important;
 
