@@ -1,0 +1,31 @@
+// 浏览器默认样式重置
+html, body, div, p, ul, ol, li, h1, h2, h3, h4, h5, h6, pre, code, blockquote, hr, table, th, td {
+  margin: 0;
+  padding: 0;
+}
+button {
+  border: none;
+  background: none;
+}
+input {
+  border: none;
+  background: none;
+}
+textarea {
+  border: none;
+  background: none;
+}
+ul, ol {
+  list-style: none;
+}
+a {
+  text-decoration: none;
+}
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+textarea {
+  resize: none;
+}
