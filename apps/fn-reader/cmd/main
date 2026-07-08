@@ -1,65 +1,27 @@
 #!/bin/bash
 
-FILE_PATH="${TRIM_APPDEST}/docker/docker-compose.yaml"
+COMPOSE_DIR="$(dirname "${TRIM_APPDEST}/docker/docker-compose.yaml")"
 
-# 获取 compose 文件中定义的所有容器名
-get_compose_containers() {
-    if [ -f "$FILE_PATH" ]; then
-        grep "container_name:" "$FILE_PATH" | awk -F ':' '{print $2}' | xargs
-    fi
-}
-
-# 获取 compose 项目名（取第一个容器名）
-get_compose_project_name() {
-    get_compose_containers | awk '{print $1}'
-}
-
-# 检查指定容器是否存在（不管运行状态）
-container_exists() {
-    docker inspect "$1" &>/dev/null
-}
-
-# 检查所有容器是否存在，返回 0 表示全部存在，1 表示有缺失
-check_containers_available() {
-    local CONTAINERS
-    CONTAINERS=$(get_compose_containers)
-
-    for CONTAINER in $CONTAINERS; do
-        if ! container_exists "$CONTAINER"; then
-            echo "[DEBUG] check_containers_available: container $CONTAINER not exist"
-            return 1
-        fi
-    done
-    return 0
-}
-
+# 检查 compose 项目下是否有 running 状态的容器
 is_docker_running() {
-    local DOCKER_NAME
-    DOCKER_NAME=$(get_compose_containers | awk '{print $1}')
-
-    echo "========== [reader] system environment =========="
-    env | grep '^TRIM_' | sort
-    echo "==================================================="
-    echo "[DEBUG] is_docker_running: checking container $DOCKER_NAME"
-    if [ -n "$DOCKER_NAME" ]; then
-        docker inspect "$DOCKER_NAME" 2>/dev/null | grep -q "\"Status\": \"running\"," || return 1
-        return 0
-    fi
-    return 1
+    local RUNNING
+    RUNNING=$(docker compose -p "$TRIM_APPNAME" ps --format '{{.State}}' 2>/dev/null | grep -ci 'running')
+    echo "[DEBUG] is_docker_running: $RUNNING running container(s)"
+    [ "$RUNNING" -gt 0 ]
 }
 
-# 确保 compose 中缺失的容器已创建并启动
+# 确保 compose 中容器已创建并启动
 ensure_containers_created() {
-    if check_containers_available; then
+    cd "$COMPOSE_DIR" || return 1
+    local EXISTS
+    EXISTS=$(docker compose -p "$TRIM_APPNAME" ps -a --format '{{.Name}}' 2>/dev/null | wc -l)
+    if [ "$EXISTS" -gt 0 ]; then
         echo "[DEBUG] ensure_containers_created: all containers already exist"
         return 0
     fi
 
-    cd "$(dirname "$FILE_PATH")"
-    local PROJECT_NAME
-    PROJECT_NAME=$(get_compose_project_name)
-    echo "[DEBUG] running: docker compose -p $PROJECT_NAME up -d"
-    docker compose -p "$PROJECT_NAME" up -d 2>&1
+    echo "[DEBUG] running: docker compose -p $TRIM_APPNAME up -d"
+    docker compose -p "$TRIM_APPNAME" up -d 2>&1
     if [ $? -ne 0 ]; then
         echo "[DEBUG] docker compose up -d FAILED"
         echo "Docker compose 创建容器失败" > "${TRIM_TEMP_LOGFILE}"
