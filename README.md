@@ -10,7 +10,6 @@
 │   ├── fn-reader/                  # 阅读 - 在线电子书阅读器
 │   ├── fn-xiaoya-only/             # 小雅 - 网盘聚合工具
 │   ├── fn-bitwarden/               # Bitwarden - 密码管理器
-│   ├── fn-mysql-8_4_9/             # MySQL - 关系型数据库
 │   ├── fn-mysql_v8/                # MySQL v8 - 关系型数据库(原生应用)
 │   ├── fn-halo/                    # Halo - 建站系统
 │   ├── fn-quark-auto-save/         # 夸克转存 - 夸克网盘自动化工具
@@ -30,7 +29,6 @@
 | [fn-reader](https://github.com/tnnevol/fn-os-apps/releases/latest)          | 阅读         | 开源在线电子书阅读器，支持多种格式、书架管理、阅读进度同步、全文搜索、主题定制      |
 | [fn-xiaoya-only](https://github.com/tnnevol/fn-os-apps/releases/latest)     | 小雅         | 基于 Alist 的网盘聚合工具，支持多网盘挂载、在线播放、WebDAV、目录索引               |
 | [fn-bitwarden](https://github.com/tnnevol/fn-os-apps/releases/latest)       | Bitwarden    | 开源密码管理器，安全存储网站登录信息、信用卡、安全笔记等                            |
-| [fn-mysql-8_4_9](https://github.com/tnnevol/fn-os-apps/releases/latest)     | MySQL        | 开源关系型数据库管理系统，固定版本 8.4.9，支持 utf8mb4 字符集                       |
 | [fn-mysql_v8](https://github.com/tnnevol/fn-os-apps/releases/latest)        | MySQL v8     | MySQL 8.4.9 原生应用，非 Docker 容器化部署，支持远程访问配置和 DNS 优化             |
 | [fn-halo](https://github.com/tnnevol/fn-os-apps/releases/latest)            | Halo         | 简洁高效的开源建站系统，支持博客、知识库、企业官网等多种场景                        |
 | [fn-quark-auto-save](https://github.com/tnnevol/fn-os-apps/releases/latest) | 夸克转存     | 夸克网盘签到、自动转存、命名整理、推送提醒和刷新媒体库自动化工具                    |
