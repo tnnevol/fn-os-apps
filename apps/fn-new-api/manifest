@@ -12,3 +12,4 @@ distributor_url       = https://github.com/tnnevol/fn-os-apps
 desktop_uidir         = ui
 desktop_applaunchname = fn-new-api.Application
 disable_authorization_path = true
+install_dep_apps       = redis

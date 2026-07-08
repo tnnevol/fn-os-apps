@@ -35,6 +35,19 @@
                         "message": "端口号必须是数字"
                     }
                 ]
+            },
+            {
+                "type": "text",
+                "field": "REDIS_CONN_STRING",
+                "label": "Redis 连接字符串",
+                "initValue": "",
+                "helpText": "Redis 连接字符串格式：redis://host:port，有密码时：redis://:password@host:port。如使用飞牛 Redis 应用，请保持默认值。",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请输入 Redis 连接字符串"
+                    }
+                ]
             }
         ]
     }

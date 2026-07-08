@@ -1,7 +1,7 @@
 services:
   new-api:
     image: calciumion/new-api:latest
-    container_name: new-api
+    container_name: fn-new-api
     restart: always
     command: --log-dir /app/logs
     ports:
@@ -12,7 +12,7 @@ services:
     environment:
       #- SQL_DSN=postgresql://root:123456@postgres:5432/new-api # ⚠️ IMPORTANT: Change the password in production!
       - SQL_DSN=${SQL_DSN}  # 格式: user:password@tcp(host:port)/dbname 或 postgresql://user:pass@host:port/dbname
-      - REDIS_CONN_STRING=redis://redis
+      - REDIS_CONN_STRING=${REDIS_CONN_STRING}
       - TZ=Asia/Shanghai
       - ERROR_LOG_ENABLED=true # 是否启用错误日志记录 (Whether to enable error log recording)
       - BATCH_UPDATE_ENABLED=true  # 是否启用批量更新 (Whether to enable batch update)
@@ -23,16 +23,8 @@ services:
 #      - UMAMI_WEBSITE_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx  # Umami 网站 ID (Umami Website ID)
 #      - UMAMI_SCRIPT_URL=https://analytics.umami.is/script.js  # Umami 脚本 URL，默认为官方地址 (Umami Script URL, defaults to official URL)
 
-    depends_on:
-      redis:
-        condition: service_started
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O - http://localhost:3000/api/status | grep -o '\"success\":\\s*true' || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
-
-  redis:
-    image: redis:latest
-    container_name: new-api-redis
-    restart: always
