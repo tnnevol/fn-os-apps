@@ -4,15 +4,15 @@
 
 ## 应用信息
 
-| 字段 | 值 |
-|------|-----|
-| 应用标识 | `fn-xiaoya-only` |
-| 版本 | `1.1.0` |
-| 显示名称 | 小雅 |
-| 桌面入口 | 小雅（5678）、小雅 Emby（2345） |
-| 架构 | `x86_64` |
-| 最低 fnOS 版本 | `0.9.27` |
-| 上游项目 | https://github.com/xiaoyaLL/xiaoya |
+| 字段           | 值                                 |
+| -------------- | ---------------------------------- |
+| 应用标识       | `fn-xiaoya-only`                   |
+| 版本           | `1.1.0`                            |
+| 显示名称       | 小雅                               |
+| 桌面入口       | 小雅（5678）                       |
+| 架构           | `x86_64`                           |
+| 最低 fnOS 版本 | `0.9.27`                           |
+| 上游项目       | https://github.com/xiaoyaLL/xiaoya |
 
 ## 功能
 
@@ -67,9 +67,9 @@ services:
       - "2346:2346"
       - "2347:2347"
     volumes:
-      - ${TRIM_PKGVAR}/alist/data:/data
-      - ${TRIM_PKGVAR}/alist/opt/alist/data:/opt/alist/data
-      - ${TRIM_PKGVAR}/alist/www/data:/www/data
+      - ${TRIM_APPDEST_VOL}/@appshare/fn-xiaoya-only/alist/data:/data
+      - ${TRIM_APPDEST_VOL}/@appshare/fn-xiaoya-only/alist/opt/alist/data:/opt/alist/data
+      - ${TRIM_APPDEST_VOL}/@appshare/fn-xiaoya-only/alist/www/data:/www/data
 
   xiaoya-aliyuntvtoken_connector:
     image: ddsderek/xiaoya-glue:aliyuntvtoken_connector
@@ -84,16 +84,16 @@ services:
 
 安装时用户需填写：
 
-| 字段 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `xiaoya_pass` | password | 是 | 小雅访问密码 |
-| `pan115_cookie` | text | 否 | 115网盘 Cookie |
-| `pan115_key` | password | 否 | 115删除转存密码 |
-| `ali_cookie` | text | 否 | 阿里云盘 Cookie |
-| `quark_cookie` | text | 否 | 夸克网盘 Cookie |
-| `emby_media_path` | text | 否 | Emby 媒体路径 |
+| 字段              | 类型     | 必填 | 说明            |
+| ----------------- | -------- | ---- | --------------- |
+| `xiaoya_pass`     | password | 是   | 小雅访问密码    |
+| `pan115_cookie`   | text     | 否   | 115网盘 Cookie  |
+| `pan115_key`      | password | 否   | 115删除转存密码 |
+| `ali_cookie`      | text     | 否   | 阿里云盘 Cookie |
+| `quark_cookie`    | text     | 否   | 夸克网盘 Cookie |
+| `emby_media_path` | text     | 否   | Emby 媒体路径   |
 
-安装向导会将这些值写入 `${TRIM_PKGVAR}/alist/data/` 下的配置文件。
+安装向导会将这些值写入 `${TRIM_APPDEST_VOL}/@appshare/fn-xiaoya-only/alist/data/` 下的配置文件。
 
 ## 本地开发
 

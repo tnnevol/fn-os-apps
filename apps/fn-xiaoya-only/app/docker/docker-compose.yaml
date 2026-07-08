@@ -3,9 +3,9 @@ services:
     image: xiaoyaliu/alist:latest
     container_name: xiaoya
     volumes:
-      - ${TRIM_PKGVAR}/alist/data:/data
-      - ${TRIM_PKGVAR}/alist/opt/alist/data:/opt/alist/data
-      - ${TRIM_PKGVAR}/alist/www/data:/www/data
+      - ${TRIM_APPDEST_VOL}/@appshare/fn-xiaoya-only/alist/data:/data
+      - ${TRIM_APPDEST_VOL}/@appshare/fn-xiaoya-only/alist/opt/alist/data:/opt/alist/data
+      - ${TRIM_APPDEST_VOL}/@appshare/fn-xiaoya-only/alist/www/data:/www/data
     ports:
       - "5678:80"
       - "2345:2345"
@@ -28,7 +28,7 @@ services:
     image: ddsderek/xiaoya-115cleaner:latest
     container_name: xiaoya-115cleaner
     volumes:
-      - ${TRIM_PKGVAR}/alist/data:/data
+      - ${TRIM_APPDEST_VOL}/@appshare/fn-xiaoya-only/alist/data:/data
     environment:
       - TZ=Asia/Shanghai
       - LANG=zh_CN.UTF-8

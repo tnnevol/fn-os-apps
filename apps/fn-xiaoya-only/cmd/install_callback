@@ -2,31 +2,41 @@
 
 ### This script is called after the user installs the application.
 
-DATA_DIR="${TRIM_PKGVAR}/alist/data"
-mkdir -p "$DATA_DIR"
+DATA_DIR="${TRIM_APPDEST_VOL}/@appshare/fn-xiaoya-only/alist/data"
 
 # guestpass.txt — 小雅密码
-echo -n "${xiaoya_pass}" > "${DATA_DIR}/guestpass.txt"
+if [ -n "${xiaoya_pass}" ]; then
+    echo -n "${xiaoya_pass}" > "${DATA_DIR}/guestpass.txt"
+fi
 
 # 115_cookie.txt
-echo -n "${pan115_cookie}" > "${DATA_DIR}/115_cookie.txt"
+if [ -n "${pan115_cookie}" ]; then
+    echo -n "${pan115_cookie}" > "${DATA_DIR}/115_cookie.txt"
+fi
 
 # 115_key.txt
-echo -n "${pan115_key}" > "${DATA_DIR}/115_key.txt"
+if [ -n "${pan115_key}" ]; then
+    echo -n "${pan115_key}" > "${DATA_DIR}/115_key.txt"
+fi
 
 # ali2115.txt
-cat > "${DATA_DIR}/ali2115.txt" <<EOF
+if [ -n "${ali_cookie}" ]; then
+    cat > "${DATA_DIR}/ali2115.txt" <<EOF
 purge_ali_temp=true
 cookie="${ali_cookie}"
 purge_pan115_temp=true
 dir_id=0
 EOF
+fi
 
 # quark_cookie.txt
-echo -n "${quark_cookie}" > "${DATA_DIR}/quark_cookie.txt"
+if [ -n "${quark_cookie}" ]; then
+    echo -n "${quark_cookie}" > "${DATA_DIR}/quark_cookie.txt"
+fi
 
 # emby_config.txt
-cat > "${DATA_DIR}/emby_config.txt" <<EOF
+if [ -n "${emby_media_path}" ]; then
+    cat > "${DATA_DIR}/emby_config.txt" <<EOF
 dev_dri=no
 mode=host
 image=amilys
@@ -34,5 +44,6 @@ media_dir=${emby_media_path}
 resilio=no
 version=4.9.0.42
 EOF
+fi
 
 exit 0

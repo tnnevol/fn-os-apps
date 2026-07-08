@@ -4,7 +4,7 @@
 
 if [ "$wizard_data_action" = "delete" ]; then
     echo "Deleting application data..."
-    rm -rf "${TRIM_PKGVAR:?}"
+    rm -rf "${TRIM_APPDEST_VOL:?}/@appshare/fn-xiaoya-only"
     rm -rf "${TRIM_PKGHOME:?}"
     echo "Application data deleted."
 else

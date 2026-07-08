@@ -3,6 +3,6 @@
     {
         "run-as": "package"
     },
-    "username": "docker-fn-xiaoya-only",
-    "groupname": "docker-fn-xiaoya-only"
+    "username": "fn-xiaoya-only",
+    "groupname": "fn-xiaoya-only"
 }

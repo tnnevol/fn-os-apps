@@ -7,14 +7,6 @@
       "port": "5678",
       "url": "/",
       "allUsers": false
-    },
-    "fn-xiaoya-only.emby": {
-      "title": "小雅 Emby",
-      "icon": "images/icon_emby_{0}.png",
-      "type": "url",
-      "port": "2345",
-      "url": "/",
-      "allUsers": false
     }
   }
 }
