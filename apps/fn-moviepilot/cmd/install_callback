@@ -17,6 +17,9 @@ APP_BIN="${TRIM_APPDEST}/app/bin"
 REPO_URL="https://github.com/jxxghp/MoviePilot.git"
 REPO_REF="v2"
 
+# 飞牛应用用户 HOME 不存在，指向实际可写目录
+export HOME="$TRIM_PKGHOME"
+
 # ── 工具函数 ──────────────────────────────────────────────
 
 log_msg() {
@@ -47,7 +50,7 @@ mkdir -p "$APP_BIN"
 
 if ! command_exists uv; then
   log_msg "Installing uv to $APP_BIN ..."
-  env UV_INSTALL_DIR="$APP_BIN" HOME="$TRIM_PKGTMP" sh -c "$(curl -LsSf https://astral.sh/uv/install.sh)" \
+  env UV_INSTALL_DIR="$APP_BIN" sh -c "$(curl -LsSf https://astral.sh/uv/install.sh)" \
     || fail "Failed to install uv"
   log_msg "uv installed."
 fi
@@ -85,9 +88,6 @@ fi
 cd "$APP_DIR"
 
 # ── 执行本地安装（venv + pip + 配置初始化）────────────────
-
-# 飞牛应用用户 HOME 不存在，指向实际可写目录
-export HOME="$TRIM_PKGHOME"
 
 log_msg "Running local setup ..."
 SETUP_ARGS=(setup --python "$PYTHON_BIN" --config-dir "$CONFIG_DIR")
