@@ -1,0 +1,84 @@
+#!/bin/bash
+#
+# install_callback — 应用文件安装后执行
+# 基于 Oh My Zsh 官方 install.sh 适配，去除所有交互行为
+#
+
+set -e
+
+# ── 路径定义 ──────────────────────────────────────────────
+
+ZDOTDIR="${TRIM_APPDEST_VOL}/@appshare/fn-ohmyzsh"
+ZSH="${TRIM_PKGHOME}/.oh-my-zsh"
+ZSHRC="${ZDOTDIR}/.zshrc"
+ZSHRC_BACKUP="${ZDOTDIR}/.zshrc.pre-oh-my-zsh"
+LOG_FILE="${TRIM_PKGVAR}/install.log"
+
+# ── 工具函数 ──────────────────────────────────────────────
+
+command_exists() {
+  command -v "$@" >/dev/null 2>&1
+}
+
+log_msg() {
+  echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$LOG_FILE"
+}
+
+# ── 安装 zsh ──────────────────────────────────────────────
+
+if ! command_exists zsh; then
+  log_msg "zsh not found, installing via apt ..."
+  apt-get update -qq && apt-get install -y zsh
+  log_msg "zsh installed."
+fi
+
+# ── 克隆 Oh My Zsh（来自 setup_ohmyzsh）──────────────────
+
+if [ -d "$ZSH" ]; then
+  log_msg "Oh My Zsh directory already exists at $ZSH, skipping clone."
+else
+  log_msg "Cloning Oh My Zsh to $ZSH ..."
+
+  umask g-w,o-w
+
+  git init --quiet "$ZSH" && cd "$ZSH" \
+  && git config core.eol lf \
+  && git config core.autocrlf false \
+  && git config fsck.zeroPaddedFilemode ignore \
+  && git config fetch.fsck.zeroPaddedFilemode ignore \
+  && git config receive.fsck.zeroPaddedFilemode ignore \
+  && git config oh-my-zsh.remote origin \
+  && git config oh-my-zsh.branch master \
+  && git remote add origin "https://github.com/ohmyzsh/ohmyzsh.git" \
+  && git fetch --depth=1 origin \
+  && git checkout -b master "origin/master" || {
+    [ ! -d "$ZSH" ] || { cd - >/dev/null; rm -rf "$ZSH" 2>/dev/null; }
+    echo "Failed to clone Oh My Zsh repository." > "$TRIM_TEMP_LOGFILE"
+    exit 1
+  }
+
+  cd - >/dev/null
+  log_msg "Oh My Zsh cloned successfully."
+fi
+
+# ── 生成 .zshrc（来自 setup_zshrc，去除交互确认）─────────
+
+if [ -f "$ZSHRC" ] || [ -h "$ZSHRC" ]; then
+  log_msg "Found existing $ZSHRC, backing up to $ZSHRC_BACKUP"
+  if [ -e "$ZSHRC_BACKUP" ]; then
+    mv "$ZSHRC_BACKUP" "${ZSHRC_BACKUP}-$(date +%Y-%m-%d_%H-%M-%S)"
+  fi
+  mv "$ZSHRC" "$ZSHRC_BACKUP"
+fi
+
+log_msg "Generating .zshrc from template ..."
+
+sed "s|^export ZSH=.*$|export ZSH=\"$ZSH\"|" \
+  "$ZSH/templates/zshrc.zsh-template" > "${ZSHRC}.tmp"
+mv -f "${ZSHRC}.tmp" "$ZSHRC"
+
+log_msg ".zshrc generated at $ZSHRC"
+
+log_msg "Installation complete. ZDOTDIR=$ZDOTDIR"
+
+exit 0

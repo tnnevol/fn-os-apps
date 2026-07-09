@@ -1,0 +1,12 @@
+appname               = fn-ohmyzsh
+version               = 1.0.0
+display_name          = Oh My Zsh
+desc                  = Oh My Zsh is a delightful, open source, community-driven framework for managing your Zsh configuration.
+platform              = x86
+source                = thirdparty
+maintainer            = ohmyzsh
+maintainer_url        = https://ohmyz.sh
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+ctl_stop              = false
+checkport             = false
