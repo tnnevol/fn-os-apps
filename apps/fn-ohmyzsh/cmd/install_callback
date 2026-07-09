@@ -69,20 +69,16 @@ fi
 # ── 生成 .zshrc（来自 setup_zshrc，去除交互确认）─────────
 
 if [ -f "$ZSHRC" ] || [ -h "$ZSHRC" ]; then
-  log_msg "Found existing $ZSHRC, backing up to $ZSHRC_BACKUP"
-  if [ -e "$ZSHRC_BACKUP" ]; then
-    mv "$ZSHRC_BACKUP" "${ZSHRC_BACKUP}-$(date +%Y-%m-%d_%H-%M-%S)"
-  fi
-  mv "$ZSHRC" "$ZSHRC_BACKUP"
+  log_msg "$ZSHRC already exists, skipping generation."
+else
+  log_msg "Generating .zshrc from template ..."
+
+  sed "s|^export ZSH=.*$|export ZSH=\"$ZSH\"|" \
+    "$ZSH/templates/zshrc.zsh-template" > "${ZSHRC}.tmp"
+  mv -f "${ZSHRC}.tmp" "$ZSHRC"
+
+  log_msg ".zshrc generated at $ZSHRC"
 fi
-
-log_msg "Generating .zshrc from template ..."
-
-sed "s|^export ZSH=.*$|export ZSH=\"$ZSH\"|" \
-  "$ZSH/templates/zshrc.zsh-template" > "${ZSHRC}.tmp"
-mv -f "${ZSHRC}.tmp" "$ZSHRC"
-
-log_msg ".zshrc generated at $ZSHRC"
 
 # ── 配置系统级 zsh 环境 ─────────────────────────────────
 
