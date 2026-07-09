@@ -10,3 +10,4 @@ distributor           = tnnevol
 distributor_url       = https://github.com/tnnevol/fn-os-apps
 ctl_stop              = false
 checkport             = false
+install_dep_apps      = git
