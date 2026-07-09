@@ -47,7 +47,7 @@ mkdir -p "$APP_BIN"
 
 if ! command_exists uv; then
   log_msg "Installing uv to $APP_BIN ..."
-  env UV_INSTALL_DIR="$APP_BIN" sh -c "$(curl -LsSf https://astral.sh/uv/install.sh)" \
+  env UV_INSTALL_DIR="$APP_BIN" HOME="$TRIM_PKGTMP" sh -c "$(curl -LsSf https://astral.sh/uv/install.sh)" \
     || fail "Failed to install uv"
   log_msg "uv installed."
 fi
