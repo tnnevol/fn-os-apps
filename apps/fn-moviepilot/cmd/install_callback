@@ -86,6 +86,9 @@ cd "$APP_DIR"
 
 # ── 执行本地安装（venv + pip + 配置初始化）────────────────
 
+# 飞牛应用用户 HOME 不存在，指向实际可写目录
+export HOME="$TRIM_PKGHOME"
+
 log_msg "Running local setup ..."
 SETUP_ARGS=(setup --python "$PYTHON_BIN" --config-dir "$CONFIG_DIR")
 
