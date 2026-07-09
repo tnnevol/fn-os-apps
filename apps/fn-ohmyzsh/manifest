@@ -10,3 +10,5 @@ distributor           = tnnevol
 distributor_url       = https://github.com/tnnevol/fn-os-apps
 ctl_stop              = false
 checkport             = false
+os_min_version        = 1.1.8
+disable_authorization_path=true
