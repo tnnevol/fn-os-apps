@@ -31,14 +31,20 @@ if ! command_exists zsh; then
   log_msg "zsh installed."
 fi
 
+# ── 安装 git（需支持 HTTPS）──────────────────────────────
+
+if ! command_exists git; then
+  log_msg "git not found, installing via apt ..."
+  apt-get install -y git
+  log_msg "git installed."
+fi
+
 # ── 克隆 Oh My Zsh（来自 setup_ohmyzsh）──────────────────
 
 if [ -d "$ZSH" ]; then
   log_msg "Oh My Zsh directory already exists at $ZSH, skipping clone."
 else
   log_msg "Cloning Oh My Zsh to $ZSH ..."
-
-  umask g-w,o-w
 
   git init --quiet "$ZSH" && cd "$ZSH" \
   && git config core.eol lf \
