@@ -64,6 +64,10 @@ else
 
   cd - >/dev/null
   log_msg "Oh My Zsh cloned successfully."
+
+  # 配置 git safe.directory，解决普通用户访问时的 dubious ownership 错误
+  git config --system --add safe.directory "$ZSH"
+  log_msg "Added $ZSH to git safe.directory"
 fi
 
 # ── 生成 .zshrc（来自 setup_zshrc，去除交互确认）─────────
