@@ -1,0 +1,123 @@
+#!/bin/bash
+#
+# install_callback — MoviePilot 安装后执行
+# 适配自 bootstrap-local.sh，运行于飞牛 Debian x86 环境
+#
+
+set -e
+
+# ── 飞牛 Python 3.12 运行时 ──────────────────────────────
+export PATH=/var/apps/python312/target/bin:$PATH
+
+# ── 路径定义 ──────────────────────────────────────────────
+
+APP_DIR="${TRIM_PKGHOME}/MoviePilot"
+CONFIG_DIR="${TRIM_APPDEST_VOL}/@appshare/fn-moviepilot"
+APP_BIN="${TRIM_APPDEST}/app/bin"
+REPO_URL="https://github.com/jxxghp/MoviePilot.git"
+REPO_REF="v2"
+
+# ── 工具函数 ──────────────────────────────────────────────
+
+log_msg() {
+  echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >&2
+}
+
+command_exists() {
+  command -v "$@" >/dev/null 2>&1
+}
+
+fail() {
+  echo "$1" > "$TRIM_TEMP_LOGFILE"
+  log_msg "ERROR: $1"
+  exit 1
+}
+
+# ── 安装 git ──────────────────────────────────────────────
+
+if ! command_exists git; then
+  log_msg "git not found, installing via apt ..."
+  apt-get update -qq && apt-get install -y git
+  log_msg "git installed."
+fi
+
+# ── 安装 uv 到 app/bin ────────────────────────────────────
+
+mkdir -p "$APP_BIN"
+
+if ! command_exists uv; then
+  log_msg "Installing uv to $APP_BIN ..."
+  env UV_INSTALL_DIR="$APP_BIN" sh -c "$(curl -LsSf https://astral.sh/uv/install.sh)" \
+    || fail "Failed to install uv"
+  log_msg "uv installed."
+fi
+export PATH="$APP_BIN:$PATH"
+
+# ── Python 运行时 ─────────────────────────────────────────
+
+PYTHON_BIN="$(command -v python3.12)"
+log_msg "Using Python: $PYTHON_BIN"
+
+# ── 克隆/更新 MoviePilot 仓库 ────────────────────────────
+
+if [ ! -d "$APP_DIR/.git" ]; then
+  log_msg "Cloning MoviePilot to $APP_DIR ..."
+  git clone --branch "$REPO_REF" "$REPO_URL" "$APP_DIR" \
+    || fail "Failed to clone MoviePilot"
+  log_msg "MoviePilot cloned."
+else
+  log_msg "Reusing existing MoviePilot repo: $APP_DIR"
+  cd "$APP_DIR"
+  if git status --porcelain --untracked-files=no 2>/dev/null | grep -q .; then
+    fail "Existing repo has uncommitted changes, aborting update."
+  fi
+  git fetch --tags origin "$REPO_REF"
+  if git show-ref --verify --quiet "refs/heads/$REPO_REF"; then
+    git checkout "$REPO_REF"
+  else
+    git checkout -b "$REPO_REF" "origin/$REPO_REF"
+  fi
+  git pull --ff-only origin "$REPO_REF" \
+    || fail "Failed to update MoviePilot"
+  log_msg "MoviePilot updated."
+fi
+
+cd "$APP_DIR"
+
+# ── 执行本地安装（venv + pip + 配置初始化）────────────────
+
+log_msg "Running local setup ..."
+SETUP_ARGS=(setup --python "$PYTHON_BIN" --config-dir "$CONFIG_DIR")
+
+# 向导传入的 superuser 信息
+if [ -n "${wizard_superuser:-}" ] && [ -n "${wizard_superuser_password:-}" ]; then
+  SETUP_ARGS+=(--superuser "$wizard_superuser" --superuser-password "$wizard_superuser_password")
+  log_msg "Superuser: $wizard_superuser"
+fi
+
+"$PYTHON_BIN" ./scripts/local_setup.py "${SETUP_ARGS[@]}" \
+  || fail "MoviePilot local_setup.py failed"
+
+log_msg "Local setup complete."
+
+# ── 创建 moviepilot CLI 到 app/bin ───────────────────────
+# local_setup.py 已在 APP_DIR/moviepilot 生成 CLI 包装脚本，
+# 此处创建 app/bin 入口，确保工作目录正确（wrapper 使用相对路径 .venv）
+
+cat > "$APP_BIN/moviepilot" << CLI_EOF
+#!/bin/bash
+export PATH=/var/apps/python312/target/bin:\$PATH
+cd "${TRIM_PKGHOME}/MoviePilot"
+exec "${TRIM_PKGHOME}/MoviePilot/moviepilot" "\$@"
+CLI_EOF
+chmod +x "$APP_BIN/moviepilot"
+log_msg "Created moviepilot CLI at $APP_BIN/moviepilot"
+
+# ── 完成 ─────────────────────────────────────────────────
+
+log_msg "Installation complete."
+log_msg "  APP_DIR:   $APP_DIR"
+log_msg "  CONFIG:    $CONFIG_DIR"
+log_msg "  PYTHON:    $PYTHON_BIN"
+
+exit 0

@@ -1,0 +1,30 @@
+[
+  {
+    "stepTitle": "MoviePilot 初始化",
+    "items": [
+      {
+        "type": "text",
+        "field": "wizard_superuser",
+        "label": "超级管理员用户名",
+        "initValue": "admin",
+        "rules": [
+          {
+            "required": true,
+            "message": "请输入管理员用户名"
+          }
+        ]
+      },
+      {
+        "type": "password",
+        "field": "wizard_superuser_password",
+        "label": "超级管理员密码",
+        "rules": [
+          {
+            "required": true,
+            "message": "请输入管理员密码"
+          }
+        ]
+      }
+    ]
+  }
+]

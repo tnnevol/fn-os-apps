@@ -1,0 +1,15 @@
+{
+  "data-share": {
+    "shares": [
+      {
+        "name": "fn-moviepilot"
+      }
+    ]
+  },
+  "usr-local-linker": {
+    "bin": [
+      "bin/moviepilot",
+      "bin/uv"
+    ]
+  }
+}

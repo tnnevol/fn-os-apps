@@ -1,0 +1,14 @@
+appname               = fn-moviepilot
+version               = 4.4.1
+display_name          = MoviePilot
+desc                  = 影视自动化管理工具，支持媒体库管理、智能订阅、自动化整理等功能。
+platform              = x86
+source                = thirdparty
+maintainer            = jxxghp
+maintainer_url        = https://github.com/jxxghp/MoviePilot
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+desktop_uidir         = ui
+desktop_applaunchname = fn-moviepilot.Application
+os_min_version        = 1.1.8
+install_dep_apps      = python312

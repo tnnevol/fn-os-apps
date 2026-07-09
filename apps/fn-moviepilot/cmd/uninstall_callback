@@ -1,0 +1,33 @@
+#!/bin/bash
+#
+# uninstall_callback — MoviePilot 卸载后执行
+#
+
+set -e
+
+log_msg() {
+  echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >&2
+}
+
+if [ "${wizard_data_action:-keep}" = "delete" ]; then
+  log_msg "User chose to delete all data."
+
+  # 删除源码目录（含虚拟环境）
+  if [ -d "${TRIM_PKGHOME}/MoviePilot" ]; then
+    rm -rf "${TRIM_PKGHOME}/MoviePilot"
+    log_msg "Removed MoviePilot source and venv."
+  fi
+
+  # 删除配置目录
+  CONFIG_DIR="${TRIM_APPDEST_VOL}/@appshare/fn-moviepilot"
+  if [ -d "$CONFIG_DIR" ]; then
+    rm -rf "$CONFIG_DIR"
+    log_msg "Removed config directory: $CONFIG_DIR"
+  fi
+
+  log_msg "All data removed."
+else
+  log_msg "User chose to keep data."
+fi
+
+exit 0
