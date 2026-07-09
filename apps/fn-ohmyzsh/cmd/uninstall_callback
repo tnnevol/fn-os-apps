@@ -11,33 +11,12 @@ ZDOTDIR="${TRIM_APPDEST_VOL}/@appshare/fn-ohmyzsh"
 ZSH="${TRIM_PKGHOME}/.oh-my-zsh"
 ZSHRC="${ZDOTDIR}/.zshrc"
 ZSHRC_BACKUP="${ZDOTDIR}/.zshrc.pre-oh-my-zsh"
-LOG_FILE="${TRIM_PKGVAR}/uninstall.log"
 
 # ── 工具函数 ──────────────────────────────────────────────
 
 log_msg() {
-  echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$LOG_FILE"
+  echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >&2
 }
-
-# ── 恢复所有用户的默认 shell ──────────────────────────────
-
-log_msg "Restoring default shell for all users ..."
-
-while IFS=: read -r username _ uid _ _ home shell; do
-  # 跳过系统用户（UID < 1000）和无 home 的用户
-  [ "$uid" -ge 1000 ] 2>/dev/null || continue
-  [ -n "$home" ] && [ "$home" != "/" ] || continue
-  # 跳过已经使用 /bin/bash 的用户
-  [ "$shell" = "/bin/bash" ] && continue
-
-  if chsh -s "/bin/bash" "$username" 2>/dev/null; then
-    log_msg "Changed shell for $username to /bin/bash"
-  else
-    log_msg "Failed to change shell for $username"
-  fi
-done < /etc/passwd
-
-log_msg "Default shell restoration complete."
 
 # ── 根据用户选择决定是否清理数据 ─────────────────────────
 

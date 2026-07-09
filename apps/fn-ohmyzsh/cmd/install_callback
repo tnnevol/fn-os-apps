@@ -12,7 +12,6 @@ ZDOTDIR="${TRIM_APPDEST_VOL}/@appshare/fn-ohmyzsh"
 ZSH="${TRIM_PKGHOME}/.oh-my-zsh"
 ZSHRC="${ZDOTDIR}/.zshrc"
 ZSHRC_BACKUP="${ZDOTDIR}/.zshrc.pre-oh-my-zsh"
-LOG_FILE="${TRIM_PKGVAR}/install.log"
 
 # ── 工具函数 ──────────────────────────────────────────────
 
@@ -21,7 +20,7 @@ command_exists() {
 }
 
 log_msg() {
-  echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$LOG_FILE"
+  echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >&2
 }
 
 # ── 安装 zsh ──────────────────────────────────────────────
