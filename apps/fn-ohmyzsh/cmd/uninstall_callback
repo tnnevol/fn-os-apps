@@ -18,20 +18,15 @@ log_msg() {
   echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >&2
 }
 
-# ── 清理所有用户的 zsh 配置 ─────────────────────────────
+# ── 清理系统级 zsh 配置 ─────────────────────────────────
 
-log_msg "Cleaning up zsh configuration for all users ..."
+log_msg "Cleaning up system-level zsh configuration ..."
 
+# 恢复所有用户的默认 shell 为 bash
 while IFS=: read -r username _ uid _ _ home shell; do
   # 跳过系统用户（UID < 1000）和无 home 的用户
   [ "$uid" -ge 1000 ] 2>/dev/null || continue
   [ -n "$home" ] && [ -d "$home" ] || continue
-
-  # 删除包含 ZDOTDIR 的 ~/.zshrc
-  if [ -f "$home/.zshrc" ] && grep -q "ZDOTDIR.*fn-ohmyzsh" "$home/.zshrc" 2>/dev/null; then
-    rm -f "$home/.zshrc"
-    log_msg "Removed ~/.zshrc for $username"
-  fi
 
   # 恢复默认 shell 为 bash
   if [ "$shell" != "/bin/bash" ]; then
@@ -43,7 +38,13 @@ while IFS=: read -r username _ uid _ _ home shell; do
   fi
 done < /etc/passwd
 
-log_msg "User cleanup complete."
+# 删除 /etc/zsh/zshenv
+if [ -f /etc/zsh/zshenv ]; then
+  rm -f /etc/zsh/zshenv
+  log_msg "Removed /etc/zsh/zshenv"
+fi
+
+log_msg "System cleanup complete."
 
 # ── 根据用户选择决定是否清理数据 ─────────────────────────
 
