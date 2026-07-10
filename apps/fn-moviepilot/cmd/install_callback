@@ -110,6 +110,22 @@ fi
 
 log_msg "Local setup complete."
 
+# ── 写入端口配置到 app.env ──────────────────────────────────
+# cmd/main 启动时从此文件读取并 export 给 service.js
+APP_ENV="${CONFIG_DIR}/app.env"
+PORT="${wizard_port:-3001}"
+NGINX_PORT="${wizard_nginx_port:-3000}"
+
+if [ -f "$APP_ENV" ]; then
+  # 追加端口配置（如果已存在则覆盖）
+  grep -v "^PORT=" "$APP_ENV" > "$APP_ENV.tmp" 2>/dev/null || true
+  grep -v "^NGINX_PORT=" "$APP_ENV.tmp" > "$APP_ENV" 2>/dev/null || true
+  rm -f "$APP_ENV.tmp"
+fi
+echo "PORT=${PORT}" >> "$APP_ENV"
+echo "NGINX_PORT=${NGINX_PORT}" >> "$APP_ENV"
+log_msg "Port config: PORT=${PORT}, NGINX_PORT=${NGINX_PORT}"
+
 # ── 创建 moviepilot CLI 到 app/bin ───────────────────────
 # local_setup.py 已在 APP_DIR/moviepilot 生成 CLI 包装脚本，
 # 此处创建 app/bin 入口，确保工作目录正确（wrapper 使用相对路径 .venv）
