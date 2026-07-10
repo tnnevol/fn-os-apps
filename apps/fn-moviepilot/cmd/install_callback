@@ -110,20 +110,6 @@ fi
 
 log_msg "Local setup complete."
 
-# ── 写入端口配置 ───────────────────────────────────────────
-# local_setup.py 不会设置端口，需要从向导变量写入 app.env
-APP_ENV="${CONFIG_DIR}/app.env"
-
-if [ -n "${wizard_port:-}" ]; then
-  echo "PORT=${wizard_port}" >> "$APP_ENV"
-  log_msg "Backend port: ${wizard_port}"
-fi
-
-if [ -n "${wizard_nginx_port:-}" ]; then
-  echo "NGINX_PORT=${wizard_nginx_port}" >> "$APP_ENV"
-  log_msg "Frontend port: ${wizard_nginx_port}"
-fi
-
 # ── 创建 moviepilot CLI 到 app/bin ───────────────────────
 # local_setup.py 已在 APP_DIR/moviepilot 生成 CLI 包装脚本，
 # 此处创建 app/bin 入口，确保工作目录正确（wrapper 使用相对路径 .venv）
