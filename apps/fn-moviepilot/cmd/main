@@ -6,6 +6,14 @@ export PATH=/var/apps/python312/target/bin:$PATH
 export PATH="${TRIM_APPDEST}/app/bin:$PATH"
 
 APP_DIR="${TRIM_PKGHOME}/MoviePilot"
+CONFIG_DIR="${TRIM_APPDEST_VOL}/@appshare/fn-moviepilot"
+
+# 从 app.env 读取端口配置
+if [ -f "$CONFIG_DIR/app.env" ]; then
+    export PORT=$(grep "^PORT=" "$CONFIG_DIR/app.env" | cut -d= -f2 | tr -d '"' | tr -d "'")
+    export NGINX_PORT=$(grep "^NGINX_PORT=" "$CONFIG_DIR/app.env" | cut -d= -f2 | tr -d '"' | tr -d "'")
+fi
+
 CMD="cd '${APP_DIR}' && exec '${TRIM_APPDEST}/app/bin/moviepilot' start"
 
 log_msg() {
