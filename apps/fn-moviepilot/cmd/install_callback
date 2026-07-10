@@ -73,7 +73,9 @@ else
   log_msg "Reusing existing MoviePilot repo: $APP_DIR"
   cd "$APP_DIR"
   if git status --porcelain --untracked-files=no 2>/dev/null | grep -q .; then
-    fail "Existing repo has uncommitted changes, aborting update."
+    log_msg "Detected uncommitted changes, resetting to clean state..."
+    git reset --hard HEAD >/dev/null 2>&1
+    git clean -fd >/dev/null 2>&1
   fi
   git fetch --tags origin "$REPO_REF"
   if git show-ref --verify --quiet "refs/heads/$REPO_REF"; then
