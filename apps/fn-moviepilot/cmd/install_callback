@@ -6,15 +6,16 @@
 
 set -e
 
-# ── 飞牛 Python 3.12 运行时 ──────────────────────────────
+# ── 飞牛运行时 ────────────────────────────────────────────
 export PATH=/var/apps/python312/target/bin:$PATH
+export PATH=/var/apps/nodejs_20/target/bin:$PATH
 
 # ── 路径定义 ──────────────────────────────────────────────
 
 APP_DIR="${TRIM_PKGHOME}/MoviePilot"
 CONFIG_DIR="${TRIM_APPDEST_VOL}/@appshare/fn-moviepilot"
 APP_BIN="${TRIM_APPDEST}/app/bin"
-REPO_URL="https://github.com/jxxghp/MoviePilot.git"
+REPO_URL="https://github.com/tnnevol/MoviePilot.git"
 REPO_REF="v2"
 
 # 飞牛应用用户 HOME 不存在，指向实际可写目录
