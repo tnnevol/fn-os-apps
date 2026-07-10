@@ -11,4 +11,4 @@ distributor_url       = https://github.com/tnnevol/fn-os-apps
 desktop_uidir         = ui
 desktop_applaunchname = fn-moviepilot.Application
 os_min_version        = 1.1.8
-install_dep_apps      = python312:nodejs_20
+install_dep_apps      = python312:nodejs_v20

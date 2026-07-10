@@ -8,7 +8,7 @@ set -e
 
 # ── 飞牛运行时 ────────────────────────────────────────────
 export PATH=/var/apps/python312/target/bin:$PATH
-export PATH=/var/apps/nodejs_20/target/bin:$PATH
+export PATH=/var/apps/nodejs_v20/target/bin:$PATH
 
 # ── 路径定义 ──────────────────────────────────────────────
 
@@ -87,6 +87,12 @@ else
 fi
 
 cd "$APP_DIR"
+
+# ── 映射飞牛 Node.js 运行时 ──────────────────────────────
+# local_setup.py 检测路径为 $APP_DIR/.runtime/node/bin/node
+mkdir -p "$APP_DIR/.runtime"
+ln -sf /var/apps/nodejs_v20/target "$APP_DIR/.runtime/node"
+log_msg "Node.js runtime linked to $APP_DIR/.runtime/node"
 
 # ── 执行本地安装（venv + pip + 配置初始化）────────────────
 
