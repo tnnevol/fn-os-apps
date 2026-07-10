@@ -97,7 +97,7 @@ log_msg "Node.js runtime linked to $APP_DIR/.runtime/node"
 # ── 执行本地安装（venv + pip + 配置初始化）────────────────
 
 log_msg "Running local setup ..."
-SETUP_ARGS=(setup --python "$PYTHON_BIN" --config-dir "$CONFIG_DIR")
+SETUP_ARGS=(setup --python "$PYTHON_BIN" --config-dir "$CONFIG_DIR" --node-version 20.20.0)
 
 # 向导传入的 superuser 信息
 if [ -n "${wizard_superuser:-}" ] && [ -n "${wizard_superuser_password:-}" ]; then
