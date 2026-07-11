@@ -101,10 +101,20 @@ log_msg "Node.js runtime linked to $APP_DIR/.runtime/node"
 log_msg "Running local setup ..."
 SETUP_ARGS=(setup --python "$PYTHON_BIN" --config-dir "$CONFIG_DIR" --node-version 20.20.0)
 
-# 向导传入的 superuser 信息
-if [ -n "${wizard_superuser:-}" ] && [ -n "${wizard_superuser_password:-}" ]; then
-  SETUP_ARGS+=(--superuser "$wizard_superuser" --superuser-password "$wizard_superuser_password")
+# 向导传入的 superuser 信息（可选，留空则保留原有配置）
+if [ -n "${wizard_superuser:-}" ]; then
+  SETUP_ARGS+=(--superuser "$wizard_superuser")
   log_msg "Superuser: $wizard_superuser"
+fi
+if [ -n "${wizard_superuser_password:-}" ]; then
+  SETUP_ARGS+=(--superuser-password "$wizard_superuser_password")
+  log_msg "Superuser password: ****"
+fi
+
+# 向导传入的 User-Agent
+if [ -n "${wizard_user_agent:-}" ]; then
+  SETUP_ARGS+=(--user-agent "$wizard_user_agent")
+  log_msg "User-Agent: $wizard_user_agent"
 fi
 
 "$PYTHON_BIN" ./scripts/local_setup.py "${SETUP_ARGS[@]}" \

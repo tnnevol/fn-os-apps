@@ -3,27 +3,19 @@
     "stepTitle": "MoviePilot 初始化",
     "items": [
       {
+        "type": "tips",
+        "helpText": "填入账号密码会覆盖原有账号密码，留空则保留原有配置"
+      },
+      {
         "type": "text",
         "field": "wizard_superuser",
         "label": "超级管理员用户名",
-        "initValue": "admin",
-        "rules": [
-          {
-            "required": true,
-            "message": "请输入管理员用户名"
-          }
-        ]
+        "initValue": "admin"
       },
       {
         "type": "password",
         "field": "wizard_superuser_password",
-        "label": "超级管理员密码",
-        "rules": [
-          {
-            "required": true,
-            "message": "请输入管理员密码"
-          }
-        ]
+        "label": "超级管理员密码"
       },
       {
         "type": "text",
@@ -56,6 +48,12 @@
             "message": "端口必须是数字"
           }
         ]
+      },
+      {
+        "type": "text",
+        "field": "wizard_user_agent",
+        "label": "GitHub User-Agent",
+        "placeholder": "留空使用默认浏览器 UA"
       }
     ]
   }
