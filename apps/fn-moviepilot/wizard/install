@@ -10,7 +10,7 @@
         "type": "text",
         "field": "wizard_superuser",
         "label": "超级管理员用户名",
-        "initValue": "admin"
+        "initValue": ""
       },
       {
         "type": "password",
