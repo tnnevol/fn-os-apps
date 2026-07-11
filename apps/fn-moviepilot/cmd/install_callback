@@ -93,6 +93,7 @@ cd "$APP_DIR"
 # ── 映射飞牛 Node.js 运行时 ──────────────────────────────
 # local_setup.py 检测路径为 $APP_DIR/.runtime/node/bin/node
 mkdir -p "$APP_DIR/.runtime"
+rm -rf "$APP_DIR/.runtime/node"
 ln -sf /var/apps/nodejs_v20/target "$APP_DIR/.runtime/node"
 log_msg "Node.js runtime linked to $APP_DIR/.runtime/node"
 
