@@ -8,7 +8,6 @@ set -e
 
 # ── 飞牛运行时 ────────────────────────────────────────────
 export PATH=/var/apps/python312/target/bin:$PATH
-export PATH=/var/apps/nodejs_v20/target/bin:$PATH
 
 # ── 路径定义 ──────────────────────────────────────────────
 
@@ -46,8 +45,6 @@ if ! command_exists git; then
 fi
 
 # ── 安装 uv 到 app/bin ────────────────────────────────────
-
-mkdir -p "$APP_BIN"
 
 if ! command_exists uv; then
   log_msg "Installing uv to $APP_BIN ..."
@@ -139,18 +136,10 @@ echo "PORT=${PORT}" >> "$APP_ENV"
 echo "NGINX_PORT=${NGINX_PORT}" >> "$APP_ENV"
 log_msg "Port config: PORT=${PORT}, NGINX_PORT=${NGINX_PORT}"
 
-# ── 创建 moviepilot CLI 到 app/bin ───────────────────────
-# local_setup.py 已在 APP_DIR/moviepilot 生成 CLI 包装脚本，
-# 此处创建 app/bin 入口，确保工作目录正确（wrapper 使用相对路径 .venv）
-
-cat > "$APP_BIN/moviepilot" << CLI_EOF
-#!/bin/bash
-export PATH=/var/apps/python312/target/bin:\$PATH
-cd "${TRIM_PKGHOME}/MoviePilot"
-exec "${TRIM_PKGHOME}/MoviePilot/moviepilot" "\$@"
-CLI_EOF
-chmod +x "$APP_BIN/moviepilot"
-log_msg "Created moviepilot CLI at $APP_BIN/moviepilot"
+# ── 链接 moviepilot CLI 到 app/bin ───────────────────────
+rm -f "$APP_BIN/moviepilot"
+ln -sf "${TRIM_PKGHOME}/MoviePilot/moviepilot" "$APP_BIN/moviepilot"
+log_msg "Linked moviepilot CLI to $APP_BIN/moviepilot"
 
 # ── 完成 ─────────────────────────────────────────────────
 
