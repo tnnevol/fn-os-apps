@@ -44,16 +44,6 @@ if ! command_exists git; then
   log_msg "git installed."
 fi
 
-# ── 安装 uv 到 app/bin ────────────────────────────────────
-
-if ! command_exists uv; then
-  log_msg "Installing uv to $APP_BIN ..."
-  env UV_INSTALL_DIR="$APP_BIN" sh -c "$(curl -LsSf https://astral.sh/uv/install.sh)" \
-    || fail "Failed to install uv"
-  log_msg "uv installed."
-fi
-export PATH="$APP_BIN:$PATH"
-
 # ── Python 运行时 ─────────────────────────────────────────
 
 PYTHON_BIN="$(command -v python3.12)"
