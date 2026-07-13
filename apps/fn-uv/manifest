@@ -1,5 +1,5 @@
 appname               = fn-uv
-version               = 0.11.28
+version               = 0.11.29
 display_name          = uv
 desc                  = An extremely fast Python package and project manager, written in Rust.
 platform              = x86
@@ -11,3 +11,4 @@ distributor_url       = https://github.com/tnnevol/fn-os-apps
 ctl_stop              = false
 checkport             = false
 os_min_version        = 1.1.8
+disable_authorization_path=true
