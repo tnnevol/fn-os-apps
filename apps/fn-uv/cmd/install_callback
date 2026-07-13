@@ -20,7 +20,7 @@ log_msg() {
 mkdir -p "$APP_BIN"
 
 log_msg "Installing uv to $APP_BIN ..."
-env UV_INSTALL_DIR="$APP_BIN" HOME="$TRIM_PKGTMP" sh -c "$(curl -LsSf https://astral.sh/uv/install.sh)" \
+env UV_INSTALL_DIR="$APP_BIN" HOME="$TRIM_PKGHOME" sh -c "$(curl -LsSf https://astral.sh/uv/install.sh)" \
   || {
     echo "Failed to install uv" > "$TRIM_TEMP_LOGFILE"
     exit 1
