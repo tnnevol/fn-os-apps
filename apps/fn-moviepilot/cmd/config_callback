@@ -1,5 +1,40 @@
 #!/bin/bash
+# config_callback — 应用配置更新后执行
+# 当用户在应用设置页面修改环境变量后，飞牛框架会调用此脚本
 
-### This script is called after the user change environment variables in application setting page.
+PID_FILE="${TRIM_PKGVAR}/app.pid"
 
+log_msg() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >&2
+}
+
+log_msg "Configuration updated, restarting MoviePilot..."
+
+# 重启 MoviePilot
+cd "${TRIM_PKGHOME}/MoviePilot" && "${TRIM_APPDEST}/app/bin/moviepilot" restart >&2
+
+# 获取状态
+status_output=$("${TRIM_APPDEST}/app/bin/moviepilot" status 2>&1)
+echo "$status_output" >&2
+
+# 检查是否运行中
+if echo "$status_output" | grep -q "未运行"; then
+    log_msg "MoviePilot is not running after restart, removing PID file"
+    rm -f "${PID_FILE}"
+else
+    # 提取 Backend PID 和 Frontend PID
+    backend_pid=$(echo "$status_output" | grep -A5 "Backend:" | grep "PID:" | grep -oP '\d+')
+    frontend_pid=$(echo "$status_output" | grep -A5 "Frontend:" | grep "PID:" | grep -oP '\d+')
+    
+    if [ -n "$backend_pid" ] && [ -n "$frontend_pid" ]; then
+        # 写入双 PID（backend 在前，frontend 在后）
+        printf "%s\n%s\n" "$backend_pid" "$frontend_pid" > "${PID_FILE}"
+        log_msg "PIDs saved: backend=$backend_pid, frontend=$frontend_pid"
+    else
+        log_msg "Warning: Could not extract PIDs from status output"
+        rm -f "${PID_FILE}"
+    fi
+fi
+
+log_msg "Configuration update completed."
 exit 0
