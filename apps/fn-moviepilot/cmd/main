@@ -1,7 +1,5 @@
 #!/bin/bash
 
-PID_FILE="${TRIM_PKGVAR}/app.pid"
-
 export PATH=/var/apps/python312/target/bin:$PATH
 export PATH="${TRIM_APPDEST}/app/bin:$PATH"
 
@@ -16,6 +14,7 @@ fi
 
 START_CMD="cd '${APP_DIR}' && exec '${TRIM_APPDEST}/app/bin/moviepilot' start"
 STOP_CMD="cd '${APP_DIR}' && exec '${TRIM_APPDEST}/app/bin/moviepilot' stop"
+STATUS_CMD="cd '${APP_DIR}' && exec '${TRIM_APPDEST}/app/bin/moviepilot' status"
 
 log_msg() {
     echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >&2
@@ -27,56 +26,30 @@ start_process() {
     fi
 
     log_msg "Starting process ..."
-    # run cmd to start process, capture output to extract PIDs
-    local output
-    output=$(bash -c "${START_CMD}" 2>&1)
-    echo "$output" >&2
-
-    # extract Backend PID and Frontend PID
-    local backend_pid frontend_pid
-    backend_pid=$(echo "$output" | grep -oP 'Backend PID:\s*\K\d+')
-    frontend_pid=$(echo "$output" | grep -oP 'Frontend PID:\s*\K\d+')
-
-    if [ -n "$backend_pid" ] && [ -n "$frontend_pid" ]; then
-        # write both PIDs to pidfile (backend first, frontend second)
-        printf "%s\n%s\n" "$backend_pid" "$frontend_pid" > "${PID_FILE}"
-        log_msg "PIDs saved: backend=$backend_pid, frontend=$frontend_pid"
-    else
-        log_msg "Warning: Could not extract PIDs from output"
-        # fallback: use bash PID
-        printf "%s" "$!" > "${PID_FILE}"
-    fi
+    bash -c "${START_CMD}" >&2
     return 0
 }
 
 stop_process() {
     log_msg "Stopping process ..."
     bash -c "${STOP_CMD}" >&2
-    rm -f "${PID_FILE}"
     return 0
 }
 
-check_process() {
-    local pid=$1
-    if kill -0 "${pid}" 2>/dev/null; then
-        return 0  # process exist
-    else
-        return 1  # process not exist
-    fi
-}
-
 status() {
-    if [ -f "${PID_FILE}" ]; then
-        pid=$(head -n 1 "${PID_FILE}" | tr -d '[:space:]')
-        if check_process "${pid}"; then
-            return 0
-        else
-            # Process is not running but pidfile exists - clean it up
-            rm -f "${PID_FILE}"
-        fi    
+    # 使用 moviepilot status 命令检测实际运行状态
+    local status_output
+    status_output=$(bash -c "${STATUS_CMD}" 2>&1)
+    
+    # 检查 Backend 和 Frontend 是否都在运行
+    if echo "$status_output" | grep -q "Backend:" && \
+       echo "$status_output" | grep -A5 "Backend:" | grep -q "running" && \
+       echo "$status_output" | grep -q "Frontend:" && \
+       echo "$status_output" | grep -A5 "Frontend:" | grep -q "running"; then
+        return 0  # 服务正在运行
     fi
-
-    return 1
+    
+    return 1  # 服务未运行
 }
 
 case $1 in
