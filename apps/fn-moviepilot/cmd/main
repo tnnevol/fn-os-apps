@@ -27,10 +27,6 @@ start_process() {
     fi
 
     log_msg "Starting process ..."
-    # 确保 CLI 文件有执行权限（兼容旧版本安装）
-    if [ -L "${TRIM_APPDEST}/app/bin/moviepilot" ]; then
-        chmod +x "${TRIM_APPDEST}/app/bin/moviepilot" 2>/dev/null || true
-    fi
     # run cmd to start process, capture output to extract PIDs
     local output
     output=$(bash -c "${START_CMD}" 2>&1)
