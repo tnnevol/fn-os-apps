@@ -1,0 +1,8 @@
+{
+  "usr-local-linker": {
+    "bin": [
+      "app/bin/uv",
+      "app/bin/uvx"
+    ]
+  }
+}

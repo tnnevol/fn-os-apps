@@ -1,0 +1,16 @@
+#!/bin/bash
+
+# uv 是 CLI 工具，不需要守护进程
+# ctl_stop = false，飞牛框架不会调用此脚本
+
+case $1 in
+start|stop)
+    exit 0
+    ;;
+status)
+    exit 0
+    ;;
+*)
+    exit 1
+    ;;
+esac

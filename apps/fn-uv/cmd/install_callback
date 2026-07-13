@@ -1,0 +1,31 @@
+#!/bin/bash
+#
+# install_callback — uv 安装后执行
+#
+
+set -e
+
+# ── 路径定义 ──────────────────────────────────────────────
+
+APP_BIN="${TRIM_APPDEST}/app/bin"
+
+# ── 工具函数 ──────────────────────────────────────────────
+
+log_msg() {
+  echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >&2
+}
+
+# ── 安装 uv ───────────────────────────────────────────────
+
+mkdir -p "$APP_BIN"
+
+log_msg "Installing uv to $APP_BIN ..."
+env UV_INSTALL_DIR="$APP_BIN" sh -c "$(curl -LsSf https://astral.sh/uv/install.sh)" \
+  || {
+    echo "Failed to install uv" > "$TRIM_TEMP_LOGFILE"
+    exit 1
+  }
+log_msg "uv installed."
+
+log_msg "Installation complete."
+exit 0
