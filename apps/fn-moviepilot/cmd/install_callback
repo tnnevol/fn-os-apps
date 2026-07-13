@@ -8,6 +8,7 @@ set -e
 
 # ── 飞牛运行时 ────────────────────────────────────────────
 export PATH=/var/apps/python312/target/bin:$PATH
+export PATH=/var/apps/nodejs_v20/target/bin:$PATH
 
 # ── 路径定义 ──────────────────────────────────────────────
 
@@ -86,8 +87,10 @@ log_msg "Node.js runtime linked to $APP_DIR/.runtime/node"
 
 # ── 执行本地安装（venv + pip + 配置初始化）────────────────
 
-log_msg "Running local setup ..."
-SETUP_ARGS=(setup --python "$PYTHON_BIN" --config-dir "$CONFIG_DIR" --node-version 20.20.0)
+# 获取飞牛 Node.js 运行时版本
+NODE_VERSION=$(/var/apps/nodejs_v20/target/bin/node --version | sed 's/^v//')
+log_msg "Running local setup with Node.js $NODE_VERSION ..."
+SETUP_ARGS=(setup --python "$PYTHON_BIN" --config-dir "$CONFIG_DIR" --node-version "$NODE_VERSION")
 
 # 向导传入的 superuser 信息（可选，留空则保留原有配置）
 if [ -n "${wizard_superuser:-}" ]; then
