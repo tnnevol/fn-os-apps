@@ -1,7 +1,7 @@
 appname               = fn-uv
-version               = 0.11.29
+version               = 4.4.0
 display_name          = uv
-desc                  = An extremely fast Python package and project manager, written in Rust.
+desc                  = 极速 Python 包和项目管理系统，由 Rust 编写。
 platform              = x86
 source                = thirdparty
 maintainer            = astral-sh
