@@ -127,6 +127,7 @@ echo "NGINX_PORT=${NGINX_PORT}" >> "$APP_ENV"
 log_msg "Port config: PORT=${PORT}, NGINX_PORT=${NGINX_PORT}"
 
 # ── 链接 moviepilot CLI 到 app/bin ───────────────────────
+mkdir -p "$APP_BIN"
 rm -f "$APP_BIN/moviepilot"
 ln -sf "${TRIM_PKGHOME}/MoviePilot/moviepilot" "$APP_BIN/moviepilot"
 log_msg "Linked moviepilot CLI to $APP_BIN/moviepilot"
