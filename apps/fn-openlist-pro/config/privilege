@@ -1,8 +1,0 @@
-{
-    "defaults":
-    {
-        "run-as": "package"
-    },
-    "username": "fn-openlist-pro",
-    "groupname": "fn-openlist-pro"
-}
