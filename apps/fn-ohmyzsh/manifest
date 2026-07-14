@@ -1,7 +1,7 @@
 appname               = fn-ohmyzsh
 version               = 4.5.1
 display_name          = Oh My Zsh
-desc                  = Oh My Zsh is a delightful, open source, community-driven framework for managing your Zsh configuration.
+desc                  = Oh My Zsh 是一个开源、社区驱动的 Zsh 配置管理框架，提供丰富的插件和主题。
 platform              = x86
 source                = thirdparty
 maintainer            = ohmyzsh
