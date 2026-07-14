@@ -2,14 +2,22 @@
 # config_callback — 应用配置更新后执行
 # 当用户在应用设置页面修改环境变量后，飞牛框架会调用此脚本
 
+RESTARTING_FLAG="${TRIM_PKGVAR}/restarting"
+
 log_msg() {
     echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >&2
 }
 
 log_msg "Configuration updated, restarting MoviePilot..."
 
+# 创建重启状态文件，告知 main 正在维护中
+touch "$RESTARTING_FLAG"
+
 # 重启 MoviePilot
 cd "${TRIM_PKGHOME}/MoviePilot" && "${TRIM_APPDEST}/app/bin/moviepilot" restart >&2
+
+# 删除重启状态文件
+rm -f "$RESTARTING_FLAG"
 
 log_msg "Configuration update completed."
 exit 0

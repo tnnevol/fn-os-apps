@@ -37,6 +37,11 @@ stop_process() {
 }
 
 status() {
+    # 检查重启状态文件，如果存在则返回 0（正在维护中）
+    if [ -f "${TRIM_PKGVAR}/restarting" ]; then
+        return 0
+    fi
+    
     # 使用 moviepilot status 命令检测实际运行状态
     local status_output
     status_output=$(bash -c "${STATUS_CMD}" 2>&1)
