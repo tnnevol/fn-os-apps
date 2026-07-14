@@ -93,30 +93,35 @@ if [ -z "$MODE" ]; then
   usage
 fi
 
-# ── 读取当前版本 ──────────────────────────────────────────
-get_current_version() {
-  for dir in "$SCRIPT_DIR"/apps/*/; do
-    local manifest="$dir/manifest"
-    if [ -f "$manifest" ]; then
-      grep '^version' "$manifest" | sed 's/.*= *//'
-      return
-    fi
-  done
-  echo ""
+# ── 从 git tag 获取最高版本 ──────────────────────────────
+get_latest_tag() {
+  cd "$SCRIPT_DIR" || exit 1
+  git tag -l 'v*' 2>/dev/null | sed 's/^v//' | sort -V | tail -n1
 }
 
-CURRENT_VERSION=$(get_current_version)
-
-if [ -z "$CURRENT_VERSION" ]; then
-  echo "Error: 未找到任何应用的 manifest 文件"
-  exit 1
-fi
+LATEST_TAG=$(get_latest_tag)
 
 # ── 计算目标版本 ──────────────────────────────────────────
 if [ "$MODE" = "tag" ]; then
   VERSION="$TARGET_VERSION"
+  # 校验指定版本是否严格大于当前最新 tag（仅在有 tag 时校验）
+  if [ -n "$LATEST_TAG" ]; then
+    if [ "$VERSION" = "$LATEST_TAG" ]; then
+      echo "Error: 指定版本 $VERSION 与当前最新 tag 相同，需要更高版本"
+      exit 1
+    fi
+    HIGHER=$(printf '%s\n%s' "$VERSION" "$LATEST_TAG" | sort -V | tail -n1)
+    if [ "$HIGHER" != "$VERSION" ]; then
+      echo "Error: 指定版本 $VERSION 必须大于当前最新 tag $LATEST_TAG"
+      exit 1
+    fi
+  fi
 else
-  IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
+  if [ -z "$LATEST_TAG" ]; then
+    echo "Error: 未找到任何 git tag（如 v4.5.0），无法计算 major/minor/patch"
+    exit 1
+  fi
+  IFS='.' read -r MAJOR MINOR PATCH <<< "$LATEST_TAG"
   case "$MODE" in
     major) VERSION="$((MAJOR + 1)).0.0" ;;
     minor) VERSION="${MAJOR}.$((MINOR + 1)).0" ;;
@@ -126,8 +131,10 @@ fi
 
 TAG="v$VERSION"
 
-echo "Current version: $CURRENT_VERSION"
-echo "Target version:  $VERSION ($TAG)"
+if [ -n "$LATEST_TAG" ]; then
+  echo "Latest tag:    $LATEST_TAG"
+fi
+echo "Target version: $VERSION ($TAG)"
 echo ""
 
 # ── 批量更新 manifest ─────────────────────────────────────
