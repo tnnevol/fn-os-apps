@@ -8,57 +8,8 @@ on:
 permissions:
   contents: write
 
-# 统一版本管理：推送 v4.0.0 等 tag 时，构建所有应用
+# 推送 v* tag 时，构建所有应用并创建 GitHub Release
 jobs:
-  # 更新所有应用的 manifest 版本号和 README.md 中的版本信息
-  bump-version:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Bump manifest and README versions
-        run: |
-          TAG="${{ github.ref_name }}"
-          VERSION="${TAG#v}"
-
-          for dir in apps/*/; do
-            app="${dir%/}"
-            app="${app#apps/}"
-            MANIFEST="apps/$app/manifest"
-            if [ -f "$MANIFEST" ]; then
-              OLD_VER=$(grep '^version' "$MANIFEST" | sed 's/.*= *//')
-              sed -i "s/^version *= *.*/version               = $VERSION/" "$MANIFEST"
-              echo "  $app: $OLD_VER → $VERSION"
-            fi
-          done
-
-          # 更新 README.md 中的 Release 链接
-          if [ -f "README.md" ]; then
-            sed -i "s|releases/tag/[^)]*|releases/tag/${TAG}|" README.md
-            # 更新 README.md 中的 Tag 示例
-            sed -i "s|git tag v[0-9][0-9.]*|git tag ${TAG}|" README.md
-            echo "  README.md: updated"
-          fi
-
-      - name: Commit and push
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add apps/*/manifest README.md
-          if ! git diff --cached --quiet; then
-            git commit -m "chore: bump all app versions to ${{ github.ref_name }} [skip ci]"
-            # 推送代码和 tag 到 main 分支
-            git push origin HEAD:main
-            git push origin ${{ github.ref_name }}
-          else
-            echo "No version changes to commit"
-            # 即使没有代码变更，也要推送 tag
-            git push origin ${{ github.ref_name }} || true
-          fi
-
   # 动态发现 apps/ 目录下的所有应用
   discover:
     runs-on: ubuntu-latest
@@ -85,44 +36,6 @@ jobs:
           echo "matrix=[${APPS_JSON}]" >> "$GITHUB_OUTPUT"
           echo "apps_space=${APPS_LIST}" >> "$GITHUB_OUTPUT"
 
-  # 构建 Nuxt 项目（仅 fn-openlist，非 matrix）
-  build-nuxt:
-    needs: [bump-version]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: main
-          fetch-depth: 0
-
-      - name: Pull latest bump-version changes
-        run: git fetch origin main && git merge origin/main
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-          cache-dependency-path: apps/fn-openlist-manager/pnpm-lock.yaml
-
-      - name: Build Nuxt project
-        working-directory: apps/fn-openlist-manager
-        run: |
-          pnpm install
-          pnpm build
-
-      - name: Upload Nuxt output
-        uses: actions/upload-artifact@v4
-        with:
-          name: nuxt-output
-          path: apps/fn-openlist/app/server/
-          retention-days: 1
-
   # 下载 fnpack 并作为 artifact 共享
   setup-fnpack:
     runs-on: ubuntu-latest
@@ -144,7 +57,7 @@ jobs:
 
   # 构建所有应用的 FPK 包
   build:
-    needs: [bump-version, discover, build-nuxt, setup-fnpack]
+    needs: [discover, setup-fnpack]
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -152,19 +65,6 @@ jobs:
       fail-fast: false
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: main
-          fetch-depth: 0
-
-      - name: Pull latest bump-version changes
-        run: git fetch origin main && git merge origin/main
-
-      - name: Download Nuxt output (fn-openlist only)
-        if: matrix.app == 'fn-openlist'
-        uses: actions/download-artifact@v4
-        with:
-          name: nuxt-output
-          path: apps/fn-openlist/app/server/
 
       - name: Install fnpack
         uses: actions/download-artifact@v4
@@ -176,14 +76,6 @@ jobs:
         run: |
           chmod +x fnpack
           sudo mv fnpack /usr/local/bin/fnpack
-
-      - name: Override manifest version with tag
-        working-directory: apps/${{ matrix.app }}
-        run: |
-          VERSION="${{ github.ref_name }}"
-          VERSION="${VERSION#v}"
-          sed -i "s/^version *= *.*/version               = $VERSION/" manifest
-          echo "Override version to $VERSION"
 
       - name: Build FPK
         working-directory: apps/${{ matrix.app }}

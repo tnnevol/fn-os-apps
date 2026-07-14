@@ -1,0 +1,192 @@
+#!/usr/bin/env bash
+#
+# 批量升级 apps/ 目录下所有应用的 manifest version 字段
+#
+# Usage:
+#   ./bump major          # 大版本 +1（如 4.4.1 → 5.0.0）
+#   ./bump minor          # 中版本 +1（如 4.4.1 → 4.5.0）
+#   ./bump patch          # 小版本 +1（如 4.4.1 → 4.4.2）
+#   ./bump -t 4.5.0       # 指定版本号（无前缀）
+#   ./bump -t v4.5.0      # 指定版本号（带 v 前缀）
+#   ./bump --tag v4.5.0   # 指定版本号（带 v 前缀）
+#
+# 选项:
+#   --no-commit    仅修改文件，不自动 commit 和打 tag
+#   --no-tag       自动 commit 但不打 tag
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+# ── 参数解析 ──────────────────────────────────────────────
+MODE=""
+TARGET_VERSION=""
+DO_COMMIT=true
+DO_TAG=true
+
+usage() {
+  echo "Usage:"
+  echo "  $0 <command> [options]"
+  echo ""
+  echo "Commands:"
+  echo "  major          大版本 +1（如 4.4.1 → 5.0.0）"
+  echo "  minor          中版本 +1（如 4.4.1 → 4.5.0）"
+  echo "  patch          小版本 +1（如 4.4.1 → 4.4.2）"
+  echo ""
+  echo "Options:"
+  echo "  -t, --tag <version>  指定目标版本号（如 4.5.0 或 v4.5.0）"
+  echo "  --no-commit          仅修改文件，不自动 commit 和打 tag"
+  echo "  --no-tag             自动 commit 但不打 tag"
+  exit 1
+}
+
+# 解析第一个参数作为指令
+if [ $# -gt 0 ]; then
+  case "$1" in
+    major|minor|patch)
+      MODE="$1"
+      shift
+      ;;
+    -t|--tag)
+      MODE="tag"
+      if [ $# -lt 2 ]; then
+        echo "Error: -t/--tag 需要指定版本号"
+        usage
+      fi
+      TARGET_VERSION="${2#v}"
+      shift 2
+      ;;
+    -h|--help)
+      usage
+      ;;
+    *)
+      echo "Error: 未知指令 '$1'"
+      usage
+      ;;
+  esac
+fi
+
+# 解析剩余选项
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -t|--tag)
+      MODE="tag"
+      if [ $# -lt 2 ]; then
+        echo "Error: -t/--tag 需要指定版本号"
+        usage
+      fi
+      TARGET_VERSION="${2#v}"
+      shift 2
+      ;;
+    --no-commit) DO_COMMIT=false; DO_TAG=false; shift ;;
+    --no-tag)    DO_TAG=false; shift ;;
+    -h|--help)   usage ;;
+    *)
+      echo "Error: 未知参数 '$1'"
+      usage
+      ;;
+  esac
+done
+
+if [ -z "$MODE" ]; then
+  echo "Error: 请指定版本升级指令或目标版本号"
+  usage
+fi
+
+# ── 读取当前版本 ──────────────────────────────────────────
+get_current_version() {
+  for dir in "$SCRIPT_DIR"/apps/*/; do
+    local manifest="$dir/manifest"
+    if [ -f "$manifest" ]; then
+      grep '^version' "$manifest" | sed 's/.*= *//'
+      return
+    fi
+  done
+  echo ""
+}
+
+CURRENT_VERSION=$(get_current_version)
+
+if [ -z "$CURRENT_VERSION" ]; then
+  echo "Error: 未找到任何应用的 manifest 文件"
+  exit 1
+fi
+
+# ── 计算目标版本 ──────────────────────────────────────────
+if [ "$MODE" = "tag" ]; then
+  VERSION="$TARGET_VERSION"
+else
+  IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
+  case "$MODE" in
+    major) VERSION="$((MAJOR + 1)).0.0" ;;
+    minor) VERSION="${MAJOR}.$((MINOR + 1)).0" ;;
+    patch) VERSION="${MAJOR}.${MINOR}.$((PATCH + 1))" ;;
+  esac
+fi
+
+TAG="v$VERSION"
+
+echo "Current version: $CURRENT_VERSION"
+echo "Target version:  $VERSION ($TAG)"
+echo ""
+
+# ── 批量更新 manifest ─────────────────────────────────────
+UPDATED=0
+SKIPPED=0
+
+for dir in "$SCRIPT_DIR"/apps/*/; do
+  app="$(basename "$dir")"
+  manifest="$dir/manifest"
+
+  if [ ! -f "$manifest" ]; then
+    echo "  SKIP  $app (no manifest)"
+    SKIPPED=$((SKIPPED + 1))
+    continue
+  fi
+
+  OLD_VER=$(grep '^version' "$manifest" | sed 's/.*= *//')
+
+  if [ "$OLD_VER" = "$VERSION" ]; then
+    echo "  SAME  $app ($OLD_VER)"
+    SKIPPED=$((SKIPPED + 1))
+    continue
+  fi
+
+  sed -i '' "s/^version *= *.*/version               = $VERSION/" "$manifest"
+  echo "  OK    $app: $OLD_VER → $VERSION"
+  UPDATED=$((UPDATED + 1))
+done
+
+# ── 更新 README.md ────────────────────────────────────────
+README="$SCRIPT_DIR/README.md"
+if [ -f "$README" ]; then
+  sed -i '' "s|releases/tag/[^)]*|releases/tag/${TAG}|g" "$README"
+  sed -i '' "s|git tag v[0-9][0-9.]*|git tag ${TAG}|g" "$README"
+  echo ""
+  echo "  README.md: updated"
+fi
+
+echo ""
+echo "Updated: $UPDATED, Skipped: $SKIPPED"
+
+# ── Git commit & tag ──────────────────────────────────────
+if [ "$DO_COMMIT" = true ]; then
+  echo ""
+  cd "$SCRIPT_DIR"
+  git add apps/*/manifest README.md
+
+  if git diff --cached --quiet; then
+    echo "No changes to commit."
+  else
+    git commit -m "chore: bump version to $TAG"
+    echo "Committed: chore: bump version to $TAG"
+
+    if [ "$DO_TAG" = true ]; then
+      git tag "$TAG"
+      echo "Tagged: $TAG"
+      echo ""
+      echo "Push when ready:"
+      echo "  git push origin main && git push origin $TAG"
+    fi
+  fi
+fi

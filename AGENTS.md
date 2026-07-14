@@ -30,26 +30,26 @@ fnpack create <appname> --template docker
 
 创建后需编辑以下文件：
 
-| 文件 | 说明 |
-|------|------|
-| `manifest` | 应用标识、版本号、显示名称、描述 |
-| `app/docker/docker-compose.yaml` | 容器镜像、端口映射、数据卷 |
-| `app/ui/config` | 桌面入口配置（JSON） |
-| `cmd/main` | 容器启停与状态检查 |
-| `config/privilege` | 运行权限（username/groupname 使用 `docker-<appname>`） |
-| `ICON.PNG` / `ICON_256.PNG` | 64×64 和 256×256 图标 |
+| 文件                             | 说明                                                   |
+| -------------------------------- | ------------------------------------------------------ |
+| `manifest`                       | 应用标识、版本号、显示名称、描述                       |
+| `app/docker/docker-compose.yaml` | 容器镜像、端口映射、数据卷                             |
+| `app/ui/config`                  | 桌面入口配置（JSON）                                   |
+| `cmd/main`                       | 容器启停与状态检查                                     |
+| `config/privilege`               | 运行权限（username/groupname 使用 `docker-<appname>`） |
+| `ICON.PNG` / `ICON_256.PNG`      | 64×64 和 256×256 图标                                  |
 
 ### 修改应用配置
 
 直接编辑对应 `apps/<appname>/` 目录下的文件：
 
-| 修改目标 | 文件 |
-|----------|------|
-| 应用基本信息 | `manifest` |
+| 修改目标        | 文件                             |
+| --------------- | -------------------------------- |
+| 应用基本信息    | `manifest`                       |
 | Docker 容器配置 | `app/docker/docker-compose.yaml` |
-| 桌面入口 | `app/ui/config` |
-| 运行权限 | `config/privilege` |
-| 生命周期脚本 | `cmd/` |
+| 桌面入口        | `app/ui/config`                  |
+| 运行权限        | `config/privilege`               |
+| 生命周期脚本    | `cmd/`                           |
 
 ### 卸载开发流程
 
@@ -91,17 +91,36 @@ fnpack build
 
 ### 版本发布
 
-所有应用共享同一版本号。推送 `v*` 格式的 tag 会触发所有应用的构建和发布。
+所有应用共享同一版本号。使用根目录 `bump` 脚本批量升级并自动 commit + tag。
 
 ```bash
-# 提交变更
-git add apps/
-git commit -m "feat: 描述"
-git push origin main
+# 快速升级（基于当前版本号自动计算）
+./bump major          # 4.4.1 → 5.0.0
+./bump minor          # 4.4.1 → 4.5.0
+./bump patch          # 4.4.1 → 4.4.2
 
-# 推送 tag 触发自动构建
-git tag v4.0.0
-git push origin v4.0.0
+# 指定版本号（支持 v 前缀或无前缀）
+./bump -t 4.5.0
+./bump -t v4.5.0
+./bump --tag v4.5.0
+
+# 仅修改文件，不自动 commit/tag
+./bump patch --no-commit
+
+# 自动 commit 但不打 tag
+./bump patch --no-tag
+```
+
+脚本执行后会自动：
+1. 更新所有 `apps/*/manifest` 的 version 字段
+2. 更新 README.md 中的 Release 链接和 Tag 示例
+3. `git commit -m "chore: bump version to vX.Y.Z"`
+4. `git tag vX.Y.Z`
+
+最后手动推送：
+
+```bash
+git push origin main && git push origin v4.5.0
 ```
 
 推送 tag 后 GitHub Actions 自动执行：
@@ -113,7 +132,7 @@ git push origin v4.0.0
 
 - **配置文件**：[.github/workflows/build-release.yml](.github/workflows/build-release.yml)
 - **Tag 格式**：`v<版本号>`（如 `v4.0.0`、`v4.1.0-rc1`）
-- 推送 tag 即统一升级所有应用版本
+- **版本升级脚本**：[bump](bump)
 
 ---
 
