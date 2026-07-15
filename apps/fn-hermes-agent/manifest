@@ -1,5 +1,5 @@
 appname               = fn-hermes-agent
-version               = 4.6.2
+version               = 4.6.3
 display_name          = Hermes Agent
 desc                  = Nous Research开发的Hermes Agent是一个自我改进的AI代理，具有内置学习循环，能够通过经验创建和改进技能。它支持多种平台，包括Telegram、Discord、Slack等，并允许用户选择不同的模型和工具。Hermes Agent可以在多种环境中运行，从低成本的VPS到GPU集群，甚至是无服务器基础设施。它提供了丰富的功能，如自动技能创建、跨会话记忆搜索、计划自动化任务等。
 platform              = x86
