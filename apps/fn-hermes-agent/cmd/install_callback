@@ -74,22 +74,96 @@ log_msg "venv ready at $HERMES_VENV"
 
 export VIRTUAL_ENV="$HERMES_VENV"
 
+# 锁定 Python 解释器，防止 UV_PYTHON 环境变量干扰
+export UV_PYTHON="$HERMES_VENV/bin/python"
+
 log_msg "Installing hermes-agent Python packages..."
 
-# 优先使用 uv.lock（hash-verified）
+# ── 多层安装策略（移植自 install.sh）──────────────────────
+# Tier 0: uv sync --locked（uv.lock 哈希校验，依赖完整性有保障）
+# Tier 1: uv pip install .[all]（PyPI 重新解析，无哈希校验）
+# Tier 2: uv pip install .[all] 去掉已知损坏的 extras
+# Tier 3: uv pip install .（仅核心包，最后手段）
+
+_installed=false
+
+# Tier 0: uv.lock 哈希校验
 if [ -f "uv.lock" ]; then
-    log_msg "Trying hash-verified install (uv.lock)..."
-    if uv sync --locked >&2; then
-        log_msg "Hash-verified install succeeded"
+    log_msg "Tier 0: trying hash-verified install (uv.lock)..."
+    if UV_PROJECT_ENVIRONMENT="$HERMES_VENV" uv sync --extra all --locked >&2; then
+        log_msg "Tier 0 succeeded (hash-verified via uv.lock)"
+        _installed=true
     else
-        log_msg "uv.lock sync failed, falling back to pip install..."
-        uv pip install -e '.[all]' >&2 \
-            || fail_install "pip install failed"
+        log_msg "Tier 0 failed, falling back to PyPI resolve..."
     fi
-else
-    uv pip install -e '.[all]' >&2 \
-        || fail_install "pip install failed"
 fi
+
+# Tier 1: .[all]
+if [ "$_installed" = false ]; then
+    log_msg "Tier 1: trying uv pip install -e '.[all]'..."
+    if uv pip install -e '.[all]' >&2; then
+        log_msg "Tier 1 succeeded (.\[all\])"
+        _installed=true
+    fi
+fi
+
+# Tier 2: 解析 pyproject.toml 中 [all] extras，排除已知损坏项
+if [ "$_installed" = false ]; then
+    log_msg "Tier 2: trying safe extras..."
+    _ALL_EXTRAS_CSV="$(
+        "$HERMES_VENV/bin/python" - <<'PY' 2>/dev/null
+import re, sys
+try:
+    import tomllib
+except ImportError:
+    import tomli as tomllib
+try:
+    with open("pyproject.toml", "rb") as fh:
+        data = tomllib.load(fh)
+    specs = data["project"]["optional-dependencies"]["all"]
+    extras = []
+    for s in specs:
+        m = re.search(r"hermes-agent\[([\w-]+)\]", s)
+        if m:
+            extras.append(m.group(1))
+    print(",".join(extras))
+except Exception:
+    sys.exit(1)
+PY
+    )" || true
+
+    _BROKEN_EXTRAS=()
+    if [ -n "$_ALL_EXTRAS_CSV" ] && [ "${#_BROKEN_EXTRAS[@]}" -gt 0 ]; then
+        IFS=',' read -ra _ALL_EXTRAS_ARR <<< "$_ALL_EXTRAS_CSV"
+        _SAFE_EXTRAS=()
+        for _e in "${_ALL_EXTRAS_ARR[@]}"; do
+            _skip=false
+            for _b in "${_BROKEN_EXTRAS[@]}"; do
+                [ "$_e" = "$_b" ] && { _skip=true; break; }
+            done
+            [ "$_skip" = false ] && _SAFE_EXTRAS+=("$_e")
+        done
+        _SAFE_SPEC=".[$(IFS=,; echo "${_SAFE_EXTRAS[*]}")]"
+    else
+        _SAFE_SPEC=".[all]"
+    fi
+
+    if uv pip install -e "$_SAFE_SPEC" >&2; then
+        log_msg "Tier 2 succeeded ($_SAFE_SPEC)"
+        _installed=true
+    fi
+fi
+
+# Tier 3: 仅核心包
+if [ "$_installed" = false ]; then
+    log_msg "Tier 3: trying core only..."
+    if uv pip install -e '.' >&2; then
+        log_msg "Tier 3 succeeded (core only, some features may be missing)"
+        _installed=true
+    fi
+fi
+
+[ "$_installed" = false ] && fail_install "All install tiers failed"
 log_msg "Python packages installed"
 
 # ── 4. Node.js 依赖（可选） ──────────────────────────────
