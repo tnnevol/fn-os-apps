@@ -236,6 +236,7 @@ chown -R "$TRIM_USERNAME:$TRIM_GROUPNAME" \
     "$APP_BIN" \
     "$HERMES_HOME" \
     "${TRIM_PKGVAR}" \
+    "${TRIM_PKGHOME}" \
     2>/dev/null || log_msg "chown skipped (non-fatal)"
 
 # ── 完成 ─────────────────────────────────────────────────
