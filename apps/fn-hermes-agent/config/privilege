@@ -1,5 +1,7 @@
 {
-    "defaults": {
-        "run-as": "root"
-    }
+  "defaults": {
+    "run-as": "package"
+  },
+  "username": "fn-hermes-agent",
+  "groupname": "fn-hermes-agent"
 }
