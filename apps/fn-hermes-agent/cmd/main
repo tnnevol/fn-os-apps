@@ -1,9 +1,11 @@
 #!/bin/bash
 
 PID_FILE="${TRIM_PKGVAR}/app.pid"
+GATEWAY_PID_FILE="${TRIM_PKGVAR}/gateway.pid"
+GATEWAY_FLAG="${TRIM_PKGVAR}/gateway.enabled"
 APP_BIN="${TRIM_APPDEST}/app/bin"
 
-# ── 工具函数 ──────────────────────────────────────────────
+# ── 工具函数 ────────────────────────────────────────────────────
 
 log_msg() {
     echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >&2
@@ -14,7 +16,30 @@ check_process() {
     kill -0 "$pid" 2>/dev/null
 }
 
-status_app() {
+kill_process() {
+    local pid="$1" pid_file="$2" name="$3"
+    if [ -z "$pid" ] || ! check_process "$pid"; then
+        rm -f "$pid_file"
+        return 0
+    fi
+    log_msg "Stopping $name (PID $pid)..."
+    kill -TERM "$pid" 2>/dev/null || true
+    local count=0
+    while check_process "$pid" && [ "$count" -lt 10 ]; do
+        sleep 1
+        count=$((count + 1))
+    done
+    if check_process "$pid"; then
+        kill -KILL "$pid" 2>/dev/null || true
+        sleep 1
+    fi
+    rm -f "$pid_file"
+    log_msg "$name stopped"
+}
+
+# ── Dashboard 进程管理 ──────────────────────────────────────
+
+status_dashboard() {
     if [ -f "$PID_FILE" ]; then
         local pid
         pid="$(head -n 1 "$PID_FILE" | tr -d '[:space:]')"
@@ -26,47 +51,72 @@ status_app() {
     return 1
 }
 
-start_app() {
-    if status_app; then
+start_dashboard() {
+    if status_dashboard; then
         return 0
     fi
-
     log_msg "Starting hermes dashboard..."
     "${APP_BIN}/hermes" dashboard &
     echo "$!" > "$PID_FILE"
     log_msg "hermes dashboard started (PID $!)"
 }
 
+stop_dashboard() {
+    local pid=""
+    [ -f "$PID_FILE" ] && pid="$(head -n 1 "$PID_FILE" | tr -d '[:space:]')"
+    kill_process "$pid" "$PID_FILE" "hermes dashboard"
+}
+
+# ── Gateway 进程管理 ──────────────────────────────────────────
+
+status_gateway() {
+    if [ -f "$GATEWAY_PID_FILE" ]; then
+        local pid
+        pid="$(head -n 1 "$GATEWAY_PID_FILE" | tr -d '[:space:]')"
+        if [ -n "$pid" ] && check_process "$pid"; then
+            return 0
+        fi
+        rm -f "$GATEWAY_PID_FILE"
+    fi
+    return 1
+}
+
+start_gateway() {
+    # 仅在标记文件存在时启动
+    if [ ! -f "$GATEWAY_FLAG" ]; then
+        return 0
+    fi
+    if status_gateway; then
+        return 0
+    fi
+    log_msg "Starting hermes gateway..."
+    nohup "${APP_BIN}/hermes" gateway >> "${TRIM_PKGVAR}/gateway.log" 2>&1 &
+    echo "$!" > "$GATEWAY_PID_FILE"
+    log_msg "hermes gateway started (PID $!)"
+}
+
+stop_gateway() {
+    local pid=""
+    [ -f "$GATEWAY_PID_FILE" ] && pid="$(head -n 1 "$GATEWAY_PID_FILE" | tr -d '[:space:]')"
+    kill_process "$pid" "$GATEWAY_PID_FILE" "hermes gateway"
+}
+
+# ── 主流程 ────────────────────────────────────────────────────
+
+start_app() {
+    start_dashboard
+    start_gateway
+}
+
 stop_app() {
-    log_msg "Stopping hermes dashboard..."
+    stop_dashboard
+    stop_gateway
+}
 
-    if [ ! -f "$PID_FILE" ]; then
-        return 0
-    fi
-
-    local pid
-    pid="$(head -n 1 "$PID_FILE" | tr -d '[:space:]')"
-
-    if [ -z "$pid" ] || ! check_process "$pid"; then
-        rm -f "$PID_FILE"
-        return 0
-    fi
-
-    kill -TERM "$pid" 2>/dev/null || true
-
-    local count=0
-    while check_process "$pid" && [ "$count" -lt 10 ]; do
-        sleep 1
-        count=$((count + 1))
-    done
-
-    if check_process "$pid"; then
-        kill -KILL "$pid" 2>/dev/null || true
-        sleep 1
-    fi
-
-    rm -f "$PID_FILE"
-    log_msg "hermes dashboard stopped"
+status_app() {
+    status_dashboard && return 0
+    status_gateway && return 0
+    return 1
 }
 
 case "$1" in

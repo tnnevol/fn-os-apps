@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # uninstall_callback — hermes-agent 卸载后执行
-# 停止 gateway 服务、根据用户选择决定是否清理数据
+# 根据用户选择决定是否清理数据（gateway 由飞牛框架通过 cmd/main 管理）
 #
 
 # ── 路径定义 ─────────────────────────────────────────────────
@@ -19,17 +19,7 @@ log_msg() {
     echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >&2
 }
 
-# ── 1. 停止 gateway 服务 ───────────────────────────────────
-
-HERMES_CMD="${APP_BIN}/hermes"
-if [ -x "$HERMES_CMD" ]; then
-    log_msg "Stopping gateway service..."
-    "$HERMES_CMD" gateway stop >&2 2>/dev/null || log_msg "Gateway stop skipped (not running or not installed)"
-else
-    log_msg "hermes CLI not found, gateway stop skipped"
-fi
-
-# ── 2. 根据用户选择决定是否清理数据 ───────────────────────
+# ── 1. 根据用户选择决定是否清理数据 ───────────────────────
 
 if [ "$wizard_action" = "delete" ]; then
     log_msg "User chose to delete all data."

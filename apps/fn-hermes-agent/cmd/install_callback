@@ -226,7 +226,9 @@ if [ ! -f "${HERMES_HOME}/config.yaml" ]; then
     fi
 fi
 
-# ── 8. 启动 Gateway（向导开关 + Token 双重校验）───────────
+# ── 8. 网关标记（向导开关 + Token 双重校验）───────────
+
+GATEWAY_FLAG="${TRIM_PKGVAR}/gateway.enabled"
 
 if [ "${wizard_start_gateway:-false}" = "true" ]; then
     ENV_FILE="${HERMES_HOME}/.env"
@@ -256,26 +258,16 @@ if [ "${wizard_start_gateway:-false}" = "true" ]; then
     fi
 
     if [ "$HAS_MESSAGING" = true ]; then
-        log_msg "Gateway switch enabled and messaging token detected, installing gateway service..."
-        HERMES_CMD="${APP_BIN}/hermes"
-        if [ -x "$HERMES_CMD" ]; then
-            if "$HERMES_CMD" gateway install >&2 2>/dev/null; then
-                log_msg "Gateway service installed"
-                if "$HERMES_CMD" gateway start >&2 2>/dev/null; then
-                    log_msg "Gateway started! Your bot is now online."
-                else
-                    log_msg "Gateway installed but failed to start. Try: hermes gateway start"
-                fi
-            else
-                log_msg "Gateway systemd install failed. Start manually: hermes gateway"
-            fi
-        fi
+        touch "$GATEWAY_FLAG"
+        log_msg "Gateway enabled. Will start automatically when app launches."
     else
+        rm -f "$GATEWAY_FLAG"
         log_msg "WARNING: Gateway switch is enabled but no messaging token found in .env."
-        log_msg "Please configure a token in ${HERMES_HOME}/.env, then run: hermes gateway install && hermes gateway start"
+        log_msg "Please configure a token in ${HERMES_HOME}/.env, then reinstall to enable gateway."
     fi
 else
-    log_msg "Gateway switch is off. Start later with: hermes gateway install && hermes gateway start"
+    rm -f "$GATEWAY_FLAG"
+    log_msg "Gateway switch is off."
 fi
 
 # ── 完成 ─────────────────────────────────────────────────
