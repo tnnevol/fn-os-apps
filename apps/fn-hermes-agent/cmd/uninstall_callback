@@ -24,11 +24,18 @@ log_msg() {
 if [ "$wizard_action" = "delete" ]; then
     log_msg "User chose to delete all data."
 
+    # 清理 HERMES_HOME（用户数据目录）
     if [ -d "$HERMES_HOME" ]; then
         rm -rf "$HERMES_HOME"
         log_msg "Removed HERMES_HOME: $HERMES_HOME"
     else
         log_msg "HERMES_HOME not found, skipping."
+    fi
+
+    # 清理 @apphome（运行时目录：PID、日志、systemd 残留等）
+    if [ -d "${TRIM_PKGHOME}" ]; then
+        rm -rf "${TRIM_PKGHOME}"
+        log_msg "Removed app home: ${TRIM_PKGHOME}"
     fi
 
     log_msg "All data deleted."
