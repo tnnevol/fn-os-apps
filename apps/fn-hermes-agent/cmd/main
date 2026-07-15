@@ -31,7 +31,7 @@ start_app() {
         return 0
     fi
     log_msg "Starting hermes gateway..."
-    nohup "${APP_BIN}/hermes" gateway >> "${TRIM_PKGVAR}/gateway.log" 2>&1 &
+    "${APP_BIN}/hermes" gateway >> "${TRIM_PKGVAR}/gateway.log" 2>&1 &
     echo "$!" > "$PID_FILE"
     log_msg "hermes gateway started (PID $!)"
 }
