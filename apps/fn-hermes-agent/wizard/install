@@ -1,0 +1,36 @@
+[
+  {
+    "stepTitle": "Dashboard 配置",
+    "items": [
+      {
+        "type": "tips",
+        "helpText": "配置 Dashboard 面板的监听地址和访问认证。Gateway 启动后将自动提供 Dashboard 服务。"
+      },
+      {
+        "type": "text",
+        "field": "dashboard_host",
+        "label": "监听地址",
+        "helpText": "默认 0.0.0.0 允许局域网访问",
+        "initValue": "0.0.0.0"
+      },
+      {
+        "type": "text",
+        "field": "dashboard_port",
+        "label": "监听端口",
+        "initValue": "9119"
+      },
+      {
+        "type": "text",
+        "field": "dashboard_username",
+        "label": "Basic Auth 用户名",
+        "initValue": "admin"
+      },
+      {
+        "type": "text",
+        "field": "dashboard_password",
+        "label": "Basic Auth 密码",
+        "initValue": "password"
+      }
+    ]
+  }
+]

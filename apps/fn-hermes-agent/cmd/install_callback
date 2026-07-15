@@ -188,17 +188,18 @@ log_msg "Creating hermes CLI wrapper..."
 cat > "${APP_BIN}/hermes" << HEREDOC
 #!/bin/bash
 export HERMES_HOME="${HERMES_HOME}"
+# 设为 1（或 true / yes）以启用受监管的 dashboard 服务
+export HERMES_DASHBOARD="yes"
+export HERMES_DASHBOARD_HOST="${dashboard_host:-0.0.0.0}"
+export HERMES_DASHBOARD_PORT="${dashboard_port:-9119}"
+export HERMES_DASHBOARD_BASIC_AUTH_USERNAME="${dashboard_username:-admin}"
+export HERMES_DASHBOARD_BASIC_AUTH_PASSWORD="${dashboard_password:-password}"
 export PATH="/var/apps/python311/target/bin:/var/apps/nodejs_v22/target/bin:${APP_BIN}:\${PATH}"
 export HOME="${TRIM_PKGHOME}"
 exec "${HERMES_VENV}/bin/python" -m hermes_cli.main "\$@"
 HEREDOC
 chmod +x "${APP_BIN}/hermes"
 log_msg "hermes CLI wrapper created at ${APP_BIN}/hermes"
-
-# ── 5b. 启用 linger（gateway 服务需要）──────────────────────
-
-log_msg "Enabling linger for root (required by hermes gateway)..."
-loginctl enable-linger root 2>/dev/null || log_msg "linger enable skipped (non-fatal)"
 
 # ── 6. 创建 HERMES_HOME 子目录 ──────────────────────────
 
