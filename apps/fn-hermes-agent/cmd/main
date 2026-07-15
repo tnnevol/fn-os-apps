@@ -1,10 +1,16 @@
 #!/bin/bash
 
 PID_FILE="${TRIM_PKGVAR}/gateway.pid"
+PID_DASHBOARD="${TRIM_PKGVAR}/dashboard.pid"
 APP_BIN="${TRIM_APPDEST}/app/bin"
+HERMES_CLI="${APP_BIN}/hermes"
 HERMES_REPO="${TRIM_APPDEST}/app/hermes-agent"
 HERMES_VENV="${TRIM_APPDEST}/app/venv"
 HERMES_HOME="${TRIM_APPDEST_VOL}/@appshare/fn-hermes-agent/.hermes"
+
+GATEWAY_CMD="${HERMES_CLI} gateway"
+DASHBOARD_CMD="${HERMES_CLI} dashboard --no-open --host $dashboard_host --port $dashboard_port"
+
 
 # ── 工具函数 ────────────────────────────────────────────────────
 
@@ -17,7 +23,51 @@ check_process() {
     kill -0 "$pid" 2>/dev/null
 }
 
+# 启动进程：start_process <名称> <pid_file> <命令...>
+start_process() {
+    local name="$1"
+    local pid_file="$2"
+    shift 2
+    log_msg "Starting $name as $TRIM_USERNAME..."
+    runuser -u "$TRIM_USERNAME" -- "$@" &
+    echo "$!" > "$pid_file"
+    log_msg "$name started (PID $!)"
+}
+
+# 停止进程：stop_process <名称> <pid_file>
+# 返回：0=成功停止或原本未运行，1=停止失败
+stop_process() {
+    local name="$1"
+    local pid_file="$2"
+    if [ -f "$pid_file" ]; then
+        local pid
+        pid="$(head -n 1 "$pid_file" | tr -d '[:space:]')"
+        if [ -n "$pid" ] && check_process "$pid"; then
+            log_msg "Stopping $name (PID $pid)..."
+            kill -TERM "$pid" 2>/dev/null || true
+            local count=0
+            while check_process "$pid" && [ "$count" -lt 10 ]; do
+                sleep 1
+                count=$((count + 1))
+            done
+            if check_process "$pid"; then
+                kill -KILL "$pid" 2>/dev/null || true
+                sleep 1
+            fi
+            if check_process "$pid"; then
+                log_msg "$name stop failed (PID $pid still running)"
+                rm -f "$pid_file"
+                return 1
+            fi
+            log_msg "$name stopped"
+        fi
+        rm -f "$pid_file"
+    fi
+    return 0
+}
+
 status_app() {
+    # 以 gateway 为主进程，只检查 gateway 状态
     if [ -f "$PID_FILE" ]; then
         local pid
         pid="$(head -n 1 "$PID_FILE" | tr -d '[:space:]')"
@@ -41,41 +91,18 @@ start_app() {
         "${TRIM_PKGHOME}" \
         "${TRIM_APPDEST_VOL}/@appshare/fn-hermes-agent" \
         2>/dev/null || true
-    log_msg "Starting hermes gateway as $TRIM_USERNAME..."
-    runuser -u "$TRIM_USERNAME" -- "${APP_BIN}/hermes" gateway &
-    echo "$!" > "$PID_FILE"
-    log_msg "hermes gateway started (PID $!)"
+    # 启动 gateway
+    start_process "hermes gateway" "$PID_FILE" $GATEWAY_CMD
+    sleep 5
+    # 启动 dashboard
+    start_process "hermes dashboard" "$PID_DASHBOARD" $DASHBOARD_CMD
 }
 
 stop_app() {
-    if [ ! -f "$PID_FILE" ]; then
-        return 0
-    fi
-
-    local pid
-    pid="$(head -n 1 "$PID_FILE" | tr -d '[:space:]')"
-
-    if [ -z "$pid" ] || ! check_process "$pid"; then
-        rm -f "$PID_FILE"
-        return 0
-    fi
-
-    log_msg "Stopping hermes gateway (PID $pid)..."
-    kill -TERM "$pid" 2>/dev/null || true
-
-    local count=0
-    while check_process "$pid" && [ "$count" -lt 10 ]; do
-        sleep 1
-        count=$((count + 1))
-    done
-
-    if check_process "$pid"; then
-        kill -KILL "$pid" 2>/dev/null || true
-        sleep 1
-    fi
-
-    rm -f "$PID_FILE"
-    log_msg "hermes gateway stopped"
+    local result=0
+    stop_process "hermes gateway" "$PID_FILE" || result=1
+    stop_process "hermes dashboard" "$PID_DASHBOARD" || result=1
+    return $result
 }
 
 case "$1" in
