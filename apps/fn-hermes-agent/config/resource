@@ -1,4 +1,11 @@
 {
+  "data-share": {
+    "shares": [
+      {
+        "name": "fn-hermes-agent/.hermes"
+      }
+    ]
+  },
   "usr-local-linker": {
     "bin": [
       "app/bin/hermes"

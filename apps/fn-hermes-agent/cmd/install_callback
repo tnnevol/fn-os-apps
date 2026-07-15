@@ -11,7 +11,7 @@ APP_DIR="${TRIM_APPDEST}/app"
 HERMES_REPO="${APP_DIR}/hermes-agent"
 HERMES_VENV="${APP_DIR}/venv"
 APP_BIN="${APP_DIR}/bin"
-HERMES_HOME="${TRIM_PKGHOME}/.hermes"
+HERMES_HOME="${TRIM_APPDEST_VOL}/@appshare/fn-hermes-agent/.hermes"
 REPO_URL="https://github.com/NousResearch/hermes-agent.git"
 BRANCH="main"
 
