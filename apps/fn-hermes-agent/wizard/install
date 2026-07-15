@@ -8,28 +8,60 @@
       },
       {
         "type": "text",
+        "field": "dashboard_username",
+        "label": "Basic Auth 用户名",
+        "initValue": "admin",
+        "rules": [
+          {
+            "required": true,
+            "message": "请输入用户名"
+          }
+        ]
+      },
+      {
+        "type": "password",
+        "field": "dashboard_password",
+        "label": "Basic Auth 密码",
+        "initValue": "",
+        "rules": [
+          {
+            "required": true,
+            "message": "请输入密码"
+          }
+        ]
+      },
+      {
+        "type": "text",
         "field": "dashboard_host",
         "label": "监听地址",
-        "helpText": "默认 0.0.0.0 允许局域网访问",
-        "initValue": "0.0.0.0"
+        "helpText": "默认 127.0.0.1，如需局域网访问请改为 0.0.0.0",
+        "initValue": "127.0.0.1",
+        "rules": [
+          {
+            "required": true,
+            "message": "请输入监听地址"
+          },
+          {
+            "pattern": "^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$",
+            "message": "请输入有效的 IPv4 地址"
+          }
+        ]
       },
       {
         "type": "text",
         "field": "dashboard_port",
         "label": "监听端口",
-        "initValue": "9119"
-      },
-      {
-        "type": "text",
-        "field": "dashboard_username",
-        "label": "Basic Auth 用户名",
-        "initValue": "admin"
-      },
-      {
-        "type": "text",
-        "field": "dashboard_password",
-        "label": "Basic Auth 密码",
-        "initValue": "password"
+        "initValue": "9119",
+        "rules": [
+          {
+            "required": true,
+            "message": "请输入端口号"
+          },
+          {
+            "pattern": "^[1-9][0-9]{0,4}$",
+            "message": "请输入 1-65535 之间的端口号"
+          }
+        ]
       }
     ]
   }
