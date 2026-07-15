@@ -1,0 +1,153 @@
+#!/bin/bash
+#
+# install_callback — hermes-agent 安装后执行
+# 从 install.sh 裁剪适配，仅保留 Debian x86 路径，消除所有交互
+#
+set -e
+
+# ── 路径定义 ──────────────────────────────────────────────
+
+APP_DIR="${TRIM_APPDEST}/app"
+HERMES_REPO="${APP_DIR}/hermes-agent"
+HERMES_VENV="${APP_DIR}/venv"
+APP_BIN="${APP_DIR}/bin"
+HERMES_HOME="${TRIM_PKGHOME}/.hermes"
+REPO_URL="https://github.com/NousResearch/hermes-agent.git"
+BRANCH="main"
+
+# ── 运行时 PATH ──────────────────────────────────────────
+
+export PATH="/var/apps/python311/target/bin:/var/apps/nodejs_v22/target/bin:/var/apps/fn-uv/target/bin:${PATH}"
+export HOME="${TRIM_PKGHOME}"
+export UV_NO_CONFIG=1
+
+# ── 工具函数 ──────────────────────────────────────────────
+
+log_msg() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >&2
+}
+
+fail_install() {
+    echo "$1" > "$TRIM_TEMP_LOGFILE"
+    log_msg "ERROR: $1"
+    exit 1
+}
+
+# ── 1. 检测 git ──────────────────────────────────────────
+
+log_msg "Checking git..."
+if ! command -v git &>/dev/null; then
+    log_msg "git not found, installing via apt..."
+    DEBIAN_FRONTEND=noninteractive apt-get update -qq >/dev/null 2>&1 || true
+    DEBIAN_FRONTEND=noninteractive apt-get install -y -qq git >/dev/null 2>&1 \
+        || fail_install "Failed to install git"
+fi
+log_msg "git $(git --version | awk '{print $3}') ready"
+
+# ── 2. 克隆/更新仓库 ─────────────────────────────────────
+
+mkdir -p "$APP_DIR"
+
+if [ -d "$HERMES_REPO/.git" ]; then
+    log_msg "Updating existing repo at $HERMES_REPO ..."
+    cd "$HERMES_REPO"
+    git fetch --depth 1 origin "$BRANCH" || fail_install "git fetch failed"
+    git reset --hard "origin/$BRANCH" || fail_install "git reset failed"
+else
+    log_msg "Cloning hermes-agent ($BRANCH)..."
+    rm -rf "$HERMES_REPO"
+    git clone --depth 1 --branch "$BRANCH" "$REPO_URL" "$HERMES_REPO" \
+        || fail_install "git clone failed"
+fi
+log_msg "Repository ready at $HERMES_REPO"
+
+cd "$HERMES_REPO"
+
+# ── 3. 创建 venv 并安装 Python 依赖 ──────────────────────
+
+log_msg "Creating venv with Python 3.11..."
+if [ ! -d "$HERMES_VENV" ]; then
+    uv venv "$HERMES_VENV" --python 3.11 \
+        || fail_install "Failed to create venv"
+fi
+log_msg "venv ready at $HERMES_VENV"
+
+export VIRTUAL_ENV="$HERMES_VENV"
+
+log_msg "Installing hermes-agent Python packages..."
+
+# 优先使用 uv.lock（hash-verified）
+if [ -f "uv.lock" ]; then
+    log_msg "Trying hash-verified install (uv.lock)..."
+    if uv sync --locked >&2; then
+        log_msg "Hash-verified install succeeded"
+    else
+        log_msg "uv.lock sync failed, falling back to pip install..."
+        uv pip install -e '.[all]' >&2 \
+            || fail_install "pip install failed"
+    fi
+else
+    uv pip install -e '.[all]' >&2 \
+        || fail_install "pip install failed"
+fi
+log_msg "Python packages installed"
+
+# ── 4. Node.js 依赖（可选） ──────────────────────────────
+
+if [ -f "package.json" ] && command -v node &>/dev/null; then
+    log_msg "Installing Node.js dependencies..."
+    npm install --silent >&2 || log_msg "npm install failed (non-fatal)"
+
+    # Playwright Chromium（带超时，失败不阻塞）
+    if [ -f "node_modules/.bin/playwright" ]; then
+        log_msg "Installing Playwright Chromium (timeout 300s)..."
+        timeout 300 npx playwright install chromium >&2 \
+            || log_msg "Playwright install skipped or timed out (non-fatal)"
+    fi
+fi
+
+# ── 5. 创建 hermes CLI 包装脚本 ──────────────────────────
+
+mkdir -p "$APP_BIN"
+
+log_msg "Creating hermes CLI wrapper..."
+cat > "${APP_BIN}/hermes" << HEREDOC
+#!/bin/bash
+export HERMES_HOME="${HERMES_HOME}"
+export PATH="/var/apps/python311/target/bin:/var/apps/nodejs_v22/target/bin:${APP_BIN}:\${PATH}"
+export HOME="${TRIM_PKGHOME}"
+exec "${HERMES_VENV}/bin/python" -m hermes_cli.main "\$@"
+HEREDOC
+chmod +x "${APP_BIN}/hermes"
+log_msg "hermes CLI wrapper created at ${APP_BIN}/hermes"
+
+# ── 6. 创建 HERMES_HOME 子目录 ──────────────────────────
+
+log_msg "Creating HERMES_HOME directories..."
+mkdir -p "${HERMES_HOME}"/{cron,sessions,logs,pairing,hooks,image_cache,audio_cache,memories,skills}
+
+# ── 7. 复制配置模板 ──────────────────────────────────────
+
+if [ ! -f "${HERMES_HOME}/.env" ]; then
+    if [ -f "${HERMES_REPO}/.env.example" ]; then
+        cp "${HERMES_REPO}/.env.example" "${HERMES_HOME}/.env"
+        log_msg "Created .env from template"
+    else
+        touch "${HERMES_HOME}/.env"
+        log_msg "Created empty .env"
+    fi
+else
+    log_msg ".env already exists, keeping it"
+fi
+
+if [ ! -f "${HERMES_HOME}/config.yaml" ]; then
+    if [ -f "${HERMES_REPO}/cli-config.yaml.example" ]; then
+        cp "${HERMES_REPO}/cli-config.yaml.example" "${HERMES_HOME}/config.yaml"
+        log_msg "Created config.yaml from template"
+    fi
+fi
+
+# ── 完成 ─────────────────────────────────────────────────
+
+log_msg "Installation complete."
+exit 0

@@ -1,0 +1,89 @@
+#!/bin/bash
+
+PID_FILE="${TRIM_PKGVAR}/app.pid"
+APP_BIN="${TRIM_APPDEST}/app/bin"
+
+# ── 工具函数 ──────────────────────────────────────────────
+
+log_msg() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >&2
+}
+
+check_process() {
+    local pid="$1"
+    kill -0 "$pid" 2>/dev/null
+}
+
+status_app() {
+    if [ -f "$PID_FILE" ]; then
+        local pid
+        pid="$(head -n 1 "$PID_FILE" | tr -d '[:space:]')"
+        if [ -n "$pid" ] && check_process "$pid"; then
+            return 0
+        fi
+        rm -f "$PID_FILE"
+    fi
+    return 1
+}
+
+start_app() {
+    if status_app; then
+        return 0
+    fi
+
+    log_msg "Starting hermes dashboard..."
+    "${APP_BIN}/hermes" dashboard &
+    echo "$!" > "$PID_FILE"
+    log_msg "hermes dashboard started (PID $!)"
+}
+
+stop_app() {
+    log_msg "Stopping hermes dashboard..."
+
+    if [ ! -f "$PID_FILE" ]; then
+        return 0
+    fi
+
+    local pid
+    pid="$(head -n 1 "$PID_FILE" | tr -d '[:space:]')"
+
+    if [ -z "$pid" ] || ! check_process "$pid"; then
+        rm -f "$PID_FILE"
+        return 0
+    fi
+
+    kill -TERM "$pid" 2>/dev/null || true
+
+    local count=0
+    while check_process "$pid" && [ "$count" -lt 10 ]; do
+        sleep 1
+        count=$((count + 1))
+    done
+
+    if check_process "$pid"; then
+        kill -KILL "$pid" 2>/dev/null || true
+        sleep 1
+    fi
+
+    rm -f "$PID_FILE"
+    log_msg "hermes dashboard stopped"
+}
+
+case "$1" in
+start)
+    start_app
+    ;;
+stop)
+    stop_app
+    ;;
+status)
+    if status_app; then
+        exit 0
+    fi
+    exit 3
+    ;;
+*)
+    echo "Unknown command: $1" > "$TRIM_TEMP_LOGFILE"
+    exit 1
+    ;;
+esac
