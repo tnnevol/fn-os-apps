@@ -1,0 +1,22 @@
+[
+  {
+    "stepTitle": "Hermes Agent 消息网关",
+    "items": [
+      {
+        "type": "tips",
+        "helpText": "如需接入消息平台（钉钉 / 飞书等），请先在 应用文件/fn-hermes-agent/.hermes/.env 中至少配置一个消息平台。未检测到有效的消息平台配置，即使开启网关也不会启动。"
+      },
+      {
+        "type": "switch",
+        "field": "wizard_start_gateway",
+        "label": "启动消息网关服务",
+        "helpText": "开启后自动安装并启动 Gateway 后台服务（需已配置消息平台 Token）",
+        "initValue": "true"
+      },
+      {
+        "type": "tips",
+        "helpText": "手动启动流程：\n1. SSH 进入设备\n2. hermes model（选择 LLM 提供商和模型）\n3. hermes gateway setup（配置消息平台）\n4. hermes gateway install（安装服务）\n5. hermes gateway start（启动服务）\n6. hermes gateway status（查看状态）"
+      }
+    ]
+  }
+]

@@ -1,0 +1,27 @@
+[
+  {
+    "stepTitle": "Hermes Agent 卸载选项",
+    "items": [
+      {
+        "type": "radio",
+        "field": "wizard_action",
+        "label": "数据处理",
+        "initValue": "keep",
+        "options": [
+          {
+            "label": "保留数据（推荐，重装后可继续使用）",
+            "value": "keep"
+          },
+          {
+            "label": "删除所有数据",
+            "value": "delete"
+          }
+        ]
+      },
+      {
+        "type": "tips",
+        "helpText": "保留数据将保存 .env、config.yaml、会话记录和消息平台配置，重装后自动恢复。"
+      }
+    ]
+  }
+]

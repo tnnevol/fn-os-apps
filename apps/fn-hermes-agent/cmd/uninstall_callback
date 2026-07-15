@@ -1,5 +1,52 @@
 #!/bin/bash
+#
+# uninstall_callback — hermes-agent 卸载后执行
+# 停止 gateway 服务、根据用户选择决定是否清理数据
+#
 
-### This script is called after the user uninstalls the application.
+# ── 路径定义 ─────────────────────────────────────────────────
+
+APP_DIR="${TRIM_APPDEST}/app"
+HERMES_HOME="${TRIM_APPDEST_VOL}/@appshare/fn-hermes-agent/.hermes"
+APP_BIN="${APP_DIR}/bin"
+
+export PATH="/var/apps/python311/target/bin:/var/apps/nodejs_v22/target/bin:/var/apps/fn-uv/target/bin:${PATH}"
+export HOME="${TRIM_PKGHOME}"
+
+# ── 工具函数 ─────────────────────────────────────────────────
+
+log_msg() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >&2
+}
+
+# ── 1. 停止 gateway 服务 ───────────────────────────────────
+
+HERMES_CMD="${APP_BIN}/hermes"
+if [ -x "$HERMES_CMD" ]; then
+    log_msg "Stopping gateway service..."
+    "$HERMES_CMD" gateway stop >&2 2>/dev/null || log_msg "Gateway stop skipped (not running or not installed)"
+else
+    log_msg "hermes CLI not found, gateway stop skipped"
+fi
+
+# ── 2. 根据用户选择决定是否清理数据 ───────────────────────
+
+if [ "$wizard_action" = "delete" ]; then
+    log_msg "User chose to delete all data."
+
+    if [ -d "$HERMES_HOME" ]; then
+        rm -rf "$HERMES_HOME"
+        log_msg "Removed HERMES_HOME: $HERMES_HOME"
+    else
+        log_msg "HERMES_HOME not found, skipping."
+    fi
+
+    log_msg "All data deleted."
+else
+    log_msg "User chose to keep data. Data preserved at:"
+    log_msg "  HERMES_HOME: $HERMES_HOME"
+fi
+
+log_msg "Uninstall complete."
 
 exit 0

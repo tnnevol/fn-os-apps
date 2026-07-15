@@ -195,6 +195,11 @@ HEREDOC
 chmod +x "${APP_BIN}/hermes"
 log_msg "hermes CLI wrapper created at ${APP_BIN}/hermes"
 
+# ── 5b. 启用 linger（gateway 服务需要）──────────────────────
+
+log_msg "Enabling linger for root (required by hermes gateway)..."
+loginctl enable-linger root 2>/dev/null || log_msg "linger enable skipped (non-fatal)"
+
 # ── 6. 创建 HERMES_HOME 子目录 ──────────────────────────
 
 log_msg "Creating HERMES_HOME directories..."
@@ -219,6 +224,58 @@ if [ ! -f "${HERMES_HOME}/config.yaml" ]; then
         cp "${HERMES_REPO}/cli-config.yaml.example" "${HERMES_HOME}/config.yaml"
         log_msg "Created config.yaml from template"
     fi
+fi
+
+# ── 8. 启动 Gateway（向导开关 + Token 双重校验）───────────
+
+if [ "${wizard_start_gateway:-false}" = "true" ]; then
+    ENV_FILE="${HERMES_HOME}/.env"
+    HAS_MESSAGING=false
+    if [ -f "$ENV_FILE" ]; then
+        # 检测所有消息平台 Token
+        for VAR in \
+            TELEGRAM_BOT_TOKEN \
+            DISCORD_BOT_TOKEN \
+            SLACK_BOT_TOKEN SLACK_APP_TOKEN \
+            WHATSAPP_ENABLED \
+            SIGNAL_ACCOUNT \
+            TWILIO_ACCOUNT_SID \
+            EMAIL_ADDRESS \
+            DINGTALK_CLIENT_ID \
+            FEISHU_APP_ID \
+            GOOGLE_CHAT_PROJECT_ID \
+            MATRIX_BOT_TOKEN \
+            MATTERMOST_BOT_TOKEN; do
+            VAL=$(grep "^${VAR}=" "$ENV_FILE" 2>/dev/null | cut -d'=' -f2-)
+            if [ -n "$VAL" ] && [ "$VAL" != "your-token-here" ] && [ "$VAL" != "false" ]; then
+                HAS_MESSAGING=true
+                log_msg "Detected messaging token: $VAR"
+                break
+            fi
+        done
+    fi
+
+    if [ "$HAS_MESSAGING" = true ]; then
+        log_msg "Gateway switch enabled and messaging token detected, installing gateway service..."
+        HERMES_CMD="${APP_BIN}/hermes"
+        if [ -x "$HERMES_CMD" ]; then
+            if "$HERMES_CMD" gateway install >&2 2>/dev/null; then
+                log_msg "Gateway service installed"
+                if "$HERMES_CMD" gateway start >&2 2>/dev/null; then
+                    log_msg "Gateway started! Your bot is now online."
+                else
+                    log_msg "Gateway installed but failed to start. Try: hermes gateway start"
+                fi
+            else
+                log_msg "Gateway systemd install failed. Start manually: hermes gateway"
+            fi
+        fi
+    else
+        log_msg "WARNING: Gateway switch is enabled but no messaging token found in .env."
+        log_msg "Please configure a token in ${HERMES_HOME}/.env, then run: hermes gateway install && hermes gateway start"
+    fi
+else
+    log_msg "Gateway switch is off. Start later with: hermes gateway install && hermes gateway start"
 fi
 
 # ── 完成 ─────────────────────────────────────────────────
