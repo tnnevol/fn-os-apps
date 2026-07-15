@@ -36,12 +36,10 @@ start_app() {
     # 修复目录权限，防止用户以 root 操作后权限被覆盖
     log_msg "Fixing ownership for $TRIM_USERNAME:$TRIM_GROUPNAME..."
     chown -R "$TRIM_USERNAME:$TRIM_GROUPNAME" \
-        "$HERMES_REPO" \
-        "$HERMES_VENV" \
-        "$APP_BIN" \
-        "$HERMES_HOME" \
+        "${TRIM_APPDEST}" \
         "${TRIM_PKGVAR}" \
         "${TRIM_PKGHOME}" \
+        "${TRIM_APPDEST_VOL}/@appshare/fn-hermes-agent" \
         2>/dev/null || true
     log_msg "Starting hermes gateway as $TRIM_USERNAME..."
     runuser -u "$TRIM_USERNAME" -- "${APP_BIN}/hermes" gateway &

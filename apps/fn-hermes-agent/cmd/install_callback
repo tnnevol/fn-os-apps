@@ -231,12 +231,10 @@ fi
 
 log_msg "Changing ownership to $TRIM_USERNAME:$TRIM_GROUPNAME..."
 chown -R "$TRIM_USERNAME:$TRIM_GROUPNAME" \
-    "$HERMES_REPO" \
-    "$HERMES_VENV" \
-    "$APP_BIN" \
-    "$HERMES_HOME" \
+    "${TRIM_APPDEST}" \
     "${TRIM_PKGVAR}" \
     "${TRIM_PKGHOME}" \
+    "${TRIM_APPDEST_VOL}/@appshare/fn-hermes-agent" \
     2>/dev/null || log_msg "chown skipped (non-fatal)"
 
 # ── 完成 ─────────────────────────────────────────────────
