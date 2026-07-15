@@ -30,8 +30,8 @@ start_app() {
     if status_app; then
         return 0
     fi
-    log_msg "Starting hermes gateway..."
-    "${APP_BIN}/hermes" gateway >> "${TRIM_PKGVAR}/gateway.log" 2>&1 &
+    log_msg "Starting hermes gateway as $TRIM_USERNAME..."
+    runuser -u "$TRIM_USERNAME" -- "${APP_BIN}/hermes" gateway >> "${TRIM_PKGVAR}/gateway.log" 2>&1 &
     echo "$!" > "$PID_FILE"
     log_msg "hermes gateway started (PID $!)"
 }
