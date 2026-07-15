@@ -2,6 +2,9 @@
 
 PID_FILE="${TRIM_PKGVAR}/gateway.pid"
 APP_BIN="${TRIM_APPDEST}/app/bin"
+HERMES_REPO="${TRIM_APPDEST}/app/hermes-agent"
+HERMES_VENV="${TRIM_APPDEST}/app/venv"
+HERMES_HOME="${TRIM_APPDEST_VOL}/@appshare/fn-hermes-agent/.hermes"
 
 # ── 工具函数 ────────────────────────────────────────────────────
 
@@ -30,8 +33,17 @@ start_app() {
     if status_app; then
         return 0
     fi
+    # 修复目录权限，防止用户以 root 操作后权限被覆盖
+    log_msg "Fixing ownership for $TRIM_USERNAME:$TRIM_GROUPNAME..."
+    chown -R "$TRIM_USERNAME:$TRIM_GROUPNAME" \
+        "$HERMES_REPO" \
+        "$HERMES_VENV" \
+        "$APP_BIN" \
+        "$HERMES_HOME" \
+        "${TRIM_PKGVAR}" \
+        2>/dev/null || true
     log_msg "Starting hermes gateway as $TRIM_USERNAME..."
-    runuser -u "$TRIM_USERNAME" -- "${APP_BIN}/hermes" gateway >> "${TRIM_PKGVAR}/gateway.log" 2>&1 &
+    runuser -u "$TRIM_USERNAME" -- "${APP_BIN}/hermes" gateway &
     echo "$!" > "$PID_FILE"
     log_msg "hermes gateway started (PID $!)"
 }
