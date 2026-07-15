@@ -33,85 +33,83 @@ fail_install() {
     exit 1
 }
 
-# ── 1. 检测 git ──────────────────────────────────────────
+# ── 功能函数 ──────────────────────────────────────────────
 
-log_msg "Checking git..."
-if ! command -v git &>/dev/null; then
-    log_msg "git not found, installing via apt..."
-    DEBIAN_FRONTEND=noninteractive apt-get update -qq >/dev/null 2>&1 || true
-    DEBIAN_FRONTEND=noninteractive apt-get install -y -qq git >/dev/null 2>&1 \
-        || fail_install "Failed to install git"
-fi
-log_msg "git $(git --version | awk '{print $3}') ready"
+check_git() {
+    log_msg "Checking git..."
+    if ! command -v git &>/dev/null; then
+        log_msg "git not found, installing via apt..."
+        DEBIAN_FRONTEND=noninteractive apt-get update -qq >/dev/null 2>&1 || true
+        DEBIAN_FRONTEND=noninteractive apt-get install -y -qq git >/dev/null 2>&1 \
+            || fail_install "Failed to install git"
+    fi
+    log_msg "git $(git --version | awk '{print $3}') ready"
+}
 
-# ── 2. 克隆/更新仓库 ─────────────────────────────────────
-
-mkdir -p "$APP_DIR"
-
-if [ -d "$HERMES_REPO/.git" ]; then
-    log_msg "Updating existing repo at $HERMES_REPO ..."
-    cd "$HERMES_REPO"
-    git fetch --depth 1 origin "$BRANCH" || fail_install "git fetch failed"
-    git reset --hard "origin/$BRANCH" || fail_install "git reset failed"
-else
-    log_msg "Cloning hermes-agent ($BRANCH)..."
-    rm -rf "$HERMES_REPO"
-    git clone --depth 1 --branch "$BRANCH" "$REPO_URL" "$HERMES_REPO" \
-        || fail_install "git clone failed"
-fi
-log_msg "Repository ready at $HERMES_REPO"
-
-cd "$HERMES_REPO"
-
-# ── 3. 创建 venv 并安装 Python 依赖 ──────────────────────
-
-log_msg "Creating venv with Python 3.11..."
-if [ ! -d "$HERMES_VENV" ]; then
-    uv venv "$HERMES_VENV" --python 3.11 \
-        || fail_install "Failed to create venv"
-fi
-log_msg "venv ready at $HERMES_VENV"
-
-export VIRTUAL_ENV="$HERMES_VENV"
-
-# 锁定 Python 解释器，防止 UV_PYTHON 环境变量干扰
-export UV_PYTHON="$HERMES_VENV/bin/python"
-
-log_msg "Installing hermes-agent Python packages..."
-
-# ── 多层安装策略（移植自 install.sh）──────────────────────
-# Tier 0: uv sync --locked（uv.lock 哈希校验，依赖完整性有保障）
-# Tier 1: uv pip install .[all]（PyPI 重新解析，无哈希校验）
-# Tier 2: uv pip install .[all] 去掉已知损坏的 extras
-# Tier 3: uv pip install .（仅核心包，最后手段）
-
-_installed=false
-
-# Tier 0: uv.lock 哈希校验
-if [ -f "uv.lock" ]; then
-    log_msg "Tier 0: trying hash-verified install (uv.lock)..."
-    if UV_PROJECT_ENVIRONMENT="$HERMES_VENV" uv sync --extra all --locked >&2; then
-        log_msg "Tier 0 succeeded (hash-verified via uv.lock)"
-        _installed=true
+clone_repo() {
+    mkdir -p "$APP_DIR"
+    if [ -d "$HERMES_REPO/.git" ]; then
+        log_msg "Updating existing repo at $HERMES_REPO ..."
+        cd "$HERMES_REPO"
+        git fetch --depth 1 origin "$BRANCH" || fail_install "git fetch failed"
+        git reset --hard "origin/$BRANCH" || fail_install "git reset failed"
     else
-        log_msg "Tier 0 failed, falling back to PyPI resolve..."
+        log_msg "Cloning hermes-agent ($BRANCH)..."
+        rm -rf "$HERMES_REPO"
+        git clone --depth 1 --branch "$BRANCH" "$REPO_URL" "$HERMES_REPO" \
+            || fail_install "git clone failed"
     fi
-fi
+    log_msg "Repository ready at $HERMES_REPO"
+    cd "$HERMES_REPO"
+}
 
-# Tier 1: .[all]
-if [ "$_installed" = false ]; then
-    log_msg "Tier 1: trying uv pip install -e '.[all]'..."
-    if uv pip install -e '.[all]' >&2; then
-        log_msg "Tier 1 succeeded (.\[all\])"
-        _installed=true
+setup_venv() {
+    log_msg "Creating venv with Python 3.11..."
+    if [ ! -d "$HERMES_VENV" ]; then
+        uv venv "$HERMES_VENV" --python 3.11 \
+            || fail_install "Failed to create venv"
     fi
-fi
+    log_msg "venv ready at $HERMES_VENV"
+    export VIRTUAL_ENV="$HERMES_VENV"
+    # 锁定 Python 解释器，防止 UV_PYTHON 环境变量干扰
+    export UV_PYTHON="$HERMES_VENV/bin/python"
+}
 
-# Tier 2: 解析 pyproject.toml 中 [all] extras，排除已知损坏项
-if [ "$_installed" = false ]; then
-    log_msg "Tier 2: trying safe extras..."
-    _ALL_EXTRAS_CSV="$(
-        "$HERMES_VENV/bin/python" - <<'PY' 2>/dev/null
+install_deps() {
+    log_msg "Installing hermes-agent Python packages..."
+    # ── 多层安装策略（移植自 install.sh）──────────────────────
+    # Tier 0: uv sync --locked（uv.lock 哈希校验，依赖完整性有保障）
+    # Tier 1: uv pip install .[all]（PyPI 重新解析，无哈希校验）
+    # Tier 2: uv pip install .[all] 去掉已知损坏的 extras
+    # Tier 3: uv pip install .（仅核心包，最后手段）
+
+    local _installed=false
+
+    # Tier 0: uv.lock 哈希校验
+    if [ -f "uv.lock" ]; then
+        log_msg "Tier 0: trying hash-verified install (uv.lock)..."
+        if UV_PROJECT_ENVIRONMENT="$HERMES_VENV" uv sync --extra all --locked >&2; then
+            log_msg "Tier 0 succeeded (hash-verified via uv.lock)"
+            _installed=true
+        else
+            log_msg "Tier 0 failed, falling back to PyPI resolve..."
+        fi
+    fi
+
+    # Tier 1: .[all]
+    if [ "$_installed" = false ]; then
+        log_msg "Tier 1: trying uv pip install -e '.[all]'..."
+        if uv pip install -e '.[all]' >&2; then
+            log_msg "Tier 1 succeeded (.\[all\])"
+            _installed=true
+        fi
+    fi
+
+    # Tier 2: 解析 pyproject.toml 中 [all] extras，排除已知损坏项
+    if [ "$_installed" = false ]; then
+        log_msg "Tier 2: trying safe extras..."
+        local _ALL_EXTRAS_CSV="$(
+            "$HERMES_VENV/bin/python" - <<'PY' 2>/dev/null
 import re, sys
 try:
     import tomllib
@@ -130,62 +128,60 @@ try:
 except Exception:
     sys.exit(1)
 PY
-    )" || true
+        )" || true
 
-    _BROKEN_EXTRAS=()
-    if [ -n "$_ALL_EXTRAS_CSV" ] && [ "${#_BROKEN_EXTRAS[@]}" -gt 0 ]; then
-        IFS=',' read -ra _ALL_EXTRAS_ARR <<< "$_ALL_EXTRAS_CSV"
-        _SAFE_EXTRAS=()
-        for _e in "${_ALL_EXTRAS_ARR[@]}"; do
-            _skip=false
-            for _b in "${_BROKEN_EXTRAS[@]}"; do
-                [ "$_e" = "$_b" ] && { _skip=true; break; }
+        local _BROKEN_EXTRAS=()
+        local _SAFE_SPEC=".[all]"
+        if [ -n "$_ALL_EXTRAS_CSV" ] && [ "${#_BROKEN_EXTRAS[@]}" -gt 0 ]; then
+            IFS=',' read -ra _ALL_EXTRAS_ARR <<< "$_ALL_EXTRAS_CSV"
+            local _SAFE_EXTRAS=()
+            for _e in "${_ALL_EXTRAS_ARR[@]}"; do
+                local _skip=false
+                for _b in "${_BROKEN_EXTRAS[@]}"; do
+                    [ "$_e" = "$_b" ] && { _skip=true; break; }
+                done
+                [ "$_skip" = false ] && _SAFE_EXTRAS+=("$_e")
             done
-            [ "$_skip" = false ] && _SAFE_EXTRAS+=("$_e")
-        done
-        _SAFE_SPEC=".[$(IFS=,; echo "${_SAFE_EXTRAS[*]}")]"
-    else
-        _SAFE_SPEC=".[all]"
+            _SAFE_SPEC=".[$(IFS=,; echo "${_SAFE_EXTRAS[*]}")]"
+        fi
+
+        if uv pip install -e "$_SAFE_SPEC" >&2; then
+            log_msg "Tier 2 succeeded ($_SAFE_SPEC)"
+            _installed=true
+        fi
     fi
 
-    if uv pip install -e "$_SAFE_SPEC" >&2; then
-        log_msg "Tier 2 succeeded ($_SAFE_SPEC)"
-        _installed=true
+    # Tier 3: 仅核心包
+    if [ "$_installed" = false ]; then
+        log_msg "Tier 3: trying core only..."
+        if uv pip install -e '.' >&2; then
+            log_msg "Tier 3 succeeded (core only, some features may be missing)"
+            _installed=true
+        fi
     fi
-fi
 
-# Tier 3: 仅核心包
-if [ "$_installed" = false ]; then
-    log_msg "Tier 3: trying core only..."
-    if uv pip install -e '.' >&2; then
-        log_msg "Tier 3 succeeded (core only, some features may be missing)"
-        _installed=true
+    [ "$_installed" = false ] && fail_install "All install tiers failed"
+    log_msg "Python packages installed"
+}
+
+install_node_deps() {
+    if [ -f "package.json" ] && command -v node &>/dev/null; then
+        log_msg "Installing Node.js dependencies..."
+        npm install --silent >&2 || log_msg "npm install failed (non-fatal)"
+
+        # Playwright Chromium（带超时，失败不阻塞）
+        if [ -f "node_modules/.bin/playwright" ]; then
+            log_msg "Installing Playwright Chromium (timeout 300s)..."
+            timeout 300 npx playwright install chromium >&2 \
+                || log_msg "Playwright install skipped or timed out (non-fatal)"
+        fi
     fi
-fi
+}
 
-[ "$_installed" = false ] && fail_install "All install tiers failed"
-log_msg "Python packages installed"
-
-# ── 4. Node.js 依赖（可选） ──────────────────────────────
-
-if [ -f "package.json" ] && command -v node &>/dev/null; then
-    log_msg "Installing Node.js dependencies..."
-    npm install --silent >&2 || log_msg "npm install failed (non-fatal)"
-
-    # Playwright Chromium（带超时，失败不阻塞）
-    if [ -f "node_modules/.bin/playwright" ]; then
-        log_msg "Installing Playwright Chromium (timeout 300s)..."
-        timeout 300 npx playwright install chromium >&2 \
-            || log_msg "Playwright install skipped or timed out (non-fatal)"
-    fi
-fi
-
-# ── 5. 创建 hermes CLI 包装脚本 ──────────────────────────
-
-mkdir -p "$APP_BIN"
-
-log_msg "Creating hermes CLI wrapper..."
-cat > "${APP_BIN}/hermes" << HEREDOC
+setup_cli_wrapper() {
+    mkdir -p "$APP_BIN"
+    log_msg "Creating hermes CLI wrapper..."
+    cat > "${APP_BIN}/hermes" << HEREDOC
 #!/bin/bash
 export HERMES_HOME="${HERMES_HOME}"
 # 设为 1（或 true / yes）以启用受监管的 dashboard 服务
@@ -198,46 +194,58 @@ export PATH="/var/apps/python311/target/bin:/var/apps/nodejs_v22/target/bin:${AP
 export HOME="${TRIM_PKGHOME}"
 exec "${HERMES_VENV}/bin/python" -m hermes_cli.main "\$@"
 HEREDOC
-chmod +x "${APP_BIN}/hermes"
-log_msg "hermes CLI wrapper created at ${APP_BIN}/hermes"
+    chmod +x "${APP_BIN}/hermes"
+    log_msg "hermes CLI wrapper created at ${APP_BIN}/hermes"
+}
 
-# ── 6. 创建 HERMES_HOME 子目录 ──────────────────────────
+setup_hermes_home() {
+    log_msg "Creating HERMES_HOME directories..."
+    mkdir -p "${HERMES_HOME}"/{cron,sessions,logs,pairing,hooks,image_cache,audio_cache,memories,skills}
 
-log_msg "Creating HERMES_HOME directories..."
-mkdir -p "${HERMES_HOME}"/{cron,sessions,logs,pairing,hooks,image_cache,audio_cache,memories,skills}
-
-# ── 7. 复制配置模板 ──────────────────────────────────────
-
-if [ ! -f "${HERMES_HOME}/.env" ]; then
-    if [ -f "${HERMES_REPO}/.env.example" ]; then
-        cp "${HERMES_REPO}/.env.example" "${HERMES_HOME}/.env"
-        log_msg "Created .env from template"
+    # 复制配置模板
+    if [ ! -f "${HERMES_HOME}/.env" ]; then
+        if [ -f "${HERMES_REPO}/.env.example" ]; then
+            cp "${HERMES_REPO}/.env.example" "${HERMES_HOME}/.env"
+            log_msg "Created .env from template"
+        else
+            touch "${HERMES_HOME}/.env"
+            log_msg "Created empty .env"
+        fi
     else
-        touch "${HERMES_HOME}/.env"
-        log_msg "Created empty .env"
+        log_msg ".env already exists, keeping it"
     fi
-else
-    log_msg ".env already exists, keeping it"
-fi
 
-if [ ! -f "${HERMES_HOME}/config.yaml" ]; then
-    if [ -f "${HERMES_REPO}/cli-config.yaml.example" ]; then
-        cp "${HERMES_REPO}/cli-config.yaml.example" "${HERMES_HOME}/config.yaml"
-        log_msg "Created config.yaml from template"
+    if [ ! -f "${HERMES_HOME}/config.yaml" ]; then
+        if [ -f "${HERMES_REPO}/cli-config.yaml.example" ]; then
+            cp "${HERMES_REPO}/cli-config.yaml.example" "${HERMES_HOME}/config.yaml"
+            log_msg "Created config.yaml from template"
+        fi
     fi
-fi
+}
 
-# ── 8. 降权：将文件所有权切换到包用户 ────────────────────
+fix_ownership() {
+    log_msg "Changing ownership to $TRIM_USERNAME:$TRIM_GROUPNAME..."
+    chown -R "$TRIM_USERNAME:$TRIM_GROUPNAME" \
+        "${TRIM_APPDEST}" \
+        "${TRIM_PKGVAR}" \
+        "${TRIM_PKGHOME}" \
+        "${TRIM_APPDEST_VOL}/@appshare/fn-hermes-agent" \
+        2>/dev/null || log_msg "chown skipped (non-fatal)"
+}
 
-log_msg "Changing ownership to $TRIM_USERNAME:$TRIM_GROUPNAME..."
-chown -R "$TRIM_USERNAME:$TRIM_GROUPNAME" \
-    "${TRIM_APPDEST}" \
-    "${TRIM_PKGVAR}" \
-    "${TRIM_PKGHOME}" \
-    "${TRIM_APPDEST_VOL}/@appshare/fn-hermes-agent" \
-    2>/dev/null || log_msg "chown skipped (non-fatal)"
+# ── 主流程 ────────────────────────────────────────────────
 
-# ── 完成 ─────────────────────────────────────────────────
+main() {
+    check_git
+    clone_repo
+    setup_venv
+    install_deps
+    install_node_deps
+    setup_cli_wrapper
+    setup_hermes_home
+    fix_ownership
+    log_msg "Installation complete."
+}
 
-log_msg "Installation complete."
+main
 exit 0
