@@ -192,7 +192,7 @@ export HERMES_DASHBOARD_BASIC_AUTH_USERNAME="${dashboard_username}"
 export HERMES_DASHBOARD_BASIC_AUTH_PASSWORD="${dashboard_password}"
 export PATH="/var/apps/python311/target/bin:/var/apps/nodejs_v22/target/bin:${APP_BIN}:\${PATH}"
 export HOME="${TRIM_PKGHOME}"
-exec "${HERMES_VENV}/bin/python" -m hermes_cli.main "\$@"
+exec runuser -u "${TRIM_USERNAME}" -- "${HERMES_VENV}/bin/python" -m hermes_cli.main "\$@"
 HEREDOC
     chmod +x "${APP_BIN}/hermes"
     log_msg "hermes CLI wrapper created at ${APP_BIN}/hermes"
