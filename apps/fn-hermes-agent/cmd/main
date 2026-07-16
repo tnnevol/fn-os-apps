@@ -84,11 +84,9 @@ status_app() {
     return 1
 }
 
-start_app() {
-    if status_app; then
-        return 0
-    fi
-    # 修复目录权限，防止用户以 root 操作后权限被覆盖
+# 修复目录权限，防止用户以 root 执行 hermes CLI 后权限被覆盖
+fix_ownership() {
+    # 启动前修复权限
     log_msg "main" "Fixing ownership for $TRIM_USERNAME:$TRIM_GROUPNAME..."
     chown -R "$TRIM_USERNAME:$TRIM_GROUPNAME" \
         "${TRIM_APPDEST}" \
@@ -96,9 +94,15 @@ start_app() {
         "${TRIM_PKGHOME}" \
         "${TRIM_APPDEST_VOL}/@appshare/fn-hermes-agent" \
         2>/dev/null || true
+}
+
+start_app() {
+    if status_app; then
+        return 0
+    fi
+    fix_ownership
     # 启动 gateway
     start_process "hermes gateway" "$PID_FILE" $GATEWAY_CMD
-    sleep 5
     # 启动 dashboard
     start_process "hermes dashboard" "$PID_DASHBOARD" $DASHBOARD_CMD
 }
@@ -118,6 +122,8 @@ stop)
     stop_app
     ;;
 status)
+    # 轮询时定期修复权限
+    fix_ownership
     if status_app; then
         exit 0
     fi

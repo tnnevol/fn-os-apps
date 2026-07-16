@@ -185,14 +185,14 @@ setup_cli_wrapper() {
 #!/bin/bash
 export HERMES_HOME="${HERMES_HOME}"
 # 设为 1（或 true / yes）以启用受监管的 dashboard 服务
-export HERMES_DASHBOARD="yes"
-export HERMES_DASHBOARD_HOST="${dashboard_host}"
-export HERMES_DASHBOARD_PORT="${dashboard_port:-9119}"
+#export HERMES_DASHBOARD="yes"
+#export HERMES_DASHBOARD_HOST="${dashboard_host}"
+#export HERMES_DASHBOARD_PORT="${dashboard_port:-9119}"
 export HERMES_DASHBOARD_BASIC_AUTH_USERNAME="${dashboard_username}"
 export HERMES_DASHBOARD_BASIC_AUTH_PASSWORD="${dashboard_password}"
 export PATH="/var/apps/python311/target/bin:/var/apps/nodejs_v22/target/bin:${APP_BIN}:\${PATH}"
 export HOME="${TRIM_PKGHOME}"
-exec runuser -u "${TRIM_USERNAME}" -- "${HERMES_VENV}/bin/python" -m hermes_cli.main "\$@"
+exec "${HERMES_VENV}/bin/python" -m hermes_cli.main "\$@"
 HEREDOC
     chmod +x "${APP_BIN}/hermes"
     log_msg "hermes CLI wrapper created at ${APP_BIN}/hermes"
@@ -223,16 +223,6 @@ setup_hermes_home() {
     fi
 }
 
-fix_ownership() {
-    log_msg "Changing ownership to $TRIM_USERNAME:$TRIM_GROUPNAME..."
-    chown -R "$TRIM_USERNAME:$TRIM_GROUPNAME" \
-        "${TRIM_APPDEST}" \
-        "${TRIM_PKGVAR}" \
-        "${TRIM_PKGHOME}" \
-        "${TRIM_APPDEST_VOL}/@appshare/fn-hermes-agent" \
-        2>/dev/null || log_msg "chown skipped (non-fatal)"
-}
-
 # ── 主流程 ────────────────────────────────────────────────
 
 main() {
@@ -243,7 +233,6 @@ main() {
     install_node_deps
     setup_cli_wrapper
     setup_hermes_home
-    fix_ownership
     log_msg "Installation complete."
 }
 
