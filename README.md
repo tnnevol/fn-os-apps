@@ -39,8 +39,8 @@
 | [fn-zentao](https://github.com/tnnevol/fn-os-apps/releases/latest)          | 禅道项目管理 | 国产开源项目管理软件，基于敏捷和 Scrum 理念，包含产品管理、项目管理、质量管理等模块 |
 | [fn-memos](https://github.com/tnnevol/fn-os-apps/releases/latest)           | Memos        | 轻量级自托管笔记工具，支持 Markdown 编写、标签管理、多端同步                        |
 | [fn-moviepilot](https://github.com/tnnevol/fn-os-apps/releases/latest)      | MoviePilot   | 影视自动化管理工具，支持媒体库管理、智能订阅、自动化整理等功能                      |
-| [fn-hermes-agent](https://github.com/tnnevol/fn-os-apps/releases/latest)    | Hermes Agent | Nous Research 开发的 AI 代理，支持多平台消息网关、自主学习、技能创建、跨会话记忆      |
-| [fn-uv](https://github.com/tnnevol/fn-os-apps/releases/latest)              | uv           | 极速 Python 包管理器，替代 pip/pip-tools，提供虚拟环境和依赖解析能力                  |
+| [fn-hermes-agent](https://github.com/tnnevol/fn-os-apps/releases/latest)    | Hermes Agent | Nous Research 开发的 AI 代理，支持多平台消息网关、自主学习、技能创建、跨会话记忆    |
+| [fn-uv](https://github.com/tnnevol/fn-os-apps/releases/latest)              | uv           | 极速 Python 包管理器，替代 pip/pip-tools，提供虚拟环境和依赖解析能力                |
 | [fn-ohmyzsh](https://github.com/tnnevol/fn-os-apps/releases/latest)         | Oh My Zsh    | Zsh 配置管理框架，提供丰富的插件、主题和自动补全，增强命令行体验                    |
 
 ## 测试与安装
