@@ -315,11 +315,33 @@ setup_hermes_home() {
     else
         log_msg ".env already exists, keeping it"
     fi
+    # 限制 .env 权限 — 该文件包含 API 密钥和令牌
+    chmod 600 "${HERMES_HOME}/.env"
 
     if [ ! -f "${HERMES_HOME}/config.yaml" ]; then
         if [ -f "${HERMES_REPO}/cli-config.yaml.example" ]; then
             cp "${HERMES_REPO}/cli-config.yaml.example" "${HERMES_HOME}/config.yaml"
             log_msg "Created config.yaml from template"
+        fi
+    fi
+
+    # 创建 SOUL.md（全局人格文件）
+    if [ ! -f "${HERMES_HOME}/SOUL.md" ]; then
+        cat > "${HERMES_HOME}/SOUL.md" << 'SOUL_EOF'
+You are Hermes Agent, an intelligent AI assistant created by Nous Research. You are helpful, knowledgeable, and direct. You assist users with a wide range of tasks including answering questions, writing and editing code, analyzing information, creative work, and executing actions via your tools. You communicate clearly, admit uncertainty when appropriate, and prioritize being genuinely useful over being verbose unless otherwise directed below. Be targeted and efficient in your exploration and investigations.
+SOUL_EOF
+        log_msg "Created SOUL.md (edit to customize personality)"
+    fi
+
+    # 同步内置技能到 ~/.hermes/skills/
+    log_msg "Syncing bundled skills to ~/.hermes/skills/ ..."
+    if "${HERMES_VENV}/bin/python" "${HERMES_REPO}/tools/skills_sync.py" 2>/dev/null; then
+        log_msg "Skills synced to ~/.hermes/skills/"
+    else
+        # 回退：如果 Python 同步失败，直接复制目录
+        if [ -d "${HERMES_REPO}/skills" ] && [ ! "$(ls -A "${HERMES_HOME}/skills/" 2>/dev/null | grep -v '.bundled_manifest')" ]; then
+            cp -r "${HERMES_REPO}/skills/"* "${HERMES_HOME}/skills/" 2>/dev/null || true
+            log_msg "Skills copied to ~/.hermes/skills/"
         fi
     fi
 }
