@@ -10,14 +10,6 @@ set -e
 export PATH=/var/apps/python312/target/bin:$PATH
 export PATH=/var/apps/nodejs_v20/target/bin:$PATH
 
-# ── 路径定义 ──────────────────────────────────────────────
-
-APP_DIR="${TRIM_PKGHOME}/MoviePilot"
-CONFIG_DIR="${TRIM_APPDEST_VOL}/@appshare/fn-moviepilot"
-APP_BIN="${TRIM_APPDEST}/app/bin"
-REPO_URL="https://github.com/tnnevol/MoviePilot.git"
-REPO_REF="v2"
-
 # 飞牛应用用户 HOME 不存在，指向实际可写目录
 export HOME="$TRIM_PKGHOME"
 
@@ -37,110 +29,158 @@ fail() {
   exit 1
 }
 
+# ── 路径定义 ──────────────────────────────────────────────
+
+define_paths() {
+  APP_DIR="${TRIM_PKGHOME}/MoviePilot"
+  CONFIG_DIR="${TRIM_APPDEST_VOL}/@appshare/fn-moviepilot"
+  APP_BIN="${TRIM_APPDEST}/app/bin"
+  REPO_URL="https://github.com/tnnevol/MoviePilot.git"
+  REPO_REF="v2"
+}
+
 # ── 安装 git ──────────────────────────────────────────────
 
-if ! command_exists git; then
-  log_msg "git not found, installing via apt ..."
-  apt-get update -qq && apt-get install -y git
-  log_msg "git installed."
-fi
+check_git() {
+  if ! command_exists git; then
+    log_msg "git not found, installing via apt ..."
+    apt-get update -qq && apt-get install -y git
+    log_msg "git installed."
+  fi
+}
 
 # ── Python 运行时 ─────────────────────────────────────────
 
-PYTHON_BIN="$(command -v python3.12)"
-log_msg "Using Python: $PYTHON_BIN"
+check_python() {
+  PYTHON_BIN="$(command -v python3.12)"
+  log_msg "Using Python: $PYTHON_BIN"
+}
 
 # ── 克隆/更新 MoviePilot 仓库 ────────────────────────────
 
-if [ ! -d "$APP_DIR/.git" ]; then
-  log_msg "Cloning MoviePilot to $APP_DIR ..."
-  git clone --branch "$REPO_REF" "$REPO_URL" "$APP_DIR" \
-    || fail "Failed to clone MoviePilot"
-  log_msg "MoviePilot cloned."
-else
-  log_msg "Reusing existing MoviePilot repo: $APP_DIR"
-  cd "$APP_DIR"
-  if git status --porcelain --untracked-files=no 2>/dev/null | grep -q .; then
-    log_msg "Detected uncommitted changes, resetting to clean state..."
-    git reset --hard HEAD >/dev/null 2>&1
-    git clean -fd >/dev/null 2>&1
-  fi
-  git fetch --tags origin "$REPO_REF"
-  if git show-ref --verify --quiet "refs/heads/$REPO_REF"; then
-    git checkout "$REPO_REF"
-  else
-    git checkout -b "$REPO_REF" "origin/$REPO_REF"
-  fi
-  git pull --ff-only origin "$REPO_REF" \
-    || fail "Failed to update MoviePilot"
-  log_msg "MoviePilot updated."
-fi
+clone_repo() {
+  # 防止 root 升级时 git dubious ownership 错误
+  git config --global --add safe.directory "$APP_DIR" 2>/dev/null || true
 
-cd "$APP_DIR"
+  if [ ! -d "$APP_DIR/.git" ]; then
+    log_msg "Cloning MoviePilot to $APP_DIR ..."
+    git clone --branch "$REPO_REF" "$REPO_URL" "$APP_DIR" \
+      || fail "Failed to clone MoviePilot"
+    log_msg "MoviePilot cloned."
+  else
+    log_msg "Reusing existing MoviePilot repo: $APP_DIR"
+    cd "$APP_DIR"
+    if git status --porcelain --untracked-files=no 2>/dev/null | grep -q .; then
+      log_msg "Detected uncommitted changes, resetting to clean state..."
+      git reset --hard HEAD >/dev/null 2>&1
+      git clean -fd >/dev/null 2>&1
+    fi
+    git fetch --tags origin "$REPO_REF"
+    if git show-ref --verify --quiet "refs/heads/$REPO_REF"; then
+      git checkout "$REPO_REF"
+    else
+      git checkout -b "$REPO_REF" "origin/$REPO_REF"
+    fi
+    git pull --ff-only origin "$REPO_REF" \
+      || fail "Failed to update MoviePilot"
+    log_msg "MoviePilot updated."
+  fi
+  cd "$APP_DIR"
+}
 
 # ── 映射飞牛 Node.js 运行时 ──────────────────────────────
 # local_setup.py 检测路径为 $APP_DIR/.runtime/node/bin/node
-mkdir -p "$APP_DIR/.runtime"
-rm -rf "$APP_DIR/.runtime/node"
-ln -sf /var/apps/nodejs_v20/target "$APP_DIR/.runtime/node"
-log_msg "Node.js runtime linked to $APP_DIR/.runtime/node"
+
+link_node_runtime() {
+  mkdir -p "$APP_DIR/.runtime"
+  rm -rf "$APP_DIR/.runtime/node"
+  ln -sf /var/apps/nodejs_v20/target "$APP_DIR/.runtime/node"
+  log_msg "Node.js runtime linked to $APP_DIR/.runtime/node"
+}
 
 # ── 执行本地安装（venv + pip + 配置初始化）────────────────
 
-# 获取飞牛 Node.js 运行时版本
-NODE_VERSION=$(/var/apps/nodejs_v20/target/bin/node --version | sed 's/^v//')
-log_msg "Running local setup with Node.js $NODE_VERSION ..."
-SETUP_ARGS=(setup --python "$PYTHON_BIN" --config-dir "$CONFIG_DIR" --node-version "$NODE_VERSION")
+run_local_setup() {
+  # 获取飞牛 Node.js 运行时版本
+  NODE_VERSION=$(/var/apps/nodejs_v20/target/bin/node --version | sed 's/^v//')
+  log_msg "Running local setup with Node.js $NODE_VERSION ..."
+  SETUP_ARGS=(setup --python "$PYTHON_BIN" --config-dir "$CONFIG_DIR" --node-version "$NODE_VERSION")
 
-# 向导传入的 superuser 信息（可选，留空则保留原有配置）
-if [ -n "${wizard_superuser:-}" ]; then
-  SETUP_ARGS+=(--superuser "$wizard_superuser")
-  log_msg "Superuser: $wizard_superuser"
-fi
-if [ -n "${wizard_superuser_password:-}" ]; then
-  SETUP_ARGS+=(--superuser-password "$wizard_superuser_password")
-  log_msg "Superuser password: ****"
-fi
+  # 向导传入的 superuser 信息（可选，留空则保留原有配置）
+  if [ -n "${wizard_superuser:-}" ]; then
+    SETUP_ARGS+=(--superuser "$wizard_superuser")
+    log_msg "Superuser: $wizard_superuser"
+  fi
+  if [ -n "${wizard_superuser_password:-}" ]; then
+    SETUP_ARGS+=(--superuser-password "$wizard_superuser_password")
+    log_msg "Superuser password: ****"
+  fi
 
-# 向导传入的 User-Agent
-if [ -n "${wizard_user_agent:-}" ]; then
-  SETUP_ARGS+=(--user-agent "$wizard_user_agent")
-  log_msg "User-Agent: $wizard_user_agent"
-fi
+  # 向导传入的 User-Agent
+  if [ -n "${wizard_user_agent:-}" ]; then
+    SETUP_ARGS+=(--user-agent "$wizard_user_agent")
+    log_msg "User-Agent: $wizard_user_agent"
+  fi
 
-"$PYTHON_BIN" ./scripts/local_setup.py "${SETUP_ARGS[@]}" \
-  || fail "MoviePilot local_setup.py failed"
+  "$PYTHON_BIN" ./scripts/local_setup.py "${SETUP_ARGS[@]}" \
+    || fail "MoviePilot local_setup.py failed"
 
-log_msg "Local setup complete."
+  log_msg "Local setup complete."
+}
 
 # ── 写入端口配置到 app.env ──────────────────────────────────
 # cmd/main 启动时从此文件读取并 export 给 service.js
-APP_ENV="${CONFIG_DIR}/app.env"
-PORT="${wizard_port:-3001}"
-NGINX_PORT="${wizard_nginx_port:-3000}"
 
-if [ -f "$APP_ENV" ]; then
-  # 追加端口配置（如果已存在则覆盖）
-  grep -v "^PORT=" "$APP_ENV" > "$APP_ENV.tmp" 2>/dev/null || true
-  grep -v "^NGINX_PORT=" "$APP_ENV.tmp" > "$APP_ENV" 2>/dev/null || true
-  rm -f "$APP_ENV.tmp"
-fi
-echo "PORT=${PORT}" >> "$APP_ENV"
-echo "NGINX_PORT=${NGINX_PORT}" >> "$APP_ENV"
-log_msg "Port config: PORT=${PORT}, NGINX_PORT=${NGINX_PORT}"
+write_port_config() {
+  APP_ENV="${CONFIG_DIR}/app.env"
+  PORT="${wizard_port:-3001}"
+  NGINX_PORT="${wizard_nginx_port:-3000}"
 
-# ── 链接 moviepilot CLI 到 app/bin ───────────────────────
-mkdir -p "$APP_BIN"
-rm -f "$APP_BIN/moviepilot"
-ln -sf "${TRIM_PKGHOME}/MoviePilot/moviepilot" "$APP_BIN/moviepilot"
-chmod +x "${TRIM_PKGHOME}/MoviePilot/moviepilot"
-log_msg "Linked moviepilot CLI to $APP_BIN/moviepilot"
+  if [ -f "$APP_ENV" ]; then
+    # 追加端口配置（如果已存在则覆盖）
+    grep -v "^PORT=" "$APP_ENV" > "$APP_ENV.tmp" 2>/dev/null || true
+    grep -v "^NGINX_PORT=" "$APP_ENV.tmp" > "$APP_ENV" 2>/dev/null || true
+    rm -f "$APP_ENV.tmp"
+  fi
+  echo "PORT=${PORT}" >> "$APP_ENV"
+  echo "NGINX_PORT=${NGINX_PORT}" >> "$APP_ENV"
+  log_msg "Port config: PORT=${PORT}, NGINX_PORT=${NGINX_PORT}"
+}
 
-# ── 完成 ─────────────────────────────────────────────────
+# ── 创建 moviepilot CLI wrapper ──────────────────────────
 
-log_msg "Installation complete."
-log_msg "  APP_DIR:   $APP_DIR"
-log_msg "  CONFIG:    $CONFIG_DIR"
-log_msg "  PYTHON:    $PYTHON_BIN"
+link_cli() {
+  mkdir -p "$APP_BIN"
+  log_msg "Creating moviepilot CLI wrapper..."
+  cat > "${APP_BIN}/moviepilot" << HEREDOC
+#!/bin/bash
+export PATH="/var/apps/python312/target/bin:/var/apps/nodejs_v20/target/bin:\${PATH}"
+export HOME="${TRIM_PKGHOME}"
+cd "${APP_DIR}"
+exec "${TRIM_PKGHOME}/MoviePilot/moviepilot" "\$@"
+HEREDOC
+  chmod +x "${APP_BIN}/moviepilot"
+  log_msg "moviepilot CLI wrapper created at ${APP_BIN}/moviepilot"
+}
+
+# ── 主流程 ───────────────────────────────────────────────
+
+main() {
+  define_paths
+  check_git
+  check_python
+  clone_repo
+  link_node_runtime
+  run_local_setup
+  write_port_config
+  link_cli
+
+  log_msg "Installation complete."
+  log_msg "  APP_DIR:   $APP_DIR"
+  log_msg "  CONFIG:    $CONFIG_DIR"
+  log_msg "  PYTHON:    $PYTHON_BIN"
+}
+
+main
 
 exit 0

@@ -2,9 +2,19 @@
 
 export PATH=/var/apps/python312/target/bin:$PATH
 export PATH="${TRIM_APPDEST}/app/bin:$PATH"
+export HOME="$TRIM_PKGHOME"
 
 APP_DIR="${TRIM_PKGHOME}/MoviePilot"
 CONFIG_DIR="${TRIM_APPDEST_VOL}/@appshare/fn-moviepilot"
+
+# 获取 NAS 主用户（UID 1000），不存在则回退到应用专用用户
+if id -u 1000 &>/dev/null; then
+    NAS_MAIN_USER=$(id -un 1000)
+    NAS_MAIN_GROUP=$(id -gn 1000)
+else
+    NAS_MAIN_USER="$TRIM_USERNAME"
+    NAS_MAIN_GROUP="$TRIM_GROUPNAME"
+fi
 
 # 从 app.env 读取端口配置（service.js 运行时读取）
 if [ -f "$CONFIG_DIR/app.env" ]; then
@@ -12,12 +22,22 @@ if [ -f "$CONFIG_DIR/app.env" ]; then
     export PORT NGINX_PORT
 fi
 
-START_CMD="cd '${APP_DIR}' && exec '${TRIM_APPDEST}/app/bin/moviepilot' start"
-STOP_CMD="cd '${APP_DIR}' && exec '${TRIM_APPDEST}/app/bin/moviepilot' stop"
-STATUS_CMD="cd '${APP_DIR}' && exec '${TRIM_APPDEST}/app/bin/moviepilot' status"
+START_CMD="runuser -u '${NAS_MAIN_USER}' -- bash -c 'cd ${APP_DIR} && exec ${TRIM_APPDEST}/app/bin/moviepilot start'"
+STOP_CMD="runuser -u '${NAS_MAIN_USER}' -- bash -c 'cd ${APP_DIR} && exec ${TRIM_APPDEST}/app/bin/moviepilot stop'"
+STATUS_CMD="runuser -u '${NAS_MAIN_USER}' -- bash -c 'cd ${APP_DIR} && exec ${TRIM_APPDEST}/app/bin/moviepilot status'"
 
 log_msg() {
     echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >&2
+}
+
+# 修复目录所有权，防止文件归属不一致
+fix_ownership() {
+    chown -R "${NAS_MAIN_USER}:${NAS_MAIN_GROUP}" \
+        "${TRIM_APPDEST}" \
+        "${TRIM_PKGVAR}" \
+        "${TRIM_PKGHOME}" \
+        "${CONFIG_DIR}" \
+        2>/dev/null || true
 }
 
 start_process() {
@@ -25,7 +45,8 @@ start_process() {
         return 0
     fi
 
-    log_msg "Starting process ..."
+    fix_ownership
+    log_msg "Starting process as ${NAS_MAIN_USER} ..."
     bash -c "${START_CMD}" >&2
     return 0
 }
@@ -68,6 +89,7 @@ stop)
     ;;
 status)
     # check application status command. exit 0 if running, exit 3 if not running
+    fix_ownership
     if status; then 
         exit 0
     else 
