@@ -11,6 +11,15 @@ HERMES_HOME="${TRIM_APPDEST_VOL}/@appshare/fn-hermes-agent/.hermes"
 GATEWAY_CMD="${HERMES_CLI} gateway"
 DASHBOARD_CMD="${HERMES_CLI} dashboard --no-open --host $dashboard_host --port $dashboard_port"
 
+# 获取 NAS 主用户（UID 1000），不存在则回退到应用专用用户
+if id -u 1000 &>/dev/null; then
+    NAS_MAIN_USER=$(id -un 1000)
+    NAS_MAIN_GROUP=$(id -gn 1000)
+else
+    NAS_MAIN_USER="$TRIM_USERNAME"
+    NAS_MAIN_GROUP="$TRIM_GROUPNAME"
+fi
+
 
 # ── 工具函数 ────────────────────────────────────────────────────
 
@@ -32,8 +41,8 @@ start_process() {
     local pid_file="$2"
     local component="${name##hermes }"  # 提取 gateway 或 dashboard
     shift 2
-    log_msg "$component" "Starting $name as uid $TRIM_UID..."
-    runuser -u "$TRIM_UID" -- "$@" &
+    log_msg "$component" "Starting $name as $NAS_MAIN_USER..."
+    runuser -u "$NAS_MAIN_USER" -- "$@" &
     echo "$!" > "$pid_file"
     log_msg "$component" "$name started (PID $!)"
 }
@@ -87,8 +96,8 @@ status_app() {
 # 修复目录权限，防止用户以 root 执行 hermes CLI 后权限被覆盖
 fix_ownership() {
     # 启动前修复权限
-    log_msg "main" "Fixing ownership for $TRIM_UID:$TRIM_GID..."
-    chown -R "$TRIM_UID:$TRIM_GID" \
+    log_msg "main" "Fixing ownership for $NAS_MAIN_USER:$NAS_MAIN_GROUP..."
+    chown -R "$NAS_MAIN_USER:$NAS_MAIN_GROUP" \
         "${TRIM_APPDEST}" \
         "${TRIM_PKGVAR}" \
         "${TRIM_PKGHOME}" \
