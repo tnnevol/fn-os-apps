@@ -1,5 +1,5 @@
 appname               = fn-ohmyzsh
-version               = 4.6.10
+version               = 4.6.11
 display_name          = Oh My Zsh
 desc                  = Oh My Zsh 是一个开源、社区驱动的 Zsh 配置管理框架，提供丰富的插件和主题。.zshrc 配置文件在 应用文件/fn-ohmyzsh/.zshrc 中配置
 platform              = x86
