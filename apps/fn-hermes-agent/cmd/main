@@ -32,8 +32,8 @@ start_process() {
     local pid_file="$2"
     local component="${name##hermes }"  # 提取 gateway 或 dashboard
     shift 2
-    log_msg "$component" "Starting $name as $TRIM_USERNAME..."
-    runuser -u "$TRIM_USERNAME" -- "$@" &
+    log_msg "$component" "Starting $name as uid $TRIM_UID..."
+    runuser -u "$TRIM_UID" -- "$@" &
     echo "$!" > "$pid_file"
     log_msg "$component" "$name started (PID $!)"
 }
@@ -87,8 +87,8 @@ status_app() {
 # 修复目录权限，防止用户以 root 执行 hermes CLI 后权限被覆盖
 fix_ownership() {
     # 启动前修复权限
-    log_msg "main" "Fixing ownership for $TRIM_USERNAME:$TRIM_GROUPNAME..."
-    chown -R "$TRIM_USERNAME:$TRIM_GROUPNAME" \
+    log_msg "main" "Fixing ownership for $TRIM_UID:$TRIM_GID..."
+    chown -R "$TRIM_UID:$TRIM_GID" \
         "${TRIM_APPDEST}" \
         "${TRIM_PKGVAR}" \
         "${TRIM_PKGHOME}" \
