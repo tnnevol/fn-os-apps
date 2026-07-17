@@ -1,30 +1,3 @@
 #!/bin/bash
-# config_callback — 应用配置更新后执行
-# 当用户在应用设置页面修改环境变量后，飞牛框架会调用此脚本
 
-RESTARTING_FLAG="${TRIM_PKGVAR}/restarting"
-
-# 获取 NAS 主用户（UID 1000），不存在则回退到应用专用用户
-if id -u 1000 &>/dev/null; then
-    NAS_MAIN_USER=$(id -un 1000)
-else
-    NAS_MAIN_USER="$TRIM_USERNAME"
-fi
-
-log_msg() {
-    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >&2
-}
-
-log_msg "Configuration updated, restarting MoviePilot..."
-
-# 创建重启状态文件，告知 main 正在维护中
-touch "$RESTARTING_FLAG"
-
-# 以 NAS 用户身份重启 MoviePilot
-runuser -u "${NAS_MAIN_USER}" -- bash -c "cd ${TRIM_PKGHOME}/MoviePilot && exec ${TRIM_APPDEST}/app/bin/moviepilot restart" >&2
-
-# 删除重启状态文件
-rm -f "$RESTARTING_FLAG"
-
-log_msg "Configuration update completed."
 exit 0
