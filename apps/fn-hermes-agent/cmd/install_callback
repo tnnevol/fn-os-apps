@@ -13,6 +13,7 @@ HERMES_VENV="${APP_DIR}/venv"
 APP_BIN="${APP_DIR}/bin"
 HERMES_HOME="${TRIM_APPDEST_VOL}/@appshare/fn-hermes-agent/.hermes"
 REPO_URL="https://github.com/NousResearch/hermes-agent.git"
+REPO_URL_SSH="git@github.com:NousResearch/hermes-agent.git"
 BRANCH="main"
 
 # ── 运行时 PATH ──────────────────────────────────────────
@@ -46,21 +47,121 @@ check_git() {
     log_msg "git $(git --version | awk '{print $3}') ready"
 }
 
+# npm 在本地构建时会非确定性地重写 package-lock.json，这些差异通常是运行时
+# 产生的无意义变更，不是用户的有意编辑。在 stash 前丢弃这些变更。
+# 如果同一目录的 package.json 也有变更，则保留 lockfile 变更。
+discard_update_lockfile_churn() {
+    local repo="${1:-$HERMES_REPO}"
+    [ -n "$repo" ] && [ -d "$repo/.git" ] || return 0
+    command -v git >/dev/null 2>&1 || return 0
+
+    local dirty_diff
+    dirty_diff=$(git -C "$repo" diff --name-only 2>/dev/null) || return 0
+    [ -n "$dirty_diff" ] || return 0
+
+    # 收集有变更的 package.json 所在目录
+    local dirty_package_dirs=""
+    while IFS= read -r path; do
+        case "$path" in
+            *package.json)
+                dirty_package_dirs="${dirty_package_dirs}$(dirname "$path")"$'\n'
+                ;;
+        esac
+    done <<EOF
+$dirty_diff
+EOF
+
+    # 找出只有 lockfile 变更（package.json 无变更）的文件
+    local dirty_locks=""
+    local dirty_count=0
+    while IFS= read -r path; do
+        case "$path" in
+            *package-lock.json)
+                local lock_dir
+                lock_dir=$(dirname "$path")
+                case $'\n'"$dirty_package_dirs" in
+                    *$'\n'"$lock_dir"$'\n'*) continue ;;
+                esac
+                dirty_locks="${dirty_locks}${path}"$'\n'
+                dirty_count=$((dirty_count + 1))
+                ;;
+        esac
+    done <<EOF
+$dirty_diff
+EOF
+
+    [ "$dirty_count" -gt 0 ] || return 0
+    while IFS= read -r path; do
+        [ -n "$path" ] || continue
+        git -C "$repo" checkout -- "$path" 2>/dev/null || true
+    done <<EOF
+$dirty_locks
+EOF
+    log_msg "Discarded npm lockfile churn (${dirty_count} file(s))"
+}
+
 clone_repo() {
     mkdir -p "$APP_DIR"
-    if [ -d "$HERMES_REPO/.git" ]; then
-        log_msg "Updating existing repo at $HERMES_REPO ..."
-        cd "$HERMES_REPO"
-        git fetch --depth 1 origin "$BRANCH" || fail_install "git fetch failed"
-        git reset --hard "origin/$BRANCH" || fail_install "git reset failed"
-    else
-        log_msg "Cloning hermes-agent ($BRANCH)..."
-        rm -rf "$HERMES_REPO"
-        git clone --depth 1 --branch "$BRANCH" "$REPO_URL" "$HERMES_REPO" \
-            || fail_install "git clone failed"
+
+    # 处理中断的克隆（无 commit 的情况）
+    if [ -d "$HERMES_REPO/.git" ] && ! git -C "$HERMES_REPO" rev-parse --verify HEAD >/dev/null 2>&1; then
+        backup_dir="${HERMES_REPO}.broken-$(date -u +%Y%m%d-%H%M%S)"
+        log_msg "Existing checkout has no commits (interrupted clone), moving to $backup_dir"
+        mv "$HERMES_REPO" "$backup_dir"
     fi
-    log_msg "Repository ready at $HERMES_REPO"
+
+    if [ -d "$HERMES_REPO" ]; then
+        if [ -d "$HERMES_REPO/.git" ]; then
+            log_msg "Updating existing repo at $HERMES_REPO ..."
+            cd "$HERMES_REPO"
+
+            # 丢弃 npm lockfile 的无意义变更
+            discard_update_lockfile_churn
+
+            # 暂存本地修改（非交互，不恢复）
+            if [ -n "$(git status --porcelain)" ]; then
+                # 清除之前冲突留下的未合并索引
+                if [ -n "$(git ls-files --unmerged)" ]; then
+                    log_msg "Clearing unmerged index entries..."
+                    git reset -q
+                fi
+                local stash_name
+                stash_name="hermes-install-$(date -u +%Y%m%d-%H%M%S)"
+                log_msg "Local changes detected, stashing (not restoring)..."
+                git stash push --include-untracked -m "$stash_name"
+            fi
+
+            # 只 fetch 目标分支，避免下载数千个自动生成的分支
+            git remote set-branches origin "$BRANCH" 2>/dev/null || true
+            git fetch origin "$BRANCH" || fail_install "git fetch failed"
+            git checkout "$BRANCH" || fail_install "git checkout failed"
+
+            # 先尝试 fast-forward，失败则 reset --hard
+            if ! git pull --ff-only origin "$BRANCH" 2>/dev/null; then
+                log_msg "Fast-forward not possible, resetting to origin/$BRANCH..."
+                git reset --hard "origin/$BRANCH" || fail_install "git reset failed"
+            fi
+        else
+            fail_install "Directory exists but is not a git repository: $HERMES_REPO"
+        fi
+    else
+        # 先尝试 SSH（用于私有仓库），失败则用 HTTPS
+        log_msg "Cloning hermes-agent ($BRANCH)..."
+        log_msg "Trying SSH clone..."
+        if GIT_SSH_COMMAND="ssh -o BatchMode=yes -o ConnectTimeout=5" \
+           git clone --depth 1 --branch "$BRANCH" "$REPO_URL_SSH" "$HERMES_REPO" 2>/dev/null; then
+            log_msg "Cloned via SSH"
+        else
+            rm -rf "$HERMES_REPO" 2>/dev/null
+            log_msg "SSH failed, trying HTTPS..."
+            git clone --depth 1 --branch "$BRANCH" "$REPO_URL" "$HERMES_REPO" \
+                || fail_install "git clone failed"
+            log_msg "Cloned via HTTPS"
+        fi
+    fi
+
     cd "$HERMES_REPO"
+    log_msg "Repository ready at $HERMES_REPO"
 }
 
 setup_venv() {
