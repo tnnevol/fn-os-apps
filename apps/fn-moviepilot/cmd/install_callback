@@ -9,7 +9,6 @@ set -e
 # ── 飞牛运行时 ────────────────────────────────────────────
 export PATH=/var/apps/python312/target/bin:$PATH
 export PATH=/var/apps/nodejs_v20/target/bin:$PATH
-export PATH=/var/apps/fn-uv/target/app/bin:$PATH
 
 # 飞牛应用用户 HOME 不存在，指向实际可写目录
 export HOME="$TRIM_PKGHOME"
@@ -155,7 +154,7 @@ link_cli() {
   log_msg "Creating moviepilot CLI wrapper..."
   cat > "${APP_BIN}/moviepilot" << HEREDOC
 #!/bin/bash
-export PATH="/var/apps/python312/target/bin:/var/apps/nodejs_v20/target/bin:/var/apps/fn-uv/target/app/bin:\${PATH}"
+export PATH="/var/apps/python312/target/bin:/var/apps/nodejs_v20/target/bin:\${PATH}"
 export HOME="${TRIM_PKGHOME}"
 cd "${APP_DIR}"
 exec "${TRIM_PKGHOME}/MoviePilot/moviepilot" "\$@"
