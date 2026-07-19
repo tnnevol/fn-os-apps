@@ -285,10 +285,6 @@ setup_cli_wrapper() {
     cat > "${APP_BIN}/hermes" << HEREDOC
 #!/bin/bash
 export HERMES_HOME="${HERMES_HOME}"
-# 设为 1（或 true / yes）以启用受监管的 dashboard 服务
-#export HERMES_DASHBOARD="yes"
-#export HERMES_DASHBOARD_HOST="${dashboard_host}"
-#export HERMES_DASHBOARD_PORT="${dashboard_port:-9119}"
 export HERMES_DASHBOARD_BASIC_AUTH_USERNAME="${dashboard_username}"
 export HERMES_DASHBOARD_BASIC_AUTH_PASSWORD="${dashboard_password}"
 export PATH="/var/apps/python311/target/bin:/var/apps/nodejs_v22/target/bin:\${PATH}"
