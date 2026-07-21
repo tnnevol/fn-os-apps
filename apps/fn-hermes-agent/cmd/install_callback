@@ -314,6 +314,24 @@ setup_hermes_home() {
     # 限制 .env 权限 — 该文件包含 API 密钥和令牌
     chmod 600 "${HERMES_HOME}/.env"
 
+    # 写入向导收集的 DashScope 配置（已存在则跳过，不覆盖用户手动配置）
+    if [ -n "${wizard_openai_url}" ]; then
+        if ! grep -q '^DASHSCOPE_BASE_URL=' "${HERMES_HOME}/.env"; then
+            echo "DASHSCOPE_BASE_URL=${wizard_openai_url}" >> "${HERMES_HOME}/.env"
+            log_msg "DASHSCOPE_BASE_URL written to .env"
+        else
+            log_msg "DASHSCOPE_BASE_URL already exists in .env, skipping"
+        fi
+    fi
+    if [ -n "${wizard_openai_key}" ]; then
+        if ! grep -q '^DASHSCOPE_API_KEY=' "${HERMES_HOME}/.env"; then
+            echo "DASHSCOPE_API_KEY=${wizard_openai_key}" >> "${HERMES_HOME}/.env"
+            log_msg "DASHSCOPE_API_KEY written to .env"
+        else
+            log_msg "DASHSCOPE_API_KEY already exists in .env, skipping"
+        fi
+    fi
+
     if [ ! -f "${HERMES_HOME}/config.yaml" ]; then
         if [ -f "${HERMES_REPO}/cli-config.yaml.example" ]; then
             cp "${HERMES_REPO}/cli-config.yaml.example" "${HERMES_HOME}/config.yaml"

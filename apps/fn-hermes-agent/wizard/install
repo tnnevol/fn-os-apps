@@ -64,5 +64,46 @@
         ]
       }
     ]
+  },
+  {
+    "stepTitle": "OpenAI 配置",
+    "items": [
+      {
+        "type": "tips",
+        "helpText": "配置 DashScope 兼容 API 的连接信息，用于 Hermes Agent 调用大模型服务。API 地址需以 /v1 结尾（OpenAI 兼容协议）。eg. https://coding.dashscope.aliyuncs.com/v1"
+      },
+      {
+        "type": "tips",
+        "helpText": "注意：若 .env 文件中已存在 DASHSCOPE_BASE_URL 或 DASHSCOPE_API_KEY，则不会覆盖。如需修改，请手动编辑 应用文件/fn-hermes-agent/.hermes/.env 文件。"
+      },
+      {
+        "type": "text",
+        "field": "wizard_openai_url",
+        "label": "API Base URL",
+        "initValue": "",
+        "rules": [
+          {
+            "required": true,
+            "message": "请输入 API 地址"
+          },
+          {
+            "pattern": "^https?://.+",
+            "message": "请输入合法的 HTTP(S) 地址"
+          }
+        ]
+      },
+      {
+        "type": "password",
+        "field": "wizard_openai_key",
+        "label": "API Key",
+        "initValue": "",
+        "rules": [
+          {
+            "required": true,
+            "message": "请输入 API Key"
+          }
+        ]
+      }
+    ]
   }
 ]
