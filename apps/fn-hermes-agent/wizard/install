@@ -74,7 +74,7 @@
       },
       {
         "type": "tips",
-        "helpText": "注意：若 .env 文件中已存在 DASHSCOPE_BASE_URL 或 DASHSCOPE_API_KEY，则不会覆盖。如需修改，请手动编辑 应用文件/fn-hermes-agent/.hermes/.env 文件。"
+        "helpText": "如需修改，请手动编辑 应用文件/fn-hermes-agent/.hermes/.env 文件。"
       },
       {
         "type": "text",
@@ -83,7 +83,6 @@
         "initValue": "",
         "rules": [
           {
-            "required": true,
             "message": "请输入 API 地址"
           },
           {
@@ -99,7 +98,6 @@
         "initValue": "",
         "rules": [
           {
-            "required": true,
             "message": "请输入 API Key"
           }
         ]
