@@ -9,7 +9,10 @@ HERMES_VENV="${TRIM_APPDEST}/app/venv"
 HERMES_HOME="${TRIM_APPDEST_VOL}/@appshare/fn-hermes-agent/.hermes"
 
 GATEWAY_CMD="${HERMES_CLI} gateway run"
+GATEWAY_STOP_CMD="${HERMES_CLI} gateway stop"
 DASHBOARD_CMD="${HERMES_CLI} dashboard --no-open --host $dashboard_host --port $dashboard_port"
+DASHBOARD_STOP_CMD="${HERMES_CLI} dashboard --stop"
+
 
 # 获取 NAS 主用户（UID 1000），不存在则回退到应用专用用户
 if id -u 1000 &>/dev/null; then
@@ -47,37 +50,46 @@ start_process() {
     log_msg "$component" "$name started (PID $!)"
 }
 
-# 停止进程：stop_process <名称> <pid_file>
+# 停止进程：stop_process <名称> <pid_file> <停止命令...>
+# 优先使用 hermes 优雅停止命令；超时未退出再回退 KILL 兜底；无论如何删除 pid 文件
 # 返回：0=成功停止或原本未运行，1=停止失败
 stop_process() {
     local name="$1"
     local pid_file="$2"
     local component="${name##hermes }"  # 提取 gateway 或 dashboard
+    shift 2
+    local result=0
+
+    # 优雅停止（以 NAS 主用户执行 hermes 停止子命令）
+    log_msg "$component" "Stopping $name gracefully..."
+    runuser -u "$NAS_MAIN_USER" -- "$@" >/dev/null 2>&1 || true
+
+    # 等待记录的进程退出；超时则回退 KILL 兜底
     if [ -f "$pid_file" ]; then
         local pid
         pid="$(head -n 1 "$pid_file" | tr -d '[:space:]')"
         if [ -n "$pid" ] && check_process "$pid"; then
-            log_msg "$component" "Stopping $name (PID $pid)..."
-            kill -TERM "$pid" 2>/dev/null || true
             local count=0
             while check_process "$pid" && [ "$count" -lt 10 ]; do
                 sleep 1
                 count=$((count + 1))
             done
             if check_process "$pid"; then
+                log_msg "$component" "Graceful stop timed out, sending KILL (PID $pid)..."
                 kill -KILL "$pid" 2>/dev/null || true
                 sleep 1
             fi
             if check_process "$pid"; then
                 log_msg "$component" "$name stop failed (PID $pid still running)"
-                rm -f "$pid_file"
-                return 1
+                result=1
+            else
+                log_msg "$component" "$name stopped"
             fi
-            log_msg "$component" "$name stopped"
         fi
+        # 删除 pid 文件维护状态
         rm -f "$pid_file"
     fi
-    return 0
+    return $result
 }
 
 status_app() {
@@ -118,8 +130,8 @@ start_app() {
 
 stop_app() {
     local result=0
-    stop_process "hermes gateway" "$PID_FILE" || result=1
-    stop_process "hermes dashboard" "$PID_DASHBOARD" || result=1
+    stop_process "hermes gateway" "$PID_FILE" $GATEWAY_STOP_CMD || result=1
+    stop_process "hermes dashboard" "$PID_DASHBOARD" $DASHBOARD_STOP_CMD || result=1
     return $result
 }
 
