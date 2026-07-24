@@ -287,12 +287,27 @@ setup_cli_wrapper() {
 export HERMES_HOME="${HERMES_HOME}"
 export HERMES_DASHBOARD_BASIC_AUTH_USERNAME="${dashboard_username}"
 export HERMES_DASHBOARD_BASIC_AUTH_PASSWORD="${dashboard_password}"
-export PATH="/var/apps/python311/target/bin:/var/apps/nodejs_v22/target/bin:\${PATH}"
+export NODE_HOME="/var/apps/nodejs_v22/target"
+export PYTHON311_HOME="/var/apps/python311/target"
+export PATH="${PYTHON311_HOME}/bin:${NODE_HOME}/bin:\${PATH}"
 export HOME="${TRIM_PKGHOME}"
 exec "${HERMES_VENV}/bin/python" -m hermes_cli.main "\$@"
 HEREDOC
     chmod +x "${APP_BIN}/hermes"
     log_msg "hermes CLI wrapper created at ${APP_BIN}/hermes"
+}
+
+setup_bash_profile() {
+    local profile="${TRIM_PKGHOME}/.bash_profile"
+    if [ -f "$profile" ]; then
+        log_msg ".bash_profile already exists, skipping"
+        return 0
+    fi
+    log_msg "Creating .bash_profile..."
+    cat > "$profile" << 'PROFILE_EOF'
+export PATH="${PATH}"
+PROFILE_EOF
+    log_msg ".bash_profile created at $profile"
 }
 
 setup_hermes_home() {
@@ -369,6 +384,7 @@ main() {
     install_deps
     install_node_deps
     setup_cli_wrapper
+    setup_bash_profile
     setup_hermes_home
     log_msg "Installation complete."
 }
