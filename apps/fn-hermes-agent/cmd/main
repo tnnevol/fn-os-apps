@@ -8,7 +8,7 @@ HERMES_REPO="${TRIM_APPDEST}/app/hermes-agent"
 HERMES_VENV="${TRIM_APPDEST}/app/venv"
 HERMES_HOME="${TRIM_APPDEST_VOL}/@appshare/fn-hermes-agent/.hermes"
 
-GATEWAY_CMD="${HERMES_CLI} gateway"
+GATEWAY_CMD="${HERMES_CLI} gateway run"
 DASHBOARD_CMD="${HERMES_CLI} dashboard --no-open --host $dashboard_host --port $dashboard_port"
 
 # 获取 NAS 主用户（UID 1000），不存在则回退到应用专用用户
