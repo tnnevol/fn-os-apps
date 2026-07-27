@@ -284,6 +284,11 @@ setup_cli_wrapper() {
     log_msg "Creating hermes CLI wrapper..."
     cat > "${APP_BIN}/hermes" << HEREDOC
 #!/bin/bash
+export APP_DIR="${TRIM_APPDEST}/app"
+export HERMES_REPO="${APP_DIR}/hermes-agent"
+export HERMES_VENV="${APP_DIR}/venv"
+export VIRTUAL_ENV="$HERMES_VENV"
+export UV_PYTHON="$HERMES_VENV/bin/python"
 export HERMES_HOME="${HERMES_HOME}"
 export HERMES_DASHBOARD_BASIC_AUTH_USERNAME="${dashboard_username}"
 export HERMES_DASHBOARD_BASIC_AUTH_PASSWORD="${dashboard_password}"
