@@ -148,8 +148,6 @@ stop)
     stop_app
     ;;
 status)
-    # 轮询时定期修复权限
-    fix_ownership
     if status_app; then
         exit 0
     fi
