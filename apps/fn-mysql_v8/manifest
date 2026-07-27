@@ -1,5 +1,5 @@
 appname               = fn-mysql_v8
-version               = 4.6.17
+version               = 4.6.18
 display_name          = MySQL v8.4.9
 desc                  = MySQL 是全球最流行的开源关系型数据库管理系统，广泛应用于 Web 应用、数据仓库和企业级系统。本应用为 MySQL 8.4.9 原生版本。
 arch                  = x86_64
