@@ -296,7 +296,7 @@ export NODE_HOME="/var/apps/nodejs_v22/target"
 export PYTHON311_HOME="/var/apps/python311/target"
 export PATH="\${PYTHON311_HOME}/bin:\${NODE_HOME}/bin:\${PATH}"
 export HOME="${TRIM_PKGHOME}"
-exec "${HERMES_VENV}/bin/python" -m hermes_cli.main "\$@"
+exec "${UV_PYTHON}" -m hermes_cli.main "\$@"
 HEREDOC
     chmod +x "${APP_BIN}/hermes"
     log_msg "hermes CLI wrapper created at ${APP_BIN}/hermes"

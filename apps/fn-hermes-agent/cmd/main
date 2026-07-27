@@ -121,6 +121,11 @@ start_app() {
     if status_app; then
         return 0
     fi
+    # gateway 未运行但 dashboard 可能残留（如 hermes update 仅重启 gateway），
+    # 先清理旧 dashboard，避免重新启动时端口被占用
+    if [ -f "$PID_DASHBOARD" ]; then
+        stop_process "hermes dashboard" "$PID_DASHBOARD" $DASHBOARD_STOP_CMD || true
+    fi
     fix_ownership
     # 启动 gateway
     start_process "hermes gateway" "$PID_FILE" $GATEWAY_CMD
