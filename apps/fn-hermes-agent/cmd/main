@@ -8,10 +8,15 @@ HERMES_REPO="${TRIM_APPDEST}/app/hermes-agent"
 HERMES_VENV="${TRIM_APPDEST}/app/venv"
 HERMES_HOME="${TRIM_APPDEST_VOL}/@appshare/fn-hermes-agent/.hermes"
 
+# gateway
 GATEWAY_CMD="${HERMES_CLI} gateway run"
 GATEWAY_STOP_CMD="${HERMES_CLI} gateway stop"
+GATEWAY_STATUS_CMD="${HERMES_CLI} gateway status"
+
+# dashboard
 DASHBOARD_CMD="${HERMES_CLI} dashboard --no-open --host $dashboard_host --port $dashboard_port"
 DASHBOARD_STOP_CMD="${HERMES_CLI} dashboard --stop"
+DASHBOARD_STATUS_CMD="${HERMES_CLI} dashboard --status"
 
 
 # 获取 NAS 主用户（UID 1000），不存在则回退到应用专用用户
@@ -92,16 +97,35 @@ stop_process() {
     return $result
 }
 
-status_app() {
-    # 以 gateway 为主进程，只检查 gateway 状态
-    if [ -f "$PID_FILE" ]; then
-        local pid
-        pid="$(head -n 1 "$PID_FILE" | tr -d '[:space:]')"
-        if [ -n "$pid" ] && check_process "$pid"; then
-            return 0
-        fi
-        rm -f "$PID_FILE"
+# 清理残留的 dashboard 进程并删除其 pid 文件（如 hermes update 仅重启 gateway 时残留），
+# 避免重新启动时端口被占用。
+# 运行中输出形如 "2 hermes dashboard process(es) running:"，未运行为 "No hermes dashboard processes running."
+cleanup_stale_dashboard() {
+    if [ -f "$PID_DASHBOARD" ] || runuser -u "$NAS_MAIN_USER" -- $DASHBOARD_STATUS_CMD 2>/dev/null | grep -qE '^[0-9]+ hermes dashboard'; then
+        stop_process "hermes dashboard" "$PID_DASHBOARD" $DASHBOARD_STOP_CMD || true
     fi
+    rm -f "$PID_DASHBOARD"
+}
+
+status_app() {
+    # 以 gateway 为主进程，通过 hermes CLI 查询真实状态。
+    # 不能只依赖 pid 文件：dashboard 内部更新会后台重启 gateway，
+    # pid 文件记录的旧 PID 失效会被误判为已停止，导致框架进入假停用状态
+    local output
+    output="$(runuser -u "$NAS_MAIN_USER" -- $GATEWAY_STATUS_CMD 2>/dev/null)"
+    if echo "$output" | grep -q "Gateway is running"; then
+        # 输出形如 "✓ Gateway is running (PID: 2542840, 2542835)"，
+        # 前者为父进程 PID，后者为 gateway 真实 PID，取最后一个覆写回 pid 文件
+        local gateway_pid
+        gateway_pid="$(echo "$output" | grep -oE 'PID: [0-9, ]+' | grep -oE '[0-9]+' | tail -n 1)"
+        if [ -n "$gateway_pid" ]; then
+            echo "$gateway_pid" > "$PID_FILE"
+        fi
+        return 0
+    fi
+    rm -f "$PID_FILE"
+    # gateway 未运行时，同步停止残留的 dashboard 并删除其 pid 文件
+    cleanup_stale_dashboard
     return 1
 }
 
@@ -118,13 +142,9 @@ fix_ownership() {
 }
 
 start_app() {
+    # status_app 在 gateway 未运行时已同步清理残留 dashboard
     if status_app; then
         return 0
-    fi
-    # gateway 未运行但 dashboard 可能残留（如 hermes update 仅重启 gateway），
-    # 先清理旧 dashboard，避免重新启动时端口被占用
-    if [ -f "$PID_DASHBOARD" ]; then
-        stop_process "hermes dashboard" "$PID_DASHBOARD" $DASHBOARD_STOP_CMD || true
     fi
     fix_ownership
     # 启动 gateway
