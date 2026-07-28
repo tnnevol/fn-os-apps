@@ -1,7 +1,5 @@
 #!/bin/bash
 
-PID_FILE="${TRIM_PKGVAR}/gateway.pid"
-PID_DASHBOARD="${TRIM_PKGVAR}/dashboard.pid"
 APP_BIN="${TRIM_APPDEST}/app/bin"
 HERMES_CLI="${APP_BIN}/hermes"
 HERMES_REPO="${TRIM_APPDEST}/app/hermes-agent"
@@ -38,93 +36,71 @@ log_msg() {
     echo "$(date '+%Y-%m-%d %H:%M:%S') - [$prefix] $msg" >&2
 }
 
-check_process() {
-    local pid="$1"
-    kill -0 "$pid" 2>/dev/null
+# 检查 gateway 是否运行中（通过 hermes CLI 查询真实状态，不维护 pid 文件）。
+# 未运行输出形如 "✗ Gateway is not running"，运行中为 "✓ Gateway is running (PID: ...)"
+gateway_running() {
+    ! runuser -u "$NAS_MAIN_USER" -- $GATEWAY_STATUS_CMD 2>/dev/null | grep -q "Gateway is not running"
 }
 
-# 启动进程：start_process <名称> <pid_file> <命令...>
+# 检查 dashboard 是否运行中。
+# 运行中输出形如 "2 hermes dashboard process(es) running:"，未运行为 "No hermes dashboard processes running."
+dashboard_running() {
+    runuser -u "$NAS_MAIN_USER" -- $DASHBOARD_STATUS_CMD 2>/dev/null | grep -qE '^[0-9]+ hermes dashboard'
+}
+
+# 启动进程：start_process <名称> <命令...>
 start_process() {
     local name="$1"
-    local pid_file="$2"
     local component="${name##hermes }"  # 提取 gateway 或 dashboard
-    shift 2
+    shift
     log_msg "$component" "Starting $name as $NAS_MAIN_USER..."
     runuser -u "$NAS_MAIN_USER" -- "$@" &
-    echo "$!" > "$pid_file"
-    log_msg "$component" "$name started (PID $!)"
+    log_msg "$component" "$name started"
 }
 
-# 停止进程：stop_process <名称> <pid_file> <停止命令...>
-# 优先使用 hermes 优雅停止命令；超时未退出再回退 KILL 兜底；无论如何删除 pid 文件
-# 返回：0=成功停止或原本未运行，1=停止失败
+# 停止进程：stop_process <名称> <状态检查函数> <停止命令...>
+# 使用 hermes 优雅停止命令，再通过状态检查函数等待退出
+# 返回：0=成功停止或原本未运行，1=停止失败（超时仍在运行）
 stop_process() {
     local name="$1"
-    local pid_file="$2"
+    local check_fn="$2"
     local component="${name##hermes }"  # 提取 gateway 或 dashboard
     shift 2
-    local result=0
 
     # 优雅停止（以 NAS 主用户执行 hermes 停止子命令）
     log_msg "$component" "Stopping $name gracefully..."
     runuser -u "$NAS_MAIN_USER" -- "$@" >/dev/null 2>&1 || true
 
-    # 等待记录的进程退出；超时则回退 KILL 兜底
-    if [ -f "$pid_file" ]; then
-        local pid
-        pid="$(head -n 1 "$pid_file" | tr -d '[:space:]')"
-        if [ -n "$pid" ] && check_process "$pid"; then
-            local count=0
-            while check_process "$pid" && [ "$count" -lt 10 ]; do
-                sleep 1
-                count=$((count + 1))
-            done
-            if check_process "$pid"; then
-                log_msg "$component" "Graceful stop timed out, sending KILL (PID $pid)..."
-                kill -KILL "$pid" 2>/dev/null || true
-                sleep 1
-            fi
-            if check_process "$pid"; then
-                log_msg "$component" "$name stop failed (PID $pid still running)"
-                result=1
-            else
-                log_msg "$component" "$name stopped"
-            fi
-        fi
-        # 删除 pid 文件维护状态
-        rm -f "$pid_file"
+    # 通过 CLI 真实状态等待进程退出
+    local count=0
+    while "$check_fn" && [ "$count" -lt 10 ]; do
+        sleep 1
+        count=$((count + 1))
+    done
+    if "$check_fn"; then
+        log_msg "$component" "$name stop failed (still running)"
+        return 1
     fi
-    return $result
+    log_msg "$component" "$name stopped"
+    return 0
 }
 
-# 清理残留的 dashboard 进程并删除其 pid 文件（如 hermes update 仅重启 gateway 时残留），
-# 避免重新启动时端口被占用。
-# 运行中输出形如 "2 hermes dashboard process(es) running:"，未运行为 "No hermes dashboard processes running."
+# 清理残留的 dashboard 进程（如 hermes update 仅重启 gateway 时残留），
+# 避免重新启动时端口被占用
 cleanup_stale_dashboard() {
-    if [ -f "$PID_DASHBOARD" ] || runuser -u "$NAS_MAIN_USER" -- $DASHBOARD_STATUS_CMD 2>/dev/null | grep -qE '^[0-9]+ hermes dashboard'; then
-        stop_process "hermes dashboard" "$PID_DASHBOARD" $DASHBOARD_STOP_CMD || true
+    if dashboard_running; then
+        stop_process "hermes dashboard" dashboard_running $DASHBOARD_STOP_CMD || true
     fi
-    rm -f "$PID_DASHBOARD"
 }
 
 status_app() {
-    # 以 gateway 为主进程，通过 hermes CLI 查询真实状态。
-    # 不能只依赖 pid 文件：dashboard 内部更新会后台重启 gateway，
-    # pid 文件记录的旧 PID 失效会被误判为已停止，导致框架进入假停用状态
-    local output
-    output="$(runuser -u "$NAS_MAIN_USER" -- $GATEWAY_STATUS_CMD 2>/dev/null)"
-    if echo "$output" | grep -q "Gateway is running"; then
-        # 输出形如 "✓ Gateway is running (PID: 2542840, 2542835)"，
-        # 前者为父进程 PID，后者为 gateway 真实 PID，取最后一个覆写回 pid 文件
-        local gateway_pid
-        gateway_pid="$(echo "$output" | grep -oE 'PID: [0-9, ]+' | grep -oE '[0-9]+' | tail -n 1)"
-        if [ -n "$gateway_pid" ]; then
-            echo "$gateway_pid" > "$PID_FILE"
-        fi
+    # 以 gateway 为主进程，通过 hermes CLI 查询真实状态，不依赖 pid 文件：
+    # dashboard 内部更新会后台重启 gateway 导致 PID 变化，
+    # 基于 pid 文件判断会误判为已停止，使框架进入假停用状态
+    if gateway_running; then
         return 0
     fi
-    rm -f "$PID_FILE"
-    # gateway 未运行时，同步停止残留的 dashboard 并删除其 pid 文件
+    # gateway 未运行时，同步停止残留的 dashboard
     cleanup_stale_dashboard
     return 1
 }
@@ -142,21 +118,25 @@ fix_ownership() {
 }
 
 start_app() {
+    fix_ownership
     # status_app 在 gateway 未运行时已同步清理残留 dashboard
     if status_app; then
+        # gateway 已运行，但 dashboard 可能单独挂掉，补启动
+        if ! dashboard_running; then
+            start_process "hermes dashboard" $DASHBOARD_CMD
+        fi
         return 0
     fi
-    fix_ownership
     # 启动 gateway
-    start_process "hermes gateway" "$PID_FILE" $GATEWAY_CMD
+    start_process "hermes gateway" $GATEWAY_CMD
     # 启动 dashboard
-    start_process "hermes dashboard" "$PID_DASHBOARD" $DASHBOARD_CMD
+    start_process "hermes dashboard" $DASHBOARD_CMD
 }
 
 stop_app() {
     local result=0
-    stop_process "hermes gateway" "$PID_FILE" $GATEWAY_STOP_CMD || result=1
-    stop_process "hermes dashboard" "$PID_DASHBOARD" $DASHBOARD_STOP_CMD || result=1
+    stop_process "hermes gateway" gateway_running $GATEWAY_STOP_CMD || result=1
+    stop_process "hermes dashboard" dashboard_running $DASHBOARD_STOP_CMD || result=1
     return $result
 }
 
