@@ -98,6 +98,10 @@ status_app() {
     # dashboard 内部更新会后台重启 gateway 导致 PID 变化，
     # 基于 pid 文件判断会误判为已停止，使框架进入假停用状态
     if gateway_running; then
+        # gateway 已运行，确保 dashboard 也在运行
+        if ! dashboard_running; then
+            start_process "hermes dashboard" $DASHBOARD_CMD || true
+        fi
         return 0
     fi
     # gateway 未运行时，同步停止残留的 dashboard
@@ -121,10 +125,6 @@ start_app() {
     fix_ownership
     # status_app 在 gateway 未运行时已同步清理残留 dashboard
     if status_app; then
-        # gateway 已运行，但 dashboard 可能单独挂掉，补启动
-        if ! dashboard_running; then
-            start_process "hermes dashboard" $DASHBOARD_CMD
-        fi
         return 0
     fi
     # 启动 gateway
