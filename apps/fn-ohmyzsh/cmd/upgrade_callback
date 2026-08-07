@@ -30,24 +30,16 @@ if [ ! -d "$OLD_SHARE" ]; then
     exit 0
 fi
 
-# 获取系统 UID 1000 用户的 home 目录。
-UID1000_HOME="$(getent passwd 1000 2>/dev/null | cut -d: -f6 || true)"
-if [ -z "$UID1000_HOME" ]; then
-    UID1000_HOME="$(awk -F: '$3 == 1000 { print $6; exit }' /etc/passwd 2>/dev/null || true)"
+# 获取系统 UID 1000 用户信息，不直接解析 /etc/passwd。
+UID1000_ENTRY="$(getent passwd 1000 2>/dev/null || true)"
+if [ -z "$UID1000_ENTRY" ]; then
+    fail_upgrade "Unable to find the passwd entry for UID 1000 during upgrade"
 fi
-if [ -z "$UID1000_HOME" ] || [ ! -d "$UID1000_HOME" ]; then
+IFS=: read -r UID1000_USER _ UID1000_UID UID1000_GID _ UID1000_HOME UID1000_SHELL <<EOF
+$UID1000_ENTRY
+EOF
+if [ -z "$UID1000_USER" ] || [ -z "$UID1000_HOME" ] || [ ! -d "$UID1000_HOME" ]; then
     fail_upgrade "Unable to find the home directory for UID 1000 during upgrade"
-fi
-UID1000_USER="$(getent passwd 1000 2>/dev/null | cut -d: -f1 || true)"
-if [ -z "$UID1000_USER" ]; then
-    UID1000_USER="$(awk -F: '$3 == 1000 { print $1; exit }' /etc/passwd 2>/dev/null || true)"
-fi
-if [ -z "$UID1000_USER" ]; then
-    fail_upgrade "Unable to find the username for UID 1000 during upgrade"
-fi
-UID1000_GID="$(getent passwd 1000 2>/dev/null | cut -d: -f4 || true)"
-if [ -z "$UID1000_GID" ]; then
-    UID1000_GID="$(awk -F: '$3 == 1000 { print $4; exit }' /etc/passwd 2>/dev/null || true)"
 fi
 if [ -z "$UID1000_GID" ]; then
     fail_upgrade "Unable to find the primary group for UID 1000 during upgrade"

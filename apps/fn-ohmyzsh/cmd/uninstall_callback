@@ -8,13 +8,11 @@
 # ── 路径定义 ──────────────────────────────────────────────
 
 # 与安装阶段保持一致，将 ZDOTDIR 指向系统 UID 1000 用户的 home 目录。
-UID1000_HOME="$(getent passwd 1000 2>/dev/null | cut -d: -f6 || true)"
-if [ -z "$UID1000_HOME" ]; then
-  UID1000_HOME="$(awk -F: '$3 == 1000 { print $6; exit }' /etc/passwd 2>/dev/null || true)"
-fi
-UID1000="$(getent passwd 1000 2>/dev/null | cut -d: -f1 || true)"
-if [ -z "$UID1000" ]; then
-  UID1000="$(awk -F: '$3 == 1000 { print $1; exit }' /etc/passwd 2>/dev/null || true)"
+UID1000_ENTRY="$(getent passwd 1000 2>/dev/null || true)"
+if [ -n "$UID1000_ENTRY" ]; then
+  IFS=: read -r UID1000_USER _ UID1000_UID UID1000_GID _ UID1000_HOME UID1000_SHELL <<EOF
+$UID1000_ENTRY
+EOF
 fi
 if [ -n "$UID1000_HOME" ] && [ -d "$UID1000_HOME" ]; then
   ZDOTDIR="$UID1000_HOME"
@@ -52,8 +50,8 @@ run_as_user() {
 }
 
 run_as_uid1000() {
-  [ -n "$UID1000" ] || return 1
-  run_as_user "$UID1000" "$UID1000_HOME" "$@"
+  [ -n "$UID1000_USER" ] || return 1
+  run_as_user "$UID1000_USER" "$UID1000_HOME" "$@"
 }
 
 # ── 清理系统级 zsh 配置 ─────────────────────────────────
@@ -61,10 +59,6 @@ run_as_uid1000() {
 log_msg "Cleaning up system-level zsh configuration ..."
 
 # 按原始脚本方案，仅恢复 UID 1000 用户安装前的默认 shell。
-UID1000_SHELL="$(getent passwd 1000 2>/dev/null | cut -d: -f7 || true)"
-if [ -z "$UID1000_SHELL" ]; then
-  UID1000_SHELL="$(awk -F: '$3 == 1000 { print $7; exit }' /etc/passwd 2>/dev/null || true)"
-fi
 SHELL_BACKUP="${UID1000_HOME:+${UID1000_HOME}/.shell.pre-oh-my-zsh}"
 if [ -n "$SHELL_BACKUP" ] && [ -f "$SHELL_BACKUP" ]; then
   old_shell=""

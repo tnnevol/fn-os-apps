@@ -9,20 +9,16 @@ set -e
 # ── 路径定义 ──────────────────────────────────────────────
 
 # 将 ZDOTDIR 指向系统 UID 1000 用户的 home 目录。
-UID1000_HOME="$(getent passwd 1000 2>/dev/null | cut -d: -f6 || true)"
-if [ -z "$UID1000_HOME" ]; then
-  UID1000_HOME="$(awk -F: '$3 == 1000 { print $6; exit }' /etc/passwd 2>/dev/null || true)"
-fi
-if [ -z "$UID1000_HOME" ] || [ ! -d "$UID1000_HOME" ]; then
-  echo "Unable to find the home directory for UID 1000." > "${TRIM_TEMP_LOGFILE}"
+UID1000_ENTRY="$(getent passwd 1000 2>/dev/null || true)"
+if [ -z "$UID1000_ENTRY" ]; then
+  echo "Unable to find the passwd entry for UID 1000." > "${TRIM_TEMP_LOGFILE}"
   exit 1
 fi
-UID1000_USER="$(getent passwd 1000 2>/dev/null | cut -d: -f1 || true)"
-if [ -z "$UID1000_USER" ]; then
-  UID1000_USER="$(awk -F: '$3 == 1000 { print $1; exit }' /etc/passwd 2>/dev/null || true)"
-fi
-if [ -z "$UID1000_USER" ]; then
-  echo "Unable to find the username for UID 1000." > "${TRIM_TEMP_LOGFILE}"
+IFS=: read -r UID1000_USER _ UID1000_UID UID1000_GID _ UID1000_HOME UID1000_SHELL <<EOF
+$UID1000_ENTRY
+EOF
+if [ -z "$UID1000_USER" ] || [ -z "$UID1000_HOME" ] || [ ! -d "$UID1000_HOME" ]; then
+  echo "Unable to find the home directory for UID 1000." > "${TRIM_TEMP_LOGFILE}"
   exit 1
 fi
 
@@ -135,11 +131,6 @@ ZSH_PATH=$(which zsh)
 log_msg "Configuring system-level zsh environment ..."
 
 # 按原始脚本方案，仅为 UID 1000 用户切换默认 shell。
-UID1000_SHELL="$(getent passwd 1000 2>/dev/null | cut -d: -f7 || true)"
-if [ -z "$UID1000_SHELL" ]; then
-  UID1000_SHELL="$(awk -F: '$3 == 1000 { print $7; exit }' /etc/passwd 2>/dev/null || true)"
-fi
-
 if [ "$(basename -- "${UID1000_SHELL:-}")" != "zsh" ]; then
   SHELL_BACKUP="${UID1000_HOME}/.shell.pre-oh-my-zsh"
   if [ ! -e "$SHELL_BACKUP" ]; then
