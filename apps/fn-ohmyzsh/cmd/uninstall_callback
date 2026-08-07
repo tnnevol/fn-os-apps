@@ -65,7 +65,12 @@ if [ -n "$SHELL_BACKUP" ] && [ -f "$SHELL_BACKUP" ]; then
   IFS= read -r old_shell < "$SHELL_BACKUP" || true
 
   if [ -n "$old_shell" ] && [ "$UID1000_SHELL" != "$old_shell" ]; then
-    if run_as_uid1000 chsh -s "$old_shell"; then
+    if [ "$(id -u)" -eq 0 ]; then
+      chsh -s "$old_shell" "$UID1000_USER"
+    else
+      run_as_uid1000 chsh -s "$old_shell"
+    fi
+    if [ "$?" -eq 0 ]; then
       run_as_uid1000 rm -f "$SHELL_BACKUP" || true
       log_msg "Restored default shell for UID 1000 to $old_shell"
     else

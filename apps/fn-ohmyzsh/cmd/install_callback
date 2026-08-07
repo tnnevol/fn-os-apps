@@ -140,10 +140,25 @@ if [ "$(basename -- "${UID1000_SHELL:-}")" != "zsh" ]; then
     log_msg "Original shell backup already exists for UID 1000, keeping it"
   fi
 
-  if run_as_uid1000 chsh -s "$ZSH_PATH"; then
+  # chsh 修改系统账户数据库，回调通常以 root 执行；只有用户目录文件
+  # 操作需要降权。普通用户执行 chsh 可能触发 PAM 密码校验而失败。
+  if [ "$(id -u)" -eq 0 ]; then
+    if ! chsh -s "$ZSH_PATH" "$UID1000_USER"; then
+      echo "Failed to change default shell for UID 1000 to $ZSH_PATH." > "${TRIM_TEMP_LOGFILE}"
+      exit 1
+    fi
+  else
+    if ! run_as_uid1000 chsh -s "$ZSH_PATH"; then
+      echo "Failed to change default shell for UID 1000 to $ZSH_PATH." > "${TRIM_TEMP_LOGFILE}"
+      exit 1
+    fi
+  fi
+  UID1000_SHELL_AFTER="$(getent passwd 1000 2>/dev/null | cut -d: -f7 || true)"
+  if [ "$(basename -- "${UID1000_SHELL_AFTER:-}")" = "zsh" ]; then
     log_msg "Changed default shell for UID 1000 to $ZSH_PATH"
   else
-    log_msg "Failed to change default shell for UID 1000"
+    echo "UID 1000 default shell is still ${UID1000_SHELL_AFTER:-unknown} after chsh." > "${TRIM_TEMP_LOGFILE}"
+    exit 1
   fi
 else
   log_msg "UID 1000 user's default shell is already zsh"

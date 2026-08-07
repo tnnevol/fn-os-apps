@@ -57,6 +57,31 @@ run_as_uid1000() {
     fi
 }
 
+# chsh 修改系统账户数据库，回调以 root 执行时必须保留 root 权限；用户目录
+# 配置和迁移仍通过 run_as_uid1000 执行，避免生成 root 所有的文件。
+ensure_uid1000_zsh() {
+    local zsh_path uid1000_shell_after
+
+    if [ "$(basename -- "${UID1000_SHELL:-}")" = "zsh" ]; then
+        log_msg "UID 1000 user's default shell is already zsh"
+        return 0
+    fi
+
+    zsh_path="$(command -v zsh 2>/dev/null || true)"
+    [ -n "$zsh_path" ] || fail_upgrade "Unable to find zsh during upgrade"
+
+    if [ "$(id -u)" -eq 0 ]; then
+        chsh -s "$zsh_path" "$UID1000_USER" || fail_upgrade "Failed to change default shell for UID 1000"
+    else
+        run_as_uid1000 chsh -s "$zsh_path" || fail_upgrade "Failed to change default shell for UID 1000"
+    fi
+
+    uid1000_shell_after="$(getent passwd 1000 2>/dev/null | cut -d: -f7 || true)"
+    [ "$(basename -- "${uid1000_shell_after:-}")" = "zsh" ] || \
+        fail_upgrade "UID 1000 default shell is still ${uid1000_shell_after:-unknown} after chsh"
+    log_msg "Changed default shell for UID 1000 to $zsh_path"
+}
+
 # 旧版本 share 内容可能由 root 创建。移动和清理源文件必须保留 root 权限，
 # 迁移到 UID 1000 home 后再修正所有权，确保用户可以继续修改配置。
 set_uid1000_ownership() {
@@ -119,6 +144,7 @@ remove_legacy_global_zdotdir() {
     fi
 }
 
+ensure_uid1000_zsh
 migrate_share_contents
 ensure_user_zdotdir
 remove_legacy_global_zdotdir
