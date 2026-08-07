@@ -18,7 +18,8 @@ BRANCH="main"
 
 # ── 运行时 PATH ──────────────────────────────────────────
 
-export PATH="/var/apps/python311/target/bin:/var/apps/nodejs_v22/target/bin:/var/apps/fn-uv/target/bin:${PATH}"
+export NODE_HOME="/var/apps/nodejs_v24/target"
+export PATH="/var/apps/python311/target/bin:${NODE_HOME}/bin:/var/apps/fn-uv/target/bin:${PATH}"
 export HOME="${TRIM_PKGHOME}"
 export UV_NO_CONFIG=1
 
@@ -292,7 +293,7 @@ export UV_PYTHON="$HERMES_VENV/bin/python"
 export HERMES_HOME="${HERMES_HOME}"
 export HERMES_DASHBOARD_BASIC_AUTH_USERNAME="${dashboard_username}"
 export HERMES_DASHBOARD_BASIC_AUTH_PASSWORD="${dashboard_password}"
-export NODE_HOME="/var/apps/nodejs_v22/target"
+export NODE_HOME="/var/apps/nodejs_v24/target"
 export PYTHON311_HOME="/var/apps/python311/target"
 export PATH="\${PYTHON311_HOME}/bin:\${NODE_HOME}/bin:\${PATH}"
 export HOME="${TRIM_PKGHOME}"

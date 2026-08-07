@@ -10,7 +10,8 @@ APP_DIR="${TRIM_APPDEST}/app"
 HERMES_HOME="${TRIM_APPDEST_VOL}/@appshare/fn-hermes-agent/.hermes"
 APP_BIN="${APP_DIR}/bin"
 
-export PATH="/var/apps/python311/target/bin:/var/apps/nodejs_v22/target/bin:/var/apps/fn-uv/target/bin:${PATH}"
+export NODE_HOME="/var/apps/nodejs_v24/target"
+export PATH="/var/apps/python311/target/bin:${NODE_HOME}/bin:/var/apps/fn-uv/target/bin:${PATH}"
 export HOME="${TRIM_PKGHOME}"
 
 # ── 工具函数 ─────────────────────────────────────────────────
