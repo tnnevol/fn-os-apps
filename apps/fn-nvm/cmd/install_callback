@@ -1,0 +1,131 @@
+#!/bin/bash
+#
+# install_callback — NVM 安装后执行
+#
+
+set -e
+
+NVM_DIR="${TRIM_PKGHOME}/.nvm"
+NVM_INSTALLER="${TRIM_APPDEST}/app/nvm/install.sh"
+NVM_PROFILE_BEGIN="# >>> fn-nvm profile >>>"
+NVM_PROFILE_END="# <<< fn-nvm profile <<<"
+
+UID1000_ENTRY="$(getent passwd 1000 2>/dev/null || true)"
+if [ -z "$UID1000_ENTRY" ]; then
+    echo "Unable to find the passwd entry for UID 1000." > "${TRIM_TEMP_LOGFILE}"
+    exit 1
+fi
+IFS=: read -r UID1000_USER _ UID1000_UID UID1000_GID _ UID1000_HOME UID1000_SHELL <<EOF
+$UID1000_ENTRY
+EOF
+if [ -z "$UID1000_USER" ] || [ -z "$UID1000_HOME" ] || [ -z "$UID1000_GID" ]; then
+    echo "Unable to resolve UID 1000 user information." > "${TRIM_TEMP_LOGFILE}"
+    exit 1
+fi
+
+# cmd 阶段以 root 执行，但 NVM 数据需要由 UID 1000 用户继续管理。
+run_as_uid1000() {
+    command -v runuser >/dev/null 2>&1 || {
+        echo "runuser is required to install NVM as UID 1000." > "${TRIM_TEMP_LOGFILE}"
+        exit 1
+    }
+    runuser -u "$UID1000_USER" -- env \
+        HOME="$UID1000_HOME" USER="$UID1000_USER" LOGNAME="$UID1000_USER" \
+        SHELL="$UID1000_SHELL" ZDOTDIR="$UID1000_HOME" \
+        NVM_DIR="$NVM_DIR" "$@"
+}
+
+log_msg() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >&2
+}
+
+fail_install() {
+    if [ -n "${TRIM_TEMP_LOGFILE:-}" ]; then
+        echo "$1" > "$TRIM_TEMP_LOGFILE"
+    fi
+    log_msg "ERROR: $1"
+    exit 1
+}
+
+if [ ! -f "$NVM_INSTALLER" ]; then
+    fail_install "NVM install script not found: $NVM_INSTALLER"
+fi
+
+if ! command -v curl >/dev/null 2>&1 && ! command -v wget >/dev/null 2>&1; then
+    fail_install "NVM requires curl or wget to download its runtime files"
+fi
+
+mkdir -p "$NVM_DIR"
+
+# 兼容此前由 root 安装的 NVM，先把已有数据交给 UID 1000 用户。
+chown -R "$UID1000_USER:$UID1000_GID" "$NVM_DIR"
+
+# 禁止官方脚本修改 root 的 profile，也不自动安装 Node.js 版本。
+log_msg "Installing NVM into $NVM_DIR ..."
+run_as_uid1000 env \
+    METHOD="script" PROFILE="/dev/null" \
+    NODE_VERSION="" NVM_ENV="" NVM_SOURCE="" \
+    NVM_INSTALL_VERSION="v0.40.6" NVM_INSTALL_GITHUB_REPO="nvm-sh/nvm" \
+    XDG_CONFIG_HOME="" \
+    bash "$NVM_INSTALLER" || fail_install "NVM installation failed"
+
+if [ ! -s "$NVM_DIR/nvm.sh" ] || [ ! -x "$NVM_DIR/nvm-exec" ]; then
+    fail_install "NVM installation completed without the required runtime files"
+fi
+
+# 按官方安装脚本兼容 Bash 和 Zsh，选择 UID 1000 用户的 shell 配置文件。
+case "$UID1000_SHELL" in
+    *bash)
+        NVM_PROFILE_CANDIDATES=(
+            "${UID1000_HOME}/.bashrc"
+            "${UID1000_HOME}/.bash_profile"
+            "${UID1000_HOME}/.profile"
+        )
+        NVM_PROFILE_DEFAULT="${UID1000_HOME}/.bashrc"
+        ;;
+    *zsh)
+        NVM_PROFILE_CANDIDATES=(
+            "${UID1000_HOME}/.zshrc"
+            "${UID1000_HOME}/.zprofile"
+            "${UID1000_HOME}/.profile"
+        )
+        NVM_PROFILE_DEFAULT="${UID1000_HOME}/.zshrc"
+        ;;
+    *)
+        NVM_PROFILE_CANDIDATES=(
+            "${UID1000_HOME}/.profile"
+            "${UID1000_HOME}/.bashrc"
+            "${UID1000_HOME}/.zprofile"
+            "${UID1000_HOME}/.zshrc"
+        )
+        NVM_PROFILE_DEFAULT="${UID1000_HOME}/.profile"
+        ;;
+esac
+
+NVM_PROFILE=""
+for profile in "${NVM_PROFILE_CANDIDATES[@]}"; do
+    if [ -f "$profile" ]; then
+        NVM_PROFILE="$profile"
+        break
+    fi
+done
+NVM_PROFILE="${NVM_PROFILE:-$NVM_PROFILE_DEFAULT}"
+
+if ! grep -Fq "$NVM_PROFILE_BEGIN" "$NVM_PROFILE" 2>/dev/null; then
+    run_as_uid1000 tee -a "$NVM_PROFILE" >/dev/null <<EOF
+
+$NVM_PROFILE_BEGIN
+export NVM_DIR="$NVM_DIR"
+if [ -s "\$NVM_DIR/nvm.sh" ]; then
+    . "\$NVM_DIR/nvm.sh"
+fi
+if [ -s "\$NVM_DIR/bash_completion" ]; then
+    . "\$NVM_DIR/bash_completion"
+fi
+$NVM_PROFILE_END
+EOF
+fi
+
+log_msg "NVM profile installed for UID 1000 at $NVM_PROFILE"
+log_msg "NVM installation complete. No Node.js version was installed automatically."
+exit 0

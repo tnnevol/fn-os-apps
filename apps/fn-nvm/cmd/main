@@ -1,0 +1,11 @@
+#!/bin/bash
+
+case "$1" in
+start|stop|status)
+    # NVM is a shell tool and has no long-running process to manage.
+    exit 0
+    ;;
+*)
+    exit 1
+    ;;
+esac
