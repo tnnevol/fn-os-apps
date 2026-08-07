@@ -19,6 +19,7 @@
 │   ├── fn-moviepilot/              # MoviePilot - 影视自动化管理
 │   ├── fn-hermes-agent/            # Hermes Agent - AI 代理(原生应用)
 │   ├── fn-uv/                      # uv - Python 包管理器(系统工具)
+│   ├── fn-nvm/                     # NVM - Node.js 版本管理工具(系统工具)
 │   └── fn-ohmyzsh/                 # Oh My Zsh - Zsh 配置管理框架
 ├── .github/workflows/              # CI: FPK 构建与 Release 发布
 ├── .gitignore
@@ -41,6 +42,7 @@
 | [fn-moviepilot](https://github.com/tnnevol/fn-os-apps/releases/latest)      | MoviePilot   | 影视自动化管理工具，支持媒体库管理、智能订阅、自动化整理等功能                      |
 | [fn-hermes-agent](https://github.com/tnnevol/fn-os-apps/releases/latest)    | Hermes Agent | Nous Research 开发的 AI 代理，支持多平台消息网关、自主学习、技能创建、跨会话记忆    |
 | [fn-uv](https://github.com/tnnevol/fn-os-apps/releases/latest)              | uv           | 极速 Python 包管理器，替代 pip/pip-tools，提供虚拟环境和依赖解析能力                |
+| [fn-nvm](https://github.com/tnnevol/fn-os-apps/releases/latest)             | NVM          | Node.js 版本管理工具，由 UID 1000 用户管理 NVM 和 Node.js 运行时                   |
 | [fn-ohmyzsh](https://github.com/tnnevol/fn-os-apps/releases/latest)         | Oh My Zsh    | Zsh 配置管理框架，提供丰富的插件、主题和自动补全，增强命令行体验                    |
 
 ## 测试与安装
