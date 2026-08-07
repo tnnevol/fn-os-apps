@@ -15,10 +15,12 @@ HERMES_HOME="${TRIM_APPDEST_VOL}/@appshare/fn-hermes-agent/.hermes"
 REPO_URL="https://github.com/NousResearch/hermes-agent.git"
 REPO_URL_SSH="git@github.com:NousResearch/hermes-agent.git"
 BRANCH="main"
+NODE_VERSION="v22.22.0"
+NVM_DIR="/var/apps/fn-nvm/home/.nvm"
+NODE_HOME="${NVM_DIR}/versions/node/${NODE_VERSION}"
 
 # ── 运行时 PATH ──────────────────────────────────────────
 
-export NODE_HOME="/var/apps/nodejs_v24/target"
 export PATH="/var/apps/python311/target/bin:${NODE_HOME}/bin:/var/apps/fn-uv/target/bin:${PATH}"
 export HOME="${TRIM_PKGHOME}"
 export UV_NO_CONFIG=1
@@ -33,6 +35,52 @@ fail_install() {
     echo "$1" > "$TRIM_TEMP_LOGFILE"
     log_msg "ERROR: $1"
     exit 1
+}
+
+# fn-nvm 和 Node.js 数据由 UID 1000 用户管理。生命周期回调虽然以 root
+# 执行，但不能以 root 写入 NVM 目录或执行 nvm install。
+UID1000_ENTRY="$(getent passwd 1000 2>/dev/null || true)"
+if [ -z "$UID1000_ENTRY" ]; then
+    fail_install "Unable to find the passwd entry for UID 1000"
+fi
+IFS=: read -r UID1000_USER _ UID1000_UID UID1000_GID _ UID1000_HOME UID1000_SHELL <<EOF
+$UID1000_ENTRY
+EOF
+if [ -z "$UID1000_USER" ] || [ -z "$UID1000_HOME" ] || [ ! -d "$UID1000_HOME" ]; then
+    fail_install "Unable to resolve the home directory for UID 1000"
+fi
+
+run_as_uid1000() {
+    if [ "$(id -u)" -eq "$UID1000_UID" ]; then
+        HOME="$UID1000_HOME" USER="$UID1000_USER" LOGNAME="$UID1000_USER" \
+            SHELL="$UID1000_SHELL" NVM_DIR="$NVM_DIR" "$@"
+        return
+    fi
+
+    command -v runuser >/dev/null 2>&1 || fail_install "runuser is required to manage Node.js as UID 1000"
+    runuser -u "$UID1000_USER" -- env \
+        HOME="$UID1000_HOME" USER="$UID1000_USER" LOGNAME="$UID1000_USER" \
+        SHELL="$UID1000_SHELL" NVM_DIR="$NVM_DIR" "$@"
+}
+
+ensure_node_runtime() {
+    if [ -d "$NODE_HOME" ]; then
+        log_msg "Node.js $NODE_VERSION already exists at $NODE_HOME"
+        return 0
+    fi
+
+    [ -s "$NVM_DIR/nvm.sh" ] || fail_install "NVM is not installed at $NVM_DIR"
+    log_msg "Node.js $NODE_VERSION not found, installing with fn-nvm as UID 1000..."
+    if ! run_as_uid1000 bash -c '
+        set -e
+        . "$NVM_DIR/nvm.sh"
+        nvm install "$1"
+    ' bash "$NODE_VERSION"; then
+        fail_install "Failed to install Node.js $NODE_VERSION with fn-nvm"
+    fi
+
+    [ -d "$NODE_HOME" ] || fail_install "Node.js $NODE_VERSION was not created at $NODE_HOME"
+    log_msg "Node.js $NODE_VERSION installed at $NODE_HOME"
 }
 
 # ── 功能函数 ──────────────────────────────────────────────
@@ -293,7 +341,6 @@ export UV_PYTHON="$HERMES_VENV/bin/python"
 export HERMES_HOME="${HERMES_HOME}"
 export HERMES_DASHBOARD_BASIC_AUTH_USERNAME="${dashboard_username}"
 export HERMES_DASHBOARD_BASIC_AUTH_PASSWORD="${dashboard_password}"
-export NODE_HOME="/var/apps/nodejs_v24/target"
 export PYTHON311_HOME="/var/apps/python311/target"
 export PATH="\${PYTHON311_HOME}/bin:\${NODE_HOME}/bin:\${PATH}"
 export HOME="${TRIM_PKGHOME}"
@@ -384,6 +431,7 @@ SOUL_EOF
 # ── 主流程 ────────────────────────────────────────────────
 
 main() {
+    ensure_node_runtime
     check_git
     clone_repo
     setup_venv
