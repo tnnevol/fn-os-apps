@@ -1,5 +1,135 @@
 #!/bin/bash
+#
+# upgrade_callback — 迁移旧版 Oh My Zsh 数据和 ZDOTDIR 配置
+#
 
-### This script is called after the user upgrades the application.
+set -e
 
+OLD_SHARE="${TRIM_APPDEST_VOL}/@appshare/fn-ohmyzsh"
+ZDOTDIR_BEGIN="# >>> fn-ohmyzsh ZDOTDIR >>>"
+ZDOTDIR_END="# <<< fn-ohmyzsh ZDOTDIR <<<"
+LEGACY_ZSHENV="/etc/zsh/zshenv"
+LEGACY_ZDOTDIR="$OLD_SHARE"
+
+log_msg() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >&2
+}
+
+fail_upgrade() {
+    if [ -n "${TRIM_TEMP_LOGFILE:-}" ]; then
+        echo "$1" > "$TRIM_TEMP_LOGFILE"
+    fi
+    log_msg "ERROR: $1"
+    exit 1
+}
+
+# 仅处理确实存在旧版 share 目录的升级场景。
+# 新安装或旧目录已被移除时，不继续执行迁移和兼容清理。
+if [ ! -d "$OLD_SHARE" ]; then
+    log_msg "Legacy share directory not found: $OLD_SHARE; skipping upgrade migration"
+    exit 0
+fi
+
+# 获取系统 UID 1000 用户的 home 目录。
+UID1000_HOME="$(getent passwd 1000 2>/dev/null | cut -d: -f6 || true)"
+if [ -z "$UID1000_HOME" ]; then
+    UID1000_HOME="$(awk -F: '$3 == 1000 { print $6; exit }' /etc/passwd 2>/dev/null || true)"
+fi
+if [ -z "$UID1000_HOME" ] || [ ! -d "$UID1000_HOME" ]; then
+    fail_upgrade "Unable to find the home directory for UID 1000 during upgrade"
+fi
+UID1000_USER="$(getent passwd 1000 2>/dev/null | cut -d: -f1 || true)"
+if [ -z "$UID1000_USER" ]; then
+    UID1000_USER="$(awk -F: '$3 == 1000 { print $1; exit }' /etc/passwd 2>/dev/null || true)"
+fi
+if [ -z "$UID1000_USER" ]; then
+    fail_upgrade "Unable to find the username for UID 1000 during upgrade"
+fi
+UID1000_GID="$(getent passwd 1000 2>/dev/null | cut -d: -f4 || true)"
+if [ -z "$UID1000_GID" ]; then
+    UID1000_GID="$(awk -F: '$3 == 1000 { print $4; exit }' /etc/passwd 2>/dev/null || true)"
+fi
+if [ -z "$UID1000_GID" ]; then
+    fail_upgrade "Unable to find the primary group for UID 1000 during upgrade"
+fi
+
+# cmd 阶段通常以 root 执行。用户配置写入必须降权，避免生成 root 所有的文件。
+run_as_uid1000() {
+    if [ "$(id -u)" -eq 1000 ]; then
+        HOME="$UID1000_HOME" USER="$UID1000_USER" LOGNAME="$UID1000_USER" "$@"
+    else
+        command -v runuser >/dev/null 2>&1 || fail_upgrade "runuser is required to migrate data as UID 1000"
+        runuser -u "$UID1000_USER" -- env \
+            HOME="$UID1000_HOME" USER="$UID1000_USER" LOGNAME="$UID1000_USER" \
+            ZDOTDIR="$UID1000_HOME" "$@"
+    fi
+}
+
+# 旧版本 share 内容可能由 root 创建。移动和清理源文件必须保留 root 权限，
+# 迁移到 UID 1000 home 后再修正所有权，确保用户可以继续修改配置。
+set_uid1000_ownership() {
+    local path="$1"
+    if [ -L "$path" ]; then
+        chown -h "$UID1000_USER:$UID1000_GID" "$path" || fail_upgrade "Failed to change ownership: $path"
+    else
+        chown -R "$UID1000_USER:$UID1000_GID" "$path" || fail_upgrade "Failed to change ownership: $path"
+    fi
+}
+
+USER_ZSHENV="${UID1000_HOME}/.zshenv"
+
+# 将旧 share 目录中的内容迁移到 UID 1000 用户目录。
+migrate_share_contents() {
+    local source name target legacy_target
+    for source in "$OLD_SHARE"/.[!.]* "$OLD_SHARE"/*; do
+        [ -e "$source" ] || [ -L "$source" ] || continue
+        name="$(basename "$source")"
+        target="${UID1000_HOME}/${name}"
+
+        if [ -e "$target" ] || [ -L "$target" ]; then
+            legacy_target="${target}.fn-ohmyzsh-legacy"
+            if [ -e "$legacy_target" ] || [ -L "$legacy_target" ]; then
+                log_msg "Skipping existing migrated data: $source"
+            else
+                mv "$source" "$legacy_target" || fail_upgrade "Failed to preserve legacy data: $source"
+                set_uid1000_ownership "$legacy_target"
+                log_msg "Moved legacy data to $legacy_target"
+            fi
+        else
+            mv "$source" "$target" || fail_upgrade "Failed to migrate share data: $source"
+            set_uid1000_ownership "$target"
+            log_msg "Migrated $source to $target"
+        fi
+    done
+
+    rmdir "$OLD_SHARE" 2>/dev/null || log_msg "Keeping non-empty legacy share directory: $OLD_SHARE"
+}
+
+# 写入 UID 1000 用户专属的 ZDOTDIR 配置。
+ensure_user_zdotdir() {
+    if [ ! -f "$USER_ZSHENV" ] || ! grep -Fq "$ZDOTDIR_BEGIN" "$USER_ZSHENV"; then
+        run_as_uid1000 tee -a "$USER_ZSHENV" >/dev/null <<EOF
+
+$ZDOTDIR_BEGIN
+export ZDOTDIR="$UID1000_HOME"
+$ZDOTDIR_END
+EOF
+        log_msg "Added UID 1000 ZDOTDIR configuration to $USER_ZSHENV"
+    fi
+}
+
+# 删除旧版本写入的全局 ZDOTDIR，保留 zshenv 中其他配置。
+remove_legacy_global_zdotdir() {
+    if [ -f "$LEGACY_ZSHENV" ] && grep -Fq "export ZDOTDIR=\"${LEGACY_ZDOTDIR}\"" "$LEGACY_ZSHENV"; then
+        sed -i "\|^export ZDOTDIR=\"${LEGACY_ZDOTDIR}\"$|d" "$LEGACY_ZSHENV"
+        [ -s "$LEGACY_ZSHENV" ] || rm -f "$LEGACY_ZSHENV"
+        log_msg "Removed legacy global ZDOTDIR configuration"
+    fi
+}
+
+migrate_share_contents
+ensure_user_zdotdir
+remove_legacy_global_zdotdir
+
+log_msg "Upgrade migration complete. ZDOTDIR=$UID1000_HOME"
 exit 0
