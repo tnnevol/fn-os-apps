@@ -6,7 +6,7 @@
 set -e
 
 NVM_DIR="${TRIM_PKGHOME}/.nvm"
-NVM_INSTALLER="${TRIM_APPDEST}/app/nvm/install.sh"
+NVM_INSTALLER="${TRIM_APPDEST}/nvm/install.sh"
 NVM_PROFILE_BEGIN="# >>> fn-nvm profile >>>"
 NVM_PROFILE_END="# <<< fn-nvm profile <<<"
 
