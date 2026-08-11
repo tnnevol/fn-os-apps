@@ -66,25 +66,62 @@
     ]
   },
   {
-    "stepTitle": "OpenAI 配置",
+    "stepTitle": "模型供应商",
     "items": [
       {
         "type": "tips",
-        "helpText": "配置 DashScope 兼容 API 的连接信息，用于 Hermes Agent 调用大模型服务。API 地址需以 /v1 结尾（OpenAI 兼容协议）。eg. https://coding.dashscope.aliyuncs.com/v1"
+        "helpText": "选择 Hermes Agent 使用的模型供应商。不同供应商会自动写入对应的环境变量。"
       },
       {
         "type": "tips",
-        "helpText": "如需修改，请手动编辑 应用文件/fn-hermes-agent/.hermes/.env 文件。"
+        "helpText": "Base URL 和 API Key 均为可选项：填写后覆盖对应环境变量，留空则保留 .env 中已有值。Fireworks AI 等仅提供 Key 环境变量的供应商可留空 Base URL；未列出的服务可选择“自定义 OpenAI 兼容”。"
+      },
+      {
+        "type": "select",
+        "field": "wizard_provider_type",
+        "label": "供应商类型",
+        "initValue": "dashscope",
+        "options": [
+          { "label": "阿里云百炼 / DashScope", "value": "dashscope" },
+          { "label": "OpenRouter", "value": "openrouter" },
+          { "label": "OpenAI", "value": "openai" },
+          { "label": "Anthropic", "value": "anthropic" },
+          { "label": "Google Gemini", "value": "gemini" },
+          { "label": "DeepSeek", "value": "deepseek" },
+          { "label": "Kimi / Moonshot", "value": "kimi" },
+          { "label": "Kimi / Moonshot（中国区）", "value": "kimi_cn" },
+          { "label": "智谱 GLM / z.ai", "value": "zai" },
+          { "label": "MiniMax（国际）", "value": "minimax" },
+          { "label": "MiniMax（中国区）", "value": "minimax_cn" },
+          { "label": "阿里云百炼 Coding Plan", "value": "alibaba_coding_plan" },
+          { "label": "StepFun", "value": "stepfun" },
+          { "label": "xAI / Grok", "value": "xai" },
+          { "label": "NVIDIA NIM", "value": "nvidia" },
+          { "label": "Ollama Cloud", "value": "ollama_cloud" },
+          { "label": "LM Studio", "value": "lmstudio" },
+          { "label": "NovitaAI", "value": "novita" },
+          { "label": "DeepInfra", "value": "deepinfra" },
+          { "label": "Hugging Face", "value": "huggingface" },
+          { "label": "GMI Cloud", "value": "gmi" },
+          { "label": "Arcee AI", "value": "arcee" },
+          { "label": "小米 MiMo", "value": "xiaomi" },
+          { "label": "腾讯 TokenHub", "value": "tokenhub" },
+          { "label": "Kilo Code", "value": "kilocode" },
+          { "label": "OpenCode Zen", "value": "opencode_zen" },
+          { "label": "OpenCode Go", "value": "opencode_go" },
+          { "label": "Fireworks AI", "value": "fireworks" },
+          { "label": "Vercel AI Gateway", "value": "ai_gateway" },
+          { "label": "Azure AI Foundry", "value": "azure_foundry" },
+          { "label": "Actual Computer", "value": "actual" },
+          { "label": "自定义 OpenAI 兼容", "value": "custom" }
+        ]
       },
       {
         "type": "text",
-        "field": "wizard_openai_url",
-        "label": "API Base URL",
+        "field": "wizard_provider_url",
+        "label": "API Base URL（可选）",
         "initValue": "",
         "rules": [
-          {
-            "message": "请输入 API 地址"
-          },
           {
             "pattern": "^https?://.+",
             "message": "请输入合法的 HTTP(S) 地址"
@@ -93,14 +130,9 @@
       },
       {
         "type": "password",
-        "field": "wizard_openai_key",
-        "label": "API Key",
-        "initValue": "",
-        "rules": [
-          {
-            "message": "请输入 API Key"
-          }
-        ]
+        "field": "wizard_provider_key",
+        "label": "API Key / Token（可选）",
+        "initValue": ""
       }
     ]
   }

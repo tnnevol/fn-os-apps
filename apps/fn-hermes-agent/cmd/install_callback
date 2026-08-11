@@ -364,6 +364,176 @@ PROFILE_EOF
     log_msg ".bash_profile created at $profile"
 }
 
+# 根据向导选择的供应商，返回 Hermes 对应的 URL 和 Key 环境变量名。
+# 这里只处理可通过静态 API Key 配置的供应商；OAuth、AWS Bedrock、Vertex
+# 等认证方式需要 Hermes 自己的登录/凭证链路，不适合由这两个输入框代管。
+get_provider_env_vars() {
+    WIZARD_PROVIDER_URL_ENV=""
+    WIZARD_PROVIDER_KEY_ENV=""
+
+    case "${1:-}" in
+        dashscope)
+            WIZARD_PROVIDER_URL_ENV="DASHSCOPE_BASE_URL"
+            WIZARD_PROVIDER_KEY_ENV="DASHSCOPE_API_KEY"
+            ;;
+        openrouter)
+            WIZARD_PROVIDER_URL_ENV="OPENROUTER_BASE_URL"
+            WIZARD_PROVIDER_KEY_ENV="OPENROUTER_API_KEY"
+            ;;
+        openai|custom)
+            WIZARD_PROVIDER_URL_ENV="OPENAI_BASE_URL"
+            WIZARD_PROVIDER_KEY_ENV="OPENAI_API_KEY"
+            ;;
+        anthropic)
+            WIZARD_PROVIDER_URL_ENV="ANTHROPIC_BASE_URL"
+            WIZARD_PROVIDER_KEY_ENV="ANTHROPIC_API_KEY"
+            ;;
+        gemini)
+            WIZARD_PROVIDER_URL_ENV="GEMINI_BASE_URL"
+            WIZARD_PROVIDER_KEY_ENV="GOOGLE_API_KEY"
+            ;;
+        deepseek)
+            WIZARD_PROVIDER_URL_ENV="DEEPSEEK_BASE_URL"
+            WIZARD_PROVIDER_KEY_ENV="DEEPSEEK_API_KEY"
+            ;;
+        kimi)
+            WIZARD_PROVIDER_URL_ENV="KIMI_BASE_URL"
+            WIZARD_PROVIDER_KEY_ENV="KIMI_API_KEY"
+            ;;
+        kimi_cn)
+            WIZARD_PROVIDER_URL_ENV="KIMI_BASE_URL"
+            WIZARD_PROVIDER_KEY_ENV="KIMI_CN_API_KEY"
+            ;;
+        zai)
+            WIZARD_PROVIDER_URL_ENV="GLM_BASE_URL"
+            WIZARD_PROVIDER_KEY_ENV="GLM_API_KEY"
+            ;;
+        minimax)
+            WIZARD_PROVIDER_URL_ENV="MINIMAX_BASE_URL"
+            WIZARD_PROVIDER_KEY_ENV="MINIMAX_API_KEY"
+            ;;
+        minimax_cn)
+            WIZARD_PROVIDER_URL_ENV="MINIMAX_CN_BASE_URL"
+            WIZARD_PROVIDER_KEY_ENV="MINIMAX_CN_API_KEY"
+            ;;
+        alibaba_coding_plan)
+            WIZARD_PROVIDER_URL_ENV="ALIBABA_CODING_PLAN_BASE_URL"
+            WIZARD_PROVIDER_KEY_ENV="ALIBABA_CODING_PLAN_API_KEY"
+            ;;
+        stepfun)
+            WIZARD_PROVIDER_URL_ENV="STEPFUN_BASE_URL"
+            WIZARD_PROVIDER_KEY_ENV="STEPFUN_API_KEY"
+            ;;
+        xai)
+            WIZARD_PROVIDER_URL_ENV="XAI_BASE_URL"
+            WIZARD_PROVIDER_KEY_ENV="XAI_API_KEY"
+            ;;
+        nvidia)
+            WIZARD_PROVIDER_URL_ENV="NVIDIA_BASE_URL"
+            WIZARD_PROVIDER_KEY_ENV="NVIDIA_API_KEY"
+            ;;
+        ollama_cloud)
+            WIZARD_PROVIDER_URL_ENV="OLLAMA_BASE_URL"
+            WIZARD_PROVIDER_KEY_ENV="OLLAMA_API_KEY"
+            ;;
+        lmstudio)
+            WIZARD_PROVIDER_URL_ENV="LM_BASE_URL"
+            WIZARD_PROVIDER_KEY_ENV="LM_API_KEY"
+            ;;
+        novita)
+            WIZARD_PROVIDER_URL_ENV="NOVITA_BASE_URL"
+            WIZARD_PROVIDER_KEY_ENV="NOVITA_API_KEY"
+            ;;
+        deepinfra)
+            WIZARD_PROVIDER_URL_ENV="DEEPINFRA_BASE_URL"
+            WIZARD_PROVIDER_KEY_ENV="DEEPINFRA_API_KEY"
+            ;;
+        huggingface)
+            WIZARD_PROVIDER_URL_ENV="HF_BASE_URL"
+            WIZARD_PROVIDER_KEY_ENV="HF_TOKEN"
+            ;;
+        gmi)
+            WIZARD_PROVIDER_URL_ENV="GMI_BASE_URL"
+            WIZARD_PROVIDER_KEY_ENV="GMI_API_KEY"
+            ;;
+        arcee)
+            WIZARD_PROVIDER_URL_ENV="ARCEE_BASE_URL"
+            WIZARD_PROVIDER_KEY_ENV="ARCEEAI_API_KEY"
+            ;;
+        xiaomi)
+            WIZARD_PROVIDER_URL_ENV="XIAOMI_BASE_URL"
+            WIZARD_PROVIDER_KEY_ENV="XIAOMI_API_KEY"
+            ;;
+        tokenhub)
+            WIZARD_PROVIDER_URL_ENV="TOKENHUB_BASE_URL"
+            WIZARD_PROVIDER_KEY_ENV="TOKENHUB_API_KEY"
+            ;;
+        kilocode)
+            WIZARD_PROVIDER_URL_ENV="KILOCODE_BASE_URL"
+            WIZARD_PROVIDER_KEY_ENV="KILOCODE_API_KEY"
+            ;;
+        opencode_zen)
+            WIZARD_PROVIDER_URL_ENV="OPENCODE_ZEN_BASE_URL"
+            WIZARD_PROVIDER_KEY_ENV="OPENCODE_ZEN_API_KEY"
+            ;;
+        opencode_go)
+            WIZARD_PROVIDER_URL_ENV="OPENCODE_GO_BASE_URL"
+            WIZARD_PROVIDER_KEY_ENV="OPENCODE_GO_API_KEY"
+            ;;
+        fireworks)
+            WIZARD_PROVIDER_KEY_ENV="FIREWORKS_API_KEY"
+            ;;
+        ai_gateway)
+            WIZARD_PROVIDER_URL_ENV="AI_GATEWAY_BASE_URL"
+            WIZARD_PROVIDER_KEY_ENV="AI_GATEWAY_API_KEY"
+            ;;
+        azure_foundry)
+            WIZARD_PROVIDER_URL_ENV="AZURE_FOUNDRY_BASE_URL"
+            WIZARD_PROVIDER_KEY_ENV="AZURE_FOUNDRY_API_KEY"
+            ;;
+        actual)
+            WIZARD_PROVIDER_URL_ENV="ACTUAL_BASE_URL"
+            WIZARD_PROVIDER_KEY_ENV="ACTUAL_API_KEY"
+            ;;
+    esac
+}
+
+# 写入 .env 中的一个变量：更新已有的有效/注释模板行，否则追加新行。
+# 通过 awk 的 ENVIRON 传值，避免 URL 中的 &, | 等字符破坏 sed 表达式。
+set_env_value() {
+    local env_file="$1"
+    local env_name="$2"
+    local env_value="$3"
+    local temp_file
+
+    [ -n "$env_name" ] || return 0
+    case "$env_name" in
+        [A-Z_][A-Z0-9_]*) ;;
+        *) log_msg "Skipping invalid environment variable name: $env_name"; return 1 ;;
+    esac
+
+    temp_file=$(mktemp "${env_file}.tmp.XXXXXX")
+    if ! ENV_NAME="$env_name" ENV_VALUE="$env_value" awk '
+        BEGIN { found = 0 }
+        {
+            pattern = "^[[:space:]]*#?[[:space:]]*" ENVIRON["ENV_NAME"] "="
+            if ($0 ~ pattern) {
+                print ENVIRON["ENV_NAME"] "=" ENVIRON["ENV_VALUE"]
+                found = 1
+            } else {
+                print
+            }
+        }
+        END {
+            if (!found) print ENVIRON["ENV_NAME"] "=" ENVIRON["ENV_VALUE"]
+        }
+    ' "$env_file" > "$temp_file"; then
+        rm -f "$temp_file"
+        return 1
+    fi
+    mv "$temp_file" "$env_file"
+}
+
 setup_hermes_home() {
     log_msg "Creating HERMES_HOME directories..."
     mkdir -p "${HERMES_HOME}"/{cron,sessions,logs,pairing,hooks,image_cache,audio_cache,memories,skills}
@@ -383,22 +553,15 @@ setup_hermes_home() {
     # 限制 .env 权限 — 该文件包含 API 密钥和令牌
     chmod 600 "${HERMES_HOME}/.env"
 
-    # 写入向导收集的 DashScope 配置（向导配置了则直接覆写）
-    if [ -n "${wizard_openai_url}" ]; then
-        if grep -q '^DASHSCOPE_BASE_URL=' "${HERMES_HOME}/.env"; then
-            sed -i "s|^DASHSCOPE_BASE_URL=.*|DASHSCOPE_BASE_URL=${wizard_openai_url}|" "${HERMES_HOME}/.env"
-        else
-            echo "DASHSCOPE_BASE_URL=${wizard_openai_url}" >> "${HERMES_HOME}/.env"
-        fi
-        log_msg "DASHSCOPE_BASE_URL written to .env"
+    # 仅在向导字段非空时覆盖对应环境变量；空值不会清空 .env 中已有配置。
+    get_provider_env_vars "${wizard_provider_type:-dashscope}"
+    if [ -n "${wizard_provider_url:-}" ] && [ -n "$WIZARD_PROVIDER_URL_ENV" ]; then
+        set_env_value "${HERMES_HOME}/.env" "$WIZARD_PROVIDER_URL_ENV" "$wizard_provider_url"
+        log_msg "$WIZARD_PROVIDER_URL_ENV written to .env"
     fi
-    if [ -n "${wizard_openai_key}" ]; then
-        if grep -q '^DASHSCOPE_API_KEY=' "${HERMES_HOME}/.env"; then
-            sed -i "s|^DASHSCOPE_API_KEY=.*|DASHSCOPE_API_KEY=${wizard_openai_key}|" "${HERMES_HOME}/.env"
-        else
-            echo "DASHSCOPE_API_KEY=${wizard_openai_key}" >> "${HERMES_HOME}/.env"
-        fi
-        log_msg "DASHSCOPE_API_KEY written to .env"
+    if [ -n "${wizard_provider_key:-}" ] && [ -n "$WIZARD_PROVIDER_KEY_ENV" ]; then
+        set_env_value "${HERMES_HOME}/.env" "$WIZARD_PROVIDER_KEY_ENV" "$wizard_provider_key"
+        log_msg "$WIZARD_PROVIDER_KEY_ENV written to .env"
     fi
 
     if [ ! -f "${HERMES_HOME}/config.yaml" ]; then
