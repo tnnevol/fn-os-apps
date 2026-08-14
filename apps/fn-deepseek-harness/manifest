@@ -1,5 +1,5 @@
 appname               = fn-deepseek-harness
-version               = 5.0.1
+version               = 5.0.2
 display_name          = DeepSeek Harness
 desc                  = DeepSeek AI 开源的插件化智能代理工具，通过 Web UI 提供 dsh 操作界面。
 platform              = x86
@@ -10,6 +10,7 @@ distributor           = tnnevol
 distributor_url       = https://github.com/tnnevol/fn-os-apps
 desktop_uidir         = ui
 desktop_applaunchname = fn-deepseek-harness.Application
+micro_app             = true
 install_dep_apps      = nodejs_v24
 os_min_version        = 1.1.3100
 disable_authorization_path = true

@@ -8,7 +8,10 @@
             "gatewayPrefix": "/app/fn-deepseek-harness",
             "gatewaySocket": "app.sock",
             "url": "/app/fn-deepseek-harness",
-            "allUsers": false
+            "allUsers": false,
+            "control": {
+                "accessPerm": "editable"
+            }
         }
     }
 }

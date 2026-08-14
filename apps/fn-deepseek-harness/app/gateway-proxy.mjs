@@ -16,6 +16,16 @@ const HOP_BY_HOP_HEADERS = new Set([
     'transfer-encoding',
     'upgrade'
 ])
+const LOCAL_ASSETS = new Map([
+    ['/trim-web-app.js', {
+        body: fs.readFileSync(new URL('./ui/trim-web-app.js', import.meta.url)),
+        contentType: 'application/javascript; charset=utf-8'
+    }],
+    ['/trim-theme-bridge.js', {
+        body: fs.readFileSync(new URL('./ui/trim-theme-bridge.js', import.meta.url)),
+        contentType: 'application/javascript; charset=utf-8'
+    }]
+])
 const openSockets = new Set()
 let stopping = false
 
@@ -230,6 +240,38 @@ function gatewayBridgeScript() {
     ].join('\n')
 }
 
+function themeBridgeScript() {
+    return '<script type="module" src="' + addGatewayPrefix('/trim-theme-bridge.js') + '"></script>'
+}
+
+function localAssetFor(upstreamPath) {
+    try {
+        return LOCAL_ASSETS.get(new URL(upstreamPath, 'http://dsh-gateway.invalid').pathname) || null
+    } catch {
+        return null
+    }
+}
+
+function serveLocalAsset(req, res, upstreamPath) {
+    const asset = localAssetFor(upstreamPath)
+    if (!asset) return false
+
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
+        res.writeHead(405, { allow: 'GET, HEAD' })
+        res.end()
+        return true
+    }
+
+    res.writeHead(200, {
+        'cache-control': 'no-store',
+        'content-length': String(asset.body.length),
+        'content-type': asset.contentType
+    })
+    if (req.method === 'HEAD') res.end()
+    else res.end(asset.body)
+    return true
+}
+
 function rewriteHtml(body) {
     let html = body.toString('utf8')
     html = html.replace(
@@ -237,9 +279,10 @@ function rewriteHtml(body) {
         (_, prefix, path) => prefix + addGatewayPrefix(path)
     )
     const bridge = gatewayBridgeScript()
+    const themeBridge = themeBridgeScript()
     return /<head\b[^>]*>/i.test(html)
-        ? html.replace(/<head\b[^>]*>/i, (head) => head + bridge)
-        : bridge + html
+        ? html.replace(/<head\b[^>]*>/i, (head) => head + bridge + themeBridge)
+        : bridge + themeBridge + html
 }
 
 function copyRequestHeaders(req, upstreamPath) {
@@ -287,6 +330,8 @@ function sendBadGateway(res, error) {
 
 function proxyRequest(req, res) {
     const upstreamPath = rewritePath(req.url)
+    if (serveLocalAsset(req, res, upstreamPath)) return
+
     const upstream = http.request({
         host: UPSTREAM_HOST,
         port: UPSTREAM_PORT,
