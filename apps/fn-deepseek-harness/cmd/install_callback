@@ -1,0 +1,47 @@
+#!/bin/bash
+
+NODE_BIN="/var/apps/nodejs_v24/target/bin"
+DSH_HOME="${TRIM_PKGHOME}"
+APP_HOME="${TRIM_APPDEST_VOL}/@appshare/fn-deepseek-harness"
+NPM_CONFIG_PREFIX="${DSH_HOME}/.npm-global"
+
+export DSH_HOME
+export HOME="${APP_HOME}"
+export NPM_CONFIG_CACHE="${DSH_HOME}/.npm-cache"
+export NPM_CONFIG_PREFIX
+export PATH="${NODE_BIN}:${NPM_CONFIG_PREFIX}/bin:${PATH}"
+
+fail_install() {
+    if [ -n "${TRIM_TEMP_LOGFILE:-}" ]; then
+        echo "$1" > "${TRIM_TEMP_LOGFILE}"
+    fi
+    echo "$1" >&2
+    exit 1
+}
+
+if [ -z "${TRIM_APPDEST_VOL}" ]; then
+    fail_install "TRIM_APPDEST_VOL is not available"
+fi
+
+if [ -z "${TRIM_PKGHOME}" ]; then
+    fail_install "TRIM_PKGHOME is not available"
+fi
+
+if [ ! -x "${NODE_BIN}/npm" ]; then
+    fail_install "nodejs_v24 runtime is not available at ${NODE_BIN}"
+fi
+
+mkdir -p "${DSH_HOME}/.npm-cache" "${NPM_CONFIG_PREFIX}" "${HOME}" \
+    || fail_install "Unable to prepare the dsh npm directories"
+
+echo "Installing @deepseek-ai/dsh globally..."
+if ! npm i @deepseek-ai/dsh -g; then
+    fail_install "Failed to install @deepseek-ai/dsh"
+fi
+
+if ! command -v dsh >/dev/null 2>&1 || ! dsh --help >/dev/null 2>&1; then
+    fail_install "dsh installation verification failed: dsh --help"
+fi
+
+echo "dsh installation verified."
+exit 0

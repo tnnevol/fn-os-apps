@@ -1,0 +1,11 @@
+#!/bin/bash
+
+### This script is called after the user changes environment variables in the application settings page.
+
+APP_MAIN="${TRIM_APPDEST:-}/cmd/main"
+if [ -x "${APP_MAIN}" ] && "${APP_MAIN}" status >/dev/null 2>&1; then
+    "${APP_MAIN}" stop || exit 1
+    "${APP_MAIN}" start || exit 1
+fi
+
+exit 0

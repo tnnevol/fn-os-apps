@@ -4,7 +4,7 @@
 
 本仓库用于将第三方应用打包为飞牛 fnOS 应用商店格式。每个应用独立管理版本号，互不影响。
 
-**技术栈**：fnOS Docker 应用规范（bash 生命周期脚本 + docker-compose + JSON 配置），非传统前后端项目。
+**技术栈**：fnOS Native 和 Docker 应用规范（bash 生命周期脚本 + JSON 配置；Docker 应用额外使用 docker-compose），非传统前后端项目。
 
 ---
 
@@ -25,6 +25,10 @@ npx skills add tnnevol/skills@fnnas-docs -g -y
 
 ```bash
 cd apps
+# Native 应用
+fnpack create <appname>
+
+# Docker 应用
 fnpack create <appname> --template docker
 ```
 
@@ -46,10 +50,12 @@ fnpack create <appname> --template docker
 | 修改目标        | 文件                             |
 | --------------- | -------------------------------- |
 | 应用基本信息    | `manifest`                       |
-| Docker 容器配置 | `app/docker/docker-compose.yaml` |
-| 桌面入口        | `app/ui/config`                  |
-| 运行权限        | `config/privilege`               |
-| 生命周期脚本    | `cmd/`                           |
+| Native 服务代码/运行入口 | `app/`、`cmd/main`                         |
+| Docker 容器配置          | `app/docker/docker-compose.yaml`           |
+| 桌面入口                 | `app/ui/config`                            |
+| 应用资源                 | `config/resource`                          |
+| 运行权限                 | `config/privilege`                         |
+| 生命周期脚本             | `cmd/`                                     |
 
 ### 卸载开发流程
 
@@ -69,16 +75,16 @@ appcenter-cli install-local
 ### fnpack 打包
 
 **下载地址**：https://static2.fnnas.com/fnpack/
-**当前版本**：1.2.1
+**当前版本**：1.2.3
 
 ```bash
 # macOS Apple Silicon
-chmod +x fnpack-1.2.1-darwin-arm64
-sudo mv fnpack-1.2.1-darwin-arm64 /usr/local/bin/fnpack
+chmod +x fnpack-1.2.3-darwin-arm64
+sudo mv fnpack-1.2.3-darwin-arm64 /usr/local/bin/fnpack
 
 # Linux x86
-chmod +x fnpack-1.2.1-linux-amd64
-sudo mv fnpack-1.2.1-linux-amd64 /usr/local/bin/fnpack
+chmod +x fnpack-1.2.3-linux-amd64
+sudo mv fnpack-1.2.3-linux-amd64 /usr/local/bin/fnpack
 ```
 
 打包命令：
@@ -87,6 +93,9 @@ sudo mv fnpack-1.2.1-linux-amd64 /usr/local/bin/fnpack
 cd apps/<appname>
 fnpack build
 # 输出 <appname>.fpk
+
+# 支持自动递增版本的应用，也可使用应用目录中的构建包装脚本
+./build
 ```
 
 ### 版本发布
@@ -141,5 +150,5 @@ git push origin main && git push origin v4.5.0
 - 每个应用**独立版本管理**，不要强行统一版本号
 - `manifest` 为 INI 格式，字段对齐靠空格，不要随意修改格式
 - `config/privilege` 中 `username`/`groupname` 使用 `docker-<appname>` 前缀
-- 入口配置（`app/ui/config`）使用 `type: "url"` + `port`，不要使用 iframe 方式
+- 入口配置（`app/ui/config`）根据应用形态选择 `type: "url"` 或 `type: "iframe"`，Native 网关应用可以使用 iframe
 - 不要编造项目中不存在的资源链接

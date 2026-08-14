@@ -1,0 +1,14 @@
+{
+    ".url": {
+        "fn-deepseek-harness.Application": {
+            "title": "DeepSeek Harness",
+            "icon": "images/icon_{0}.png",
+            "type": "iframe",
+            "protocol": "",
+            "gatewayPrefix": "/app/fn-deepseek-harness",
+            "gatewaySocket": "app.sock",
+            "url": "/app/fn-deepseek-harness",
+            "allUsers": false
+        }
+    }
+}

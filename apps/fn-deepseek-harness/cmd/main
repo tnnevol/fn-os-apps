@@ -1,0 +1,174 @@
+#!/bin/bash
+
+PID_FILE="${TRIM_PKGVAR}/app.pid"
+GATEWAY_PID_FILE="${TRIM_PKGVAR}/gateway.pid"
+SOCKET_PATH="${TRIM_APPDEST}/app.sock"
+PROXY_SCRIPT="${TRIM_APPDEST}/gateway-proxy.mjs"
+GATEWAY_PREFIX="/app/fn-deepseek-harness"
+NODE_BIN="/var/apps/nodejs_v24/target/bin"
+REQUESTED_HOST="${wizard_host:-127.0.0.1}"
+PORT="${wizard_port:-3080}"
+TRUSTED_HOSTS="${wizard_trusted_hosts:-}"
+DSH_HOME="${TRIM_PKGHOME}"
+APP_HOME="${TRIM_APPDEST_VOL}/@appshare/fn-deepseek-harness"
+
+case "${REQUESTED_HOST}" in
+127.0.0.1|0.0.0.0)
+    HOST="${REQUESTED_HOST}"
+    ;;
+*)
+    # Existing installations may still have an older NAS IP value. The dsh
+    # webserver only accepts these two bind addresses, so expose all interfaces
+    # instead of passing an invalid host to dsh.
+    HOST="0.0.0.0"
+    ;;
+esac
+
+export PATH="${NODE_BIN}:${PATH}"
+export DSH_HOME
+export HOME="${APP_HOME}"
+export NPM_CONFIG_CACHE="${DSH_HOME}/.npm-cache"
+export NPM_CONFIG_PREFIX="${DSH_HOME}/.npm-global"
+export PATH="${NPM_CONFIG_PREFIX}/bin:${PATH}"
+
+log_error() {
+    if [ -n "${TRIM_TEMP_LOGFILE:-}" ]; then
+        echo "$1" > "${TRIM_TEMP_LOGFILE}"
+    fi
+    echo "$1" >&2
+}
+
+check_process() {
+    local pid="$1"
+    [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null
+}
+
+pid_from_file() {
+    local file="$1"
+    [ -r "${file}" ] || return 0
+    head -n 1 "${file}" | tr -d '[:space:]'
+}
+
+start_process() {
+    if status; then
+        return 0
+    fi
+
+    if [ ! -x "${NODE_BIN}/node" ]; then
+        log_error "nodejs_v24 runtime is not available at ${NODE_BIN}"
+        return 1
+    fi
+
+    if ! command -v dsh >/dev/null 2>&1; then
+        log_error "dsh is not installed; run the application install callback first"
+        return 1
+    fi
+
+    if [ ! -f "${PROXY_SCRIPT}" ]; then
+        log_error "DeepSeek Harness gateway proxy is not available at ${PROXY_SCRIPT}"
+        return 1
+    fi
+
+    if [ "${HOST}" = "127.0.0.1" ] && [ -z "${TRUSTED_HOSTS}" ]; then
+        log_error "No trusted NAS Web host configured; set the trusted access address to the NAS host or host:port in application settings"
+        return 1
+    fi
+
+    mkdir -p "${DSH_HOME}/.npm-cache" "${HOME}"
+    rm -f "${SOCKET_PATH}"
+    echo "Starting DeepSeek Harness on ${HOST}:${PORT}..."
+
+    (
+        cd "${TRIM_APPDEST}" || exit 1
+        GATEWAY_SOCKET="${SOCKET_PATH}" \
+        GATEWAY_PREFIX="${GATEWAY_PREFIX}" \
+        DSH_UPSTREAM_HOST="127.0.0.1" \
+        DSH_UPSTREAM_PORT="${PORT}" \
+        exec node "${PROXY_SCRIPT}"
+    ) &
+    printf "%s" "$!" > "${GATEWAY_PID_FILE}"
+
+    local -a dsh_args=(web --host "${HOST}" --port "${PORT}")
+    if [ -n "${TRUSTED_HOSTS}" ]; then
+        local -a trusted_host_list
+        local trusted_host
+        IFS=',' read -r -a trusted_host_list <<< "${TRUSTED_HOSTS}"
+        for trusted_host in "${trusted_host_list[@]}"; do
+            [ -n "${trusted_host}" ] || continue
+            dsh_args+=(--trusted-host "${trusted_host}")
+        done
+    fi
+    (
+        cd "${TRIM_APPDEST}" || exit 1
+        exec dsh "${dsh_args[@]}"
+    ) &
+    printf "%s" "$!" > "${PID_FILE}"
+    return 0
+}
+
+stop_pid() {
+    local pid_file="$1"
+    if [ ! -r "${pid_file}" ]; then
+        return 0
+    fi
+
+    local pid
+    pid=$(pid_from_file "${pid_file}")
+    if ! check_process "${pid}"; then
+        rm -f "${pid_file}"
+        return 0
+    fi
+
+    kill -TERM "${pid}" 2>/dev/null || true
+
+    local count=0
+    while check_process "${pid}" && [ "${count}" -lt 10 ]; do
+        sleep 1
+        count=$((count + 1))
+    done
+
+    if check_process "${pid}"; then
+        kill -KILL "${pid}" 2>/dev/null || true
+    fi
+    rm -f "${pid_file}"
+}
+
+stop_process() {
+    stop_pid "${PID_FILE}"
+    stop_pid "${GATEWAY_PID_FILE}"
+    rm -f "${SOCKET_PATH}"
+    return 0
+}
+
+status() {
+    local dsh_pid
+    local gateway_pid
+    dsh_pid=$(pid_from_file "${PID_FILE}")
+    gateway_pid=$(pid_from_file "${GATEWAY_PID_FILE}")
+
+    if check_process "${dsh_pid}" && check_process "${gateway_pid}"; then
+        return 0
+    fi
+
+    [ -n "${dsh_pid}" ] || rm -f "${PID_FILE}"
+    [ -n "${gateway_pid}" ] || rm -f "${GATEWAY_PID_FILE}"
+    return 1
+}
+
+case "$1" in
+start)
+    start_process
+    ;;
+stop)
+    stop_process
+    ;;
+status)
+    if status; then
+        exit 0
+    fi
+    exit 3
+    ;;
+*)
+    exit 1
+    ;;
+esac

@@ -1,0 +1,76 @@
+#!/bin/bash
+
+NODE_BIN="/var/apps/nodejs_v24/target/bin"
+APPNAME="${TRIM_APPNAME:-fn-deepseek-harness}"
+DSH_HOME="${TRIM_PKGHOME:-}"
+APP_HOME="${TRIM_APPDEST_VOL:-}/@appshare/${APPNAME}"
+NPM_CONFIG_PREFIX="${DSH_HOME}/.npm-global"
+KEEP_DATA="${wizard_keep_data:-keep}"
+
+export DSH_HOME
+export HOME="${APP_HOME}"
+export NPM_CONFIG_CACHE="${DSH_HOME}/.npm-cache"
+export NPM_CONFIG_PREFIX
+export PATH="${NODE_BIN}:${NPM_CONFIG_PREFIX}/bin:${PATH}"
+
+fail_uninstall() {
+    if [ -n "${TRIM_TEMP_LOGFILE:-}" ]; then
+        echo "$1" > "${TRIM_TEMP_LOGFILE}"
+    fi
+    echo "$1" >&2
+    exit 1
+}
+
+clear_app_dir() {
+    local dir="$1"
+    local kind="$2"
+    local expected_suffix="/${kind}/${APPNAME}"
+
+    [ -n "${dir}" ] || return 0
+    case "${dir}" in
+        *"${expected_suffix}")
+            ;;
+        *)
+            fail_uninstall "Refusing to clear unexpected ${kind} directory: ${dir}"
+            ;;
+    esac
+
+    if [ -e "${dir}" ] || [ -L "${dir}" ]; then
+        echo "Clearing ${kind} data inside ${dir}..."
+        # fnOS owns the @apphome directory itself. Remove only its children,
+        # including hidden files, and keep the root directory in place.
+        rm -rf -- \
+            "${dir:?}"/* \
+            "${dir:?}"/.[!.]* \
+            "${dir:?}"/..?* \
+            || fail_uninstall "Failed to clear ${kind} data: ${dir}"
+    fi
+}
+
+case "${KEEP_DATA}" in
+keep|yes|true|1)
+    echo "Keeping DeepSeek Harness data in ${DSH_HOME}."
+    ;;
+remove|no|false|0)
+    if [ -z "${TRIM_APPDEST_VOL:-}" ]; then
+        fail_uninstall "TRIM_APPDEST_VOL is not available; cannot remove DeepSeek Harness data"
+    fi
+
+    if [ -x "${NODE_BIN}/npm" ] && [ -d "${NPM_CONFIG_PREFIX}" ]; then
+        echo "Uninstalling @deepseek-ai/dsh globally..."
+        if ! npm uninstall @deepseek-ai/dsh -g; then
+            echo "npm uninstall failed; the application npm directory will be removed." >&2
+        fi
+    fi
+
+    clear_app_dir "${DSH_HOME}" "@apphome"
+    clear_app_dir "${APP_HOME}" "@appshare"
+    clear_app_dir "${TRIM_PKGVAR:-}" "@appdata"
+    clear_app_dir "${TRIM_PKGETC:-}" "@appconf"
+    ;;
+*)
+    fail_uninstall "Unknown wizard_keep_data value: ${KEEP_DATA}"
+    ;;
+esac
+
+exit 0
