@@ -35,8 +35,23 @@ mkdir -p "${DSH_HOME}/.npm-cache" "${NPM_CONFIG_PREFIX}" "${HOME}" \
     || fail_install "Unable to prepare the dsh npm directories"
 
 echo "Installing @deepseek-ai/dsh globally..."
-if ! npm i @deepseek-ai/dsh -g; then
-    fail_install "Failed to install @deepseek-ai/dsh"
+install_dsh() {
+    local source_name="$1"
+    local registry_url="$2"
+
+    if [ -n "${registry_url}" ]; then
+        echo "Trying ${source_name} registry: ${registry_url}"
+        npm install @deepseek-ai/dsh -g --registry="${registry_url}"
+    else
+        echo "Trying npm default registry"
+        npm install @deepseek-ai/dsh -g
+    fi
+}
+
+if ! (install_dsh "npm default" "" \
+    || install_dsh "cnpm" "https://r.cnpmjs.org/" \
+    || install_dsh "taobao" "https://registry.npmmirror.com/"); then
+    fail_install "Failed to install @deepseek-ai/dsh from npm, cnpm, and taobao registries"
 fi
 
 if ! command -v dsh >/dev/null 2>&1 || ! dsh --help >/dev/null 2>&1; then

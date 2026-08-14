@@ -17,6 +17,8 @@ npm i @deepseek-ai/dsh -g
 dsh --help
 ```
 
+安装时先使用 npm 默认源；默认源失败后依次重试 cnpm 源 `https://r.cnpmjs.org/` 和淘宝源 `https://registry.npmmirror.com/`，三个源都失败才会终止安装。
+
 应用启动时执行：
 
 ```bash
