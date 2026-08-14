@@ -18,6 +18,7 @@
 │   ├── fn-memos/                   # Memos - 自托管笔记
 │   ├── fn-moviepilot/              # MoviePilot - 影视自动化管理
 │   ├── fn-hermes-agent/            # Hermes Agent - AI 代理(原生应用)
+│   ├── fn-deepseek-harness/        # DeepSeek Harness - 插件化智能代理(原生应用)
 │   ├── fn-uv/                      # uv - Python 包管理器(系统工具)
 │   ├── fn-nvm/                     # NVM - Node.js 版本管理工具(系统工具)
 │   └── fn-ohmyzsh/                 # Oh My Zsh - Zsh 配置管理框架
@@ -44,6 +45,12 @@
 | [fn-uv](https://github.com/tnnevol/fn-os-apps/releases/latest)              | uv           | 极速 Python 包管理器，替代 pip/pip-tools，提供虚拟环境和依赖解析能力                |
 | [fn-nvm](https://github.com/tnnevol/fn-os-apps/releases/latest)             | NVM          | Node.js 版本管理工具，由 UID 1000 用户管理 NVM 和 Node.js 运行时                   |
 | [fn-ohmyzsh](https://github.com/tnnevol/fn-os-apps/releases/latest)         | Oh My Zsh    | Zsh 配置管理框架，提供丰富的插件、主题和自动补全，增强命令行体验                    |
+
+## 开发中的应用
+
+| 应用 | 说明 |
+| --- | --- |
+| [fn-deepseek-harness](apps/fn-deepseek-harness/README.md) | DeepSeek AI 开源的插件化智能代理工具，通过 Web UI 提供 dsh 操作界面 |
 
 ## 测试与安装
 
@@ -88,7 +95,7 @@ appcenter-cli stop <appname>
 
 ## 版本发布
 
-通过 GitHub Actions 自动完成 FPK 构建和 Release 发布。所有应用共享同一版本号。
+通过 GitHub Actions 自动完成 FPK 构建和 Release 发布。各应用独立维护版本号。
 
 ### Tag 命名规范
 
@@ -114,7 +121,7 @@ git push origin main
 2. **推送版本 Tag 触发发布**
 
 ```bash
-git tag v4.7.3
+git tag v5.0.0
 git push origin v4.6.5
 ```
 
@@ -123,6 +130,8 @@ git push origin v4.6.5
 - **discover** — 扫描 `apps/` 目录，收集所有应用名
 - **build** — 为每个应用并行构建 FPK，文件名格式 `<app>-v4.0.0.fpk`
 - **release** — 生成中文 Release 文案 → 创建 GitHub Release，附带所有 `.fpk` 包
+
+单个应用也可以在自己的目录中执行 `./build` 构建。`fn-deepseek-harness` 的构建脚本默认自动递增 patch 版本。
 
 ## 上架应用
 
