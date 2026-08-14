@@ -5,7 +5,7 @@
 - 上游项目：[deepseek-harness](https://github.com/deepseek-ai/deepseek-harness)
 - 架构：`x86`
 - 运行时依赖：`nodejs_v24`
-- 当前应用版本：`1.0.11`
+- 应用版本：以 [`manifest`](manifest) 中的 `version` 为准
 - Web 入口：`/app/fn-deepseek-harness`
 
 ## 启动方式
