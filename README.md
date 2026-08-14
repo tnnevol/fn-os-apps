@@ -27,7 +27,7 @@
 └── README.md
 ```
 
-## 已上架应用
+## 项目应用
 
 | 应用                                                                        | 显示名称     | 说明                                                                                |
 | --------------------------------------------------------------------------- | ------------ | ----------------------------------------------------------------------------------- |
@@ -42,15 +42,10 @@
 | [fn-memos](https://github.com/tnnevol/fn-os-apps/releases/latest)           | Memos        | 轻量级自托管笔记工具，支持 Markdown 编写、标签管理、多端同步                        |
 | [fn-moviepilot](https://github.com/tnnevol/fn-os-apps/releases/latest)      | MoviePilot   | 影视自动化管理工具，支持媒体库管理、智能订阅、自动化整理等功能                      |
 | [fn-hermes-agent](https://github.com/tnnevol/fn-os-apps/releases/latest)    | Hermes Agent | Nous Research 开发的 AI 代理，支持多平台消息网关、自主学习、技能创建、跨会话记忆    |
+| [fn-deepseek-harness](apps/fn-deepseek-harness/README.md)                   | DeepSeek Harness | DeepSeek AI 开源的插件化智能代理工具，通过 Web UI 提供 dsh 操作界面                 |
 | [fn-uv](https://github.com/tnnevol/fn-os-apps/releases/latest)              | uv           | 极速 Python 包管理器，替代 pip/pip-tools，提供虚拟环境和依赖解析能力                |
 | [fn-nvm](https://github.com/tnnevol/fn-os-apps/releases/latest)             | NVM          | Node.js 版本管理工具，由 UID 1000 用户管理 NVM 和 Node.js 运行时                   |
 | [fn-ohmyzsh](https://github.com/tnnevol/fn-os-apps/releases/latest)         | Oh My Zsh    | Zsh 配置管理框架，提供丰富的插件、主题和自动补全，增强命令行体验                    |
-
-## 开发中的应用
-
-| 应用 | 说明 |
-| --- | --- |
-| [fn-deepseek-harness](apps/fn-deepseek-harness/README.md) | DeepSeek AI 开源的插件化智能代理工具，通过 Web UI 提供 dsh 操作界面 |
 
 ## 测试与安装
 
@@ -121,7 +116,7 @@ git push origin main
 2. **推送版本 Tag 触发发布**
 
 ```bash
-git tag v5.0.0
+git tag v5.0.1
 git push origin v4.6.5
 ```
 
