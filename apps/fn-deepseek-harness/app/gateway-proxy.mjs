@@ -68,59 +68,6 @@ function rewritePath(rawUrl) {
     return (parsed.pathname || '/') + parsed.search
 }
 
-function isApiPath(pathname) {
-    return pathname === '/api' || pathname.startsWith('/api/')
-}
-
-function isInternalApiRequest(upstreamPath) {
-    try {
-        return isApiPath(new URL(upstreamPath, 'http://dsh-gateway.invalid').pathname)
-    } catch {
-        return false
-    }
-}
-
-function parseHttpAuthority(value) {
-    if (typeof value !== 'string') return null
-    const authority = value.split(',', 1)[0].trim()
-    if (!authority) return null
-
-    try {
-        const parsed = new URL('http://' + authority)
-        if (parsed.username || parsed.password || parsed.pathname !== '/' || parsed.search || parsed.hash) return null
-        return parsed.host || null
-    } catch {
-        return null
-    }
-}
-
-function requestAuthority(req) {
-    const forwardedHost = parseHttpAuthority(req.headers['x-forwarded-host'])
-    if (forwardedHost) return forwardedHost
-
-    const origin = typeof req.headers.origin === 'string' ? req.headers.origin : ''
-    if (origin) {
-        try {
-            const parsed = new URL(origin)
-            if ((parsed.protocol === 'http:' || parsed.protocol === 'https:') && parsed.host) return parsed.host
-        } catch {
-            // Fall back to the Host header when Origin is absent or malformed.
-        }
-    }
-
-    const referer = typeof req.headers.referer === 'string' ? req.headers.referer : ''
-    if (referer) {
-        try {
-            const parsed = new URL(referer)
-            if ((parsed.protocol === 'http:' || parsed.protocol === 'https:') && parsed.host) return parsed.host
-        } catch {
-            // Fall back to the Host header when Referer is absent or malformed.
-        }
-    }
-
-    return parseHttpAuthority(req.headers.host)
-}
-
 function addGatewayPrefix(path) {
     if (!GATEWAY_PREFIX || !path || !path.startsWith('/') || path.startsWith('//')) return path
     if (path === GATEWAY_PREFIX || path.startsWith(GATEWAY_PREFIX + '/')) return path
@@ -285,24 +232,22 @@ function rewriteHtml(body) {
         : bridge + themeBridge + html
 }
 
-function copyRequestHeaders(req, upstreamPath) {
+function applyLoopbackHeaders(headers) {
+    // The fnOS gateway already provides the external access boundary. This
+    // proxy owns the complete application path, so every dsh request must see
+    // the second hop as loopback. Otherwise the browser's external Origin and
+    // Fetch Metadata can fail dsh's trust fence on pages, APIs, or plugins.
+    headers.host = `127.0.0.1:${UPSTREAM_PORT}`
+    delete headers.origin
+    delete headers['sec-fetch-site']
+    return headers
+}
+
+function copyRequestHeaders(req) {
     const headers = { ...req.headers }
     for (const header of HOP_BY_HOP_HEADERS) delete headers[header]
     headers['accept-encoding'] = 'identity'
-    if (isInternalApiRequest(upstreamPath)) {
-        // The fnOS gateway already provides the external access boundary. dsh
-        // must see this second hop as loopback so its loopback-only privileged
-        // APIs (for example credentials.describe) remain usable in the iframe.
-        // The browser's external Origin and Fetch Metadata would otherwise
-        // conflict with the loopback Host and fail the dsh trust fence.
-        headers.host = `127.0.0.1:${UPSTREAM_PORT}`
-        delete headers.origin
-        delete headers['sec-fetch-site']
-    } else {
-        const authority = requestAuthority(req)
-        if (authority) headers.host = authority
-    }
-    return headers
+    return applyLoopbackHeaders(headers)
 }
 
 function copyResponseHeaders(headers, rewriteBody) {
@@ -337,7 +282,7 @@ function proxyRequest(req, res) {
         port: UPSTREAM_PORT,
         method: req.method,
         path: upstreamPath,
-        headers: copyRequestHeaders(req, upstreamPath)
+        headers: copyRequestHeaders(req)
     }, (response) => {
         const contentType = String(response.headers['content-type'] || '').toLowerCase()
         const rewriteBody = contentType.includes('text/html')
@@ -371,15 +316,7 @@ function proxyRequest(req, res) {
 function proxyUpgrade(req, clientSocket, head) {
     const upstreamPath = rewritePath(req.url)
     const upstreamSocket = net.connect({ host: UPSTREAM_HOST, port: UPSTREAM_PORT }, () => {
-        const forwardedHeaders = { ...req.headers }
-        if (isInternalApiRequest(upstreamPath)) {
-            forwardedHeaders.host = `127.0.0.1:${UPSTREAM_PORT}`
-            delete forwardedHeaders.origin
-            delete forwardedHeaders['sec-fetch-site']
-        } else {
-            const authority = requestAuthority(req)
-            if (authority) forwardedHeaders.host = authority
-        }
+        const forwardedHeaders = applyLoopbackHeaders({ ...req.headers })
         const lines = [
             req.method + ' ' + upstreamPath + ' HTTP/' + req.httpVersion
         ]
