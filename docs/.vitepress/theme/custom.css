@@ -131,27 +131,31 @@
   transition: transform 0.22s var(--docs-ease), box-shadow 0.22s var(--docs-ease), filter 0.22s var(--docs-ease);
 }
 
-.VPButton.brand {
+.VPHero .VPButton.VPButton.brand,
+.VPHero .VPButton.VPButton.brand:hover,
+.VPHero .VPButton.VPButton.brand:focus-visible,
+.VPHero .VPButton.VPButton.brand:active {
+  --vp-button-brand-bg: transparent;
+  --vp-button-brand-hover-bg: transparent;
+  --vp-button-brand-active-bg: transparent;
+  --vp-button-brand-border: transparent;
+  --vp-button-brand-hover-border: transparent;
+  --vp-button-brand-active-border: transparent;
   overflow: hidden;
   isolation: isolate;
-  background: var(--docs-button-gradient);
-  background-color: transparent;
-  border-color: transparent;
-  box-shadow: 0 10px 24px rgba(3, 12, 30, 0.22);
+  background-image: linear-gradient(90deg, #22d3ee 0%, #a855f7 100%) !important;
+  background-color: transparent !important;
+  background-clip: padding-box;
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  border-color: transparent !important;
+  box-shadow: none !important;
 }
 
-.VPButton.VPButton.brand:hover,
-.VPButton.VPButton.brand:focus-visible,
-.VPButton.VPButton.brand:active {
-  background: var(--docs-button-gradient);
-  background-color: transparent;
-  border-color: transparent;
-}
-
-.VPButton.brand:hover {
-  filter: saturate(1.12) brightness(1.05);
+.VPHero .VPButton.VPButton.brand:hover {
+  filter: brightness(1.05);
   transform: translateY(-2px);
-  box-shadow: 0 14px 30px rgba(3, 12, 30, 0.28);
+  box-shadow: none !important;
 }
 
 .VPButton.brand:active,
