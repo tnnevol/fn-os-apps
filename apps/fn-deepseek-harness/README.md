@@ -17,7 +17,16 @@ npm i @deepseek-ai/dsh -g
 dsh --help
 ```
 
-安装时先使用 npm 默认源；默认源失败后依次重试 cnpm 源 `https://r.cnpmjs.org/` 和淘宝源 `https://registry.npmmirror.com/`，三个源都失败才会终止安装。
+安装默认使用 npm 官方源 `https://registry.npmjs.org/`。安装引导中的 npm 镜像源字段为可选项，只有选择其他源时才会覆盖默认源。应用只使用所选源安装，不会在安装失败后自动切换其他源：
+
+| 可选镜像 | 地址 |
+| --- | --- |
+| yarn | `https://registry.yarnpkg.com/` |
+| tencent | `https://mirrors.tencent.com/npm/` |
+| cnpm | `https://r.cnpmjs.org/` |
+| taobao | `https://registry.npmmirror.com/` |
+| npmMirror | `https://skimdb.npmjs.com/registry/` |
+| huawei | `https://repo.huaweicloud.com/repository/npm/` |
 
 应用启动时执行：
 

@@ -56,6 +56,39 @@
                         "message": "请输入 host 或 host:port，多个地址用英文逗号分隔"
                     }
                 ]
+            },
+            {
+                "type": "select",
+                "field": "wizard_npm_registry",
+                "label": "npm 镜像源（可选）",
+                "initValue": "",
+                "helpText": "默认使用 npm 官方源 https://registry.npmjs.org/；如需使用其他源，请选择一个。安装失败不会自动切换其他源，请根据网络情况选择合适的源后重试。",
+                "options": [
+                    {
+                        "label": "yarn",
+                        "value": "https://registry.yarnpkg.com/"
+                    },
+                    {
+                        "label": "tencent",
+                        "value": "https://mirrors.tencent.com/npm/"
+                    },
+                    {
+                        "label": "cnpm",
+                        "value": "https://r.cnpmjs.org/"
+                    },
+                    {
+                        "label": "taobao",
+                        "value": "https://registry.npmmirror.com/"
+                    },
+                    {
+                        "label": "npmMirror",
+                        "value": "https://skimdb.npmjs.com/registry/"
+                    },
+                    {
+                        "label": "huawei",
+                        "value": "https://repo.huaweicloud.com/repository/npm/"
+                    }
+                ]
             }
         ]
     }
