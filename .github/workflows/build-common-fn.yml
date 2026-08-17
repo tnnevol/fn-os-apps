@@ -1,0 +1,96 @@
+name: Build common fnOS FPKs
+
+# 仅允许被 build-release.yml 调用，不配置 push 或 workflow_dispatch 触发器。
+on:
+  workflow_call:
+    inputs:
+      release_tag:
+        description: Release tag to which the FPKs are uploaded
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  discover:
+    name: Discover common apps
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: set-matrix
+        name: Build app matrix
+        run: |
+          set -euo pipefail
+
+          APPS_JSON=""
+          for DIR in apps/*/; do
+            APP="${DIR%/}"
+            APP="${APP#apps/}"
+            if [ ! -f "apps/${APP}/manifest" ]; then
+              echo "Skipping ${APP} (no manifest)"
+              continue
+            fi
+            if [ "$APP" = "fn-deepseek-harness" ]; then
+              echo "Skipping ${APP} (built by build-dsh-fn.yml)"
+              continue
+            fi
+            APPS_JSON="${APPS_JSON}${APPS_JSON:+,}\"${APP}\""
+          done
+
+          if [ -z "$APPS_JSON" ]; then
+            echo "ERROR: no common fnOS apps found" >&2
+            exit 1
+          fi
+
+          echo "matrix=[${APPS_JSON}]" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Build ${{ matrix.app }}
+    needs: discover
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        app: ${{ fromJson(needs.discover.outputs.matrix) }}
+    env:
+      RELEASE_TAG: ${{ inputs.release_tag }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install fnpack
+        run: |
+          curl -fsSL https://static2.fnnas.com/fnpack/fnpack-1.2.1-linux-amd64 -o fnpack
+          chmod +x fnpack
+          sudo mv fnpack /usr/local/bin/fnpack
+          fnpack --help
+
+      - name: Build FPK
+        working-directory: apps/${{ matrix.app }}
+        run: fnpack build
+
+      - name: Rename FPK with version
+        id: rename
+        working-directory: apps/${{ matrix.app }}
+        run: |
+          set -euo pipefail
+
+          ORIGINAL_FPK="$(find . -maxdepth 1 -type f -name '*.fpk' -print -quit)"
+          ORIGINAL_FPK="${ORIGINAL_FPK#./}"
+          if [ -z "$ORIGINAL_FPK" ]; then
+            echo "ERROR: no .fpk file generated" >&2
+            exit 1
+          fi
+
+          VERSIONED_FPK="${{ matrix.app }}-${RELEASE_TAG}.fpk"
+          mv "$ORIGINAL_FPK" "$VERSIONED_FPK"
+          echo "fpk=${VERSIONED_FPK}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload FPK to release
+        working-directory: apps/${{ matrix.app }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload "$RELEASE_TAG" "${{ steps.rename.outputs.fpk }}" --clobber

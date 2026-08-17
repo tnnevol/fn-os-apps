@@ -8,156 +8,138 @@ on:
 permissions:
   contents: write
 
-# 推送 v* tag 时，构建所有应用并创建 GitHub Release
+# 推送 v* tag 后先创建草稿 Release，再调用可复用 workflow 构建并上传 FPK，最后发布 Release。
 jobs:
-  # 动态发现 apps/ 目录下的所有应用
-  discover:
+  prepare-release:
+    name: Create draft release
     runs-on: ubuntu-latest
-    outputs:
-      matrix: ${{ steps.set-matrix.outputs.matrix }}
-      apps_space: ${{ steps.set-matrix.outputs.apps_space }}
     steps:
       - uses: actions/checkout@v4
 
-      - id: set-matrix
+      - name: Create or reset draft release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPOSITORY: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
         run: |
-          APPS_JSON=""
-          APPS_LIST=""
-          for dir in apps/*/; do
-            app="${dir%/}"
-            app="${app#apps/}"
-            if [ ! -f "apps/$app/manifest" ]; then
-              echo "Skipping $app (no manifest)"
-              continue
-            fi
-            APPS_JSON="${APPS_JSON}${APPS_JSON:+,}\"${app}\""
-            APPS_LIST="${APPS_LIST}${APPS_LIST:+ }${app}"
-          done
-          echo "matrix=[${APPS_JSON}]" >> "$GITHUB_OUTPUT"
-          echo "apps_space=${APPS_LIST}" >> "$GITHUB_OUTPUT"
+          set -euo pipefail
 
-  # 下载 fnpack 并作为 artifact 共享
-  setup-fnpack:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Install fnpack
-        run: |
-          curl -fsSL https://static2.fnnas.com/fnpack/fnpack-1.2.1-linux-amd64 -o fnpack
-          chmod +x fnpack
+          PRERELEASE=false
+          case "$TAG" in
+            *-rc*|*-beta*|*-alpha*) PRERELEASE=true ;;
+          esac
 
-      - name: Upload fnpack artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: fnpack
-          path: fnpack
-          retention-days: 1
-
-      - name: Verify fnpack
-        run: ./fnpack --help
-
-  # 构建所有应用的 FPK 包
-  build:
-    needs: [discover, setup-fnpack]
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        app: ${{ fromJson(needs.discover.outputs.matrix) }}
-      fail-fast: false
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install fnpack
-        uses: actions/download-artifact@v4
-        with:
-          name: fnpack
-          path: .
-
-      - name: Make fnpack executable
-        run: |
-          chmod +x fnpack
-          sudo mv fnpack /usr/local/bin/fnpack
-
-      - name: Build FPK
-        working-directory: apps/${{ matrix.app }}
-        run: fnpack build
-
-      - name: Rename FPK with version
-        working-directory: apps/${{ matrix.app }}
-        id: rename
-        run: |
-          APP="${{ matrix.app }}"
-          VERSION="${{ github.ref_name }}"
-          ORIGINAL_FPK=$(ls *.fpk 2>/dev/null | head -1)
-          if [ -z "$ORIGINAL_FPK" ]; then
-            echo "ERROR: No .fpk file generated"
-            exit 1
+          RELEASE_ID="$(gh api "repos/${REPOSITORY}/releases/tags/${TAG}" --jq '.id' 2>/dev/null || true)"
+          if [ -n "$RELEASE_ID" ]; then
+            gh api --method PATCH "repos/${REPOSITORY}/releases/${RELEASE_ID}" \
+              -f name="Release ${TAG}" \
+              -f body="正在构建 fnOS 应用安装包，请稍候。" \
+              -F draft=true \
+              -F prerelease="$PRERELEASE"
+          elif [ "$PRERELEASE" = true ]; then
+            gh release create "$TAG" \
+              --draft \
+              --prerelease \
+              --title "Release ${TAG}" \
+              --notes "正在构建 fnOS 应用安装包，请稍候。"
+          else
+            gh release create "$TAG" \
+              --draft \
+              --title "Release ${TAG}" \
+              --notes "正在构建 fnOS 应用安装包，请稍候。"
           fi
-          VERSIONED_FPK="${APP}-${VERSION}.fpk"
-          mv "$ORIGINAL_FPK" "$VERSIONED_FPK"
-          echo "fpk=$VERSIONED_FPK" >> "$GITHUB_OUTPUT"
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.app }}
-          path: apps/${{ matrix.app }}/*.fpk
-          retention-days: 30
+  build-common:
+    name: Build common fnOS FPKs
+    needs: prepare-release
+    uses: ./.github/workflows/build-common-fn.yml
+    with:
+      release_tag: ${{ github.ref_name }}
+    secrets: inherit
 
-  # 创建 GitHub Release
-  release:
-    needs: [discover, build]
+  build-dsh:
+    name: Build DeepSeek Harness FPK
+    needs: prepare-release
+    uses: ./.github/workflows/build-dsh-fn.yml
+    with:
+      release_tag: ${{ github.ref_name }}
+    secrets: inherit
+
+  publish-release:
+    name: Publish release
+    needs: [build-common, build-dsh]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
-
-      - name: Generate release notes
+      - name: Generate release notes from uploaded FPKs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPOSITORY: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
         run: |
-          TAG="${{ github.ref_name }}"
-          VERSION="${TAG#v}"
+          set -euo pipefail
 
-          # 获取上一个 tag
-          PREV_TAG=$(git tag --sort=-version:refname | grep "^v" | awk -v tag="$TAG" 'found{print;exit} $0==tag{found=1}')
+          VERSION="${TAG#v}"
+          RELEASE_ASSETS="$(gh release view "$TAG" --json assets --jq '.assets[].name')"
+          PREV_TAG="$(git tag --sort=-version:refname | awk -v tag="$TAG" 'found { print; exit } $0 == tag { found = 1 }')"
 
           printf '# 📦 fnOS Apps v%s\n\n| 应用 | 安装包 |\n|------|----------|\n' "$VERSION" > RELEASE_NOTES.md
 
-          for APP in ${{ needs.discover.outputs.apps_space }}; do
-            if [ -f "apps/$APP/manifest" ]; then
-              DISPLAY_NAME=$(grep '^display_name' "apps/$APP/manifest" | sed 's/.*= *//')
-            else
-              DISPLAY_NAME="$APP"
+          for APP_DIR in apps/*/; do
+            APP="${APP_DIR%/}"
+            APP="${APP#apps/}"
+            [ -f "${APP_DIR}manifest" ] || continue
+
+            FPK_NAME=""
+            while IFS= read -r ASSET; do
+              case "$ASSET" in
+                "${APP}-${TAG}"*.fpk)
+                  FPK_NAME="$ASSET"
+                  break
+                  ;;
+              esac
+            done <<< "$RELEASE_ASSETS"
+
+            if [ -z "$FPK_NAME" ]; then
+              echo "ERROR: no FPK asset found for ${APP}" >&2
+              exit 1
             fi
-            printf '| **%s** (`%s`) | %s-%s.fpk |\n' "$DISPLAY_NAME" "$APP" "$APP" "$TAG" >> RELEASE_NOTES.md
+
+            DISPLAY_NAME="$(sed -n 's/^display_name[[:space:]]*=[[:space:]]*//p' "${APP_DIR}manifest" | head -n 1)"
+            DISPLAY_NAME="${DISPLAY_NAME:-$APP}"
+            printf '| **%s** (`%s`) | %s |\n' "$DISPLAY_NAME" "$APP" "$FPK_NAME" >> RELEASE_NOTES.md
           done
 
           printf '\n## 🛠 安装方式\n\n1. 下载上方对应的 `.fpk` 安装包\n2. 打开飞牛 fnOS 应用中心\n3. 点击左下角 **手动安装** 按钮\n4. 选择下载好的 `.fpk` 文件完成安装\n' >> RELEASE_NOTES.md
 
           printf '\n## 📝 提交记录\n\n' >> RELEASE_NOTES.md
           if [ -n "$PREV_TAG" ]; then
-            git log --pretty=format:"- %s [%h](https://github.com/${{ github.repository }}/commit/%H)" "${PREV_TAG}..${TAG}" >> RELEASE_NOTES.md
+            git log --pretty=format:"- %s [%h](https://github.com/${REPOSITORY}/commit/%H)" "${PREV_TAG}..${TAG}" >> RELEASE_NOTES.md
           else
-            git log --pretty=format:"- %s [%h](https://github.com/${{ github.repository }}/commit/%H)" --max-count=20 >> RELEASE_NOTES.md
+            git log --pretty=format:"- %s [%h](https://github.com/${REPOSITORY}/commit/%H)" --max-count=20 >> RELEASE_NOTES.md
           fi
           printf '\n' >> RELEASE_NOTES.md
 
-      - name: Create Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ github.ref_name }}
-          name: "Release ${{ github.ref_name }}"
-          body_path: RELEASE_NOTES.md
-          draft: false
-          prerelease: ${{ contains(github.ref_name, '-rc') || contains(github.ref_name, '-beta') || contains(github.ref_name, '-alpha') }}
-
-      - name: Upload FPK files serially
-        run: |
-          for fpk in **/*.fpk; do
-            echo "Uploading $fpk ..."
-            gh release upload ${{ github.ref_name }} "$fpk" --clobber
-          done
+      - name: Publish release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPOSITORY: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+
+          PRERELEASE=false
+          case "$TAG" in
+            *-rc*|*-beta*|*-alpha*) PRERELEASE=true ;;
+          esac
+
+          RELEASE_ID="$(gh api "repos/${REPOSITORY}/releases/tags/${TAG}" --jq '.id')"
+          RELEASE_BODY="$(<RELEASE_NOTES.md)"
+          gh api --method PATCH "repos/${REPOSITORY}/releases/${RELEASE_ID}" \
+            -f name="Release ${TAG}" \
+            -f body="$RELEASE_BODY" \
+            -F draft=false \
+            -F prerelease="$PRERELEASE"

@@ -32,6 +32,12 @@ tmp/
 # Node.js 依赖
 node_modules/
 
+# fn-deepseek-harness 在 CI 构建时生成的 DSH native 依赖
+apps/fn-deepseek-harness/app/dsh-version
+apps/fn-deepseek-harness/app/node-pty-version
+apps/fn-deepseek-harness/app/node-pty-versions
+apps/fn-deepseek-harness/app/native/node-pty/
+
 # VitePress 构建产物
 docs/.vitepress/cache/
 docs/.vitepress/dist/
