@@ -1,6 +1,6 @@
 {
   "name": "fn-os-apps",
-  "version": "5.0.12",
+  "version": "5.0.13",
   "private": true,
   "description": "飞牛 fnOS 应用 Monorepo",
   "scripts": {
