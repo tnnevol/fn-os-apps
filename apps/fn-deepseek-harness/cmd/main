@@ -11,6 +11,7 @@ PORT="${wizard_port:-3080}"
 TRUSTED_HOSTS="${wizard_trusted_hosts:-}"
 DSH_HOME="${TRIM_PKGHOME}"
 APP_HOME="${TRIM_APPDEST_VOL}/@appshare/fn-deepseek-harness"
+DSH_BIN="${DSH_HOME}/.npm-global/bin/dsh"
 
 case "${REQUESTED_HOST}" in
 127.0.0.1|0.0.0.0)
@@ -59,8 +60,8 @@ start_process() {
         return 1
     fi
 
-    if ! command -v dsh >/dev/null 2>&1; then
-        log_error "dsh is not installed; run the application install callback first"
+    if [ ! -x "${DSH_BIN}" ]; then
+        log_error "dsh is not installed at ${DSH_BIN}; run the application install callback first"
         return 1
     fi
 
@@ -100,7 +101,7 @@ start_process() {
     fi
     (
         cd "${TRIM_APPDEST}" || exit 1
-        exec dsh "${dsh_args[@]}"
+        exec "${DSH_BIN}" "${dsh_args[@]}"
     ) &
     printf "%s" "$!" > "${PID_FILE}"
     return 0

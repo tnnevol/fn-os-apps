@@ -10,11 +10,10 @@
 
 ## 启动方式
 
-安装回调会在 Node.js v24 环境中执行：
+安装回调会在 Node.js v24 环境中检查应用全局 npm 前缀中的 `@deepseek-ai/dsh`：本地未安装，或查询到线上版本更高时执行全局安装；否则复用本地版本。最终固定使用应用全局路径中的 `dsh` 并执行 `dsh --help` 验证：
 
 ```bash
-npm i @deepseek-ai/dsh -g
-dsh --help
+${DSH_HOME}/.npm-global/bin/dsh --help
 ```
 
 安装默认使用 npm 官方源 `https://registry.npmjs.org/`。安装引导中的 npm 镜像源字段为可选项，只有选择其他源时才会覆盖默认源。应用只使用所选源安装，不会在安装失败后自动切换其他源：

@@ -29,6 +29,7 @@ DeepSeek Harness 是 DeepSeek AI 开源的插件化智能代理工具。本应�
 - 默认端口为 `3080`，iframe 入口需要固定端口。
 - 使用 `127.0.0.1` 时，可信访问地址填写打开 NAS Web 时浏览器地址栏中的 host 或 host:port。
 - npm 官方源默认使用 `https://registry.npmjs.org/`；安装失败不会自动切换其他源。
+- 安装时会检查应用全局 npm 前缀中的 `@deepseek-ai/dsh`；本地未安装或线上版本更高时才会更新，否则复用本地版本。
 
 应用的 npm 镜像源、数据目录和环境变量详见应用目录中的 [README](https://github.com/tnnevol/fn-os-apps/blob/main/apps/fn-deepseek-harness/README.md)。
 

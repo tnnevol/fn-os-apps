@@ -4,6 +4,9 @@ NODE_BIN="/var/apps/nodejs_v24/target/bin"
 DSH_HOME="${TRIM_PKGHOME}"
 APP_HOME="${TRIM_APPDEST_VOL}/@appshare/fn-deepseek-harness"
 NPM_CONFIG_PREFIX="${DSH_HOME}/.npm-global"
+NPM_BIN="${NODE_BIN}/npm"
+DSH_BIN="${NPM_CONFIG_PREFIX}/bin/dsh"
+DSH_PACKAGE="@deepseek-ai/dsh"
 
 export DSH_HOME
 export HOME="${APP_HOME}"
@@ -27,7 +30,7 @@ if [ -z "${TRIM_PKGHOME}" ]; then
     fail_install "TRIM_PKGHOME is not available"
 fi
 
-if [ ! -x "${NODE_BIN}/npm" ]; then
+if [ ! -x "${NPM_BIN}" ] || [ ! -x "${NODE_BIN}/node" ]; then
     fail_install "nodejs_v24 runtime is not available at ${NODE_BIN}"
 fi
 
@@ -35,15 +38,74 @@ mkdir -p "${DSH_HOME}/.npm-cache" "${NPM_CONFIG_PREFIX}" "${HOME}" \
     || fail_install "Unable to prepare the dsh npm directories"
 
 NPM_REGISTRY="${wizard_npm_registry:-https://registry.npmjs.org/}"
+NPM_GLOBAL_ROOT="$(${NPM_BIN} root -g 2>/dev/null || true)"
+NPM_GLOBAL_ROOT="${NPM_GLOBAL_ROOT:-${NPM_CONFIG_PREFIX}/lib/node_modules}"
+DSH_PACKAGE_DIR="${NPM_GLOBAL_ROOT}/${DSH_PACKAGE}"
 
-echo "Installing @deepseek-ai/dsh globally from ${NPM_REGISTRY}..."
-if ! npm install @deepseek-ai/dsh -g --registry="${NPM_REGISTRY}"; then
-    fail_install "Failed to install @deepseek-ai/dsh from ${NPM_REGISTRY}"
+read_package_version() {
+    local package_json="$1"
+    [ -f "${package_json}" ] || return 0
+    "${NODE_BIN}/node" -e '
+const fs = require("node:fs")
+try {
+    const value = JSON.parse(fs.readFileSync(process.argv[1], "utf8")).version
+    if (typeof value === "string") process.stdout.write(value)
+} catch {}
+' "${package_json}" 2>/dev/null || true
+}
+
+version_is_newer() {
+    "${NODE_BIN}/node" -e '
+const [online, local] = process.argv.slice(1)
+const parse = value => {
+    const match = /^(?:v)?(\d+)\.(\d+)\.(\d+)(?:[-+].*)?$/.exec(value || "")
+    return match ? match.slice(1, 4).map(Number) : null
+}
+const onlineParts = parse(online)
+const localParts = parse(local)
+if (!onlineParts || !localParts) process.exit(1)
+for (let index = 0; index < onlineParts.length; index += 1) {
+    if (onlineParts[index] > localParts[index]) process.exit(0)
+    if (onlineParts[index] < localParts[index]) process.exit(1)
+}
+process.exit(1)
+' "${1:-}" "${2:-}" >/dev/null 2>&1
+}
+
+LOCAL_VERSION="$(read_package_version "${DSH_PACKAGE_DIR}/package.json")"
+ONLINE_VERSION=""
+if [ -n "${LOCAL_VERSION}" ]; then
+    ONLINE_VERSION="$(${NPM_BIN} view "${DSH_PACKAGE}" version --registry="${NPM_REGISTRY}" 2>/dev/null | tr -d '[:space:]' || true)"
 fi
 
-if ! command -v dsh >/dev/null 2>&1 || ! dsh --help >/dev/null 2>&1; then
+NEEDS_INSTALL=0
+if [ ! -x "${DSH_BIN}" ] || [ -z "${LOCAL_VERSION}" ]; then
+    NEEDS_INSTALL=1
+elif [ -n "${ONLINE_VERSION}" ] && version_is_newer "${ONLINE_VERSION}" "${LOCAL_VERSION}"; then
+    echo "Online ${DSH_PACKAGE} version ${ONLINE_VERSION} is newer than local version ${LOCAL_VERSION}."
+    NEEDS_INSTALL=1
+elif [ -z "${ONLINE_VERSION}" ]; then
+    echo "Unable to check the online ${DSH_PACKAGE} version; reusing local version ${LOCAL_VERSION}." >&2
+else
+    echo "Using locally installed ${DSH_PACKAGE} version ${LOCAL_VERSION}."
+fi
+
+if [ "${NEEDS_INSTALL}" -eq 1 ]; then
+    if [ -n "${ONLINE_VERSION}" ]; then
+        echo "Installing ${DSH_PACKAGE}@${ONLINE_VERSION} globally from ${NPM_REGISTRY}..."
+        INSTALL_SPEC="${DSH_PACKAGE}@${ONLINE_VERSION}"
+    else
+        echo "Installing ${DSH_PACKAGE} globally from ${NPM_REGISTRY}..."
+        INSTALL_SPEC="${DSH_PACKAGE}"
+    fi
+    if ! "${NPM_BIN}" install "${INSTALL_SPEC}" -g --registry="${NPM_REGISTRY}"; then
+        fail_install "Failed to install ${DSH_PACKAGE} from ${NPM_REGISTRY}"
+    fi
+fi
+
+if [ ! -x "${DSH_BIN}" ] || ! "${DSH_BIN}" --help >/dev/null 2>&1; then
     fail_install "dsh installation verification failed: dsh --help"
 fi
 
-echo "dsh installation verified."
+echo "dsh installation verified at ${DSH_BIN}."
 exit 0
