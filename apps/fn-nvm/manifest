@@ -1,5 +1,5 @@
 appname               = fn-nvm
-version               = 5.0.5
+version               = 5.0.6
 display_name          = NVM
 desc                  = Node.js 版本管理工具，提供 nvm 命令用于安装和切换不同版本的 Node.js。
 platform              = x86
