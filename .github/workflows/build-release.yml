@@ -13,10 +13,13 @@ jobs:
   prepare-release:
     name: Create draft release
     runs-on: ubuntu-latest
+    outputs:
+      release_id: ${{ steps.create_release.outputs.release_id }}
     steps:
       - uses: actions/checkout@v4
 
-      - name: Create or reset draft release
+      - id: create_release
+        name: Create or reset draft release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPOSITORY: ${{ github.repository }}
@@ -36,30 +39,28 @@ jobs:
           }
 
           ensure_draft_release() {
-            local release_id
-            release_id="$(get_release_id)"
-            if [ -n "$release_id" ]; then
-              gh api --method PATCH "repos/${REPOSITORY}/releases/${release_id}" \
+            RELEASE_ID="$(get_release_id)"
+            if [ -n "$RELEASE_ID" ]; then
+              gh api --method PATCH "repos/${REPOSITORY}/releases/${RELEASE_ID}" \
                 -f name="Release ${TAG}" \
                 -f body="正在构建 fnOS 应用安装包，请稍候。" \
                 -F draft=true \
-                -F prerelease="$PRERELEASE"
-            elif [ "$PRERELEASE" = true ]; then
-              gh release create "$TAG" \
-                --draft \
-                --prerelease \
-                --title "Release ${TAG}" \
-                --notes "正在构建 fnOS 应用安装包，请稍候。"
+                -F prerelease="$PRERELEASE" >/dev/null
             else
-              gh release create "$TAG" \
-                --draft \
-                --title "Release ${TAG}" \
-                --notes "正在构建 fnOS 应用安装包，请稍候。"
+              RELEASE_ID="$(gh api --method POST "repos/${REPOSITORY}/releases" \
+                -f tag_name="$TAG" \
+                -f name="Release ${TAG}" \
+                -f body="正在构建 fnOS 应用安装包，请稍候。" \
+                -F draft=true \
+                -F prerelease="$PRERELEASE" \
+                --jq '.id' 2>/dev/null)" || return 1
             fi
+            [ -n "$RELEASE_ID" ]
           }
 
           for ATTEMPT in 1 2 3 4 5; do
-            if ensure_draft_release; then
+            if ensure_draft_release && [ -n "$RELEASE_ID" ]; then
+              echo "release_id=${RELEASE_ID}" >> "$GITHUB_OUTPUT"
               exit 0
             fi
             if [ "$ATTEMPT" -eq 5 ]; then
@@ -77,6 +78,7 @@ jobs:
     uses: ./.github/workflows/build-common-fn.yml
     with:
       release_tag: ${{ github.ref_name }}
+      release_id: ${{ needs.prepare-release.outputs.release_id }}
     secrets: inherit
 
   build-dsh:
@@ -85,11 +87,12 @@ jobs:
     uses: ./.github/workflows/build-dsh-fn.yml
     with:
       release_tag: ${{ github.ref_name }}
+      release_id: ${{ needs.prepare-release.outputs.release_id }}
     secrets: inherit
 
   publish-release:
     name: Publish release
-    needs: [build-common, build-dsh]
+    needs: [prepare-release, build-common, build-dsh]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -101,11 +104,29 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPOSITORY: ${{ github.repository }}
           TAG: ${{ github.ref_name }}
+          RELEASE_ID: ${{ needs.prepare-release.outputs.release_id }}
         run: |
           set -euo pipefail
 
           VERSION="${TAG#v}"
-          RELEASE_ASSETS="$(gh release view "$TAG" --json assets --jq '.assets[].name')"
+          RELEASE_ASSETS=""
+          for ATTEMPT in 1 2 3 4 5; do
+            RELEASE_ASSETS="$(
+              gh api "repos/${REPOSITORY}/releases/${RELEASE_ID}" 2>/dev/null \
+                | jq -r '.assets[]?.name' \
+                || true
+            )"
+            if [ -n "$RELEASE_ASSETS" ]; then
+              break
+            fi
+            DELAY=$((ATTEMPT * 15))
+            echo "Release assets are not visible yet; retrying in ${DELAY}s (attempt ${ATTEMPT}/5)" >&2
+            sleep "$DELAY"
+          done
+          if [ -z "$RELEASE_ASSETS" ]; then
+            echo "ERROR: no FPK assets found in release ${RELEASE_ID}" >&2
+            exit 1
+          fi
           PREV_TAG="$(git tag --sort=-version:refname | awk -v tag="$TAG" 'found { print; exit } $0 == tag { found = 1 }')"
 
           printf '# 📦 fnOS Apps v%s\n\n| 应用 | 安装包 |\n|------|----------|\n' "$VERSION" > RELEASE_NOTES.md
@@ -159,10 +180,9 @@ jobs:
           esac
 
           publish_release() {
-            local release_id release_body
-            release_id="$(gh api "repos/${REPOSITORY}/releases/tags/${TAG}" --jq '.id' 2>/dev/null)" || return 1
+            local release_body
             release_body="$(<RELEASE_NOTES.md)"
-            gh api --method PATCH "repos/${REPOSITORY}/releases/${release_id}" \
+            gh api --method PATCH "repos/${REPOSITORY}/releases/${RELEASE_ID}" \
               -f name="Release ${TAG}" \
               -f body="$release_body" \
               -F draft=false \

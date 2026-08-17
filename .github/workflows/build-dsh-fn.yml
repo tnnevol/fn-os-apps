@@ -8,6 +8,10 @@ on:
         description: Release tag to which the FPK is uploaded
         required: true
         type: string
+      release_id:
+        description: Release database ID used for the asset upload
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -18,6 +22,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       RELEASE_TAG: ${{ inputs.release_tag }}
+      RELEASE_ID: ${{ inputs.release_id }}
+      REPOSITORY: ${{ github.repository }}
     steps:
       - uses: actions/checkout@v4
 
@@ -74,8 +80,28 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
+          ASSET_PATH="${{ steps.rename.outputs.fpk }}"
+          ASSET_NAME="$(basename "$ASSET_PATH")"
+
+          upload_asset() {
+            local existing_asset_id
+            existing_asset_id="$(
+              gh api "repos/${REPOSITORY}/releases/${RELEASE_ID}/assets" --paginate 2>/dev/null \
+                | jq -r --arg name "$ASSET_NAME" '.[] | select(.name == $name) | .id' \
+                | head -n 1 \
+                || true
+            )"
+            if [ -n "$existing_asset_id" ]; then
+              gh api --method DELETE "repos/${REPOSITORY}/releases/assets/${existing_asset_id}" >/dev/null
+            fi
+            gh api --method POST \
+              "https://uploads.github.com/repos/${REPOSITORY}/releases/${RELEASE_ID}/assets?name=${ASSET_NAME}" \
+              -H "Content-Type: application/octet-stream" \
+              --input "$ASSET_PATH" >/dev/null
+          }
+
           for ATTEMPT in 1 2 3 4 5; do
-            if gh release upload "$RELEASE_TAG" "${{ steps.rename.outputs.fpk }}" --clobber; then
+            if upload_asset; then
               exit 0
             fi
             if [ "$ATTEMPT" -eq 5 ]; then
