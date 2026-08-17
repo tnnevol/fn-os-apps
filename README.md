@@ -161,5 +161,5 @@ git push origin v4.6.5
 ## 开发资源
 
 - [飞牛开发者官网](https://developer.fnnas.com/)
-- [fnpack 下载](https://static2.fnnas.com/fnpack/)
+- [fnpack 下载](https://developer.fnnas.com/docs/cli/fnpack/)
 - [通用 CGI 网关集合](https://github.com/FNOSP/fnosAppCenterCgiCollection)
