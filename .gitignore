@@ -28,3 +28,10 @@ desktop.ini
 tmp/
 .qwen
 .qoder
+
+# Node.js 依赖
+node_modules/
+
+# VitePress 构建产物
+docs/.vitepress/cache/
+docs/.vitepress/dist/

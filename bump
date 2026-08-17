@@ -17,6 +17,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PACKAGE_JSON="$SCRIPT_DIR/package.json"
 
 # ── 参数解析 ──────────────────────────────────────────────
 MODE=""
@@ -141,6 +142,26 @@ echo ""
 UPDATED=0
 SKIPPED=0
 
+# ── 更新根项目版本 ───────────────────────────────────────
+if [ ! -f "$PACKAGE_JSON" ]; then
+  echo "Error: 未找到根 package.json"
+  exit 1
+fi
+
+PACKAGE_VERSION_LINE_COUNT=$(grep -Ec '^[[:space:]]*"version"[[:space:]]*:' "$PACKAGE_JSON" || true)
+if [ "$PACKAGE_VERSION_LINE_COUNT" -ne 1 ]; then
+  echo "Error: package.json 必须包含且只能包含一个 version 字段"
+  exit 1
+fi
+
+PACKAGE_VERSION=$(grep '^[[:space:]]*"version"[[:space:]]*:' "$PACKAGE_JSON" | sed -E 's/^[^:]*:[[:space:]]*"([^"]+)".*$/\1/')
+if [ "$PACKAGE_VERSION" != "$VERSION" ]; then
+  sed -i '' -E "s/^([[:space:]]*\"version\"[[:space:]]*:[[:space:]]*\")[^\"]+(\"[, ]*)$/\1${VERSION}\2/" "$PACKAGE_JSON"
+  echo "  OK    package.json: $PACKAGE_VERSION → $VERSION"
+else
+  echo "  SAME  package.json ($PACKAGE_VERSION)"
+fi
+
 for dir in "$SCRIPT_DIR"/apps/*/; do
   app="$(basename "$dir")"
   manifest="$dir/manifest"
@@ -180,7 +201,7 @@ echo "Updated: $UPDATED, Skipped: $SKIPPED"
 if [ "$DO_COMMIT" = true ]; then
   echo ""
   cd "$SCRIPT_DIR"
-  git add apps/*/manifest README.md
+  git add package.json apps/*/manifest README.md
 
   if git diff --cached --quiet; then
     echo "No changes to commit."

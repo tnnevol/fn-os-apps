@@ -1,0 +1,22 @@
+{
+  "name": "fn-os-apps",
+  "version": "5.0.6",
+  "private": true,
+  "description": "飞牛 fnOS 应用 Monorepo",
+  "scripts": {
+    "bump:major": "./bump major",
+    "bump:minor": "./bump minor",
+    "bump:patch": "./bump patch",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs"
+  },
+  "engines": {
+    "node": ">=22.23.0",
+    "pnpm": ">=11.16.0"
+  },
+  "packageManager": "pnpm@11.16.0",
+  "devDependencies": {
+    "vitepress": "1.6.4"
+  }
+}

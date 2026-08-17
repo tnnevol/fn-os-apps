@@ -2,7 +2,7 @@
 
 ## 项目概述
 
-本仓库用于将第三方应用打包为飞牛 fnOS 应用商店格式。每个应用独立管理版本号，互不影响。
+本仓库用于将第三方应用打包为飞牛 fnOS 应用商店格式。项目根目录 `package.json` 维护统一发布版本号，根目录 `bump` 脚本会同步更新各应用版本。
 
 **技术栈**：fnOS Native 和 Docker 应用规范（bash 生命周期脚本 + JSON 配置；Docker 应用额外使用 docker-compose），非传统前后端项目。
 
@@ -100,7 +100,7 @@ fnpack build
 
 ### 版本发布
 
-所有应用共享同一版本号。使用根目录 `bump` 脚本批量升级并自动 commit + tag。
+项目根目录 `package.json` 维护版本号。使用根目录 `bump` 脚本或对应的 npm bump 脚本批量升级并自动 commit + tag。
 
 ```bash
 # 快速升级（基于当前版本号自动计算）
@@ -118,13 +118,19 @@ fnpack build
 
 # 自动 commit 但不打 tag
 ./bump patch --no-tag
+
+# npm 脚本入口（任选其一）
+pnpm run bump:major
+pnpm run bump:minor
+pnpm run bump:patch
 ```
 
 脚本执行后会自动：
-1. 更新所有 `apps/*/manifest` 的 version 字段
-2. 更新 README.md 中的 Release 链接和 Tag 示例
-3. `git commit -m "chore: bump version to vX.Y.Z"`
-4. `git tag vX.Y.Z`
+1. 更新根 `package.json` 的 version 字段
+2. 更新所有 `apps/*/manifest` 的 version 字段
+3. 更新 README.md 中的 Release 链接和 Tag 示例
+4. `git commit -m "chore: bump version to vX.Y.Z"`
+5. `git tag vX.Y.Z`
 
 最后手动推送：
 

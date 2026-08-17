@@ -23,6 +23,8 @@
 │   ├── fn-nvm/                     # NVM - Node.js 版本管理工具(系统工具)
 │   └── fn-ohmyzsh/                 # Oh My Zsh - Zsh 配置管理框架
 ├── .github/workflows/              # CI: FPK 构建与 Release 发布
+├── docs/                           # VitePress 项目文档
+├── package.json                    # 项目版本与开发脚本
 ├── .gitignore
 └── README.md
 ```
@@ -48,6 +50,15 @@
 | [fn-ohmyzsh](https://github.com/tnnevol/fn-os-apps/releases/latest)         | Oh My Zsh    | Zsh 配置管理框架，提供丰富的插件、主题和自动补全，增强命令行体验                    |
 
 ## 测试与安装
+
+### 项目文档
+
+```bash
+pnpm install
+pnpm run docs:dev
+```
+
+生产构建使用 `pnpm run docs:build`，构建结果位于 `docs/.vitepress/dist/`。
 
 ### 本地快速安装（开发阶段推荐）
 
@@ -90,7 +101,7 @@ appcenter-cli stop <appname>
 
 ## 版本发布
 
-通过 GitHub Actions 自动完成 FPK 构建和 Release 发布。各应用独立维护版本号。
+通过 GitHub Actions 自动完成 FPK 构建和 Release 发布。项目根目录通过 `package.json` 维护当前版本号，根目录 `bump` 脚本负责同步更新应用版本。
 
 ### Tag 命名规范
 
@@ -116,8 +127,18 @@ git push origin main
 2. **推送版本 Tag 触发发布**
 
 ```bash
-git tag v5.0.6
-git push origin v4.6.5
+pnpm run bump:patch
+git push origin main && git push origin v<版本号>
+```
+
+`bump` 会同步更新根 `package.json`、所有 `apps/*/manifest` 和 README 中的版本示例，然后自动创建版本提交和 Tag。
+
+也可以直接使用对应的 npm 脚本（任选其一）：
+
+```bash
+pnpm run bump:major
+pnpm run bump:minor
+pnpm run bump:patch
 ```
 
 3. **GitHub Actions 自动执行**
