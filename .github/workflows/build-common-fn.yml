@@ -93,4 +93,17 @@ jobs:
         working-directory: apps/${{ matrix.app }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload "$RELEASE_TAG" "${{ steps.rename.outputs.fpk }}" --clobber
+        run: |
+          set -euo pipefail
+          for ATTEMPT in 1 2 3 4 5; do
+            if gh release upload "$RELEASE_TAG" "${{ steps.rename.outputs.fpk }}" --clobber; then
+              exit 0
+            fi
+            if [ "$ATTEMPT" -eq 5 ]; then
+              echo "ERROR: unable to upload FPK after ${ATTEMPT} attempts" >&2
+              exit 1
+            fi
+            DELAY=$((ATTEMPT * 15))
+            echo "Release upload failed; retrying in ${DELAY}s (attempt ${ATTEMPT}/5)" >&2
+            sleep "$DELAY"
+          done

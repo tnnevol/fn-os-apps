@@ -29,29 +29,47 @@ jobs:
             *-rc*|*-beta*|*-alpha*) PRERELEASE=true ;;
           esac
 
-          RELEASE_ID="$(
+          get_release_id() {
             gh api "repos/${REPOSITORY}/releases/tags/${TAG}" 2>/dev/null \
               | jq -r '.id // empty' \
               || true
-          )"
-          if [ -n "$RELEASE_ID" ]; then
-            gh api --method PATCH "repos/${REPOSITORY}/releases/${RELEASE_ID}" \
-              -f name="Release ${TAG}" \
-              -f body="正在构建 fnOS 应用安装包，请稍候。" \
-              -F draft=true \
-              -F prerelease="$PRERELEASE"
-          elif [ "$PRERELEASE" = true ]; then
-            gh release create "$TAG" \
-              --draft \
-              --prerelease \
-              --title "Release ${TAG}" \
-              --notes "正在构建 fnOS 应用安装包，请稍候。"
-          else
-            gh release create "$TAG" \
-              --draft \
-              --title "Release ${TAG}" \
-              --notes "正在构建 fnOS 应用安装包，请稍候。"
-          fi
+          }
+
+          ensure_draft_release() {
+            local release_id
+            release_id="$(get_release_id)"
+            if [ -n "$release_id" ]; then
+              gh api --method PATCH "repos/${REPOSITORY}/releases/${release_id}" \
+                -f name="Release ${TAG}" \
+                -f body="正在构建 fnOS 应用安装包，请稍候。" \
+                -F draft=true \
+                -F prerelease="$PRERELEASE"
+            elif [ "$PRERELEASE" = true ]; then
+              gh release create "$TAG" \
+                --draft \
+                --prerelease \
+                --title "Release ${TAG}" \
+                --notes "正在构建 fnOS 应用安装包，请稍候。"
+            else
+              gh release create "$TAG" \
+                --draft \
+                --title "Release ${TAG}" \
+                --notes "正在构建 fnOS 应用安装包，请稍候。"
+            fi
+          }
+
+          for ATTEMPT in 1 2 3 4 5; do
+            if ensure_draft_release; then
+              exit 0
+            fi
+            if [ "$ATTEMPT" -eq 5 ]; then
+              echo "ERROR: unable to create or update the draft release after ${ATTEMPT} attempts" >&2
+              exit 1
+            fi
+            DELAY=$((ATTEMPT * 15))
+            echo "Release API failed; retrying in ${DELAY}s (attempt ${ATTEMPT}/5)" >&2
+            sleep "$DELAY"
+          done
 
   build-common:
     name: Build common fnOS FPKs
@@ -140,10 +158,26 @@ jobs:
             *-rc*|*-beta*|*-alpha*) PRERELEASE=true ;;
           esac
 
-          RELEASE_ID="$(gh api "repos/${REPOSITORY}/releases/tags/${TAG}" --jq '.id')"
-          RELEASE_BODY="$(<RELEASE_NOTES.md)"
-          gh api --method PATCH "repos/${REPOSITORY}/releases/${RELEASE_ID}" \
-            -f name="Release ${TAG}" \
-            -f body="$RELEASE_BODY" \
-            -F draft=false \
-            -F prerelease="$PRERELEASE"
+          publish_release() {
+            local release_id release_body
+            release_id="$(gh api "repos/${REPOSITORY}/releases/tags/${TAG}" --jq '.id' 2>/dev/null)" || return 1
+            release_body="$(<RELEASE_NOTES.md)"
+            gh api --method PATCH "repos/${REPOSITORY}/releases/${release_id}" \
+              -f name="Release ${TAG}" \
+              -f body="$release_body" \
+              -F draft=false \
+              -F prerelease="$PRERELEASE"
+          }
+
+          for ATTEMPT in 1 2 3 4 5; do
+            if publish_release; then
+              exit 0
+            fi
+            if [ "$ATTEMPT" -eq 5 ]; then
+              echo "ERROR: unable to publish the release after ${ATTEMPT} attempts" >&2
+              exit 1
+            fi
+            DELAY=$((ATTEMPT * 15))
+            echo "Release API failed; retrying in ${DELAY}s (attempt ${ATTEMPT}/5)" >&2
+            sleep "$DELAY"
+          done
