@@ -29,7 +29,11 @@ jobs:
             *-rc*|*-beta*|*-alpha*) PRERELEASE=true ;;
           esac
 
-          RELEASE_ID="$(gh api "repos/${REPOSITORY}/releases/tags/${TAG}" --jq '.id' 2>/dev/null || true)"
+          RELEASE_ID="$(
+            gh api "repos/${REPOSITORY}/releases/tags/${TAG}" 2>/dev/null \
+              | jq -r '.id // empty' \
+              || true
+          )"
           if [ -n "$RELEASE_ID" ]; then
             gh api --method PATCH "repos/${REPOSITORY}/releases/${RELEASE_ID}" \
               -f name="Release ${TAG}" \
