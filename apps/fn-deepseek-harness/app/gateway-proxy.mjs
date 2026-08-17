@@ -6,6 +6,7 @@ const SOCKET_PATH = process.env.GATEWAY_SOCKET || '/var/apps/fn-deepseek-harness
 const UPSTREAM_HOST = process.env.DSH_UPSTREAM_HOST || '127.0.0.1'
 const UPSTREAM_PORT = Number.parseInt(process.env.DSH_UPSTREAM_PORT || '3080', 10)
 const GATEWAY_PREFIX = normalizePrefix(process.env.GATEWAY_PREFIX || '/app/fn-deepseek-harness')
+const SSE_KEEPALIVE_INTERVAL = 15_000
 const HOP_BY_HOP_HEADERS = new Set([
     'connection',
     'keep-alive',
@@ -250,16 +251,23 @@ function copyRequestHeaders(req) {
     return applyLoopbackHeaders(headers)
 }
 
-function copyResponseHeaders(headers, rewriteBody) {
+function copyResponseHeaders(headers, rewriteBody, eventStream) {
     const result = {}
     for (const [name, value] of Object.entries(headers)) {
         if (HOP_BY_HOP_HEADERS.has(name.toLowerCase())) continue
-        if (name.toLowerCase() === 'content-length' && rewriteBody) continue
+        if (name.toLowerCase() === 'content-length' && (rewriteBody || eventStream)) continue
         if (name.toLowerCase() === 'location' && typeof value === 'string') {
             result[name] = rewriteLocation(value)
         } else {
             result[name] = value
         }
+    }
+    if (eventStream) {
+        // SSE must pass through the fnOS/nginx gateway as an unbuffered,
+        // indefinite response. The comment heartbeat below also prevents an
+        // otherwise idle HMR channel from being reset by an upstream timeout.
+        result['cache-control'] = 'no-cache, no-transform'
+        result['x-accel-buffering'] = 'no'
     }
     return result
 }
@@ -285,11 +293,22 @@ function proxyRequest(req, res) {
         headers: copyRequestHeaders(req)
     }, (response) => {
         const contentType = String(response.headers['content-type'] || '').toLowerCase()
-        const rewriteBody = contentType.includes('text/html')
-        const headers = copyResponseHeaders(response.headers, rewriteBody)
+        const eventStream = contentType.startsWith('text/event-stream')
+        const rewriteBody = contentType.includes('text/html') && !eventStream
+        const headers = copyResponseHeaders(response.headers, rewriteBody, eventStream)
 
         if (!rewriteBody) {
             res.writeHead(response.statusCode || 502, response.statusMessage, headers)
+            if (eventStream) {
+                res.flushHeaders()
+                const keepAlive = setInterval(() => {
+                    if (!res.destroyed && !res.writableEnded) res.write(': fn-deepseek-harness keep-alive\n\n')
+                }, SSE_KEEPALIVE_INTERVAL)
+                const clearKeepAlive = () => clearInterval(keepAlive)
+                response.once('close', clearKeepAlive)
+                response.once('error', clearKeepAlive)
+                res.once('close', clearKeepAlive)
+            }
             response.pipe(res)
             return
         }
