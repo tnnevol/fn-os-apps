@@ -1,5 +1,5 @@
 appname               = fn-moviepilot
-version               = 5.0.16
+version               = 5.0.17
 display_name          = MoviePilot
 desc                  = 影视自动化管理工具，支持媒体库管理、智能订阅、自动化整理等功能。
 platform              = x86
