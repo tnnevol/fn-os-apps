@@ -38,6 +38,14 @@ pnpm dsh web --patch /absolute/path/to/fn-os-apps/plugins/dsh-codex-auth-plugin/
 
 `cordis.patch.yml` 使用包名加载 Host bundle；如果要调试尚未构建的源码，可将 patch 中的 `name` 改成源码入口的绝对路径，并使用 DSH skill 中的 `--patch` 调试流程。
 
+## 发布 rc 版本
+
+当前版本为 npm prerelease，发布时必须使用 `rc` dist-tag：
+
+```sh
+npm run publish:rc
+```
+
 ## 安装到 profile
 
 ```sh

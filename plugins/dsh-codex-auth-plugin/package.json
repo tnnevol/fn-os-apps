@@ -6,13 +6,16 @@
   "author": "tnnevol",
   "repository": {
     "type": "git",
-    "url": "https://github.com/tnnevol/fn-os-apps.git",
+    "url": "git+https://github.com/tnnevol/fn-os-apps.git",
     "directory": "plugins/dsh-codex-auth-plugin"
   },
   "homepage": "https://github.com/tnnevol/fn-os-apps/tree/main/plugins/dsh-codex-auth-plugin",
   "documentation": "https://fnapps-doc.tnnevol.cn/plugins/",
   "bugs": {
     "url": "https://github.com/tnnevol/fn-os-apps/issues"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "type": "module",
   "license": "AGPL-3.0-only",
@@ -47,6 +50,7 @@
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run",
     "check": "pnpm run typecheck && pnpm run test && pnpm run build",
+    "publish:rc": "npm publish --tag rc --access public",
     "prepublishOnly": "pnpm run check"
   },
   "dsh": {
