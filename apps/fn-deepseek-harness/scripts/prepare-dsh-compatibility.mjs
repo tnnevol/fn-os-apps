@@ -16,6 +16,14 @@ const DSH_PACKAGE_PREFIX = '@deepseek-ai/dsh-'
 const MANAGED_MARKER = '# Managed by fn-deepseek-harness: temporary compatibility quarantine.'
 const EXACT_VERSION_PATTERN = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/u
 
+// Older dsh-codex-connect releases published wildcard DSH peer dependencies
+// and no compatibility.json, although they were built against DSH rc.6. Keep
+// those installs safe on newer runtimes until the plugin publishes an explicit
+// compatibility declaration. An explicit declaration always takes precedence.
+const KNOWN_PLUGIN_DSH_VERSIONS = new Map([
+  ['dsh-codex-connect', '0.1.0-rc.6'],
+])
+
 function isMissingFile(error) {
   return error?.code === 'ENOENT'
 }
@@ -68,7 +76,7 @@ function profileBundleNames(profileManifest) {
   return Array.isArray(bundles) ? bundles.filter(bundle => typeof bundle === 'string' && bundle.length > 0) : []
 }
 
-function declaredDshVersions(packageDirectory, packageManifest) {
+function declaredDshVersions(packageName, packageDirectory, packageManifest) {
   const versions = []
   const compatibility = readJson(join(packageDirectory, 'compatibility.json'))
   const compatibilityVersion = exactVersion(compatibility?.dshPluginApi?.version)
@@ -80,6 +88,14 @@ function declaredDshVersions(packageDirectory, packageManifest) {
       const peerVersion = exactVersion(version)
       if (peerVersion !== undefined) versions.push(peerVersion)
     }
+  }
+
+  // Some older third-party bundles only published wildcard peers. Use the
+  // package-specific baseline only when no explicit DSH API version exists;
+  // this lets a future compatibility.json opt the plugin back in.
+  if (versions.length === 0) {
+    const knownVersion = KNOWN_PLUGIN_DSH_VERSIONS.get(packageName)
+    if (knownVersion !== undefined) versions.push(knownVersion)
   }
   return [...new Set(versions)]
 }
@@ -115,8 +131,8 @@ export function insertedEntryIds(patch) {
   return ids
 }
 
-function pluginCompatibility(packageDirectory, packageManifest, runtimeVersion) {
-  const declaredVersions = declaredDshVersions(packageDirectory, packageManifest)
+function pluginCompatibility(packageName, packageDirectory, packageManifest, runtimeVersion) {
+  const declaredVersions = declaredDshVersions(packageName, packageDirectory, packageManifest)
   if (runtimeVersion === undefined || declaredVersions.length === 0) return undefined
   const incompatibleVersions = declaredVersions.filter(version => version !== runtimeVersion)
   if (incompatibleVersions.length === 0) return undefined
@@ -193,7 +209,7 @@ export function prepareCompatibility({
     const packageManifest = readJson(packageDirectory === undefined ? undefined : join(packageDirectory, 'package.json'))
     if (packageDirectory === undefined || packageManifest === undefined) continue
 
-    const compatibility = pluginCompatibility(packageDirectory, packageManifest, currentVersion)
+    const compatibility = pluginCompatibility(packageName, packageDirectory, packageManifest, currentVersion)
     if (compatibility === undefined) continue
     const plugin = {
       packageName,

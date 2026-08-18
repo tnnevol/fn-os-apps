@@ -48,7 +48,7 @@ dsh web --host <host> --port <port> --trusted-host <authority...>
 
 ## 旧版插件兼容处理
 
-应用升级或启动前会检查 `DSH_HOME/profiles/web` 中的三方插件与当前内置 DSH 版本是否匹配。发现插件声明的 DSH API 版本过旧时，应用只会在 `HOME` 下生成一个应用自有的临时 patch，并通过 `dsh --patch` 禁用该插件在 Web profile 中插入的入口，避免旧插件阻塞整个 Web 页面。
+应用升级或启动前会检查 `DSH_HOME/profiles/web` 中的三方插件与当前内置 DSH 版本是否匹配。发现插件声明的 DSH API 版本过旧时，应用只会在 `HOME` 下生成一个应用自有的临时 patch，并通过 `dsh --patch` 禁用该插件在 Web profile 中插入的入口，避免旧插件阻塞整个 Web 页面。对于旧版 `dsh-codex-connect` 未提供兼容性声明的情况，应用按其已知的 DSH `0.1.0-rc.6` 基线处理；新版插件提供明确兼容声明后会恢复。
 
 该处理不会修改官方 DSH 或三方插件源码，也不会删除插件包、profile 依赖、插件配置、登录凭据或其他用户数据。当前不兼容时会在安装/启动日志中打印插件名称、版本和 patch 位置：
 
