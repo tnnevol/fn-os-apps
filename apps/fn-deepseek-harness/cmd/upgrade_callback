@@ -2,4 +2,22 @@
 
 ### This script is called after the user upgrades the application.
 
+NODE_BIN="/var/apps/nodejs_v24/target/bin"
+DSH_HOME="${TRIM_PKGHOME}"
+APP_HOME="${TRIM_APPDEST_VOL}/@appshare/fn-deepseek-harness"
+COMPATIBILITY_SCRIPT="${TRIM_APPDEST}/scripts/prepare-dsh-compatibility.mjs"
+COMPATIBILITY_PATCH="${APP_HOME}/.fn-deepseek-harness/compatibility/web-incompatible-plugins.patch.yml"
+
+export DSH_HOME
+
+if [ -x "${NODE_BIN}/node" ] && [ -f "${COMPATIBILITY_SCRIPT}" ]; then
+    DSH_COMPAT_PROFILE_DIRECTORY="${DSH_HOME}/profiles/web" \
+    DSH_COMPAT_DSH_PACKAGE_DIRECTORY="${DSH_HOME}/.npm-global/lib/node_modules/@deepseek-ai/dsh" \
+    DSH_COMPAT_DSH_PACKAGE_FILE="${DSH_HOME}/.npm-global/lib/node_modules/@deepseek-ai/dsh/package.json" \
+    DSH_COMPAT_DSH_VERSION_FILE="${TRIM_APPDEST}/dsh-version" \
+    DSH_COMPAT_APP_HOME="${APP_HOME}" \
+    DSH_COMPAT_PATCH_FILE="${COMPATIBILITY_PATCH}" \
+    "${NODE_BIN}/node" "${COMPATIBILITY_SCRIPT}" || exit 1
+fi
+
 exit 0

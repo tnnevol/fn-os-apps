@@ -46,6 +46,24 @@ dsh web --host <host> --port <port> --trusted-host <authority...>
 
 应用入口保留 `allUsers=false`，并将入口访问权限设置为可编辑。管理员可以在应用设置中配置允许访问 DeepSeek Harness 的用户。
 
+## 旧版插件兼容处理
+
+应用升级或启动前会检查 `DSH_HOME/profiles/web` 中的三方插件与当前内置 DSH 版本是否匹配。发现插件声明的 DSH API 版本过旧时，应用只会在 `HOME` 下生成一个应用自有的临时 patch，并通过 `dsh --patch` 禁用该插件在 Web profile 中插入的入口，避免旧插件阻塞整个 Web 页面。
+
+该处理不会修改官方 DSH 或三方插件源码，也不会删除插件包、profile 依赖、插件配置、登录凭据或其他用户数据。当前不兼容时会在安装/启动日志中打印插件名称、版本和 patch 位置：
+
+```text
+${HOME}/.fn-deepseek-harness/compatibility/web-incompatible-plugins.patch.yml
+```
+
+插件发布兼容版本后，可以先停止应用，再在 NAS 终端执行对应的插件更新命令，然后重新启动应用：
+
+```bash
+${DSH_HOME}/.npm-global/bin/dsh plugin --profile web update dsh-codex-connect
+```
+
+下次启动检测到插件已经兼容后，会自动删除应用生成的 patch 并恢复插件。无法从插件 bundle patch 中识别入口的未知插件不会被应用自动删除，日志会提示用户手动升级或移除该插件。
+
 ## DSH native 依赖构建
 
 GitHub Actions 在构建 `fn-deepseek-harness` 时会执行 [`scripts/prepare-dsh-native.sh`](scripts/prepare-dsh-native.sh)：
