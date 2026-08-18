@@ -1,6 +1,7 @@
 import { CODEX_AUTH_LOGIN_PATH, CODEX_AUTH_LOGOUT_PATH, CODEX_AUTH_SETTINGS_NAMESPACE, CODEX_AUTH_STATUS_PATH } from "./auth-paths.js";
 import { a as CODEX_AUTH_FILENAME, c as codexAuthPath, i as logoutCodex, n as codexAuthStatus, o as CODEX_PROVIDER, r as loginCodex, s as CodexCredentialStore, t as CodexAuthStatus } from "./auth-BBBeI24-.js";
 import { CredentialProvider } from "@deepseek-ai/dsh-credentials";
+import "@deepseek-ai/dsh-settings";
 import { AttachmentStore } from "@deepseek-ai/dsh-attachment";
 import { PiAiAdapter } from "@deepseek-ai/dsh-llm-pi-ai";
 import { Context } from "@deepseek-ai/cordis";

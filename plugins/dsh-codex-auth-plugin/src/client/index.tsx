@@ -11,6 +11,7 @@ import { CodexAuthCard } from './CodexAuthCard.tsx'
 import type { CodexAuthCardInjected } from './CodexAuthCard.tsx'
 import { decodeCodexAuthSettings } from '../settings-contract.ts'
 import { installCodexModelEditorPresentation } from './model-editor-presentation.ts'
+import { CodexAuthRemoteSettingsScope } from './remote-settings-scope.ts'
 import { CODEX_AUTH_SETTINGS_NAMESPACE } from '../auth-paths.ts'
 import { en, zh } from './locales.ts'
 import type { CodexAuthLocaleKey } from './locales.ts'
@@ -32,10 +33,20 @@ export function apply(ctx: ClientContext): void {
   const namespace = 'settings.dsh-codex-auth'
   ctx.effect(() => ctx.locale.register(namespace, { zh, en }), 'dsh-codex-auth-plugin: locale')
   const t = ctx.locale.bind(namespace) as CodexAuthCardInjected['t']
-  const configScope = ctx.settingsScope.bind({
+  const connection = ctx.get('connection') as { isLoopback: boolean }
+  const remoteScope = connection.isLoopback ? undefined : new CodexAuthRemoteSettingsScope()
+  const configScope = remoteScope ?? ctx.settingsScope.bind({
     namespace: CODEX_AUTH_SETTINGS_NAMESPACE,
     decode: decodeCodexAuthSettings,
   })
+  if (remoteScope !== undefined) {
+    ctx.effect(() => {
+      void remoteScope.load()
+      return async () => {
+        await remoteScope.dispose()
+      }
+    }, 'dsh-codex-auth-plugin: remote settings scope')
+  }
   ctx.slots.inject('settings.plugin.item', () => ctx.slots.register({
     name: 'settings.plugin.item',
     key: CODEX_AUTH_SETTINGS_NAMESPACE,

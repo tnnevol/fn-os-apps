@@ -1,5 +1,5 @@
 import { a as CODEX_PROVIDER, i as CODEX_AUTH_FILENAME, n as loginCodex, o as CodexCredentialStore, r as logoutCodex, s as codexAuthPath, t as codexAuthStatus } from "./auth-DQ2F4vc6.js";
-import { CODEX_AUTH_LOGIN_PATH, CODEX_AUTH_LOGOUT_PATH, CODEX_AUTH_SETTINGS_NAMESPACE, CODEX_AUTH_STATUS_PATH, CODEX_USAGE_PATH } from "./auth-paths.js";
+import { CODEX_AUTH_LOGIN_PATH, CODEX_AUTH_LOGOUT_PATH, CODEX_AUTH_SETTINGS_NAMESPACE, CODEX_AUTH_SETTINGS_PATH, CODEX_AUTH_STATUS_PATH, CODEX_USAGE_PATH } from "./auth-paths.js";
 import { createModels } from "@earendil-works/pi-ai";
 import { openaiCodexProvider } from "@earendil-works/pi-ai/providers/openai-codex";
 import { basename } from "node:path";
@@ -136,10 +136,29 @@ var CodexUsageService = class {
 	}
 };
 //#endregion
+//#region src/settings-contract.ts
+const DEFAULT_CODEX_AUTH_SETTINGS = Object.freeze({
+	enableImageTool: false,
+	enableImageUpload: false
+});
+function isRecord(value) {
+	return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+/** Narrow the settings wire payload before it enters React state. */
+function decodeCodexAuthSettings(value) {
+	if (!isRecord(value) || typeof value["enableImageTool"] !== "boolean") return void 0;
+	return {
+		enableImageTool: value["enableImageTool"],
+		enableImageUpload: typeof value["enableImageUpload"] === "boolean" ? value["enableImageUpload"] : DEFAULT_CODEX_AUTH_SETTINGS.enableImageUpload
+	};
+}
+//#endregion
 //#region src/auth-routes.ts
 const CODEX_AUTH_URL_TIMEOUT_MS = 3e4;
 const REMOTE_WEB_ORIGIN_NOT_TRUSTED = "remote-web-origin-not-trusted";
 const CODEX_USAGE_UNAVAILABLE = "codex-usage-unavailable";
+const CODEX_SETTINGS_INVALID = "codex-settings-invalid";
+const CODEX_SETTINGS_BODY_LIMIT = 8192;
 function signedInStatus(expiresAt) {
 	return expiresAt === void 0 ? { status: "signed-in" } : {
 		status: "signed-in",
@@ -336,6 +355,71 @@ function json(res, status, value) {
 	});
 	res.end(JSON.stringify(value));
 }
+function readJsonBody(req) {
+	return new Promise((resolve, reject) => {
+		let body = "";
+		let size = 0;
+		let finished = false;
+		req.setEncoding("utf8");
+		req.on("data", (chunk) => {
+			if (finished) return;
+			size += Buffer.byteLength(chunk);
+			if (size > CODEX_SETTINGS_BODY_LIMIT) {
+				finished = true;
+				reject(/* @__PURE__ */ new Error("request body is too large"));
+				return;
+			}
+			body += chunk;
+		});
+		req.on("end", () => {
+			if (finished) return;
+			finished = true;
+			try {
+				resolve(JSON.parse(body));
+			} catch {
+				reject(/* @__PURE__ */ new Error("request body is not valid JSON"));
+			}
+		});
+		req.on("error", (error) => {
+			if (finished) return;
+			finished = true;
+			reject(error);
+		});
+	});
+}
+function decodeSettingsWrite(value) {
+	if (typeof value !== "object" || value === null || Array.isArray(value)) return void 0;
+	const record = value;
+	if (typeof record["enableImageTool"] !== "boolean" || typeof record["enableImageUpload"] !== "boolean") return;
+	return decodeCodexAuthSettings(record);
+}
+/** Register the plugin-owned settings endpoint for browsers opened through a NAS authority. */
+function registerCodexSettingsRoute(ctx, settings) {
+	ctx.effect(() => {
+		const authorize = (req, res) => {
+			if (trustedRequest(req)) return true;
+			json(res, 403, { error: REMOTE_WEB_ORIGIN_NOT_TRUSTED });
+			return false;
+		};
+		return ctx.webServer.register({
+			kind: "exact",
+			path: CODEX_AUTH_SETTINGS_PATH,
+			handler: async (req, res) => {
+				if (req.method !== "GET" && req.method !== "PUT") return json(res, 405, { error: "method not allowed" });
+				if (!authorize(req, res)) return;
+				if (req.method === "GET") return json(res, 200, settings.get());
+				try {
+					const next = decodeSettingsWrite(await readJsonBody(req));
+					if (next === void 0) return json(res, 400, { error: CODEX_SETTINGS_INVALID });
+					await settings.update(next);
+					json(res, 200, settings.get());
+				} catch (error) {
+					json(res, 400, { error: safeMessage(error) });
+				}
+			}
+		});
+	}, "dsh-codex-auth-plugin: remote settings route");
+}
 /** Register the auth endpoints when the DSH Web server is available. */
 function registerCodexAuthRoutes(ctx, store, mirror) {
 	const auth = new CodexWebAuth(store, CODEX_AUTH_URL_TIMEOUT_MS, mirror);
@@ -459,12 +543,6 @@ var CodexCredentialMirror = class {
 		await this.credentials.unset(CODEX_API_KEY_REF);
 	}
 };
-//#endregion
-//#region src/settings-contract.ts
-const DEFAULT_CODEX_AUTH_SETTINGS = Object.freeze({
-	enableImageTool: false,
-	enableImageUpload: false
-});
 //#endregion
 //#region src/settings.ts
 /** Host settings registration that makes the standalone auth card discoverable. */
@@ -706,6 +784,7 @@ function apply(ctx) {
 		};
 	}, "dsh-codex-auth: credential mirror");
 	registerCodexAuthRoutes(ctx, store, mirror);
+	registerCodexSettingsRoute(ctx, settings);
 	let stopped = false;
 	let imageFiber;
 	let imageTail = Promise.resolve();

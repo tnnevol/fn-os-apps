@@ -7,7 +7,7 @@ import type {} from '@deepseek-ai/dsh-fs'
 import type {} from '@deepseek-ai/dsh-host-webserver'
 import type {} from '@deepseek-ai/dsh-llm'
 import type {} from '@deepseek-ai/dsh-tools'
-import { registerCodexAuthRoutes } from './auth-routes.ts'
+import { registerCodexAuthRoutes, registerCodexSettingsRoute } from './auth-routes.ts'
 import { CodexCredentialMirror } from './credential-mirror.ts'
 import { CodexCredentialStore, CODEX_AUTH_FILENAME, CODEX_PROVIDER, codexAuthPath } from './store.ts'
 import { CODEX_AUTH_SETTINGS_NS, CodexAuthSettingsSchema } from './settings.ts'
@@ -33,6 +33,7 @@ export function apply(ctx: Context): void {
     return () => { clearInterval(timer) }
   }, 'dsh-codex-auth: credential mirror')
   registerCodexAuthRoutes(ctx, store, mirror)
+  registerCodexSettingsRoute(ctx, settings)
 
   let stopped = false
   let imageFiber: Fiber | undefined

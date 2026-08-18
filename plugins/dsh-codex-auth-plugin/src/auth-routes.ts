@@ -10,14 +10,21 @@ import type { CodexCredentialStore } from './store.ts'
 import {
   CODEX_AUTH_LOGIN_PATH,
   CODEX_AUTH_LOGOUT_PATH,
+  CODEX_AUTH_SETTINGS_PATH,
   CODEX_AUTH_STATUS_PATH,
   CODEX_USAGE_PATH,
 } from './auth-paths.ts'
 import { CodexUsageService } from './usage.ts'
+import type { SettingsScope } from '@deepseek-ai/dsh-settings'
+import { decodeCodexAuthSettings } from './settings-contract.ts'
+import type { CodexAuthSettingsConfig } from './settings-contract.ts'
 
 export const CODEX_AUTH_URL_TIMEOUT_MS = 30_000
 export const REMOTE_WEB_ORIGIN_NOT_TRUSTED = 'remote-web-origin-not-trusted'
 export const CODEX_USAGE_UNAVAILABLE = 'codex-usage-unavailable'
+export const CODEX_SETTINGS_INVALID = 'codex-settings-invalid'
+
+const CODEX_SETTINGS_BODY_LIMIT = 8 * 1024
 
 export type CodexWebAuthStatus =
   | { status: 'signed-out' }
@@ -245,6 +252,80 @@ function json(res: ServerResponse, status: number, value: unknown): void {
     'x-content-type-options': 'nosniff',
   })
   res.end(JSON.stringify(value))
+}
+
+function readJsonBody(req: IncomingMessage): Promise<unknown> {
+  return new Promise((resolve, reject) => {
+    let body = ''
+    let size = 0
+    let finished = false
+    req.setEncoding('utf8')
+    req.on('data', (chunk: string) => {
+      if (finished) return
+      size += Buffer.byteLength(chunk)
+      if (size > CODEX_SETTINGS_BODY_LIMIT) {
+        finished = true
+        reject(new Error('request body is too large'))
+        return
+      }
+      body += chunk
+    })
+    req.on('end', () => {
+      if (finished) return
+      finished = true
+      try {
+        resolve(JSON.parse(body) as unknown)
+      } catch {
+        reject(new Error('request body is not valid JSON'))
+      }
+    })
+    req.on('error', error => {
+      if (finished) return
+      finished = true
+      reject(error)
+    })
+  })
+}
+
+function decodeSettingsWrite(value: unknown): CodexAuthSettingsConfig | undefined {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return undefined
+  const record = value as Record<string, unknown>
+  if (typeof record['enableImageTool'] !== 'boolean' || typeof record['enableImageUpload'] !== 'boolean') {
+    return undefined
+  }
+  return decodeCodexAuthSettings(record)
+}
+
+/** Register the plugin-owned settings endpoint for browsers opened through a NAS authority. */
+export function registerCodexSettingsRoute(
+  ctx: Context,
+  settings: SettingsScope<CodexAuthSettingsConfig>,
+): void {
+  ctx.effect(() => {
+    const authorize = (req: IncomingMessage, res: ServerResponse): boolean => {
+      if (trustedRequest(req)) return true
+      json(res, 403, { error: REMOTE_WEB_ORIGIN_NOT_TRUSTED })
+      return false
+    }
+    const dispose = ctx.webServer.register({
+      kind: 'exact',
+      path: CODEX_AUTH_SETTINGS_PATH,
+      handler: async (req, res) => {
+        if (req.method !== 'GET' && req.method !== 'PUT') return json(res, 405, { error: 'method not allowed' })
+        if (!authorize(req, res)) return
+        if (req.method === 'GET') return json(res, 200, settings.get())
+        try {
+          const next = decodeSettingsWrite(await readJsonBody(req))
+          if (next === undefined) return json(res, 400, { error: CODEX_SETTINGS_INVALID })
+          await settings.update(next)
+          json(res, 200, settings.get())
+        } catch (error: unknown) {
+          json(res, 400, { error: safeMessage(error) })
+        }
+      },
+    })
+    return dispose
+  }, 'dsh-codex-auth-plugin: remote settings route')
 }
 
 /** Register the auth endpoints when the DSH Web server is available. */

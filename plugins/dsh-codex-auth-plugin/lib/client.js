@@ -300,6 +300,8 @@ window.__ModuleLoader__.load({
 		const CODEX_AUTH_LOGIN_PATH = "/plugins/dsh-codex-auth-plugin/auth/login";
 		const CODEX_AUTH_LOGOUT_PATH = "/plugins/dsh-codex-auth-plugin/auth/logout";
 		const CODEX_USAGE_PATH = "/plugins/dsh-codex-auth-plugin/auth/usage";
+		/** Same-origin settings endpoint used when DSH marks a NAS browser as remote. */
+		const CODEX_AUTH_SETTINGS_PATH = "/plugins/dsh-codex-auth-plugin/auth/settings";
 		//#endregion
 		//#region src/client/CodexAuthCard.tsx
 		/** Expandable account card for the DSH Plugins settings section. */
@@ -1515,6 +1517,116 @@ window.__ModuleLoader__.load({
 			};
 		}
 		//#endregion
+		//#region src/client/remote-settings-scope.ts
+		const INITIAL_SNAPSHOT = {
+			status: "loading",
+			value: void 0,
+			base: void 0,
+			user: void 0,
+			revision: void 0,
+			writable: false,
+			mode: "host"
+		};
+		async function requestSettings(method, value) {
+			const response = await fetch(CODEX_AUTH_SETTINGS_PATH, {
+				method,
+				headers: {
+					accept: "application/json",
+					...value === void 0 ? {} : { "content-type": "application/json" }
+				},
+				...value === void 0 ? {} : { body: JSON.stringify(value) },
+				credentials: "same-origin"
+			});
+			const payload = await response.json().catch(() => void 0);
+			if (!response.ok) {
+				const error = typeof payload === "object" && payload !== null && "error" in payload && typeof payload.error === "string" ? payload.error : `HTTP ${String(response.status)}`;
+				throw new Error(error);
+			}
+			const settings = decodeCodexAuthSettings(payload);
+			if (settings === void 0) throw new Error("Host returned invalid Codex settings");
+			return settings;
+		}
+		/**
+		* The official settings RPC is intentionally unavailable to non-loopback
+		* browser authorities. This small scope talks only to the plugin-owned,
+		* same-origin endpoint and carries no settings schema or credential data.
+		*/
+		var CodexAuthRemoteSettingsScope = class {
+			snapshot = INITIAL_SNAPSHOT;
+			listeners = /* @__PURE__ */ new Set();
+			tail = Promise.resolve();
+			disposed = false;
+			getSnapshot() {
+				return this.snapshot;
+			}
+			subscribe(listener) {
+				this.listeners.add(listener);
+				return () => {
+					this.listeners.delete(listener);
+				};
+			}
+			load() {
+				return this.enqueue(async () => {
+					try {
+						const settings = await requestSettings("GET");
+						if (this.disposed) return;
+						this.publish({
+							...this.snapshot,
+							status: "ready",
+							value: settings,
+							writable: true
+						});
+					} catch {
+						if (this.disposed) return;
+						this.publish({
+							...this.snapshot,
+							status: "unavailable",
+							writable: false
+						});
+					}
+				});
+			}
+			set(field, value) {
+				if (field !== "enableImageTool" && field !== "enableImageUpload") return Promise.reject(/* @__PURE__ */ new Error(`Unsupported Codex settings field: ${field}`));
+				if (typeof value !== "boolean") return Promise.reject(/* @__PURE__ */ new TypeError(`Codex setting ${field} must be boolean`));
+				return this.enqueue(async () => {
+					const current = this.getSnapshot().value;
+					if (current === void 0) throw new Error("Codex settings are not loaded");
+					const accepted = await requestSettings("PUT", {
+						...current,
+						[field]: value
+					});
+					if (this.disposed) return;
+					this.publish({
+						...this.snapshot,
+						status: "ready",
+						value: accepted,
+						writable: true
+					});
+				});
+			}
+			unset(field) {
+				return this.set(field, false);
+			}
+			async dispose() {
+				this.disposed = true;
+				await this.tail;
+			}
+			enqueue(operation) {
+				if (this.disposed) return Promise.resolve();
+				const task = this.tail.then(async () => {
+					if (this.disposed) return;
+					await operation();
+				});
+				this.tail = task.catch(() => void 0);
+				return task;
+			}
+			publish(next) {
+				this.snapshot = next;
+				for (const listener of [...this.listeners]) listener();
+			}
+		};
+		//#endregion
 		//#region src/client/locales.ts
 		/** Browser copy for the standalone Codex authentication card. */
 		const en = {
@@ -1639,10 +1751,17 @@ window.__ModuleLoader__.load({
 				en
 			}), "dsh-codex-auth-plugin: locale");
 			const t = ctx.locale.bind(namespace);
-			const configScope = ctx.settingsScope.bind({
-				namespace: CODEX_AUTH_SETTINGS_NAMESPACE,
+			const remoteScope = ctx.get("connection").isLoopback ? void 0 : new CodexAuthRemoteSettingsScope();
+			const configScope = remoteScope ?? ctx.settingsScope.bind({
+				namespace: "dsh-codex-auth",
 				decode: decodeCodexAuthSettings
 			});
+			if (remoteScope !== void 0) ctx.effect(() => {
+				remoteScope.load();
+				return async () => {
+					await remoteScope.dispose();
+				};
+			}, "dsh-codex-auth-plugin: remote settings scope");
 			ctx.slots.inject("settings.plugin.item", () => ctx.slots.register({
 				name: "settings.plugin.item",
 				key: CODEX_AUTH_SETTINGS_NAMESPACE,
