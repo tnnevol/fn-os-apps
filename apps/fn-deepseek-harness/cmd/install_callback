@@ -143,6 +143,87 @@ install_bundled_node_pty() {
     echo "Installed bundled node-pty versions: ${found_versions//$'\n'/,}."
 }
 
+run_dsh_dependency_scripts() {
+    local backup_dir map_file package_json backup_file rebuild_status
+    local -a node_pty_package_files=()
+    local -A seen_package_files=()
+
+    while IFS= read -r -d '' package_json; do
+        if [ -z "${seen_package_files["${package_json}"]+x}" ]; then
+            seen_package_files["${package_json}"]=1
+            node_pty_package_files+=("${package_json}")
+        fi
+    done < <(
+        find "${DSH_PACKAGE_DIR}" "${NPM_GLOBAL_ROOT}" \
+            -type f \
+            -path '*/node_modules/node-pty/package.json' \
+            -print0 2>/dev/null
+    )
+
+    if [ "${#node_pty_package_files[@]}" -eq 0 ]; then
+        fail_install "Unable to locate any node-pty package before running dependency scripts"
+    fi
+
+    backup_dir="$(mktemp -d "${DSH_HOME}/.node-pty-scripts.XXXXXX")" \
+        || fail_install "Unable to create a temporary node-pty script backup directory"
+    map_file="${backup_dir}/paths"
+    : > "${map_file}" || fail_install "Unable to create the node-pty script backup index"
+
+    restore_node_pty_scripts() {
+        local original_path original_backup
+        while IFS= read -r -d '' original_path && IFS= read -r -d '' original_backup; do
+            cp -a "${original_backup}" "${original_path}" || return 1
+        done < "${map_file}"
+    }
+
+    for package_json in "${node_pty_package_files[@]}"; do
+        backup_file="${backup_dir}/$(printf '%s' "${#package_json}").${RANDOM}.json"
+        while [ -e "${backup_file}" ]; do
+            backup_file="${backup_dir}/$(printf '%s' "${#package_json}").${RANDOM}.json"
+        done
+        cp -a "${package_json}" "${backup_file}" || {
+            restore_node_pty_scripts >/dev/null 2>&1 || true
+            rm -rf "${backup_dir}"
+            fail_install "Unable to back up node-pty package metadata"
+        }
+        printf '%s\0%s\0' "${package_json}" "${backup_file}" >> "${map_file}" || {
+            restore_node_pty_scripts >/dev/null 2>&1 || true
+            rm -rf "${backup_dir}"
+            fail_install "Unable to record node-pty package metadata backup"
+        }
+        "${NODE_BIN}/node" -e '
+const fs = require("node:fs")
+const file = process.argv[1]
+const packageJson = JSON.parse(fs.readFileSync(file, "utf8"))
+// Prevent npm from falling back to its binding.gyp default install action.
+packageJson.scripts = {
+  install: "node -e \"process.exit(0)\"",
+}
+fs.writeFileSync(file, `${JSON.stringify(packageJson, null, 2)}\n`)
+' "${package_json}" || {
+            restore_node_pty_scripts >/dev/null 2>&1 || true
+            rm -rf "${backup_dir}"
+            fail_install "Unable to disable node-pty native lifecycle scripts"
+        }
+    done
+
+    echo "Temporarily disabling lifecycle scripts for ${#node_pty_package_files[@]} node-pty package(s); other DSH dependency scripts remain enabled."
+    echo "Running DSH dependency lifecycle scripts with node-pty native compilation disabled..."
+    "${NPM_BIN}" rebuild --global --ignore-scripts=false --foreground-scripts
+    rebuild_status=$?
+
+    if ! restore_node_pty_scripts; then
+        rm -rf "${backup_dir}"
+        fail_install "Unable to restore node-pty package metadata"
+    fi
+    rm -rf "${backup_dir}"
+
+    if [ "${rebuild_status}" -ne 0 ]; then
+        fail_install "Failed to run DSH dependency lifecycle scripts"
+    fi
+    echo "DSH dependency lifecycle scripts completed."
+}
+
 validate_node_pty_versions() {
     local version
     while IFS= read -r version; do
@@ -205,7 +286,7 @@ fi
 LOCAL_VERSION="$(read_package_version "${DSH_PACKAGE_DIR}/package.json")"
 ONLINE_VERSION=""
 INSTALL_SPEC=""
-IGNORE_NPM_SCRIPTS=0
+INSTALL_WITHOUT_SCRIPTS=0
 NEEDS_INSTALL=0
 
 if [ -n "${PINNED_DSH_VERSION}" ]; then
@@ -213,7 +294,7 @@ if [ -n "${PINNED_DSH_VERSION}" ]; then
     if [ ! -x "${DSH_BIN}" ] || [ "${LOCAL_VERSION}" != "${PINNED_DSH_VERSION}" ]; then
         NEEDS_INSTALL=1
         INSTALL_SPEC="${DSH_PACKAGE}@${PINNED_DSH_VERSION}"
-        IGNORE_NPM_SCRIPTS=1
+        INSTALL_WITHOUT_SCRIPTS=1
     else
         echo "Using locally installed ${DSH_PACKAGE} version ${LOCAL_VERSION}."
     fi
@@ -251,7 +332,7 @@ if [ "${NEEDS_INSTALL}" -eq 1 ]; then
         INSTALL_ARGS+=("node-pty@${NODE_PTY_SINGLE_VERSION}")
     fi
     INSTALL_ARGS+=(-g --registry="${NPM_REGISTRY}")
-    if [ "${IGNORE_NPM_SCRIPTS}" -eq 1 ]; then
+    if [ "${INSTALL_WITHOUT_SCRIPTS}" -eq 1 ]; then
         INSTALL_ARGS+=(--ignore-scripts)
     fi
     if ! "${NPM_BIN}" install "${INSTALL_ARGS[@]}"; then
@@ -262,6 +343,10 @@ fi
 NPM_GLOBAL_ROOT="$(${NPM_BIN} root -g 2>/dev/null || true)"
 NPM_GLOBAL_ROOT="${NPM_GLOBAL_ROOT:-${NPM_CONFIG_PREFIX}/lib/node_modules}"
 DSH_PACKAGE_DIR="${NPM_GLOBAL_ROOT}/${DSH_PACKAGE}"
+
+if [ "${INSTALL_WITHOUT_SCRIPTS}" -eq 1 ]; then
+    run_dsh_dependency_scripts
+fi
 
 if [ -n "${PINNED_DSH_VERSION}" ]; then
     install_bundled_node_pty

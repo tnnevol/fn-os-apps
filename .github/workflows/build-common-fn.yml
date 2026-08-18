@@ -119,6 +119,7 @@ jobs:
               "https://uploads.github.com/repos/${REPOSITORY}/releases/${RELEASE_ID}/assets?name=${ASSET_NAME}" \
               -H "Content-Type: application/octet-stream" \
               --input "$ASSET_PATH" >/dev/null
+            echo "Uploaded ${ASSET_NAME} to Release ${RELEASE_TAG}."
           }
 
           for ATTEMPT in 1 2 3 4 5; do

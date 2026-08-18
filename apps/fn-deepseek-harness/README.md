@@ -10,7 +10,7 @@
 
 ## 启动方式
 
-发布的 FPK 会在构建时解析 `@deepseek-ai/dsh` 的 latest 版本，并记录对应的 `node-pty` 版本列表。安装回调优先使用 FPK 内置的 DSH 版本；如果本地版本不一致，则从安装引导选择的 npm 源安装该精确版本。安装时使用 `--ignore-scripts`，然后将构建机生成的 `node-pty` native 文件写入所有对应依赖目录，因此 NAS 不需要安装 g++ 或重新编译。
+发布的 FPK 会在构建时解析 `@deepseek-ai/dsh` 的 latest 版本，并记录对应的 `node-pty` 版本列表。安装回调优先使用 FPK 内置的 DSH 版本；如果本地版本不一致，则从安装引导选择的 npm 源安装该精确版本。安装阶段会暂时跳过 `node-pty` 的 native 生命周期脚本，并单独执行 DSH 依赖树中其他包的生命周期脚本，最后将构建机生成的 `node-pty` native 文件写入所有对应依赖目录，因此 NAS 不需要安装 g++ 或重新编译。
 
 最终固定使用应用全局路径中的 `dsh` 并执行 `dsh --help` 验证：
 

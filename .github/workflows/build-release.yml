@@ -99,6 +99,33 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Mark FPK upload complete
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPOSITORY: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+          RELEASE_ID: ${{ needs.prepare-release.outputs.release_id }}
+        run: |
+          set -euo pipefail
+
+          PRERELEASE=false
+          case "$TAG" in
+            *-rc*|*-beta*|*-alpha*) PRERELEASE=true ;;
+          esac
+
+          RELEASE_BODY=$(cat <<EOF
+          ## 📦 fnOS Apps ${TAG}
+
+          FPK 安装包已全部上传，正在生成 Release 说明，请稍候。
+          EOF
+          )
+
+          gh api --method PATCH "repos/${REPOSITORY}/releases/${RELEASE_ID}" \
+            -f name="Release ${TAG}" \
+            -f body="$RELEASE_BODY" \
+            -F draft=true \
+            -F prerelease="$PRERELEASE" >/dev/null
+
       - name: Generate release notes from uploaded FPKs
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -202,3 +229,48 @@ jobs:
             echo "Release API failed; retrying in ${DELAY}s (attempt ${ATTEMPT}/5)" >&2
             sleep "$DELAY"
           done
+
+  report-failure:
+    name: Report failed release
+    if: ${{ always() && (needs.prepare-release.result != 'success' || needs.build-common.result != 'success' || needs.build-dsh.result != 'success' || needs.publish-release.result != 'success') }}
+    needs: [prepare-release, build-common, build-dsh, publish-release]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update draft release with failure status
+        if: ${{ needs.prepare-release.result == 'success' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPOSITORY: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+          RELEASE_ID: ${{ needs.prepare-release.outputs.release_id }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          PREPARE_RESULT: ${{ needs.prepare-release.result }}
+          COMMON_RESULT: ${{ needs.build-common.result }}
+          DSH_RESULT: ${{ needs.build-dsh.result }}
+          PUBLISH_RESULT: ${{ needs.publish-release.result }}
+        run: |
+          set -euo pipefail
+
+          RELEASE_BODY=$(cat <<EOF
+          ## ❌ fnOS Apps ${TAG} 构建未完成
+
+          FPK 构建或 Release 发布流程失败，当前 Release 保持草稿状态。请查看 [GitHub Actions 运行日志](${RUN_URL}) 后重试。
+
+          | 阶段 | 状态 |
+          |------|------|
+          | 创建草稿 Release | ${PREPARE_RESULT} |
+          | 构建公共应用 | ${COMMON_RESULT} |
+          | 构建 DeepSeek Harness | ${DSH_RESULT} |
+          | 发布 Release | ${PUBLISH_RESULT} |
+          EOF
+          )
+
+          gh api --method PATCH "repos/${REPOSITORY}/releases/${RELEASE_ID}" \
+            -f name="Release ${TAG}（构建失败）" \
+            -f body="$RELEASE_BODY" \
+            -F draft=true >/dev/null
+
+      - name: Log failure when draft release was not created
+        if: ${{ needs.prepare-release.result != 'success' }}
+        run: |
+          echo "The draft release could not be created; no Release body can be updated."
