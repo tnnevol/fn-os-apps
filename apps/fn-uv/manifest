@@ -1,5 +1,5 @@
 appname               = fn-uv
-version               = 5.0.17
+version               = 5.0.18
 display_name          = uv
 desc                  = 极速 Python 包和项目管理系统，由 Rust 编写。
 platform              = x86
