@@ -41,6 +41,7 @@ export default defineConfig({
     nav: [
       { text: '开始使用', link: '/guide/quick-start' },
       { text: '应用文档', link: '/apps/' },
+      { text: 'Harness 插件', link: '/plugins/' },
       { text: '开发指南', link: '/development/manifest' },
       { text: '构建发布', link: '/build/fnpack' },
       { text: '问题排查', link: '/troubleshooting' }
@@ -59,6 +60,12 @@ export default defineConfig({
         {
           text: '应用文档',
           items: appItems
+        }
+      ],
+      '/plugins/': [
+        {
+          text: 'Harness 插件',
+          items: [{ text: '插件总览', link: '/plugins/' }]
         }
       ],
       '/development/': [

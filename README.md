@@ -22,6 +22,7 @@
 │   ├── fn-uv/                      # uv - Python 包管理器(系统工具)
 │   ├── fn-nvm/                     # NVM - Node.js 版本管理工具(系统工具)
 │   └── fn-ohmyzsh/                 # Oh My Zsh - Zsh 配置管理框架
+├── plugins/                        # Agent 插件 workspace
 ├── .github/workflows/              # CI: FPK 构建与 Release 发布
 ├── docs/                           # VitePress 项目文档
 ├── package.json                    # 项目版本与开发脚本

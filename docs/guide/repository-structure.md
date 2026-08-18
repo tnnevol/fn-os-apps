@@ -3,6 +3,7 @@
 ```text
 .
 ├── apps/                  # fnOS 应用源码与打包配置
+├── plugins/               # Agent 插件 workspace
 ├── docs/                  # VitePress 文档源文件
 ├── .github/workflows/     # GitHub Actions 构建与发布流程
 ├── bump                   # 版本升级、提交和 Tag 脚本
@@ -26,6 +27,10 @@
 | `ICON.PNG` | 应用图标 |
 
 具体文件以应用类型和功能为准。新增文件时应保留 fnpack 模板要求的基础结构。
+
+## Agent 插件目录
+
+`plugins/*` 是 Agent 插件的 pnpm workspace。通用插件默认使用 `agent-plugin-<name>` 命名；面向特定生态的插件可以保留生态名称，例如 `@tnnevol/dsh-codex-auth`。每个子目录可以维护插件源码、构建配置、测试和 Cordis bundle patch。插件开发约定见 [`plugins/README.md`](https://github.com/tnnevol/fn-os-apps/blob/main/plugins/README.md)。
 
 ## 文档目录
 

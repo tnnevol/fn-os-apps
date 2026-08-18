@@ -2,7 +2,18 @@
   "name": "@tnnevol/dsh-codex-auth",
   "displayName": "Codex Auth",
   "description": "Standalone ChatGPT OAuth account management for DeepSeek Harness.",
-  "version": "0.1.0-alpha.1",
+  "version": "0.1.0-rc.7",
+  "author": "tnnevol",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tnnevol/fn-os-apps.git",
+    "directory": "plugins/dsh-codex-auth-plugin"
+  },
+  "homepage": "https://github.com/tnnevol/fn-os-apps/tree/main/plugins/dsh-codex-auth-plugin",
+  "documentation": "https://fnapps-doc.tnnevol.cn/plugins/",
+  "bugs": {
+    "url": "https://github.com/tnnevol/fn-os-apps/issues"
+  },
   "type": "module",
   "license": "AGPL-3.0-only",
   "engines": {
