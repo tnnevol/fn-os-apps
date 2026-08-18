@@ -1,5 +1,5 @@
 appname               = fn-deepseek-harness
-version               = 5.0.19
+version               = 5.0.20
 display_name          = DeepSeek Harness
 desc                  = DeepSeek AI 开源的插件化智能代理工具，通过 Web UI 提供 dsh 操作界面。
 changelog             = 优化 @deepseek-ai/dsh 安装检查；线上版本更新时自动升级全局版本；统一应用请求回环代理；修复插件授权和 SSE 事件流访问问题；启动前隔离旧版不兼容插件并保留插件数据
