@@ -1,0 +1,28 @@
+- insert:
+    - id: dsh-codex-auth
+      name: '@tnnevol/dsh-codex-auth'
+
+# Use the official pi-ai settings family so the DSH Models page renders the
+# provider's credential status and its standard model-catalog editor. The
+# access token is mirrored to this reference by the plugin after OAuth login.
+- id: llm-pi-ai
+  config:
+    providers:
+      openai-codex:
+        displayName: OpenAI Codex
+        apiKeyEnv: OPENAI_CODEX_AUTH_TOKEN
+        models:
+          - id: gpt-5.3-codex-spark
+            name: GPT-5.3 Codex Spark
+          - id: gpt-5.4
+            name: GPT-5.4
+          - id: gpt-5.4-mini
+            name: GPT-5.4 mini
+          - id: gpt-5.5
+            name: GPT-5.5
+          - id: gpt-5.6-luna
+            name: GPT-5.6 Luna
+          - id: gpt-5.6-sol
+            name: GPT-5.6 Sol
+          - id: gpt-5.6-terra
+            name: GPT-5.6 Terra

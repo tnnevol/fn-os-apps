@@ -1,0 +1,100 @@
+/** Standalone ChatGPT OAuth plugin for DeepSeek Harness. */
+
+import type { Context, Fiber } from '@deepseek-ai/cordis'
+import type {} from '@deepseek-ai/dsh-attachment'
+import type {} from '@deepseek-ai/dsh-credentials'
+import type {} from '@deepseek-ai/dsh-fs'
+import type {} from '@deepseek-ai/dsh-host-webserver'
+import type {} from '@deepseek-ai/dsh-llm'
+import type {} from '@deepseek-ai/dsh-tools'
+import { registerCodexAuthRoutes } from './auth-routes.ts'
+import { CodexCredentialMirror } from './credential-mirror.ts'
+import { CodexCredentialStore, CODEX_AUTH_FILENAME, CODEX_PROVIDER, codexAuthPath } from './store.ts'
+import { CODEX_AUTH_SETTINGS_NS, CodexAuthSettingsSchema } from './settings.ts'
+import { viewImageTool } from './view-image.ts'
+
+/** Stable Host bundle name. */
+export const name = 'dsh-codex-auth-plugin'
+/** Host services required by the routes, settings card, and credential mirror. */
+export const inject = ['webServer', 'settings', 'credentials']
+
+export function apply(ctx: Context): void {
+  const settings = ctx.settings.register(CODEX_AUTH_SETTINGS_NS, CodexAuthSettingsSchema)
+  const store = new CodexCredentialStore()
+  const mirror = new CodexCredentialMirror(ctx.credentials, store)
+  const syncMirror = (): void => {
+    void mirror.sync().catch(error => {
+      ctx.logger.warn('dsh-codex-auth: failed to synchronize the Codex credential with dsh', error)
+    })
+  }
+  ctx.effect(() => {
+    syncMirror()
+    const timer = setInterval(syncMirror, 60_000)
+    return () => { clearInterval(timer) }
+  }, 'dsh-codex-auth: credential mirror')
+  registerCodexAuthRoutes(ctx, store, mirror)
+
+  let stopped = false
+  let imageFiber: Fiber | undefined
+  let imageTail = Promise.resolve()
+
+  const reconcileImageTool = async (): Promise<void> => {
+    if (stopped) return
+    const enabled = settings.get().enableImageTool
+    if (enabled === (imageFiber !== undefined)) return
+
+    const previous = imageFiber
+    imageFiber = undefined
+    if (previous !== undefined) await previous.dispose()
+    if (stopped || !enabled) return
+
+    const fiber = ctx.inject(
+      ['tools', 'fs', 'attachments', 'llm'],
+      toolCtx => toolCtx.tools.register(viewImageTool(toolCtx)),
+    )
+    imageFiber = fiber
+    void Promise.resolve(fiber).catch((error: unknown) => {
+      if (imageFiber === fiber) imageFiber = undefined
+      ctx.logger.error('dsh-codex-auth: optional view_image tool failed to activate')
+      ctx.logger.error(error)
+    })
+  }
+
+  const scheduleImageTool = (): void => {
+    imageTail = imageTail.then(reconcileImageTool, reconcileImageTool).catch((error: unknown) => {
+      ctx.logger.error('dsh-codex-auth: could not apply the image-recognition configuration')
+      ctx.logger.error(error)
+    })
+  }
+
+  const unwatch = settings.watch(scheduleImageTool)
+  ctx.effect(() => async () => {
+    stopped = true
+    unwatch()
+    await imageTail
+    const image = imageFiber
+    imageFiber = undefined
+    await image?.dispose()
+  }, 'dsh-codex-auth: optional image-tool lifecycle')
+  scheduleImageTool()
+}
+
+export {
+  CODEX_AUTH_FILENAME,
+  CODEX_PROVIDER,
+  CodexCredentialStore,
+  codexAuthPath,
+} from './store.ts'
+export { CODEX_API_KEY_ENV, CODEX_API_KEY_REF, CodexCredentialMirror } from './credential-mirror.ts'
+export { createCodexAdapter, CODEX_STREAM_IDLE_TIMEOUT_MS } from './adapter.ts'
+export { CodexUsageService, normalizeCodexUsagePayload } from './usage.ts'
+export { codexAuthStatus, loginCodex, logoutCodex } from './auth.ts'
+export type { CodexAuthStatus } from './auth.ts'
+export {
+  CODEX_AUTH_LOGIN_PATH,
+  CODEX_AUTH_LOGOUT_PATH,
+  CODEX_AUTH_STATUS_PATH,
+  CODEX_AUTH_SETTINGS_NAMESPACE,
+} from './auth-paths.ts'
+export { CodexWebAuth, registerCodexAuthRoutes, trustedRequest } from './auth-routes.ts'
+export type { CodexLoginChallenge, CodexWebAuthStatus } from './auth-routes.ts'
