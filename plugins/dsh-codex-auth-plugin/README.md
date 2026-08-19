@@ -2,8 +2,6 @@
 
 一个独立的 DeepSeek Harness Codex OAuth 插件，适配 DSH `0.1.0-rc.7`。
 
-作者：tnnevol
-
 ## 功能
 
 - 在 DSH Web 的“插件”设置中提供 ChatGPT 登录和退出登录入口。
