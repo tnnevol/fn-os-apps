@@ -6,7 +6,7 @@
 
 | 插件 | 版本 | 作用 | 项目源码 |
 | --- | --- | --- | --- |
-| `@tnnevol/dsh-codex-auth` | `0.1.0-rc.7` | ChatGPT/Codex OAuth 登录、凭据同步和 Codex 模型适配 | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/plugins/dsh-codex-auth-plugin) |
+| `@tnnevol/dsh-codex-auth` | `0.1.0-rc.7.1` | ChatGPT/Codex OAuth 登录、凭据同步和 Codex 模型适配 | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/plugins/dsh-codex-auth-plugin) |
 | `@tnnevol/dsh-fnos` | `0.1.0-rc.7` | fnOS 主题桥接：跟随 NAS 主题事件，同时保留 DSH 手动主题优先级 | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/plugins/dsh-fnos-plugin) |
 
 ## @tnnevol/dsh-fnos
