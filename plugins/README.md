@@ -16,12 +16,9 @@ plugins/
 面向特定 Agent 生态的插件可以保留生态约定的独立名称，例如 DSH 插件
 `@tnnevol/dsh-codex-auth`，不强制追加 `agent-plugin-` 前缀。
 
-## 飞牛 fnOS 专用插件规划
+## 飞牛 fnOS 专用插件
 
-后续面向飞牛 fnOS 的多个 NAS 能力，统一规划在同一个插件中，具体范围与
-主题桥接需求记录在 [dsh-fnos-plugin](./dsh-fnos-plugin/README.md)。
-
-当前已完成 P0 主题能力；插件包源码位于 `plugins/dsh-fnos-plugin`，由 `fn-deepseek-harness` 的 FPK 构建流程自动编译并内置。
+fnOS DSH 适配的需求、状态和实现计划统一维护在文档站的 [FNOS-001：DSH 飞牛 NAS 适配](/requirements/2026-08-19-dsh-fnos-adaptation) 和 [对应计划](/plans/2026-08-19-plan-dsh-fnos-adaptation) 中。`fn-deepseek-harness` 的 FPK 构建流程会自动编译并内置 `plugins/dsh-fnos-plugin` 与 `plugins/dsh-codex-auth-plugin`；本文件不再维护具体功能说明。
 
 ## 新增插件
 

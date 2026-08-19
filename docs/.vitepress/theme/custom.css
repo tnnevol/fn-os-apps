@@ -188,7 +188,9 @@
 }
 
 .VPSidebarItem .item > p.text,
-.VPSidebarItem .item > .link > p.text {
+.VPSidebarItem .item > .link > p.text,
+.VPSidebarItem .item > h2.text,
+.VPSidebarItem .item > .link > h2.text {
   padding-left: 8px;
 }
 

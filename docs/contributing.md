@@ -14,7 +14,7 @@
 - 生命周期脚本通过 `bash -n` 检查。
 - JSON 配置可以被解析。
 - 构建产物和 `.DS_Store` 不提交。
-- 需要时同步更新 `apps/<appname>/README.md` 和 `docs/apps/<appname>.md`。
+- 应用与插件的面向用户文档只更新 `docs/` 下的统一文档页面，不再同步维护 `docs/apps/`、`docs/plugins/`、`apps/<appname>/README.md` 或 `plugins/<pluginname>/README.md`。
 
 ## 文档修改检查
 
@@ -23,4 +23,4 @@ pnpm run docs:build
 git diff --check
 ```
 
-应用介绍页应保持简洁。配置较多时优先增加章节，只有在内容确实独立且篇幅较大时才拆分页面。
+应用和插件说明应统一维护在文档站中。配置较多时优先增加现有文档章节，只有在内容确实独立且篇幅较大时才拆分页面。

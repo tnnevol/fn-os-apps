@@ -7,19 +7,43 @@
 | 插件 | 版本 | 作用 | 项目源码 |
 | --- | --- | --- | --- |
 | `@tnnevol/dsh-codex-auth` | `0.1.0-rc.7.2` | ChatGPT/Codex OAuth 登录、凭据同步和 Codex 模型适配 | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/plugins/dsh-codex-auth-plugin) |
-| `@tnnevol/dsh-fnos` | `0.1.0-rc.7` | fnOS 主题桥接：跟随 NAS 主题事件，同时保留 DSH 手动主题优先级 | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/plugins/dsh-fnos-plugin) |
+| `@tnnevol/dsh-fnos` | `0.1.0-rc.7` | fnOS 主题桥接、NAS 主题事件和授权目录管理 | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/plugins/dsh-fnos-plugin) |
 
 ## @tnnevol/dsh-fnos
 
-这是随 `fn-deepseek-harness` FPK 内置的 fnOS 专用插件，当前完成 P0 主题能力：
+这是随 `fn-deepseek-harness` FPK 内置的 fnOS 专用插件，提供 P0 主题能力和 P1 授权目录、工作区快捷跳转能力。`@tnnevol/dsh-codex-auth` 也会由同一 FPK 安装回调内置到 DSH Web profile：
 
 - DSH 主题选择为“跟随系统”时，跟随 fnOS 当前主题和后续主题切换。
 - DSH 主题选择为“浅色”或“深色”时，以 DSH 设置为准，不被 NAS 主题覆盖。
 - 通过 `@trimjs/web-app` 的 `getPlatformConfig()` 获取初始主题，通过 `$on('os/theme')` 接收主题切换事件。
 - 主题变化只通过 SDK 的 `$on('os/theme')` 事件同步，不额外执行轮询。
-- 插件和 SDK 均由 FPK 内置，不依赖 NAS 安装 pnpm 或访问外部 CDN。
+- `@trimjs/web-app` 作为插件的构建依赖，随插件客户端 bundle 一起内置到 FPK；运行时不需要 NAS 安装 pnpm，也不需要访问外部 CDN。
 
-应用每次安装、升级和启动前都会将插件放入 Web profile 的本地 `node_modules` 并补齐 profile bundle 配置。插件的客户端入口使用 DSH 的 `immediately` bundle 机制，在主题模块首次创建前安装 fnOS-backed `matchMedia`，避免首次打开时主题状态落后于 NAS。
+### 工作区快捷跳转
+
+- 保留 DSH 原始工作区弹框、菜单和工作区打开逻辑，只接入官方公开的 `directoryFlow` 子流程。
+- 点击原始“添加工作区”后展示已授权目录，超过 10 个目录时提供搜索，列表使用 fnOS 语义化路径。
+- 点击目录或“选择其他目录”后交回 DSH 原生 `onPicked`；已有路径复用工作区，新路径由 DSH 登记为工作区后打开。
+- “选择其他目录”调用 fnOS 目录选择器；取消操作静默结束，不修改 ACL、文件或会话数据。
+- fnOS 应用 bundle 会禁用官方自动目录选择插件，避免同一个 DSH 目录流程插槽被重复占用；未修改 DSH 官方源码。
+
+### 授权目录
+
+在「设置 → 插件 → fnos」中：
+
+- 展开卡片时读取应用当前已授权的 NAS 目录，并使用 `trim.file.convertPath` 转换为语义化路径后展示。
+- 点击“添加授权目录”调用 fnOS `pickSharedFile()`，授权成功后立即重新读取列表。
+- 点击“取消授权”前会确认操作；只移除应用 ACL，不删除目录或文件。
+- `TRIM_DATA_SHARE_PATHS` 中的应用共享目录会出现在列表中，但仅展示，不提供删除/取消授权按钮。
+- 列表、添加和删除请求由插件 Host 侧调用 fnOS API，浏览器不会接触 `TRIM_API_TOKEN`。
+- 插件会合并 `TRIM_DATA_ACCESSIBLE_PATHS`、`TRIM_DATA_SHARE_PATHS` 与 fnOS 授权 API 的目录，按规范化路径去重。
+- 目录展示使用 `trim.file.convertPath` 的语义化路径，删除请求仍使用 Host 内部的真实路径。
+- 取消授权弹框或返回空结果时静默结束，不显示权限角色类红色警告。
+- fnOS API 不可用、权限不足或当前页面不是 NAS iframe 时，卡片展示可理解的错误并保留刷新入口。
+
+当前 P1 已完成代码和本地验证，仍需在真实 fnOS NAS 上验证 API Scope、权限环境变量、共享目录只读状态和删除行为。
+
+应用每次安装、升级和启动前都会将插件放入 Web profile 的本地 `node_modules` 并补齐 profile bundle 配置。主题首次渲染由 DSH 已保存的配置负责；插件启动后再通过 SDK 获取 fnOS 真实主题，并仅在 DSH 选择“跟随系统”时接管主题同步。
 
 ### 本地调试
 

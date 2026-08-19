@@ -23,6 +23,57 @@ const appItems = [
   { text: '禅道', link: '/apps/fn-zentao' }
 ]
 
+const developmentSidebar = [
+  {
+    text: '开发指南',
+    items: [
+      { text: 'Manifest 配置', link: '/development/manifest' },
+      { text: '生命周期脚本', link: '/development/lifecycle' },
+      { text: '用户向导', link: '/development/wizard' },
+      { text: '权限与入口', link: '/development/permissions' }
+    ]
+  },
+  {
+    text: '构建发布',
+    items: [
+      { text: 'fnpack 打包', link: '/build/fnpack' },
+      { text: '版本管理', link: '/build/versioning' },
+      { text: 'CI 构建', link: '/build/ci' },
+      { text: '发布流程', link: '/build/release' }
+    ]
+  },
+  {
+    text: '问题排查',
+    items: [{ text: '常见问题', link: '/troubleshooting' }]
+  }
+]
+
+const requirementsSidebar = [
+  {
+    text: '需求清单',
+    items: [
+      { text: '规范', link: '/requirements/' },
+      {
+        text: '2026-08-19 DSH 飞牛 NAS 适配',
+        link: '/requirements/2026-08-19-dsh-fnos-adaptation'
+      }
+    ]
+  }
+]
+
+const plansSidebar = [
+  {
+    text: '详细计划',
+    items: [
+      { text: '规范', link: '/plans/' },
+      {
+        text: '2026-08-19-PLAN-DSH 飞牛 NAS 适配',
+        link: '/plans/2026-08-19-plan-dsh-fnos-adaptation'
+      }
+    ]
+  }
+]
+
 export default defineConfig({
   lang: 'zh-CN',
   title: 'fnOS Apps',
@@ -43,8 +94,8 @@ export default defineConfig({
       { text: '应用文档', link: '/apps/' },
       { text: 'Harness 插件', link: '/plugins/' },
       { text: '开发指南', link: '/development/manifest' },
-      { text: '构建发布', link: '/build/fnpack' },
-      { text: '问题排查', link: '/troubleshooting' }
+      { text: '需求清单', link: '/requirements/' },
+      { text: '详细计划', link: '/plans/' }
     ],
     sidebar: {
       '/guide/': [
@@ -68,34 +119,11 @@ export default defineConfig({
           items: [{ text: '插件总览', link: '/plugins/' }]
         }
       ],
-      '/development/': [
-        {
-          text: '开发指南',
-          items: [
-            { text: 'Manifest 配置', link: '/development/manifest' },
-            { text: '生命周期脚本', link: '/development/lifecycle' },
-            { text: '用户向导', link: '/development/wizard' },
-            { text: '权限与入口', link: '/development/permissions' }
-          ]
-        }
-      ],
-      '/build/': [
-        {
-          text: '构建与发布',
-          items: [
-            { text: 'fnpack 打包', link: '/build/fnpack' },
-            { text: '版本管理', link: '/build/versioning' },
-            { text: 'CI 构建', link: '/build/ci' },
-            { text: '发布流程', link: '/build/release' }
-          ]
-        }
-      ],
-      '/troubleshooting': [
-        {
-          text: '问题排查',
-          items: [{ text: '常见问题', link: '/troubleshooting' }]
-        }
-      ],
+      '/development/': developmentSidebar,
+      '/build/': developmentSidebar,
+      '/troubleshooting': developmentSidebar,
+      '/requirements/': requirementsSidebar,
+      '/plans/': plansSidebar,
       '/contributing': [
         {
           text: '参与贡献',
