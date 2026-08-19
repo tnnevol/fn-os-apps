@@ -38,6 +38,7 @@ apps/fn-deepseek-harness/app/node-pty-version
 apps/fn-deepseek-harness/app/node-pty-versions
 apps/fn-deepseek-harness/app/native/node-pty/
 apps/fn-deepseek-harness/app/plugins/dsh-fnos/
+apps/fn-deepseek-harness/app/plugins/dsh-codex-auth/
 
 # VitePress 构建产物
 docs/.vitepress/cache/

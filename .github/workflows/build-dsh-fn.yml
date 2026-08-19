@@ -37,13 +37,13 @@ jobs:
         with:
           node-version: 24
 
-      - name: Install fnOS DSH plugin build dependencies
+      - name: Install DSH plugin build dependencies
         run: pnpm install --frozen-lockfile --filter @tnnevol/dsh-fnos...
 
-      - name: Build bundled fnOS DSH plugin
+      - name: Build bundled fnOS DSH plugins
         run: pnpm --filter @tnnevol/dsh-fnos run build
 
-      - name: Stage bundled fnOS DSH plugin
+      - name: Stage local fnOS DSH plugin
         run: node apps/fn-deepseek-harness/scripts/prepare-dsh-fnos-plugin.mjs
 
       - name: Install fnpack

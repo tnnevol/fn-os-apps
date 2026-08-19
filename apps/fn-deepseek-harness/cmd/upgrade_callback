@@ -5,21 +5,38 @@
 NODE_BIN="/var/apps/nodejs_v24/target/bin"
 DSH_HOME="${TRIM_PKGHOME}"
 APP_HOME="${TRIM_APPDEST_VOL}/@appshare/fn-deepseek-harness"
+NPM_CONFIG_PREFIX="${DSH_HOME}/.npm-global"
+NPM_BIN="${NODE_BIN}/npm"
+NPM_REGISTRY_FILE="${APP_HOME}/.fn-deepseek-harness/npm-registry"
 COMPATIBILITY_SCRIPT="${TRIM_APPDEST}/scripts/prepare-dsh-compatibility.mjs"
-FNOS_PLUGIN_SCRIPT="${TRIM_APPDEST}/scripts/install-dsh-fnos-plugin.mjs"
-FNOS_PLUGIN_SOURCE="${TRIM_APPDEST}/plugins/dsh-fnos"
-FNOS_PROFILE_DIRECTORY="${DSH_HOME}/profiles/web"
+DSH_PLUGIN_SCRIPT="${TRIM_APPDEST}/scripts/install-dsh-fnos-plugin.mjs"
+DSH_PLUGIN_SOURCE_DIRECTORY="${TRIM_APPDEST}/plugins"
+DSH_PUBLISHED_PLUGIN_MANIFEST="${TRIM_APPDEST}/published-dsh-plugins.json"
+DSH_LOCAL_PLUGIN_NAMES="@tnnevol/dsh-fnos"
+DSH_PROFILE_DIRECTORY="${DSH_HOME}/profiles/web"
 COMPATIBILITY_PATCH="${APP_HOME}/.fn-deepseek-harness/compatibility/web-incompatible-plugins.patch.yml"
 
 export DSH_HOME
+export HOME="${APP_HOME}"
+export NPM_CONFIG_CACHE="${DSH_HOME}/.npm-cache"
+export NPM_CONFIG_PREFIX
+export PATH="${NODE_BIN}:${NPM_CONFIG_PREFIX}/bin:${PATH}"
 
-if [ -x "${NODE_BIN}/node" ] && [ -f "${FNOS_PLUGIN_SCRIPT}" ] && [ -f "${FNOS_PLUGIN_SOURCE}/package.json" ]; then
-    if [ ! -f "${FNOS_PROFILE_DIRECTORY}/package.json" ]; then
+NPM_REGISTRY="$(tr -d '[:space:]' < "${NPM_REGISTRY_FILE}" 2>/dev/null || true)"
+NPM_REGISTRY="${NPM_REGISTRY:-https://registry.npmjs.org/}"
+
+if [ -x "${NODE_BIN}/node" ] && [ -f "${DSH_PLUGIN_SCRIPT}" ] && [ -d "${DSH_PLUGIN_SOURCE_DIRECTORY}" ]; then
+    if [ ! -f "${DSH_PROFILE_DIRECTORY}/package.json" ]; then
         "${DSH_HOME}/.npm-global/bin/dsh" --profile web --dump-config >/dev/null 2>&1 || exit 1
     fi
-    DSH_FNOS_PLUGIN_SOURCE="${FNOS_PLUGIN_SOURCE}" \
-    DSH_FNOS_PROFILE_DIRECTORY="${FNOS_PROFILE_DIRECTORY}" \
-    "${NODE_BIN}/node" "${FNOS_PLUGIN_SCRIPT}" || exit 1
+    DSH_PLUGIN_SOURCE_DIRECTORY="${DSH_PLUGIN_SOURCE_DIRECTORY}" \
+    DSH_PUBLISHED_PLUGIN_MANIFEST="${DSH_PUBLISHED_PLUGIN_MANIFEST}" \
+    DSH_LOCAL_PLUGIN_NAMES="${DSH_LOCAL_PLUGIN_NAMES}" \
+    DSH_PROFILE_DIRECTORY="${DSH_PROFILE_DIRECTORY}" \
+    DSH_INSTALL_PUBLISHED=1 \
+    NPM_BIN="${NPM_BIN}" \
+    NPM_REGISTRY="${NPM_REGISTRY}" \
+    "${NODE_BIN}/node" "${DSH_PLUGIN_SCRIPT}" || exit 1
 fi
 
 if [ -x "${NODE_BIN}/node" ] && [ -f "${COMPATIBILITY_SCRIPT}" ]; then

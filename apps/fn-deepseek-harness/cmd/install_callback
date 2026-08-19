@@ -12,9 +12,12 @@ DSH_VERSION_FILE="${APP_DEST}/dsh-version"
 NODE_PTY_VERSIONS_FILE="${APP_DEST}/node-pty-versions"
 NODE_PTY_LEGACY_VERSION_FILE="${APP_DEST}/node-pty-version"
 DSH_NATIVE_BUNDLE="${APP_DEST}/native/node-pty"
-FNOS_PLUGIN_SCRIPT="${APP_DEST}/scripts/install-dsh-fnos-plugin.mjs"
-FNOS_PLUGIN_SOURCE="${APP_DEST}/plugins/dsh-fnos"
-FNOS_PROFILE_DIRECTORY="${DSH_HOME}/profiles/web"
+DSH_PLUGIN_SCRIPT="${APP_DEST}/scripts/install-dsh-fnos-plugin.mjs"
+DSH_PLUGIN_SOURCE_DIRECTORY="${APP_DEST}/plugins"
+DSH_PUBLISHED_PLUGIN_MANIFEST="${APP_DEST}/published-dsh-plugins.json"
+DSH_LOCAL_PLUGIN_NAMES="@tnnevol/dsh-fnos"
+DSH_PROFILE_DIRECTORY="${DSH_HOME}/profiles/web"
+NPM_REGISTRY_FILE="${APP_HOME}/.fn-deepseek-harness/npm-registry"
 
 export DSH_HOME
 export HOME="${APP_HOME}"
@@ -46,25 +49,34 @@ if [ ! -x "${NPM_BIN}" ] || [ ! -x "${NODE_BIN}/node" ]; then
     fail_install "nodejs_v24 runtime is not available at ${NODE_BIN}"
 fi
 
-install_bundled_fnos_plugin() {
-    [ -f "${FNOS_PLUGIN_SCRIPT}" ] || return 0
-    [ -f "${FNOS_PLUGIN_SOURCE}/package.json" ] || fail_install "Bundled fnOS DSH plugin is missing"
+install_bundled_dsh_plugins() {
+    [ -f "${DSH_PLUGIN_SCRIPT}" ] || return 0
+    [ -d "${DSH_PLUGIN_SOURCE_DIRECTORY}" ] || fail_install "Bundled DSH plugin directory is missing"
 
-    if [ ! -f "${FNOS_PROFILE_DIRECTORY}/package.json" ]; then
+    if [ ! -f "${DSH_PROFILE_DIRECTORY}/package.json" ]; then
         "${DSH_BIN}" --profile web --dump-config >/dev/null 2>&1 \
             || fail_install "Unable to initialize the dsh web profile"
     fi
 
-    DSH_FNOS_PLUGIN_SOURCE="${FNOS_PLUGIN_SOURCE}" \
-    DSH_FNOS_PROFILE_DIRECTORY="${FNOS_PROFILE_DIRECTORY}" \
-    "${NODE_BIN}/node" "${FNOS_PLUGIN_SCRIPT}" \
-        || fail_install "Unable to install the bundled fnOS DSH plugin"
+    DSH_PLUGIN_SOURCE_DIRECTORY="${DSH_PLUGIN_SOURCE_DIRECTORY}" \
+    DSH_PUBLISHED_PLUGIN_MANIFEST="${DSH_PUBLISHED_PLUGIN_MANIFEST}" \
+    DSH_LOCAL_PLUGIN_NAMES="${DSH_LOCAL_PLUGIN_NAMES}" \
+    DSH_PROFILE_DIRECTORY="${DSH_PROFILE_DIRECTORY}" \
+    DSH_INSTALL_PUBLISHED=1 \
+    NPM_BIN="${NPM_BIN}" \
+    NPM_REGISTRY="${NPM_REGISTRY}" \
+    "${NODE_BIN}/node" "${DSH_PLUGIN_SCRIPT}" \
+        || fail_install "Unable to install the bundled DSH plugins"
 }
 
 mkdir -p "${DSH_HOME}/.npm-cache" "${NPM_CONFIG_PREFIX}" "${HOME}" \
     || fail_install "Unable to prepare the dsh npm directories"
 
 NPM_REGISTRY="${wizard_npm_registry:-https://registry.npmjs.org/}"
+mkdir -p "$(dirname -- "${NPM_REGISTRY_FILE}")" \
+    || fail_install "Unable to prepare the npm registry configuration directory"
+printf '%s\n' "${NPM_REGISTRY}" > "${NPM_REGISTRY_FILE}" \
+    || fail_install "Unable to save the npm registry configuration"
 NPM_GLOBAL_ROOT="$(${NPM_BIN} root -g 2>/dev/null || true)"
 NPM_GLOBAL_ROOT="${NPM_GLOBAL_ROOT:-${NPM_CONFIG_PREFIX}/lib/node_modules}"
 DSH_PACKAGE_DIR="${NPM_GLOBAL_ROOT}/${DSH_PACKAGE}"
@@ -375,5 +387,5 @@ if [ ! -x "${DSH_BIN}" ] || ! "${DSH_BIN}" --help >/dev/null 2>&1; then
 fi
 
 echo "dsh installation verified at ${DSH_BIN}."
-install_bundled_fnos_plugin
+install_bundled_dsh_plugins
 exit 0

@@ -12,6 +12,8 @@
 
 发布的 FPK 会在构建时解析 `@deepseek-ai/dsh` 的 latest 版本，并记录对应的 `node-pty` 版本列表。安装回调优先使用 FPK 内置的 DSH 版本；如果本地版本不一致，则从安装引导选择的 npm 源安装该精确版本。安装阶段会暂时跳过 `node-pty` 的 native 生命周期脚本，并单独执行 DSH 依赖树中其他包的生命周期脚本，最后将构建机生成的 `node-pty` native 文件写入所有对应依赖目录，因此 NAS 不需要安装 g++ 或重新编译。
 
+FPK 会将尚未发布的 `@tnnevol/dsh-fnos` 本地构建产物打入应用，并在安装、升级阶段使用所选 npm 源安装已发布的 `@tnnevol/dsh-codex-auth@0.1.0-rc.7.2`。两个插件都会写入 `DSH_HOME/profiles/web/node_modules` 并补齐 `dsh.profile.bundles`；应用启动只校验插件，不会每次启动联网，用户无需手动执行 `dsh plugin add`。待 `@tnnevol/dsh-fnos` 正式发布后，再改为与 Codex 插件相同的 npm 安装方式。
+
 最终固定使用应用全局路径中的 `dsh` 并执行 `dsh --help` 验证：
 
 ```bash
@@ -43,8 +45,6 @@ dsh web --host <host> --port <port> --trusted-host <authority...>
 ```
 
 多个地址使用英文逗号分隔。应用代理会将根路径的 `/api`、`/plugins` 请求改写到 iframe 网关前缀，并处理 dsh HMR 使用的 `/plugins/events` EventSource。
-
-应用入口保留 `allUsers=false`，并将入口访问权限设置为可编辑。管理员可以在应用设置中配置允许访问 DeepSeek Harness 的用户。
 
 ## 旧版插件兼容处理
 
@@ -80,14 +80,6 @@ fn-deepseek-harness-v5.0.12-dsh-0.1.0-rc.7.fpk
 ```
 
 其中 `-dsh-` 后的版本就是 FPK 内置并在 NAS 上安装的 DSH 版本。构建产物中的 `pty.node` 不提交到源码仓库，由 workflow 在打包前生成。
-
-## fnOS 主题适配
-
-应用声明了 `micro_app=true`，并在统一网关中提供飞牛官方 `@trimjs/web-app@0.4.2` SDK。主题桥接由随 FPK 内置的 `@tnnevol/dsh-fnos` DSH 插件负责，不再通过网关向 HTML 注入独立主题脚本。
-
-插件通过 `getPlatformConfig()` 读取初始主题，并通过 `$on('os/theme')` 监听 fnOS Web 宿主的后续切换，将 fnOS 的 `light/dark` 同步到 dsh 的 `prefers-color-scheme`。在 dsh 设置中明确选择 `light` 或 `dark` 时以用户选择为准，只有选择 `system` 时才会跟随 NAS 主题。主题变化只通过 SDK 事件同步，不额外执行轮询。SDK 文件随应用本地打包，NAS 运行时不依赖外部 CDN；在独立浏览器中打开时，插件会自动跳过宿主主题同步。
-
-安装回调、升级回调和每次启动前都会把内置插件复制到 `${DSH_HOME}/profiles/web/node_modules/@tnnevol/dsh-fnos`，并确保 Web profile 的 bundle 列表包含该插件。这样不需要在 NAS 上安装 pnpm，也不会修改官方 DSH 源码。
 
 ## 环境变量与数据目录
 

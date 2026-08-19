@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "registry": "https://registry.npmjs.org/",
+  "plugins": [
+    {
+      "name": "@tnnevol/dsh-codex-auth",
+      "version": "0.1.0-rc.7.2"
+    }
+  ]
+}
