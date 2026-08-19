@@ -21,10 +21,6 @@ const LOCAL_ASSETS = new Map([
     ['/trim-web-app.js', {
         body: fs.readFileSync(new URL('./ui/trim-web-app.js', import.meta.url)),
         contentType: 'application/javascript; charset=utf-8'
-    }],
-    ['/trim-theme-bridge.js', {
-        body: fs.readFileSync(new URL('./ui/trim-theme-bridge.js', import.meta.url)),
-        contentType: 'application/javascript; charset=utf-8'
     }]
 ])
 const openSockets = new Set()
@@ -84,6 +80,69 @@ function gatewayBridgeScript() {
     return [
         '<script>',
         '(function (prefix) {',
+        '  // The browser is opened through the fnOS app gateway, so its page',
+        '  // authority is a NAS IP/domain even though every DSH request is',
+        '  // terminated and forwarded to the local DSH process. DSH normally',
+        '  // uses that visible authority to select memory settings mode. Wrap',
+        '  // the connection module before the client boot graph materializes',
+        '  // it, and mark only this gateway page as a trusted Host connection.',
+        '  const connectionModuleId = "@deepseek-ai/dsh-client-connection";',
+        '  const markFnOSHostConnection = function (ctx) {',
+        '    let connection;',
+        '    try { connection = typeof ctx?.get === "function" ? ctx.get("connection") : null; }',
+        '    catch (_) { return; }',
+        '    if (!connection || (typeof connection !== "object" && typeof connection !== "function")) return;',
+        '    try {',
+        '      Object.defineProperty(connection, "isLoopback", {',
+        '        configurable: true,',
+        '        enumerable: true,',
+        '        writable: true,',
+        '        value: true',
+        '      });',
+        '    } catch (_) {',
+        '      try { connection.isLoopback = true; } catch (_) {}',
+        '    }',
+        '  };',
+        '  const wrapConnectionFactory = function (factory) {',
+        '    return function (require) {',
+        '      const moduleExports = factory(require);',
+        '      const apply = moduleExports && moduleExports.apply;',
+        '      if (typeof apply !== "function") return moduleExports;',
+        '      try {',
+        '        moduleExports.apply = function (ctx, config) {',
+        '          const result = apply.call(this, ctx, config);',
+        '          markFnOSHostConnection(ctx);',
+        '          return result;',
+        '        };',
+        '      } catch (_) {}',
+        '      return moduleExports;',
+        '    };',
+        '  };',
+        '  const wrapModuleLoader = function (loader) {',
+        '    if (!loader || typeof loader.load !== "function") return loader;',
+        '    const load = loader.load;',
+        '    if (load.__fnosSettingsBridge === true) return loader;',
+        '    const bridgedLoad = function (handoff) {',
+        '      if (handoff && handoff.id === connectionModuleId && typeof handoff.factory === "function") {',
+        '        handoff = Object.assign({}, handoff, { factory: wrapConnectionFactory(handoff.factory) });',
+        '      }',
+        '      return load.call(this, handoff);',
+        '    };',
+        '    try { Object.defineProperty(bridgedLoad, "__fnosSettingsBridge", { value: true }); } catch (_) {}',
+        '    try { loader.load = bridgedLoad; return loader; }',
+        '    catch (_) { return Object.assign({}, loader, { load: bridgedLoad }); }',
+        '  };',
+        '  // ClientModuleSystem installs __ModuleLoader__ after this script is',
+        '  // evaluated. A setter lets the bridge wrap it before any bundle can',
+        '  // register or materialize the connection module.',
+        '  let moduleLoader;',
+        '  try {',
+        '    Object.defineProperty(window, "__ModuleLoader__", {',
+        '      configurable: true,',
+        '      get: function () { return moduleLoader; },',
+        '      set: function (value) { moduleLoader = wrapModuleLoader(value); }',
+        '    });',
+        '  } catch (_) {}',
         '  const cryptoObject = window.crypto;',
         '  if (cryptoObject && typeof cryptoObject.randomUUID !== "function" && typeof cryptoObject.getRandomValues === "function") {',
         '    const getRandomValues = cryptoObject.getRandomValues.bind(cryptoObject);',
@@ -188,10 +247,6 @@ function gatewayBridgeScript() {
     ].join('\n')
 }
 
-function themeBridgeScript() {
-    return '<script type="module" src="' + addGatewayPrefix('/trim-theme-bridge.js') + '"></script>'
-}
-
 function localAssetFor(upstreamPath) {
     try {
         return LOCAL_ASSETS.get(new URL(upstreamPath, 'http://dsh-gateway.invalid').pathname) || null
@@ -227,10 +282,9 @@ function rewriteHtml(body) {
         (_, prefix, path) => prefix + addGatewayPrefix(path)
     )
     const bridge = gatewayBridgeScript()
-    const themeBridge = themeBridgeScript()
     return /<head\b[^>]*>/i.test(html)
-        ? html.replace(/<head\b[^>]*>/i, (head) => head + bridge + themeBridge)
-        : bridge + themeBridge + html
+        ? html.replace(/<head\b[^>]*>/i, (head) => head + bridge)
+        : bridge + html
 }
 
 function applyLoopbackHeaders(headers) {

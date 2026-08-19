@@ -2,16 +2,19 @@
 
 PID_FILE="${TRIM_PKGVAR}/app.pid"
 GATEWAY_PID_FILE="${TRIM_PKGVAR}/gateway.pid"
+DSH_HOME="${TRIM_PKGHOME}"
+APP_HOME="${TRIM_APPDEST_VOL}/@appshare/fn-deepseek-harness"
 SOCKET_PATH="${TRIM_APPDEST}/app.sock"
 PROXY_SCRIPT="${TRIM_APPDEST}/gateway-proxy.mjs"
 COMPATIBILITY_SCRIPT="${TRIM_APPDEST}/scripts/prepare-dsh-compatibility.mjs"
+FNOS_PLUGIN_SCRIPT="${TRIM_APPDEST}/scripts/install-dsh-fnos-plugin.mjs"
+FNOS_PLUGIN_SOURCE="${TRIM_APPDEST}/plugins/dsh-fnos"
+FNOS_PROFILE_DIRECTORY="${DSH_HOME}/profiles/web"
 GATEWAY_PREFIX="/app/fn-deepseek-harness"
 NODE_BIN="/var/apps/nodejs_v24/target/bin"
 REQUESTED_HOST="${wizard_host:-127.0.0.1}"
 PORT="${wizard_port:-3080}"
 TRUSTED_HOSTS="${wizard_trusted_hosts:-}"
-DSH_HOME="${TRIM_PKGHOME}"
-APP_HOME="${TRIM_APPDEST_VOL}/@appshare/fn-deepseek-harness"
 COMPATIBILITY_PATCH="${APP_HOME}/.fn-deepseek-harness/compatibility/web-incompatible-plugins.patch.yml"
 DSH_BIN="${DSH_HOME}/.npm-global/bin/dsh"
 
@@ -57,6 +60,25 @@ prepare_dsh_compatibility() {
     "${NODE_BIN}/node" "${COMPATIBILITY_SCRIPT}"
 }
 
+prepare_bundled_fnos_plugin() {
+    [ -f "${FNOS_PLUGIN_SCRIPT}" ] || return 0
+    [ -f "${FNOS_PLUGIN_SOURCE}/package.json" ] || {
+        log_error "Bundled fnOS DSH plugin is missing"
+        return 1
+    }
+
+    if [ ! -f "${FNOS_PROFILE_DIRECTORY}/package.json" ]; then
+        "${DSH_BIN}" --profile web --dump-config >/dev/null 2>&1 || {
+            log_error "Unable to initialize the dsh web profile"
+            return 1
+        }
+    fi
+
+    DSH_FNOS_PLUGIN_SOURCE="${FNOS_PLUGIN_SOURCE}" \
+    DSH_FNOS_PROFILE_DIRECTORY="${FNOS_PROFILE_DIRECTORY}" \
+    "${NODE_BIN}/node" "${FNOS_PLUGIN_SCRIPT}"
+}
+
 pid_from_file() {
     local file="$1"
     [ -r "${file}" ] || return 0
@@ -89,6 +111,10 @@ start_process() {
     fi
 
     mkdir -p "${DSH_HOME}/.npm-cache" "${HOME}"
+    if ! prepare_bundled_fnos_plugin; then
+        log_error "Unable to prepare the bundled fnOS DSH plugin; the application was not started"
+        return 1
+    fi
     if ! prepare_dsh_compatibility; then
         log_error "Unable to prepare DSH compatibility quarantine; the application was not started"
         return 1

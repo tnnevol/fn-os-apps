@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "engines": {
+    "node": "^22.19.0 || >=24.0.0"
+  },
+  "dshPluginApi": {
+    "version": "0.1.0-rc.7",
+    "packages": [
+      "@deepseek-ai/dsh-client-runtime",
+      "@deepseek-ai/dsh-client-ui-theme"
+    ]
+  }
+}

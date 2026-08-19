@@ -12,6 +12,9 @@ DSH_VERSION_FILE="${APP_DEST}/dsh-version"
 NODE_PTY_VERSIONS_FILE="${APP_DEST}/node-pty-versions"
 NODE_PTY_LEGACY_VERSION_FILE="${APP_DEST}/node-pty-version"
 DSH_NATIVE_BUNDLE="${APP_DEST}/native/node-pty"
+FNOS_PLUGIN_SCRIPT="${APP_DEST}/scripts/install-dsh-fnos-plugin.mjs"
+FNOS_PLUGIN_SOURCE="${APP_DEST}/plugins/dsh-fnos"
+FNOS_PROFILE_DIRECTORY="${DSH_HOME}/profiles/web"
 
 export DSH_HOME
 export HOME="${APP_HOME}"
@@ -42,6 +45,21 @@ fi
 if [ ! -x "${NPM_BIN}" ] || [ ! -x "${NODE_BIN}/node" ]; then
     fail_install "nodejs_v24 runtime is not available at ${NODE_BIN}"
 fi
+
+install_bundled_fnos_plugin() {
+    [ -f "${FNOS_PLUGIN_SCRIPT}" ] || return 0
+    [ -f "${FNOS_PLUGIN_SOURCE}/package.json" ] || fail_install "Bundled fnOS DSH plugin is missing"
+
+    if [ ! -f "${FNOS_PROFILE_DIRECTORY}/package.json" ]; then
+        "${DSH_BIN}" --profile web --dump-config >/dev/null 2>&1 \
+            || fail_install "Unable to initialize the dsh web profile"
+    fi
+
+    DSH_FNOS_PLUGIN_SOURCE="${FNOS_PLUGIN_SOURCE}" \
+    DSH_FNOS_PROFILE_DIRECTORY="${FNOS_PROFILE_DIRECTORY}" \
+    "${NODE_BIN}/node" "${FNOS_PLUGIN_SCRIPT}" \
+        || fail_install "Unable to install the bundled fnOS DSH plugin"
+}
 
 mkdir -p "${DSH_HOME}/.npm-cache" "${NPM_CONFIG_PREFIX}" "${HOME}" \
     || fail_install "Unable to prepare the dsh npm directories"
@@ -357,4 +375,5 @@ if [ ! -x "${DSH_BIN}" ] || ! "${DSH_BIN}" --help >/dev/null 2>&1; then
 fi
 
 echo "dsh installation verified at ${DSH_BIN}."
+install_bundled_fnos_plugin
 exit 0

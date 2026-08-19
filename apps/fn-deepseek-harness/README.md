@@ -83,9 +83,11 @@ fn-deepseek-harness-v5.0.12-dsh-0.1.0-rc.7.fpk
 
 ## fnOS 主题适配
 
-应用声明了 `micro_app=true`，并在统一网关返回的页面中加载飞牛官方 `@trimjs/web-app@0.4.2` SDK。主题适配层通过 `getPlatformConfig()` 读取初始主题，并通过 `$on('os/theme')` 监听 fnOS Web 宿主的后续切换。
+应用声明了 `micro_app=true`，并在统一网关中提供飞牛官方 `@trimjs/web-app@0.4.2` SDK。主题桥接由随 FPK 内置的 `@tnnevol/dsh-fnos` DSH 插件负责，不再通过网关向 HTML 注入独立主题脚本。
 
-适配层将 fnOS 的 `light/dark` 同步到 dsh 的 `prefers-color-scheme`，由 dsh 自己的主题呈现器更新页面。这样在 dsh 设置中明确选择 `light` 或 `dark` 时以用户选择为准，选择 `system` 时才会跟随 NAS 主题。SDK 的 `$on('os/theme')` 是实时同步主通道；在宿主未转发主题事件时，首次收到事件前会每 5 秒重新读取一次平台配置，并在事件恢复后停止兜底轮询。SDK 文件随应用本地打包，NAS 运行时不依赖外部 CDN；在独立浏览器中打开时，SDK 会自动跳过宿主主题同步。
+插件通过 `getPlatformConfig()` 读取初始主题，并通过 `$on('os/theme')` 监听 fnOS Web 宿主的后续切换，将 fnOS 的 `light/dark` 同步到 dsh 的 `prefers-color-scheme`。在 dsh 设置中明确选择 `light` 或 `dark` 时以用户选择为准，只有选择 `system` 时才会跟随 NAS 主题。主题变化只通过 SDK 事件同步，不额外执行轮询。SDK 文件随应用本地打包，NAS 运行时不依赖外部 CDN；在独立浏览器中打开时，插件会自动跳过宿主主题同步。
+
+安装回调、升级回调和每次启动前都会把内置插件复制到 `${DSH_HOME}/profiles/web/node_modules/@tnnevol/dsh-fnos`，并确保 Web profile 的 bundle 列表包含该插件。这样不需要在 NAS 上安装 pnpm，也不会修改官方 DSH 源码。
 
 ## 环境变量与数据目录
 

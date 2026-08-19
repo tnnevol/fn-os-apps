@@ -1,0 +1,75 @@
+{
+  "name": "@tnnevol/dsh-fnos",
+  "displayName": "fnOS",
+  "description": "fnOS-specific integrations for DeepSeek Harness.",
+  "version": "0.1.0-rc.7",
+  "author": "tnnevol",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tnnevol/fn-os-apps.git",
+    "directory": "plugins/dsh-fnos-plugin"
+  },
+  "homepage": "https://github.com/tnnevol/fn-os-apps/tree/main/plugins/dsh-fnos-plugin",
+  "documentation": "https://fnapps-doc.tnnevol.cn/plugins/",
+  "bugs": {
+    "url": "https://github.com/tnnevol/fn-os-apps/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "type": "module",
+  "license": "AGPL-3.0-only",
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./client": "./lib/client.js",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./compatibility.json": "./compatibility.json",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "compatibility.json",
+    "cordis.patch.yml",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsdown",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "check": "pnpm run typecheck && pnpm run build && pnpm run test"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-theme"
+      ],
+      "platform": "web",
+      "immediately": true
+    }
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1",
+    "@deepseek-ai/dsh-client-runtime": "0.1.0-rc.7",
+    "@deepseek-ai/dsh-client-ui-theme": "0.1.0-rc.7"
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1",
+    "@deepseek-ai/dsh-client-runtime": "0.1.0-rc.7",
+    "@deepseek-ai/dsh-client-ui-theme": "0.1.0-rc.7",
+    "@types/node": "^22.20.0",
+    "tsdown": "^0.22.2",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.8"
+  }
+}

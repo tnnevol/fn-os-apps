@@ -6,9 +6,21 @@ NODE_BIN="/var/apps/nodejs_v24/target/bin"
 DSH_HOME="${TRIM_PKGHOME}"
 APP_HOME="${TRIM_APPDEST_VOL}/@appshare/fn-deepseek-harness"
 COMPATIBILITY_SCRIPT="${TRIM_APPDEST}/scripts/prepare-dsh-compatibility.mjs"
+FNOS_PLUGIN_SCRIPT="${TRIM_APPDEST}/scripts/install-dsh-fnos-plugin.mjs"
+FNOS_PLUGIN_SOURCE="${TRIM_APPDEST}/plugins/dsh-fnos"
+FNOS_PROFILE_DIRECTORY="${DSH_HOME}/profiles/web"
 COMPATIBILITY_PATCH="${APP_HOME}/.fn-deepseek-harness/compatibility/web-incompatible-plugins.patch.yml"
 
 export DSH_HOME
+
+if [ -x "${NODE_BIN}/node" ] && [ -f "${FNOS_PLUGIN_SCRIPT}" ] && [ -f "${FNOS_PLUGIN_SOURCE}/package.json" ]; then
+    if [ ! -f "${FNOS_PROFILE_DIRECTORY}/package.json" ]; then
+        "${DSH_HOME}/.npm-global/bin/dsh" --profile web --dump-config >/dev/null 2>&1 || exit 1
+    fi
+    DSH_FNOS_PLUGIN_SOURCE="${FNOS_PLUGIN_SOURCE}" \
+    DSH_FNOS_PROFILE_DIRECTORY="${FNOS_PROFILE_DIRECTORY}" \
+    "${NODE_BIN}/node" "${FNOS_PLUGIN_SCRIPT}" || exit 1
+fi
 
 if [ -x "${NODE_BIN}/node" ] && [ -f "${COMPATIBILITY_SCRIPT}" ]; then
     DSH_COMPAT_PROFILE_DIRECTORY="${DSH_HOME}/profiles/web" \

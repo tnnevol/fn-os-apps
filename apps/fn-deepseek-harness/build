@@ -12,7 +12,11 @@ fail() {
 }
 
 command -v fnpack >/dev/null 2>&1 || fail "fnpack is not installed or not in PATH"
+command -v pnpm >/dev/null 2>&1 || fail "pnpm is not installed or not in PATH"
+command -v node >/dev/null 2>&1 || fail "node is not installed or not in PATH"
 [ -f "${MANIFEST}" ] || fail "manifest not found: ${MANIFEST}"
+
+REPOSITORY_DIR="$(cd "${APP_DIR}/../.." && pwd)"
 
 VERSION_LINE_COUNT="$(grep -Ec '^[[:space:]]*version[[:space:]]*=' "${MANIFEST}" || true)"
 [ "${VERSION_LINE_COUNT}" -eq 1 ] || fail "manifest must contain exactly one version field"
@@ -64,9 +68,15 @@ sed -E -i.bak "s/^[[:space:]]*version[[:space:]]*=.*/version               = ${N
 rm -f "${MANIFEST}.bak"
 
 echo "Version: ${CURRENT_VERSION} -> ${NEXT_VERSION}"
-if ! (cd "${APP_DIR}" && fnpack build); then
+build_package() {
+    pnpm --dir "${REPOSITORY_DIR}" --filter @tnnevol/dsh-fnos run build || return 1
+    node "${APP_DIR}/scripts/prepare-dsh-fnos-plugin.mjs" || return 1
+    (cd "${APP_DIR}" && fnpack build) || return 1
+}
+
+if ! build_package; then
     restore_manifest
-    echo "Build failed; restored version ${CURRENT_VERSION}." >&2
+    echo "Build or plugin staging failed; restored version ${CURRENT_VERSION}." >&2
     exit 1
 fi
 

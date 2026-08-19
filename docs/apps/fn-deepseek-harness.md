@@ -10,7 +10,11 @@ DeepSeek Harness 是 DeepSeek AI 开源的插件化智能代理工具。本应�
 
 - 提供 DeepSeek Harness Web 操作界面。
 - 通过 fnOS 应用入口访问，不需要单独暴露 Web 服务端口。
-- 支持 fnOS 主题同步和应用访问权限配置。
+- 通过内置 [`@tnnevol/dsh-fnos`](../plugins/) 插件支持 fnOS 主题同步和应用访问权限配置。
+
+### fnOS 主题同步
+
+当 DSH 主题设置为“跟随系统”时，内置 `@tnnevol/dsh-fnos` 插件会通过 fnOS Web SDK 获取当前主题，并监听 `os/theme` 事件同步后续切换；设置为“浅色”或“深色”时，以 DSH 自身设置为准。主题变化只依赖 SDK 事件，不执行额外轮询。
 
 ## 运行要求
 
