@@ -1,6 +1,6 @@
 {
   "name": "@tnnevol/dsh-fnos",
-  "displayName": "fnOS",
+  "displayName": "fnos",
   "description": "fnOS-specific integrations for DeepSeek Harness.",
   "version": "0.1.0-rc.7",
   "author": "tnnevol",
@@ -52,7 +52,13 @@
     },
     "client": {
       "inject": [
-        "@deepseek-ai/dsh-client-ui-theme"
+        "@deepseek-ai/dsh-client-ui-theme",
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-settings-plugins",
+        "@deepseek-ai/dsh-client-ui-conversation",
+        "@deepseek-ai/dsh-client-ui-input-trigger",
+        "@deepseek-ai/dsh-client-ui-primitives",
+        "@deepseek-ai/dsh-client-ui-workspace"
       ],
       "platform": "web",
       "immediately": true
@@ -60,14 +66,38 @@
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.1",
+    "@deepseek-ai/dsh-client-locale": "0.1.0-rc.7",
     "@deepseek-ai/dsh-client-runtime": "0.1.0-rc.7",
-    "@deepseek-ai/dsh-client-ui-theme": "0.1.0-rc.7"
+    "@deepseek-ai/dsh-client-ui-conversation": "0.1.0-rc.7",
+    "@deepseek-ai/dsh-client-ui-input-trigger": "0.1.0-rc.7",
+    "@deepseek-ai/dsh-client-ui-primitives": "0.1.0-rc.7",
+    "@deepseek-ai/dsh-client-ui-workspace": "0.1.0-rc.7",
+    "@deepseek-ai/dsh-client-ui-settings-plugins": "0.1.0-rc.7",
+    "@deepseek-ai/dsh-client-ui-slots": "0.1.0-rc.7",
+    "@deepseek-ai/dsh-client-ui-theme": "0.1.0-rc.7",
+    "@deepseek-ai/dsh-host-webserver": "0.1.0-rc.7",
+    "@deepseek-ai/dsh-settings": "0.1.0-rc.7",
+    "@deepseek-ai/schemastery": "^3.18.1",
+    "react": "^18.3.1"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "^4.0.1",
+    "@deepseek-ai/dsh-client-locale": "0.1.0-rc.7",
     "@deepseek-ai/dsh-client-runtime": "0.1.0-rc.7",
+    "@deepseek-ai/dsh-client-ui-conversation": "0.1.0-rc.7",
+    "@deepseek-ai/dsh-client-ui-input-trigger": "0.1.0-rc.7",
+    "@deepseek-ai/dsh-client-ui-primitives": "0.1.0-rc.7",
+    "@deepseek-ai/dsh-client-ui-workspace": "0.1.0-rc.7",
+    "@deepseek-ai/dsh-client-ui-settings-plugins": "0.1.0-rc.7",
+    "@deepseek-ai/dsh-client-ui-slots": "0.1.0-rc.7",
     "@deepseek-ai/dsh-client-ui-theme": "0.1.0-rc.7",
+    "@deepseek-ai/dsh-host-webserver": "0.1.0-rc.7",
+    "@deepseek-ai/dsh-settings": "0.1.0-rc.7",
+    "@deepseek-ai/schemastery": "^3.18.1",
+    "@trimjs/web-app": "latest",
     "@types/node": "^22.20.0",
+    "@types/react": "^18.3.31",
+    "react": "^18.3.1",
     "tsdown": "^0.22.2",
     "typescript": "^5.9.3",
     "vitest": "^4.1.8"

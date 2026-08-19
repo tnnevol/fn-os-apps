@@ -11,8 +11,9 @@
     "lib": ["es2024", "dom", "dom.iterable"],
     "allowImportingTsExtensions": true,
     "esModuleInterop": true,
+    "jsx": "react-jsx",
     "noEmit": true,
-    "types": ["node"]
+    "types": ["node", "react"]
   },
-  "include": ["src/**/*.ts", "tests/**/*.ts", "tsdown.config.ts"]
+  "include": ["src/**/*.ts", "src/**/*.tsx", "tests/**/*.ts", "tests/**/*.tsx", "tsdown.config.ts"]
 }

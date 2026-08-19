@@ -7,7 +7,17 @@
     "version": "0.1.0-rc.7",
     "packages": [
       "@deepseek-ai/dsh-client-runtime",
-      "@deepseek-ai/dsh-client-ui-theme"
+      "@deepseek-ai/dsh-client-ui-theme",
+      "@deepseek-ai/dsh-client-locale",
+      "@deepseek-ai/dsh-client-ui-conversation",
+      "@deepseek-ai/dsh-client-ui-input-trigger",
+      "@deepseek-ai/dsh-client-ui-primitives",
+      "@deepseek-ai/dsh-client-ui-workspace",
+      "@deepseek-ai/dsh-client-ui-settings-plugins",
+      "@deepseek-ai/dsh-client-ui-slots",
+      "@deepseek-ai/dsh-host-webserver",
+      "@deepseek-ai/dsh-settings",
+      "@deepseek-ai/schemastery"
     ]
   }
 }
