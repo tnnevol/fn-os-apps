@@ -25,6 +25,7 @@ export function apply(ctx: Context): void {
 
 export {
   FNOS_AUTHORIZED_DIRECTORIES_DELETE_PATH,
+  FNOS_AUTHORIZED_ENTRIES_PATH,
   FNOS_AUTHORIZED_DIRECTORIES_PATH,
   FNOS_AUTHORIZED_DIRECTORIES_SETTINGS_NAMESPACE,
   FNOS_PATH_CONVERSION_PATH,
@@ -43,5 +44,6 @@ export {
   normalizePathForAuthorization,
   isPathWithinAuthorizedDirectory,
   isAuthorizedPathForOpen,
+  loadAuthorizedEntries,
   splitPathEnvironment,
 } from './authorized-directories.ts'

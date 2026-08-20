@@ -2,9 +2,12 @@
 
 import {
   FNOS_AUTHORIZED_DIRECTORIES_PATH,
+  FNOS_AUTHORIZED_ENTRIES_PATH,
   FNOS_PATH_CONVERSION_PATH,
   FNOS_PATH_OPEN_VALIDATION_PATH,
   type AuthorizedDirectory,
+  type AuthorizedEntry,
+  type AuthorizedEntriesResponse,
   type ReadablePath,
 } from '../authorized-directories-contract.ts'
 
@@ -15,6 +18,12 @@ export interface AuthorizedDirectoriesResponse {
 
 export interface ReadablePathsResponse {
   paths?: unknown
+}
+
+export interface AuthorizedEntriesResult {
+  directory?: ReadablePath
+  entries: AuthorizedEntry[]
+  truncated: boolean
 }
 
 export class DirectoryRequestError extends Error {
@@ -67,6 +76,56 @@ export async function requestAuthorizedDirectories(): Promise<AuthorizedDirector
   }
   if (typeof value !== 'object' || value === null || Array.isArray(value)) return []
   return directoriesFromResponse(value as AuthorizedDirectoriesResponse)
+}
+
+function entriesFromResponse(value: AuthorizedEntriesResponse): AuthorizedEntriesResult {
+  const seen = new Set<string>()
+  const entries = Array.isArray(value.entries)
+    ? value.entries.flatMap(entry => {
+      if (typeof entry !== 'object' || entry === null || Array.isArray(entry)) return []
+      const path = typeof entry.path === 'string' ? entry.path : ''
+      const semanticPath = typeof entry.semanticPath === 'string' ? entry.semanticPath : path
+      const kind = entry.kind === 'directory' || entry.kind === 'file' ? entry.kind : undefined
+      if (path.length === 0 || semanticPath.length === 0 || kind === undefined || seen.has(path)) return []
+      seen.add(path)
+      return [{
+        path,
+        semanticPath,
+        kind,
+        ...(typeof entry.size === 'number' && Number.isFinite(entry.size) ? { size: entry.size } : {}),
+        ...(typeof entry.modifiedAt === 'number' && Number.isFinite(entry.modifiedAt) ? { modifiedAt: entry.modifiedAt } : {}),
+      }]
+    })
+    : []
+  const directory = value.directory?.path !== undefined && value.directory.semanticPath !== undefined
+    ? { path: value.directory.path, semanticPath: value.directory.semanticPath }
+    : undefined
+  return {
+    ...(directory === undefined ? {} : { directory }),
+    entries,
+    truncated: value.truncated === true,
+  }
+}
+
+/** List authorized roots or one authorized directory level without using the fnOS SDK picker. */
+export async function requestAuthorizedEntries(path?: string): Promise<AuthorizedEntriesResult> {
+  const response = await fetch(FNOS_AUTHORIZED_ENTRIES_PATH, {
+    method: 'POST',
+    headers: { ...requestHeaders(), 'content-type': 'application/json' },
+    credentials: 'same-origin',
+    body: JSON.stringify(path === undefined ? {} : { path }),
+  })
+  const value: unknown = await response.json().catch(() => undefined)
+  if (!response.ok) {
+    const code = typeof value === 'object' && value !== null && 'error' in value && typeof value.error === 'string'
+      ? value.error
+      : `HTTP ${response.status}`
+    throw new DirectoryRequestError(code)
+  }
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    return { entries: [], truncated: false }
+  }
+  return entriesFromResponse(value as AuthorizedEntriesResponse)
 }
 
 export function readablePathsFromResponse(value: ReadablePathsResponse): ReadablePath[] {

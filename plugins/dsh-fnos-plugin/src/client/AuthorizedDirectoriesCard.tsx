@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import type { CSSProperties } from 'react'
 import type { PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type { FnosLocaleKey } from './locales.ts'
-import { isPickerCancellation } from './picker-result.ts'
+import { diagnosePickerResult, isPickerCancellation, logPickerSdkEvent, logPickerSdkValue } from './picker-result.ts'
 import { createTrimApp } from './sdk.ts'
 import {
   DirectoryRequestError,
@@ -64,7 +64,12 @@ const errorStyle: CSSProperties = { ...bodyStyle, color: 'var(--dsw-alias-state-
 const cardBodyStyle: CSSProperties = { display: 'flex', flexDirection: 'column', gap: 12, borderTop: '1px solid var(--dsw-alias-border-l2)', margin: '0 16px', padding: '12px 0 8px' }
 const rowStyle: CSSProperties = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }
 const buttonStyle: CSSProperties = { boxSizing: 'border-box', minHeight: 30, padding: '4px 12px', border: '1px solid var(--dsw-alias-border-l2)', borderRadius: 16, background: 'var(--dsw-alias-bg-layer-1)', color: 'var(--dsw-alias-label-primary)', font: 'inherit', fontSize: 13, cursor: 'pointer' }
-const primaryButtonStyle: CSSProperties = { ...buttonStyle, border: 0, background: 'var(--dsw-alias-label-primary)', color: 'var(--dsw-alias-bg-layer-3)' }
+const primaryButtonStyle: CSSProperties = {
+  ...buttonStyle,
+  border: 0,
+  background: 'var(--dsw-alias-button-primary-fill)',
+  color: 'var(--dsw-alias-label-primary-foreground)',
+}
 const pathListStyle: CSSProperties = { display: 'flex', flexDirection: 'column', gap: 8, margin: 0, padding: 0, listStyle: 'none' }
 const pathRowStyle: CSSProperties = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '10px 12px', border: '1px solid var(--dsw-alias-border-l2)', borderRadius: 9, background: 'var(--dsw-alias-bg-layer-1)' }
 const pathStyle: CSSProperties = { minWidth: 0, overflow: 'hidden', color: 'var(--dsw-alias-label-primary)', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: 13, textOverflow: 'ellipsis', whiteSpace: 'nowrap' }
@@ -135,22 +140,42 @@ export function AuthorizedDirectoriesCard({ t }: AuthorizedDirectoriesCardProps)
 
   const addDirectory = useCallback(async (): Promise<void> => {
     setBusy(true)
+    let phase = 'createTrimApp'
     try {
       const sdk = createTrimApp()
-      const result = await sdk.pickSharedFile({
+      const params = {
         title: t('add'),
         okText: t('confirm'),
         sidebarGroup: ['myFiles', 'otherShare', 'external', 'remote', 'favorites'],
+      } as const
+      logPickerSdkEvent('created', {
+        isWeb: sdk.isWeb,
+        isStandaloneWeb: sdk.isStandaloneWeb,
+        params: {
+          title: params.title,
+          okText: params.okText,
+          sidebarGroup: params.sidebarGroup,
+        },
       })
-      if (isPickerCancellation(result)) return
-      if (result?.code !== undefined && result.code !== 0) {
+
+      phase = 'ready'
+      await sdk.ready()
+      logPickerSdkEvent('ready', { isWeb: sdk.isWeb, isStandaloneWeb: sdk.isStandaloneWeb })
+
+      phase = 'pickSharedFile'
+      const result = await sdk.pickSharedFile(params)
+      const diagnosis = logPickerSdkValue('resolved', result)
+      if (diagnosis.outcome === 'cancelled') return
+      if (diagnosis.outcome !== 'success') {
         throw new DirectoryRequestError(
-          result.code === 1 ? 'fnos-authorized-directory-permission-denied' : 'fnos-authorized-directory-request-failed',
-          result.msg,
+          diagnosis.code === 1 ? 'fnos-authorized-directory-permission-denied' : 'fnos-authorized-directory-request-failed',
+          diagnosis.message ?? diagnosis.error ?? `fnOS picker returned ${diagnosis.reason}`,
         )
       }
       await refresh()
     } catch (error: unknown) {
+      const diagnosis = diagnosePickerResult(error)
+      logPickerSdkEvent('rejected', { phase, diagnosis })
       if (isPickerCancellation(error)) return
       setState(current => ({ status: 'error', directories: current.directories, code: errorMessage(error, t, 'pick') }))
     } finally {

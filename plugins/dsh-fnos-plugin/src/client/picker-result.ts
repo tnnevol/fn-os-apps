@@ -1,16 +1,44 @@
 /**
- * Detect the result shapes used by different fnOS hosts when a file picker is
- * closed without confirming a selection.
+ * Diagnostics and result classification for the fnOS shared-directory picker.
  *
- * The SDK type allows `undefined`, while some host versions return a bridge
- * response with a cancel status/message or an empty result. Keep this helper
- * separate from the card so those host variations can be tested without a
- * browser or React runtime.
+ * The SDK documents `undefined` as a possible picker result and documents
+ * `{ code, msg, data }` as the bridge response. It does not document a
+ * Chinese message or an empty `data` array as a cancellation signal, so this
+ * module deliberately does not infer cancellation from either of them.
  */
 
 const cancellationStatusPattern = /^(?:cancel(?:led|ed)?|abort(?:ed)?)$/iu
-const cancellationMessagePattern = /(?:用户\s*)?(?:已\s*)?取消(?:选择|操作|授权)?(?:$|[\s,，。!！])|\b(?:cancel(?:led|ed)?|abort(?:ed)?|user[_ -]?cancel(?:led|ed)?)\b/iu
-const adminOnlyPickerMessagePattern = /(?:只有|仅)\s*(?:NAS|fnOS|飞牛)?\s*管理员.*(?:授权|操作|目录)/iu
+const errorStatusPattern = /^(?:error|failed|failure|rejected)$/iu
+
+export type PickerResultOutcome = 'cancelled' | 'success' | 'error' | 'unknown'
+
+export interface PickerDataSummary {
+  kind: 'undefined' | 'null' | 'array' | 'object' | 'string' | 'number' | 'boolean' | 'function' | 'symbol' | 'bigint'
+  length?: number
+  itemTypes?: string[]
+}
+
+/** Safe, path-free summary of a value returned by the fnOS SDK. */
+export interface PickerResultDiagnosis {
+  outcome: PickerResultOutcome
+  reason: string
+  valueType: string
+  keys?: string[]
+  code?: number
+  errorCode?: string
+  errorName?: string
+  status?: string
+  error?: string
+  message?: string
+  data?: PickerDataSummary
+}
+
+export interface PickerSdkLogger {
+  info: (...data: unknown[]) => void
+  warn: (...data: unknown[]) => void
+}
+
+export const PICKER_SDK_LOG_PREFIX = '[dsh-fnos][fnos-sdk][pickSharedFile]'
 
 function asRecord(value: unknown): Record<string, unknown> | undefined {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -18,42 +46,127 @@ function asRecord(value: unknown): Record<string, unknown> | undefined {
     : undefined
 }
 
-function textFields(record: Record<string, unknown>): string {
-  return [record.msg, record.message, record.error]
-    .filter((value): value is string => typeof value === 'string')
-    .join(' ')
-    .trim()
+function valueType(value: unknown): string {
+  if (value === undefined) return 'undefined'
+  if (value === null) return 'null'
+  if (value instanceof Error) return value.constructor.name || 'Error'
+  if (Array.isArray(value)) return 'array'
+  return typeof value
 }
 
-function hasCancellationStatus(record: Record<string, unknown>): boolean {
-  const data = asRecord(record.data)
-  return [record.status, data?.status]
-    .some(status => typeof status === 'string' && cancellationStatusPattern.test(status.trim()))
+function dataSummary(value: unknown): PickerDataSummary {
+  if (value === undefined) return { kind: 'undefined' }
+  if (value === null) return { kind: 'null' }
+  if (Array.isArray(value)) {
+    const itemTypes = [...new Set(value.slice(0, 5).map(item => valueType(item)))]
+    return { kind: 'array', length: value.length, itemTypes }
+  }
+  if (typeof value === 'object') return { kind: 'object' }
+  return { kind: typeof value }
 }
 
-/** Return true when the fnOS picker was closed without a confirmed selection. */
-export function isPickerCancellation(value: unknown): boolean {
-  if (value === undefined || value === null) return true
+function stringField(record: Record<string, unknown>, key: string): string | undefined {
+  const value = record[key]
+  return typeof value === 'string' && value.length > 0 ? value : undefined
+}
+
+function diagnosisFor(value: unknown, outcome: PickerResultOutcome, reason: string): PickerResultDiagnosis {
+  const diagnosis: PickerResultDiagnosis = {
+    outcome,
+    reason,
+    valueType: valueType(value),
+  }
 
   if (value instanceof Error) {
-    if (value.name === 'AbortError' || value.name === 'CanceledError') return true
-    if (adminOnlyPickerMessagePattern.test(value.message)) return true
+    diagnosis.errorName = value.name
+    diagnosis.message = value.message
+    const errorCode = (value as Error & { code?: unknown }).code
+    if (typeof errorCode === 'string' && errorCode.length > 0) diagnosis.errorCode = errorCode
+    return diagnosis
   }
 
   const record = asRecord(value)
-  if (!record) return false
-  if (hasCancellationStatus(record)) return true
+  if (record === undefined) {
+    if (value !== undefined && value !== null) diagnosis.data = dataSummary(value)
+    return diagnosis
+  }
 
-  const message = textFields(record)
-  if (cancellationMessagePattern.test(message)) return true
+  diagnosis.keys = Object.keys(record).sort()
+  if (typeof record.code === 'number' && Number.isFinite(record.code)) diagnosis.code = record.code
+  const status = stringField(record, 'status')
+  if (status !== undefined) diagnosis.status = status
+  const error = stringField(record, 'error')
+  if (error !== undefined) diagnosis.error = error
+  const message = stringField(record, 'msg') ?? stringField(record, 'message')
+  if (message !== undefined) diagnosis.message = message
+  diagnosis.data = dataSummary(record.data)
+  return diagnosis
+}
 
-  // The fnOS iframe host currently uses the same empty-path bridge response
-  // when the shared picker closes without a selection. One variant includes
-  // code 1 and the administrator-only message; there is no state change to
-  // report in either case, so keep the picker dismissal silent. Permission
-  // errors from the follow-up Host list/delete routes remain visible.
-  if (!Array.isArray(record.data)) return adminOnlyPickerMessagePattern.test(message)
-  if (record.data.length !== 0) return false
-  if (message.length === 0) return true
-  return record.code === 1 && adminOnlyPickerMessagePattern.test(message)
+function explicitStatus(record: Record<string, unknown>): string | undefined {
+  const status = stringField(record, 'status')
+  return status?.trim()
+}
+
+/**
+ * Classify only signals that are explicit in the SDK response/error shape.
+ * Unknown values remain visible to the caller and are logged as unknown.
+ */
+export function diagnosePickerResult(value: unknown): PickerResultDiagnosis {
+  if (value === undefined) return diagnosisFor(value, 'cancelled', 'sdk-returned-undefined')
+
+  if (value instanceof Error) {
+    if (value.name === 'AbortError' || value.name === 'CanceledError') {
+      return diagnosisFor(value, 'cancelled', 'abort-error')
+    }
+    return diagnosisFor(value, 'error', 'exception')
+  }
+
+  const record = asRecord(value)
+  if (record === undefined) return diagnosisFor(value, 'unknown', value === null ? 'null-result' : 'non-object-result')
+
+  const status = explicitStatus(record)
+  if (status !== undefined && cancellationStatusPattern.test(status)) {
+    return diagnosisFor(value, 'cancelled', 'explicit-cancel-status')
+  }
+  if (status !== undefined && errorStatusPattern.test(status)) {
+    return diagnosisFor(value, 'error', 'explicit-error-status')
+  }
+
+  if (typeof record.code === 'number' && Number.isFinite(record.code)) {
+    return diagnosisFor(value, record.code === 0 ? 'success' : 'error', record.code === 0 ? 'success-code-0' : 'non-zero-code')
+  }
+
+  if (typeof record.error === 'string' && record.error.length > 0) {
+    return diagnosisFor(value, 'error', 'error-field')
+  }
+
+  return diagnosisFor(value, 'unknown', 'unrecognized-result-shape')
+}
+
+/** Return true only when the SDK explicitly indicates that the picker closed. */
+export function isPickerCancellation(value: unknown): boolean {
+  return diagnosePickerResult(value).outcome === 'cancelled'
+}
+
+/** Write a non-sensitive invocation/result summary to the browser console. */
+export function logPickerSdkEvent(
+  stage: 'created' | 'ready' | 'resolved' | 'rejected',
+  details: Record<string, unknown>,
+  logger: PickerSdkLogger = console,
+): void {
+  const method = stage === 'rejected' ? logger.warn : logger.info
+  method(PICKER_SDK_LOG_PREFIX, stage, details)
+}
+
+/** Diagnose and log an SDK result without logging selected NAS paths. */
+export function logPickerSdkValue(
+  stage: 'resolved' | 'rejected',
+  value: unknown,
+  logger: PickerSdkLogger = console,
+): PickerResultDiagnosis {
+  const diagnosis = diagnosePickerResult(value)
+  const method = diagnosis.outcome === 'error' || diagnosis.outcome === 'unknown' ? logger.warn : logger.info
+  method(PICKER_SDK_LOG_PREFIX, stage, diagnosis)
+  return diagnosis
 }

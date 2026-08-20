@@ -1,16 +1,20 @@
 /** Host routes for fnOS application shared-directory ACLs. */
 
 import type { IncomingMessage, ServerResponse } from 'node:http'
+import { readdir, realpath, stat } from 'node:fs/promises'
 import { posix } from 'node:path'
 import type { Context } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-host-webserver'
 import { callFnOsApi, FnOsApiError } from './fnos-api.ts'
 import {
   FNOS_AUTHORIZED_DIRECTORIES_DELETE_PATH,
+  FNOS_AUTHORIZED_ENTRIES_PATH,
   FNOS_AUTHORIZED_DIRECTORIES_PATH,
   FNOS_PATH_CONVERSION_PATH,
   FNOS_PATH_OPEN_VALIDATION_PATH,
   type AuthorizedDirectory,
+  type AuthorizedEntry,
+  type AuthorizedEntriesResponse,
   type ReadablePath,
 } from './authorized-directories-contract.ts'
 
@@ -46,6 +50,15 @@ interface ConvertedPaths {
 interface ConvertedPathsEnvelope {
   data?: unknown
   result?: unknown
+}
+
+const AUTHORIZED_ENTRIES_LIMIT = 500
+
+class AuthorizedEntriesError extends Error {
+  constructor(readonly code: string, readonly status: number, message = code) {
+    super(message)
+    this.name = 'AuthorizedEntriesError'
+  }
 }
 
 function header(req: IncomingMessage, name: string): string | undefined {
@@ -362,6 +375,127 @@ function openPathValue(value: unknown): string | undefined {
   return normalizePathForAuthorization((value as Record<string, unknown>).path)
 }
 
+/** Read the optional directory field used by the authorized-entry listing. */
+function listingPathValue(value: unknown): string | undefined | null {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return null
+  const raw = (value as Record<string, unknown>).path
+  if (raw === undefined) return undefined
+  return normalizePathForAuthorization(raw) ?? null
+}
+
+async function resolvedAuthorizedRoots(): Promise<string[]> {
+  let roots: string[]
+  try {
+    roots = mergeAuthorizedPaths(await loadAuthorizedDirectoryPaths(), dataSharePathsFromEnvironment())
+  } catch (error: unknown) {
+    const shares = dataSharePathsFromEnvironment()
+    if (shares.length === 0) throw error
+    roots = shares
+  }
+  const resolved = await Promise.all(roots.map(async root => {
+    try {
+      return normalizePathForAuthorization(await realpath(root))
+    } catch {
+      return normalizePathForAuthorization(root)
+    }
+  }))
+  return resolved.filter((root): root is string => root !== undefined)
+}
+
+async function isResolvedPathWithinAuthorizedRoots(path: string, roots: readonly string[]): Promise<boolean> {
+  if (!isPathWithinAuthorizedDirectory(path, roots)) return false
+  try {
+    const resolvedPath = normalizePathForAuthorization(await realpath(path))
+    if (resolvedPath === undefined) return false
+    return roots.some(root => root === '/' || resolvedPath === root || resolvedPath.startsWith(`${root}/`))
+  } catch {
+    return false
+  }
+}
+
+function sortAuthorizedEntries(entries: AuthorizedEntry[]): AuthorizedEntry[] {
+  return entries.sort((left, right) => {
+    if (left.kind !== right.kind) return left.kind === 'directory' ? -1 : 1
+    return left.semanticPath.localeCompare(right.semanticPath, undefined, { numeric: true, sensitivity: 'base' })
+  })
+}
+
+/**
+ * List only the authorized roots or one authorized directory level. The
+ * lexical boundary check prevents `share-archive` from matching `share`, and
+ * the realpath check prevents a symlink inside an authorized root from
+ * escaping that root.
+ */
+export async function loadAuthorizedEntries(
+  req: IncomingMessage,
+  pathValue?: string,
+): Promise<AuthorizedEntriesResponse> {
+  const roots = await resolvedAuthorizedRoots()
+  if (pathValue === undefined) {
+    const readable = await convertPathsForDisplay(roots, requestLanguage(req))
+    return {
+      entries: readable.map(entry => ({ ...entry, kind: 'directory' as const })),
+    }
+  }
+
+  if (!isPathWithinAuthorizedDirectory(pathValue, roots)
+    || !await isResolvedPathWithinAuthorizedRoots(pathValue, roots)) {
+    throw new AuthorizedEntriesError('fnos-path-not-authorized', 403)
+  }
+  let directoryStat
+  try {
+    directoryStat = await stat(pathValue)
+  } catch {
+    throw new AuthorizedEntriesError('authorized-directory-not-found', 404)
+  }
+  if (!directoryStat.isDirectory()) {
+    throw new AuthorizedEntriesError('authorized-path-not-directory', 400)
+  }
+
+  let children
+  try {
+    children = await readdir(pathValue, { withFileTypes: true })
+  } catch {
+    throw new AuthorizedEntriesError('authorized-directory-not-readable', 403)
+  }
+
+  const candidates: { path: string; kind: 'file' | 'directory'; size?: number; modifiedAt?: number }[] = []
+  for (const child of children) {
+    const childPath = normalizePathForAuthorization(posix.join(pathValue, child.name))
+    if (childPath === undefined || !isPathWithinAuthorizedDirectory(childPath, roots)) continue
+    try {
+      const childStat = await stat(childPath)
+      if (!await isResolvedPathWithinAuthorizedRoots(childPath, roots)) continue
+      const candidate: { path: string; kind: 'file' | 'directory'; size?: number; modifiedAt?: number } = {
+        path: childPath,
+        kind: childStat.isDirectory() ? 'directory' : 'file',
+        modifiedAt: childStat.mtimeMs,
+      }
+      if (childStat.isFile()) candidate.size = childStat.size
+      candidates.push(candidate)
+    } catch {
+      // A disappearing or unreadable child should not make the whole picker
+      // unusable; the next refresh will reconcile it.
+    }
+  }
+
+  const truncated = candidates.length > AUTHORIZED_ENTRIES_LIMIT
+  const selected = candidates.slice(0, AUTHORIZED_ENTRIES_LIMIT)
+  const readable = await convertPathsForDisplay([pathValue, ...selected.map(entry => entry.path)], requestLanguage(req))
+  const readableByPath = new Map(readable.map(entry => [entry.path, entry.semanticPath]))
+  return {
+    directory: {
+      path: pathValue,
+      semanticPath: readableByPath.get(pathValue) ?? readableFallbackPath(pathValue, requestLanguage(req)),
+    },
+    entries: sortAuthorizedEntries(selected.map(entry => ({
+      ...entry,
+      semanticPath: readableByPath.get(entry.path) ?? readableFallbackPath(entry.path, requestLanguage(req)),
+    }))),
+    truncated,
+  }
+}
+
 /** Register list/delete routes only on the DSH Web profile. */
 export function registerAuthorizedDirectoryRoutes(ctx: Context): void {
   ctx.effect(() => {
@@ -440,6 +574,25 @@ export function registerAuthorizedDirectoryRoutes(ctx: Context): void {
             }
             json(res, 200, { ok: true })
           } catch (error: unknown) {
+            errorResponse(res, error)
+          }
+        },
+      }),
+      ctx.webServer.register({
+        kind: 'exact',
+        path: FNOS_AUTHORIZED_ENTRIES_PATH,
+        handler: async (req, res) => {
+          if (req.method !== 'POST') return json(res, 405, { error: 'method not allowed' })
+          if (!authorize(req, res)) return
+          try {
+            const path = listingPathValue(await readJsonBody(req))
+            if (path === null) return json(res, 400, { error: 'invalid-fnos-path' })
+            json(res, 200, await loadAuthorizedEntries(req, path))
+          } catch (error: unknown) {
+            if (error instanceof AuthorizedEntriesError) {
+              json(res, error.status, { error: error.code })
+              return
+            }
             errorResponse(res, error)
           }
         },

@@ -171,10 +171,12 @@ export function apply(ctx: ClientContext): void {
       yield ctx.slots.register({
         name: 'conversation.hero.workspace.directoryFlow',
         locale: namespace,
+        inject: () => ({ listDirectory: (path: string | undefined, signal?: AbortSignal) => ctx.workspaces.listDirectory(path, signal) }),
       }, FnosWorkspaceDirectoryFlow)
       yield ctx.slots.register({
         name: 'sidebar.workspaces.directoryFlow',
         locale: namespace,
+        inject: () => ({ listDirectory: (path: string | undefined, signal?: AbortSignal) => ctx.workspaces.listDirectory(path, signal) }),
       }, FnosWorkspaceDirectoryFlow)
     }))
 }
