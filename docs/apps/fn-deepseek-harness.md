@@ -46,7 +46,7 @@ DeepSeek Harness 是 DeepSeek AI 开源的插件化智能代理工具。本应�
 - 使用 `127.0.0.1` 时，可信访问地址填写打开 NAS Web 时浏览器地址栏中的 host 或 host:port。
 - npm 官方源默认使用 `https://registry.npmjs.org/`；安装失败不会自动切换其他源。
 - 安装时会检查应用全局 npm 前缀中的 `@deepseek-ai/dsh`；本地未安装或线上版本更高时才会更新，否则复用本地版本。
-- 应用安装、升级和启动前会自动修复旧版 Web profile 的官方 bundle 基线（`@deepseek-ai/dsh-base`、`@deepseek-ai/dsh-web-app`），并保留已有的第三方插件和用户配置；这两个 bundle 缺失时，终端、Agent 循环和网页搜索设置卡片不会出现。历史上曾随 FPK 暂存、但当前尚未发布的 `@tnnevol/dsh-fnos` bundle 及其 `link:` 本地依赖会从 profile 配置中移除（不删除插件包或用户数据），避免 npm 安装和 DSH 启动被旧插件阻塞；该插件正式加入发布清单后才会重新保留。
+- 应用安装、升级和启动前会自动修复旧版 Web profile 的官方 bundle 基线（`@deepseek-ai/dsh-base`、`@deepseek-ai/dsh-web-app`），并保留已有的第三方插件和用户配置；这两个 bundle 缺失时，终端、Agent 循环和网页搜索设置卡片不会出现。有效的手动安装 `@tnnevol/dsh-fnos` 会将 `link:` 依赖规范化为 npm 可处理的 `file:` 并继续保留；只有本地路径失效或旧 patch 不再提供目录选择 Host 服务时，才移除其依赖和 bundle（不删除插件包或用户数据）。
 
 应用的 npm 镜像源、数据目录和环境变量详见应用目录中的 [README](https://github.com/tnnevol/fn-os-apps/blob/main/apps/fn-deepseek-harness/README.md)。
 

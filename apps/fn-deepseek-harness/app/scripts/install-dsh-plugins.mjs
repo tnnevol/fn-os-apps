@@ -9,6 +9,7 @@ const publishedManifestPath = process.env.DSH_PUBLISHED_PLUGIN_MANIFEST
 const npmBin = process.env.NPM_BIN || 'npm'
 const npmRegistry = process.env.NPM_REGISTRY || 'https://registry.npmjs.org/'
 const installPublished = process.env.DSH_INSTALL_PUBLISHED === '1'
+const FNOS_PLUGIN_NAME = '@tnnevol/dsh-fnos'
 
 // These are the shipped web profile layers. The three built-in settings cards
 // (terminal, agent loop, and web search) are registered by this official
@@ -26,7 +27,7 @@ const OFFICIAL_WEB_PROFILE_BUNDLES = [
 // dsh-host-apiproxy pending. Once the plugin is included in the published
 // manifest, it is no longer treated as obsolete and is retained normally.
 const UNPUBLISHED_LEGACY_BUNDLES = new Set([
-  '@tnnevol/dsh-fnos',
+  FNOS_PLUGIN_NAME,
 ])
 
 function fail(message) {
@@ -58,6 +59,7 @@ async function removeLegacyLocalPluginReferences(publishedPlugins) {
   const profileManifestPath = join(profileDirectory, 'package.json')
   const profileManifest = JSON.parse(await readFile(profileManifestPath, 'utf8'))
   const publishedPluginNames = new Set(publishedPlugins.map(plugin => plugin.name))
+  const normalizedReferences = []
   const removedReferences = []
 
   for (const field of ['dependencies', 'devDependencies', 'optionalDependencies']) {
@@ -69,18 +71,32 @@ async function removeLegacyLocalPluginReferences(publishedPlugins) {
       if (publishedPluginNames.has(packageName) || typeof specifier !== 'string' || !specifier.startsWith('link:')) {
         continue
       }
-      delete dependencies[packageName]
-      removedReferences.push(`${field}.${packageName}`)
+      const localPackageDirectory = specifier.slice('link:'.length)
+      if (await hasUsableLegacyBundle(packageName, localPackageDirectory)) {
+        dependencies[packageName] = `file:${localPackageDirectory}`
+        normalizedReferences.push(`${field}.${packageName}`)
+      } else {
+        delete dependencies[packageName]
+        removedReferences.push(`${field}.${packageName}`)
+      }
     }
   }
 
-  if (removedReferences.length === 0) return
+  if (normalizedReferences.length === 0 && removedReferences.length === 0) return
 
   await writeFile(profileManifestPath, `${JSON.stringify(profileManifest, null, 2)}\n`)
-  console.log(
-    `Removed unpublished legacy local plugin reference(s): ${removedReferences.join(', ')}.`
-    + ' Plugin packages and user data were kept.',
-  )
+  if (normalizedReferences.length > 0) {
+    console.log(
+      `Normalized usable local plugin reference(s) to file: ${normalizedReferences.join(', ')}.`
+      + ' Plugin packages and user data were kept.',
+    )
+  }
+  if (removedReferences.length > 0) {
+    console.log(
+      `Removed unusable unpublished local plugin reference(s): ${removedReferences.join(', ')}.`
+      + ' Plugin packages and user data were kept.',
+    )
+  }
 }
 
 async function readPackageManifest(packageDirectoryPath) {
@@ -89,6 +105,21 @@ async function readPackageManifest(packageDirectoryPath) {
   } catch (error) {
     if (error?.code === 'ENOENT') return undefined
     throw error
+  }
+}
+
+async function hasUsableLegacyBundle(packageName, packageDirectoryPath = packageDirectory(profileDirectory, packageName)) {
+  const packageManifest = await readPackageManifest(packageDirectoryPath)
+  if (packageManifest?.name !== packageName) return false
+
+  const patchPath = packageManifest.dsh?.bundle?.patch
+  if (typeof patchPath !== 'string' || patchPath.length === 0) return false
+
+  try {
+    const patch = await readFile(join(packageDirectoryPath, patchPath), 'utf8')
+    return patch.includes("name: '@deepseek-ai/dsh-host-directory-picker-browse'")
+  } catch {
+    return false
   }
 }
 
@@ -204,7 +235,8 @@ async function updateProfileBundles(publishedPlugins) {
   for (const bundle of [...OFFICIAL_WEB_PROFILE_BUNDLES, ...existingBundles]) {
     if (typeof bundle !== 'string' || bundles.includes(bundle)) continue
     if (UNPUBLISHED_LEGACY_BUNDLES.has(bundle) && !publishedPluginNames.has(bundle)) {
-      removedLegacyBundles.push(bundle)
+      if (!(await hasUsableLegacyBundle(bundle))) removedLegacyBundles.push(bundle)
+      else bundles.push(bundle)
       continue
     }
     bundles.push(bundle)

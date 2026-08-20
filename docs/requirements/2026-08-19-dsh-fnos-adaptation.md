@@ -80,7 +80,7 @@ DeepSeek Harness（DSH）原生面向通用 Node.js 和浏览器环境。作为 
 - FPK 只打入已发布插件的精确版本清单和通用安装脚本，不复制任何插件工作空间源码或本地构建产物。
 - `cmd/install_callback` 在 DSH Web profile 尚未初始化时先完成初始化，再使用安装向导选择的 npm 源安装发布清单中的插件，并将包加入 `dsh.profile.bundles`。
 - 升级流程按清单从 npm 更新已发布插件；应用启动只校验清单插件的精确版本和 bundle 声明，不因每次启动联网。
-- 安装和升级流程必须可重复执行，不能覆盖用户的 DSH 配置、会话、凭据或其他 profile 数据；npm 安装前仅清理历史未发布 `@tnnevol/dsh-fnos` 的 `link:` 本地依赖，并将其从 bundle 列表移除，不删除插件包或用户数据；npm 安装失败时应用安装/升级失败并输出明确日志。
+- 安装和升级流程必须可重复执行，不能覆盖用户的 DSH 配置、会话、凭据或其他 profile 数据；npm 安装前将有效的本地 `@tnnevol/dsh-fnos` `link:` 依赖规范化为 `file:`，仅将路径失效或旧 patch 不可用的插件从 bundle 列表移除，不删除插件包或用户数据；npm 安装失败时应用安装/升级失败并输出明确日志。
 - FPK 安装完成后，发布清单中的插件应能随 `dsh web` 自动加载；未发布插件不属于 FPK 自动安装范围。
 
 ### 工作区快捷跳转授权目录
@@ -161,7 +161,7 @@ DeepSeek Harness（DSH）原生面向通用 Node.js 和浏览器环境。作为 
 
 - `@tnnevol/dsh-codex-auth` 按发布清单从 npm 安装；未发布的 `@tnnevol/dsh-fnos` 不进入 FPK，也不修改官方 DSH 源码。
 - 从 FPK 全新安装后，清单中的插件应存在于 Web profile 并随 `dsh web` 加载。
-- 重复安装、升级和应用启动不会重复写入异常 bundle，也不会丢失用户 profile 数据、配置、会话或凭据；历史未发布的 `@tnnevol/dsh-fnos` 只从 `link:` 依赖和 bundle 列表移除，避免 npm 安装及旧 patch 阻塞 Web profile。
+- 重复安装、升级和应用启动不会重复写入异常 bundle，也不会丢失用户 profile 数据、配置、会话或凭据；有效的 `@tnnevol/dsh-fnos` 会从 `link:` 规范化为 `file:` 并保留，失效插件才从依赖和 bundle 列表移除，避免 npm 安装及旧 patch 阻塞 Web profile。
 
 ### P1 授权目录待真实 NAS 验收
 
@@ -242,4 +242,4 @@ Host/Client 实现、应用 Scope、环境变量合并、语义路径转换、�
 | 2026-08-20 | 移除 FPK 对未发布插件的本地构建、打包和复制流程；插件自动集成统一为发布清单驱动的 npm 安装，未发布插件发布并加入清单后才进入 FPK。 |
 | 2026-08-20 | 增加 FNOS-001-12 上下文文件访问需求：在 fnOS iframe 中通过授权校验和 `TrimApp.openFile()` 打开 DSH 文件路径，独立浏览器保留原生行为；补充统一交互流程。 |
 | 2026-08-20 | 修复旧 NAS profile 残留未发布 `@tnnevol/dsh-fnos` bundle 导致 `directoryPicker` 服务被禁用的问题：启动/升级时仅移除该 bundle 配置，不删除插件包或用户数据；fnos 插件正式发布并加入清单后恢复标准集成。 |
-| 2026-08-20 | 修复旧 NAS profile 中 `@tnnevol/dsh-fnos` 的 `link:` 本地依赖阻断 npm 安装发布插件的问题：安装前清理该依赖引用，同时保留插件包和用户数据。 |
+| 2026-08-20 | 修复旧 NAS profile 中 `@tnnevol/dsh-fnos` 的 `link:` 本地依赖阻断 npm 安装发布插件的问题：有效本地插件改为 `file:` 依赖并保留，失效插件才清理依赖和 bundle，同时保留插件包和用户数据。 |
