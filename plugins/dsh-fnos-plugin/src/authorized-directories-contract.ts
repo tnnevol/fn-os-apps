@@ -12,6 +12,9 @@ export const FNOS_AUTHORIZED_DIRECTORIES_DELETE_PATH = '/plugins/dsh-fnos/author
 /** Same-origin route that converts internal fnOS paths to readable paths. */
 export const FNOS_PATH_CONVERSION_PATH = '/plugins/dsh-fnos/paths/convert'
 
+/** Same-origin route that validates a DSH path before fnOS opens it. */
+export const FNOS_PATH_OPEN_VALIDATION_PATH = '/plugins/dsh-fnos/paths/open/validate'
+
 export interface AuthorizedDirectory {
   /** Internal fnOS path used by the Host side when removing the ACL. */
   path: string

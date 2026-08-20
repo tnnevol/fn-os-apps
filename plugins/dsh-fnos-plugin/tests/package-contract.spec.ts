@@ -27,6 +27,8 @@ describe('dsh-fnos package contract', () => {
     expect(patch).toContain("name: '@tnnevol/dsh-fnos'")
     expect(patch).toContain('id: directory-picker')
     expect(patch).toContain('disabled: true')
+    expect(patch).toContain('id: directory-picker-browse')
+    expect(patch).toContain("name: '@deepseek-ai/dsh-host-directory-picker-browse'")
     expect(patch).not.toContain('dsh-client-ui-directory-picker-browse')
     expect(patch).toContain("name: '@tnnevol/dsh-fnos'")
   })

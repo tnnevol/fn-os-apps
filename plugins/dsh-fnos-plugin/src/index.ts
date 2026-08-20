@@ -28,6 +28,7 @@ export {
   FNOS_AUTHORIZED_DIRECTORIES_PATH,
   FNOS_AUTHORIZED_DIRECTORIES_SETTINGS_NAMESPACE,
   FNOS_PATH_CONVERSION_PATH,
+  FNOS_PATH_OPEN_VALIDATION_PATH,
 } from './authorized-directories-contract.ts'
 export {
   accessiblePathsFromEnvironment,
@@ -39,5 +40,8 @@ export {
   markAuthorizedPathRemoved,
   normalizeAuthorizedPath,
   normalizeAuthorizedPaths,
+  normalizePathForAuthorization,
+  isPathWithinAuthorizedDirectory,
+  isAuthorizedPathForOpen,
   splitPathEnvironment,
 } from './authorized-directories.ts'

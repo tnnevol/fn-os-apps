@@ -3,6 +3,7 @@
 import {
   FNOS_AUTHORIZED_DIRECTORIES_PATH,
   FNOS_PATH_CONVERSION_PATH,
+  FNOS_PATH_OPEN_VALIDATION_PATH,
   type AuthorizedDirectory,
   type ReadablePath,
 } from '../authorized-directories-contract.ts'
@@ -97,4 +98,21 @@ export async function requestReadablePaths(paths: readonly string[]): Promise<Re
   }
   if (typeof value !== 'object' || value === null || Array.isArray(value)) return []
   return readablePathsFromResponse(value as ReadablePathsResponse)
+}
+
+/** Validate a path against the current fnOS ACL before opening it. */
+export async function requestPathOpenAuthorization(path: string): Promise<void> {
+  const response = await fetch(FNOS_PATH_OPEN_VALIDATION_PATH, {
+    method: 'POST',
+    headers: { ...requestHeaders(), 'content-type': 'application/json' },
+    credentials: 'same-origin',
+    body: JSON.stringify({ path }),
+  })
+  const value: unknown = await response.json().catch(() => undefined)
+  if (!response.ok) {
+    const code = typeof value === 'object' && value !== null && 'error' in value && typeof value.error === 'string'
+      ? value.error
+      : `HTTP ${response.status}`
+    throw new DirectoryRequestError(code)
+  }
 }

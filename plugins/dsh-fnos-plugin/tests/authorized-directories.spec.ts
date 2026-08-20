@@ -6,6 +6,8 @@ import {
   mergeAuthorizedPaths,
   normalizeAuthorizedPath,
   normalizeAuthorizedPaths,
+  normalizePathForAuthorization,
+  isPathWithinAuthorizedDirectory,
 } from '../src/authorized-directories.ts'
 
 describe('fnOS authorized-directory contract', () => {
@@ -73,5 +75,13 @@ describe('fnOS authorized-directory contract', () => {
       '/vol4/share',
       '/vol2/media',
     ])
+  })
+
+  it('normalizes path traversal before checking an authorized root boundary', () => {
+    expect(normalizePathForAuthorization('/vol4/share/./nested/../file')).toBe('/vol4/share/file')
+    expect(isPathWithinAuthorizedDirectory('/vol4/share/file.txt', ['/vol4/share'])).toBe(true)
+    expect(isPathWithinAuthorizedDirectory('/vol4/share-archive/file.txt', ['/vol4/share'])).toBe(false)
+    expect(isPathWithinAuthorizedDirectory('/vol4/share/../private/file.txt', ['/vol4/share'])).toBe(false)
+    expect(isPathWithinAuthorizedDirectory('/vol4/share/file.txt', ['/'])).toBe(true)
   })
 })

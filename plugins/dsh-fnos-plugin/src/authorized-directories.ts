@@ -1,6 +1,7 @@
 /** Host routes for fnOS application shared-directory ACLs. */
 
 import type { IncomingMessage, ServerResponse } from 'node:http'
+import { posix } from 'node:path'
 import type { Context } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-host-webserver'
 import { callFnOsApi, FnOsApiError } from './fnos-api.ts'
@@ -8,6 +9,7 @@ import {
   FNOS_AUTHORIZED_DIRECTORIES_DELETE_PATH,
   FNOS_AUTHORIZED_DIRECTORIES_PATH,
   FNOS_PATH_CONVERSION_PATH,
+  FNOS_PATH_OPEN_VALIDATION_PATH,
   type AuthorizedDirectory,
   type ReadablePath,
 } from './authorized-directories-contract.ts'
@@ -138,6 +140,23 @@ export function normalizeAuthorizedPath(value: unknown): string | undefined {
   if (path.length === 0 || !path.startsWith('/') || path.includes('\0')) return undefined
   if (path === '/') return path
   return path.replace(/\/+$/u, '')
+}
+
+/** Normalize a path used for the open authorization boundary. */
+export function normalizePathForAuthorization(value: unknown): string | undefined {
+  const path = normalizeAuthorizedPath(value)
+  if (path === undefined) return undefined
+  return normalizeAuthorizedPath(posix.normalize(path))
+}
+
+/** Check a target path against authorized roots without confusing path prefixes. */
+export function isPathWithinAuthorizedDirectory(pathValue: unknown, rootsValue: unknown): boolean {
+  const path = normalizePathForAuthorization(pathValue)
+  if (path === undefined) return false
+  const roots = normalizeAuthorizedPaths(rootsValue).map(normalizePathForAuthorization).filter(
+    (root): root is string => root !== undefined,
+  )
+  return roots.some(root => root === '/' || path === root || path.startsWith(`${root}/`))
 }
 
 /** Keep API order while removing malformed and duplicate paths. */
@@ -279,6 +298,24 @@ export async function loadAuthorizedDirectoryPaths(): Promise<string[]> {
   }
 }
 
+/**
+ * Verify a DSH file/directory target against the current fnOS ACL and the
+ * app-declared shared paths before the browser asks fnOS to open it.
+ */
+export async function isAuthorizedPathForOpen(pathValue: unknown): Promise<boolean> {
+  if (normalizePathForAuthorization(pathValue) === undefined) return false
+  const sharedPaths = dataSharePathsFromEnvironment()
+  let roots: string[]
+  try {
+    roots = mergeAuthorizedPaths(await loadAuthorizedDirectoryPaths(), sharedPaths)
+  } catch (error: unknown) {
+    if (sharedPaths.length === 0) throw error
+    console.warn('[dsh-fnos] using TRIM_DATA_SHARE_PATHS for path-open validation because the fnOS ACL query failed')
+    roots = sharedPaths
+  }
+  return isPathWithinAuthorizedDirectory(pathValue, roots)
+}
+
 async function convertDirectories(paths: string[], language: string, readOnlyPaths: string[] = []): Promise<AuthorizedDirectory[]> {
   const readOnly = new Set(normalizeAuthorizedPaths(readOnlyPaths))
   const converted = await convertPathsForDisplay(paths, language)
@@ -318,6 +355,11 @@ function conversionPaths(value: unknown): string[] | undefined {
   const valuePaths = (value as Record<string, unknown>).paths
   if (!Array.isArray(valuePaths)) return undefined
   return normalizeAuthorizedPaths(valuePaths)
+}
+
+function openPathValue(value: unknown): string | undefined {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return undefined
+  return normalizePathForAuthorization((value as Record<string, unknown>).path)
 }
 
 /** Register list/delete routes only on the DSH Web profile. */
@@ -379,6 +421,24 @@ export function registerAuthorizedDirectoryRoutes(ctx: Context): void {
             const paths = conversionPaths(await readJsonBody(req))
             if (paths === undefined) return json(res, 400, { error: 'invalid-fnos-paths' })
             json(res, 200, { paths: await convertPathsForDisplay(paths, requestLanguage(req)) })
+          } catch (error: unknown) {
+            errorResponse(res, error)
+          }
+        },
+      }),
+      ctx.webServer.register({
+        kind: 'exact',
+        path: FNOS_PATH_OPEN_VALIDATION_PATH,
+        handler: async (req, res) => {
+          if (req.method !== 'POST') return json(res, 405, { error: 'method not allowed' })
+          if (!authorize(req, res)) return
+          try {
+            const path = openPathValue(await readJsonBody(req))
+            if (path === undefined) return json(res, 400, { error: 'invalid-fnos-path' })
+            if (!await isAuthorizedPathForOpen(path)) {
+              return json(res, 403, { error: 'fnos-path-not-authorized' })
+            }
+            json(res, 200, { ok: true })
           } catch (error: unknown) {
             errorResponse(res, error)
           }

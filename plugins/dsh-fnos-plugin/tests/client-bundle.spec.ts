@@ -22,6 +22,8 @@ describe('dsh-fnos client artifact', () => {
     expect(source).toContain('sdk.$on("os/theme"')
     expect(source).toContain('getPlatformConfig')
     expect(source).toContain('const fnosTheme = bridge.getTheme()')
+    expect(source).toContain('fnOS path opener')
+    expect(source).toContain('openFile')
     expect(source).not.toContain('/app/fn-deepseek-harness/trim-web-app.js')
     expect(source).not.toContain('__DSH_FNOS_THEME_BRIDGE__')
     expect(source).not.toContain('setInterval')

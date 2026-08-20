@@ -70,7 +70,7 @@ fn-deepseek-harness 应用网关 ──────► DSH Web profile
 2. `cmd/install_callback` 在需要时初始化 `web` profile，按安装向导选择的 npm 源安装发布清单中的插件，并加入 `dsh.profile.bundles`。
 3. 应用升级时重新安装清单中的已发布插件；应用启动只校验清单插件的精确版本和 bundle 声明，不执行联网安装。
 4. 安装逻辑可重复执行且不覆盖用户 profile 数据；npm 安装失败必须阻断安装/升级并输出明确错误。
-5. 在模拟 profile 上验证清单插件目录、bundle 名称和已有用户 bundle 均被正确保留，同时确认 FPK 不包含 `app/plugins` 本地产物。
+5. 在模拟 profile 上验证清单插件目录、bundle 名称和已有用户 bundle 均被正确保留；仅移除历史上曾随 FPK 暂存、当前未进入发布清单的 `@tnnevol/dsh-fnos` bundle（不删除插件包或用户数据），同时确认 FPK 不包含 `app/plugins` 本地产物。
 6. 在真实 fnOS NAS 上验证全新安装、升级、重复启动和发布清单插件自动加载；fnOS 插件发布并加入清单后再验证对应设置入口。
 
 当前结果：已移除未发布插件的本地集成分支，发布清单驱动的 npm 安装、升级和启动校验流程已完成；真实 fnOS NAS 的安装、升级和清单插件自动加载验收待执行。
@@ -135,7 +135,7 @@ const result = await sdk.pickSharedFile({
 1. 使用 DSH 官方公开的 `conversation.hero.workspace.directoryFlow` 和 `sidebar.workspaces.directoryFlow` 子流程插槽，不修改官方 DSH 源码；保留官方工作区菜单、弹框关闭和选中后的工作区处理。
 2. 复用 `@tnnevol/dsh-fnos` Host/Client 已有的有效授权目录查询结果，包含运行时授权目录和仅展示的应用共享目录，并按规范化真实路径去重。
 3. 在目录流程中使用彩色 fnOS logo 入口选择其他目录；目录列表和搜索由插件 Client 提供，图标资源随 FPK/插件提供。
-4. 为避免 DSH 单一目录流程插槽被官方自动目录选择插件重复占用，在 fnOS 应用 bundle patch 中禁用 `directory-picker`；这只影响该应用 profile 的自动目录选择入口，不修改官方源码。
+4. 为避免 DSH 单一目录流程插槽被官方自动目录选择插件重复占用，在 fnOS 应用 bundle patch 中禁用 `directory-picker`，再注入官方 `@deepseek-ai/dsh-host-directory-picker-browse` Host 后端；这样保留 `ctx.directoryPicker`，使 rc.8 的 `dsh-host-apiproxy` 可以激活，同时不加载官方 browse Client UI，避免与 fnos 的 `directoryFlow` 重复占槽，不修改官方源码。
 
 #### 2. 下拉列表与跳转
 
@@ -167,7 +167,7 @@ const result = await sdk.pickSharedFile({
 
 #### 3. 验收
 
-本地已验证插件 typecheck、构建、19 个单元测试、ModuleLoader bundle 和纯函数层的路径规范化/引用 codec。仍需在真实 fnOS NAS 验证目录/文件选择、路径转换、引用提交/复制、权限错误、主题适配和不会产生文件副作用。
+本地已验证插件 typecheck、构建、23 个单元测试、ModuleLoader bundle 和纯函数层的路径规范化/引用 codec。仍需在真实 fnOS NAS 验证目录/文件选择、路径转换、引用提交/复制、权限错误、主题适配和不会产生文件副作用。
 
 #### 4. 当前实现边界
 
@@ -175,7 +175,60 @@ const result = await sdk.pickSharedFile({
 - DSH 草稿内部保存原生引用占位符，不把 URL 直接拼接进用户文本；移除引用时由 DSH 输入状态机同步维护草稿和 occurrence。
 - fnOS SDK 不可用时仅禁用选择动作，普通文本输入和 DSH 其他功能继续工作。
 
+### P1：上下文文件访问适配（代码完成，待真实 NAS 验收）
+
+#### 1. DSH 入口与插件边界
+
+1. 不复制或修改 DSH 上下文文件、工具结果和生成文件的 UI；复用 DSH 公开的 `ctx.workspaces.openPath(path)` 服务入口。
+2. 在 `@tnnevol/dsh-fnos` Client 注入 `workspaces`，通过生命周期 effect 装饰 `openPath`，插件卸载或 effect 销毁时恢复原始方法。
+3. DSH 现有逻辑负责把工作区相对路径解析成 Host 可用的绝对路径；插件不重复解析、重写或持久化路径。
+
+#### 2. fnOS 打开流程
+
+1. fnOS iframe 内首次点击路径时初始化 `@trimjs/web-app`，等待 SDK `ready()` 完成后确认当前页面不是独立浏览器。
+2. 先调用 Host 同源路由 `/plugins/dsh-fnos/paths/open/validate`，由 Host 合并 `trim.file.getSharedAccessibleFolders`、`TRIM_DATA_ACCESSIBLE_PATHS` 和 `TRIM_DATA_SHARE_PATHS`，对规范化后的真实路径执行目录边界判断。
+3. 路径属于授权根目录时调用 `TrimApp.openFile(path)`，由 fnOS 文件应用打开文件或目录；不再调用 DSH 默认 Linux `xdg-open`。
+4. 路径不在授权边界时返回稳定错误码 `fnos-path-not-authorized`，Client 转换为授权目录提示；Host 不返回 Token、Socket 路径或内部堆栈。
+5. SDK 初始化失败、授权校验失败、文件应用打开失败时保留 DSH 原生错误/重试交互；独立浏览器直接回退到 DSH 原始 `openPath`，保证本地 CLI 调试不依赖 fnOS。
+
+#### 3. 验收
+
+本地通过路径规范化、授权根目录边界、前端 iframe/独立浏览器分流、未授权错误映射和生命周期恢复测试，并完成插件 typecheck/build；真实 fnOS NAS 仍需验证上下文文件点击、授权目录变更、文件应用打开和异常提示。
+
+#### 4. 当前实现边界
+
+- 不安装 `xdg-utils`，不为 NAS 增加 g++、文件管理器或其他系统依赖。
+- 不自动申请目录授权；用户必须先在「设置 → 插件 → fnos → 授权目录」添加目标所在目录。
+- 不上传、复制、移动或删除文件，不修改 DSH 会话、工作区和 `DSH_HOME` 数据。
+- 不改变独立浏览器中的 DSH 原生行为，只在 fnOS iframe 宿主中启用 SDK 打开路径。
+
 ## 详细交互
+
+### P1：上下文文件访问
+
+```text
+用户点击 DSH 上下文/工具结果/生成文件中的路径
+  └─ DSH 解析工作区相对路径
+       └─ 调用 workspaces.openPath(真实路径)
+            ├─ 独立浏览器/本地调试
+            │    └─ 使用 DSH 原生打开逻辑
+            └─ fnOS iframe
+                 ├─ Host 校验真实路径是否位于授权目录
+                 │    ├─ 未授权：显示“请先授权目录”并保留重试
+                 │    └─ 已授权：继续
+                 └─ TrimApp.openFile(真实路径)
+                      ├─ 文件：交给 fnOS 默认文件应用打开
+                      ├─ 目录：交给 fnOS 文件管理器打开
+                      └─ 失败：显示可理解错误并保留 DSH 原生错误入口
+```
+
+交互约束：
+
+1. 用户操作入口保持 DSH 原有路径链接，不增加第二个“打开”按钮，也不要求用户手动复制 NAS 路径。
+2. 未授权提示指向「设置 → 插件 → fnos → 授权目录」；用户取消授权目录选择器时静默结束，不显示“只有 NAS 管理员可以授权目录”等红色提示。
+3. 真实路径只用于 Host 校验和 `TrimApp.openFile()`，页面不展示 Unix 内部路径，也不把 Token 或 Socket 信息写入错误提示。
+4. 文件/目录打开成功后不修改 DSH 工作区、会话和配置；用户回到 DSH 后继续原有交互。
+5. 插件只在 fnOS iframe 内调用 SDK；本地独立浏览器继续使用 DSH 原生路径打开行为，便于插件开发调试。
 
 ### P1：工作区快捷跳转授权目录
 
@@ -263,6 +316,7 @@ const result = await sdk.pickSharedFile({
 - Host 只返回目录展示所需的结构化字段，禁止返回 `TRIM_API_TOKEN`、Unix Socket 路径和内部堆栈。
 - 工作区快捷跳转只消费已授权目录列表，不因跳转自动申请 ACL，不传递 Token，不复制或移动目录内容；选中结果交由 DSH 原生 `onPicked` 复用或登记工作区。
 - 工作区列表展示语义路径，跳转使用与其对应的真实路径；授权被撤销、目录不存在或真实路径不可访问时返回可区分的错误状态。
+- 上下文文件访问只允许打开当前 fnOS 授权根目录内的真实路径；Host 使用路径边界比较防止 `/vol4/share-archive` 被误判为 `/vol4/share` 的子路径，路径校验失败不调用系统打开器。
 - 内容输入框只接收 fnOS 选择器返回的真实目录/文件路径，展示时转换为语义路径；通过 DSH 原生引用 codec 在提交/复制时按输入契约进行 URL 转义，不把文件内容、Token 或临时本地路径写入 DSH 配置。
 - 内容输入框多选结果按规范化真实路径去重，引用可单独移除；文件选择使用 SDK 的 `multiple` 参数，目录选择按 fnOS 单目录接口连续选择并合并；多选不等同于上传或会话附件持久化。
 - 页面区分未授权、无目录、加载失败、操作失败和权限不足，错误提示提供重试或重新授权入口。
@@ -277,8 +331,10 @@ const result = await sdk.pickSharedFile({
 | fnOS 权限环境变量/API 在不同版本的返回不一致 | 授权列表可能存在重复或短暂不同步 | 规范化并去重 API/环境变量来源；API 失败时使用环境变量回退，真实 NAS 以实际返回验收 |
 | 非 iframe 或独立浏览器调试 | 缺少 fnOS SDK 宿主 | 提供安全降级和授权跳转回退，不影响 DSH 本地调试 |
 | 取消授权影响用户已有目录配置 | 用户可能误以为文件被删除 | 二次确认明确说明只移除 ACL，不自动删除数据 |
-| DSH 工作区目录流程是单一插槽 | 官方自动目录选择插件与 fnOS 目录流程可能重复占用 | 使用官方 `conversation.hero.workspace.directoryFlow` / `sidebar.workspaces.directoryFlow`，并在 fnOS 应用 bundle 中禁用 `directory-picker`，不修改官方源码 |
+| DSH 工作区目录流程是单一插槽 | 官方自动目录选择插件与 fnOS 目录流程可能重复占用；直接禁用后又会让 `dsh-host-apiproxy` 缺少 `directoryPicker` | 禁用官方 `directory-picker` 的双面自适应入口，仅注入官方 `@deepseek-ai/dsh-host-directory-picker-browse` Host 后端；fnos 插件独占公开 `conversation.hero.workspace.directoryFlow` / `sidebar.workspaces.directoryFlow`，不修改官方源码 |
 | fnOS 目录/文件选择 API 在 NAS 版本间存在差异 | 输入框入口可能无法统一返回目录和文件 | 使用 `pickUserFile({ directory })` 的稳定参数；缺失能力时安全禁用入口并保留文本输入，转换失败回退到内部路径 |
+| NAS 环境缺少 `xdg-open` | DSH 默认 Host 打开路径会出现 `spawn xdg-open ENOENT` | fnOS iframe 内改由 Host 授权校验后调用 `TrimApp.openFile()`；独立浏览器保留 DSH 原生逻辑，不安装系统依赖 |
+| 上下文路径未授权或包含相似前缀 | 可能绕过授权边界或误报权限 | Host 对规范化路径执行 `root === target` 或 `target.startsWith(root + '/')` 的边界比较，并返回稳定错误码 |
 | 目录数量较多或路径过长 | 下拉框难以浏览，可能误选目录 | 超过 10 项才显示搜索；展示可读路径并保留真实路径作为内部值 |
 | 授权目录被撤销或真实路径失效 | 快捷入口可能持有过期目录 | 跳转前后校验真实路径，按权限失效、目录不存在和访问失败分别提示，不修改工作区配置 |
 | 多选结果过多或路径包含特殊字符 | 输入框空间不足，引用可能解析失败 | 采用堆叠/悬停展开/最大宽度横向滚动；以规范化真实路径去重，并在回填前统一 URL 转义 |
@@ -297,13 +353,15 @@ const result = await sdk.pickSharedFile({
 - 已补充路径规范化、重复路径去重、共享目录只读标记、语义路径回退、授权目录选择取消静默、客户端 bundle 和应用 Scope 契约测试；真实 API 的权限码和 NAS 返回仍需目标环境验收。
 - 为 FNOS-001-10 增加目录流程 slot 注册、语义路径展示、真实路径映射、10 项搜索阈值、原始 `onPicked` 委托、选择其他目录、取消静默、错误状态和官方自动目录选择 bundle patch 契约验证。
 - 为 FNOS-001-11 增加输入框入口位置、彩色 logo、目录/文件选择、文件夹/文件 icon、堆叠与悬停展开、横向滚动、移除、真实路径去重、URL 转义 codec、取消静默和无 SDK 降级测试。
+- 为 FNOS-001-12 增加 `workspaces.openPath` 装饰、Host 授权边界路由、`TrimApp.openFile` iframe 分流、独立浏览器回退、未授权错误映射和生命周期恢复测试。
 
 ### 应用和文档验证
 
 - 构建 FPK，检查 `apps/fn-deepseek-harness` 中的最小 Scope、发布清单和通用插件安装脚本，并确认包内不存在历史 `app/plugins` 本地产物。
-- 检查安装回调只从 npm 安装发布清单中的精确版本，在模拟 profile 上验证清单插件写入 `node_modules`、更新 `dsh.profile.bundles` 并保留已有用户 bundle。
+- 检查安装回调只从 npm 安装发布清单中的精确版本，在模拟 profile 上验证清单插件写入 `node_modules`、更新 `dsh.profile.bundles` 并保留已有用户 bundle；旧版未发布 `@tnnevol/dsh-fnos` 只从 bundle 列表移除，不删除其包目录和用户数据。
 - 在 NAS 上验证 iframe 页面、应用网关、SSE、授权目录选择器和错误提示。
 - 在 NAS 上验证从原始工作区弹框进入 fnOS 目录流程、授权目录语义路径展示、真实路径通过 DSH `onPicked` 复用/登记工作区、超过 10 项搜索、选择其他目录、权限撤销/目录不存在提示，以及输入框多选目录/文件、悬浮引用展示、移除、去重和 URL 转义回填行为。
+- 在 NAS 上验证点击上下文、工具结果和生成文件路径时，已授权路径由 fnOS 文件应用打开；未授权路径提示添加授权目录；不再出现 `spawn xdg-open ENOENT`。
 - 验证取消授权不会删除目录、文件、工作区记录或 DSH 数据。
 - 运行 `pnpm run docs:build`，检查需求、计划以及 `docs/` 中应用和插件文档的链接。
 
@@ -325,6 +383,7 @@ P1 授权目录管理依赖 fnOS 前端 JS SDK 和应用共享授权 API。实�
 | 监听 NAS 主题变化 | `$on('os/theme')` | [调用方式：前端 JS SDK](https://developer.fnnas.com/api/calling) |
 | 添加授权目录 | `pickSharedFile()` | [应用共享授权路径](https://developer.fnnas.com/api/authorization/shared-access) |
 | 选择 NAS 文件/目录 | `pickUserFile({ directory })` | [前端 JS SDK 包](https://www.npmjs.com/package/@trimjs/web-app)；[文件授权说明](https://developer.fnnas.com/api/authorization/overview) |
+| 打开已授权文件/目录 | `openFile(path)` | [前端 JS SDK 包](https://www.npmjs.com/package/@trimjs/web-app) |
 | 查询已授权目录 | `trim.file.getSharedAccessibleFolders` | [应用共享授权路径](https://developer.fnnas.com/api/authorization/shared-access) |
 | 删除授权目录 | `trim.file.delSharedAccessibleFolder` | [应用共享授权路径](https://developer.fnnas.com/api/authorization/shared-access) |
 | 转换可读路径 | `trim.file.convertPath` | [调用方式：后端 API](https://developer.fnnas.com/api/calling) |
@@ -340,6 +399,8 @@ P1 授权目录管理依赖 fnOS 前端 JS SDK 和应用共享授权 API。实�
 - [DSH 原始工作区选择弹框](https://github.com/deepseek-ai/deepseek-harness/blob/main/packages/client/ui-workspace/src/client/WorkspacePicker.tsx)：确认官方菜单、目录流程、`onPicked` 以及工作区复用/登记行为。
 - [DSH 客户端输入区插槽源码](https://github.com/deepseek-ai/deepseek-harness/tree/main/packages/client/ui-conversation/src/client/contract)：确认 `conversation.input.right` / `conversation.input.dock` 的公开扩展边界。
 - [DSH 输入引用契约源码](https://github.com/deepseek-ai/deepseek-harness/tree/main/packages/client/ui-input-trigger/src)：确认 `ReferenceInsert`、`ReferenceCodec` 和 `slash/input-insert-reference` 的引用生命周期。
+- [DSH 内容文件打开入口](https://github.com/deepseek-ai/deepseek-harness/blob/main/packages/client/ui-conversation/src/client/apply.ts)：确认上下文文件由 DSH 统一调用 `workspaces.openPath()`。
+- [DSH 工作区路径打开服务](https://github.com/deepseek-ai/deepseek-harness/blob/main/packages/client/runtime/src/client/workspaces/service.ts)：确认官方默认 Host 路径打开行为及插件装饰边界。
 
 ## 完成状态
 
@@ -350,6 +411,7 @@ P1 授权目录管理依赖 fnOS 前端 JS SDK 和应用共享授权 API。实�
 | P1 授权目录管理 | 代码完成，待真实 NAS 验收 | Host/Client、Scope、环境变量合并、语义路径、添加/删除交互和本地验证已完成 |
 | P1 工作区快捷跳转 | 代码完成，待真实 NAS 验收 | 已接入 DSH 原始 `directoryFlow` 插槽，完成授权目录、搜索、选择其他目录和 `onPicked` 委托；待真实 NAS 验证原始弹框及工作区复用/登记 |
 | P1 内容输入框 NAS 选择 | 代码完成，待真实 NAS 验收 | 已接入 DSH 输入区公开 slot、fnOS `pickUserFile`、Host 路径转换和原生引用 codec；待 NAS 验证选择器及提交/复制链路 |
+| P1 上下文文件访问 | 代码完成，待真实 NAS 验收 | 已接入 `workspaces.openPath`、Host 授权边界校验和 fnOS `openFile`；待 NAS 验证文件/目录打开和未授权提示 |
 
 ## 变更记录
 
@@ -364,5 +426,6 @@ P1 授权目录管理依赖 fnOS 前端 JS SDK 和应用共享授权 API。实�
 | 2026-08-19 | 明确 FNOS-001-10 的语义路径展示、真实路径跳转、关闭弹框定位和权限/目录失效提示。 |
 | 2026-08-19 | 明确 FNOS-001-11 的多选引用展示、文件夹/文件 icon、堆叠与悬停展开、移除、去重、URL 转义、无障碍和安全降级验收。 |
 | 2026-08-19 | 完成 FNOS-001-11 插件侧计划：接入 DSH 输入区公开 slot、fnOS 文件/目录选择、Host 可读路径转换和原生引用 codec；保留真实 NAS 验收状态。 |
-| 2026-08-20 | 完成 FNOS-001-10 计划实施：使用 DSH 原始工作区 `directoryFlow` 插槽接入授权目录、超过 10 项搜索和 fnOS“选择其他目录”，选择结果交回原生 `onPicked`；通过应用 bundle patch 禁用官方自动目录选择插件以避免单一插槽冲突，待真实 NAS 验收。 |
+| 2026-08-20 | 完成 FNOS-001-10 计划实施：使用 DSH 原始工作区 `directoryFlow` 插槽接入授权目录、超过 10 项搜索和 fnOS“选择其他目录”，选择结果交回原生 `onPicked`；应用 bundle patch 禁用官方自动目录选择器的 Client 侧并注入官方 browse Host 后端，避免单一插槽冲突且满足 `dsh-host-apiproxy` 的 `directoryPicker` 依赖，待真实 NAS 验收。 |
 | 2026-08-20 | 移除 FPK 对未发布插件的本地构建、暂存和复制流程；插件集成统一改为发布清单驱动的 npm 安装，启动阶段仅离线校验清单插件。 |
+| 2026-08-20 | 完成 FNOS-001-12 计划实施：为 DSH 上下文文件访问增加授权路径校验和 fnOS `openFile` 适配，避免 NAS 缺少 `xdg-open`；保留独立浏览器原生回退，待真实 NAS 验收。 |

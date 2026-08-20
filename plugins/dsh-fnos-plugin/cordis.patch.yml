@@ -2,5 +2,7 @@
   disabled: true
 
 - insert:
+    - id: directory-picker-browse
+      name: '@deepseek-ai/dsh-host-directory-picker-browse'
     - id: dsh-fnos
       name: '@tnnevol/dsh-fnos'

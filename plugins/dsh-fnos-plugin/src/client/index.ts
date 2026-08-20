@@ -16,6 +16,8 @@ import { insertFnosReferences } from './input-reference-actions.ts'
 import { FNOS_REFERENCE_SOURCE, decodeFnosReference, fileUrlForPath } from './input-references.ts'
 import type { FnosLocaleKey } from './locales.ts'
 import { en, zh } from './locales.ts'
+import { installFnosPathOpener } from './path-opener.ts'
+import { createTrimApp } from './sdk.ts'
 import { createThemeBridge, type ThemeBridge } from './theme-bridge.ts'
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
@@ -25,7 +27,7 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
 }
 
 export const name = 'dsh-fnos-plugin-client'
-export const inject = ['theme', 'slots', 'locale', 'sessions', 'inputTriggers']
+export const inject = ['theme', 'slots', 'locale', 'sessions', 'inputTriggers', 'workspaces']
 
 const DARK_ATTRIBUTE = 'data-ds-dark-theme'
 
@@ -116,6 +118,11 @@ export function apply(ctx: ClientContext): void {
   const namespace = 'settings.dsh-fnos'
   ctx.effect(() => ctx.locale.register(namespace, { zh, en }), 'dsh-fnos: locale')
   const t = ctx.locale.bind(namespace) as (key: FnosLocaleKey) => string
+
+  ctx.effect(() => installFnosPathOpener(ctx.workspaces, {
+    createSdk: createTrimApp,
+    message: key => t(key),
+  }), 'dsh-fnos: fnOS path opener')
 
   const source: InputTriggerSource = {
     trigger: '@',

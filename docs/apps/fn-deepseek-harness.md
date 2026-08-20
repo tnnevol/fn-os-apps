@@ -22,6 +22,10 @@ DeepSeek Harness 是 DeepSeek AI 开源的插件化智能代理工具。本应�
 
 插件安装后，在原始 DSH 工作区弹框中点击“添加工作区”，会在官方公开的目录流程中展示已授权目录；超过 10 个目录时提供搜索，并支持通过 fnOS logo 选择其他目录。选中结果交回 DSH 原生工作区流程，由 DSH 复用已有工作区或登记新路径后打开。插件不会修改 ACL、复制文件或接管整个工作区菜单。取消授权弹框或返回空结果时静默结束，不显示权限角色类红色警告。插件会合并 fnOS 授权 API、`TRIM_DATA_ACCESSIBLE_PATHS` 和 `TRIM_DATA_SHARE_PATHS` 并去重，页面只展示语义化路径。
 
+### 上下文文件访问
+
+点击 DSH 上下文、工具结果或生成文件中的路径时，插件会复用 DSH 原有入口。在 fnOS iframe 内，Host 先校验真实路径是否位于当前授权目录、`TRIM_DATA_ACCESSIBLE_PATHS` 或 `TRIM_DATA_SHARE_PATHS` 根目录内，校验通过后调用 `@trimjs/web-app` 的 `openFile()` 交给 fnOS 文件应用打开；未授权时提示先到「设置 → 插件 → fnos → 授权目录」添加目录。该流程不调用 Linux `xdg-open`，因此不依赖 NAS 安装 `xdg-utils`。独立浏览器调试时继续使用 DSH 原生行为。
+
 当前 FPK 只从 npm 安装发布清单中的插件，不包含未发布的 `@tnnevol/dsh-fnos` 本地构建产物。插件发布后，需要将精确版本加入应用发布清单才会随 FPK 自动安装。
 
 ## 运行要求
@@ -42,7 +46,7 @@ DeepSeek Harness 是 DeepSeek AI 开源的插件化智能代理工具。本应�
 - 使用 `127.0.0.1` 时，可信访问地址填写打开 NAS Web 时浏览器地址栏中的 host 或 host:port。
 - npm 官方源默认使用 `https://registry.npmjs.org/`；安装失败不会自动切换其他源。
 - 安装时会检查应用全局 npm 前缀中的 `@deepseek-ai/dsh`；本地未安装或线上版本更高时才会更新，否则复用本地版本。
-- 应用安装、升级和启动前会自动修复旧版 Web profile 的官方 bundle 基线（`@deepseek-ai/dsh-base`、`@deepseek-ai/dsh-web-app`），并保留已有的第三方插件和用户配置；这两个 bundle 缺失时，终端、Agent 循环和网页搜索设置卡片不会出现。
+- 应用安装、升级和启动前会自动修复旧版 Web profile 的官方 bundle 基线（`@deepseek-ai/dsh-base`、`@deepseek-ai/dsh-web-app`），并保留已有的第三方插件和用户配置；这两个 bundle 缺失时，终端、Agent 循环和网页搜索设置卡片不会出现。历史上曾随 FPK 暂存、但当前尚未发布的 `@tnnevol/dsh-fnos` bundle 会从 profile 列表移除（不删除插件包或用户数据），避免旧 patch 禁用 DSH 必需的 `directoryPicker` 服务；该插件正式加入发布清单后才会重新保留。
 
 应用的 npm 镜像源、数据目录和环境变量详见应用目录中的 [README](https://github.com/tnnevol/fn-os-apps/blob/main/apps/fn-deepseek-harness/README.md)。
 

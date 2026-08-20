@@ -20,6 +20,15 @@ const OFFICIAL_WEB_PROFILE_BUNDLES = [
   '@deepseek-ai/dsh-web-app',
 ]
 
+// This plugin was previously staged into the FPK before it was published.
+// Do not let that old bundle survive in an upgraded profile: its old bundle
+// patch disables the official directory-picker service and leaves
+// dsh-host-apiproxy pending. Once the plugin is included in the published
+// manifest, it is no longer treated as obsolete and is retained normally.
+const UNPUBLISHED_LEGACY_BUNDLES = new Set([
+  '@tnnevol/dsh-fnos',
+])
+
 function fail(message) {
   throw new Error(`[dsh-plugins] ${message}`)
 }
@@ -157,12 +166,18 @@ async function updateProfileBundles(publishedPlugins) {
     (bundle, index) => existingBundles[index] === bundle,
   )
   const bundles = []
+  const publishedPluginNames = new Set(publishedPlugins.map(plugin => plugin.name))
+  const removedLegacyBundles = []
 
   // Heal profiles created by older FPK/DSH versions. Do not replace the
   // user's bundle list: normalize the official baseline first, then retain
   // every existing string bundle in its original order.
   for (const bundle of [...OFFICIAL_WEB_PROFILE_BUNDLES, ...existingBundles]) {
     if (typeof bundle !== 'string' || bundles.includes(bundle)) continue
+    if (UNPUBLISHED_LEGACY_BUNDLES.has(bundle) && !publishedPluginNames.has(bundle)) {
+      removedLegacyBundles.push(bundle)
+      continue
+    }
     bundles.push(bundle)
   }
 
@@ -172,6 +187,9 @@ async function updateProfileBundles(publishedPlugins) {
 
   if (!hadOfficialBaseline) {
     console.log('Repaired the dsh web profile with the official base and web-app bundles.')
+  }
+  if (removedLegacyBundles.length > 0) {
+    console.log(`Removed unpublished legacy DSH bundle(s): ${removedLegacyBundles.join(', ')}.`)
   }
 
   profileManifest.dsh = {
