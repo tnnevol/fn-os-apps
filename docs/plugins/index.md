@@ -11,7 +11,7 @@
 
 ## @tnnevol/dsh-fnos
 
-这是随 `fn-deepseek-harness` FPK 内置的 fnOS 专用插件，提供 P0 主题能力和 P1 授权目录、工作区快捷跳转能力。`@tnnevol/dsh-codex-auth` 也会由同一 FPK 安装回调内置到 DSH Web profile：
+这是为 `fn-deepseek-harness` 开发的 fnOS 专用插件，提供 P0 主题能力和 P1 授权目录、工作区快捷跳转能力。插件源码继续在本仓库维护，但未发布版本不再随 FPK 本地打包：
 
 - DSH 主题选择为“跟随系统”时，跟随 fnOS 当前主题和后续主题切换。
 - DSH 主题选择为“浅色”或“深色”时，以 DSH 设置为准，不被 NAS 主题覆盖。
@@ -43,7 +43,7 @@
 
 当前 P1 已完成代码和本地验证，仍需在真实 fnOS NAS 上验证 API Scope、权限环境变量、共享目录只读状态和删除行为。
 
-应用每次安装、升级和启动前都会将插件放入 Web profile 的本地 `node_modules` 并补齐 profile bundle 配置。主题首次渲染由 DSH 已保存的配置负责；插件启动后再通过 SDK 获取 fnOS 真实主题，并仅在 DSH 选择“跟随系统”时接管主题同步。
+FPK 只从 npm 安装发布清单中的插件。`@tnnevol/dsh-fnos` 发布后，需要将精确版本或 dist-tag 加入 `apps/fn-deepseek-harness/app/published-dsh-plugins.json`，安装和升级回调才会把它安装到 Web profile 并补齐 bundle 配置。主题首次渲染由 DSH 已保存的配置负责；插件启动后再通过 SDK 获取 fnOS 真实主题，并仅在 DSH 选择“跟随系统”时接管主题同步。
 
 ### 本地调试
 
@@ -59,21 +59,21 @@ pnpm dsh plugin --profile web add /absolute/path/to/fn-os-apps/plugins/dsh-fnos-
 pnpm dsh --profile web
 ```
 
-插件要求 DSH `0.1.0-rc.7`，可使用本地 DSH CLI 配合 `cordis.patch.yml` 调试。fnOS SDK 桥接只有在 fnOS micro app 宿主中启用，在独立浏览器中会安全跳过。
+插件要求 DSH `0.1.0-rc.8`，可使用本地 DSH CLI 配合 `cordis.patch.yml` 调试。fnOS SDK 桥接只有在 fnOS micro app 宿主中启用，在独立浏览器中会安全跳过。
 
 - [插件源码](https://github.com/tnnevol/fn-os-apps/tree/main/plugins/dsh-fnos-plugin)
 - [插件 README](https://github.com/tnnevol/fn-os-apps/blob/main/plugins/dsh-fnos-plugin/README.md)
 
 ## @tnnevol/dsh-codex-auth
 
-这是一个面向 DSH `0.1.0-rc.7` 的 Codex OAuth 插件，提供以下能力：
+这是一个面向 DSH `0.1.0-rc.8` 的 Codex OAuth 插件，提供以下能力：
 
 - 在 DSH Web 插件设置中登录和退出 ChatGPT/Codex 账号。
 - 使用插件生成的一次性授权码完成 Codex 授权，不需要选择工作空间。
 - 将 OAuth 凭据同步到 DSH 的通用凭据和模型适配器。
 - 在模型设置中展示 OpenAI Codex 模型和登录状态。
 - 直接展示 Codex 模型目录，支持模型列表选择、全选、恢复模型和获取模型。
-- 可选启用图片识别；DSH `rc.7` 暂不支持 Codex 图像生成。
+- 可选启用图片识别；当前插件未启用 Codex 图像生成。
 
 ## 功能展示
 

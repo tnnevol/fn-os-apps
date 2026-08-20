@@ -20,7 +20,7 @@ description: DeepSeek Harness 在飞牛 fnOS 中的应用和专用插件适配�
 
 | 模块 | 计划入口 | 实现责任 |
 | --- | --- | --- |
-| FPK 应用 | `apps/fn-deepseek-harness` | 提供 iframe 入口、Node.js 运行时、持久化环境、统一网关、已发布插件安装和未发布插件本地资源 |
+| FPK 应用 | `apps/fn-deepseek-harness` | 提供 iframe 入口、Node.js 运行时、持久化环境、统一网关和发布清单驱动的 npm 插件安装 |
 | fnOS/Codex Host 插件 | `plugins/dsh-fnos-plugin/src/index.ts`、`plugins/dsh-codex-auth-plugin/src/` | 处理 fnOS 目录权限、Codex OAuth、凭据同步和模型适配，不把敏感凭据交给浏览器 |
 | fnOS Client 插件 | `plugins/dsh-fnos-plugin/src/client/` | 注册设置卡片、主题桥接、目录选择交互和状态展示 |
 | 应用目录 | `apps/fn-deepseek-harness` | 为已确认的 fnOS API 声明最小 Scope，保留现有共享数据配置 |
@@ -38,7 +38,7 @@ fnOS 桌面
    ▼
 fn-deepseek-harness 应用网关 ──────► DSH Web profile
    │                                      │
-   │ 本地 fnOS 插件资源                    │ @tnnevol/dsh-fnos Client
+   │ 发布清单中的 npm 插件                 │ 已发布插件 Client
    │                                      │
    └──────────────► DSH Host ◄───────────┘
                            │
@@ -46,7 +46,7 @@ fn-deepseek-harness 应用网关 ──────► DSH Web profile
                            └─ fnOS Host API / 应用授权目录
 ```
 
-安装阶段另由 npm 提供已发布的 `@tnnevol/dsh-codex-auth`，其包目录位于同一个 Web profile。
+安装阶段由 npm 提供发布清单中的已发布插件，其包目录位于同一个 Web profile。未发布的 `@tnnevol/dsh-fnos` 不进入 FPK；发布并加入清单后才参与该数据流。
 
 - 浏览器只负责渲染设置卡片和发起受控的 Host 调用。
 - 需要 Token、应用权限或后端 API 的操作由 Host 侧执行。
@@ -66,14 +66,14 @@ fn-deepseek-harness 应用网关 ──────► DSH Web profile
 
 ### P1：FPK 集成 DSH 插件（代码完成，待真实 NAS 验收）
 
-1. FPK 构建时打入未发布的 `@tnnevol/dsh-fnos` 本地构建产物、已发布插件的精确版本清单、兼容性声明和 bundle patch；Codex 插件源码不复制进 FPK。
-2. `cmd/install_callback` 在需要时初始化 `web` profile，按安装向导选择的 npm 源安装 `@tnnevol/dsh-codex-auth`，再将本地 `@tnnevol/dsh-fnos` 复制到 profile 的 `node_modules`，并把两个包加入 `dsh.profile.bundles`。
-3. 应用升级时重新安装清单中的已发布插件并刷新本地 fnOS 插件；应用启动只校验已发布插件版本和本地插件文件，不执行联网安装。
+1. FPK 构建时只打入已发布插件的精确版本清单和通用安装脚本，不编译、复制或打包工作空间中的未发布插件。
+2. `cmd/install_callback` 在需要时初始化 `web` profile，按安装向导选择的 npm 源安装发布清单中的插件，并加入 `dsh.profile.bundles`。
+3. 应用升级时重新安装清单中的已发布插件；应用启动只校验清单插件的精确版本和 bundle 声明，不执行联网安装。
 4. 安装逻辑可重复执行且不覆盖用户 profile 数据；npm 安装失败必须阻断安装/升级并输出明确错误。
-5. 在模拟 profile 上验证 npm 插件目录、本地插件目录、两个 bundle 名称和已有用户 bundle 均被正确保留。
-6. 在真实 fnOS NAS 上验证全新安装、升级、重复启动和两个插件自动加载；验证 Codex 登录、模型设置入口以及 fnOS 设置入口均可正常打开。
+5. 在模拟 profile 上验证清单插件目录、bundle 名称和已有用户 bundle 均被正确保留，同时确认 FPK 不包含 `app/plugins` 本地产物。
+6. 在真实 fnOS NAS 上验证全新安装、升级、重复启动和发布清单插件自动加载；fnOS 插件发布并加入清单后再验证对应设置入口。
 
-当前结果：未发布 fnOS 插件的本地集成、已发布 Codex 插件的 npm 安装、安装回调和本地模拟安装已经完成；真实 fnOS NAS 的安装、升级、自动加载和插件功能验收待执行。
+当前结果：已移除未发布插件的本地集成分支，发布清单驱动的 npm 安装、升级和启动校验流程已完成；真实 fnOS NAS 的安装、升级和清单插件自动加载验收待执行。
 
 ### P1：授权目录管理（代码完成，待真实 NAS 验收）
 
@@ -300,8 +300,8 @@ const result = await sdk.pickSharedFile({
 
 ### 应用和文档验证
 
-- 构建 FPK，检查 `apps/fn-deepseek-harness` 中的最小 Scope、内置插件和 SDK 资源。
-- 检查 FPK 中包含本地 `@tnnevol/dsh-fnos` 的 package manifest、`lib` 构建产物、已发布插件版本清单、兼容性声明、bundle patch 和安装回调脚本；在模拟 profile 上验证安装回调会写入 npm 插件和本地插件两个 `node_modules` 包目录并更新 `dsh.profile.bundles`。
+- 构建 FPK，检查 `apps/fn-deepseek-harness` 中的最小 Scope、发布清单和通用插件安装脚本，并确认包内不存在历史 `app/plugins` 本地产物。
+- 检查安装回调只从 npm 安装发布清单中的精确版本，在模拟 profile 上验证清单插件写入 `node_modules`、更新 `dsh.profile.bundles` 并保留已有用户 bundle。
 - 在 NAS 上验证 iframe 页面、应用网关、SSE、授权目录选择器和错误提示。
 - 在 NAS 上验证从原始工作区弹框进入 fnOS 目录流程、授权目录语义路径展示、真实路径通过 DSH `onPicked` 复用/登记工作区、超过 10 项搜索、选择其他目录、权限撤销/目录不存在提示，以及输入框多选目录/文件、悬浮引用展示、移除、去重和 URL 转义回填行为。
 - 验证取消授权不会删除目录、文件、工作区记录或 DSH 数据。
@@ -346,6 +346,7 @@ P1 授权目录管理依赖 fnOS 前端 JS SDK 和应用共享授权 API。实�
 | 阶段 | 状态 | 说明 |
 | --- | --- | --- |
 | P0 运行和主题桥接 | 待完成 | 代码和本地验证已完成，待真实 fnOS NAS 环境验收 |
+| P1 FPK 集成 DSH 插件 | 代码完成，待真实 NAS 验收 | 已移除未发布插件本地集成，只保留发布清单驱动的 npm 安装、升级和启动校验 |
 | P1 授权目录管理 | 代码完成，待真实 NAS 验收 | Host/Client、Scope、环境变量合并、语义路径、添加/删除交互和本地验证已完成 |
 | P1 工作区快捷跳转 | 代码完成，待真实 NAS 验收 | 已接入 DSH 原始 `directoryFlow` 插槽，完成授权目录、搜索、选择其他目录和 `onPicked` 委托；待真实 NAS 验证原始弹框及工作区复用/登记 |
 | P1 内容输入框 NAS 选择 | 代码完成，待真实 NAS 验收 | 已接入 DSH 输入区公开 slot、fnOS `pickUserFile`、Host 路径转换和原生引用 codec；待 NAS 验证选择器及提交/复制链路 |
@@ -364,3 +365,4 @@ P1 授权目录管理依赖 fnOS 前端 JS SDK 和应用共享授权 API。实�
 | 2026-08-19 | 明确 FNOS-001-11 的多选引用展示、文件夹/文件 icon、堆叠与悬停展开、移除、去重、URL 转义、无障碍和安全降级验收。 |
 | 2026-08-19 | 完成 FNOS-001-11 插件侧计划：接入 DSH 输入区公开 slot、fnOS 文件/目录选择、Host 可读路径转换和原生引用 codec；保留真实 NAS 验收状态。 |
 | 2026-08-20 | 完成 FNOS-001-10 计划实施：使用 DSH 原始工作区 `directoryFlow` 插槽接入授权目录、超过 10 项搜索和 fnOS“选择其他目录”，选择结果交回原生 `onPicked`；通过应用 bundle patch 禁用官方自动目录选择插件以避免单一插槽冲突，待真实 NAS 验收。 |
+| 2026-08-20 | 移除 FPK 对未发布插件的本地构建、暂存和复制流程；插件集成统一改为发布清单驱动的 npm 安装，启动阶段仅离线校验清单插件。 |
