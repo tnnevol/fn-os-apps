@@ -70,7 +70,7 @@ fn-deepseek-harness 应用网关 ──────► DSH Web profile
 2. `cmd/install_callback` 在需要时初始化 `web` profile，按安装向导选择的 npm 源安装发布清单中的插件，并加入 `dsh.profile.bundles`。
 3. 应用升级时重新安装清单中的已发布插件；应用启动只校验清单插件的精确版本和 bundle 声明，不执行联网安装。
 4. 安装逻辑可重复执行且不覆盖用户 profile 数据；npm 安装失败必须阻断安装/升级并输出明确错误。
-5. 在模拟 profile 上验证清单插件目录、bundle 名称和已有用户 bundle 均被正确保留；仅移除历史上曾随 FPK 暂存、当前未进入发布清单的 `@tnnevol/dsh-fnos` bundle（不删除插件包或用户数据），同时确认 FPK 不包含 `app/plugins` 本地产物。
+5. 在模拟 profile 上验证清单插件目录、bundle 名称和已有用户 bundle 均被正确保留；npm 安装前清理历史未发布 `@tnnevol/dsh-fnos` 的 `link:` 本地依赖，并仅移除其 bundle 配置（不删除插件包或用户数据），同时确认 FPK 不包含 `app/plugins` 本地产物。
 6. 在真实 fnOS NAS 上验证全新安装、升级、重复启动和发布清单插件自动加载；fnOS 插件发布并加入清单后再验证对应设置入口。
 
 当前结果：已移除未发布插件的本地集成分支，发布清单驱动的 npm 安装、升级和启动校验流程已完成；真实 fnOS NAS 的安装、升级和清单插件自动加载验收待执行。
@@ -358,7 +358,7 @@ const result = await sdk.pickSharedFile({
 ### 应用和文档验证
 
 - 构建 FPK，检查 `apps/fn-deepseek-harness` 中的最小 Scope、发布清单和通用插件安装脚本，并确认包内不存在历史 `app/plugins` 本地产物。
-- 检查安装回调只从 npm 安装发布清单中的精确版本，在模拟 profile 上验证清单插件写入 `node_modules`、更新 `dsh.profile.bundles` 并保留已有用户 bundle；旧版未发布 `@tnnevol/dsh-fnos` 只从 bundle 列表移除，不删除其包目录和用户数据。
+- 检查安装回调只从 npm 安装发布清单中的精确版本，在模拟 profile 上验证 npm 安装前清理旧版未发布 `@tnnevol/dsh-fnos` 的 `link:` 依赖，清单插件写入 `node_modules`、更新 `dsh.profile.bundles` 并保留已有用户 bundle；旧版 fnos 只从依赖和 bundle 配置移除，不删除其包目录和用户数据。
 - 在 NAS 上验证 iframe 页面、应用网关、SSE、授权目录选择器和错误提示。
 - 在 NAS 上验证从原始工作区弹框进入 fnOS 目录流程、授权目录语义路径展示、真实路径通过 DSH `onPicked` 复用/登记工作区、超过 10 项搜索、选择其他目录、权限撤销/目录不存在提示，以及输入框多选目录/文件、悬浮引用展示、移除、去重和 URL 转义回填行为。
 - 在 NAS 上验证点击上下文、工具结果和生成文件路径时，已授权路径由 fnOS 文件应用打开；未授权路径提示添加授权目录；不再出现 `spawn xdg-open ENOENT`。

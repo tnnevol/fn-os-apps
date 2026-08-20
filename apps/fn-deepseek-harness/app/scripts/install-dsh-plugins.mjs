@@ -54,6 +54,35 @@ function packageDirectory(baseDirectory, packageName) {
   return join(baseDirectory, 'node_modules', ...packageName.split('/'))
 }
 
+async function removeLegacyLocalPluginReferences(publishedPlugins) {
+  const profileManifestPath = join(profileDirectory, 'package.json')
+  const profileManifest = JSON.parse(await readFile(profileManifestPath, 'utf8'))
+  const publishedPluginNames = new Set(publishedPlugins.map(plugin => plugin.name))
+  const removedReferences = []
+
+  for (const field of ['dependencies', 'devDependencies', 'optionalDependencies']) {
+    const dependencies = profileManifest[field]
+    if (!dependencies || typeof dependencies !== 'object') continue
+
+    for (const packageName of UNPUBLISHED_LEGACY_BUNDLES) {
+      const specifier = dependencies[packageName]
+      if (publishedPluginNames.has(packageName) || typeof specifier !== 'string' || !specifier.startsWith('link:')) {
+        continue
+      }
+      delete dependencies[packageName]
+      removedReferences.push(`${field}.${packageName}`)
+    }
+  }
+
+  if (removedReferences.length === 0) return
+
+  await writeFile(profileManifestPath, `${JSON.stringify(profileManifest, null, 2)}\n`)
+  console.log(
+    `Removed unpublished legacy local plugin reference(s): ${removedReferences.join(', ')}.`
+    + ' Plugin packages and user data were kept.',
+  )
+}
+
 async function readPackageManifest(packageDirectoryPath) {
   try {
     return JSON.parse(await readFile(join(packageDirectoryPath, 'package.json'), 'utf8'))
@@ -206,6 +235,7 @@ try {
   if (!profileDirectory) fail('web profile directory is not configured')
 
   const publishedPlugins = await loadPublishedPlugins()
+  await removeLegacyLocalPluginReferences(publishedPlugins)
   await installPublishedPlugins(publishedPlugins)
   await updateProfileBundles(publishedPlugins)
   console.log(`${installPublished ? 'Installed' : 'Verified'} ${publishedPlugins.length} published DSH plugin(s).`)
