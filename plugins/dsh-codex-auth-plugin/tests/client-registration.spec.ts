@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises'
 import { describe, expect, it } from 'vitest'
 
-describe('dsh-codex-auth-plugin rc.7 client registration', () => {
+describe('dsh-codex-auth-plugin rc.8 client registration', () => {
   it('uses the required key for the keyed settings plugin slot', async () => {
     const client = await readFile(new URL('../src/client/index.tsx', import.meta.url), 'utf8')
     expect(client).toContain("ctx.slots.inject('settings.plugin.item'")

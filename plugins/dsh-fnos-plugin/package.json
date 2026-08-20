@@ -2,7 +2,7 @@
   "name": "@tnnevol/dsh-fnos",
   "displayName": "fnos",
   "description": "fnOS-specific integrations for DeepSeek Harness.",
-  "version": "0.1.0-rc.7",
+  "version": "0.1.0-rc.8",
   "author": "tnnevol",
   "repository": {
     "type": "git",
@@ -20,7 +20,7 @@
   "type": "module",
   "license": "AGPL-3.0-only",
   "engines": {
-    "node": ">=22.19.0"
+    "node": "^22.19.0 || >=24.0.0"
   },
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -44,7 +44,9 @@
     "build": "tsdown",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run",
-    "check": "pnpm run typecheck && pnpm run build && pnpm run test"
+    "check": "pnpm run typecheck && pnpm run test && pnpm run build",
+    "publish:rc": "npm publish --tag rc --access public",
+    "prepublishOnly": "pnpm run check"
   },
   "dsh": {
     "bundle": {

@@ -224,7 +224,7 @@ function UsageWindowView({ label, value, t }: { label: string; value: UsageWindo
   )
 }
 
-/** Render a standalone login/logout card in the rc.7 keyed Plugin slot. */
+/** Render a standalone login/logout card in the rc.8 keyed Plugin slot. */
 export function CodexAuthCard({ t, configScope }: CodexAuthCardProps) {
   if (t === undefined) throw new Error('Codex auth card requires its translation function')
   const [open, setOpen] = useState(false)

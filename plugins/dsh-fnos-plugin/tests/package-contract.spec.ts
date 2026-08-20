@@ -10,7 +10,7 @@ describe('dsh-fnos package contract', () => {
       devDependencies: { '@trimjs/web-app': string }
     }
     expect(manifest.name).toBe('@tnnevol/dsh-fnos')
-    expect(manifest.version).toBe('0.1.0-rc.7')
+    expect(manifest.version).toBe('0.1.0-rc.8')
     expect(manifest.dsh.bundle.patch).toBe('./cordis.patch.yml')
     expect(manifest.dsh.client.platform).toBe('web')
     expect(manifest.dsh.client.immediately).toBe(true)
