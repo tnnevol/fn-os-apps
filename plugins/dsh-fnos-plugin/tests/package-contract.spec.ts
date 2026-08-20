@@ -35,7 +35,7 @@ describe('dsh-fnos package contract', () => {
     const compatibility = JSON.parse(await readFile(new URL('../compatibility.json', import.meta.url), 'utf8')) as {
       dshPluginApi: { version: string, packages: string[] }
     }
-    expect(compatibility.dshPluginApi.version).toBe('0.1.0-rc.7')
+    expect(compatibility.dshPluginApi.version).toBe('0.1.0-rc.8')
     expect(compatibility.dshPluginApi.packages).toEqual([
       '@deepseek-ai/dsh-client-runtime',
       '@deepseek-ai/dsh-client-ui-theme',

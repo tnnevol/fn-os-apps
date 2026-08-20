@@ -13,6 +13,9 @@ import { CODEX_PROVIDER } from './store.ts'
 /** Keep the Codex stream open while the provider is still producing output. */
 export const CODEX_STREAM_IDLE_TIMEOUT_MS = 300_000
 
+/** Match dsh rc.8's default request-level image payload bound. */
+export const CODEX_MAX_REQUEST_IMAGE_BYTES = 20 * 1024 * 1024
+
 /**
  * Give dsh's generic adapter the bearer token resolved by the plugin-owned
  * OAuth store. This keeps the provider-native login flow separate from model
@@ -46,6 +49,7 @@ export function createCodexAdapter(
     provider: CODEX_PROVIDER,
     displayName: 'OpenAI Codex',
     streamIdleTimeoutMs: CODEX_STREAM_IDLE_TIMEOUT_MS,
+    maxRequestImageBytes: CODEX_MAX_REQUEST_IMAGE_BYTES,
     retryPolicy: resolveRetryPolicy(undefined, 'dsh-codex-auth-plugin retryPolicy'),
     configuredMaxTokens: new Map(),
     piProvider: requestProvider(provider),

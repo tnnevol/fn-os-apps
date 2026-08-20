@@ -715,6 +715,8 @@ function viewImageTool(ctx) {
 /** OpenAI Codex adapter assembled from dsh's public pi-ai extension seam. */
 /** Keep the Codex stream open while the provider is still producing output. */
 const CODEX_STREAM_IDLE_TIMEOUT_MS = 3e5;
+/** Match dsh rc.8's default request-level image payload bound. */
+const CODEX_MAX_REQUEST_IMAGE_BYTES = 20971520;
 /**
 * Give dsh's generic adapter the bearer token resolved by the plugin-owned
 * OAuth store. This keeps the provider-native login flow separate from model
@@ -745,6 +747,7 @@ function createCodexAdapter(credentials, resolveAttachments) {
 		provider: CODEX_PROVIDER,
 		displayName: "OpenAI Codex",
 		streamIdleTimeoutMs: CODEX_STREAM_IDLE_TIMEOUT_MS,
+		maxRequestImageBytes: CODEX_MAX_REQUEST_IMAGE_BYTES,
 		retryPolicy: resolveRetryPolicy(void 0, "dsh-codex-auth-plugin retryPolicy"),
 		configuredMaxTokens: /* @__PURE__ */ new Map(),
 		piProvider: requestProvider(provider)
