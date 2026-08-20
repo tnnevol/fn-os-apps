@@ -8,11 +8,10 @@ APP_HOME="${TRIM_APPDEST_VOL}/@appshare/fn-deepseek-harness"
 NPM_CONFIG_PREFIX="${DSH_HOME}/.npm-global"
 NPM_BIN="${NODE_BIN}/npm"
 NPM_REGISTRY_FILE="${APP_HOME}/.fn-deepseek-harness/npm-registry"
+INSTALL_CALLBACK="${TRIM_APPDEST}/cmd/install_callback"
 COMPATIBILITY_SCRIPT="${TRIM_APPDEST}/scripts/prepare-dsh-compatibility.mjs"
-DSH_PLUGIN_SCRIPT="${TRIM_APPDEST}/scripts/install-dsh-fnos-plugin.mjs"
-DSH_PLUGIN_SOURCE_DIRECTORY="${TRIM_APPDEST}/plugins"
+DSH_PLUGIN_SCRIPT="${TRIM_APPDEST}/scripts/install-dsh-plugins.mjs"
 DSH_PUBLISHED_PLUGIN_MANIFEST="${TRIM_APPDEST}/published-dsh-plugins.json"
-DSH_LOCAL_PLUGIN_NAMES="@tnnevol/dsh-fnos"
 DSH_PROFILE_DIRECTORY="${DSH_HOME}/profiles/web"
 COMPATIBILITY_PATCH="${APP_HOME}/.fn-deepseek-harness/compatibility/web-incompatible-plugins.patch.yml"
 
@@ -25,13 +24,14 @@ export PATH="${NODE_BIN}:${NPM_CONFIG_PREFIX}/bin:${PATH}"
 NPM_REGISTRY="$(tr -d '[:space:]' < "${NPM_REGISTRY_FILE}" 2>/dev/null || true)"
 NPM_REGISTRY="${NPM_REGISTRY:-https://registry.npmjs.org/}"
 
-if [ -x "${NODE_BIN}/node" ] && [ -f "${DSH_PLUGIN_SCRIPT}" ] && [ -d "${DSH_PLUGIN_SOURCE_DIRECTORY}" ]; then
+if [ -f "${INSTALL_CALLBACK}" ]; then
+    wizard_npm_registry="${NPM_REGISTRY}" \
+    bash "${INSTALL_CALLBACK}" || exit 1
+elif [ -x "${NODE_BIN}/node" ] && [ -f "${DSH_PLUGIN_SCRIPT}" ]; then
     if [ ! -f "${DSH_PROFILE_DIRECTORY}/package.json" ]; then
         "${DSH_HOME}/.npm-global/bin/dsh" --profile web --dump-config >/dev/null 2>&1 || exit 1
     fi
-    DSH_PLUGIN_SOURCE_DIRECTORY="${DSH_PLUGIN_SOURCE_DIRECTORY}" \
     DSH_PUBLISHED_PLUGIN_MANIFEST="${DSH_PUBLISHED_PLUGIN_MANIFEST}" \
-    DSH_LOCAL_PLUGIN_NAMES="${DSH_LOCAL_PLUGIN_NAMES}" \
     DSH_PROFILE_DIRECTORY="${DSH_PROFILE_DIRECTORY}" \
     DSH_INSTALL_PUBLISHED=1 \
     NPM_BIN="${NPM_BIN}" \

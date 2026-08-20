@@ -7,10 +7,8 @@ APP_HOME="${TRIM_APPDEST_VOL}/@appshare/fn-deepseek-harness"
 SOCKET_PATH="${TRIM_APPDEST}/app.sock"
 PROXY_SCRIPT="${TRIM_APPDEST}/gateway-proxy.mjs"
 COMPATIBILITY_SCRIPT="${TRIM_APPDEST}/scripts/prepare-dsh-compatibility.mjs"
-DSH_PLUGIN_SCRIPT="${TRIM_APPDEST}/scripts/install-dsh-fnos-plugin.mjs"
-DSH_PLUGIN_SOURCE_DIRECTORY="${TRIM_APPDEST}/plugins"
+DSH_PLUGIN_SCRIPT="${TRIM_APPDEST}/scripts/install-dsh-plugins.mjs"
 DSH_PUBLISHED_PLUGIN_MANIFEST="${TRIM_APPDEST}/published-dsh-plugins.json"
-DSH_LOCAL_PLUGIN_NAMES="@tnnevol/dsh-fnos"
 DSH_PROFILE_DIRECTORY="${DSH_HOME}/profiles/web"
 GATEWAY_PREFIX="/app/fn-deepseek-harness"
 NODE_BIN="/var/apps/nodejs_v24/target/bin"
@@ -62,12 +60,8 @@ prepare_dsh_compatibility() {
     "${NODE_BIN}/node" "${COMPATIBILITY_SCRIPT}"
 }
 
-prepare_bundled_dsh_plugins() {
+verify_published_dsh_plugins() {
     [ -f "${DSH_PLUGIN_SCRIPT}" ] || return 0
-    [ -d "${DSH_PLUGIN_SOURCE_DIRECTORY}" ] || {
-        log_error "Bundled DSH plugin directory is missing"
-        return 1
-    }
 
     if [ ! -f "${DSH_PROFILE_DIRECTORY}/package.json" ]; then
         "${DSH_BIN}" --profile web --dump-config >/dev/null 2>&1 || {
@@ -76,9 +70,7 @@ prepare_bundled_dsh_plugins() {
         }
     fi
 
-    DSH_PLUGIN_SOURCE_DIRECTORY="${DSH_PLUGIN_SOURCE_DIRECTORY}" \
     DSH_PUBLISHED_PLUGIN_MANIFEST="${DSH_PUBLISHED_PLUGIN_MANIFEST}" \
-    DSH_LOCAL_PLUGIN_NAMES="${DSH_LOCAL_PLUGIN_NAMES}" \
     DSH_PROFILE_DIRECTORY="${DSH_PROFILE_DIRECTORY}" \
     DSH_INSTALL_PUBLISHED=0 \
     "${NODE_BIN}/node" "${DSH_PLUGIN_SCRIPT}"
@@ -116,8 +108,8 @@ start_process() {
     fi
 
     mkdir -p "${DSH_HOME}/.npm-cache" "${HOME}"
-    if ! prepare_bundled_dsh_plugins; then
-        log_error "Unable to prepare the bundled DSH plugins; the application was not started"
+    if ! verify_published_dsh_plugins; then
+        log_error "Unable to verify the published DSH plugins; the application was not started"
         return 1
     fi
     if ! prepare_dsh_compatibility; then

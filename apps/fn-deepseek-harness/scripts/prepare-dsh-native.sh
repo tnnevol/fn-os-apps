@@ -30,7 +30,68 @@ export PATH="${NODE_BIN_DIR}:${PATH}"
 NODE_MAJOR="$("${NODE_BIN}" -p 'process.versions.node.split(".")[0]')"
 [ "${NODE_MAJOR}" = "24" ] || fail "Node.js 24 is required; found ${NODE_MAJOR}"
 
-DSH_VERSION="${DSH_VERSION:-$(${NPM_BIN} view "${DSH_PACKAGE}" version --registry="${NPM_REGISTRY}" 2>/dev/null | tr -d '[:space:]' || true)}"
+version_is_newer() {
+    "${NODE_BIN}" -e '
+const [candidate, current] = process.argv.slice(1)
+const parse = value => {
+    const match = /^(?:v)?(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+[0-9A-Za-z-]+)?$/.exec(value || "")
+    if (!match) return null
+    return {
+        core: match.slice(1, 4).map(Number),
+        prerelease: match[4] === undefined ? [] : match[4].split("."),
+    }
+}
+const compareIdentifier = (left, right) => {
+    const leftNumeric = /^\d+$/.test(left)
+    const rightNumeric = /^\d+$/.test(right)
+    if (leftNumeric && rightNumeric) {
+        const leftNumber = BigInt(left)
+        const rightNumber = BigInt(right)
+        return leftNumber < rightNumber ? -1 : leftNumber > rightNumber ? 1 : 0
+    }
+    if (leftNumeric) return -1
+    if (rightNumeric) return 1
+    return left < right ? -1 : left > right ? 1 : 0
+}
+const compare = (left, right) => {
+    for (let index = 0; index < left.core.length; index += 1) {
+        if (left.core[index] !== right.core[index]) return left.core[index] > right.core[index] ? 1 : -1
+    }
+    if (left.prerelease.length === 0 && right.prerelease.length > 0) return 1
+    if (left.prerelease.length > 0 && right.prerelease.length === 0) return -1
+    for (let index = 0; index < Math.min(left.prerelease.length, right.prerelease.length); index += 1) {
+        const result = compareIdentifier(left.prerelease[index], right.prerelease[index])
+        if (result !== 0) return result
+    }
+    return left.prerelease.length === right.prerelease.length
+        ? 0
+        : left.prerelease.length > right.prerelease.length ? 1 : -1
+}
+const candidateVersion = parse(candidate)
+const currentVersion = parse(current)
+process.exit(candidateVersion && currentVersion && compare(candidateVersion, currentVersion) > 0 ? 0 : 1)
+' "${1:-}" "${2:-}" >/dev/null 2>&1
+}
+
+read_registry_version() {
+    local tag="$1"
+    "${NPM_BIN}" view "${DSH_PACKAGE}@${tag}" version --registry="${NPM_REGISTRY}" 2>/dev/null \
+        | tr -d '[:space:]' || true
+}
+
+resolve_latest_dsh_version() {
+    local latest_version next_version
+    latest_version="$(read_registry_version latest)"
+    next_version="$(read_registry_version next)"
+
+    if [ -n "${next_version}" ] && { [ -z "${latest_version}" ] || version_is_newer "${next_version}" "${latest_version}"; }; then
+        printf '%s\n' "${next_version}"
+    else
+        printf '%s\n' "${latest_version}"
+    fi
+}
+
+DSH_VERSION="${DSH_VERSION:-$(resolve_latest_dsh_version)}"
 [ -n "${DSH_VERSION}" ] || fail "unable to resolve the latest ${DSH_PACKAGE} version"
 
 RESOLVE_DIR="${WORK_DIR}/resolve"
