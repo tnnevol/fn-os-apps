@@ -104,7 +104,7 @@ dsh --profile web --dump-config
 
 ### 本地调试
 
-插件要求 Node.js 22.19+ 或 Node.js 24+，并使用本地 DSH CLI 调试：
+插件开发环境要求 Node.js 24+，并使用本地 DSH CLI 调试：
 
 ```sh
 pnpm --filter @tnnevol/dsh-codex-auth run check

@@ -12,7 +12,7 @@
     "docs:preview": "vitepress preview docs"
   },
   "engines": {
-    "node": ">=22.23.0",
+    "node": ">=24.0.0",
     "pnpm": ">=11.16.0"
   },
   "packageManager": "pnpm@11.16.0",
