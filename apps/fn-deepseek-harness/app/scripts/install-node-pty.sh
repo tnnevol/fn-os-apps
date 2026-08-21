@@ -10,8 +10,22 @@ NODE_PTY_VERSIONS_FILE="${NODE_PTY_VERSIONS_FILE:?NODE_PTY_VERSIONS_FILE is requ
 DSH_PACKAGE_DIR="${DSH_PACKAGE_DIR:?DSH_PACKAGE_DIR is required}"
 NPM_GLOBAL_ROOT="${NPM_GLOBAL_ROOT:?NPM_GLOBAL_ROOT is required}"
 
+log_message() {
+    local level="$1"
+    shift
+    printf '[%s] [install-node-pty] [%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "${level}" "$*"
+}
+
+log_info() {
+    log_message INFO "$@"
+}
+
+log_error() {
+    log_message ERROR "$@" >&2
+}
+
 fail() {
-    echo "[dsh-node-pty] $*" >&2
+    log_error "$*"
     exit 1
 }
 
@@ -103,7 +117,7 @@ run_dsh_dependency_scripts() {
 
     if has_compiler; then
         use_compiler=1
-        echo "g++ detected; running node-pty lifecycle scripts without the native compilation patch."
+        log_info "g++ detected; running node-pty lifecycle scripts without the native compilation patch."
     else
         for package_json in "${node_pty_package_files[@]}"; do
             backup_file="${backup_dir}/$(printf '%s' "${#package_json}").${RANDOM}.json"
@@ -139,15 +153,25 @@ fs.writeFileSync(file, `${JSON.stringify(packageJson, null, 2)}\n`)
     fi
 
     if [ "${use_compiler}" -eq 1 ]; then
-        echo "Running DSH dependency lifecycle scripts with node-pty native compilation enabled..."
+        log_info "Running DSH dependency lifecycle scripts with node-pty native compilation enabled."
     else
-        echo "Temporarily disabling lifecycle scripts for ${#node_pty_package_files[@]} node-pty package(s); other DSH dependency scripts remain enabled."
-        echo "Running DSH dependency lifecycle scripts with node-pty native compilation disabled..."
+        log_info "Temporarily disabling lifecycle scripts for ${#node_pty_package_files[@]} node-pty package(s); other DSH dependency scripts remain enabled."
+        log_info "Running DSH dependency lifecycle scripts with node-pty native compilation disabled."
     fi
+    local started_at finished_at elapsed
+    started_at="$(date +%s)"
+    log_info "START: npm rebuild --global --foreground-scripts"
     if "${NPM_BIN}" rebuild --global --ignore-scripts=false --foreground-scripts; then
         rebuild_status=0
     else
         rebuild_status=$?
+    fi
+    finished_at="$(date +%s)"
+    elapsed="$((finished_at - started_at))"
+    if [ "${rebuild_status}" -eq 0 ]; then
+        log_info "DONE: npm rebuild --global --foreground-scripts (${elapsed}s)"
+    else
+        log_error "FAILED: npm rebuild --global --foreground-scripts (exit=${rebuild_status}, elapsed=${elapsed}s)"
     fi
 
     if [ "${use_compiler}" -eq 0 ]; then
@@ -159,7 +183,7 @@ fs.writeFileSync(file, `${JSON.stringify(packageJson, null, 2)}\n`)
     rm -rf "${backup_dir}"
 
     [ "${rebuild_status}" -eq 0 ] || fail "Failed to run DSH dependency lifecycle scripts"
-    echo "DSH dependency lifecycle scripts completed."
+    log_info "DSH dependency lifecycle scripts completed."
 }
 
 install_bundled_node_pty() {
@@ -198,12 +222,13 @@ install_bundled_node_pty() {
             || fail "Installed dsh dependency tree is missing node-pty ${expected_version}"
     done <<< "${NODE_PTY_VERSIONS}"
 
-    echo "Installed bundled node-pty versions: ${found_versions//$'\n'/,}."
+    log_info "Installed bundled node-pty versions: ${found_versions//$'\n'/,}."
 }
 
 NODE_PTY_VERSIONS="$(read_version_list)"
 NODE_PTY_VERSION_COUNT="$(printf '%s\n' "${NODE_PTY_VERSIONS}" | awk 'NF { count++ } END { print count + 0 }')"
 HAS_BUNDLED_NODE_PTY=0
+log_info "Checking bundled node-pty files for ${NODE_PTY_VERSION_COUNT} packaged version(s)."
 if [ "${NODE_PTY_VERSION_COUNT}" -gt 0 ] && [ -d "${DSH_NATIVE_BUNDLE}" ]; then
     HAS_BUNDLED_NODE_PTY=1
     validate_versions
@@ -221,8 +246,10 @@ if [ "${HAS_BUNDLED_NODE_PTY}" -eq 1 ]; then
     if ! has_compiler || [ "${DSH_RUN_DEPENDENCY_SCRIPTS:-0}" != "1" ]; then
         install_bundled_node_pty
     else
-        echo "g++ detected; using the node-pty native build from the NAS environment."
+        log_info "g++ detected; using the node-pty native build from the NAS environment."
     fi
 else
-    echo "Using the node-pty native build from the NAS environment."
+    log_info "Using the node-pty native build from the NAS environment."
 fi
+
+log_info "node-pty preparation completed."

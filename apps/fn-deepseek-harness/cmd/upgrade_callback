@@ -19,14 +19,37 @@ export NPM_CONFIG_CACHE="${DSH_HOME}/.npm-cache"
 export NPM_CONFIG_PREFIX
 export PATH="${NODE_BIN}:${NPM_CONFIG_PREFIX}/bin:${PATH}"
 
+log_message() {
+    local level="$1"
+    shift
+    printf '[%s] [upgrade_callback] [%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "${level}" "$*"
+}
+
+log_info() {
+    log_message INFO "$@"
+}
+
+log_error() {
+    log_message ERROR "$@" >&2
+}
+
+log_info "Starting DeepSeek Harness upgrade callback."
+
 NPM_REGISTRY="$(tr -d '[:space:]' < "${NPM_REGISTRY_FILE}" 2>/dev/null || true)"
 NPM_REGISTRY="${NPM_REGISTRY:-https://registry.npmjs.org/}"
+log_info "Using npm registry ${NPM_REGISTRY}."
 
 if [ -f "${INSTALL_CALLBACK}" ]; then
+    log_info "Running install callback to reconcile the fixed DSH runtime and published plugins."
     wizard_npm_registry="${NPM_REGISTRY}" \
-    bash "${INSTALL_CALLBACK}" || exit 1
+    bash "${INSTALL_CALLBACK}" || {
+        log_error "Install callback failed during upgrade."
+        exit 1
+    }
 elif [ -x "${NODE_BIN}/node" ] && [ -f "${DSH_PLUGIN_SCRIPT}" ]; then
+    log_info "Install callback is unavailable; running published plugin reconciliation directly."
     if [ ! -f "${DSH_PROFILE_DIRECTORY}/package.json" ]; then
+        log_info "Initializing the dsh web profile."
         "${DSH_HOME}/.npm-global/bin/dsh" --profile web --dump-config >/dev/null 2>&1 || exit 1
     fi
     DSH_PUBLISHED_PLUGIN_MANIFEST="${DSH_PUBLISHED_PLUGIN_MANIFEST}" \
@@ -34,7 +57,11 @@ elif [ -x "${NODE_BIN}/node" ] && [ -f "${DSH_PLUGIN_SCRIPT}" ]; then
     DSH_INSTALL_PUBLISHED=1 \
     NPM_BIN="${NPM_BIN}" \
     NPM_REGISTRY="${NPM_REGISTRY}" \
-    "${NODE_BIN}/node" "${DSH_PLUGIN_SCRIPT}" || exit 1
+    "${NODE_BIN}/node" "${DSH_PLUGIN_SCRIPT}" || {
+        log_error "Published plugin reconciliation failed during upgrade."
+        exit 1
+    }
 fi
 
+log_info "DeepSeek Harness upgrade callback completed."
 exit 0

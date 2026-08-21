@@ -2,10 +2,34 @@
 
 ### This script is called after the user changes environment variables in the application settings page.
 
+log_message() {
+    local level="$1"
+    shift
+    printf '[%s] [config_callback] [%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "${level}" "$*"
+}
+
+log_info() {
+    log_message INFO "$@"
+}
+
+log_error() {
+    log_message ERROR "$@" >&2
+}
+
 APP_MAIN="${TRIM_APPDEST:-}/cmd/main"
 if [ -x "${APP_MAIN}" ] && "${APP_MAIN}" status >/dev/null 2>&1; then
-    "${APP_MAIN}" stop || exit 1
-    "${APP_MAIN}" start || exit 1
+    log_info "Restarting DeepSeek Harness after configuration changes."
+    "${APP_MAIN}" stop || {
+        log_error "Failed to stop DeepSeek Harness during configuration reload."
+        exit 1
+    }
+    "${APP_MAIN}" start || {
+        log_error "Failed to start DeepSeek Harness during configuration reload."
+        exit 1
+    }
+    log_info "DeepSeek Harness configuration reload completed."
+else
+    log_info "DeepSeek Harness is not running; configuration changes will apply on next start."
 fi
 
 exit 0

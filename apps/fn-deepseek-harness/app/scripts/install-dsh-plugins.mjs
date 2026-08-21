@@ -10,6 +10,24 @@ const npmBin = process.env.NPM_BIN || 'npm'
 const npmRegistry = process.env.NPM_REGISTRY || 'https://registry.npmjs.org/'
 const installPublished = process.env.DSH_INSTALL_PUBLISHED === '1'
 
+function logMessage(level, message) {
+  const now = new Date()
+  const pad = value => String(value).padStart(2, '0')
+  const timestamp = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} `
+    + `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`
+  const output = `[${timestamp}] [install-dsh-plugins] [${level}] ${message}`
+  if (level === 'ERROR') console.error(output)
+  else console.log(output)
+}
+
+function logInfo(message) {
+  logMessage('INFO', message)
+}
+
+function logError(message) {
+  logMessage('ERROR', message)
+}
+
 // These are the shipped web profile layers. The three built-in settings cards
 // (terminal, agent loop, and web search) are registered by this official
 // bundle pair, not by the published third-party plugin manifest. Keep the
@@ -84,6 +102,7 @@ async function loadPublishedPlugins() {
 
 function resolvePublishedVersion(plugin) {
   const requirement = pluginRequirement(plugin)
+  logInfo(`Resolving ${requirement} from ${npmRegistry}.`)
   if (plugin.version) return plugin.version
 
   const result = spawnSync(npmBin, [
@@ -99,6 +118,7 @@ function resolvePublishedVersion(plugin) {
     const detail = String(result.stderr ?? '').trim()
     fail(`unable to resolve ${requirement} from ${npmRegistry}${detail ? `: ${detail}` : ''}`)
   }
+  logInfo(`Resolved ${requirement} to ${version}.`)
   return version
 }
 
@@ -108,11 +128,12 @@ async function installPublishedPlugins(publishedPlugins) {
     let resolvedVersion = plugin.version
     if (installPublished) {
       resolvedVersion = resolvePublishedVersion(plugin)
-      console.log(
+      logInfo(
         `Installing published ${plugin.name}@${resolvedVersion}`
         + (plugin.distTag ? ` (dist-tag ${plugin.distTag})` : '')
         + ` from ${npmRegistry}...`,
       )
+      const startedAt = Date.now()
       const result = spawnSync(npmBin, [
         'install',
         '--prefix', profileDirectory,
@@ -125,8 +146,16 @@ async function installPublishedPlugins(publishedPlugins) {
         `--registry=${npmRegistry}`,
         `${plugin.name}@${resolvedVersion}`,
       ], { stdio: 'inherit' })
-      if (result.error) throw result.error
-      if (result.status !== 0) fail(`failed to install published ${plugin.name}@${resolvedVersion}`)
+      const elapsed = Math.round((Date.now() - startedAt) / 1000)
+      if (result.error) {
+        logError(`FAILED: npm install ${plugin.name}@${resolvedVersion} (${elapsed}s): ${result.error.message}`)
+        throw result.error
+      }
+      if (result.status !== 0) {
+        logError(`FAILED: npm install ${plugin.name}@${resolvedVersion} (exit=${result.status}, elapsed=${elapsed}s)`)
+        fail(`failed to install published ${plugin.name}@${resolvedVersion}`)
+      }
+      logInfo(`DONE: npm install ${plugin.name}@${resolvedVersion} (${elapsed}s)`)
     }
 
     const installedManifest = await readPackageManifest(targetDirectory)
@@ -171,7 +200,7 @@ async function updateProfileBundles(publishedPlugins) {
   }
 
   if (!hadOfficialBaseline) {
-    console.log('Repaired the dsh web profile with the official base and web-app bundles.')
+    logInfo('Repaired the dsh web profile with the official base and web-app bundles.')
   }
   profileManifest.dsh = {
     ...(profileManifest.dsh ?? {}),
@@ -189,8 +218,8 @@ try {
   const publishedPlugins = await loadPublishedPlugins()
   await installPublishedPlugins(publishedPlugins)
   await updateProfileBundles(publishedPlugins)
-  console.log(`${installPublished ? 'Installed' : 'Verified'} ${publishedPlugins.length} published DSH plugin(s).`)
+  logInfo(`${installPublished ? 'Installed' : 'Verified'} ${publishedPlugins.length} published DSH plugin(s).`)
 } catch (error) {
-  console.error(error instanceof Error ? error.message : error)
+  logError(error instanceof Error ? error.message : String(error))
   process.exitCode = 1
 }
