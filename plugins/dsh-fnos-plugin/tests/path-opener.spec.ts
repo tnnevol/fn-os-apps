@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest'
-import { DirectoryRequestError } from '../src/client/authorized-directories-client.ts'
 import { installFnosPathOpener, type PathOpenerSdk } from '../src/client/path-opener.ts'
 
 function sdk(options: Partial<PathOpenerSdk> = {}): PathOpenerSdk {
@@ -16,18 +15,15 @@ describe('fnOS path opener', () => {
   it('opens an authorized path through the fnOS iframe bridge', async () => {
     const original: string[] = []
     const opened: string[] = []
-    const validated: string[] = []
     const workspaces = {
       openPath: async (path: string) => { original.push(path) },
     }
     const dispose = installFnosPathOpener(workspaces, {
       createSdk: () => sdk({ openFile: async path => { opened.push(path) } }),
-      validatePath: async path => { validated.push(path) },
     })
 
     await workspaces.openPath('/vol4/project/report.md')
 
-    expect(validated).toEqual(['/vol4/project/report.md'])
     expect(opened).toEqual(['/vol4/project/report.md'])
     expect(original).toEqual([])
     dispose()
@@ -35,54 +31,79 @@ describe('fnOS path opener', () => {
 
   it('keeps the original DSH opener in a standalone browser', async () => {
     const original: string[] = []
-    let validated = false
     const workspaces = {
       openPath: async (path: string) => { original.push(path) },
     }
     const dispose = installFnosPathOpener(workspaces, {
       createSdk: () => sdk({ isStandaloneWeb: true }),
-      validatePath: async () => { validated = true },
     })
 
     await workspaces.openPath('/tmp/report.md')
 
     expect(original).toEqual(['/tmp/report.md'])
-    expect(validated).toBe(false)
     dispose()
   })
 
-  it('returns a readable authorization error and restores the service', async () => {
+  it('uses the fnOS bridge inside an iframe even when the SDK reports standalone', async () => {
     const original: string[] = []
+    const opened: string[] = []
+    const previousWindow = (globalThis as { window?: unknown }).window
+    Object.defineProperty(globalThis, 'window', {
+      configurable: true,
+      value: { parent: {} },
+    })
+    try {
+      const workspaces = {
+        openPath: async (path: string) => { original.push(path) },
+      }
+      const dispose = installFnosPathOpener(workspaces, {
+        createSdk: () => sdk({
+          isStandaloneWeb: true,
+          openFile: async path => { opened.push(path) },
+        }),
+      })
+
+      await workspaces.openPath('/vol4/project/report.md')
+
+      expect(opened).toEqual(['/vol4/project/report.md'])
+      expect(original).toEqual([])
+      dispose()
+    } finally {
+      if (previousWindow === undefined) delete (globalThis as { window?: unknown }).window
+      else Object.defineProperty(globalThis, 'window', { configurable: true, value: previousWindow })
+    }
+  })
+
+  it('lets fnOS decide authorization instead of preflighting the plugin directory list', async () => {
+    const original: string[] = []
+    const opened: string[] = []
     const workspaces = {
       openPath: async (path: string) => { original.push(path) },
     }
     const dispose = installFnosPathOpener(workspaces, {
-      createSdk: () => sdk(),
-      validatePath: async () => {
-        throw new DirectoryRequestError('fnos-path-not-authorized')
-      },
-      message: key => key === 'pathNotAuthorized' ? '请先授权目录' : '无法打开路径',
+      createSdk: () => sdk({ openFile: async path => { opened.push(path) } }),
     })
 
-    await expect(workspaces.openPath('/vol4/private/report.md')).rejects.toThrow('请先授权目录')
+    await workspaces.openPath('/vol4/private/report.md')
+    expect(opened).toEqual(['/vol4/private/report.md'])
+    expect(original).toEqual([])
     dispose()
     await workspaces.openPath('/vol4/private/report.md')
     expect(original).toEqual(['/vol4/private/report.md'])
   })
 
-  it('distinguishes current-user permission errors from missing app authorization', async () => {
+  it('converts fnOS bridge failures into a readable error', async () => {
     const workspaces = {
       openPath: async (_path: string) => undefined,
     }
     const dispose = installFnosPathOpener(workspaces, {
-      createSdk: () => sdk(),
-      validatePath: async () => {
-        throw new DirectoryRequestError('fnos-user-permission-denied')
-      },
-      message: key => key === 'pathPermissionDenied' ? '当前用户没有读取权限' : '无法打开路径',
+      createSdk: () => sdk({
+        openFile: async () => { throw new Error('openFile unavailable') },
+      }),
+      message: () => '无法通过 fnOS 打开该路径',
     })
 
-    await expect(workspaces.openPath('/vol4/share/private.md')).rejects.toThrow('当前用户没有读取权限')
+    await expect(workspaces.openPath('/vol4/share/report.md')).rejects.toThrow('无法通过 fnOS 打开该路径')
     dispose()
   })
 })

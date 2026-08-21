@@ -1,228 +1,196 @@
-/** DSH-style multi-select browser limited to fnOS-authorized paths. */
+/** Compact fnOS-authorized tree selector used by the DSH input toolbar. */
 
-import { useEffect, useMemo, useState } from 'react'
-import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
-import { Button, IconBrowseOutline16, IconFolderOpen16, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
-import {
-  DirectoryRequestError,
-  requestAuthorizedEntries,
-  type AuthorizedEntriesResult,
-} from './authorized-directories-client.ts'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import type { PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
+import TreeSelect from '@douyinfe/semi-ui/lib/es/treeSelect/index'
+import Tooltip from '@douyinfe/semi-ui/lib/es/tooltip/index'
+import IconFile from '@douyinfe/semi-icons/lib/es/icons/IconFile.js'
+import IconFolder from '@douyinfe/semi-icons/lib/es/icons/IconFolder.js'
+import { requestAuthorizedEntries, type AuthorizedEntriesResult } from './authorized-directories-client.ts'
+import { FnosColorLogo } from './FnosLogo.tsx'
+import { decodeFnosReference, type FnosInputReference, createFnosInputReference, uniqueFnosInputReferences, FNOS_REFERENCE_SOURCE } from './input-references.ts'
 import type { AuthorizedEntry } from '../authorized-directories-contract.ts'
 import type { FnosLocaleKey } from './locales.ts'
 
 type Translate = (key: FnosLocaleKey) => string
+type InputProps = Pick<PropsRuntime<'conversation.input.left'>, 'input' | 'inputActions' | 'session'> & PropsLocale<'settings.dsh-fnos'>
 
-export type FnosAuthorizedPathPickerProps = PropsLocale<'settings.dsh-fnos'> & {
-  open: boolean
-  busy: boolean
-  onClose: () => void
-  onConfirm: (entries: readonly AuthorizedEntry[]) => boolean
+interface TreeNode {
+  key: string
+  value: string
+  label: ReactNode
+  isLeaf: boolean
+  children?: TreeNode[]
 }
 
-type ListingState =
-  | { status: 'idle'; value: AuthorizedEntriesResult }
-  | { status: 'loading'; value: AuthorizedEntriesResult }
-  | { status: 'ready'; value: AuthorizedEntriesResult }
-  | { status: 'error'; value: AuthorizedEntriesResult; message: string }
+function displayName(value: string): string {
+  const parts = value.split('/').filter(Boolean)
+  return parts.at(-1) ?? value
+}
 
-function errorMessage(error: unknown, t: Translate): string {
-  if (error instanceof DirectoryRequestError && error.code === 'remote-web-origin-not-trusted') {
-    return t('originNotTrusted')
+function nodeLabel(entry: AuthorizedEntry): ReactNode {
+  const name = displayName(entry.semanticPath)
+  const Icon = entry.kind === 'directory' ? IconFolder : IconFile
+  const content = (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, minWidth: 0 }}>
+      <Icon size="small" />
+      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
+    </span>
+  )
+  return <Tooltip content={entry.semanticPath} showArrow>{content}</Tooltip>
+}
+
+function toNode(entry: AuthorizedEntry): TreeNode {
+  return {
+    key: entry.path,
+    value: entry.path,
+    label: nodeLabel(entry),
+    isLeaf: entry.kind === 'file',
   }
-  return t('inputPickerFailed')
 }
 
-function EntryRow({ entry, selected, busy, onToggle, onOpen, t }: {
-  entry: AuthorizedEntry
-  selected: boolean
-  busy: boolean
-  onToggle: () => void
-  onOpen: () => void
-  t: Translate
-}) {
-  const directory = entry.kind === 'directory'
+function updateChildren(nodes: readonly TreeNode[], key: string, children: TreeNode[]): TreeNode[] {
+  return nodes.map(node => {
+    if (node.key === key) return { ...node, children, isLeaf: false }
+    if (node.children === undefined) return node
+    return { ...node, children: updateChildren(node.children, key, children) }
+  })
+}
+
+function selectedPaths(value: unknown): string[] {
+  const values = Array.isArray(value) ? value : value === undefined || value === null ? [] : [value]
+  return values.flatMap(item => typeof item === 'string' && item.startsWith('/') ? [item] : [])
+}
+
+function referenceEntries(input: InputProps['input']): FnosInputReference[] {
+  return uniqueFnosInputReferences(input.occurrences
+    .filter(occurrence => occurrence.source === FNOS_REFERENCE_SOURCE)
+    .flatMap(occurrence => {
+      const decoded = decodeFnosReference(occurrence.ref)
+      if (decoded === undefined) return []
+      const reference = createFnosInputReference(decoded.kind, decoded.path, decoded.path)
+      return reference === undefined ? [] : [reference]
+    }))
+}
+
+export type FnosAuthorizedPathPickerProps = InputProps & {
+  insertReferences: (input: { draft: string, draftRev: number }, references: readonly FnosInputReference[]) => boolean
+}
+
+/** Selection is immediate; closing the TreeSelect never discards a choice. */
+export function FnosAuthorizedPathPicker({ input, inputActions, insertReferences, t }: FnosAuthorizedPathPickerProps) {
+  const [treeData, setTreeData] = useState<TreeNode[]>([])
+  const [desiredPaths, setDesiredPaths] = useState<string[] | undefined>()
+  const entries = useRef(new Map<string, AuthorizedEntry>())
+  const busy = input.phase === 'adjudicating' || input.phase === 'submitting'
+  const currentReferences = useMemo(() => referenceEntries(input), [input])
+  const currentPaths = useMemo(() => currentReferences.map(reference => reference.path), [currentReferences])
+  const value = desiredPaths ?? currentPaths
+
+  const applyEntries = useCallback((result: AuthorizedEntriesResult, parent?: string) => {
+    for (const entry of result.entries) entries.current.set(entry.path, entry)
+    const children = result.entries.map(toNode)
+    setTreeData(current => parent === undefined ? children : updateChildren(current, parent, children))
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    void requestAuthorizedEntries().then(result => {
+      if (!cancelled) applyEntries(result)
+    }).catch(() => {
+      if (!cancelled) setTreeData([])
+    })
+    return () => { cancelled = true }
+  }, [applyEntries])
+
+  useEffect(() => {
+    if (desiredPaths === undefined) return
+    const wanted = new Set(desiredPaths)
+    const current = new Set(currentPaths)
+    const removed = input.occurrences
+      .filter(occurrence => occurrence.source === FNOS_REFERENCE_SOURCE)
+      .filter(occurrence => {
+        const decoded = decodeFnosReference(occurrence.ref)
+        return decoded !== undefined && !wanted.has(decoded.path)
+      })
+      .sort((left, right) => right.offset - left.offset)
+
+    if (removed.length > 0) {
+      let draft = input.draft
+      for (const occurrence of removed) {
+        draft = draft.slice(0, occurrence.offset) + draft.slice(occurrence.offset + occurrence.length)
+      }
+      inputActions.setDraft(draft)
+      return
+    }
+
+    const additions = desiredPaths
+      .filter(path => !current.has(path))
+      .map(path => entries.current.get(path))
+      .flatMap(entry => {
+        if (entry === undefined) return []
+        const reference = createFnosInputReference(entry.kind, entry.path, entry.semanticPath)
+        return reference === undefined ? [] : [reference]
+      })
+    if (additions.length > 0) {
+      insertReferences({ draft: input.draft, draftRev: input.draftRev }, additions)
+      return
+    }
+    setDesiredPaths(undefined)
+  }, [currentPaths, desiredPaths, input, inputActions, insertReferences])
+
+  const loadData = useCallback(async (node: unknown) => {
+    const key = typeof node === 'object' && node !== null && 'key' in node && typeof node.key === 'string'
+      ? node.key
+      : undefined
+    if (key === undefined) return
+    const result = await requestAuthorizedEntries(key)
+    applyEntries(result, key)
+  }, [applyEntries])
+
   return (
-    <div
-      role="listitem"
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 8,
-        minHeight: 42,
-        padding: '4px 8px',
-        border: '1px solid var(--dsw-alias-border-l2)',
-        borderRadius: 9,
-        background: selected ? 'var(--dsw-alias-interactive-bg-active, var(--dsw-alias-interactive-bg-hover))' : 'var(--dsw-alias-bg-layer-1)',
-        color: 'var(--dsw-alias-label-primary)',
-      }}
-    >
-      <label style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flex: 1, cursor: busy ? 'not-allowed' : 'pointer' }}>
-        <input
-          type="checkbox"
-          checked={selected}
-          disabled={busy}
-          onChange={onToggle}
-          style={{ accentColor: 'var(--dsw-alias-button-primary-fill)', flex: '0 0 auto' }}
-        />
-        <span aria-hidden="true" style={{ display: 'inline-flex', color: 'var(--dsw-alias-label-secondary)', flex: '0 0 auto' }}>
-          {directory ? <IconFolderOpen16 size={16} /> : <IconBrowseOutline16 size={16} />}
-        </span>
-        <span title={entry.semanticPath} style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 13 }}>
-          {entry.semanticPath}
-        </span>
-      </label>
-      {directory && (
-        <button
-          type="button"
-          aria-label={`${t('inputPickerOpenDirectory')}: ${entry.semanticPath}`}
-          title={t('inputPickerOpenDirectory')}
-          disabled={busy}
-          onMouseDown={event => event.preventDefault()}
-          onClick={onOpen}
+    <TreeSelect
+      aria-label={t('inputPicker')}
+      multiple
+      treeCheckable
+      treeData={treeData}
+      value={value}
+      loadData={loadData}
+      onChange={(next: unknown) => { setDesiredPaths(selectedPaths(next)) }}
+      disabled={busy}
+      size="small"
+      borderless
+      showClear={false}
+      maxTagCount={0}
+      dropdownMatchSelectWidth={false}
+      dropdownStyle={{ width: 260, maxHeight: 320 }}
+      optionListStyle={{ maxHeight: 280 }}
+      showLine={false}
+      emptyContent={t('inputPickerEmpty')}
+      searchPlaceholder={t('workspaceSearchPlaceholder')}
+      placeholder=""
+      prefix={null}
+      triggerRender={() => (
+        <span
+          aria-label={t('inputPicker')}
+          title={t('inputPicker')}
           style={{
             display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',
             width: 28,
             height: 28,
-            padding: 0,
-            border: 0,
             borderRadius: 7,
-            background: 'transparent',
-            color: 'var(--dsw-alias-label-tertiary)',
+            background: '#fff',
+            color: '#111',
             cursor: busy ? 'not-allowed' : 'pointer',
-            fontSize: 20,
-            lineHeight: 1,
+            opacity: busy ? 0.45 : 1,
           }}
         >
-          ›
-        </button>
+          <FnosColorLogo size={17} />
+        </span>
       )}
-    </div>
-  )
-}
-
-export function FnosAuthorizedPathPicker({ open, busy, onClose, onConfirm, t }: FnosAuthorizedPathPickerProps) {
-  const [path, setPath] = useState<string | undefined>()
-  const [history, setHistory] = useState<(string | undefined)[]>([])
-  const [selected, setSelected] = useState<Map<string, AuthorizedEntry>>(new Map())
-  const [state, setState] = useState<ListingState>({ status: 'idle', value: { entries: [], truncated: false } })
-
-  useEffect(() => {
-    if (!open) return
-    setPath(undefined)
-    setHistory([])
-    setSelected(new Map())
-    setState({ status: 'idle', value: { entries: [], truncated: false } })
-  }, [open])
-
-  useEffect(() => {
-    if (!open) return
-    let cancelled = false
-    const previous = state.value
-    setState({ status: 'loading', value: previous })
-    void requestAuthorizedEntries(path).then(
-      value => {
-        if (!cancelled) setState({ status: 'ready', value })
-      },
-      error => {
-        if (!cancelled) setState({ status: 'error', value: previous, message: errorMessage(error, t) })
-      },
-    )
-    return () => { cancelled = true }
-    // `state.value` is intentionally excluded: changing the response must
-    // not reissue the same directory request.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, path, t])
-
-  const currentLabel = state.value.directory?.semanticPath ?? t('inputPickerRoots')
-  const selectedEntries = useMemo(() => [...selected.values()], [selected])
-  const navigate = (nextPath: string): void => {
-    setHistory(value => [...value, path])
-    setPath(nextPath)
-  }
-  const goBack = (): void => {
-    const previous = history.at(-1)
-    if (history.length === 0) return
-    setHistory(value => value.slice(0, -1))
-    setPath(previous)
-  }
-  const toggle = (entry: AuthorizedEntry): void => {
-    setSelected(current => {
-      const next = new Map(current)
-      if (next.has(entry.path)) next.delete(entry.path)
-      else next.set(entry.path, entry)
-      return next
-    })
-  }
-  const confirm = (): void => {
-    if (selectedEntries.length === 0 || busy) return
-    if (onConfirm(selectedEntries)) onClose()
-  }
-
-  if (!open) return null
-
-  return (
-    <Modal
-      open={open}
-      onClose={() => { if (!busy) onClose() }}
-      title={t('inputPickerTitle')}
-      description={t('inputPickerDescription')}
-      closeLabel={t('cancel')}
-      footer={(
-        <>
-          <Button variant="outline" size="sm" disabled={busy} onClick={onClose}>{t('cancel')}</Button>
-          <Button variant="primary" size="sm" disabled={busy || selectedEntries.length === 0} onClick={confirm}>{t('inputPickerConfirm')}</Button>
-        </>
-      )}
-    >
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-          <button
-            type="button"
-            disabled={busy || history.length === 0}
-            onClick={goBack}
-            style={{
-              flex: '0 0 auto',
-              minWidth: 30,
-              height: 30,
-              padding: '0 8px',
-              border: '1px solid var(--dsw-alias-border-l2)',
-              borderRadius: 8,
-              background: 'var(--dsw-alias-bg-layer-1)',
-              color: 'var(--dsw-alias-label-primary)',
-              cursor: busy || history.length === 0 ? 'not-allowed' : 'pointer',
-              opacity: busy || history.length === 0 ? 0.45 : 1,
-            }}
-          >
-            ‹
-          </button>
-          <div title={currentLabel} style={{ minWidth: 0, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', padding: '6px 10px', border: '1px solid var(--dsw-alias-border-l2)', borderRadius: 8, background: 'var(--dsw-alias-bg-layer-2)', color: 'var(--dsw-alias-label-secondary)', fontSize: 13 }}>
-            {currentLabel}
-          </div>
-          <span style={{ flex: '0 0 auto', color: 'var(--dsw-alias-label-tertiary)', fontSize: 12 }}>{selectedEntries.length} {t('inputPickerSelectedSuffix')}</span>
-        </div>
-        {state.status === 'loading' && <p role="status" style={{ margin: 0, color: 'var(--dsw-alias-label-tertiary)' }}>{t('inputPickerLoading')}</p>}
-        {state.status === 'error' && <p role="alert" style={{ margin: 0, color: 'var(--dsw-alias-state-error-primary, #d92d20)' }}>{state.message}</p>}
-        {state.status !== 'loading' && state.value.entries.length === 0 && <p style={{ margin: 0, color: 'var(--dsw-alias-label-tertiary)' }}>{t('inputPickerEmpty')}</p>}
-        {state.value.entries.length > 0 && (
-          <div role="list" aria-label={t('inputPickerTitle')} style={{ display: 'flex', flexDirection: 'column', gap: 7, maxHeight: 360, overflowY: 'auto', padding: 1 }}>
-            {state.value.entries.map(entry => (
-              <EntryRow
-                key={entry.path}
-                entry={entry}
-                selected={selected.has(entry.path)}
-                busy={busy || state.status === 'loading'}
-                onToggle={() => { toggle(entry) }}
-                onOpen={() => { navigate(entry.path) }}
-                t={t}
-              />
-            ))}
-          </div>
-        )}
-        {state.value.truncated && <p style={{ margin: 0, color: 'var(--dsw-alias-label-tertiary)', fontSize: 12 }}>{t('inputPickerTruncated')}</p>}
-      </div>
-    </Modal>
+      style={{ width: 30, height: 30, padding: 0, background: 'transparent' }}
+    />
   )
 }

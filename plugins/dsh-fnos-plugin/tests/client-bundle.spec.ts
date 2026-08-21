@@ -29,8 +29,16 @@ describe('dsh-fnos client artifact', () => {
     expect(source).toContain('openFile')
     expect(source).not.toContain('/app/fn-deepseek-harness/trim-web-app.js')
     expect(source).not.toContain('__DSH_FNOS_THEME_BRIDGE__')
-    expect(source).not.toContain('setInterval')
-    expect(source).not.toContain('visibilitychange')
+    // Semi TreeSelect bundles its own timer utilities. Check the plugin
+    // sources for the no-polling contract instead of scanning third-party UI
+    // code that is intentionally included in the client artifact.
+    const pluginSource = [
+      'src/client/index.ts',
+      'src/client/theme-bridge.ts',
+      'src/client/sdk.ts',
+    ].map(path => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8')).join('\n')
+    expect(pluginSource).not.toContain('setInterval')
+    expect(pluginSource).not.toContain('visibilitychange')
     const primitives = {
       IconBrowseOutline16: () => null,
       IconFolderOpen16: () => null,

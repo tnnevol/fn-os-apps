@@ -12,7 +12,7 @@ import { AuthorizedDirectoriesCard } from './AuthorizedDirectoriesCard.tsx'
 import { FnosInputPickerButton } from './FnosInputPickerButton.tsx'
 import { FnosInputReferencesDock } from './FnosInputReferencesDock.tsx'
 import { insertFnosReferences } from './input-reference-actions.ts'
-import { FNOS_REFERENCE_SOURCE, decodeFnosReference, fileUrlForPath } from './input-references.ts'
+import { FNOS_REFERENCE_SOURCE, decodeFnosReference } from './input-references.ts'
 import type { FnosLocaleKey } from './locales.ts'
 import { en, zh } from './locales.ts'
 import { installFnosPathOpener } from './path-opener.ts'
@@ -150,11 +150,14 @@ export function apply(ctx: ClientContext): void {
     codec: {
       clipboardText: ref => {
         const decoded = decodeFnosReference(ref)
-        return decoded === undefined ? ref : fileUrlForPath(decoded.path)
+        return decoded === undefined ? ref : decoded.path
       },
       serialize: async ref => {
         const decoded = decodeFnosReference(ref)
-        return decoded === undefined ? ref : fileUrlForPath(decoded.path)
+        // The UI keeps only the readable filename in the composer. The model
+        // receives the original NAS path, which is the value the Host can
+        // resolve and the agent can use in its workspace context.
+        return decoded === undefined ? ref : decoded.path
       },
     },
   }
@@ -171,8 +174,8 @@ export function apply(ctx: ClientContext): void {
     priority: 100,
     inject: () => ({ t }),
   }, AuthorizedDirectoriesCard))
-  ctx.slots.inject('conversation.input.right', () => ctx.slots.register({
-    name: 'conversation.input.right',
+  ctx.slots.inject('conversation.input.left', () => ctx.slots.register({
+    name: 'conversation.input.left',
     id: 'dsh-fnos-input-picker',
     order: 100,
     locale: namespace,

@@ -1,92 +1,89 @@
-/** Collapsible native DSH reference chips for selected fnOS files/directories. */
+/** Top reference blocks rendered above the DSH composer card. */
 
-import { useState } from 'react'
 import type { PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
-import { IconBrowseOutline16, IconFolderOpen16 } from '@deepseek-ai/dsh-client-ui-primitives'
+import Tooltip from '@douyinfe/semi-ui/lib/es/tooltip/index'
+import IconClose from '@douyinfe/semi-icons/lib/es/icons/IconClose.js'
+import IconFile from '@douyinfe/semi-icons/lib/es/icons/IconFile.js'
+import IconFolder from '@douyinfe/semi-icons/lib/es/icons/IconFolder.js'
 import { decodeFnosReference, FNOS_REFERENCE_SOURCE } from './input-references.ts'
 
 type InputReferencesDockProps = PropsRuntime<'conversation.input.dock'> & PropsLocale<'settings.dsh-fnos'>
 
+function displayName(value: string): string {
+  const parts = value.split('/').filter(Boolean)
+  return parts.at(-1) ?? value
+}
+
 export function FnosInputReferencesDock({ input, inputActions, t }: InputReferencesDockProps) {
-  const [expanded, setExpanded] = useState(false)
   const occurrences = input.occurrences.filter(occurrence => occurrence.source === FNOS_REFERENCE_SOURCE)
   if (occurrences.length === 0) return null
 
   return (
     <div
       aria-label={t('selectedReferences')}
-      onMouseEnter={() => setExpanded(true)}
-      onMouseLeave={() => setExpanded(false)}
-      onFocus={() => setExpanded(true)}
-      onBlur={event => {
-        if (!event.currentTarget.contains(event.relatedTarget)) setExpanded(false)
-      }}
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: expanded ? 6 : 0,
+        flexWrap: 'wrap',
+        gap: 6,
+        width: '100%',
         maxWidth: '100%',
-        maxHeight: expanded ? 40 : 28,
-        overflowX: expanded ? 'auto' : 'hidden',
-        overflowY: 'hidden',
-        padding: expanded ? '3px 2px' : '2px 0',
-        whiteSpace: 'nowrap',
-        transition: 'max-height 120ms ease, gap 120ms ease',
+        padding: '4px 2px 2px',
+        overflow: 'hidden',
       }}
     >
-      {occurrences.map((occurrence, index) => {
+      {occurrences.map(occurrence => {
         const decoded = decodeFnosReference(occurrence.ref)
         const isDirectory = decoded?.kind === 'directory'
+        const readablePath = occurrence.clipboardText || decoded?.path || occurrence.label
+        const name = displayName(readablePath)
+        const Icon = isDirectory ? IconFolder : IconFile
         return (
-          <div
-            key={occurrence.occurrenceId}
-            title={occurrence.label}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              flex: '0 0 auto',
-              gap: 5,
-              maxWidth: expanded ? 320 : 210,
-              minHeight: 24,
-              padding: '2px 5px 2px 7px',
-              marginLeft: expanded || index === 0 ? 0 : -5,
-              border: '1px solid var(--dsw-alias-border-l2)',
-              borderRadius: 7,
-              background: 'var(--dsw-alias-interactive-bg-hover)',
-              color: 'var(--dsw-alias-label-secondary)',
-              fontSize: 12,
-              lineHeight: '18px',
-            }}
-          >
-            {isDirectory ? <IconFolderOpen16 size={14} /> : <IconBrowseOutline16 size={14} />}
-            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{occurrence.label}</span>
-            <button
-              type="button"
-              aria-label={`${t('removeReference')}: ${occurrence.label}`}
-              title={t('removeReference')}
-              onMouseDown={event => event.preventDefault()}
-              onClick={() => {
-                inputActions.setDraft(input.draft.slice(0, occurrence.offset) + input.draft.slice(occurrence.offset + 1))
-              }}
+          <Tooltip key={occurrence.occurrenceId} content={readablePath} showArrow>
+            <span
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                justifyContent: 'center',
-                width: 18,
-                height: 18,
-                padding: 0,
-                border: 0,
-                borderRadius: 5,
-                background: 'transparent',
-                color: 'var(--dsw-alias-label-tertiary)',
-                cursor: 'pointer',
-                fontSize: 15,
-                lineHeight: 1,
+                gap: 6,
+                minWidth: 0,
+                maxWidth: 260,
+                minHeight: 28,
+                padding: '3px 6px 3px 8px',
+                borderRadius: 8,
+                background: 'var(--dsw-alias-interactive-bg-hover)',
+                color: 'var(--dsw-alias-label-primary)',
+                fontSize: 12,
+                lineHeight: '18px',
               }}
             >
-              ×
-            </button>
-          </div>
+              <Icon size="small" />
+              <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
+              <button
+                type="button"
+                aria-label={`${t('removeReference')}: ${readablePath}`}
+                title={t('removeReference')}
+                onMouseDown={event => event.preventDefault()}
+                onClick={() => {
+                  inputActions.setDraft(input.draft.slice(0, occurrence.offset) + input.draft.slice(occurrence.offset + occurrence.length))
+                }}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: 18,
+                  height: 18,
+                  padding: 0,
+                  border: 0,
+                  borderRadius: 5,
+                  background: 'transparent',
+                  color: 'var(--dsw-alias-label-tertiary)',
+                  cursor: 'pointer',
+                }}
+              >
+                <IconClose size="small" />
+              </button>
+            </span>
+          </Tooltip>
         )
       })}
     </div>

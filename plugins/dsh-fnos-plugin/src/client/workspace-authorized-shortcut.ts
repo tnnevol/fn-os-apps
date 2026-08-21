@@ -4,6 +4,7 @@ import { createElement, useCallback, useState, type ElementType } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import Dropdown from '@douyinfe/semi-ui/lib/es/dropdown/index.js'
 import IconButton from '@douyinfe/semi-ui/lib/es/iconButton/index.js'
+import Tooltip from '@douyinfe/semi-ui/lib/es/tooltip/index'
 import IconFolderOpen from '@douyinfe/semi-icons/lib/es/icons/IconFolderOpen.js'
 import type { AuthorizedDirectory } from '../authorized-directories-contract.ts'
 import { DirectoryRequestError, requestAuthorizedDirectories } from './authorized-directories-client.ts'
@@ -21,6 +22,7 @@ const SemiDropdown = Dropdown as unknown as ElementType
 const SemiDropdownItem = Dropdown.Item as unknown as ElementType
 const SemiDropdownMenu = Dropdown.Menu as unknown as ElementType
 const SemiIconButton = IconButton as unknown as ElementType
+const SemiTooltip = Tooltip as unknown as ElementType
 
 const SHORTCUT_ATTRIBUTE = 'data-dsh-fnos-workspace-shortcut'
 
@@ -52,6 +54,10 @@ function setControlledInputValue(input: HTMLInputElement, value: string): void {
   setter.call(input, value)
   input.dispatchEvent(new Event('input', { bubbles: true }))
   input.dispatchEvent(new Event('change', { bubbles: true }))
+  // DSH's native picker commits the edited path on Enter. Dispatching the
+  // same browser event keeps the original picker navigation and validation
+  // flow intact after choosing a shortcut.
+  input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', bubbles: true }))
   input.focus()
 }
 
@@ -81,16 +87,16 @@ interface AuthorizedDirectoryDropdownProps {
 }
 
 function menuText(text: string, color = 'var(--dsw-alias-label-tertiary)') {
-  return createElement('span', {
+  return createElement(SemiTooltip, { content: text, showArrow: true }, createElement('span', {
     style: {
       display: 'block',
-      maxWidth: '270px',
+      maxWidth: '220px',
       overflow: 'hidden',
       color,
       textOverflow: 'ellipsis',
       whiteSpace: 'nowrap',
     },
-  }, text)
+  }, text))
 }
 
 function AuthorizedDirectoryDropdown({ dialog, t }: AuthorizedDirectoryDropdownProps) {
@@ -132,10 +138,11 @@ function AuthorizedDirectoryDropdown({ dialog, t }: AuthorizedDirectoryDropdownP
 
   const menu = createElement(SemiDropdownMenu, {
     style: {
-      maxWidth: '320px',
-      maxHeight: 'min(360px, calc(100vh - 32px))',
+      width: '250px',
+      maxWidth: '250px',
+      maxHeight: 'min(320px, calc(100vh - 32px))',
       overflowY: 'auto',
-      padding: '6px',
+      padding: '4px',
     },
   }, items)
 
@@ -183,7 +190,10 @@ function installButton(dialog: HTMLElement, t: Translate, roots: Set<{ mount: HT
   })
   // Keep the entry beside DSH's existing path editor, without taking over
   // the official directoryFlow slot or changing the picker footer.
-  bar.append(mount)
+  // Keep the fnOS shortcut in the left path-bar slot. Appending it caused
+  // the icon to jump sides when DSH switched between the readable and edit
+  // path presentations.
+  bar.insertBefore(mount, bar.firstChild)
   const root = createRoot(mount)
   root.render(createElement(AuthorizedDirectoryDropdown, { dialog, t }))
   roots.add({ mount, root })

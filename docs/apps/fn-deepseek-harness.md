@@ -24,7 +24,7 @@ DeepSeek Harness 是 DeepSeek AI 开源的插件化智能代理工具。本应�
 
 ### 上下文文件访问
 
-点击 DSH 上下文、工具结果或生成文件中的路径时，插件会复用 DSH 原有入口。在 fnOS iframe 内，Host 不再把“命中授权列表”当作最终权限结论，而是依次确认应用授权根、真实路径存在且应用进程可读，并使用统一网关转发的当前用户 UID 调用 `trim.file.checkUserACL`；全部通过后才调用 `@trimjs/web-app` 的 `openFile()` 交给 fnOS 文件应用打开。未获得应用授权、路径不存在、应用进程不可读或当前用户没有读取权限时分别返回对应状态。该流程不调用 Linux `xdg-open`，因此不依赖 NAS 安装 `xdg-utils`。独立浏览器调试时继续使用 DSH 原生行为。
+点击 DSH 上下文、工具结果或生成文件中的路径时，插件会复用 DSH 原有入口。在 fnOS iframe 内，插件直接调用 `@trimjs/web-app` 的 `openFile()`，由 fnOS 文件应用和当前用户权限决定是否可以打开；不再依据插件展示的授权目录列表预先拦截，避免已授权路径因为列表延迟或路径表示差异被误判。该流程不调用 Linux `xdg-open`，因此不依赖 NAS 安装 `xdg-utils`。独立浏览器调试时继续使用 DSH 原生行为。
 
 当前 FPK 只从 npm 安装发布清单中的插件，不包含未发布的 `@tnnevol/dsh-fnos` 本地构建产物。插件发布后，需要将精确版本加入应用发布清单才会随 FPK 自动安装。
 

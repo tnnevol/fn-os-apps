@@ -1,6 +1,6 @@
 /** Route DSH's existing path-open action through the fnOS iframe bridge. */
 
-import { DirectoryRequestError, requestPathOpenAuthorization } from './authorized-directories-client.ts'
+import { isEmbeddedFnosFrame } from './sdk-carrier.ts'
 
 export interface PathOpenerWorkspaces {
   openPath(path: string): Promise<void>
@@ -13,17 +13,14 @@ export interface PathOpenerSdk {
   openFile(path: string): Promise<unknown>
 }
 
-export type PathOpenerMessageKey = 'pathNotAuthorized' | 'pathPermissionDenied' | 'pathOpenUnavailable'
+export type PathOpenerMessageKey = 'pathOpenUnavailable'
 
 export interface PathOpenerOptions {
   createSdk: () => PathOpenerSdk
-  validatePath?: (path: string) => Promise<void>
   message?: (key: PathOpenerMessageKey) => string
 }
 
 const defaultMessages: Record<PathOpenerMessageKey, string> = {
-  pathNotAuthorized: 'This path is not authorized for DSH.',
-  pathPermissionDenied: 'The current fnOS user cannot read this path.',
   pathOpenUnavailable: 'Unable to open this path through fnOS.',
 }
 
@@ -38,7 +35,6 @@ export function installFnosPathOpener(
 ): () => void {
   const originalOpenPath = workspaces.openPath
   const createSdk = options.createSdk
-  const validatePath = options.validatePath ?? requestPathOpenAuthorization
   const message = (key: PathOpenerMessageKey): string => options.message?.(key) ?? defaultMessages[key]
   let sdkPromise: Promise<PathOpenerSdk> | undefined
 
@@ -56,25 +52,24 @@ export function installFnosPathOpener(
       throw new Error(message('pathOpenUnavailable'), { cause: error })
     }
 
-    if (!sdk.isWeb || sdk.isStandaloneWeb) {
+    const embeddedFnosFrame = isEmbeddedFnosFrame()
+    if ((!sdk.isWeb || sdk.isStandaloneWeb) && !embeddedFnosFrame) {
       await originalOpenPath.call(workspaces, path)
       return
     }
 
     try {
-      await validatePath(path)
+      // Never fall back to DSH's native opener inside fnOS. That opener runs
+      // xdg-open in the NAS service container, where the command is absent.
+      if (!sdk.isWeb) throw new Error('fnOS iframe SDK did not initialize its web carrier')
+      // The SDK is the authority for opening a path. Do not preflight against
+      // the plugin's displayed authorization roots: the list is intended for
+      // browsing and selecting paths, but it can lag behind fnOS ACL state or
+      // use a different path representation. A preflight here caused valid
+      // NAS paths to be rejected before fnOS could make the real decision.
       await sdk.openFile(path)
     } catch (error: unknown) {
-      if (error instanceof DirectoryRequestError && error.code === 'fnos-path-not-authorized') {
-        throw new Error(message('pathNotAuthorized'), { cause: error })
-      }
-      if (error instanceof DirectoryRequestError && error.code === 'fnos-user-permission-denied') {
-        throw new Error(message('pathPermissionDenied'), { cause: error })
-      }
-      if (error instanceof DirectoryRequestError) {
-        throw new Error(message('pathOpenUnavailable'), { cause: error })
-      }
-      throw error
+      throw new Error(message('pathOpenUnavailable'), { cause: error })
     }
   }
 
