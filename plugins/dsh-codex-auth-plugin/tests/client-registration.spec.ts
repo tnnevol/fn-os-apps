@@ -45,6 +45,7 @@ describe('dsh-codex-auth-plugin rc.8 client registration', () => {
     expect(presentation).toContain('模型 ID')
     expect(presentation).toContain('MODEL_READONLY_LABELS')
     expect(presentation).toContain('MODEL_NAME_LABELS')
+    expect(presentation).toContain('`[${CODEX_EDITOR_ATTRIBUTE}="true"]`')
     expect(presentation).toContain('input.readOnly = true')
     expect(presentation).toContain("setAttribute('aria-readonly', 'true')")
     expect(presentation).toContain('128_000')

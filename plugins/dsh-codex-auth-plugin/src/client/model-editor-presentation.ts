@@ -227,17 +227,19 @@ export function installCodexModelEditorPresentation(): () => void {
 
   const markModelNameInputsReadonly = (): void => {
     const current = new Set<HTMLInputElement>()
-    for (const input of document.querySelectorAll<HTMLInputElement>('input')) {
-      if (!startsWithAny(labelOf(input), MODEL_READONLY_LABELS)) continue
-      current.add(input)
-      if (!originalModelNameAttributes.has(input)) {
-        originalModelNameAttributes.set(input, {
-          readOnly: input.readOnly,
-          ariaReadOnly: input.getAttribute('aria-readonly'),
-        })
+    for (const editor of document.querySelectorAll<HTMLElement>(`[${CODEX_EDITOR_ATTRIBUTE}="true"]`)) {
+      for (const input of editor.querySelectorAll<HTMLInputElement>('input')) {
+        if (!startsWithAny(labelOf(input), MODEL_READONLY_LABELS)) continue
+        current.add(input)
+        if (!originalModelNameAttributes.has(input)) {
+          originalModelNameAttributes.set(input, {
+            readOnly: input.readOnly,
+            ariaReadOnly: input.getAttribute('aria-readonly'),
+          })
+        }
+        input.readOnly = true
+        input.setAttribute('aria-readonly', 'true')
       }
-      input.readOnly = true
-      input.setAttribute('aria-readonly', 'true')
     }
     for (const [input, original] of originalModelNameAttributes) {
       if (current.has(input)) continue
@@ -550,8 +552,8 @@ export function installCodexModelEditorPresentation(): () => void {
   }
 
   const updatePickers = (): void => {
-    markModelNameInputsReadonly()
     markEditors()
+    markModelNameInputsReadonly()
     for (const [dialog] of originalPickerCopy) {
       if (!document.contains(dialog)) originalPickerCopy.delete(dialog)
     }
