@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 #
-# 批量升级 apps/ 目录下所有应用的 manifest version 字段
+# 升级项目版本和 apps/ 目录下应用的 manifest version 字段。
+# plugins/ 下的插件版本独立维护，禁止由本脚本更新。
 #
 # Usage:
 #   ./bump major          # 大版本 +1（如 4.4.1 → 5.0.0）
@@ -18,6 +19,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PACKAGE_JSON="$SCRIPT_DIR/package.json"
+APPS_DIR="$SCRIPT_DIR/apps"
 
 # ── 参数解析 ──────────────────────────────────────────────
 MODE=""
@@ -162,7 +164,7 @@ else
   echo "  SAME  package.json ($PACKAGE_VERSION)"
 fi
 
-for dir in "$SCRIPT_DIR"/apps/*/; do
+for dir in "$APPS_DIR"/*/; do
   app="$(basename "$dir")"
   manifest="$dir/manifest"
 
