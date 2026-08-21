@@ -8,6 +8,7 @@ import type {} from '@deepseek-ai/dsh-client-ui-settings-plugins/client'
 import type { CodexAuthSettingsConfig } from '../settings-contract.ts'
 import type { CodexAuthLocaleKey } from './locales.ts'
 import { CodexCapabilities } from './CodexCapabilities.tsx'
+import { copyTextToClipboard } from './copy-to-clipboard.ts'
 import {
   CODEX_AUTH_LOGIN_PATH,
   CODEX_AUTH_LOGOUT_PATH,
@@ -231,6 +232,7 @@ export function CodexAuthCard({ t, configScope }: CodexAuthCardProps) {
   const [status, setStatus] = useState<AccountStatus>({ status: 'loading' })
   const [busy, setBusy] = useState(false)
   const [challenge, setChallenge] = useState<LoginChallenge | undefined>()
+  const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'failed'>('idle')
   const [usage, setUsage] = useState<UsageState>({ status: 'hidden' })
 
   const refreshUsage = useCallback(async (): Promise<void> => {
@@ -247,7 +249,10 @@ export function CodexAuthCard({ t, configScope }: CodexAuthCardProps) {
     try {
       const next = await jsonRequest<AccountStatus>(CODEX_AUTH_STATUS_PATH)
       setStatus(next)
-      if (next.status !== 'signing-in') setChallenge(undefined)
+      if (next.status !== 'signing-in') {
+        setChallenge(undefined)
+        setCopyStatus('idle')
+      }
     } catch (error: unknown) {
       setStatus(error instanceof AccountRequestError && error.code === 'remote-web-origin-not-trusted'
         ? { status: 'remote-web-origin-not-trusted' }
@@ -285,6 +290,7 @@ export function CodexAuthCard({ t, configScope }: CodexAuthCardProps) {
     setBusy(true)
     setStatus({ status: 'signing-in' })
     setChallenge(undefined)
+    setCopyStatus('idle')
     try {
       const next = await jsonRequest<LoginChallenge>(CODEX_AUTH_LOGIN_PATH, 'POST')
       setChallenge(next)
@@ -292,6 +298,7 @@ export function CodexAuthCard({ t, configScope }: CodexAuthCardProps) {
     } catch (error: unknown) {
       popup.close()
       setChallenge(undefined)
+      setCopyStatus('idle')
       setStatus(error instanceof AccountRequestError && error.code === 'remote-web-origin-not-trusted'
         ? { status: 'remote-web-origin-not-trusted' }
         : { status: 'error', message: error instanceof Error ? error.message : t('requestFailed') })
@@ -307,10 +314,21 @@ export function CodexAuthCard({ t, configScope }: CodexAuthCardProps) {
       setStatus({ status: 'signed-out' })
       setUsage({ status: 'hidden' })
       setChallenge(undefined)
+      setCopyStatus('idle')
     } catch (error: unknown) {
       setStatus({ status: 'error', message: error instanceof Error ? error.message : t('requestFailed') })
     } finally {
       setBusy(false)
+    }
+  }
+
+  const copyAuthorizationCode = async (): Promise<void> => {
+    if (challenge === undefined) return
+    try {
+      await copyTextToClipboard(challenge.userCode)
+      setCopyStatus('copied')
+    } catch {
+      setCopyStatus('failed')
     }
   }
 
@@ -379,10 +397,14 @@ export function CodexAuthCard({ t, configScope }: CodexAuthCardProps) {
               <p style={bodyStyle}>{t('authorizationCodeHelp')}</p>
               <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
                 <code aria-label={t('authorizationCodeLabel')} style={codeStyle}>{challenge.userCode}</code>
+                <button type="button" style={buttonStyle} onClick={() => { void copyAuthorizationCode() }}>
+                  {copyStatus === 'copied' ? t('authorizationCodeCopied') : t('copyAuthorizationCode')}
+                </button>
                 <a href={challenge.verificationUri} target="_blank" rel="noreferrer" style={{ ...buttonStyle, display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}>
                   {t('openAuthorization')}
                 </a>
               </div>
+              {copyStatus === 'failed' ? <p style={errorStyle}>{t('authorizationCodeCopyFailed')}</p> : null}
             </div>
           ) : null}
           <CodexCapabilities scope={configScope} t={t} />

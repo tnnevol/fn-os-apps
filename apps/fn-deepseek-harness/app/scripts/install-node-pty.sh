@@ -59,6 +59,21 @@ node_pty_packages() {
         -print0 2>/dev/null
 }
 
+has_compiler() {
+    command -v g++ >/dev/null 2>&1
+}
+
+has_seen_package() {
+    local candidate="$1"
+    local package_json
+    if [ "${#node_pty_package_files[@]}" -gt 0 ]; then
+        for package_json in "${node_pty_package_files[@]}"; do
+            [ "${package_json}" = "${candidate}" ] && return 0
+        done
+    fi
+    return 1
+}
+
 restore_node_pty_scripts() {
     local map_file="$1"
     local original_path original_backup
@@ -69,12 +84,11 @@ restore_node_pty_scripts() {
 
 run_dsh_dependency_scripts() {
     local backup_dir map_file package_json backup_file rebuild_status
+    local use_compiler=0
     local -a node_pty_package_files=()
-    local -A seen_package_files=()
 
     while IFS= read -r -d '' package_json; do
-        if [ -z "${seen_package_files["${package_json}"]+x}" ]; then
-            seen_package_files["${package_json}"]=1
+        if ! has_seen_package "${package_json}"; then
             node_pty_package_files+=("${package_json}")
         fi
     done < <(node_pty_packages)
@@ -87,22 +101,26 @@ run_dsh_dependency_scripts() {
     map_file="${backup_dir}/paths"
     : > "${map_file}" || fail "Unable to create the node-pty script backup index"
 
-    for package_json in "${node_pty_package_files[@]}"; do
-        backup_file="${backup_dir}/$(printf '%s' "${#package_json}").${RANDOM}.json"
-        while [ -e "${backup_file}" ]; do
+    if has_compiler; then
+        use_compiler=1
+        echo "g++ detected; running node-pty lifecycle scripts without the native compilation patch."
+    else
+        for package_json in "${node_pty_package_files[@]}"; do
             backup_file="${backup_dir}/$(printf '%s' "${#package_json}").${RANDOM}.json"
-        done
-        cp -a "${package_json}" "${backup_file}" || {
-            restore_node_pty_scripts "${map_file}" >/dev/null 2>&1 || true
-            rm -rf "${backup_dir}"
-            fail "Unable to back up node-pty package metadata"
-        }
-        printf '%s\0%s\0' "${package_json}" "${backup_file}" >> "${map_file}" || {
-            restore_node_pty_scripts "${map_file}" >/dev/null 2>&1 || true
-            rm -rf "${backup_dir}"
-            fail "Unable to record the node-pty package metadata backup"
-        }
-        "${NODE_BIN}/node" -e '
+            while [ -e "${backup_file}" ]; do
+                backup_file="${backup_dir}/$(printf '%s' "${#package_json}").${RANDOM}.json"
+            done
+            cp -a "${package_json}" "${backup_file}" || {
+                restore_node_pty_scripts "${map_file}" >/dev/null 2>&1 || true
+                rm -rf "${backup_dir}"
+                fail "Unable to back up node-pty package metadata"
+            }
+            printf '%s\0%s\0' "${package_json}" "${backup_file}" >> "${map_file}" || {
+                restore_node_pty_scripts "${map_file}" >/dev/null 2>&1 || true
+                rm -rf "${backup_dir}"
+                fail "Unable to record the node-pty package metadata backup"
+            }
+            "${NODE_BIN}/node" -e '
 const fs = require("node:fs")
 const file = process.argv[1]
 const packageJson = JSON.parse(fs.readFileSync(file, "utf8"))
@@ -113,23 +131,30 @@ packageJson.scripts = {
 }
 fs.writeFileSync(file, `${JSON.stringify(packageJson, null, 2)}\n`)
 ' "${package_json}" || {
-            restore_node_pty_scripts "${map_file}" >/dev/null 2>&1 || true
-            rm -rf "${backup_dir}"
-            fail "Unable to disable node-pty native lifecycle scripts"
-        }
-    done
+                restore_node_pty_scripts "${map_file}" >/dev/null 2>&1 || true
+                rm -rf "${backup_dir}"
+                fail "Unable to disable node-pty native lifecycle scripts"
+            }
+        done
+    fi
 
-    echo "Temporarily disabling lifecycle scripts for ${#node_pty_package_files[@]} node-pty package(s); other DSH dependency scripts remain enabled."
-    echo "Running DSH dependency lifecycle scripts with node-pty native compilation disabled..."
+    if [ "${use_compiler}" -eq 1 ]; then
+        echo "Running DSH dependency lifecycle scripts with node-pty native compilation enabled..."
+    else
+        echo "Temporarily disabling lifecycle scripts for ${#node_pty_package_files[@]} node-pty package(s); other DSH dependency scripts remain enabled."
+        echo "Running DSH dependency lifecycle scripts with node-pty native compilation disabled..."
+    fi
     if "${NPM_BIN}" rebuild --global --ignore-scripts=false --foreground-scripts; then
         rebuild_status=0
     else
         rebuild_status=$?
     fi
 
-    if ! restore_node_pty_scripts "${map_file}"; then
-        rm -rf "${backup_dir}"
-        fail "Unable to restore node-pty package metadata"
+    if [ "${use_compiler}" -eq 0 ]; then
+        if ! restore_node_pty_scripts "${map_file}"; then
+            rm -rf "${backup_dir}"
+            fail "Unable to restore node-pty package metadata"
+        fi
     fi
     rm -rf "${backup_dir}"
 
@@ -178,13 +203,26 @@ install_bundled_node_pty() {
 
 NODE_PTY_VERSIONS="$(read_version_list)"
 NODE_PTY_VERSION_COUNT="$(printf '%s\n' "${NODE_PTY_VERSIONS}" | awk 'NF { count++ } END { print count + 0 }')"
-[ "${NODE_PTY_VERSION_COUNT}" -gt 0 ] \
-    || fail "The FPK does not contain node-pty versions"
-validate_versions
-[ -d "${DSH_NATIVE_BUNDLE}" ] \
-    || fail "The FPK does not contain bundled node-pty native files"
+HAS_BUNDLED_NODE_PTY=0
+if [ "${NODE_PTY_VERSION_COUNT}" -gt 0 ] && [ -d "${DSH_NATIVE_BUNDLE}" ]; then
+    HAS_BUNDLED_NODE_PTY=1
+    validate_versions
+fi
+
+if [ "${HAS_BUNDLED_NODE_PTY}" -eq 0 ] && ! has_compiler; then
+    fail "The FPK has no bundled node-pty native files and g++ is not available on this NAS"
+fi
 
 if [ "${DSH_RUN_DEPENDENCY_SCRIPTS:-0}" = "1" ]; then
     run_dsh_dependency_scripts
 fi
-install_bundled_node_pty
+
+if [ "${HAS_BUNDLED_NODE_PTY}" -eq 1 ]; then
+    if ! has_compiler || [ "${DSH_RUN_DEPENDENCY_SCRIPTS:-0}" != "1" ]; then
+        install_bundled_node_pty
+    else
+        echo "g++ detected; using the node-pty native build from the NAS environment."
+    fi
+else
+    echo "Using the node-pty native build from the NAS environment."
+fi

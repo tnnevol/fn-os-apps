@@ -111,6 +111,12 @@ run_node_pty_script() {
         || fail_install "Unable to prepare the bundled node-pty dependencies"
 }
 
+has_bundled_node_pty() {
+    [ "$(read_trimmed_file "${DSH_VERSION_FILE}")" = "${DSH_VERSION}" ] \
+        && [ -s "${APP_DEST}/node-pty-versions" ] \
+        && [ -d "${APP_DEST}/native/node-pty" ]
+}
+
 main() {
     if [ ! -x "${NPM_BIN}" ] || [ ! -x "${NODE_BIN}/node" ]; then
         fail_install "nodejs_v24 runtime is not available at ${NODE_BIN}"
@@ -131,10 +137,6 @@ main() {
     NPM_GLOBAL_ROOT="${NPM_GLOBAL_ROOT:-${NPM_CONFIG_PREFIX}/lib/node_modules}"
     DSH_PACKAGE_DIR="${NPM_GLOBAL_ROOT}/${DSH_PACKAGE}"
 
-    PACKAGED_DSH_VERSION="$(read_trimmed_file "${DSH_VERSION_FILE}")"
-    [ "${PACKAGED_DSH_VERSION}" = "${DSH_VERSION}" ] \
-        || fail_install "The FPK is not prepared for ${DSH_PACKAGE}@${DSH_VERSION}"
-
     LOCAL_VERSION="$(read_package_version "${DSH_PACKAGE_DIR}/package.json")"
     RUN_NODE_PTY_DEPENDENCY_SCRIPTS=0
     if [ -x "${DSH_BIN}" ] && [ "${LOCAL_VERSION}" = "${DSH_VERSION}" ]; then
@@ -153,6 +155,13 @@ main() {
         NPM_GLOBAL_ROOT="$(${NPM_BIN} root -g 2>/dev/null || true)"
         NPM_GLOBAL_ROOT="${NPM_GLOBAL_ROOT:-${NPM_CONFIG_PREFIX}/lib/node_modules}"
         DSH_PACKAGE_DIR="${NPM_GLOBAL_ROOT}/${DSH_PACKAGE}"
+        RUN_NODE_PTY_DEPENDENCY_SCRIPTS=1
+    fi
+
+    if has_bundled_node_pty; then
+        log_info "Using FPK bundled node-pty native files when the NAS compiler is unavailable."
+    else
+        log_info "FPK has no bundled node-pty native files; the NAS must provide g++ for native compilation."
         RUN_NODE_PTY_DEPENDENCY_SCRIPTS=1
     fi
 
