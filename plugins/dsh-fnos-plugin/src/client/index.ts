@@ -4,7 +4,6 @@ import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
-import type {} from '@deepseek-ai/dsh-client-ui-workspace/client'
 import type { InputTriggerServiceContract, InputTriggerSource } from '@deepseek-ai/dsh-client-ui-input-trigger/client'
 import type {} from '@deepseek-ai/dsh-client-ui-settings-plugins/client'
 import type {} from '@deepseek-ai/dsh-client-ui-slots'
@@ -12,7 +11,6 @@ import type {} from '@deepseek-ai/dsh-client-ui-theme/client'
 import { AuthorizedDirectoriesCard } from './AuthorizedDirectoriesCard.tsx'
 import { FnosInputPickerButton } from './FnosInputPickerButton.tsx'
 import { FnosInputReferencesDock } from './FnosInputReferencesDock.tsx'
-import { FnosWorkspaceDirectoryFlow } from './FnosWorkspaceDirectoryFlow.tsx'
 import { insertFnosReferences } from './input-reference-actions.ts'
 import { FNOS_REFERENCE_SOURCE, decodeFnosReference, fileUrlForPath } from './input-references.ts'
 import type { FnosLocaleKey } from './locales.ts'
@@ -21,6 +19,7 @@ import { installFnosPathOpener } from './path-opener.ts'
 import { createTrimApp } from './sdk.ts'
 import { createThemeBridge, type ThemeBridge } from './theme-bridge.ts'
 import { createThemePersistence } from './theme-persistence.ts'
+import { installWorkspaceAuthorizedShortcut } from './workspace-authorized-shortcut.ts'
 import { FNOS_AUTHORIZED_DIRECTORIES_SETTINGS_NAMESPACE } from '../authorized-directories-contract.ts'
 import type { FnosSettings, FnosTheme } from '../theme-contract.ts'
 
@@ -141,6 +140,7 @@ export function apply(ctx: ClientContext): void {
     createSdk: createTrimApp,
     message: key => t(key),
   }), 'dsh-fnos: fnOS path opener')
+  ctx.effect(() => installWorkspaceAuthorizedShortcut(t), 'dsh-fnos: workspace authorized shortcut')
 
   const source: InputTriggerSource = {
     trigger: '@',
@@ -186,17 +186,4 @@ export function apply(ctx: ClientContext): void {
     order: 100,
     locale: namespace,
   }, FnosInputReferencesDock))
-  ctx.slots.inject('conversation.hero.workspace.directoryFlow', () =>
-    ctx.slots.inject('sidebar.workspaces.directoryFlow', function* () {
-      yield ctx.slots.register({
-        name: 'conversation.hero.workspace.directoryFlow',
-        locale: namespace,
-        inject: () => ({ listDirectory: (path: string | undefined, signal?: AbortSignal) => ctx.workspaces.listDirectory(path, signal) }),
-      }, FnosWorkspaceDirectoryFlow)
-      yield ctx.slots.register({
-        name: 'sidebar.workspaces.directoryFlow',
-        locale: namespace,
-        inject: () => ({ listDirectory: (path: string | undefined, signal?: AbortSignal) => ctx.workspaces.listDirectory(path, signal) }),
-      }, FnosWorkspaceDirectoryFlow)
-    }))
 }

@@ -103,7 +103,8 @@ export default defineConfig({
           text: '开始使用',
           items: [
             { text: '快速开始', link: '/guide/quick-start' },
-            { text: '仓库结构', link: '/guide/repository-structure' }
+            { text: '仓库结构', link: '/guide/repository-structure' },
+            { text: 'SDD 模式转换报告', link: '/guide/sdd-transition-report' }
           ]
         }
       ],

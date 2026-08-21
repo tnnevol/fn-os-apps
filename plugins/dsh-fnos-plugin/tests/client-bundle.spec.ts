@@ -1,4 +1,7 @@
 import { readFileSync } from 'node:fs'
+import * as React from 'react'
+import * as ReactDom from 'react-dom'
+import * as ReactDomClient from 'react-dom/client'
 import { describe, expect, it } from 'vitest'
 
 interface Handoff {
@@ -28,19 +31,16 @@ describe('dsh-fnos client artifact', () => {
     expect(source).not.toContain('__DSH_FNOS_THEME_BRIDGE__')
     expect(source).not.toContain('setInterval')
     expect(source).not.toContain('visibilitychange')
-    const react = {
-      useCallback: <T extends (...args: never[]) => unknown>(callback: T): T => callback,
-      useEffect: () => {},
-      useState: <T>(value: T): [T, (next: T) => void] => [value, () => {}],
-    }
     const primitives = {
       IconBrowseOutline16: () => null,
       IconFolderOpen16: () => null,
     }
     const jsxRuntime = { jsx: () => null, jsxs: () => null, Fragment: Symbol('Fragment') }
     const exports = handoff?.factory(specifier => {
-      if (specifier === 'react') return react
+      if (specifier === 'react') return React
       if (specifier === 'react/jsx-runtime') return jsxRuntime
+      if (specifier === 'react-dom') return ReactDom
+      if (specifier === 'react-dom/client') return ReactDomClient
       if (specifier === '@deepseek-ai/dsh-client-ui-primitives') return primitives
       throw new Error(`unexpected client external: ${specifier}`)
     })

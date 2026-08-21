@@ -35,3 +35,5 @@ export function FnosMonoLogo({ size = 18, className }: FnosLogoProps) {
     />
   )
 }
+
+export { FNOS_MARK_DATA_URL }
