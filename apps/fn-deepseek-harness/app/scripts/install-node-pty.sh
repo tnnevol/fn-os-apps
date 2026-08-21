@@ -127,7 +127,7 @@ const packageJson = JSON.parse(fs.readFileSync(file, "utf8"))
 // Keep every other dependency lifecycle script enabled; only node-pty install is bypassed.
 packageJson.scripts = {
   ...(packageJson.scripts ?? {}),
-  install: "node -e \\\"process.exit(0)\\\"",
+  install: "node -e \"process.exit(0)\"",
 }
 fs.writeFileSync(file, `${JSON.stringify(packageJson, null, 2)}\n`)
 ' "${package_json}" || {
