@@ -53,7 +53,7 @@ DeepSeek Harness（DSH）原生面向通用 Node.js 和浏览器环境。作为 
 | FNOS-001-09 | P1 | FPK 安装阶段集成 DSH 插件 | 安装 FPK 时，只通过所选 npm 源安装发布清单中的插件精确版本并启用 bundle；未发布插件不参与 FPK 构建和安装，发布后加入清单才会自动集成 | <Badge type="warning" text="待真实 NAS 验收" /> |
 | FNOS-001-10 | P1 | 工作区快捷跳转已授权 fnOS 目录 | 在 DSH 原始工作区目录流程中展示有效授权目录；目录超过 10 个时提供搜索，并通过路径输入旁的黑白 fnOS logo 打开授权目录面板。选择结果写回原始路径输入并交回 DSH 原生 `onPicked`，由 DSH 复用已有工作区或登记新路径后打开；不修改 ACL、文件或会话数据 | <Badge type="warning" text="待真实 NAS 验收" /> |
 | FNOS-001-11 | P1 | 内容输入框选择 NAS 目录和文件 | 在 DSH 内容输入框右下区域增加有颜色的 fnOS 官方 logo 按钮；点击后支持多选 NAS 目录和文件，在输入框文案上方以文件夹/文件 icon 展示已选项，支持堆叠、悬停展开、横向滚动、移除和去重，并通过 DSH 原生引用机制携带 URL 转义后的真实路径 | <Badge type="warning" text="待真实 NAS 验收" /> |
-| FNOS-001-12 | P1 | 上下文文件访问适配 | 点击 DSH 上下文、工具结果或生成文件中的路径后，在 fnOS iframe 内通过 `@trimjs/web-app` 打开文件；打开前校验路径属于当前授权目录，未授权时引导用户授权；独立浏览器继续使用 DSH 原生行为 | <Badge type="warning" text="待真实 NAS 验收" /> |
+| FNOS-001-12 | P1 | 上下文文件访问适配 | 点击 DSH 上下文、工具结果或生成文件中的路径后，在 fnOS iframe 内通过 `@trimjs/web-app` 打开文件；打开前同时校验应用授权边界、真实路径状态和当前用户 ACL，不把授权列表命中单独当作权限结论；独立浏览器继续使用 DSH 原生行为 | <Badge type="warning" text="待真实 NAS 验收" /> |
 
 ## 交互和行为约束
 
@@ -62,6 +62,8 @@ DeepSeek Harness（DSH）原生面向通用 Node.js 和浏览器环境。作为 
 - 进入 fnOS 应用时读取 NAS 当前主题作为初始状态。
 - 只在 DSH 主题设置为“跟随系统”时响应 NAS 主题变化。
 - 使用 fnOS SDK 的主题事件监听，不增加轮询兜底。
+- DSH 保持 `system` 偏好不变；真实 fnOS Web 宿主可写入当前生效的 NAS 主题缓存，下一次 Web profile 首屏由 Host 优先使用缓存，避免浏览器系统主题造成闪烁。
+- DSH 显式选择浅色或深色时不写入 NAS 主题缓存，并清理旧缓存。由于 fnOS SDK 只返回 `light`/`dark` 最终值，未提供 NAS“跟随系统”偏好字段，无法在插件侧区分 NAS 的显式选择和跟随系统后的相同最终值。
 - 在独立浏览器运行 DSH 时找不到 fnOS SDK，适配层应安全降级，不阻塞 DSH 工作台。
 
 ### 授权目录
@@ -80,13 +82,13 @@ DeepSeek Harness（DSH）原生面向通用 Node.js 和浏览器环境。作为 
 - FPK 只打入已发布插件的精确版本清单和通用安装脚本，不复制任何插件工作空间源码或本地构建产物。
 - `cmd/install_callback` 在 DSH Web profile 尚未初始化时先完成初始化，再使用安装向导选择的 npm 源安装发布清单中的插件，并将包加入 `dsh.profile.bundles`。
 - 升级流程按清单从 npm 更新已发布插件；应用启动只校验清单插件的精确版本和 bundle 声明，不因每次启动联网。
-- 安装和升级流程必须可重复执行，不能覆盖用户的 DSH 配置、会话、凭据或其他 profile 数据；npm 安装前将有效的本地 `@tnnevol/dsh-fnos` `link:` 依赖规范化为 `file:`，仅将路径失效或旧 patch 不可用的插件从 bundle 列表移除，不删除插件包或用户数据；npm 安装失败时应用安装/升级失败并输出明确日志。
+- 安装和升级流程必须可重复执行，不能覆盖用户的 DSH 配置、会话、凭据或其他 profile 数据；安装器只维护官方 bundle 基线和发布清单中的插件，不对 `@tnnevol/dsh-fnos` 执行本地依赖迁移、删除或补丁操作；npm 安装失败时应用安装/升级失败并输出明确日志。
 - FPK 安装完成后，发布清单中的插件应能随 `dsh web` 自动加载；未发布插件不属于 FPK 自动安装范围。
 
 ### 工作区快捷跳转授权目录
 
 - 保留 DSH 原始工作区选择弹框、菜单、关闭和选中后的跳转逻辑；插件只占用官方公开的 `conversation.hero.workspace.directoryFlow` 与 `sidebar.workspaces.directoryFlow` 子流程插槽。
-- 目录流程保留 DSH 原始路径输入、目录列表、目录打开、确认和取消行为；列表数据与 fnOS 设置中的授权目录列表保持一致，并进行规范化去重；列表展示语义路径，内部保留对应真实路径。
+- 目录流程保留 DSH 原始路径输入、目录列表、目录打开、确认和取消行为；工作区入口使用同一授权范围，但只展示当前真实存在且当前用户可读的目录，并进行规范化去重；列表展示语义路径，内部保留对应真实路径。
 - 授权目录超过 10 个时显示搜索输入，可按语义路径或真实路径检索；少于等于 10 个时直接展示目录列表。
 - 在 DSH 原始路径输入旁增加无文字的主题感知黑白 fnOS logo 按钮；点击后打开插件自己的授权目录列表面板，选择结果写回原始路径输入框，再交给 DSH 原始 `onPicked`。
 - 工作区快捷入口不调用 fnOS SDK 目录选择器，不申请 ACL；只能选择已经授权的目录或应用共享目录。
@@ -107,9 +109,10 @@ DeepSeek Harness（DSH）原生面向通用 Node.js 和浏览器环境。作为 
 
 - 不增加新的文件打开按钮，继续使用 DSH 现有上下文文件、工具结果和生成文件路径的点击入口。
 - DSH 将相对路径解析为工作区对应的真实路径后调用统一的 `workspaces.openPath(path)`；`@tnnevol/dsh-fnos` 在 fnOS iframe 内装饰这个公开服务入口。
-- 在 fnOS iframe 内，插件先通过 Host 同源路由校验目标路径是否位于 fnOS 当前授权目录、`TRIM_DATA_ACCESSIBLE_PATHS` 或 `TRIM_DATA_SHARE_PATHS` 根目录内，校验通过后调用 `TrimApp.openFile(path)`。
+- 在 fnOS iframe 内，插件先通过 Host 同源路由校验目标路径是否位于应用授权根（fnOS 授权 API、`TRIM_DATA_ACCESSIBLE_PATHS` 或 `TRIM_DATA_SHARE_PATHS`）内，再检查真实路径存在且应用进程可读，并使用统一网关的当前用户 UID 调用 `trim.file.checkUserACL`；全部通过后才调用 `TrimApp.openFile(path)`。
+- 授权根列表只定义应用的访问边界，不代表当前用户对根目录下所有文件都有权限；用户权限检查缺失、失败或返回 `readable: false` 时不得继续打开。
 - 打开目录或文件均交给 fnOS 文件应用处理；插件不调用、不安装也不依赖 Linux `xdg-open`，避免 NAS 环境缺少该命令导致 `ENOENT`。
-- 路径未授权时保留 DSH 原有错误/重试交互，并提示用户到「设置 → 插件 → fnos → 授权目录」添加目标所在目录；取消或关闭授权入口不产生额外红色权限提示。
+- 应用边界未覆盖时提示用户到「设置 → 插件 → fnos → 授权目录」添加目标所在目录；路径不存在、应用进程不可读或当前用户无权限时提示对应真实状态并保留重试；取消或关闭授权入口不产生额外红色权限提示。
 - 在独立浏览器或本地 DSH 调试环境中，插件不执行 fnOS 授权校验，继续调用 DSH 原生打开逻辑，不影响官方本地调试。
 
 #### 用户交互流程
@@ -118,9 +121,11 @@ DeepSeek Harness（DSH）原生面向通用 Node.js 和浏览器环境。作为 
 用户点击 DSH 上下文/工具结果/生成文件中的路径
   └─ DSH 解析工作区相对路径并调用 workspaces.openPath(真实路径)
        ├─ 独立浏览器：继续使用 DSH 原生打开逻辑
-       └─ fnOS iframe：Host 校验路径授权边界
-            ├─ 未授权：提示先到“设置 → 插件 → fnos → 授权目录”添加目录
-            └─ 已授权：TrimApp.openFile(真实路径)
+       └─ fnOS iframe：Host 校验应用边界、真实文件状态和当前用户 ACL
+            ├─ 不在应用边界：提示先到“设置 → 插件 → fnos → 授权目录”添加目录
+            ├─ 路径不存在或应用进程不可读：提示路径不可用
+            ├─ 当前用户无读取权限：提示当前用户没有权限
+            └─ 全部通过：TrimApp.openFile(真实路径)
                  ├─ 文件/目录打开成功：返回 DSH 页面
                  └─ 打开失败：保留 DSH 错误/重试入口
 ```
@@ -129,7 +134,7 @@ DeepSeek Harness（DSH）原生面向通用 Node.js 和浏览器环境。作为 
 
 1. 用户继续点击 DSH 原有路径链接，不增加第二个打开按钮，也不要求复制 NAS 内部路径。
 2. 取消授权目录选择器、关闭弹框或返回空结果时静默结束，不出现“只有 NAS 管理员可以授权目录”等红色提示。
-3. 真实路径只用于 Host 校验和 fnOS 打开调用，不展示 Token、Socket 或内部堆栈。
+3. 真实路径只用于 Host 校验和 fnOS 打开调用；Host 同时检查实际文件状态与当前网关用户 ACL，不展示 Token、Socket 或内部堆栈。
 4. 打开文件或目录不修改 DSH 工作区、会话、配置和 NAS 文件内容。
 
 ## 不在本次范围内
@@ -162,7 +167,7 @@ DeepSeek Harness（DSH）原生面向通用 Node.js 和浏览器环境。作为 
 
 - `@tnnevol/dsh-codex-auth` 按发布清单从 npm 安装；未发布的 `@tnnevol/dsh-fnos` 不进入 FPK，也不修改官方 DSH 源码。
 - 从 FPK 全新安装后，清单中的插件应存在于 Web profile 并随 `dsh web` 加载。
-- 重复安装、升级和应用启动不会重复写入异常 bundle，也不会丢失用户 profile 数据、配置、会话或凭据；有效的 `@tnnevol/dsh-fnos` 会从 `link:` 规范化为 `file:` 并保留，失效插件才从依赖和 bundle 列表移除，避免 npm 安装及旧 patch 阻塞 Web profile。
+- 重复安装、升级和应用启动不会重复写入异常 bundle，也不会丢失用户 profile 数据、配置、会话或凭据；安装器不再对 `@tnnevol/dsh-fnos` 执行本地依赖迁移、删除或旧补丁清理，避免把 fnOS 插件与 FPK 的通用发布插件流程耦合。
 
 ### P1 授权目录待真实 NAS 验收
 
@@ -183,7 +188,7 @@ Host/Client 实现、应用 Scope、环境变量合并、语义路径转换、�
 - 目录流程保留 DSH 原始路径输入、目录列表、目录打开、确认和取消行为；展示有效授权目录，超过 10 个目录时出现搜索。
 - 路径输入旁的黑白 fnOS logo 打开插件授权目录面板；选择结果写回原始路径输入，再通过 DSH 原生 `onPicked` 复用或登记工作区并打开，不修改 ACL、文件或会话数据。
 - 该入口不调用 fnOS SDK 目录选择器；取消时静默结束，加载失败、授权目录失效和路径确认失败保留可理解的错误状态。
-- 应用 bundle 禁用官方自动目录选择器，避免其 Client 目录流程与 fnos 插件重复占用同一插槽；同时只注入官方 `@deepseek-ai/dsh-host-directory-picker-browse` Host 后端，保证 rc.8 的 `dsh-host-apiproxy` 仍能获得 `directoryPicker` 服务。fnos 插件继续独占 Client 目录流程，不修改官方 DSH 源码。
+- fnos 插件只使用 DSH 公开的目录流程插槽，不通过应用 bundle 禁用或替换官方目录选择器，也不修改官方 DSH 源码；官方目录流程与 fnOS 目录入口的兼容性由真实 NAS 验收确认。
 
 ### FNOS-001-11 内容输入框 NAS 选择代码完成，待真实 NAS 验收
 
@@ -202,8 +207,8 @@ Host/Client 实现、应用 Scope、环境变量合并、语义路径转换、�
 已完成插件侧路径打开适配和本地验证，尚未在真实 fnOS NAS 完成上下文文件点击、授权边界和文件应用打开验收：
 
 - DSH 上下文、工具结果和生成文件中的现有路径入口仍可使用，不增加重复 UI。
-- fnOS iframe 内通过 Host 同源路由校验路径授权边界，校验通过后调用 `TrimApp.openFile(path)`，不再触发 NAS 上的 `xdg-open`。
-- 未授权路径显示可理解的授权目录提示；授权目录撤销、路径不存在、SDK 不可用和文件应用打开失败均保留 DSH 错误/重试入口。
+- fnOS iframe 内通过 Host 同源路由校验应用授权边界、真实路径状态和当前用户 ACL，全部通过后调用 `TrimApp.openFile(path)`，不再触发 NAS 上的 `xdg-open`。
+- 应用边界未覆盖、路径不存在、应用进程不可读、当前用户无权限、SDK 不可用和文件应用打开失败均保留可理解的 DSH 错误/重试入口。
 - 独立浏览器继续走 DSH 原生打开逻辑；插件卸载或生命周期销毁后恢复原始 `workspaces.openPath`。
 - Host 不向浏览器返回 Token、Socket 或内部错误堆栈。
 
@@ -218,7 +223,7 @@ Host/Client 实现、应用 Scope、环境变量合并、语义路径转换、�
 | P1 授权目录管理 | <Badge type="warning" text="待真实 NAS 验收" /> | Host/Client、Scope、环境变量合并、语义路径、列表/添加/删除交互和本地验证已完成；共享目录仅展示 | 在真实 NAS 验证权限、列表、共享目录只读状态和删除行为 |
 | P1 工作区快捷跳转 | <Badge type="warning" text="待真实 NAS 验收" /> | 已接入 DSH 原始工作区目录流程插槽，提供授权目录列表、超过 10 项搜索、黑白 fnOS logo 快捷面板、原始路径回填和原生 `onPicked` | 在真实 NAS 验证原始弹框打开/关闭、工作区复用或登记、授权目录变化和错误处理 |
 | P1 内容输入框 NAS 选择 | <Badge type="warning" text="待真实 NAS 验收" /> | DSH 输入区彩色 fnOS logo、插件自有授权路径面板、目录/文件多选、原生引用 chip、可读路径转换、移除和去重已完成本地验证 | 在真实 NAS 验证授权路径读取、路径转换、提交/复制 URL 和取消/权限错误行为 |
-| P1 上下文文件访问 | <Badge type="warning" text="待真实 NAS 验收" /> | 已接管 DSH 公开 `workspaces.openPath`，增加 Host 授权边界校验和 fnOS `openFile` 路由；本地验证已完成 | 在真实 NAS 验证上下文文件点击、授权目录提示和文件应用打开行为 |
+| P1 上下文文件访问 | <Badge type="warning" text="待真实 NAS 验收" /> | 已接管 DSH 公开 `workspaces.openPath`，增加 Host 应用边界、真实 fs 状态和当前用户 ACL 校验，再调用 fnOS `openFile`；本地验证已完成 | 在真实 NAS 验证上下文文件点击、当前用户权限提示和文件应用打开行为 |
 | P2 fnOS 能力扩展 | <Badge type="info" text="后续计划" /> | 接入其他已确认的 fnOS JS SDK 能力 | 另立需求和计划 |
 
 详细实现边界和任务拆分见[对应计划](/plans/2026-08-19-plan-dsh-fnos-adaptation)。
@@ -245,3 +250,5 @@ Host/Client 实现、应用 Scope、环境变量合并、语义路径转换、�
 | 2026-08-20 | 增加 FNOS-001-12 上下文文件访问需求：在 fnOS iframe 中通过授权校验和 `TrimApp.openFile()` 打开 DSH 文件路径，独立浏览器保留原生行为；补充统一交互流程。 |
 | 2026-08-20 | 修复旧 NAS profile 残留未发布 `@tnnevol/dsh-fnos` bundle 导致 `directoryPicker` 服务被禁用的问题：启动/升级时仅移除该 bundle 配置，不删除插件包或用户数据；fnos 插件正式发布并加入清单后恢复标准集成。 |
 | 2026-08-20 | 修复旧 NAS profile 中 `@tnnevol/dsh-fnos` 的 `link:` 本地依赖阻断 npm 安装发布插件的问题：有效本地插件改为 `file:` 依赖并保留，失效插件才清理依赖和 bundle，同时保留插件包和用户数据。 |
+| 2026-08-20 | 调整 FNOS-001-12 路径校验：授权列表只作为应用边界，打开和目录浏览增加真实 `stat`/`access`、符号链接边界和统一网关当前用户 `trim.file.checkUserACL` 校验；新增 `trim.file.userAcl` Scope，并区分路径不可用与当前用户无权限。 |
+| 2026-08-20 | 移除 `@tnnevol/dsh-fnos` 对官方目录选择器的禁用/替换补丁，以及 FPK 安装器针对该插件旧本地依赖和旧 patch 的专用清理逻辑；保留插件自身加载所需的最小 bundle 自注册声明。 |

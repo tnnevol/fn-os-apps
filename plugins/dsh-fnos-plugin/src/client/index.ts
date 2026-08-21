@@ -3,6 +3,7 @@
 import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
+import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import type {} from '@deepseek-ai/dsh-client-ui-workspace/client'
 import type { InputTriggerServiceContract, InputTriggerSource } from '@deepseek-ai/dsh-client-ui-input-trigger/client'
 import type {} from '@deepseek-ai/dsh-client-ui-settings-plugins/client'
@@ -19,6 +20,9 @@ import { en, zh } from './locales.ts'
 import { installFnosPathOpener } from './path-opener.ts'
 import { createTrimApp } from './sdk.ts'
 import { createThemeBridge, type ThemeBridge } from './theme-bridge.ts'
+import { createThemePersistence } from './theme-persistence.ts'
+import { FNOS_AUTHORIZED_DIRECTORIES_SETTINGS_NAMESPACE } from '../authorized-directories-contract.ts'
+import type { FnosSettings, FnosTheme } from '../theme-contract.ts'
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {
@@ -27,16 +31,22 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
 }
 
 export const name = 'dsh-fnos-plugin-client'
-export const inject = ['theme', 'slots', 'locale', 'sessions', 'inputTriggers', 'workspaces']
+export const inject = ['theme', 'slots', 'locale', 'sessions', 'inputTriggers', 'workspaces', 'settingsScope']
 
 const DARK_ATTRIBUTE = 'data-ds-dark-theme'
 
 /**
  * Keep DSH's saved preference unchanged. When it is set to "system", apply
  * the fnOS theme to the document after the SDK bridge has supplied the real
- * NAS state. For explicit light/dark preferences, DSH remains authoritative.
+ * NAS state and persist that resolved state for the next Host bootstrap. For
+ * explicit light/dark preferences, DSH remains authoritative and the stale
+ * fnOS snapshot is removed.
  */
-function createThemeController(ctx: ClientContext, bridge: ThemeBridge) {
+function createThemeController(
+  ctx: ClientContext,
+  bridge: ThemeBridge,
+  persistence: ReturnType<typeof createThemePersistence>,
+) {
   let systemFallbackActive = false
   let previousColorScheme: string | undefined
   let previousDarkAttribute: boolean | undefined
@@ -67,12 +77,15 @@ function createThemeController(ctx: ClientContext, bridge: ThemeBridge) {
 
   const refresh = (): void => {
     const theme = ctx.theme
-    if (theme.getTheme().preference !== 'system') {
+    const preference = theme.getTheme().preference
+    if (preference !== 'system') {
+      persistence.sync(preference, null)
       clearSystemTheme()
       return
     }
 
     const fnosTheme = bridge.getTheme()
+    persistence.sync(preference, fnosTheme)
     if (fnosTheme === null) return
 
     applySystemTheme(fnosTheme)
@@ -95,11 +108,15 @@ function createThemeController(ctx: ClientContext, bridge: ThemeBridge) {
 
 export function apply(ctx: ClientContext): void {
   const bridge = createThemeBridge()
+  const fnosSettings = ctx.settingsScope.bind<FnosSettings>({
+    namespace: FNOS_AUTHORIZED_DIRECTORIES_SETTINGS_NAMESPACE,
+  })
   {
-    const controller = createThemeController(ctx, bridge)
+    const controller = createThemeController(ctx, bridge, createThemePersistence(fnosSettings))
 
     ctx.effect(() => {
       const unsubscribe = bridge.subscribe(() => { controller.refresh() })
+      const unsubscribeSettings = fnosSettings.subscribe(() => { controller.refresh() })
       const offThemeChange = ctx.on('theme/change', () => { controller.refresh() })
       controller.refresh()
       void bridge.connect().catch(error => {
@@ -108,6 +125,7 @@ export function apply(ctx: ClientContext): void {
 
       return async () => {
         unsubscribe()
+        unsubscribeSettings()
         offThemeChange()
         await bridge.disconnect()
         controller.dispose()
@@ -149,6 +167,8 @@ export function apply(ctx: ClientContext): void {
   ctx.slots.inject('settings.plugin.item', () => ctx.slots.register({
     name: 'settings.plugin.item',
     key: 'dsh-fnos-authorized-directories',
+    // Keep the fnOS card after DSH's built-in configurable plugin cards.
+    priority: 100,
     inject: () => ({ t }),
   }, AuthorizedDirectoriesCard))
   ctx.slots.inject('conversation.input.right', () => ctx.slots.register({

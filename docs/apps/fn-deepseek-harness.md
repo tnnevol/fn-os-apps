@@ -18,13 +18,13 @@ DeepSeek Harness 是 DeepSeek AI 开源的插件化智能代理工具。本应�
 
 ### 授权目录
 
-安装 `@tnnevol/dsh-fnos` 后，在「设置 → 插件 → fnos」中可以查看当前应用已授权的 NAS 目录。列表使用 fnOS 的语义化路径展示，不直接显示 `/vol1/...` 这类内部路径。点击“添加授权目录”打开 fnOS 目录选择器，授权成功后列表立即刷新；点击目录后的“取消授权”只移除应用 ACL，不删除目录或文件。`TRIM_DATA_SHARE_PATHS` 中声明的应用共享目录也会在列表中展示，但不提供删除/取消授权入口。授权目录能力依赖应用的 `trim.file.sharedAccess` 和 `trim.file.path` 权限，真实 NAS 权限行为以系统校验为准。
+安装 `@tnnevol/dsh-fnos` 后，在「设置 → 插件 → fnos」中可以查看当前应用已授权的 NAS 目录。列表使用 fnOS 的语义化路径展示，不直接显示 `/vol1/...` 这类内部路径。点击“添加授权目录”打开 fnOS 目录选择器，授权成功后列表立即刷新；点击目录后的“取消授权”只移除应用 ACL，不删除目录或文件。`TRIM_DATA_SHARE_PATHS` 中声明的应用共享目录也会在列表中展示，但不提供删除/取消授权入口。授权目录能力依赖应用的 `trim.file.sharedAccess` 和 `trim.file.path` 权限；打开文件、浏览目录内容还会使用 `trim.file.userAcl` 检查当前网关用户，真实 NAS 权限行为以系统校验为准。
 
 插件安装后，在原始 DSH 工作区弹框中点击“添加工作区”，会在官方公开的目录流程中展示已授权目录；超过 10 个目录时提供搜索，并支持通过 fnOS logo 选择其他目录。选中结果交回 DSH 原生工作区流程，由 DSH 复用已有工作区或登记新路径后打开。插件不会修改 ACL、复制文件或接管整个工作区菜单。取消授权弹框或返回空结果时静默结束，不显示权限角色类红色警告。插件会合并 fnOS 授权 API、`TRIM_DATA_ACCESSIBLE_PATHS` 和 `TRIM_DATA_SHARE_PATHS` 并去重，页面只展示语义化路径。
 
 ### 上下文文件访问
 
-点击 DSH 上下文、工具结果或生成文件中的路径时，插件会复用 DSH 原有入口。在 fnOS iframe 内，Host 先校验真实路径是否位于当前授权目录、`TRIM_DATA_ACCESSIBLE_PATHS` 或 `TRIM_DATA_SHARE_PATHS` 根目录内，校验通过后调用 `@trimjs/web-app` 的 `openFile()` 交给 fnOS 文件应用打开；未授权时提示先到「设置 → 插件 → fnos → 授权目录」添加目录。该流程不调用 Linux `xdg-open`，因此不依赖 NAS 安装 `xdg-utils`。独立浏览器调试时继续使用 DSH 原生行为。
+点击 DSH 上下文、工具结果或生成文件中的路径时，插件会复用 DSH 原有入口。在 fnOS iframe 内，Host 不再把“命中授权列表”当作最终权限结论，而是依次确认应用授权根、真实路径存在且应用进程可读，并使用统一网关转发的当前用户 UID 调用 `trim.file.checkUserACL`；全部通过后才调用 `@trimjs/web-app` 的 `openFile()` 交给 fnOS 文件应用打开。未获得应用授权、路径不存在、应用进程不可读或当前用户没有读取权限时分别返回对应状态。该流程不调用 Linux `xdg-open`，因此不依赖 NAS 安装 `xdg-utils`。独立浏览器调试时继续使用 DSH 原生行为。
 
 当前 FPK 只从 npm 安装发布清单中的插件，不包含未发布的 `@tnnevol/dsh-fnos` 本地构建产物。插件发布后，需要将精确版本加入应用发布清单才会随 FPK 自动安装。
 
@@ -45,8 +45,8 @@ DeepSeek Harness 是 DeepSeek AI 开源的插件化智能代理工具。本应�
 - 默认端口为 `3080`，iframe 入口需要固定端口。
 - 使用 `127.0.0.1` 时，可信访问地址填写打开 NAS Web 时浏览器地址栏中的 host 或 host:port。
 - npm 官方源默认使用 `https://registry.npmjs.org/`；安装失败不会自动切换其他源。
-- 安装时会检查应用全局 npm 前缀中的 `@deepseek-ai/dsh`；本地未安装或线上版本更高时才会更新，否则复用本地版本。
-- 应用安装、升级和启动前会自动修复旧版 Web profile 的官方 bundle 基线（`@deepseek-ai/dsh-base`、`@deepseek-ai/dsh-web-app`），并保留已有的第三方插件和用户配置；这两个 bundle 缺失时，终端、Agent 循环和网页搜索设置卡片不会出现。有效的手动安装 `@tnnevol/dsh-fnos` 会将 `link:` 依赖规范化为 npm 可处理的 `file:` 并继续保留；只有本地路径失效或旧 patch 不再提供目录选择 Host 服务时，才移除其依赖和 bundle（不删除插件包或用户数据）。
+- 安装时固定检查应用全局 npm 前缀中的 `@deepseek-ai/dsh@0.1.0-rc.8`；本地存在该精确版本时复用，否则安装该固定版本，并使用 FPK 内置的 rc.8 对应 `node-pty` native 文件。
+- 应用安装、升级和启动前会自动修复旧版 Web profile 的官方 bundle 基线（`@deepseek-ai/dsh-base`、`@deepseek-ai/dsh-web-app`），并保留已有的第三方插件和用户配置；这两个 bundle 缺失时，终端、Agent 循环和网页搜索设置卡片不会出现。安装器只维护官方 bundle 基线和发布清单中的插件，不会对 `@tnnevol/dsh-fnos` 执行额外的本地依赖迁移、删除或补丁操作。
 
 应用的 npm 镜像源、数据目录和环境变量详见应用目录中的 [README](https://github.com/tnnevol/fn-os-apps/blob/main/apps/fn-deepseek-harness/README.md)。
 

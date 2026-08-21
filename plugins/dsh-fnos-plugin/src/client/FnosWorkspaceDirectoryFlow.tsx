@@ -5,7 +5,7 @@ import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
 import type { DirectoryFlowOwnerProps } from '@deepseek-ai/dsh-client-ui-workspace/client'
 import type { DirectoryEntry, DirectoryListing } from '@deepseek-ai/dsh-client-runtime/client'
 import { Button, IconFolderOpen16, IconSearchOutline16, Input, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
-import { DirectoryRequestError, requestAuthorizedDirectories } from './authorized-directories-client.ts'
+import { DirectoryRequestError, requestAuthorizedEntries } from './authorized-directories-client.ts'
 import type { AuthorizedDirectory } from '../authorized-directories-contract.ts'
 import type { FnosLocaleKey } from './locales.ts'
 import { FnosMonoLogo } from './FnosLogo.tsx'
@@ -31,6 +31,14 @@ type AuthorizedState =
 function failureText(error: unknown, t: Translate): string {
   if (error instanceof DirectoryRequestError && error.code === 'remote-web-origin-not-trusted') return t('originNotTrusted')
   return t('workspaceLoadFailed')
+}
+
+/** Workspace shortcuts only show roots that currently exist and are readable. */
+async function requestUsableWorkspaceDirectories(): Promise<AuthorizedDirectory[]> {
+  const response = await requestAuthorizedEntries()
+  return response.entries
+    .filter(entry => entry.kind === 'directory')
+    .map(entry => ({ path: entry.path, semanticPath: entry.semanticPath, removable: false }))
 }
 
 function WorkspaceEntryRow({ entry, selected, disabled, onSelect, onOpen, t }: {
@@ -152,7 +160,7 @@ export function FnosWorkspaceDirectoryFlow({ open, busy, onPicked, onCancel, lis
     if (!authorizedOpen || authorizedState.status !== 'idle') return
     let cancelled = false
     setAuthorizedState(current => ({ status: 'loading', directories: current.directories }))
-    void requestAuthorizedDirectories().then(
+    void requestUsableWorkspaceDirectories().then(
       directories => { if (!cancelled) setAuthorizedState({ status: 'ready', directories }) },
       error => { if (!cancelled) setAuthorizedState({ status: 'error', directories: [], message: failureText(error, t) }) },
     )

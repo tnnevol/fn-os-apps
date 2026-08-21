@@ -1,13 +1,18 @@
+import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
   accessiblePathsFromEnvironment,
   buildAuthorizedDirectories,
   dataSharePathsFromEnvironment,
+  gatewayUserId,
   mergeAuthorizedPaths,
   normalizeAuthorizedPath,
   normalizeAuthorizedPaths,
   normalizePathForAuthorization,
   isPathWithinAuthorizedDirectory,
+  validatePathForOpen,
 } from '../src/authorized-directories.ts'
 
 describe('fnOS authorized-directory contract', () => {
@@ -83,5 +88,57 @@ describe('fnOS authorized-directory contract', () => {
     expect(isPathWithinAuthorizedDirectory('/vol4/share-archive/file.txt', ['/vol4/share'])).toBe(false)
     expect(isPathWithinAuthorizedDirectory('/vol4/share/../private/file.txt', ['/vol4/share'])).toBe(false)
     expect(isPathWithinAuthorizedDirectory('/vol4/share/file.txt', ['/'])).toBe(true)
+  })
+
+  it('uses the gateway user header instead of the application service uid', () => {
+    expect(gatewayUserId({ headers: { 'x-trim-userid': '1000' } } as never)).toBe(1000)
+    expect(gatewayUserId({ headers: { 'x-trim-userid': 'not-a-uid' } } as never)).toBeUndefined()
+    expect(gatewayUserId({ headers: { 'x-trim-userid': '999999999999999999999' } } as never)).toBeUndefined()
+  })
+
+  it('requires a real readable path and the current user ACL', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'dsh-fnos-authorized-'))
+    const file = join(root, 'report.md')
+    try {
+      await writeFile(file, 'report')
+      const checkUserAcl = async (_req: unknown, paths: readonly string[]) => ({
+        available: true,
+        readable: new Set(paths),
+      })
+      await expect(validatePathForOpen(file, undefined, { roots: [root], checkUserAcl })).resolves.toEqual({ ok: true })
+
+      const deniedByUserAcl = async (_req: unknown, _paths: readonly string[]) => ({ available: true, readable: new Set<string>() })
+      await expect(validatePathForOpen(file, undefined, { roots: [root], checkUserAcl: deniedByUserAcl })).resolves.toEqual({
+        ok: false,
+        failure: 'fnos-user-permission-denied',
+      })
+
+      await expect(validatePathForOpen(join(root, 'missing.md'), undefined, { roots: [root], checkUserAcl })).resolves.toEqual({
+        ok: false,
+        failure: 'fnos-path-not-found',
+      })
+    } finally {
+      await rm(root, { recursive: true, force: true })
+    }
+  })
+
+  it('keeps the app authorization boundary even when the user ACL allows another path', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'dsh-fnos-authorized-'))
+    const outside = await mkdtemp(join(tmpdir(), 'dsh-fnos-outside-'))
+    const file = join(outside, 'report.md')
+    try {
+      await writeFile(file, 'report')
+      const checkUserAcl = async (_req: unknown, paths: readonly string[]) => ({
+        available: true,
+        readable: new Set(paths),
+      })
+      await expect(validatePathForOpen(file, undefined, { roots: [root], checkUserAcl })).resolves.toEqual({
+        ok: false,
+        failure: 'fnos-path-not-authorized',
+      })
+    } finally {
+      await rm(root, { recursive: true, force: true })
+      await rm(outside, { recursive: true, force: true })
+    }
   })
 })

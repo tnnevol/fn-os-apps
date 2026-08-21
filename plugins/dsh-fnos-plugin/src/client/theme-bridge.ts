@@ -2,8 +2,9 @@
 
 import type { PlatformConfig } from '@trimjs/web-app'
 import { createTrimApp } from './sdk.ts'
+import { isFnosTheme, type FnosTheme } from '../theme-contract.ts'
 
-export type FnosTheme = 'light' | 'dark'
+export type { FnosTheme } from '../theme-contract.ts'
 
 export interface ThemeBridge {
   getTheme(): FnosTheme | null
@@ -13,7 +14,7 @@ export interface ThemeBridge {
 }
 
 function normalizeTheme(value: unknown): FnosTheme | null {
-  if (value === 'dark' || value === 'light') return value
+  if (isFnosTheme(value)) return value
   if (Array.isArray(value)) return normalizeTheme(value[0])
   if (!value || typeof value !== 'object') return null
   const config = value as Record<string, unknown>

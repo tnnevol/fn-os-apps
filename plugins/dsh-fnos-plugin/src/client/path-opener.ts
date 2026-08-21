@@ -13,7 +13,7 @@ export interface PathOpenerSdk {
   openFile(path: string): Promise<unknown>
 }
 
-export type PathOpenerMessageKey = 'pathNotAuthorized' | 'pathOpenUnavailable'
+export type PathOpenerMessageKey = 'pathNotAuthorized' | 'pathPermissionDenied' | 'pathOpenUnavailable'
 
 export interface PathOpenerOptions {
   createSdk: () => PathOpenerSdk
@@ -23,6 +23,7 @@ export interface PathOpenerOptions {
 
 const defaultMessages: Record<PathOpenerMessageKey, string> = {
   pathNotAuthorized: 'This path is not authorized for DSH.',
+  pathPermissionDenied: 'The current fnOS user cannot read this path.',
   pathOpenUnavailable: 'Unable to open this path through fnOS.',
 }
 
@@ -66,6 +67,9 @@ export function installFnosPathOpener(
     } catch (error: unknown) {
       if (error instanceof DirectoryRequestError && error.code === 'fnos-path-not-authorized') {
         throw new Error(message('pathNotAuthorized'), { cause: error })
+      }
+      if (error instanceof DirectoryRequestError && error.code === 'fnos-user-permission-denied') {
+        throw new Error(message('pathPermissionDenied'), { cause: error })
       }
       if (error instanceof DirectoryRequestError) {
         throw new Error(message('pathOpenUnavailable'), { cause: error })

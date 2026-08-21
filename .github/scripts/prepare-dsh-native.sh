@@ -2,7 +2,8 @@
 
 set -euo pipefail
 
-APP_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+REPO_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
+APP_DIR="${APP_DIR:-${REPO_DIR}/apps/fn-deepseek-harness}"
 DSH_PACKAGE="@deepseek-ai/dsh"
 NPM_REGISTRY="${NPM_REGISTRY:-https://registry.npmjs.org/}"
 NODE_BIN="${NODE_BIN:-node}"
@@ -21,6 +22,7 @@ fail() {
 
 command -v "${NODE_BIN}" >/dev/null 2>&1 || fail "node is not installed"
 command -v "${NPM_BIN}" >/dev/null 2>&1 || fail "npm is not installed"
+[ -d "${APP_DIR}" ] || fail "application directory not found: ${APP_DIR}"
 command -v g++ >/dev/null 2>&1 || fail "g++ is required on the build runner"
 command -v make >/dev/null 2>&1 || fail "make is required on the build runner"
 command -v python3 >/dev/null 2>&1 || fail "python3 is required by node-gyp"
@@ -30,69 +32,7 @@ export PATH="${NODE_BIN_DIR}:${PATH}"
 NODE_MAJOR="$("${NODE_BIN}" -p 'process.versions.node.split(".")[0]')"
 [ "${NODE_MAJOR}" = "24" ] || fail "Node.js 24 is required; found ${NODE_MAJOR}"
 
-version_is_newer() {
-    "${NODE_BIN}" -e '
-const [candidate, current] = process.argv.slice(1)
-const parse = value => {
-    const match = /^(?:v)?(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+[0-9A-Za-z-]+)?$/.exec(value || "")
-    if (!match) return null
-    return {
-        core: match.slice(1, 4).map(Number),
-        prerelease: match[4] === undefined ? [] : match[4].split("."),
-    }
-}
-const compareIdentifier = (left, right) => {
-    const leftNumeric = /^\d+$/.test(left)
-    const rightNumeric = /^\d+$/.test(right)
-    if (leftNumeric && rightNumeric) {
-        const leftNumber = BigInt(left)
-        const rightNumber = BigInt(right)
-        return leftNumber < rightNumber ? -1 : leftNumber > rightNumber ? 1 : 0
-    }
-    if (leftNumeric) return -1
-    if (rightNumeric) return 1
-    return left < right ? -1 : left > right ? 1 : 0
-}
-const compare = (left, right) => {
-    for (let index = 0; index < left.core.length; index += 1) {
-        if (left.core[index] !== right.core[index]) return left.core[index] > right.core[index] ? 1 : -1
-    }
-    if (left.prerelease.length === 0 && right.prerelease.length > 0) return 1
-    if (left.prerelease.length > 0 && right.prerelease.length === 0) return -1
-    for (let index = 0; index < Math.min(left.prerelease.length, right.prerelease.length); index += 1) {
-        const result = compareIdentifier(left.prerelease[index], right.prerelease[index])
-        if (result !== 0) return result
-    }
-    return left.prerelease.length === right.prerelease.length
-        ? 0
-        : left.prerelease.length > right.prerelease.length ? 1 : -1
-}
-const candidateVersion = parse(candidate)
-const currentVersion = parse(current)
-process.exit(candidateVersion && currentVersion && compare(candidateVersion, currentVersion) > 0 ? 0 : 1)
-' "${1:-}" "${2:-}" >/dev/null 2>&1
-}
-
-read_registry_version() {
-    local tag="$1"
-    "${NPM_BIN}" view "${DSH_PACKAGE}@${tag}" version --registry="${NPM_REGISTRY}" 2>/dev/null \
-        | tr -d '[:space:]' || true
-}
-
-resolve_latest_dsh_version() {
-    local latest_version next_version
-    latest_version="$(read_registry_version latest)"
-    next_version="$(read_registry_version next)"
-
-    if [ -n "${next_version}" ] && { [ -z "${latest_version}" ] || version_is_newer "${next_version}" "${latest_version}"; }; then
-        printf '%s\n' "${next_version}"
-    else
-        printf '%s\n' "${latest_version}"
-    fi
-}
-
-DSH_VERSION="${DSH_VERSION:-$(resolve_latest_dsh_version)}"
-[ -n "${DSH_VERSION}" ] || fail "unable to resolve the latest ${DSH_PACKAGE} version"
+DSH_VERSION="0.1.0-rc.8"
 
 RESOLVE_DIR="${WORK_DIR}/resolve"
 mkdir -p "${RESOLVE_DIR}"

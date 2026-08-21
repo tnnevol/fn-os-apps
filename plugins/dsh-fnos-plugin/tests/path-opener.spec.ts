@@ -69,4 +69,20 @@ describe('fnOS path opener', () => {
     await workspaces.openPath('/vol4/private/report.md')
     expect(original).toEqual(['/vol4/private/report.md'])
   })
+
+  it('distinguishes current-user permission errors from missing app authorization', async () => {
+    const workspaces = {
+      openPath: async (_path: string) => undefined,
+    }
+    const dispose = installFnosPathOpener(workspaces, {
+      createSdk: () => sdk(),
+      validatePath: async () => {
+        throw new DirectoryRequestError('fnos-user-permission-denied')
+      },
+      message: key => key === 'pathPermissionDenied' ? '当前用户没有读取权限' : '无法打开路径',
+    })
+
+    await expect(workspaces.openPath('/vol4/share/private.md')).rejects.toThrow('当前用户没有读取权限')
+    dispose()
+  })
 })

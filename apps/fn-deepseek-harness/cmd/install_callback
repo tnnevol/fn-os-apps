@@ -3,18 +3,18 @@
 NODE_BIN="/var/apps/nodejs_v24/target/bin"
 DSH_HOME="${TRIM_PKGHOME}"
 APP_HOME="${TRIM_APPDEST_VOL}/@appshare/fn-deepseek-harness"
-APP_DEST="${TRIM_APPDEST:-}"
+APP_DEST="${TRIM_APPDEST}"
 NPM_CONFIG_PREFIX="${DSH_HOME}/.npm-global"
 NPM_BIN="${NODE_BIN}/npm"
 DSH_BIN="${NPM_CONFIG_PREFIX}/bin/dsh"
 DSH_PACKAGE="@deepseek-ai/dsh"
+DSH_VERSION="0.1.0-rc.8"
 DSH_VERSION_FILE="${APP_DEST}/dsh-version"
-NODE_PTY_VERSIONS_FILE="${APP_DEST}/node-pty-versions"
-NODE_PTY_LEGACY_VERSION_FILE="${APP_DEST}/node-pty-version"
-DSH_NATIVE_BUNDLE="${APP_DEST}/native/node-pty"
+DSH_NODE_PTY_SCRIPT="${APP_DEST}/scripts/install-node-pty.sh"
 DSH_PLUGIN_SCRIPT="${APP_DEST}/scripts/install-dsh-plugins.mjs"
 DSH_PUBLISHED_PLUGIN_MANIFEST="${APP_DEST}/published-dsh-plugins.json"
 DSH_PROFILE_DIRECTORY="${DSH_HOME}/profiles/web"
+PROXY_SCRIPT="${APP_DEST}/gateway-proxy.mjs"
 NPM_REGISTRY_FILE="${APP_HOME}/.fn-deepseek-harness/npm-registry"
 
 export DSH_HOME
@@ -23,29 +23,30 @@ export NPM_CONFIG_CACHE="${DSH_HOME}/.npm-cache"
 export NPM_CONFIG_PREFIX
 export PATH="${NODE_BIN}:${NPM_CONFIG_PREFIX}/bin:${PATH}"
 
-fail_install() {
-    if [ -n "${TRIM_TEMP_LOGFILE:-}" ]; then
-        echo "$1" > "${TRIM_TEMP_LOGFILE}"
-    fi
-    echo "$1" >&2
-    exit 1
+log_message() {
+    local level="$1"
+    shift
+    printf '[%s] [install_callback] [%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "${level}" "$*"
 }
 
-if [ -z "${TRIM_APPDEST_VOL}" ]; then
-    fail_install "TRIM_APPDEST_VOL is not available"
-fi
+log_info() {
+    log_message INFO "$@"
+}
 
-if [ -z "${TRIM_PKGHOME}" ]; then
-    fail_install "TRIM_PKGHOME is not available"
-fi
+log_error() {
+    log_message ERROR "$@" >&2
+}
 
-if [ -z "${APP_DEST}" ]; then
-    fail_install "TRIM_APPDEST is not available"
-fi
-
-if [ ! -x "${NPM_BIN}" ] || [ ! -x "${NODE_BIN}/node" ]; then
-    fail_install "nodejs_v24 runtime is not available at ${NODE_BIN}"
-fi
+fail_install() {
+    local message="$1"
+    local formatted_message
+    formatted_message="$(log_message ERROR "${message}")"
+    if [ -n "${TRIM_TEMP_LOGFILE:-}" ]; then
+        printf '%s\n' "${formatted_message}" > "${TRIM_TEMP_LOGFILE}"
+    fi
+    printf '%s\n' "${formatted_message}" >&2
+    exit 1
+}
 
 install_published_dsh_plugins() {
     [ -f "${DSH_PLUGIN_SCRIPT}" ] || return 0
@@ -63,18 +64,6 @@ install_published_dsh_plugins() {
     "${NODE_BIN}/node" "${DSH_PLUGIN_SCRIPT}" \
         || fail_install "Unable to install the published DSH plugins"
 }
-
-mkdir -p "${DSH_HOME}/.npm-cache" "${NPM_CONFIG_PREFIX}" "${HOME}" \
-    || fail_install "Unable to prepare the dsh npm directories"
-
-NPM_REGISTRY="${wizard_npm_registry:-https://registry.npmjs.org/}"
-mkdir -p "$(dirname -- "${NPM_REGISTRY_FILE}")" \
-    || fail_install "Unable to prepare the npm registry configuration directory"
-printf '%s\n' "${NPM_REGISTRY}" > "${NPM_REGISTRY_FILE}" \
-    || fail_install "Unable to save the npm registry configuration"
-NPM_GLOBAL_ROOT="$(${NPM_BIN} root -g 2>/dev/null || true)"
-NPM_GLOBAL_ROOT="${NPM_GLOBAL_ROOT:-${NPM_CONFIG_PREFIX}/lib/node_modules}"
-DSH_PACKAGE_DIR="${NPM_GLOBAL_ROOT}/${DSH_PACKAGE}"
 
 read_package_version() {
     local package_json="$1"
@@ -94,400 +83,90 @@ read_trimmed_file() {
     tr -d '[:space:]' < "${file}"
 }
 
-read_version_list_file() {
-    local file="$1"
-    [ -f "${file}" ] || return 0
-    awk 'NF { gsub(/[[:space:]]/, "", $0); print }' "${file}"
+validate_install_configuration() {
+    [ -f "${PROXY_SCRIPT}" ] \
+        || fail_install "DeepSeek Harness gateway proxy is not available at ${PROXY_SCRIPT}"
+
+    if { [ "${wizard_host+x}" = "x" ] || [ "${wizard_trusted_hosts+x}" = "x" ]; } \
+        && [ "${wizard_host:-127.0.0.1}" = "127.0.0.1" ] \
+        && [ -z "${wizard_trusted_hosts:-}" ]; then
+        fail_install "No trusted NAS Web host configured; set the trusted access address to the NAS host or host:port"
+    fi
 }
 
-version_in_list() {
-    local needle="$1"
-    local list="$2"
-    local value
-    while IFS= read -r value; do
-        if [ "${value}" = "${needle}" ]; then
-            return 0
-        fi
-    done <<< "${list}"
-    return 1
+run_node_pty_script() {
+    local run_dependency_scripts="$1"
+    [ -f "${DSH_NODE_PTY_SCRIPT}" ] \
+        || fail_install "The FPK node-pty installer is not available at ${DSH_NODE_PTY_SCRIPT}"
+
+    DSH_HOME="${DSH_HOME}" \
+    DSH_NATIVE_BUNDLE="${APP_DEST}/native/node-pty" \
+    NODE_PTY_VERSIONS_FILE="${APP_DEST}/node-pty-versions" \
+    DSH_PACKAGE_DIR="${DSH_PACKAGE_DIR}" \
+    NPM_GLOBAL_ROOT="${NPM_GLOBAL_ROOT}" \
+    NODE_BIN="${NODE_BIN}" \
+    NPM_BIN="${NPM_BIN}" \
+    DSH_RUN_DEPENDENCY_SCRIPTS="${run_dependency_scripts}" \
+    bash "${DSH_NODE_PTY_SCRIPT}" \
+        || fail_install "Unable to prepare the bundled node-pty dependencies"
 }
 
-node_pty_bundle_dir() {
-    if [ "${NODE_PTY_BUNDLE_MODE}" = "legacy" ]; then
-        printf '%s\n' "${DSH_NATIVE_BUNDLE}"
+main() {
+    if [ ! -x "${NPM_BIN}" ] || [ ! -x "${NODE_BIN}/node" ]; then
+        fail_install "nodejs_v24 runtime is not available at ${NODE_BIN}"
+    fi
+
+    mkdir -p "${DSH_HOME}/.npm-cache" "${NPM_CONFIG_PREFIX}" "${HOME}" \
+        || fail_install "Unable to prepare the dsh npm directories"
+
+    NPM_REGISTRY="${wizard_npm_registry:-https://registry.npmjs.org/}"
+    mkdir -p "$(dirname -- "${NPM_REGISTRY_FILE}")" \
+        || fail_install "Unable to prepare the npm registry configuration directory"
+    printf '%s\n' "${NPM_REGISTRY}" > "${NPM_REGISTRY_FILE}" \
+        || fail_install "Unable to save the npm registry configuration"
+
+    validate_install_configuration
+
+    NPM_GLOBAL_ROOT="$(${NPM_BIN} root -g 2>/dev/null || true)"
+    NPM_GLOBAL_ROOT="${NPM_GLOBAL_ROOT:-${NPM_CONFIG_PREFIX}/lib/node_modules}"
+    DSH_PACKAGE_DIR="${NPM_GLOBAL_ROOT}/${DSH_PACKAGE}"
+
+    PACKAGED_DSH_VERSION="$(read_trimmed_file "${DSH_VERSION_FILE}")"
+    [ "${PACKAGED_DSH_VERSION}" = "${DSH_VERSION}" ] \
+        || fail_install "The FPK is not prepared for ${DSH_PACKAGE}@${DSH_VERSION}"
+
+    LOCAL_VERSION="$(read_package_version "${DSH_PACKAGE_DIR}/package.json")"
+    RUN_NODE_PTY_DEPENDENCY_SCRIPTS=0
+    if [ -x "${DSH_BIN}" ] && [ "${LOCAL_VERSION}" = "${DSH_VERSION}" ]; then
+        log_info "Using locally installed ${DSH_PACKAGE}@${DSH_VERSION}."
     else
-        printf '%s\n' "${DSH_NATIVE_BUNDLE}/$1"
-    fi
-}
-
-install_bundled_node_pty() {
-    local package_json candidate_version bundle_dir
-    local found_versions=""
-    local package_count=0
-    while IFS= read -r -d '' package_json; do
-        candidate_version="$(read_package_version "${package_json}")"
-        [ -n "${candidate_version}" ] || continue
-        if ! version_in_list "${candidate_version}" "${NODE_PTY_VERSIONS}"; then
-            fail_install "Installed node-pty ${candidate_version} is not present in the FPK dependency set"
-        fi
-
-        bundle_dir="$(node_pty_bundle_dir "${candidate_version}")"
-        if [ ! -f "${bundle_dir}/pty.node" ]; then
-            fail_install "The FPK does not contain node-pty ${candidate_version} native files"
-        fi
-
-        NODE_PTY_DIR="$(dirname -- "${package_json}")"
-        mkdir -p "${NODE_PTY_DIR}/build/Release"
-        cp -a "${bundle_dir}/." "${NODE_PTY_DIR}/build/Release/"
-        chmod +x "${NODE_PTY_DIR}/build/Release/spawn-helper" 2>/dev/null || true
-        package_count=$((package_count + 1))
-        if ! version_in_list "${candidate_version}" "${found_versions}"; then
-            if [ -n "${found_versions}" ]; then
-                found_versions="${found_versions}"$'\n'"${candidate_version}"
-            else
-                found_versions="${candidate_version}"
-            fi
-        fi
-    done < <(
-        find "${DSH_PACKAGE_DIR}" "${NPM_GLOBAL_ROOT}" \
-            -type f \
-            -path '*/node_modules/node-pty/package.json' \
-            -print0 2>/dev/null
-    )
-    if [ "${package_count}" -eq 0 ]; then
-        fail_install "Unable to locate any node-pty package in the installed dsh dependency tree"
-    fi
-
-    while IFS= read -r candidate_version; do
-        [ -n "${candidate_version}" ] || continue
-        if ! version_in_list "${candidate_version}" "${found_versions}"; then
-            fail_install "Installed dsh dependency tree is missing node-pty ${candidate_version}"
-        fi
-    done <<< "${NODE_PTY_VERSIONS}"
-
-    echo "Installed bundled node-pty versions: ${found_versions//$'\n'/,}."
-}
-
-bundled_node_pty_matches_installed() {
-    local package_json candidate_version
-    local found_versions=""
-    local package_count=0
-
-    while IFS= read -r -d '' package_json; do
-        candidate_version="$(read_package_version "${package_json}")"
-        [ -n "${candidate_version}" ] || continue
-        version_in_list "${candidate_version}" "${NODE_PTY_VERSIONS}" || return 1
-        package_count=$((package_count + 1))
-        if ! version_in_list "${candidate_version}" "${found_versions}"; then
-            if [ -n "${found_versions}" ]; then
-                found_versions="${found_versions}"$'\n'"${candidate_version}"
-            else
-                found_versions="${candidate_version}"
-            fi
-        fi
-    done < <(
-        find "${DSH_PACKAGE_DIR}" "${NPM_GLOBAL_ROOT}" \
-            -type f \
-            -path '*/node_modules/node-pty/package.json' \
-            -print0 2>/dev/null
-    )
-
-    [ "${package_count}" -gt 0 ] || return 1
-    while IFS= read -r candidate_version; do
-        [ -n "${candidate_version}" ] || continue
-        version_in_list "${candidate_version}" "${found_versions}" || return 1
-    done <<< "${NODE_PTY_VERSIONS}"
-}
-
-run_dsh_dependency_scripts() {
-    local backup_dir map_file package_json backup_file rebuild_status
-    local -a node_pty_package_files=()
-    local -A seen_package_files=()
-
-    while IFS= read -r -d '' package_json; do
-        if [ -z "${seen_package_files["${package_json}"]+x}" ]; then
-            seen_package_files["${package_json}"]=1
-            node_pty_package_files+=("${package_json}")
-        fi
-    done < <(
-        find "${DSH_PACKAGE_DIR}" "${NPM_GLOBAL_ROOT}" \
-            -type f \
-            -path '*/node_modules/node-pty/package.json' \
-            -print0 2>/dev/null
-    )
-
-    if [ "${#node_pty_package_files[@]}" -eq 0 ]; then
-        fail_install "Unable to locate any node-pty package before running dependency scripts"
-    fi
-
-    backup_dir="$(mktemp -d "${DSH_HOME}/.node-pty-scripts.XXXXXX")" \
-        || fail_install "Unable to create a temporary node-pty script backup directory"
-    map_file="${backup_dir}/paths"
-    : > "${map_file}" || fail_install "Unable to create the node-pty script backup index"
-
-    restore_node_pty_scripts() {
-        local original_path original_backup
-        while IFS= read -r -d '' original_path && IFS= read -r -d '' original_backup; do
-            cp -a "${original_backup}" "${original_path}" || return 1
-        done < "${map_file}"
-    }
-
-    for package_json in "${node_pty_package_files[@]}"; do
-        backup_file="${backup_dir}/$(printf '%s' "${#package_json}").${RANDOM}.json"
-        while [ -e "${backup_file}" ]; do
-            backup_file="${backup_dir}/$(printf '%s' "${#package_json}").${RANDOM}.json"
-        done
-        cp -a "${package_json}" "${backup_file}" || {
-            restore_node_pty_scripts >/dev/null 2>&1 || true
-            rm -rf "${backup_dir}"
-            fail_install "Unable to back up node-pty package metadata"
-        }
-        printf '%s\0%s\0' "${package_json}" "${backup_file}" >> "${map_file}" || {
-            restore_node_pty_scripts >/dev/null 2>&1 || true
-            rm -rf "${backup_dir}"
-            fail_install "Unable to record node-pty package metadata backup"
-        }
-        "${NODE_BIN}/node" -e '
-const fs = require("node:fs")
-const file = process.argv[1]
-const packageJson = JSON.parse(fs.readFileSync(file, "utf8"))
-// Prevent npm from falling back to its binding.gyp default install action.
-packageJson.scripts = {
-  install: "node -e \"process.exit(0)\"",
-}
-fs.writeFileSync(file, `${JSON.stringify(packageJson, null, 2)}\n`)
-' "${package_json}" || {
-            restore_node_pty_scripts >/dev/null 2>&1 || true
-            rm -rf "${backup_dir}"
-            fail_install "Unable to disable node-pty native lifecycle scripts"
-        }
-    done
-
-    echo "Temporarily disabling lifecycle scripts for ${#node_pty_package_files[@]} node-pty package(s); other DSH dependency scripts remain enabled."
-    echo "Running DSH dependency lifecycle scripts with node-pty native compilation disabled..."
-    "${NPM_BIN}" rebuild --global --ignore-scripts=false --foreground-scripts
-    rebuild_status=$?
-
-    if ! restore_node_pty_scripts; then
-        rm -rf "${backup_dir}"
-        fail_install "Unable to restore node-pty package metadata"
-    fi
-    rm -rf "${backup_dir}"
-
-    if [ "${rebuild_status}" -ne 0 ]; then
-        fail_install "Failed to run DSH dependency lifecycle scripts"
-    fi
-    echo "DSH dependency lifecycle scripts completed."
-}
-
-validate_node_pty_versions() {
-    local version
-    while IFS= read -r version; do
-        [ -n "${version}" ] || continue
-        case "${version}" in
-            *[![:alnum:]_.+-]*)
-                fail_install "invalid packaged node-pty version: ${version}"
-                ;;
-        esac
-    done <<< "${NODE_PTY_VERSIONS}"
-}
-
-node_pty_version_count() {
-    printf '%s\n' "${NODE_PTY_VERSIONS}" | awk 'NF { count++ } END { print count + 0 }'
-}
-
-node_pty_single_version() {
-    printf '%s\n' "${NODE_PTY_VERSIONS}" | awk 'NF { print; exit }'
-}
-
-version_is_newer() {
-    "${NODE_BIN}/node" -e '
-const [candidate, current] = process.argv.slice(1)
-const parse = value => {
-    const match = /^(?:v)?(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+[0-9A-Za-z-]+)?$/.exec(value || "")
-    if (!match) return null
-    return {
-        core: match.slice(1, 4).map(Number),
-        prerelease: match[4] === undefined ? [] : match[4].split("."),
-    }
-}
-const compareIdentifier = (left, right) => {
-    const leftNumeric = /^\d+$/.test(left)
-    const rightNumeric = /^\d+$/.test(right)
-    if (leftNumeric && rightNumeric) {
-        const leftNumber = BigInt(left)
-        const rightNumber = BigInt(right)
-        return leftNumber < rightNumber ? -1 : leftNumber > rightNumber ? 1 : 0
-    }
-    if (leftNumeric) return -1
-    if (rightNumeric) return 1
-    return left < right ? -1 : left > right ? 1 : 0
-}
-const compare = (left, right) => {
-    for (let index = 0; index < left.core.length; index += 1) {
-        if (left.core[index] !== right.core[index]) return left.core[index] > right.core[index] ? 1 : -1
-    }
-    if (left.prerelease.length === 0 && right.prerelease.length > 0) return 1
-    if (left.prerelease.length > 0 && right.prerelease.length === 0) return -1
-    for (let index = 0; index < Math.min(left.prerelease.length, right.prerelease.length); index += 1) {
-        const result = compareIdentifier(left.prerelease[index], right.prerelease[index])
-        if (result !== 0) return result
-    }
-    return left.prerelease.length === right.prerelease.length
-        ? 0
-        : left.prerelease.length > right.prerelease.length ? 1 : -1
-}
-const candidateVersion = parse(candidate)
-const currentVersion = parse(current)
-process.exit(candidateVersion && currentVersion && compare(candidateVersion, currentVersion) > 0 ? 0 : 1)
-' "${1:-}" "${2:-}" >/dev/null 2>&1
-}
-
-read_registry_version() {
-    local tag="$1"
-    "${NPM_BIN}" view "${DSH_PACKAGE}@${tag}" version --registry="${NPM_REGISTRY}" 2>/dev/null \
-        | tr -d '[:space:]' || true
-}
-
-resolve_online_version() {
-    local latest_version next_version
-    latest_version="$(read_registry_version latest)"
-    next_version="$(read_registry_version next)"
-
-    if [ -n "${next_version}" ] && { [ -z "${latest_version}" ] || version_is_newer "${next_version}" "${latest_version}"; }; then
-        printf '%s\n' "${next_version}"
-    else
-        printf '%s\n' "${latest_version}"
-    fi
-}
-
-PINNED_DSH_VERSION="$(read_trimmed_file "${DSH_VERSION_FILE}")"
-NODE_PTY_VERSIONS="$(read_version_list_file "${NODE_PTY_VERSIONS_FILE}")"
-NODE_PTY_BUNDLE_MODE="versioned"
-if [ -z "${NODE_PTY_VERSIONS}" ]; then
-    NODE_PTY_VERSIONS="$(read_trimmed_file "${NODE_PTY_LEGACY_VERSION_FILE}")"
-    NODE_PTY_BUNDLE_MODE="legacy"
-fi
-NODE_PTY_VERSION_COUNT="$(node_pty_version_count)"
-NODE_PTY_SINGLE_VERSION="$(node_pty_single_version)"
-case "${PINNED_DSH_VERSION}" in
-    ""|*[![:alnum:]_.+-]*)
-        if [ -n "${PINNED_DSH_VERSION}" ]; then
-            fail_install "invalid packaged dsh version: ${PINNED_DSH_VERSION}"
-        fi
-        ;;
-esac
-if [ -n "${PINNED_DSH_VERSION}" ]; then
-    echo "FPK includes ${DSH_PACKAGE} version ${PINNED_DSH_VERSION} as the offline fallback."
-fi
-
-LOCAL_VERSION="$(read_package_version "${DSH_PACKAGE_DIR}/package.json")"
-ONLINE_VERSION="$(resolve_online_version)"
-INSTALL_SPEC=""
-INSTALL_WITHOUT_SCRIPTS=0
-NEEDS_INSTALL=0
-USE_BUNDLED_NATIVE=0
-ONLINE_INSTALL=0
-TARGET_VERSION=""
-
-if [ ! -x "${DSH_BIN}" ] || [ -z "${LOCAL_VERSION}" ]; then
-    if [ -n "${ONLINE_VERSION}" ]; then
-        TARGET_VERSION="${ONLINE_VERSION}"
-        echo "No usable local ${DSH_PACKAGE} installation; selecting online version ${ONLINE_VERSION}."
-    elif [ -n "${PINNED_DSH_VERSION}" ]; then
-        TARGET_VERSION="${PINNED_DSH_VERSION}"
-        USE_BUNDLED_NATIVE=1
-        echo "Unable to check the online ${DSH_PACKAGE} version; falling back to packaged version ${PINNED_DSH_VERSION}." >&2
-    else
-        NEEDS_INSTALL=1
-        INSTALL_SPEC="${DSH_PACKAGE}"
-        echo "No packaged ${DSH_PACKAGE} version found; installing the registry default."
-    fi
-elif [ -n "${ONLINE_VERSION}" ] && version_is_newer "${ONLINE_VERSION}" "${LOCAL_VERSION}"; then
-    TARGET_VERSION="${ONLINE_VERSION}"
-    echo "Online ${DSH_PACKAGE} version ${ONLINE_VERSION} is newer than local version ${LOCAL_VERSION}."
-elif [ -n "${PINNED_DSH_VERSION}" ] && [ "${LOCAL_VERSION}" = "${PINNED_DSH_VERSION}" ]; then
-    USE_BUNDLED_NATIVE=1
-    echo "Using locally installed packaged ${DSH_PACKAGE} version ${LOCAL_VERSION}."
-elif [ -n "${PINNED_DSH_VERSION}" ] && version_is_newer "${PINNED_DSH_VERSION}" "${LOCAL_VERSION}"; then
-    TARGET_VERSION="${PINNED_DSH_VERSION}"
-    USE_BUNDLED_NATIVE=1
-    echo "Local ${DSH_PACKAGE} version ${LOCAL_VERSION} is older than the packaged version ${PINNED_DSH_VERSION}."
-else
-    if [ -z "${ONLINE_VERSION}" ]; then
-        echo "Unable to check the online ${DSH_PACKAGE} version; reusing local version ${LOCAL_VERSION}." >&2
-    fi
-    echo "Using locally installed ${DSH_PACKAGE} version ${LOCAL_VERSION}."
-fi
-
-if [ -n "${TARGET_VERSION}" ]; then
-    NEEDS_INSTALL=1
-    INSTALL_SPEC="${DSH_PACKAGE}@${TARGET_VERSION}"
-    if [ -n "${PINNED_DSH_VERSION}" ] && [ "${TARGET_VERSION}" = "${PINNED_DSH_VERSION}" ]; then
-        USE_BUNDLED_NATIVE=1
-        INSTALL_WITHOUT_SCRIPTS=1
-        echo "Using packaged native dependencies for ${DSH_PACKAGE}@${TARGET_VERSION}."
-    else
-        ONLINE_INSTALL=1
-        if [ -n "${PINNED_DSH_VERSION}" ] && [ -d "${DSH_NATIVE_BUNDLE}" ] && [ "${NODE_PTY_VERSION_COUNT}" -gt 0 ]; then
-            INSTALL_WITHOUT_SCRIPTS=1
-            echo "Installing online ${DSH_PACKAGE}@${TARGET_VERSION} with node-pty lifecycle scripts temporarily deferred."
+        if [ -n "${LOCAL_VERSION}" ]; then
+            log_info "Local ${DSH_PACKAGE}@${LOCAL_VERSION} does not match required ${DSH_VERSION}; reinstalling the required version."
         else
-            echo "Installing online ${DSH_PACKAGE}@${TARGET_VERSION}; its dependency lifecycle scripts remain enabled."
+            log_info "No usable local ${DSH_PACKAGE}@${DSH_VERSION}; installing the required version."
         fi
-    fi
-fi
-
-if [ "${USE_BUNDLED_NATIVE}" -eq 1 ]; then
-    [ "${NODE_PTY_VERSION_COUNT}" -gt 0 ] || fail_install "The FPK does not contain any bundled node-pty version"
-    validate_node_pty_versions
-    [ -d "${DSH_NATIVE_BUNDLE}" ] || fail_install "The FPK does not contain bundled node-pty native files"
-fi
-
-if [ "${NEEDS_INSTALL}" -eq 1 ]; then
-    echo "Installing ${INSTALL_SPEC} globally from ${NPM_REGISTRY}..."
-    INSTALL_ARGS=("${INSTALL_SPEC}")
-    if [ "${USE_BUNDLED_NATIVE}" -eq 1 ] && [ "${NODE_PTY_VERSION_COUNT}" -eq 1 ]; then
-        INSTALL_ARGS+=("node-pty@${NODE_PTY_SINGLE_VERSION}")
-    fi
-    INSTALL_ARGS+=(-g --registry="${NPM_REGISTRY}")
-    if [ "${INSTALL_WITHOUT_SCRIPTS}" -eq 1 ]; then
-        INSTALL_ARGS+=(--ignore-scripts)
-    fi
-    if ! "${NPM_BIN}" install "${INSTALL_ARGS[@]}"; then
-        fail_install "Failed to install ${DSH_PACKAGE} from ${NPM_REGISTRY}"
-    fi
-fi
-
-NPM_GLOBAL_ROOT="$(${NPM_BIN} root -g 2>/dev/null || true)"
-NPM_GLOBAL_ROOT="${NPM_GLOBAL_ROOT:-${NPM_CONFIG_PREFIX}/lib/node_modules}"
-DSH_PACKAGE_DIR="${NPM_GLOBAL_ROOT}/${DSH_PACKAGE}"
-
-if [ "${ONLINE_INSTALL}" -eq 1 ] && [ "${INSTALL_WITHOUT_SCRIPTS}" -eq 1 ]; then
-    if bundled_node_pty_matches_installed; then
-        USE_BUNDLED_NATIVE=1
-        echo "Online ${DSH_PACKAGE}@${TARGET_VERSION} uses node-pty versions bundled in the FPK."
-    else
-        INSTALL_WITHOUT_SCRIPTS=0
-        echo "Online ${DSH_PACKAGE}@${TARGET_VERSION} requires node-pty versions not bundled in this FPK; running all dependency lifecycle scripts."
-        if ! "${NPM_BIN}" rebuild --global --ignore-scripts=false --foreground-scripts; then
-            fail_install "Failed to run online DSH dependency lifecycle scripts"
+        log_info "Installing ${DSH_PACKAGE}@${DSH_VERSION} globally from ${NPM_REGISTRY}..."
+        if ! "${NPM_BIN}" install "${DSH_PACKAGE}@${DSH_VERSION}" -g \
+            --registry="${NPM_REGISTRY}" --ignore-scripts; then
+            fail_install "Failed to install ${DSH_PACKAGE}@${DSH_VERSION} from ${NPM_REGISTRY}"
         fi
+        NPM_GLOBAL_ROOT="$(${NPM_BIN} root -g 2>/dev/null || true)"
+        NPM_GLOBAL_ROOT="${NPM_GLOBAL_ROOT:-${NPM_CONFIG_PREFIX}/lib/node_modules}"
+        DSH_PACKAGE_DIR="${NPM_GLOBAL_ROOT}/${DSH_PACKAGE}"
+        RUN_NODE_PTY_DEPENDENCY_SCRIPTS=1
     fi
-fi
 
-if [ "${INSTALL_WITHOUT_SCRIPTS}" -eq 1 ]; then
-    run_dsh_dependency_scripts
-fi
+    LOCAL_VERSION="$(read_package_version "${DSH_PACKAGE_DIR}/package.json")"
+    [ "${LOCAL_VERSION}" = "${DSH_VERSION}" ] \
+        || fail_install "Installed ${DSH_PACKAGE} version ${LOCAL_VERSION:-unknown} does not match required ${DSH_VERSION}"
 
-if [ "${USE_BUNDLED_NATIVE}" -eq 1 ]; then
-    install_bundled_node_pty
-fi
+    run_node_pty_script "${RUN_NODE_PTY_DEPENDENCY_SCRIPTS}"
+    if [ ! -x "${DSH_BIN}" ] || ! "${DSH_BIN}" --help >/dev/null 2>&1; then
+        fail_install "dsh installation verification failed: dsh --help"
+    fi
 
-if [ ! -x "${DSH_BIN}" ] || ! "${DSH_BIN}" --help >/dev/null 2>&1; then
-    fail_install "dsh installation verification failed: dsh --help"
-fi
+    log_info "dsh ${DSH_PACKAGE}@${DSH_VERSION} installation verified at ${DSH_BIN}."
+    install_published_dsh_plugins
+}
 
-echo "dsh installation verified at ${DSH_BIN}."
-install_published_dsh_plugins
-exit 0
+main "$@"

@@ -6,29 +6,13 @@ DSH_HOME="${TRIM_PKGHOME}"
 APP_HOME="${TRIM_APPDEST_VOL}/@appshare/fn-deepseek-harness"
 SOCKET_PATH="${TRIM_APPDEST}/app.sock"
 PROXY_SCRIPT="${TRIM_APPDEST}/gateway-proxy.mjs"
-COMPATIBILITY_SCRIPT="${TRIM_APPDEST}/scripts/prepare-dsh-compatibility.mjs"
-DSH_PLUGIN_SCRIPT="${TRIM_APPDEST}/scripts/install-dsh-plugins.mjs"
-DSH_PUBLISHED_PLUGIN_MANIFEST="${TRIM_APPDEST}/published-dsh-plugins.json"
-DSH_PROFILE_DIRECTORY="${DSH_HOME}/profiles/web"
 GATEWAY_PREFIX="/app/fn-deepseek-harness"
 NODE_BIN="/var/apps/nodejs_v24/target/bin"
 REQUESTED_HOST="${wizard_host:-127.0.0.1}"
 PORT="${wizard_port:-3080}"
 TRUSTED_HOSTS="${wizard_trusted_hosts:-}"
-COMPATIBILITY_PATCH="${APP_HOME}/.fn-deepseek-harness/compatibility/web-incompatible-plugins.patch.yml"
 DSH_BIN="${DSH_HOME}/.npm-global/bin/dsh"
-
-case "${REQUESTED_HOST}" in
-127.0.0.1|0.0.0.0)
-    HOST="${REQUESTED_HOST}"
-    ;;
-*)
-    # Existing installations may still have an older NAS IP value. The dsh
-    # webserver only accepts these two bind addresses, so expose all interfaces
-    # instead of passing an invalid host to dsh.
-    HOST="0.0.0.0"
-    ;;
-esac
+HOST="${REQUESTED_HOST}"
 
 export PATH="${NODE_BIN}:${PATH}"
 export DSH_HOME
@@ -37,43 +21,23 @@ export NPM_CONFIG_CACHE="${DSH_HOME}/.npm-cache"
 export NPM_CONFIG_PREFIX="${DSH_HOME}/.npm-global"
 export PATH="${NPM_CONFIG_PREFIX}/bin:${PATH}"
 
+log_message() {
+    local level="$1"
+    shift
+    printf '[%s] [main] [%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "${level}" "$*"
+}
+
+log_info() {
+    log_message INFO "$@"
+}
+
 log_error() {
-    if [ -n "${TRIM_TEMP_LOGFILE:-}" ]; then
-        echo "$1" > "${TRIM_TEMP_LOGFILE}"
-    fi
-    echo "$1" >&2
+    log_message ERROR "$@" >&2
 }
 
 check_process() {
     local pid="$1"
     [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null
-}
-
-prepare_dsh_compatibility() {
-    [ -f "${COMPATIBILITY_SCRIPT}" ] || return 0
-    DSH_COMPAT_PROFILE_DIRECTORY="${DSH_HOME}/profiles/web" \
-    DSH_COMPAT_DSH_PACKAGE_DIRECTORY="${DSH_HOME}/.npm-global/lib/node_modules/@deepseek-ai/dsh" \
-    DSH_COMPAT_DSH_PACKAGE_FILE="${DSH_HOME}/.npm-global/lib/node_modules/@deepseek-ai/dsh/package.json" \
-    DSH_COMPAT_DSH_VERSION_FILE="${TRIM_APPDEST}/dsh-version" \
-    DSH_COMPAT_APP_HOME="${APP_HOME}" \
-    DSH_COMPAT_PATCH_FILE="${COMPATIBILITY_PATCH}" \
-    "${NODE_BIN}/node" "${COMPATIBILITY_SCRIPT}"
-}
-
-verify_published_dsh_plugins() {
-    [ -f "${DSH_PLUGIN_SCRIPT}" ] || return 0
-
-    if [ ! -f "${DSH_PROFILE_DIRECTORY}/package.json" ]; then
-        "${DSH_BIN}" --profile web --dump-config >/dev/null 2>&1 || {
-            log_error "Unable to initialize the dsh web profile"
-            return 1
-        }
-    fi
-
-    DSH_PUBLISHED_PLUGIN_MANIFEST="${DSH_PUBLISHED_PLUGIN_MANIFEST}" \
-    DSH_PROFILE_DIRECTORY="${DSH_PROFILE_DIRECTORY}" \
-    DSH_INSTALL_PUBLISHED=0 \
-    "${NODE_BIN}/node" "${DSH_PLUGIN_SCRIPT}"
 }
 
 pid_from_file() {
@@ -87,37 +51,8 @@ start_process() {
         return 0
     fi
 
-    if [ ! -x "${NODE_BIN}/node" ]; then
-        log_error "nodejs_v24 runtime is not available at ${NODE_BIN}"
-        return 1
-    fi
-
-    if [ ! -x "${DSH_BIN}" ]; then
-        log_error "dsh is not installed at ${DSH_BIN}; run the application install callback first"
-        return 1
-    fi
-
-    if [ ! -f "${PROXY_SCRIPT}" ]; then
-        log_error "DeepSeek Harness gateway proxy is not available at ${PROXY_SCRIPT}"
-        return 1
-    fi
-
-    if [ "${HOST}" = "127.0.0.1" ] && [ -z "${TRUSTED_HOSTS}" ]; then
-        log_error "No trusted NAS Web host configured; set the trusted access address to the NAS host or host:port in application settings"
-        return 1
-    fi
-
-    mkdir -p "${DSH_HOME}/.npm-cache" "${HOME}"
-    if ! verify_published_dsh_plugins; then
-        log_error "Unable to verify the published DSH plugins; the application was not started"
-        return 1
-    fi
-    if ! prepare_dsh_compatibility; then
-        log_error "Unable to prepare DSH compatibility quarantine; the application was not started"
-        return 1
-    fi
     rm -f "${SOCKET_PATH}"
-    echo "Starting DeepSeek Harness on ${HOST}:${PORT}..."
+    log_info "Starting DeepSeek Harness on ${HOST}:${PORT}..."
 
     (
         cd "${TRIM_APPDEST}" || exit 1
@@ -130,9 +65,6 @@ start_process() {
     printf "%s" "$!" > "${GATEWAY_PID_FILE}"
 
     local -a dsh_args=(web)
-    if [ -f "${COMPATIBILITY_PATCH}" ]; then
-        dsh_args+=(--patch "${COMPATIBILITY_PATCH}")
-    fi
     dsh_args+=(--host "${HOST}" --port "${PORT}")
     if [ -n "${TRUSTED_HOSTS}" ]; then
         local -a trusted_host_list

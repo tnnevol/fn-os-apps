@@ -39,12 +39,12 @@ jobs:
           sudo mv fnpack /usr/local/bin/fnpack
           fnpack --help
 
-      - name: Prepare latest DSH native dependency
+      - name: Prepare DSH rc.8 native dependency
         id: prepare_dsh
         working-directory: apps/fn-deepseek-harness
         env:
           NPM_REGISTRY: https://registry.npmjs.org/
-        run: bash scripts/prepare-dsh-native.sh
+        run: bash ../../.github/scripts/prepare-dsh-native.sh
 
       - name: Build FPK
         working-directory: apps/fn-deepseek-harness

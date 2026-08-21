@@ -1,19 +1,25 @@
 /** fnOS-specific integrations for DeepSeek Harness. */
 
 import type { Context } from '@deepseek-ai/cordis'
+import type {} from '@deepseek-ai/dsh-host-webserver'
 import { settingsNamespace } from '@deepseek-ai/dsh-settings'
 import z from '@deepseek-ai/schemastery'
 import { registerAuthorizedDirectoryRoutes } from './authorized-directories.ts'
 import { FNOS_AUTHORIZED_DIRECTORIES_SETTINGS_NAMESPACE } from './authorized-directories-contract.ts'
+import { injectCachedFnosTheme, type DshThemePreference } from './theme-bootstrap.ts'
+import { FNOS_SYSTEM_THEME_FIELD, isFnosTheme, type FnosSettings, type FnosTheme } from './theme-contract.ts'
 
 /** Stable Host bundle name. */
 export const name = '@tnnevol/dsh-fnos'
 
-/** Settings are used to make the read-only fnOS card discoverable. */
-export const FnosSettingsSchema = z.object({})
+/** Settings back the fnOS card and the cached pre-plugin theme bootstrap. */
+export const FnosSettingsSchema = z.object({
+  [FNOS_SYSTEM_THEME_FIELD]: z.union(['light', 'dark']),
+})
 export const FNOS_AUTHORIZED_DIRECTORIES_SETTINGS_NS = settingsNamespace(
   FNOS_AUTHORIZED_DIRECTORIES_SETTINGS_NAMESPACE,
 )
+const DSH_THEME_SETTINGS_NS = settingsNamespace('ui-theme')
 
 /** Host services required by the fnOS settings namespace and Web routes. */
 export const inject = ['webServer', 'settings']
@@ -21,6 +27,28 @@ export const inject = ['webServer', 'settings']
 export function apply(ctx: Context): void {
   ctx.settings.register(FNOS_AUTHORIZED_DIRECTORIES_SETTINGS_NS, FnosSettingsSchema)
   registerAuthorizedDirectoryRoutes(ctx)
+  ctx.inject(['webServer'], httpCtx => {
+    httpCtx.effect(
+      () => httpCtx.webServer.tapIndex(html => injectCachedFnosTheme(
+        html,
+        readDshThemePreference(ctx),
+        readCachedFnosTheme(ctx),
+      )),
+      'dsh-fnos: cached fnOS theme bootstrap',
+    )
+  })
+}
+
+function readDshThemePreference(ctx: Context): DshThemePreference {
+  const section = ctx.settings.get(DSH_THEME_SETTINGS_NS) as { preference?: unknown } | undefined
+  return section?.preference === 'light' || section?.preference === 'dark' || section?.preference === 'system'
+    ? section.preference
+    : 'system'
+}
+
+function readCachedFnosTheme(ctx: Context): FnosTheme | null {
+  const section = ctx.settings.get(FNOS_AUTHORIZED_DIRECTORIES_SETTINGS_NS) as FnosSettings | undefined
+  return isFnosTheme(section?.[FNOS_SYSTEM_THEME_FIELD]) ? section[FNOS_SYSTEM_THEME_FIELD] : null
 }
 
 export {
@@ -44,6 +72,8 @@ export {
   normalizePathForAuthorization,
   isPathWithinAuthorizedDirectory,
   isAuthorizedPathForOpen,
+  validatePathForOpen,
+  gatewayUserId,
   loadAuthorizedEntries,
   splitPathEnvironment,
 } from './authorized-directories.ts'

@@ -17,6 +17,9 @@
 - DSH 主题选择为“浅色”或“深色”时，以 DSH 设置为准，不被 NAS 主题覆盖。
 - 通过 `@trimjs/web-app` 的 `getPlatformConfig()` 获取初始主题，通过 `$on('os/theme')` 接收主题切换事件。
 - 主题变化只通过 SDK 的 `$on('os/theme')` 事件同步，不额外执行轮询。
+- 当 DSH 选择“跟随系统”且运行在真实 fnOS Web 宿主时，将 fnOS 当前生效主题写入 `dsh-fnos-authorized-directories` 设置中的 `systemTheme` 字段；下次 Web profile 返回首页时，Host 先用该缓存替换 DSH 官方首屏 bootstrap，避免先显示浏览器系统主题、再切换到 NAS 主题。
+- 该过程不会把 DSH 的 `system` 偏好改成固定的浅色或深色；显式选择浅色/深色时不写入 fnOS 主题缓存，并清理旧缓存。
+- fnOS SDK 当前只提供 NAS 的最终生效主题（`light`/`dark`），没有提供“NAS 是否选择跟随系统”的独立偏好字段，因此插件只能在 DSH 为 `system`、SDK 处于真实 fnOS Web 宿主且设置可写时执行缓存同步。
 - `@trimjs/web-app` 作为插件的构建依赖，随插件客户端 bundle 一起内置到 FPK；运行时不需要 NAS 安装 pnpm，也不需要访问外部 CDN。
 
 ### 工作区快捷跳转
@@ -25,7 +28,7 @@
 - 目录流程保留 DSH 原始的路径输入、目录列表、目录打开、确认和取消语义；插件只在路径输入旁增加一个无文字的 fnOS 黑白 logo 按钮。
 - 点击 fnOS logo 后打开插件自己的授权目录列表面板，使用 fnOS 语义化路径展示；选中目录后将真实路径写回 DSH 原始路径输入框，随后仍由 DSH 原生 `onPicked` 完成工作区复用或登记。
 - 插件目录列表超过 10 个目录时提供搜索；该入口只展示当前已授权目录和应用共享目录，不申请新 ACL，不调用 fnOS SDK 目录选择器。
-- fnOS 应用 bundle 会禁用官方自动目录选择器的 Client 侧，并保留官方 browse Host 后端提供 `directoryPicker` 服务；这样不会与 fnos 插件的目录流程重复占用插槽，也不会让 `dsh-host-apiproxy` 因缺少服务而停留在 pending。未修改 DSH 官方源码。
+- fnos 插件只使用 DSH 公开的目录流程插槽，不通过 fnOS 应用 bundle 禁用或替换官方目录选择器，也不修改 DSH 官方源码；官方目录流程与 fnOS 目录入口的兼容性由真实 NAS 验收确认。
 
 ### 内容输入框 NAS 文件和目录
 
@@ -52,9 +55,9 @@
 
 ### 上下文文件访问
 
-点击 DSH 上下文、工具结果或生成文件中的路径时，插件会复用 DSH 的 `workspaces.openPath()` 入口。在 fnOS iframe 内，Host 先校验路径是否位于当前授权目录或应用共享目录，校验通过后调用 `@trimjs/web-app` 的 `openFile(path)`；未授权路径提示用户先添加授权目录。插件不调用 `xdg-open`，不会因为 NAS 缺少系统打开器而出现 `spawn xdg-open ENOENT`。独立浏览器仍使用 DSH 原生打开逻辑，便于本地调试。
+点击 DSH 上下文、工具结果或生成文件中的路径时，插件会复用 DSH 的 `workspaces.openPath()` 入口。在 fnOS iframe 内，Host 将应用授权根作为边界，再检查真实路径存在、应用进程可读，并通过统一网关的当前用户 UID 调用 `trim.file.checkUserACL`；全部通过后才调用 `@trimjs/web-app` 的 `openFile(path)`。因此授权列表只是应用范围，不再单独代表当前用户对文件的权限；用户无权读取时会提示实际权限不足，路径失效时会提示路径不可用。插件不调用 `xdg-open`，不会因为 NAS 缺少系统打开器而出现 `spawn xdg-open ENOENT`。独立浏览器仍使用 DSH 原生打开逻辑，便于本地调试。
 
-FPK 只从 npm 安装发布清单中的插件。`@tnnevol/dsh-fnos` 发布后，需要将精确版本或 dist-tag 加入 `apps/fn-deepseek-harness/app/published-dsh-plugins.json`，安装和升级回调才会把它安装到 Web profile 并补齐 bundle 配置。主题首次渲染由 DSH 已保存的配置负责；插件启动后再通过 SDK 获取 fnOS 真实主题，并仅在 DSH 选择“跟随系统”时接管主题同步。
+FPK 只从 npm 安装发布清单中的插件。`@tnnevol/dsh-fnos` 发布后，需要将精确版本或 dist-tag 加入 `apps/fn-deepseek-harness/app/published-dsh-plugins.json`，安装和升级回调才会把它安装到 Web profile 并补齐 bundle 配置。主题首次渲染由 fnOS 插件在 Host 侧读取的 `systemTheme` 缓存参与；插件启动后再通过 SDK 获取 fnOS 真实主题，并仅在 DSH 选择“跟随系统”时接管主题同步。
 
 ### 本地调试
 

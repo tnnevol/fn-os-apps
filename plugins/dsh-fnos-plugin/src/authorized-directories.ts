@@ -1,7 +1,8 @@
 /** Host routes for fnOS application shared-directory ACLs. */
 
 import type { IncomingMessage, ServerResponse } from 'node:http'
-import { readdir, realpath, stat } from 'node:fs/promises'
+import { constants as fsConstants, type Stats } from 'node:fs'
+import { access, readdir, realpath, stat } from 'node:fs/promises'
 import { posix } from 'node:path'
 import type { Context } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-host-webserver'
@@ -37,6 +38,43 @@ interface SharedAccessibleFolderDeleteResult {
   suc?: unknown
 }
 
+interface UserAclEntry {
+  path?: unknown
+  readable?: unknown
+}
+
+export interface UserAclResult {
+  /** Whether fnOS returned a usable ACL response for the current user. */
+  available: boolean
+  /** Paths that fnOS says the current user can read. */
+  readable: Set<string>
+}
+
+/** Injectable ACL checker used by the path validation tests. */
+export type UserAclChecker = (
+  req: IncomingMessage | undefined,
+  paths: readonly string[],
+) => Promise<UserAclResult>
+
+export interface PathValidationOptions {
+  /** Override the application roots when validating in isolation. */
+  roots?: readonly string[]
+  /** Override the current-user ACL lookup when validating in isolation. */
+  checkUserAcl?: UserAclChecker
+}
+
+export type PathValidationFailure =
+  | 'fnos-path-not-authorized'
+  | 'fnos-path-not-found'
+  | 'fnos-path-not-readable'
+  | 'fnos-user-permission-denied'
+  | 'fnos-user-permission-unavailable'
+
+export interface PathValidationResult {
+  ok: boolean
+  failure?: PathValidationFailure
+}
+
 interface ConvertedPath {
   path?: unknown
   semanticPath?: unknown
@@ -64,6 +102,19 @@ class AuthorizedEntriesError extends Error {
 function header(req: IncomingMessage, name: string): string | undefined {
   const value = req.headers[name]
   return Array.isArray(value) ? value[0] : value
+}
+
+/**
+ * Read the user identity supplied by the fnOS unified gateway.
+ *
+ * `TRIM_UID` is the application service user and must not be used here. The
+ * current browser user is carried by `X-Trim-Userid` on gateway requests.
+ */
+export function gatewayUserId(req: IncomingMessage | undefined): number | undefined {
+  const value = req === undefined ? undefined : header(req, 'x-trim-userid')?.trim()
+  if (value === undefined || !/^\d+$/u.test(value)) return undefined
+  const uid = Number(value)
+  return Number.isSafeInteger(uid) && uid >= 0 ? uid : undefined
 }
 
 function firstForwarded(value: string | undefined): string | undefined {
@@ -184,6 +235,55 @@ export function normalizeAuthorizedPaths(value: unknown): string[] {
     paths.push(path)
   }
   return paths
+}
+
+function userAclEntries(value: unknown): UserAclEntry[] {
+  if (Array.isArray(value)) return value.filter(
+    (entry): entry is UserAclEntry => typeof entry === 'object' && entry !== null && !Array.isArray(entry),
+  )
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return []
+  const record = value as Record<string, unknown>
+  for (const key of ['result', 'paths', 'data']) {
+    const entries = userAclEntries(record[key])
+    if (entries.length > 0) return entries
+  }
+  return []
+}
+
+function userAclResult(value: unknown): UserAclResult {
+  const readable = new Set<string>()
+  for (const entry of userAclEntries(value)) {
+    if (entry.readable !== true) continue
+    const path = normalizePathForAuthorization(entry.path)
+    if (path !== undefined) readable.add(path)
+  }
+  return { available: true, readable }
+}
+
+/**
+ * Check the current gateway user instead of treating an application ACL root
+ * as proof that every user can read every child path.
+ *
+ * Direct localhost development requests do not carry a NAS user header. In
+ * that case the real process-level fs check remains the only meaningful check
+ * and the fnOS `openFile()` bridge is still the final host-side operation.
+ */
+export const checkCurrentUserAcl: UserAclChecker = async (req, paths) => {
+  const uid = gatewayUserId(req)
+  const normalizedPaths = normalizeAuthorizedPaths(paths)
+  if (uid === undefined || normalizedPaths.length === 0) {
+    return { available: true, readable: new Set(normalizedPaths) }
+  }
+  try {
+    const data = await callFnOsApi<unknown>('trim.file.checkUserACL', {
+      uid,
+      path: normalizedPaths.length === 1 ? normalizedPaths[0] : normalizedPaths,
+    })
+    return userAclResult(data)
+  } catch (error: unknown) {
+    console.warn('[dsh-fnos] unable to check current fnOS user ACL', error)
+    return { available: false, readable: new Set() }
+  }
 }
 
 /** Parse a fnOS colon-separated path environment variable. */
@@ -311,22 +411,87 @@ export async function loadAuthorizedDirectoryPaths(): Promise<string[]> {
   }
 }
 
-/**
- * Verify a DSH file/directory target against the current fnOS ACL and the
- * app-declared shared paths before the browser asks fnOS to open it.
- */
-export async function isAuthorizedPathForOpen(pathValue: unknown): Promise<boolean> {
-  if (normalizePathForAuthorization(pathValue) === undefined) return false
-  const sharedPaths = dataSharePathsFromEnvironment()
-  let roots: string[]
+async function readablePathStat(path: string): Promise<Stats | undefined> {
   try {
-    roots = mergeAuthorizedPaths(await loadAuthorizedDirectoryPaths(), sharedPaths)
-  } catch (error: unknown) {
-    if (sharedPaths.length === 0) throw error
-    console.warn('[dsh-fnos] using TRIM_DATA_SHARE_PATHS for path-open validation because the fnOS ACL query failed')
-    roots = sharedPaths
+    const pathStat = await stat(path)
+    const mode = pathStat.isDirectory() ? fsConstants.R_OK | fsConstants.X_OK : fsConstants.R_OK
+    await access(path, mode)
+    return pathStat
+  } catch {
+    return undefined
   }
-  return isPathWithinAuthorizedDirectory(pathValue, roots)
+}
+
+async function existingAuthorizedRoots(rootsValue: unknown): Promise<string[]> {
+  const roots = normalizeAuthorizedPaths(rootsValue)
+  const resolved = await Promise.all(roots.map(async root => {
+    try {
+      const resolvedRoot = normalizePathForAuthorization(await realpath(root))
+      if (resolvedRoot === undefined) return undefined
+      const rootStat = await readablePathStat(resolvedRoot)
+      return rootStat?.isDirectory() === true ? resolvedRoot : undefined
+    } catch {
+      return undefined
+    }
+  }))
+  return resolved.filter((root): root is string => root !== undefined)
+}
+
+async function currentAuthorizedRoots(options: PathValidationOptions = {}): Promise<string[]> {
+  if (options.roots !== undefined) return existingAuthorizedRoots(options.roots)
+  return resolvedAuthorizedRoots()
+}
+
+async function validateReadableAuthorizedPath(
+  req: IncomingMessage | undefined,
+  path: string,
+  roots: readonly string[],
+  checkUserAcl: UserAclChecker,
+): Promise<PathValidationResult> {
+  let pathStat: Stats
+  try {
+    pathStat = await stat(path)
+  } catch {
+    return { ok: false, failure: 'fnos-path-not-found' }
+  }
+  try {
+    const mode = pathStat.isDirectory() ? fsConstants.R_OK | fsConstants.X_OK : fsConstants.R_OK
+    await access(path, mode)
+  } catch {
+    return { ok: false, failure: 'fnos-path-not-readable' }
+  }
+  if (!await isResolvedPathWithinAuthorizedRoots(path, roots)) {
+    return { ok: false, failure: 'fnos-path-not-authorized' }
+  }
+
+  const userAcl = await checkUserAcl(req, [path])
+  if (!userAcl.available) return { ok: false, failure: 'fnos-user-permission-unavailable' }
+  if (!userAcl.readable.has(path)) return { ok: false, failure: 'fnos-user-permission-denied' }
+  return { ok: true }
+}
+
+/**
+ * Validate a DSH file/directory target using all applicable permission layers:
+ * the app's real shared roots, the process's actual fs access, and the
+ * current NAS user ACL supplied by the unified gateway.
+ */
+export async function validatePathForOpen(
+  pathValue: unknown,
+  req?: IncomingMessage,
+  options: PathValidationOptions = {},
+): Promise<PathValidationResult> {
+  const path = normalizePathForAuthorization(pathValue)
+  if (path === undefined) return { ok: false, failure: 'fnos-path-not-authorized' }
+  const roots = await currentAuthorizedRoots(options)
+  return validateReadableAuthorizedPath(req, path, roots, options.checkUserAcl ?? checkCurrentUserAcl)
+}
+
+/** Backward-compatible boolean helper for callers that only need a verdict. */
+export async function isAuthorizedPathForOpen(
+  pathValue: unknown,
+  req?: IncomingMessage,
+): Promise<boolean> {
+  return (await validatePathForOpen(pathValue, req)).ok
 }
 
 async function convertDirectories(paths: string[], language: string, readOnlyPaths: string[] = []): Promise<AuthorizedDirectory[]> {
@@ -346,6 +511,9 @@ export async function loadAuthorizedDirectories(req: IncomingMessage): Promise<A
     if (readOnlyPaths.length === 0) throw error
     console.warn('[dsh-fnos] using TRIM_DATA_SHARE_PATHS because the fnOS ACL query failed', error)
   }
+  // Keep configured shared paths visible in the management card even when a
+  // volume is temporarily offline. Functional browsing/opening below still
+  // requires the path to exist and be readable at the time of use.
   const paths = mergeAuthorizedPaths(accessiblePaths, readOnlyPaths)
   return convertDirectories(paths, requestLanguage(req), readOnlyPaths)
 }
@@ -392,24 +560,30 @@ async function resolvedAuthorizedRoots(): Promise<string[]> {
     if (shares.length === 0) throw error
     roots = shares
   }
-  const resolved = await Promise.all(roots.map(async root => {
-    try {
-      return normalizePathForAuthorization(await realpath(root))
-    } catch {
-      return normalizePathForAuthorization(root)
-    }
-  }))
-  return resolved.filter((root): root is string => root !== undefined)
+  return existingAuthorizedRoots(roots)
 }
 
 async function isResolvedPathWithinAuthorizedRoots(path: string, roots: readonly string[]): Promise<boolean> {
-  if (!isPathWithinAuthorizedDirectory(path, roots)) return false
   try {
     const resolvedPath = normalizePathForAuthorization(await realpath(path))
     if (resolvedPath === undefined) return false
     return roots.some(root => root === '/' || resolvedPath === root || resolvedPath.startsWith(`${root}/`))
   } catch {
     return false
+  }
+}
+
+function authorizedEntriesErrorForValidation(result: PathValidationResult): AuthorizedEntriesError {
+  switch (result.failure) {
+    case 'fnos-path-not-found':
+      return new AuthorizedEntriesError('authorized-directory-not-found', 404)
+    case 'fnos-path-not-readable':
+    case 'fnos-user-permission-denied':
+      return new AuthorizedEntriesError('authorized-directory-not-readable', 403)
+    case 'fnos-user-permission-unavailable':
+      return new AuthorizedEntriesError('fnos-user-permission-check-unavailable', 503)
+    default:
+      return new AuthorizedEntriesError('fnos-path-not-authorized', 403)
   }
 }
 
@@ -421,10 +595,10 @@ function sortAuthorizedEntries(entries: AuthorizedEntry[]): AuthorizedEntry[] {
 }
 
 /**
- * List only the authorized roots or one authorized directory level. The
- * lexical boundary check prevents `share-archive` from matching `share`, and
- * the realpath check prevents a symlink inside an authorized root from
- * escaping that root.
+ * List only existing, readable authorized roots or one authorized directory
+ * level. The app ACL root is only the first boundary: every returned entry is
+ * also checked with the real filesystem and, when the request came through
+ * the fnOS gateway, the current user's ACL.
  */
 export async function loadAuthorizedEntries(
   req: IncomingMessage,
@@ -432,22 +606,20 @@ export async function loadAuthorizedEntries(
 ): Promise<AuthorizedEntriesResponse> {
   const roots = await resolvedAuthorizedRoots()
   if (pathValue === undefined) {
-    const readable = await convertPathsForDisplay(roots, requestLanguage(req))
+    const userAcl = await checkCurrentUserAcl(req, roots)
+    if (!userAcl.available) {
+      throw new AuthorizedEntriesError('fnos-user-permission-check-unavailable', 503)
+    }
+    const readableRoots = roots.filter(root => userAcl.readable.has(root))
+    const readable = await convertPathsForDisplay(readableRoots, requestLanguage(req))
     return {
       entries: readable.map(entry => ({ ...entry, kind: 'directory' as const })),
     }
   }
 
-  if (!isPathWithinAuthorizedDirectory(pathValue, roots)
-    || !await isResolvedPathWithinAuthorizedRoots(pathValue, roots)) {
-    throw new AuthorizedEntriesError('fnos-path-not-authorized', 403)
-  }
-  let directoryStat
-  try {
-    directoryStat = await stat(pathValue)
-  } catch {
-    throw new AuthorizedEntriesError('authorized-directory-not-found', 404)
-  }
+  const pathValidation = await validateReadableAuthorizedPath(req, pathValue, roots, checkCurrentUserAcl)
+  if (!pathValidation.ok) throw authorizedEntriesErrorForValidation(pathValidation)
+  const directoryStat = await stat(pathValue)
   if (!directoryStat.isDirectory()) {
     throw new AuthorizedEntriesError('authorized-path-not-directory', 400)
   }
@@ -462,9 +634,10 @@ export async function loadAuthorizedEntries(
   const candidates: { path: string; kind: 'file' | 'directory'; size?: number; modifiedAt?: number }[] = []
   for (const child of children) {
     const childPath = normalizePathForAuthorization(posix.join(pathValue, child.name))
-    if (childPath === undefined || !isPathWithinAuthorizedDirectory(childPath, roots)) continue
+    if (childPath === undefined) continue
     try {
-      const childStat = await stat(childPath)
+      const childStat = await readablePathStat(childPath)
+      if (childStat === undefined) continue
       if (!await isResolvedPathWithinAuthorizedRoots(childPath, roots)) continue
       const candidate: { path: string; kind: 'file' | 'directory'; size?: number; modifiedAt?: number } = {
         path: childPath,
@@ -479,8 +652,13 @@ export async function loadAuthorizedEntries(
     }
   }
 
-  const truncated = candidates.length > AUTHORIZED_ENTRIES_LIMIT
-  const selected = candidates.slice(0, AUTHORIZED_ENTRIES_LIMIT)
+  const userAcl = await checkCurrentUserAcl(req, candidates.map(entry => entry.path))
+  if (!userAcl.available) {
+    throw new AuthorizedEntriesError('fnos-user-permission-check-unavailable', 503)
+  }
+  const readableCandidates = candidates.filter(entry => userAcl.readable.has(entry.path))
+  const truncated = readableCandidates.length > AUTHORIZED_ENTRIES_LIMIT
+  const selected = readableCandidates.slice(0, AUTHORIZED_ENTRIES_LIMIT)
   const readable = await convertPathsForDisplay([pathValue, ...selected.map(entry => entry.path)], requestLanguage(req))
   const readableByPath = new Map(readable.map(entry => [entry.path, entry.semanticPath]))
   return {
@@ -494,6 +672,44 @@ export async function loadAuthorizedEntries(
     }))),
     truncated,
   }
+}
+
+/**
+ * Path conversion is a display helper, not an authorization bypass. Reject
+ * arbitrary or stale paths before returning their semantic names.
+ */
+async function validatePathsForConversion(req: IncomingMessage, paths: readonly string[]): Promise<string[]> {
+  const roots = await resolvedAuthorizedRoots()
+  const userAcl = await checkCurrentUserAcl(req, paths)
+  if (!userAcl.available) {
+    throw new AuthorizedEntriesError('fnos-user-permission-check-unavailable', 503)
+  }
+  let failure: PathValidationFailure | undefined
+  for (const path of paths) {
+    let pathStat: Stats
+    try {
+      pathStat = await stat(path)
+    } catch {
+      failure ??= 'fnos-path-not-found'
+      continue
+    }
+    try {
+      const mode = pathStat.isDirectory() ? fsConstants.R_OK | fsConstants.X_OK : fsConstants.R_OK
+      await access(path, mode)
+    } catch {
+      failure ??= 'fnos-path-not-readable'
+      continue
+    }
+    if (!await isResolvedPathWithinAuthorizedRoots(path, roots)) {
+      failure ??= 'fnos-path-not-authorized'
+      continue
+    }
+    if (!userAcl.readable.has(path)) {
+      failure ??= 'fnos-user-permission-denied'
+    }
+  }
+  if (failure !== undefined) throw authorizedEntriesErrorForValidation({ ok: false, failure })
+  return [...paths]
 }
 
 /** Register list/delete routes only on the DSH Web profile. */
@@ -554,8 +770,13 @@ export function registerAuthorizedDirectoryRoutes(ctx: Context): void {
           try {
             const paths = conversionPaths(await readJsonBody(req))
             if (paths === undefined) return json(res, 400, { error: 'invalid-fnos-paths' })
-            json(res, 200, { paths: await convertPathsForDisplay(paths, requestLanguage(req)) })
+            const validPaths = await validatePathsForConversion(req, paths)
+            json(res, 200, { paths: await convertPathsForDisplay(validPaths, requestLanguage(req)) })
           } catch (error: unknown) {
+            if (error instanceof AuthorizedEntriesError) {
+              json(res, error.status, { error: error.code })
+              return
+            }
             errorResponse(res, error)
           }
         },
@@ -569,8 +790,12 @@ export function registerAuthorizedDirectoryRoutes(ctx: Context): void {
           try {
             const path = openPathValue(await readJsonBody(req))
             if (path === undefined) return json(res, 400, { error: 'invalid-fnos-path' })
-            if (!await isAuthorizedPathForOpen(path)) {
-              return json(res, 403, { error: 'fnos-path-not-authorized' })
+            const validation = await validatePathForOpen(path, req)
+            if (!validation.ok) {
+              const status = validation.failure === 'fnos-path-not-found' ? 404
+                : validation.failure === 'fnos-user-permission-unavailable' ? 503
+                  : 403
+              return json(res, status, { error: validation.failure })
             }
             json(res, 200, { ok: true })
           } catch (error: unknown) {

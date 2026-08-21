@@ -10,7 +10,7 @@
 
 ## 启动方式
 
-发布的 FPK 会在构建时查询 `@deepseek-ai/dsh` 的 `latest` 和 `next` dist-tag，选择 semver 更高的版本，并记录对应的 `node-pty` 版本列表。安装和升级回调也会查询安装引导选择的 npm 源：线上版本高于当前本地版本时安装线上版本；线上不可用或本地版本低于 FPK 版本时回退到 FPK 内置的精确版本。使用 FPK 内置版本时会暂时跳过 `node-pty` 的 native 生命周期脚本，并单独执行 DSH 依赖树中其他包的生命周期脚本，最后将构建机生成的 `node-pty` native 文件写入所有对应依赖目录，因此 NAS 不需要安装 g++ 或重新编译。线上版本高于 FPK 版本时，使用线上依赖自己的生命周期脚本完成安装。
+发布的 FPK 固定适配 `@deepseek-ai/dsh@0.1.0-rc.8`，构建时解析该版本的依赖并记录对应的 `node-pty` 版本列表。安装回调只接受本地精确版本 `0.1.0-rc.8`；本地没有该版本时才从安装向导选择的 npm 源安装固定版本。安装回调通过 `app/scripts/install-node-pty.sh` 处理 node-pty：暂时跳过其 native 生命周期脚本，执行 DSH 依赖树中其他包的生命周期脚本，再写入构建机生成的 native 文件，因此 NAS 不需要安装 g++ 或重新编译。
 
 FPK 只处理 [`app/published-dsh-plugins.json`](app/published-dsh-plugins.json) 中声明的已发布插件。安装和升级阶段使用安装向导选择的 npm 源，按清单中的精确版本或 dist-tag 安装并补齐 `dsh.profile.bundles`；应用启动只校验已安装版本，不会每次启动联网。当前清单使用 `@tnnevol/dsh-codex-auth` 的 `rc` dist-tag，因此后续发布新的 rc 版本不需要修改 FPK 清单。未发布插件不会在 FPK 构建阶段编译、打包或复制到 Web profile，发布后需要先加入该清单才会随应用安装。
 
@@ -46,32 +46,13 @@ dsh web --host <host> --port <port> --trusted-host <authority...>
 
 多个地址使用英文逗号分隔。应用代理会将根路径的 `/api`、`/plugins` 请求改写到 iframe 网关前缀，并处理 dsh HMR 使用的 `/plugins/events` EventSource。
 
-## 旧版插件兼容处理
-
-应用升级或启动前会检查 `DSH_HOME/profiles/web` 中的三方插件与当前内置 DSH 版本是否匹配。发现插件声明的 DSH API 版本过旧时，应用只会在 `HOME` 下生成一个应用自有的临时 patch，并通过 `dsh --patch` 禁用该插件在 Web profile 中插入的入口，避免旧插件阻塞整个 Web 页面。对于旧版 `dsh-codex-connect` 未提供兼容性声明的情况，应用按其已知的 DSH `0.1.0-rc.6` 基线处理；新版插件提供明确兼容声明后会恢复。
-
-该处理不会修改官方 DSH 或三方插件源码，也不会删除插件包、profile 依赖、插件配置、登录凭据或其他用户数据。当前不兼容时会在安装/启动日志中打印插件名称、版本和 patch 位置：
-
-```text
-${HOME}/.fn-deepseek-harness/compatibility/web-incompatible-plugins.patch.yml
-```
-
-插件发布兼容版本后，可以先停止应用，再在 NAS 终端执行对应的插件更新命令，然后重新启动应用：
-
-```bash
-${DSH_HOME}/.npm-global/bin/dsh plugin --profile web update dsh-codex-connect
-```
-
-下次启动检测到插件已经兼容后，会自动删除应用生成的 patch 并恢复插件。无法从插件 bundle patch 中识别入口的未知插件不会被应用自动删除，日志会提示用户手动升级或移除该插件。
-
 ## DSH native 依赖构建
 
-GitHub Actions 在构建 `fn-deepseek-harness` 时会执行 [`scripts/prepare-dsh-native.sh`](scripts/prepare-dsh-native.sh)：
+GitHub Actions 在构建 `fn-deepseek-harness` 时会执行 [`.github/scripts/prepare-dsh-native.sh`](../../.github/scripts/prepare-dsh-native.sh)：
 
-1. 从 npm 官方源查询 `@deepseek-ai/dsh` 的 `latest` 和 `next` dist-tag，选择较新的版本；
-2. 只解析该版本的依赖锁文件，得到所有实际使用的 `node-pty` 版本；
-3. 在 Node.js v24、带有 g++/make/python3 的 Linux runner 中编译 `node-pty`；
-4. 将每个版本对应的 `build/Release` native 文件，以及 DSH/node-pty 版本文件打进 FPK。
+1. 固定解析 `@deepseek-ai/dsh@0.1.0-rc.8` 的依赖锁文件，得到所有实际使用的 `node-pty` 版本；
+2. 在 Node.js v24、带有 g++/make/python3 的 Linux runner 中编译 `node-pty`；
+3. 将每个版本对应的 `build/Release` native 文件，以及 DSH/node-pty 版本文件打进 FPK。
 
 发布包名称会追加 DSH 版本，例如：
 
@@ -102,6 +83,8 @@ fn-deepseek-harness-v5.0.12-dsh-0.1.0-rc.8.fpk
 }
 ```
 
+文件访问还声明了 `trim.file.userAcl`，用于 Host 根据统一网关转发的当前用户 UID 检查实际读取权限；应用服务用户的 `TRIM_UID` 不作为浏览器用户权限使用。
+
 删除数据卸载时会卸载 `@deepseek-ai/dsh`，并清空 `@apphome`、`@appshare`、`@appdata` 和 `@appconf` 中对应应用目录的内容，但保留这些目录本身。
 
 当前升级流程不会自动在 `@apphome` 和 `@appshare` 之间迁移历史数据。变更存储布局前请先备份需要保留的数据。
@@ -116,4 +99,4 @@ fn-deepseek-harness-v5.0.12-dsh-0.1.0-rc.8.fpk
 
 构建脚本默认自动递增 patch 版本并生成 `fn-deepseek-harness.fpk`。也可以通过 `VERSION_BUMP=minor` 或 `VERSION_BUMP=major` 选择递增级别。构建前会清理历史版本残留的本地插件目录，构建失败时会恢复 manifest 版本。
 
-带内置 native 依赖的正式包由 tag workflow 生成。如果需要在本地准备同样的依赖，先使用 Node.js v24 执行 `bash scripts/prepare-dsh-native.sh`，再运行 `fnpack build`；脚本会要求构建机提供 npm、g++、make 和 python3。
+带内置 native 依赖的正式包仅由 tag workflow 生成。应用目录中的本地 `./build` 只执行 `fnpack build`，不会调用 native 依赖准备脚本；该脚本位于 `.github/scripts/`，仅供 GitHub Actions 在 Linux runner 上构建正式包使用。

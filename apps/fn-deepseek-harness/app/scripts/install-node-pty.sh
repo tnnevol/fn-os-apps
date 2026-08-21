@@ -1,0 +1,190 @@
+#!/bin/bash
+
+set -euo pipefail
+
+NODE_BIN="${NODE_BIN:-/var/apps/nodejs_v24/target/bin}"
+NPM_BIN="${NPM_BIN:-${NODE_BIN}/npm}"
+DSH_HOME="${DSH_HOME:?DSH_HOME is required}"
+DSH_NATIVE_BUNDLE="${DSH_NATIVE_BUNDLE:?DSH_NATIVE_BUNDLE is required}"
+NODE_PTY_VERSIONS_FILE="${NODE_PTY_VERSIONS_FILE:?NODE_PTY_VERSIONS_FILE is required}"
+DSH_PACKAGE_DIR="${DSH_PACKAGE_DIR:?DSH_PACKAGE_DIR is required}"
+NPM_GLOBAL_ROOT="${NPM_GLOBAL_ROOT:?NPM_GLOBAL_ROOT is required}"
+
+fail() {
+    echo "[dsh-node-pty] $*" >&2
+    exit 1
+}
+
+read_package_version() {
+    local package_json="$1"
+    [ -f "${package_json}" ] || return 0
+    "${NODE_BIN}/node" -e '
+const fs = require("node:fs")
+try {
+    const value = JSON.parse(fs.readFileSync(process.argv[1], "utf8")).version
+    if (typeof value === "string") process.stdout.write(value)
+} catch {}
+' "${package_json}" 2>/dev/null || true
+}
+
+read_version_list() {
+    [ -f "${NODE_PTY_VERSIONS_FILE}" ] || return 0
+    awk 'NF { gsub(/[[:space:]]/, "", $0); print }' "${NODE_PTY_VERSIONS_FILE}"
+}
+
+version_in_list() {
+    local needle="$1"
+    local list="$2"
+    local value
+    while IFS= read -r value; do
+        [ "${value}" = "${needle}" ] && return 0
+    done <<< "${list}"
+    return 1
+}
+
+validate_versions() {
+    local version
+    while IFS= read -r version; do
+        [ -n "${version}" ] || continue
+        case "${version}" in
+            *[![:alnum:]_.+-]*) fail "invalid packaged node-pty version: ${version}" ;;
+        esac
+    done <<< "${NODE_PTY_VERSIONS}"
+}
+
+node_pty_packages() {
+    find "${DSH_PACKAGE_DIR}" "${NPM_GLOBAL_ROOT}" \
+        -type f \
+        -path '*/node_modules/node-pty/package.json' \
+        -print0 2>/dev/null
+}
+
+restore_node_pty_scripts() {
+    local map_file="$1"
+    local original_path original_backup
+    while IFS= read -r -d '' original_path && IFS= read -r -d '' original_backup; do
+        cp -a "${original_backup}" "${original_path}" || return 1
+    done < "${map_file}"
+}
+
+run_dsh_dependency_scripts() {
+    local backup_dir map_file package_json backup_file rebuild_status
+    local -a node_pty_package_files=()
+    local -A seen_package_files=()
+
+    while IFS= read -r -d '' package_json; do
+        if [ -z "${seen_package_files["${package_json}"]+x}" ]; then
+            seen_package_files["${package_json}"]=1
+            node_pty_package_files+=("${package_json}")
+        fi
+    done < <(node_pty_packages)
+
+    [ "${#node_pty_package_files[@]}" -gt 0 ] \
+        || fail "Unable to locate any node-pty package before running dependency scripts"
+
+    backup_dir="$(mktemp -d "${DSH_HOME}/.node-pty-scripts.XXXXXX")" \
+        || fail "Unable to create a temporary node-pty script backup directory"
+    map_file="${backup_dir}/paths"
+    : > "${map_file}" || fail "Unable to create the node-pty script backup index"
+
+    for package_json in "${node_pty_package_files[@]}"; do
+        backup_file="${backup_dir}/$(printf '%s' "${#package_json}").${RANDOM}.json"
+        while [ -e "${backup_file}" ]; do
+            backup_file="${backup_dir}/$(printf '%s' "${#package_json}").${RANDOM}.json"
+        done
+        cp -a "${package_json}" "${backup_file}" || {
+            restore_node_pty_scripts "${map_file}" >/dev/null 2>&1 || true
+            rm -rf "${backup_dir}"
+            fail "Unable to back up node-pty package metadata"
+        }
+        printf '%s\0%s\0' "${package_json}" "${backup_file}" >> "${map_file}" || {
+            restore_node_pty_scripts "${map_file}" >/dev/null 2>&1 || true
+            rm -rf "${backup_dir}"
+            fail "Unable to record the node-pty package metadata backup"
+        }
+        "${NODE_BIN}/node" -e '
+const fs = require("node:fs")
+const file = process.argv[1]
+const packageJson = JSON.parse(fs.readFileSync(file, "utf8"))
+// Keep every other dependency lifecycle script enabled; only node-pty install is bypassed.
+packageJson.scripts = {
+  ...(packageJson.scripts ?? {}),
+  install: "node -e \\\"process.exit(0)\\\"",
+}
+fs.writeFileSync(file, `${JSON.stringify(packageJson, null, 2)}\n`)
+' "${package_json}" || {
+            restore_node_pty_scripts "${map_file}" >/dev/null 2>&1 || true
+            rm -rf "${backup_dir}"
+            fail "Unable to disable node-pty native lifecycle scripts"
+        }
+    done
+
+    echo "Temporarily disabling lifecycle scripts for ${#node_pty_package_files[@]} node-pty package(s); other DSH dependency scripts remain enabled."
+    echo "Running DSH dependency lifecycle scripts with node-pty native compilation disabled..."
+    if "${NPM_BIN}" rebuild --global --ignore-scripts=false --foreground-scripts; then
+        rebuild_status=0
+    else
+        rebuild_status=$?
+    fi
+
+    if ! restore_node_pty_scripts "${map_file}"; then
+        rm -rf "${backup_dir}"
+        fail "Unable to restore node-pty package metadata"
+    fi
+    rm -rf "${backup_dir}"
+
+    [ "${rebuild_status}" -eq 0 ] || fail "Failed to run DSH dependency lifecycle scripts"
+    echo "DSH dependency lifecycle scripts completed."
+}
+
+install_bundled_node_pty() {
+    local package_json candidate_version bundle_dir
+    local found_versions=""
+    local package_count=0
+
+    while IFS= read -r -d '' package_json; do
+        candidate_version="$(read_package_version "${package_json}")"
+        [ -n "${candidate_version}" ] || continue
+        version_in_list "${candidate_version}" "${NODE_PTY_VERSIONS}" \
+            || fail "Installed node-pty ${candidate_version} is not present in the FPK dependency set"
+
+        bundle_dir="${DSH_NATIVE_BUNDLE}/${candidate_version}"
+        [ -f "${bundle_dir}/pty.node" ] \
+            || fail "The FPK does not contain node-pty ${candidate_version} native files"
+
+        local node_pty_dir
+        node_pty_dir="$(dirname -- "${package_json}")"
+        mkdir -p "${node_pty_dir}/build/Release"
+        cp -a "${bundle_dir}/." "${node_pty_dir}/build/Release/"
+        chmod +x "${node_pty_dir}/build/Release/spawn-helper" 2>/dev/null || true
+        package_count=$((package_count + 1))
+        if ! version_in_list "${candidate_version}" "${found_versions}"; then
+            found_versions="${found_versions:+${found_versions}$'\n'}${candidate_version}"
+        fi
+    done < <(node_pty_packages)
+
+    [ "${package_count}" -gt 0 ] \
+        || fail "Unable to locate any node-pty package in the installed dsh dependency tree"
+
+    local expected_version
+    while IFS= read -r expected_version; do
+        [ -n "${expected_version}" ] || continue
+        version_in_list "${expected_version}" "${found_versions}" \
+            || fail "Installed dsh dependency tree is missing node-pty ${expected_version}"
+    done <<< "${NODE_PTY_VERSIONS}"
+
+    echo "Installed bundled node-pty versions: ${found_versions//$'\n'/,}."
+}
+
+NODE_PTY_VERSIONS="$(read_version_list)"
+NODE_PTY_VERSION_COUNT="$(printf '%s\n' "${NODE_PTY_VERSIONS}" | awk 'NF { count++ } END { print count + 0 }')"
+[ "${NODE_PTY_VERSION_COUNT}" -gt 0 ] \
+    || fail "The FPK does not contain node-pty versions"
+validate_versions
+[ -d "${DSH_NATIVE_BUNDLE}" ] \
+    || fail "The FPK does not contain bundled node-pty native files"
+
+if [ "${DSH_RUN_DEPENDENCY_SCRIPTS:-0}" = "1" ]; then
+    run_dsh_dependency_scripts
+fi
+install_bundled_node_pty

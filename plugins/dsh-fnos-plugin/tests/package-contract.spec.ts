@@ -15,22 +15,24 @@ describe('dsh-fnos package contract', () => {
     expect(manifest.dsh.client.platform).toBe('web')
     expect(manifest.dsh.client.immediately).toBe(true)
     expect(manifest.dsh.client.inject).toContain('@deepseek-ai/dsh-client-ui-theme')
+    expect(manifest.dsh.client.inject).toContain('@deepseek-ai/dsh-client-ui-settings')
     expect(manifest.dsh.client.inject).toContain('@deepseek-ai/dsh-client-ui-settings-plugins')
     expect(manifest.dsh.client.inject).toContain('@deepseek-ai/dsh-client-ui-workspace')
     expect(manifest.dsh.client.inject).not.toContain('@deepseek-ai/dsh-client-ui-directory-picker-browse')
     expect(manifest.devDependencies['@trimjs/web-app']).toBe('latest')
   })
 
-  it('inserts the plugin using the package name resolved by client-modules', async () => {
+  it('only registers itself and does not patch the official directory picker', async () => {
     const patch = await readFile(new URL('../cordis.patch.yml', import.meta.url), 'utf8')
     expect(patch).toContain('id: dsh-fnos')
     expect(patch).toContain("name: '@tnnevol/dsh-fnos'")
-    expect(patch).toContain('id: directory-picker')
-    expect(patch).toContain('disabled: true')
-    expect(patch).toContain('id: directory-picker-browse')
-    expect(patch).toContain("name: '@deepseek-ai/dsh-host-directory-picker-browse'")
-    expect(patch).not.toContain('dsh-client-ui-directory-picker-browse')
-    expect(patch).toContain("name: '@tnnevol/dsh-fnos'")
+    expect(patch).not.toContain('directory-picker')
+    expect(patch).not.toContain('@deepseek-ai/dsh-host-directory-picker-browse')
+  })
+
+  it('keeps the fnOS settings card after the built-in keyed cards', async () => {
+    const source = await readFile(new URL('../src/client/index.ts', import.meta.url), 'utf8')
+    expect(source).toMatch(/key:\s*'dsh-fnos-authorized-directories'[\s\S]{0,160}priority:\s*100/u)
   })
 
   it('declares the DSH API version used by the client bridge', async () => {
@@ -41,6 +43,7 @@ describe('dsh-fnos package contract', () => {
     expect(compatibility.dshPluginApi.packages).toEqual([
       '@deepseek-ai/dsh-client-runtime',
       '@deepseek-ai/dsh-client-ui-theme',
+      '@deepseek-ai/dsh-client-ui-settings',
       '@deepseek-ai/dsh-client-locale',
       '@deepseek-ai/dsh-client-ui-conversation',
       '@deepseek-ai/dsh-client-ui-input-trigger',
