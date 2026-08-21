@@ -45,6 +45,7 @@ jobs:
         working-directory: apps/fn-deepseek-harness
         timeout-minutes: 20
         env:
+          NATIVE_CONFIG_FILE: ${{ github.workspace }}/.github/config/dsh-native-rc.8.env
           NPM_REGISTRY: https://registry.npmjs.org/
           NPM_COMMAND_TIMEOUT_SECONDS: 900
           NODE_GYP_TIMEOUT_SECONDS: 900
