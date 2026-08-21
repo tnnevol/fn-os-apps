@@ -2,7 +2,7 @@
 
 import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
 import type {} from '@deepseek-ai/dsh-api-remotes/client'
-import type {} from '@deepseek-ai/dsh-client-connection/client'
+import type { ConnectionHandle } from '@deepseek-ai/dsh-client-connection/client'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import type {} from '@deepseek-ai/dsh-client-ui-settings-plugins/client'
@@ -33,7 +33,7 @@ export function apply(ctx: ClientContext): void {
   const namespace = 'settings.dsh-codex-auth'
   ctx.effect(() => ctx.locale.register(namespace, { zh, en }), 'dsh-codex-auth-plugin: locale')
   const t = ctx.locale.bind(namespace) as CodexAuthCardInjected['t']
-  const connection = ctx.get('connection') as { isLoopback: boolean }
+  const connection = ctx.get('connection') as ConnectionHandle
   const remoteScope = connection.isLoopback ? undefined : new CodexAuthRemoteSettingsScope()
   const configScope = remoteScope ?? ctx.settingsScope.bind({
     namespace: CODEX_AUTH_SETTINGS_NAMESPACE,
@@ -50,6 +50,6 @@ export function apply(ctx: ClientContext): void {
   ctx.slots.inject('settings.plugin.item', () => ctx.slots.register({
     name: 'settings.plugin.item',
     key: CODEX_AUTH_SETTINGS_NAMESPACE,
-    inject: (): CodexAuthCardInjected => ({ t, configScope }),
+    inject: (): CodexAuthCardInjected => ({ t, configScope, connection }),
   }, CodexAuthCard))
 }

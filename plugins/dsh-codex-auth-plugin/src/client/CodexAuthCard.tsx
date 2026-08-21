@@ -3,11 +3,13 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { CSSProperties } from 'react'
 import type { SettingsScope } from '@deepseek-ai/dsh-client-runtime/client'
+import type { ConnectionHandle } from '@deepseek-ai/dsh-client-connection/client'
 import type { PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type {} from '@deepseek-ai/dsh-client-ui-settings-plugins/client'
 import type { CodexAuthSettingsConfig } from '../settings-contract.ts'
 import type { CodexAuthLocaleKey } from './locales.ts'
 import { CodexCapabilities } from './CodexCapabilities.tsx'
+import { CodexGlobalModel } from './CodexGlobalModel.tsx'
 import { copyTextToClipboard } from './copy-to-clipboard.ts'
 import {
   CODEX_AUTH_LOGIN_PATH,
@@ -59,6 +61,7 @@ type UsageState =
 export interface CodexAuthCardInjected {
   t: Translate
   configScope: SettingsScope<CodexAuthSettingsConfig>
+  connection: ConnectionHandle
 }
 
 export type CodexAuthCardProps = PropsRuntime<'settings.plugin.item'> & Partial<CodexAuthCardInjected>
@@ -123,7 +126,7 @@ const usageWindowDetailsStyle: CSSProperties = { display: 'flex', minWidth: 0, f
 const usageWindowTitleStyle: CSSProperties = { color: 'var(--dsw-alias-label-primary)', fontSize: 14, fontWeight: 600 }
 const usageResetStyle: CSSProperties = { color: 'var(--dsw-alias-label-tertiary)', fontSize: 12 }
 const usageRemainingStyle: CSSProperties = { display: 'flex', alignItems: 'center', justifyContent: 'flex-end', flex: '1 1 220px', minWidth: 200, gap: 12 }
-const usageTrackStyle: CSSProperties = { overflow: 'hidden', flex: '1 1 140px', width: 192, minWidth: 100, maxWidth: 192, height: 8, borderRadius: 999, background: 'var(--dsw-alias-bg-layer-3, rgba(127, 127, 127, 0.28))' }
+const usageTrackStyle: CSSProperties = { overflow: 'hidden', flex: '1 1 140px', width: 192, minWidth: 100, maxWidth: 192, height: 8, borderRadius: 999, background: 'rgba(127, 127, 127, 0.28)' }
 const usageFillStyle: CSSProperties = { height: '100%', borderRadius: 'inherit', background: 'var(--dsw-alias-brand-primary)', transition: 'width 160ms ease' }
 const usageRemainingTextStyle: CSSProperties = { color: 'var(--dsw-alias-label-secondary)', fontSize: 14, whiteSpace: 'nowrap' }
 
@@ -226,8 +229,9 @@ function UsageWindowView({ label, value, t }: { label: string; value: UsageWindo
 }
 
 /** Render a standalone login/logout card in the rc.8 keyed Plugin slot. */
-export function CodexAuthCard({ t, configScope }: CodexAuthCardProps) {
+export function CodexAuthCard({ t, configScope, connection }: CodexAuthCardProps) {
   if (t === undefined) throw new Error('Codex auth card requires its translation function')
+  if (connection === undefined) throw new Error('Codex auth card requires the DSH connection')
   const [open, setOpen] = useState(false)
   const [status, setStatus] = useState<AccountStatus>({ status: 'loading' })
   const [busy, setBusy] = useState(false)
@@ -407,6 +411,7 @@ export function CodexAuthCard({ t, configScope }: CodexAuthCardProps) {
               {copyStatus === 'failed' ? <p style={errorStyle}>{t('authorizationCodeCopyFailed')}</p> : null}
             </div>
           ) : null}
+          <CodexGlobalModel connection={connection} t={t} />
           <CodexCapabilities scope={configScope} t={t} />
         </div>
       ) : null}

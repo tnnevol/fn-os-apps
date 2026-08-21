@@ -6,8 +6,9 @@ import type {} from '@deepseek-ai/dsh-credentials'
 import type {} from '@deepseek-ai/dsh-fs'
 import type {} from '@deepseek-ai/dsh-host-webserver'
 import type {} from '@deepseek-ai/dsh-llm'
+import type {} from '@deepseek-ai/dsh-agent-default-model'
 import type {} from '@deepseek-ai/dsh-tools'
-import { registerCodexAuthRoutes, registerCodexSettingsRoute } from './auth-routes.ts'
+import { registerCodexAuthRoutes, registerCodexGlobalModelRoute, registerCodexSettingsRoute } from './auth-routes.ts'
 import { CodexCredentialMirror } from './credential-mirror.ts'
 import { CodexCredentialStore, CODEX_AUTH_FILENAME, CODEX_PROVIDER, codexAuthPath } from './store.ts'
 import { CODEX_AUTH_SETTINGS_NS, CodexAuthSettingsSchema } from './settings.ts'
@@ -16,7 +17,7 @@ import { viewImageTool } from './view-image.ts'
 /** Stable Host bundle name. */
 export const name = 'dsh-codex-auth-plugin'
 /** Host services required by the routes, settings card, and credential mirror. */
-export const inject = ['webServer', 'settings', 'credentials']
+export const inject = ['webServer', 'settings', 'credentials', 'agentDefaultModel', 'llm']
 
 export function apply(ctx: Context): void {
   const settings = ctx.settings.register(CODEX_AUTH_SETTINGS_NS, CodexAuthSettingsSchema)
@@ -34,6 +35,7 @@ export function apply(ctx: Context): void {
   }, 'dsh-codex-auth: credential mirror')
   registerCodexAuthRoutes(ctx, store, mirror)
   registerCodexSettingsRoute(ctx, settings)
+  registerCodexGlobalModelRoute(ctx, ctx.agentDefaultModel, ctx.llm)
 
   let stopped = false
   let imageFiber: Fiber | undefined
@@ -96,6 +98,7 @@ export {
   CODEX_AUTH_LOGOUT_PATH,
   CODEX_AUTH_STATUS_PATH,
   CODEX_AUTH_SETTINGS_NAMESPACE,
+  CODEX_GLOBAL_MODEL_PATH,
 } from './auth-paths.ts'
 export { CodexWebAuth, registerCodexAuthRoutes, trustedRequest } from './auth-routes.ts'
 export type { CodexLoginChallenge, CodexWebAuthStatus } from './auth-routes.ts'

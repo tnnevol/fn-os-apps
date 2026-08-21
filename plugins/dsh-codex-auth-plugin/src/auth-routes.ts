@@ -6,12 +6,14 @@ import type {} from '@deepseek-ai/dsh-host-webserver'
 import type { AuthEvent, AuthPrompt } from '@earendil-works/pi-ai'
 import { codexAuthStatus, loginCodex, logoutCodex } from './auth.ts'
 import type { CodexCredentialMirror } from './credential-mirror.ts'
+import { CODEX_PROVIDER } from './store.ts'
 import type { CodexCredentialStore } from './store.ts'
 import {
   CODEX_AUTH_LOGIN_PATH,
   CODEX_AUTH_LOGOUT_PATH,
   CODEX_AUTH_SETTINGS_PATH,
   CODEX_AUTH_STATUS_PATH,
+  CODEX_GLOBAL_MODEL_PATH,
   CODEX_USAGE_PATH,
 } from './auth-paths.ts'
 import { CodexUsageService } from './usage.ts'
@@ -23,6 +25,7 @@ export const CODEX_AUTH_URL_TIMEOUT_MS = 30_000
 export const REMOTE_WEB_ORIGIN_NOT_TRUSTED = 'remote-web-origin-not-trusted'
 export const CODEX_USAGE_UNAVAILABLE = 'codex-usage-unavailable'
 export const CODEX_SETTINGS_INVALID = 'codex-settings-invalid'
+export const CODEX_GLOBAL_MODEL_INVALID = 'codex-global-model-invalid'
 
 const CODEX_SETTINGS_BODY_LIMIT = 8 * 1024
 
@@ -294,6 +297,80 @@ function decodeSettingsWrite(value: unknown): CodexAuthSettingsConfig | undefine
     return undefined
   }
   return decodeCodexAuthSettings(record)
+}
+
+export interface CodexDefaultModelSelection {
+  provider: string
+  model: string
+  reasoningEffort?: string
+}
+
+interface DefaultModelService {
+  currentSelection(): CodexDefaultModelSelection
+  saveSelection(selection: CodexDefaultModelSelection): Promise<void>
+}
+
+interface LlmResolver {
+  resolveCallConfig(options: CodexDefaultModelSelection): Promise<CodexDefaultModelSelection>
+}
+
+function codexGlobalModelOf(selection: CodexDefaultModelSelection): { model: string; reasoningEffort?: string } | undefined {
+  if (selection.provider !== CODEX_PROVIDER) return undefined
+  return {
+    model: selection.model,
+    ...(selection.reasoningEffort === undefined ? {} : { reasoningEffort: selection.reasoningEffort }),
+  }
+}
+
+function decodeGlobalModelWrite(value: unknown): { model: string; reasoningEffort?: string } | undefined {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return undefined
+  const record = value as Record<string, unknown>
+  if (typeof record.model !== 'string' || record.model.trim().length === 0) return undefined
+  if (record.reasoningEffort !== undefined
+    && (typeof record.reasoningEffort !== 'string' || record.reasoningEffort.trim().length === 0)) return undefined
+  return {
+    model: record.model.trim(),
+    ...(typeof record.reasoningEffort === 'string' ? { reasoningEffort: record.reasoningEffort } : {}),
+  }
+}
+
+/** Register the plugin-owned bridge to DSH rc.8's shared Agent default model. */
+export function registerCodexGlobalModelRoute(
+  ctx: Context,
+  defaultModel: DefaultModelService,
+  llm: LlmResolver,
+): void {
+  ctx.effect(() => {
+    const authorize = (req: IncomingMessage, res: ServerResponse): boolean => {
+      if (trustedRequest(req)) return true
+      json(res, 403, { error: REMOTE_WEB_ORIGIN_NOT_TRUSTED })
+      return false
+    }
+    const dispose = ctx.webServer.register({
+      kind: 'exact',
+      path: CODEX_GLOBAL_MODEL_PATH,
+      handler: async (req, res) => {
+        if (req.method !== 'GET' && req.method !== 'PUT') return json(res, 405, { error: 'method not allowed' })
+        if (!authorize(req, res)) return
+        if (req.method === 'GET') return json(res, 200, { globalModel: codexGlobalModelOf(defaultModel.currentSelection()) })
+        try {
+          const next = decodeGlobalModelWrite(await readJsonBody(req))
+          if (next === undefined) return json(res, 400, { error: CODEX_GLOBAL_MODEL_INVALID })
+          const resolved = await llm.resolveCallConfig({
+            provider: CODEX_PROVIDER,
+            model: next.model,
+            ...(next.reasoningEffort === undefined ? {} : { reasoningEffort: next.reasoningEffort }),
+          })
+          if (resolved.provider !== CODEX_PROVIDER) return json(res, 400, { error: CODEX_GLOBAL_MODEL_INVALID })
+          await defaultModel.saveSelection(resolved)
+          return json(res, 200, { globalModel: codexGlobalModelOf(defaultModel.currentSelection()) })
+        } catch (error: unknown) {
+          return json(res, 400, { error: safeMessage(error) })
+        }
+      },
+    })
+    return dispose
+  }, 'dsh-codex-auth-plugin: global Codex model route')
 }
 
 /** Register the plugin-owned settings endpoint for browsers opened through a NAS authority. */

@@ -23,6 +23,7 @@ const bodyStyle: CSSProperties = { margin: 0, fontSize: 12, lineHeight: '18px', 
 const fieldsetStyle: CSSProperties = { display: 'flex', flexDirection: 'column', gap: 12, margin: 0, padding: 0, border: 0 }
 const rowStyle: CSSProperties = { display: 'flex', alignItems: 'flex-start', gap: 9, cursor: 'pointer' }
 const disabledRowStyle: CSSProperties = { ...rowStyle, cursor: 'not-allowed', opacity: 0.62 }
+const checkboxStyle: CSSProperties = { accentColor: 'var(--dsw-alias-button-primary-fill)' }
 const copyStyle: CSSProperties = { display: 'flex', flexDirection: 'column', gap: 2 }
 const labelStyle: CSSProperties = { fontSize: 13, lineHeight: '18px', fontWeight: 500, color: 'var(--dsw-alias-label-primary)' }
 const actionsStyle: CSSProperties = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }
@@ -129,6 +130,7 @@ export function CodexCapabilities({ scope, t }: CodexCapabilitiesProps) {
         <fieldset style={fieldsetStyle} disabled={!editable}>
           <label style={rowStyle}>
             <input
+              style={checkboxStyle}
               type="checkbox"
               checked={draft.enableImageTool}
               onChange={event => { updateImageTool(event.currentTarget.checked) }}
@@ -140,6 +142,7 @@ export function CodexCapabilities({ scope, t }: CodexCapabilitiesProps) {
           </label>
           <label style={rowStyle}>
             <input
+              style={checkboxStyle}
               type="checkbox"
               checked={draft.enableImageUpload}
               onChange={event => { updateImageUpload(event.currentTarget.checked) }}
@@ -150,7 +153,7 @@ export function CodexCapabilities({ scope, t }: CodexCapabilitiesProps) {
             </span>
           </label>
           <label style={disabledRowStyle} title={t('imageGenerationUnavailableHelp')}>
-            <input type="checkbox" checked={false} disabled aria-label={t('enableImageGeneration')} readOnly />
+            <input style={checkboxStyle} type="checkbox" checked={false} disabled aria-label={t('enableImageGeneration')} readOnly />
             <span style={copyStyle}>
               <span style={labelStyle}>{t('enableImageGeneration')}</span>
               <span style={bodyStyle}>{t('imageGenerationUnavailableHelp')}</span>

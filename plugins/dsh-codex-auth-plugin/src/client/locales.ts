@@ -54,6 +54,15 @@ export const en = {
   discard: 'Discard',
   save: 'Save',
   saving: 'Saving…',
+  globalModelTitle: 'Global model',
+  globalModelIntro: 'Choose the default Codex model for new DSH sessions.',
+  globalModelModel: 'Model',
+  globalModelThinking: 'Reasoning effort',
+  globalModelProviderDefault: 'Provider default',
+  globalModelUnset: 'Select a model',
+  globalModelLoadFailed: 'Unable to load the Codex model catalog.',
+  globalModelUnavailable: 'This model is no longer in the current catalog.',
+  setGlobalModel: 'Set as global model',
 }
 
 export type CodexAuthLocaleKey = keyof typeof en
@@ -112,4 +121,13 @@ export const zh: { [Key in CodexAuthLocaleKey]: string } = {
   discard: '放弃',
   save: '保存',
   saving: '保存中…',
+  globalModelTitle: '全局模型',
+  globalModelIntro: '设置新 DSH 会话使用的 Codex 默认模型。',
+  globalModelModel: '模型',
+  globalModelThinking: '思考强度',
+  globalModelProviderDefault: '提供方默认',
+  globalModelUnset: '请选择模型',
+  globalModelLoadFailed: '加载 Codex 模型目录失败。',
+  globalModelUnavailable: '当前模型已不在可用目录中。',
+  setGlobalModel: '设置为全局模型',
 }

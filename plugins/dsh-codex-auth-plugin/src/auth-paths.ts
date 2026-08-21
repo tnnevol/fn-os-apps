@@ -9,3 +9,5 @@ export const CODEX_AUTH_LOGOUT_PATH = '/plugins/dsh-codex-auth-plugin/auth/logou
 export const CODEX_USAGE_PATH = '/plugins/dsh-codex-auth-plugin/auth/usage'
 /** Same-origin settings endpoint used when DSH marks a NAS browser as remote. */
 export const CODEX_AUTH_SETTINGS_PATH = '/plugins/dsh-codex-auth-plugin/auth/settings'
+/** Same-origin endpoint for the DSH-wide Codex default model selection. */
+export const CODEX_GLOBAL_MODEL_PATH = '/plugins/dsh-codex-auth-plugin/auth/global-model'

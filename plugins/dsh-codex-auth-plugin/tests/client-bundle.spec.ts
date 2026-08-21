@@ -27,6 +27,9 @@ describe('dsh-codex-auth-plugin client artifact', () => {
     const exports = handoff?.factory(specifier => {
       if (specifier === 'react') return React
       if (specifier === 'react/jsx-runtime') return ReactJsxRuntime
+      if (specifier === '@deepseek-ai/dsh-client-ui-primitives') {
+        return { IconChevronDownOutline14: () => null }
+      }
       throw new Error(`unexpected client external: ${specifier}`)
     })
     expect(typeof exports?.apply).toBe('function')
