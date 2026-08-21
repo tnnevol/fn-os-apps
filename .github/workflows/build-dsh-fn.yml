@@ -20,6 +20,7 @@ jobs:
   build:
     name: Build fn-deepseek-harness
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     env:
       RELEASE_TAG: ${{ inputs.release_tag }}
       RELEASE_ID: ${{ inputs.release_id }}
@@ -42,8 +43,13 @@ jobs:
       - name: Prepare DSH rc.8 native dependency
         id: prepare_dsh
         working-directory: apps/fn-deepseek-harness
+        timeout-minutes: 20
         env:
           NPM_REGISTRY: https://registry.npmjs.org/
+          NPM_COMMAND_TIMEOUT_SECONDS: 900
+          NODE_GYP_TIMEOUT_SECONDS: 900
+          NPM_FETCH_TIMEOUT_MS: 120000
+          NPM_FETCH_RETRIES: 2
         run: bash ../../.github/scripts/prepare-dsh-native.sh
 
       - name: Build FPK
