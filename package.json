@@ -1,9 +1,10 @@
 {
   "name": "fn-os-apps",
-  "version": "5.0.21",
+  "version": "5.0.36",
   "private": true,
   "description": "飞牛 fnOS 应用 Monorepo",
   "scripts": {
+    "bump": "./bump",
     "bump:major": "./bump major",
     "bump:minor": "./bump minor",
     "bump:patch": "./bump patch",
