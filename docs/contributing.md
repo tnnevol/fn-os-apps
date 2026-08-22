@@ -3,10 +3,11 @@
 ## 修改流程
 
 1. 从 `main` 创建分支。
-2. 修改对应应用或文档。
-3. 运行与改动相关的校验。
-4. 使用 Conventional Commits 创建提交。
-5. 推送分支并提交 Pull Request。
+2. 按 [SDD 维护规范](/guide/sdd-workflow) 判断是否需要更新需求和计划。
+3. 修改对应应用、插件或文档。
+4. 运行与改动相关的校验，包括 `pnpm run check:sdd`。
+5. 使用 Conventional Commits 创建提交。
+6. 推送分支并提交 Pull Request，填写仓库 PR 检查清单。
 
 ## 应用修改检查
 
@@ -19,6 +20,7 @@
 ## 文档修改检查
 
 ```bash
+pnpm run check:sdd
 pnpm run docs:build
 git diff --check
 ```

@@ -44,7 +44,7 @@
     "build": "tsdown",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run",
-    "check": "pnpm run typecheck && pnpm run test && pnpm run build",
+    "check": "pnpm run typecheck && pnpm run build && pnpm run test",
     "publish:rc": "npm publish --tag rc --access public",
     "prepublishOnly": "pnpm run check"
   },

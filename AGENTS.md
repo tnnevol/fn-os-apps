@@ -21,6 +21,18 @@ npx skills add tnnevol/skills@fnnas-docs -g -y
 
 该 skill 覆盖了 manifest 配置、权限管理、入口配置、Docker/Native 构建、向导配置、网关认证、CLI 工具等完整开发文档。
 
+### SDD 维护模式
+
+本仓库采用轻量规格驱动开发（SDD）维护模式：
+
+- 新功能、用户可见行为、权限、数据、网关或插件契约变更，先更新 `docs/requirements/`，再在 `docs/plans/` 建立或调整实施计划。
+- 需求规格描述范围、优先级和可观察的验收条件；计划描述实现、测试、发布和回滚，不用代码或测试替代规格。
+- 每个 P0/P1 功能应保持需求、验收、计划任务、测试和目标环境证据的可追踪关系；涉及 fnOS 的功能必须区分本地验证和真实 NAS 验收。
+- 应用和插件面向用户的说明以 `docs/` 为唯一维护入口；`README.md` 只保留项目识别、开发入口或历史兼容内容。
+- 提交前运行 `pnpm run check:sdd` 和与改动相关的构建/测试；文档改动还需运行 `pnpm run docs:build` 与 `git diff --check`。
+
+完整流程见 [`docs/guide/sdd-workflow.md`](docs/guide/sdd-workflow.md)。
+
 ### 创建新应用
 
 ```bash

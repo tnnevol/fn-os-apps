@@ -104,6 +104,7 @@ export default defineConfig({
           items: [
             { text: '快速开始', link: '/guide/quick-start' },
             { text: '仓库结构', link: '/guide/repository-structure' },
+            { text: 'SDD 维护规范', link: '/guide/sdd-workflow' },
             { text: 'SDD 模式转换报告', link: '/guide/sdd-transition-report' }
           ]
         }

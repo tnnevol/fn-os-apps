@@ -42,4 +42,5 @@ apps/fn-deepseek-harness/app/node-pty-versions
 apps/fn-deepseek-harness/app/native/node-pty/
 # VitePress 构建产物
 docs/.vitepress/cache/
+docs/.vitepress/.temp/
 docs/.vitepress/dist/

@@ -8,10 +8,10 @@ description: fnOS Apps Monorepo 从代码优先维护转换为规格驱动开发
 | 项目 | 结论 |
 | --- | --- |
 | SDD 定义 | 本报告按 Specification-Driven Development（规格驱动开发）理解：先定义可验收规格，再制定计划、实现、验证并回写状态。 |
-| 当前状态 | 部分就绪。项目已经有需求/计划规范和 FNOS-001 示例，但还没有把 SDD 作为全仓库的强制变更门禁。 |
+| 当前状态 | 第一阶段已落地。项目已具备 SDD 维护规范、规格检查、PR 模板和 PR 工作流；真实 NAS 证据和完整追踪闭环仍需持续补齐。 |
 | 建议模式 | 采用轻量 SDD，不新建一套重复的 `specs/` 目录；继续以 `docs/requirements/` 作为需求规格，以 `docs/plans/` 作为实施计划。 |
 | 本次转换范围 | 维护流程、文档结构、追踪关系、验证证据、PR/CI 门禁；不改变 fnOS 应用运行时、FPK 格式或 DSH 插件业务逻辑。 |
-| 评估基线 | 2026-08-21 当前工作区；运行实现状态以现行需求、计划和代码检查结果为准，未将未提交改动重新整理或覆盖。 |
+| 评估基线 | 2026-08-22；已将最新 `main`（`d6f55ad`）合并到当前 SDD 分支后继续优化。 |
 
 ## 1. 当前盘点
 
@@ -24,7 +24,7 @@ description: fnOS Apps Monorepo 从代码优先维护转换为规格驱动开发
 - 文档站已有 `pnpm run docs:build`，贡献指南已有 `git diff --check` 和文档构建要求。
 - 面向用户的应用和插件文档已经确定统一维护在 `docs/`，减少 README 多处漂移。
 
-### 当前缺口
+### 转换前缺口
 
 | 领域 | 当前情况 | SDD 风险 |
 | --- | --- | --- |
@@ -36,6 +36,12 @@ description: fnOS Apps Monorepo 从代码优先维护转换为规格驱动开发
 | 目标环境证据 | FNOS-001 多项能力仍标记为待真实 NAS 验收，但没有统一的验收记录模板 | “代码完成”容易被误认为“需求完成” |
 | 历史应用 | 现有多个应用没有对应需求规格 | 一次性回填成本高，也不应为了 SDD 阻塞日常维护 |
 | 文档一致性 | 已规定 `docs/` 为面向用户文档唯一入口，但 README 等历史文件仍存在 | 后续维护者可能误改非规范入口 |
+
+### 合并 main 后的处理
+
+- 保留 main 分支最新的 DSH 版本、fnOS 插件、工作区流程、输入引用和上下文文件访问实现。
+- 解决文档导航和 SDD 转换报告的同名文件冲突，没有用旧分支内容覆盖 main 的实现说明。
+- 在合并后的代码基线上继续补充 SDD 维护规范、追踪矩阵、验收记录入口和自动检查。
 
 ## 2. 转换后的目标工作流
 
@@ -54,11 +60,20 @@ description: fnOS Apps Monorepo 从代码优先维护转换为规格驱动开发
 
 核心规则是：规格描述“做什么以及什么结果算完成”，计划描述“怎么做以及如何验证”，代码和测试不能替代规格，目标环境验收不能被本地构建结果替代。
 
-## 3. 必须调整的内容
+## 3. 转换实施与剩余工作
 
-### P0：建立统一维护规则
+### 已完成的第一阶段转换
 
-1. 在 `AGENTS.md` 或新增 `docs/guide/sdd-workflow.md` 中明确全仓库 SDD 流程，并要求所有新功能、用户可见行为、权限、数据格式、网关和插件契约变更关联需求编号。
+- 新增 [`SDD 维护规范`](/guide/sdd-workflow)，明确需求、计划、实现、验证、发布和例外规则。
+- 新增 `scripts/sdd/check-docs.mjs`，检查 SDD 文档结构、元信息、编号唯一性和内部链接。
+- 新增根级 `check:sdd`、`check:docs`、`check:plugins` 和 `check` 命令。
+- 新增 PR 模板、`sdd-check.yml` 和 `docs/validation/README.md`。
+- 为当前 FNOS-001 需求和计划补充 SDD 元数据，并在计划中加入 P0/P1 追踪矩阵。
+- 修正插件检查顺序为 `typecheck → build → test`，使根级质量门禁可重复执行。
+
+### P0：统一维护规则
+
+1. 已在 `AGENTS.md` 和 `docs/guide/sdd-workflow.md` 中明确全仓库 SDD 流程，并要求所有新功能、用户可见行为、权限、数据格式、网关和插件契约变更关联需求编号。
 2. 采用以下变更分类，避免把所有小改动都强制写成完整需求：
 
    | 变更类型 | 必需产物 |
@@ -72,7 +87,7 @@ description: fnOS Apps Monorepo 从代码优先维护转换为规格驱动开发
 
 ### P0：补齐可追踪 ID
 
-建议在不改变现有 `FNOS-001-##` 编号的前提下补充以下 ID：
+已在不改变现有 `FNOS-001-##` 编号的前提下定义以下 ID：
 
 | 对象 | 示例 | 用途 |
 | --- | --- | --- |
@@ -86,7 +101,7 @@ description: fnOS Apps Monorepo 从代码优先维护转换为规格驱动开发
 
 ### P1：增加需求元数据和模板
 
-在现有 title/description 基础上，逐步增加可选但统一的 frontmatter：
+当前 FNOS-001 需求和计划已在现有 title/description 基础上增加统一 frontmatter；后续新文档沿用该字段：
 
 ```yaml
 ---
@@ -94,17 +109,17 @@ id: FNOS-001
 title: 2026-08-19 DSH 飞牛 NAS 适配
 status: in-progress
 owner: tnnevol
-priority: P1
+priority: mixed
 targetVersion: 5.0.x
-lastVerified: 2026-08-21
+lastVerified: 2026-08-22
 ---
 ```
 
-建议提供四类模板：需求、计划、验收记录和决策记录。模板只约束必填字段，不要求所有历史应用一次性补齐。
+需求和计划继续使用现有规范；真实环境验收已有 `docs/validation/` 入口。决策记录模板暂不单独建立，优先使用计划中的“依赖、风险和决策”章节。
 
 ### P1：建立真实环境验收记录
 
-新增 `docs/validation/`，每次真实 NAS 验收记录至少包含：
+已新增 `docs/validation/` 及记录模板，每次真实 NAS 验收记录至少包含：
 
 - fnOS 版本、设备架构、应用 FPK 版本、插件版本和 DSH 版本；
 - 安装/升级方式、用户角色、授权目录和 npm 源等前置条件；
@@ -116,19 +131,20 @@ FNOS-001 当前“待真实 NAS 验收”的 P0/P1 项目应优先生成这类�
 
 ### P1：增加 PR/CI 门禁
 
-建议新增 PR 级工作流和根级检查命令：
+已新增 PR 级工作流和根级检查命令：
 
 ```json
 {
   "scripts": {
     "check:sdd": "node scripts/sdd/check-docs.mjs",
     "check:plugins": "pnpm --filter './plugins/*' run check",
-    "check": "pnpm run check:sdd && pnpm run check:plugins && pnpm run docs:build"
+    "check:docs": "pnpm run check:sdd && pnpm run docs:build",
+    "check": "pnpm run check:sdd && pnpm run docs:build && pnpm run check:plugins"
   }
 }
 ```
 
-`check:sdd` 首期只做低风险静态检查：
+`check:sdd` 当前做低风险静态检查：
 
 - 需求/计划 frontmatter、标题和编号格式；
 - 需求与计划的一对一链接；
@@ -149,13 +165,13 @@ PR 模板至少要求填写：变更类型、需求编号、计划编号、验�
 
 | 目标 SDD 产物 | 当前文件/目录 | 结论 |
 | --- | --- | --- |
-| 需求规范 | `docs/requirements/index.md`、`docs/requirements/2026-08-19-dsh-fnos-adaptation.md` | 已具备，后续补充元数据和追踪 ID |
-| 实施计划 | `docs/plans/index.md`、`docs/plans/2026-08-19-plan-dsh-fnos-adaptation.md` | 已具备，后续补充任务/测试矩阵 |
-| 代码实现 | `plugins/*`、`apps/*` | 已有插件级验证；缺少根级统一入口 |
+| 需求规范 | `docs/requirements/index.md`、`docs/requirements/2026-08-19-dsh-fnos-adaptation.md` | 已具备元数据、验收规则和功能编号 |
+| 实施计划 | `docs/plans/index.md`、`docs/plans/2026-08-19-plan-dsh-fnos-adaptation.md` | 已具备元数据和 P0/P1 追踪矩阵 |
+| 代码实现 | `plugins/*`、`apps/*` | 插件级验证和根级统一入口均已具备 |
 | 用户文档 | `docs/apps/`、`docs/plugins/`、`docs/guide/` | 已规定 `docs/` 为规范入口，需持续避免重复维护 |
-| 验收证据 | 当前未形成统一 `docs/validation/` 目录 | 需要新增，优先覆盖 FNOS-001 的真实 NAS 验收 |
-| 变更门禁 | `.github/workflows/`、`docs/contributing.md` | 有 Release/文档构建，但缺少 PR 级 SDD 检查 |
-| 维护约束 | `AGENTS.md` | 有 fnOS 构建规则，需补充 SDD 变更分类和必需产物 |
+| 验收证据 | `docs/validation/README.md` | 已有统一记录模板，真实 NAS 记录待补齐 |
+| 变更门禁 | `.github/workflows/sdd-check.yml`、`docs/contributing.md` | 已有 PR 级 SDD、文档和插件检查 |
+| 维护约束 | `AGENTS.md`、`docs/guide/sdd-workflow.md` | 已有 SDD 变更分类、必需产物和例外规则 |
 
 ## 5. 建议的目标目录
 
@@ -185,15 +201,15 @@ scripts/
 
 | 阶段 | 内容 | 完成标志 |
 | --- | --- | --- |
-| 阶段 0：现状确认 | 保留现有需求/计划体系，批准本报告，确定 SDD 适用于全仓库的新行为变更 | 维护者确认规范入口和变更分类 |
-| 阶段 1：规则固化 | 增加 SDD 工作流、模板、PR 模板和 FNOS-001 追踪 ID | 新的 P0/P1 变更可按模板完整记录 |
-| 阶段 2：自动门禁 | 增加 `check:sdd`、根级 `check` 和 PR 工作流 | 缺少规格链接、重复 ID 或文档构建失败时 PR 阻塞 |
-| 阶段 3：验收闭环 | 增加 `docs/validation/`，补齐 FNOS-001 的真实 NAS 证据并回写状态 | P0/P1 具备可复核的环境验收记录 |
+| 阶段 0：现状确认 | 已保留现有需求/计划体系，并在合并最新 main 后确认 SDD 适用范围 | 当前分支基于 `d6f55ad`，转换报告已更新 |
+| 阶段 1：规则固化 | 已增加 SDD 工作流、模板、PR 模板和 FNOS-001 追踪 ID | 新的 P0/P1 变更可按模板完整记录 |
+| 阶段 2：自动门禁 | 已增加 `check:sdd`、根级 `check` 和 PR 工作流首版 | 本地完整检查可发现规格、链接和构建问题 |
+| 阶段 3：验收闭环 | 已增加 `docs/validation/` 模板，FNOS-001 的真实 NAS 证据待补齐并回写状态 | P0/P1 具备可复核的环境验收记录 |
 | 阶段 4：增量覆盖 | 历史应用按修改时机补齐基线和规格，新应用强制从规格开始 | 不阻塞旧应用，同时新改动不再脱离规格 |
 
 ## 7. 转换完成判定
 
-项目可以宣布进入 SDD 维护模式，需要同时满足：
+项目已具备进入 SDD 维护模式的第一阶段条件；正式宣布完整闭环仍需满足：
 
 1. 新增或修改用户可见行为时，PR 关联需求和实施计划。
 2. 每个 P0/P1 功能都有验收 ID、测试 ID 和目标环境结论。
@@ -204,12 +220,12 @@ scripts/
 
 ## 8. 最终建议
 
-本项目不需要推倒重建文档，也不需要先给所有历史应用补齐完整规格。建议采用“现有 `requirements`/`plans` 体系 + 追踪矩阵 + 验收证据 + PR/CI 门禁”的轻量 SDD 方案。
+本项目不需要推倒重建文档，也不需要先给所有历史应用补齐完整规格。当前分支已落地“现有 `requirements`/`plans` 体系 + 追踪矩阵 + 验收证据模板 + PR/CI 门禁”的轻量 SDD 方案。
 
-最优先的三项工作是：
+后续优先工作是：
 
-1. 把 SDD 变更规则写入 `AGENTS.md` 或 `docs/guide/sdd-workflow.md`；
-2. 为 FNOS-001-01 至 FNOS-001-12 补齐验收/测试/环境证据追踪；
-3. 增加 `check:sdd` 和 PR 工作流，先保证新变更不再绕过规格进入代码。
+1. 为 FNOS-001 当前 P0/P1 功能补齐真实 NAS 验收记录，并回写需求与计划状态；
+2. 在后续行为变更中持续维护需求、计划、测试和环境证据的追踪矩阵；
+3. 按历史应用的实际改动时机增量补齐基线，不阻塞当前开发。
 
-本报告只完成转换评估和维护方案，不改变现有应用运行逻辑；具体门禁和模板落地应作为独立的维护变更执行。
+本报告记录本次转换和落地结果，不改变现有应用运行逻辑；当前 SDD 结构的剩余工作主要是目标 NAS 证据和历史应用的增量覆盖。

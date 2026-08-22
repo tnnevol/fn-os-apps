@@ -1,0 +1,53 @@
+name: SDD Checks
+
+on:
+  pull_request:
+    paths:
+      - 'AGENTS.md'
+      - 'docs/**'
+      - 'scripts/sdd/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'plugins/**'
+      - 'apps/**'
+      - '.github/pull_request_template.md'
+      - '.github/workflows/sdd-check.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sdd-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Validate SDD and project checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.16.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check SDD documents
+        run: pnpm run check:sdd
+
+      - name: Build documentation
+        run: pnpm run docs:build
+
+      - name: Check plugins
+        run: pnpm run check:plugins

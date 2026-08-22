@@ -1,6 +1,11 @@
 ---
+id: FNOS-001
 title: 2026-08-19 DSH 飞牛 NAS 适配
 description: DeepSeek Harness 在飞牛 fnOS 中的应用、插件和 NAS 能力适配需求。
+status: in-progress
+owner: tnnevol
+targetVersion: 5.0.x
+lastVerified: 2026-08-22
 ---
 
 # 2026-08-19 DSH 飞牛 NAS 适配

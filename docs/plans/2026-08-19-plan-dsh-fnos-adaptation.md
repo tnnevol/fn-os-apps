@@ -1,6 +1,11 @@
 ---
+id: PLAN-FNOS-001
 title: 2026-08-19-PLAN-DSH 飞牛 NAS 适配
 description: DeepSeek Harness 在飞牛 fnOS 中的应用和专用插件适配实施计划。
+status: in-progress
+owner: tnnevol
+targetVersion: 5.0.x
+lastVerified: 2026-08-22
 ---
 
 # 2026-08-19-PLAN-DSH 飞牛 NAS 适配
@@ -405,6 +410,21 @@ P1 授权目录管理依赖 fnOS 前端 JS SDK 和应用共享授权 API。实�
 - [DSH 输入引用契约源码](https://github.com/deepseek-ai/deepseek-harness/tree/main/packages/client/ui-input-trigger/src)：确认 `ReferenceInsert`、`ReferenceCodec` 和 `slash/input-insert-reference` 的引用生命周期。
 - [DSH 内容文件打开入口](https://github.com/deepseek-ai/deepseek-harness/blob/main/packages/client/ui-conversation/src/client/apply.ts)：确认上下文文件由 DSH 统一调用 `workspaces.openPath()`。
 - [DSH 工作区路径打开服务](https://github.com/deepseek-ai/deepseek-harness/blob/main/packages/client/runtime/src/client/workspaces/service.ts)：确认官方默认 Host 路径打开行为及插件装饰边界。
+
+## SDD 追踪矩阵
+
+| 功能 | 验收条件 ID | 计划任务 ID | 主要测试/验证 | 当前结论 |
+| --- | --- | --- | --- | --- |
+| FNOS-001-01 | FNOS-001-01-AC-01 | PLAN-FNOS-001-T01-01 | FPK、iframe、网关和 NAS 验收 | 待真实 NAS 验收 |
+| FNOS-001-02 | FNOS-001-02-AC-01 | PLAN-FNOS-001-T02-01 | `theme-bootstrap.spec.ts`、`theme-persistence.spec.ts`、NAS 主题事件 | 待真实 NAS 验收 |
+| FNOS-001-03 | FNOS-001-03-AC-01 | PLAN-FNOS-001-T03-01 | `package-contract.spec.ts`、插件 bundle 和上游源码边界检查 | 待真实 NAS 验收 |
+| FNOS-001-04 | FNOS-001-04-AC-01 | PLAN-FNOS-001-T04-01 | `authorized-directories.spec.ts`、`authorized-directories-client.spec.ts`、NAS 权限 | 待真实 NAS 验收 |
+| FNOS-001-05 | FNOS-001-05-AC-01 | PLAN-FNOS-001-T05-01 | 授权选择器、Host 路由和 NAS 授权回调 | 待真实 NAS 验收 |
+| FNOS-001-06 | FNOS-001-06-AC-01 | PLAN-FNOS-001-T06-01 | 删除确认、ACL 回写和 NAS 删除行为 | 待真实 NAS 验收 |
+| FNOS-001-09 | FNOS-001-09-AC-01 | PLAN-FNOS-001-T09-01 | FPK 安装/升级模拟、发布清单和 NAS 自动加载 | 待真实 NAS 验收 |
+| FNOS-001-10 | FNOS-001-10-AC-01 | PLAN-FNOS-001-T10-01 | `client-bundle.spec.ts`、`package-contract.spec.ts`、NAS 工作区流程 | 待真实 NAS 验收 |
+| FNOS-001-11 | FNOS-001-11-AC-01 | PLAN-FNOS-001-T11-01 | `input-references.spec.ts`、`picker-result.spec.ts`、NAS 多选回填 | 待真实 NAS 验收 |
+| FNOS-001-12 | FNOS-001-12-AC-01 | PLAN-FNOS-001-T12-01 | `path-opener.spec.ts`、`sdk.spec.ts`、NAS 文件打开和 ACL | 待真实 NAS 验收 |
 
 ## 完成状态
 

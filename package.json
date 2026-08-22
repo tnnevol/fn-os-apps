@@ -10,7 +10,11 @@
     "bump:patch": "./bump patch",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
-    "docs:preview": "vitepress preview docs"
+    "docs:preview": "vitepress preview docs",
+    "check:sdd": "node scripts/sdd/check-docs.mjs",
+    "check:docs": "pnpm run check:sdd && pnpm run docs:build",
+    "check:plugins": "pnpm --filter './plugins/*' run check",
+    "check": "pnpm run check:sdd && pnpm run docs:build && pnpm run check:plugins"
   },
   "engines": {
     "node": ">=24.0.0",
