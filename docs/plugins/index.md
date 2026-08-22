@@ -6,8 +6,8 @@
 
 | 插件 | 版本 | 作用 | 项目源码 |
 | --- | --- | --- | --- |
-| `@tnnevol/dsh-codex-auth` | `0.1.0-rc.7.2` | ChatGPT/Codex OAuth 登录、凭据同步和 Codex 模型适配 | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/plugins/dsh-codex-auth-plugin) |
-| `@tnnevol/dsh-fnos` | `0.1.0-rc.8` | fnOS 主题桥接、授权目录管理、工作区跳转和上下文文件访问 | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/plugins/dsh-fnos-plugin) |
+| `@tnnevol/dsh-codex-auth` | `0.1.1-rc.2.0` | ChatGPT/Codex OAuth 登录、凭据同步和 Codex 模型适配 | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/plugins/dsh-codex-auth-plugin) |
+| `@tnnevol/dsh-fnos` | `0.1.1-rc.2.0` | fnOS 主题桥接、授权目录管理、工作区跳转和上下文文件访问 | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/plugins/dsh-fnos-plugin) |
 
 ## @tnnevol/dsh-fnos
 
@@ -73,21 +73,21 @@ pnpm dsh plugin --profile web add /absolute/path/to/fn-os-apps/plugins/dsh-fnos-
 pnpm dsh --profile web
 ```
 
-插件要求 DSH `0.1.0-rc.8`，可使用本地 DSH CLI 配合 `cordis.patch.yml` 调试。fnOS SDK 桥接只有在 fnOS micro app 宿主中启用，在独立浏览器中会安全跳过。
+插件要求 DSH `0.1.1-rc.2`，可使用本地 DSH CLI 配合 `cordis.patch.yml` 调试。fnOS SDK 桥接只有在 fnOS micro app 宿主中启用，在独立浏览器中会安全跳过。
 
 - [插件源码](https://github.com/tnnevol/fn-os-apps/tree/main/plugins/dsh-fnos-plugin)
 - [插件 README](https://github.com/tnnevol/fn-os-apps/blob/main/plugins/dsh-fnos-plugin/README.md)
 
 ## @tnnevol/dsh-codex-auth
 
-这是一个面向 DSH `0.1.0-rc.8` 的 Codex OAuth 插件，提供以下能力：
+这是一个面向 DSH `0.1.1-rc.2` 的 Codex OAuth 插件，提供以下能力：
 
 - 在 DSH Web 插件设置中登录和退出 ChatGPT/Codex 账号。
 - 使用插件生成的一次性授权码完成 Codex 授权，不需要选择工作空间。
 - 将 OAuth 凭据同步到 DSH 的通用凭据和模型适配器。
 - 在模型设置中展示 OpenAI Codex 模型和登录状态。
 - 直接展示 Codex 模型目录，支持模型列表选择、全选、恢复模型和获取模型。
-- 可选启用图片识别；当前插件未启用 Codex 图像生成。
+- 可选启用图片识别和图片上传。
 
 ## 功能展示
 
@@ -95,7 +95,7 @@ pnpm dsh --profile web
 
 ### Codex Auth 授权与用量
 
-在「设置 → 插件」中可以完成 Codex 登录、退出登录和用量刷新，并查看每周使用限额的剩余比例。图片识别、图片上传和图像生成能力也会在同一面板中明确展示当前状态。
+在「设置 → 插件」中可以完成 Codex 登录、退出登录和用量刷新，并查看每周使用限额的剩余比例。图片识别和图片上传能力也会在同一面板中明确展示当前状态。
 
 ![Codex Auth 授权、用量与图片能力设置](/images/plugins/dsh-codex-auth/settings.png)
 
