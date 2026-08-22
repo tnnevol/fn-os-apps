@@ -7,6 +7,8 @@ import { join } from 'node:path'
 const profileDirectory = process.env.DSH_PROFILE_DIRECTORY
 const publishedManifestPath = process.env.DSH_PUBLISHED_PLUGIN_MANIFEST
 const npmBin = process.env.NPM_BIN || 'npm'
+const packageManager = 'npm'
+const packageManagerBin = npmBin
 const npmRegistry = process.env.NPM_REGISTRY || 'https://registry.npmjs.org/'
 const installPublished = process.env.DSH_INSTALL_PUBLISHED === '1'
 
@@ -105,7 +107,7 @@ function resolvePublishedVersion(plugin) {
   logInfo(`Resolving ${requirement} from ${npmRegistry}.`)
   if (plugin.version) return plugin.version
 
-  const result = spawnSync(npmBin, [
+  const result = spawnSync(packageManagerBin, [
     'view',
     requirement,
     'version',
@@ -134,7 +136,8 @@ async function installPublishedPlugins(publishedPlugins) {
         + ` from ${npmRegistry}...`,
       )
       const startedAt = Date.now()
-      const result = spawnSync(npmBin, [
+      const installCommand = 'install'
+      const installArgs = [
         'install',
         '--prefix', profileDirectory,
         '--no-save',
@@ -145,17 +148,18 @@ async function installPublishedPlugins(publishedPlugins) {
         '--fund=false',
         `--registry=${npmRegistry}`,
         `${plugin.name}@${resolvedVersion}`,
-      ], { stdio: 'inherit' })
+      ]
+      const result = spawnSync(packageManagerBin, installArgs, { stdio: 'inherit' })
       const elapsed = Math.round((Date.now() - startedAt) / 1000)
       if (result.error) {
-        logError(`FAILED: npm install ${plugin.name}@${resolvedVersion} (${elapsed}s): ${result.error.message}`)
+        logError(`FAILED: ${packageManager} ${installCommand} ${plugin.name}@${resolvedVersion} (${elapsed}s): ${result.error.message}`)
         throw result.error
       }
       if (result.status !== 0) {
-        logError(`FAILED: npm install ${plugin.name}@${resolvedVersion} (exit=${result.status}, elapsed=${elapsed}s)`)
+        logError(`FAILED: ${packageManager} ${installCommand} ${plugin.name}@${resolvedVersion} (exit=${result.status}, elapsed=${elapsed}s)`)
         fail(`failed to install published ${plugin.name}@${resolvedVersion}`)
       }
-      logInfo(`DONE: npm install ${plugin.name}@${resolvedVersion} (${elapsed}s)`)
+      logInfo(`DONE: ${packageManager} ${installCommand} ${plugin.name}@${resolvedVersion} (${elapsed}s)`)
     }
 
     const installedManifest = await readPackageManifest(targetDirectory)

@@ -8,7 +8,7 @@ NPM_CONFIG_PREFIX="${DSH_HOME}/.npm-global"
 NPM_BIN="${NODE_BIN}/npm"
 DSH_BIN="${NPM_CONFIG_PREFIX}/bin/dsh"
 DSH_PACKAGE="@deepseek-ai/dsh"
-DSH_VERSION="0.1.1-rc.1"
+DSH_VERSION="0.1.1-rc.2"
 DSH_VERSION_FILE="${APP_DEST}/dsh-version"
 DSH_NODE_PTY_SCRIPT="${APP_DEST}/scripts/install-node-pty.sh"
 DSH_PLUGIN_SCRIPT="${APP_DEST}/scripts/install-dsh-plugins.mjs"
@@ -37,6 +37,20 @@ log_error() {
     log_message ERROR "$@" >&2
 }
 
+select_npm() {
+    [ -x "${NPM_BIN}" ] || fail_install "npm is not available in the nodejs_v24 runtime"
+    NPM_VERSION="$(${NPM_BIN} --version 2>/dev/null || true)"
+    log_info "Using npm ${NPM_VERSION:-unknown} for DSH and plugin installation."
+}
+
+global_package_root() {
+    "${NPM_BIN}" root -g 2>/dev/null || true
+}
+
+resolve_dsh_package_dir() {
+    DSH_PACKAGE_DIR="${NPM_GLOBAL_ROOT}/${DSH_PACKAGE}"
+}
+
 fail_install() {
     local message="$1"
     local formatted_message
@@ -59,6 +73,8 @@ install_published_dsh_plugins() {
     DSH_PUBLISHED_PLUGIN_MANIFEST="${DSH_PUBLISHED_PLUGIN_MANIFEST}" \
     DSH_PROFILE_DIRECTORY="${DSH_PROFILE_DIRECTORY}" \
     DSH_INSTALL_PUBLISHED=1 \
+    PACKAGE_MANAGER="npm" \
+    PACKAGE_MANAGER_BIN="${NPM_BIN}" \
     NPM_BIN="${NPM_BIN}" \
     NPM_REGISTRY="${NPM_REGISTRY}" \
     "${NODE_BIN}/node" "${DSH_PLUGIN_SCRIPT}" \
@@ -106,6 +122,8 @@ run_node_pty_script() {
     NPM_GLOBAL_ROOT="${NPM_GLOBAL_ROOT}" \
     NODE_BIN="${NODE_BIN}" \
     NPM_BIN="${NPM_BIN}" \
+    PACKAGE_MANAGER="npm" \
+    PACKAGE_MANAGER_BIN="${NPM_BIN}" \
     DSH_RUN_DEPENDENCY_SCRIPTS="${run_dependency_scripts}" \
     bash "${DSH_NODE_PTY_SCRIPT}" \
         || fail_install "Unable to prepare the bundled node-pty dependencies"
@@ -118,12 +136,14 @@ has_bundled_node_pty() {
 }
 
 main() {
-    if [ ! -x "${NPM_BIN}" ] || [ ! -x "${NODE_BIN}/node" ]; then
+    if [ ! -x "${NODE_BIN}/node" ]; then
         fail_install "nodejs_v24 runtime is not available at ${NODE_BIN}"
     fi
 
+    select_npm
+
     mkdir -p "${DSH_HOME}/.npm-cache" "${NPM_CONFIG_PREFIX}" "${HOME}" \
-        || fail_install "Unable to prepare the dsh npm directories"
+        || fail_install "Unable to prepare the dsh package manager directories"
 
     NPM_REGISTRY="${wizard_npm_registry:-https://registry.npmjs.org/}"
     mkdir -p "$(dirname -- "${NPM_REGISTRY_FILE}")" \
@@ -133,9 +153,11 @@ main() {
 
     validate_install_configuration
 
-    NPM_GLOBAL_ROOT="$(${NPM_BIN} root -g 2>/dev/null || true)"
-    NPM_GLOBAL_ROOT="${NPM_GLOBAL_ROOT:-${NPM_CONFIG_PREFIX}/lib/node_modules}"
-    DSH_PACKAGE_DIR="${NPM_GLOBAL_ROOT}/${DSH_PACKAGE}"
+    NPM_GLOBAL_ROOT="$(global_package_root)"
+    if [ -z "${NPM_GLOBAL_ROOT}" ]; then
+        NPM_GLOBAL_ROOT="${NPM_CONFIG_PREFIX}/lib/node_modules"
+    fi
+    resolve_dsh_package_dir
 
     LOCAL_VERSION="$(read_package_version "${DSH_PACKAGE_DIR}/package.json")"
     RUN_NODE_PTY_DEPENDENCY_SCRIPTS=0
@@ -152,9 +174,11 @@ main() {
             --registry="${NPM_REGISTRY}" --ignore-scripts; then
             fail_install "Failed to install ${DSH_PACKAGE}@${DSH_VERSION} from ${NPM_REGISTRY}"
         fi
-        NPM_GLOBAL_ROOT="$(${NPM_BIN} root -g 2>/dev/null || true)"
-        NPM_GLOBAL_ROOT="${NPM_GLOBAL_ROOT:-${NPM_CONFIG_PREFIX}/lib/node_modules}"
-        DSH_PACKAGE_DIR="${NPM_GLOBAL_ROOT}/${DSH_PACKAGE}"
+        NPM_GLOBAL_ROOT="$(global_package_root)"
+        if [ -z "${NPM_GLOBAL_ROOT}" ]; then
+            NPM_GLOBAL_ROOT="${NPM_CONFIG_PREFIX}/lib/node_modules"
+        fi
+        resolve_dsh_package_dir
         RUN_NODE_PTY_DEPENDENCY_SCRIPTS=1
     fi
 

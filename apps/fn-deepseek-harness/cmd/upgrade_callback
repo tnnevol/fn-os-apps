@@ -19,6 +19,9 @@ export NPM_CONFIG_CACHE="${DSH_HOME}/.npm-cache"
 export NPM_CONFIG_PREFIX
 export PATH="${NODE_BIN}:${NPM_CONFIG_PREFIX}/bin:${PATH}"
 
+PACKAGE_MANAGER="npm"
+PACKAGE_MANAGER_BIN="${NPM_BIN}"
+
 log_message() {
     local level="$1"
     shift
@@ -55,6 +58,8 @@ elif [ -x "${NODE_BIN}/node" ] && [ -f "${DSH_PLUGIN_SCRIPT}" ]; then
     DSH_PUBLISHED_PLUGIN_MANIFEST="${DSH_PUBLISHED_PLUGIN_MANIFEST}" \
     DSH_PROFILE_DIRECTORY="${DSH_PROFILE_DIRECTORY}" \
     DSH_INSTALL_PUBLISHED=1 \
+    PACKAGE_MANAGER="npm" \
+    PACKAGE_MANAGER_BIN="${NPM_BIN}" \
     NPM_BIN="${NPM_BIN}" \
     NPM_REGISTRY="${NPM_REGISTRY}" \
     "${NODE_BIN}/node" "${DSH_PLUGIN_SCRIPT}" || {

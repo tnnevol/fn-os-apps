@@ -4,11 +4,24 @@ set -euo pipefail
 
 NODE_BIN="${NODE_BIN:-/var/apps/nodejs_v24/target/bin}"
 NPM_BIN="${NPM_BIN:-${NODE_BIN}/npm}"
+PACKAGE_MANAGER="${PACKAGE_MANAGER:-npm}"
+PACKAGE_MANAGER_BIN="${PACKAGE_MANAGER_BIN:-${NPM_BIN}}"
 DSH_HOME="${DSH_HOME:?DSH_HOME is required}"
 DSH_NATIVE_BUNDLE="${DSH_NATIVE_BUNDLE:?DSH_NATIVE_BUNDLE is required}"
 NODE_PTY_VERSIONS_FILE="${NODE_PTY_VERSIONS_FILE:?NODE_PTY_VERSIONS_FILE is required}"
 DSH_PACKAGE_DIR="${DSH_PACKAGE_DIR:?DSH_PACKAGE_DIR is required}"
 NPM_GLOBAL_ROOT="${NPM_GLOBAL_ROOT:?NPM_GLOBAL_ROOT is required}"
+
+case "${PACKAGE_MANAGER}" in
+    npm)
+        ;;
+    *)
+        printf '[%s] [install-node-pty] [ERROR] Unsupported package manager: %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "${PACKAGE_MANAGER}" >&2
+        exit 1
+        ;;
+esac
+[ -x "${PACKAGE_MANAGER_BIN}" ] \
+    || { printf '[%s] [install-node-pty] [ERROR] Package manager is not executable: %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "${PACKAGE_MANAGER_BIN}" >&2; exit 1; }
 
 log_message() {
     local level="$1"
@@ -158,7 +171,7 @@ fs.writeFileSync(file, `${JSON.stringify(packageJson, null, 2)}\n`)
         log_info "Temporarily disabling lifecycle scripts for ${#node_pty_package_files[@]} node-pty package(s); other DSH dependency scripts remain enabled."
         log_info "Running DSH dependency lifecycle scripts with node-pty native compilation disabled."
     fi
-    local started_at finished_at elapsed
+    local started_at finished_at elapsed importer_dir importer_count=0
     started_at="$(date +%s)"
     log_info "START: npm rebuild --global --foreground-scripts"
     if "${NPM_BIN}" rebuild --global --ignore-scripts=false --foreground-scripts; then

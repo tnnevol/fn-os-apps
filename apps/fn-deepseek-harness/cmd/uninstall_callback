@@ -5,6 +5,7 @@ APPNAME="${TRIM_APPNAME:-fn-deepseek-harness}"
 DSH_HOME="${TRIM_PKGHOME:-}"
 APP_HOME="${TRIM_APPDEST_VOL:-}/@appshare/${APPNAME}"
 NPM_CONFIG_PREFIX="${DSH_HOME}/.npm-global"
+NPM_BIN="${NODE_BIN}/npm"
 KEEP_DATA="${wizard_keep_data:-keep}"
 
 export DSH_HOME
@@ -12,6 +13,13 @@ export HOME="${APP_HOME}"
 export NPM_CONFIG_CACHE="${DSH_HOME}/.npm-cache"
 export NPM_CONFIG_PREFIX
 export PATH="${NODE_BIN}:${NPM_CONFIG_PREFIX}/bin:${PATH}"
+
+# npm is supplied by the nodejs_v24 runtime and is shared by the system.
+# The uninstall callback only removes this app's DSH package; it must never
+# uninstall or modify the runtime package manager itself.
+log_package_manager() {
+    log_info "Keeping npm provided by nodejs_v24; only the app-local DSH package will be removed."
+}
 
 log_message() {
     local level="$1"
@@ -70,12 +78,13 @@ remove|no|false|0)
         fail_uninstall "TRIM_APPDEST_VOL is not available; cannot remove DeepSeek Harness data"
     fi
 
-    if [ -x "${NODE_BIN}/npm" ] && [ -d "${NPM_CONFIG_PREFIX}" ]; then
-        log_info "Uninstalling @deepseek-ai/dsh globally."
+    if [ -x "${NPM_BIN}" ] && [ -d "${NPM_CONFIG_PREFIX}" ]; then
+        log_package_manager
+        log_info "Uninstalling @deepseek-ai/dsh globally with npm."
         started_at="$(date +%s)"
-        if "${NODE_BIN}/npm" uninstall @deepseek-ai/dsh -g; then
+        if "${NPM_BIN}" uninstall @deepseek-ai/dsh -g; then
             elapsed="$(( $(date +%s) - started_at ))"
-            log_info "Global @deepseek-ai/dsh uninstall completed (${elapsed}s)."
+            log_info "Global @deepseek-ai/dsh uninstall completed with npm (${elapsed}s)."
         else
             log_error "npm uninstall failed; the application npm directory will be removed."
         fi
