@@ -10,7 +10,7 @@
 
 ## 启动方式
 
-发布的 FPK 固定适配 `@deepseek-ai/dsh@0.1.0-rc.8`，并固定预编译 `node-pty@1.2.0-beta.15`。安装回调只接受本地精确版本 `0.1.0-rc.8`；本地没有该版本时才从安装向导选择的 npm 源安装固定版本。安装回调通过 `app/scripts/install-node-pty.sh` 处理 node-pty：暂时跳过其 native 生命周期脚本，执行 DSH 依赖树中其他包的生命周期脚本，再写入构建机生成的 native 文件，因此 NAS 不需要安装 g++ 或重新编译。
+发布的 FPK 固定适配 `@deepseek-ai/dsh@0.1.1-rc.1`，并固定预编译 `node-pty@1.2.0-beta.15`。安装回调只接受本地精确版本 `0.1.1-rc.1`；本地没有该版本时才从安装向导选择的 npm 源安装固定版本。安装回调通过 `app/scripts/install-node-pty.sh` 处理 node-pty：暂时跳过其 native 生命周期脚本，执行 DSH 依赖树中其他包的生命周期脚本，再写入构建机生成的 native 文件，因此 NAS 不需要安装 g++ 或重新编译。
 
 FPK 只处理 [`app/published-dsh-plugins.json`](app/published-dsh-plugins.json) 中声明的已发布插件。安装和升级阶段使用安装向导选择的 npm 源，按清单中的精确版本或 dist-tag 安装并补齐 `dsh.profile.bundles`；应用启动只校验已安装版本，不会每次启动联网。当前清单使用 `@tnnevol/dsh-codex-auth` 的 `rc` dist-tag，因此后续发布新的 rc 版本不需要修改 FPK 清单。未发布插件不会在 FPK 构建阶段编译、打包或复制到 Web profile，发布后需要先加入该清单才会随应用安装。
 
@@ -48,7 +48,7 @@ dsh web --host <host> --port <port> --trusted-host <authority...>
 
 ## DSH native 依赖构建
 
-GitHub Actions 在构建 `fn-deepseek-harness` 时会执行 [`.github/scripts/prepare-dsh-native.sh`](../../.github/scripts/prepare-dsh-native.sh)，构建参数维护在 [`.github/config/dsh-native-rc.8.env`](../../.github/config/dsh-native-rc.8.env)：
+GitHub Actions 在构建 `fn-deepseek-harness` 时会执行 [`.github/scripts/prepare-dsh-native.sh`](../../.github/scripts/prepare-dsh-native.sh)，构建参数维护在 [`.github/config/dsh-native-0.1.1-rc.1.env`](../../.github/config/dsh-native-0.1.1-rc.1.env)：
 
 1. 读取固定的 DSH、Node.js、node-pty 和 node-gyp 版本参数，不再在 workflow 中解析完整 DSH 依赖树；
 2. 在 Node.js v24、带有 g++/make/python3 的 Linux runner 中直接安装并编译 `node-pty@1.2.0-beta.15`；
@@ -57,7 +57,7 @@ GitHub Actions 在构建 `fn-deepseek-harness` 时会执行 [`.github/scripts/pr
 发布包名称会追加 DSH 版本，例如：
 
 ```text
-fn-deepseek-harness-v5.0.12-dsh-0.1.0-rc.8.fpk
+fn-deepseek-harness-v5.0.12-dsh-0.1.1-rc.1.fpk
 ```
 
 其中 `-dsh-` 后的版本就是 FPK 内置并在 NAS 上安装的 DSH 版本。构建产物中的 `pty.node` 不提交到源码仓库，由 workflow 在打包前生成。

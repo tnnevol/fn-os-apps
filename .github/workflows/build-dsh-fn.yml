@@ -40,12 +40,12 @@ jobs:
           sudo mv fnpack /usr/local/bin/fnpack
           fnpack --help
 
-      - name: Prepare DSH rc.8 native dependency
+      - name: Prepare DSH 0.1.1-rc.1 native dependency
         id: prepare_dsh
         working-directory: apps/fn-deepseek-harness
         timeout-minutes: 20
         env:
-          NATIVE_CONFIG_FILE: ${{ github.workspace }}/.github/config/dsh-native-rc.8.env
+          NATIVE_CONFIG_FILE: ${{ github.workspace }}/.github/config/dsh-native-0.1.1-rc.1.env
           NPM_REGISTRY: https://registry.npmjs.org/
           NPM_COMMAND_TIMEOUT_SECONDS: 900
           NODE_GYP_TIMEOUT_SECONDS: 900
