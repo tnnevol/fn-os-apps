@@ -87,7 +87,7 @@ interface AuthorizedDirectoryDropdownProps {
 }
 
 function menuText(text: string, color = 'var(--dsw-alias-label-tertiary)') {
-  return createElement(SemiTooltip, { content: text, showArrow: true }, createElement('span', {
+  return createElement(SemiTooltip, { content: text, showArrow: true, mouseEnterDelay: 0.5 }, createElement('span', {
     style: {
       display: 'block',
       maxWidth: '220px',

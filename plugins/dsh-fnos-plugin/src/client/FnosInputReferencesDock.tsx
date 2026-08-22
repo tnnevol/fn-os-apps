@@ -1,6 +1,8 @@
-/** Top reference blocks rendered above the DSH composer card. */
+/** Reference blocks rendered in the top row of the DSH composer card. */
 
 import type { PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
+import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import Tooltip from '@douyinfe/semi-ui/lib/es/tooltip/index'
 import IconClose from '@douyinfe/semi-icons/lib/es/icons/IconClose.js'
 import IconFile from '@douyinfe/semi-icons/lib/es/icons/IconFile.js'
@@ -15,31 +17,46 @@ function displayName(value: string): string {
 }
 
 export function FnosInputReferencesDock({ input, inputActions, t }: InputReferencesDockProps) {
+  const [composerCard, setComposerCard] = useState<HTMLElement | null>(null)
   const occurrences = input.occurrences.filter(occurrence => occurrence.source === FNOS_REFERENCE_SOURCE)
+
+  useEffect(() => {
+    const cards = [...document.querySelectorAll<HTMLElement>('[data-composer-card]')]
+    setComposerCard(cards.find(card => card.offsetParent !== null) ?? cards[0] ?? null)
+  }, [])
+
   if (occurrences.length === 0) return null
 
-  return (
+  const content = (
     <div
       aria-label={t('selectedReferences')}
+      data-dsh-fnos-input-references
       style={{
         display: 'flex',
         alignItems: 'center',
-        flexWrap: 'wrap',
         gap: 6,
         width: '100%',
         maxWidth: '100%',
-        padding: '4px 2px 2px',
-        overflow: 'hidden',
+        padding: '4px 44px 2px 2px',
+        overflowX: 'auto',
+        overflowY: 'hidden',
+        flexWrap: 'nowrap',
+        scrollbarWidth: 'none',
+        position: 'absolute',
+        top: 10,
+        left: 12,
+        right: 12,
+        zIndex: 2,
       }}
     >
       {occurrences.map(occurrence => {
         const decoded = decodeFnosReference(occurrence.ref)
         const isDirectory = decoded?.kind === 'directory'
-        const readablePath = occurrence.clipboardText || decoded?.path || occurrence.label
+        const readablePath = decoded?.path || occurrence.clipboardText || occurrence.label
         const name = displayName(readablePath)
         const Icon = isDirectory ? IconFolder : IconFile
         return (
-          <Tooltip key={occurrence.occurrenceId} content={readablePath} showArrow>
+          <Tooltip key={occurrence.occurrenceId} content={readablePath} showArrow mouseEnterDelay={0.5}>
             <span
               style={{
                 display: 'inline-flex',
@@ -88,4 +105,6 @@ export function FnosInputReferencesDock({ input, inputActions, t }: InputReferen
       })}
     </div>
   )
+
+  return composerCard === null ? null : createPortal(content, composerCard)
 }

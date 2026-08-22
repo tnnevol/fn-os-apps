@@ -26,6 +26,9 @@ body[${SEMI_DSH_THEME_ATTRIBUTE}] {
   --semi-color-tertiary: var(--dsw-alias-button-tool-bar-fill);
   --semi-color-tertiary-hover: var(--dsw-alias-button-tool-bar-hover);
   --semi-color-tertiary-active: var(--dsw-alias-interactive-bg-active);
+  --semi-color-primary-light-default: var(--dsw-alias-interactive-bg-hover);
+  --semi-color-primary-light-hover: var(--dsw-alias-interactive-bg-active);
+  --semi-color-primary-light-active: var(--dsw-alias-interactive-bg-active);
   --semi-color-disabled-text: var(--dsw-alias-label-dimmed);
   --semi-color-disabled-border: var(--dsw-alias-border-l1);
   --semi-color-disabled-bg: var(--dsw-alias-bg-layer-2);
@@ -53,6 +56,46 @@ body[${SEMI_DSH_THEME_ATTRIBUTE}] .semi-dropdown-wrapper {
   background: var(--dsw-alias-bg-layer-3);
   border: 1px solid var(--dsw-alias-border-l2);
   box-shadow: var(--dsw-shadow-lv3);
+}
+
+/* Semi's default Tooltip background uses the raw --semi-grey-7 token. That
+ * token is not available in the host theme, so the declaration becomes
+ * invalid and leaves the portal transparent. Use DSH semantic tokens instead
+ * so the tooltip remains readable in both light and dark themes. */
+body[${SEMI_DSH_THEME_ATTRIBUTE}] .semi-tooltip-wrapper {
+  background-color: var(--dsw-alias-bg-layer-3, #2a2a2a);
+  color: var(--dsw-alias-label-primary, #fff);
+  box-shadow: var(--dsw-shadow-lv3, 0 8px 24px rgba(0, 0, 0, 0.18));
+  pointer-events: none;
+}
+
+body[${SEMI_DSH_THEME_ATTRIBUTE}] .semi-tooltip-wrapper .semi-tooltip-icon-arrow {
+  color: var(--dsw-alias-bg-layer-3, #2a2a2a);
+}
+
+body[${SEMI_DSH_THEME_ATTRIBUTE}] .semi-tree-option-list {
+  overflow-x: auto;
+}
+
+body[${SEMI_DSH_THEME_ATTRIBUTE}] .semi-tree-option-list > ul {
+  min-width: max-content;
+}
+
+/* The reference rail is portaled into the composer card. Reserve the same
+ * top row in DSH's native scrollport so the caret and draft stay below it. */
+body[${SEMI_DSH_THEME_ATTRIBUTE}] [data-composer-card]:has([data-dsh-fnos-input-references]) [data-input-scroll] {
+  padding-top: 46px;
+}
+
+body[${SEMI_DSH_THEME_ATTRIBUTE}] .semi-tree-option-list .semi-checkbox-inner-checked .semi-checkbox-inner-display {
+  background: var(--dsw-alias-state-business-primary, #4d8dff);
+  box-shadow: inset 0 0 0 1px var(--dsw-alias-state-business-primary, #4d8dff);
+}
+
+body[${SEMI_DSH_THEME_ATTRIBUTE}] .semi-tree-option-list .semi-tree-option-selected .semi-tree-option-label,
+body[${SEMI_DSH_THEME_ATTRIBUTE}] .semi-tree-option-list .semi-tree-option-selected .semi-tree-option-label:hover,
+body[${SEMI_DSH_THEME_ATTRIBUTE}] .semi-tree-option-list .semi-tree-option-selected .semi-tree-option-label:active {
+  background-color: var(--dsw-alias-interactive-bg-hover);
 }
 
 body[${SEMI_DSH_THEME_ATTRIBUTE}] .semi-dropdown-item {

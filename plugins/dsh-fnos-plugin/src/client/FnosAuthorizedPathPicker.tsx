@@ -32,12 +32,12 @@ function nodeLabel(entry: AuthorizedEntry): ReactNode {
   const name = displayName(entry.semanticPath)
   const Icon = entry.kind === 'directory' ? IconFolder : IconFile
   const content = (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, minWidth: 0 }}>
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, minWidth: 'max-content' }}>
       <Icon size="small" />
       <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
     </span>
   )
-  return <Tooltip content={entry.semanticPath} showArrow>{content}</Tooltip>
+  return <Tooltip content={entry.semanticPath} showArrow mouseEnterDelay={0.5}>{content}</Tooltip>
 }
 
 function toNode(entry: AuthorizedEntry): TreeNode {
@@ -164,7 +164,7 @@ export function FnosAuthorizedPathPicker({ input, inputActions, insertReferences
       maxTagCount={0}
       dropdownMatchSelectWidth={false}
       dropdownStyle={{ width: 260, maxHeight: 320 }}
-      optionListStyle={{ maxHeight: 280 }}
+      optionListStyle={{ maxHeight: 280, overflowX: 'auto', overflowY: 'auto' }}
       showLine={false}
       emptyContent={t('inputPickerEmpty')}
       searchPlaceholder={t('workspaceSearchPlaceholder')}

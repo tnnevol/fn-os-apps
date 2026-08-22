@@ -4,11 +4,6 @@ import type { ClientContext, SessionId } from '@deepseek-ai/dsh-client-runtime/c
 import type { ReferenceInsert, TokenSpan } from '@deepseek-ai/dsh-client-ui-input-trigger/client'
 import { FNOS_REFERENCE_SOURCE, type FnosInputReference, type InputSnapshotForReference } from './input-references.ts'
 
-function displayName(value: string): string {
-  const parts = value.split('/').filter(Boolean)
-  return parts.at(-1) ?? value
-}
-
 function insertText(ctx: ClientContext, sessionId: SessionId, text: string, span: TokenSpan): boolean {
   const actx = ctx.sessions.scope(sessionId)
   if (actx === undefined) return false
@@ -26,9 +21,12 @@ function insertReference(
   const value: ReferenceInsert = {
     source: FNOS_REFERENCE_SOURCE,
     ref: reference.ref,
-    // Keep the native DSH draft free of the full NAS path. The dock shows
-    // the same name as a visual block, while the codec sends the raw path.
-    label: displayName(reference.semanticPath),
+    appearance: reference.kind === 'directory' ? 'folder' : 'file',
+    // Keep the native DSH draft free of both the full NAS path and the
+    // display name. DSH retains the reference token for serialization while
+    // the fnOS reference rail renders the selected name as a block inside
+    // the composer card.
+    label: '',
     clipboardText: reference.semanticPath,
   }
   return actx.bail(actx, 'slash/input-insert-reference', { reference: value, span }) === true
