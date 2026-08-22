@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises'
 import { describe, expect, it } from 'vitest'
 
-describe('dsh-codex-auth-plugin rc.8 client registration', () => {
+describe('dsh-codex-auth-plugin rc.2 client registration', () => {
   it('uses the required key for the keyed settings plugin slot', async () => {
     const client = await readFile(new URL('../src/client/index.tsx', import.meta.url), 'utf8')
     expect(client).toContain("ctx.slots.inject('settings.plugin.item'")
@@ -60,6 +60,27 @@ describe('dsh-codex-auth-plugin rc.8 client registration', () => {
     expect(card).toContain("t('usageWeekly')")
     expect(card).toContain("t('usageRemaining')")
     expect(card).not.toContain('value.usedPercent')
+  })
+
+  it('opens the global model cascade on parent hover and keeps it open after leaf clicks', async () => {
+    const picker = await readFile(new URL('../src/client/CodexGlobalModel.tsx', import.meta.url), 'utf8')
+    expect(picker).toContain('onClick={onToggle}')
+    expect(picker).toContain("onHover={() => { openSubmenu('model') }}")
+    expect(picker).toContain("onHover={() => { openSubmenu('effort') }}")
+    expect(picker).toContain('const openSubmenu = (menu: ChoiceMenuKind): void =>')
+    expect(picker).toContain('onLeave={closeSubmenuOnParentLeave}')
+    expect(picker).toContain("target.closest('[data-dsh-cascade-submenu]')")
+    expect(picker).toContain('scheduleSubmenuClose')
+    expect(picker).toContain('onMouseEnter={cancelScheduledClose}')
+    expect(picker).toContain('onClick={() => { onChooseModel(option.id) }}')
+    expect(picker).toContain('onClick={() => { onChooseEffort(option.id) }}')
+    expect(picker).toContain('onMouseLeave={onCloseSubmenu}')
+    expect(picker).toContain('var(--dsw-alias-interactive-bg-hover, var(--dsw-alias-bg-layer-1))')
+    expect(picker).not.toContain('onMouseEnter={() => { onChooseModel(option.id) }}')
+    expect(picker).not.toContain('onMouseEnter={() => { onChooseEffort(option.id) }}')
+    expect(picker).toContain("onChooseModel={id => { setDraftModel(id); setDraftEffort(''); setFeedback('idle') }}")
+    expect(picker).toContain("onChooseEffort={id => { setDraftEffort(id); setFeedback('idle') }}")
+    expect(picker).toContain("onCloseSubmenu={() => { setOpenMenu('root') }}")
   })
 
   it('matches the DSH plugin card surfaces in both color modes', async () => {

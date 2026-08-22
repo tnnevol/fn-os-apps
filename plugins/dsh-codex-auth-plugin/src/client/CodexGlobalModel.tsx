@@ -1,7 +1,7 @@
 /** DSH-wide Codex default model controls. */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { CSSProperties } from 'react'
+import type { CSSProperties, MouseEvent as ReactMouseEvent } from 'react'
 import type { ConnectionHandle, ModelCatalogModel, ModelProviderGroup } from '@deepseek-ai/dsh-client-connection/client'
 import { IconChevronDownOutline14 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { CodexAuthLocaleKey } from './locales.ts'
@@ -212,12 +212,14 @@ const pickerSubmenuStyle: CSSProperties = {
   boxShadow: 'var(--dsw-alias-shadow-popover, 0 12px 30px rgb(0 0 0 / 24%))',
 }
 
-function PickerRow({ label, value, disabled, active, onClick }: {
+function PickerRow({ label, value, disabled, active, onClick, onHover, onLeave }: {
   label: string
   value: string
   disabled?: boolean
   active?: boolean
   onClick: () => void
+  onHover?: () => void
+  onLeave?: (event: ReactMouseEvent<HTMLButtonElement>) => void
 }) {
   return (
     <button
@@ -231,8 +233,8 @@ function PickerRow({ label, value, disabled, active, onClick }: {
         opacity: disabled ? 0.5 : 1,
         cursor: disabled ? 'not-allowed' : 'pointer',
       }}
-      onMouseEnter={event => { if (!disabled) event.currentTarget.style.background = 'var(--dsw-alias-interactive-bg-hover, var(--dsw-alias-bg-layer-1))' }}
-      onMouseLeave={event => { event.currentTarget.style.background = active ? 'var(--dsw-alias-interactive-bg-active, var(--dsw-alias-interactive-bg-hover))' : 'transparent' }}
+      onMouseEnter={event => { if (!disabled) { event.currentTarget.style.background = 'var(--dsw-alias-interactive-bg-hover, var(--dsw-alias-bg-layer-1))'; onHover?.() } }}
+      onMouseLeave={event => { event.currentTarget.style.background = active ? 'var(--dsw-alias-interactive-bg-active, var(--dsw-alias-interactive-bg-hover))' : 'transparent'; onLeave?.(event) }}
       onClick={onClick}
     >
         <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 13 }}>{label}</span>
@@ -244,7 +246,7 @@ function PickerRow({ label, value, disabled, active, onClick }: {
   )
 }
 
-function GlobalModelPicker({ modelMenuLabel, effortMenuLabel, modelLabel, modelPlaceholder, effortLabel, selectedModelId, selectedEffortId, modelOptions, effortOptions, activeMenu, onToggle, onOpenSubmenu, onChooseModel, onChooseEffort }: {
+function GlobalModelPicker({ modelMenuLabel, effortMenuLabel, modelLabel, modelPlaceholder, effortLabel, selectedModelId, selectedEffortId, modelOptions, effortOptions, activeMenu, onToggle, onOpenSubmenu, onCloseSubmenu, onChooseModel, onChooseEffort }: {
   modelMenuLabel: string
   effortMenuLabel: string
   modelLabel: string
@@ -257,12 +259,38 @@ function GlobalModelPicker({ modelMenuLabel, effortMenuLabel, modelLabel, modelP
   activeMenu: ChoiceMenuKind | null
   onToggle: () => void
   onOpenSubmenu: (menu: ChoiceMenuKind) => void
+  onCloseSubmenu: () => void
   onChooseModel: (id: string) => void
   onChooseEffort: (id: string) => void
 }) {
   const open = activeMenu !== null
   const modelValue = modelLabel === '' ? modelPlaceholder : modelLabel
   const buttonValue = effortLabel === '' ? modelValue : `${modelValue} · ${effortLabel}`
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const cancelScheduledClose = (): void => {
+    if (closeTimerRef.current === undefined) return
+    clearTimeout(closeTimerRef.current)
+    closeTimerRef.current = undefined
+  }
+  const scheduleSubmenuClose = (): void => {
+    cancelScheduledClose()
+    closeTimerRef.current = setTimeout(() => {
+      closeTimerRef.current = undefined
+      onCloseSubmenu()
+    }, 220)
+  }
+  useEffect(() => () => { cancelScheduledClose() }, [])
+
+  const openSubmenu = (menu: ChoiceMenuKind): void => {
+    cancelScheduledClose()
+    onOpenSubmenu(menu)
+  }
+
+  const closeSubmenuOnParentLeave = (event: ReactMouseEvent<HTMLButtonElement>): void => {
+    const target = event.relatedTarget
+    if (target instanceof Element && target.closest('[data-dsh-cascade-submenu]') !== null) return
+    scheduleSubmenuClose()
+  }
   return (
     <div style={{ position: 'relative', width: 'fit-content', maxWidth: '100%' }}>
       <button type="button" aria-haspopup="menu" aria-expanded={open} style={pickerButtonStyle} onClick={onToggle}>
@@ -272,13 +300,13 @@ function GlobalModelPicker({ modelMenuLabel, effortMenuLabel, modelLabel, modelP
       {open ? (
         <div role="menu" style={pickerPanelStyle}>
           <div style={pickerColumnStyle}>
-            <PickerRow label={modelMenuLabel} value={modelValue} active={activeMenu === 'model'} onClick={() => { onOpenSubmenu('model') }} />
-            <PickerRow label={effortMenuLabel} value={effortLabel} active={activeMenu === 'effort'} onClick={() => { onOpenSubmenu('effort') }} />
+            <PickerRow label={modelMenuLabel} value={modelValue} active={activeMenu === 'model'} onClick={() => { openSubmenu('model') }} onHover={() => { openSubmenu('model') }} onLeave={closeSubmenuOnParentLeave} />
+            <PickerRow label={effortMenuLabel} value={effortLabel} active={activeMenu === 'effort'} onClick={() => { openSubmenu('effort') }} onHover={() => { openSubmenu('effort') }} onLeave={closeSubmenuOnParentLeave} />
           </div>
           {activeMenu === 'model' ? (
-            <div role="menu" aria-label={modelMenuLabel} style={pickerSubmenuStyle}>
+            <div role="menu" aria-label={modelMenuLabel} data-dsh-cascade-submenu="model" style={pickerSubmenuStyle} onMouseEnter={cancelScheduledClose} onMouseLeave={onCloseSubmenu}>
               {modelOptions.map(option => (
-                <button key={option.id} type="button" role="menuitemradio" aria-checked={option.id === selectedModelId} style={option.id === selectedModelId ? { ...choiceItemStyle, background: 'var(--dsw-alias-interactive-bg-active, var(--dsw-alias-interactive-bg-hover))' } : choiceItemStyle} onClick={() => { onChooseModel(option.id) }}>
+                <button key={option.id} type="button" role="menuitemradio" aria-checked={option.id === selectedModelId} style={option.id === selectedModelId ? { ...choiceItemStyle, background: 'var(--dsw-alias-interactive-bg-active, var(--dsw-alias-interactive-bg-hover))' } : choiceItemStyle} onMouseEnter={event => { event.currentTarget.style.background = 'var(--dsw-alias-interactive-bg-hover, var(--dsw-alias-bg-layer-1))' }} onMouseLeave={event => { event.currentTarget.style.background = option.id === selectedModelId ? 'var(--dsw-alias-interactive-bg-active, var(--dsw-alias-interactive-bg-hover))' : 'transparent' }} onClick={() => { onChooseModel(option.id) }}>
                   <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{option.label}</span>
                   {option.id === selectedModelId ? <span aria-hidden="true">✓</span> : null}
                 </button>
@@ -286,9 +314,9 @@ function GlobalModelPicker({ modelMenuLabel, effortMenuLabel, modelLabel, modelP
             </div>
           ) : null}
           {activeMenu === 'effort' ? (
-            <div role="menu" aria-label={effortMenuLabel} style={pickerSubmenuStyle}>
+            <div role="menu" aria-label={effortMenuLabel} data-dsh-cascade-submenu="effort" style={pickerSubmenuStyle} onMouseEnter={cancelScheduledClose} onMouseLeave={onCloseSubmenu}>
               {effortOptions.map(option => (
-                <button key={option.id} type="button" role="menuitemradio" aria-checked={option.id === selectedEffortId} style={option.id === selectedEffortId ? { ...choiceItemStyle, background: 'var(--dsw-alias-interactive-bg-active, var(--dsw-alias-interactive-bg-hover))' } : choiceItemStyle} onClick={() => { onChooseEffort(option.id) }}>
+                <button key={option.id} type="button" role="menuitemradio" aria-checked={option.id === selectedEffortId} style={option.id === selectedEffortId ? { ...choiceItemStyle, background: 'var(--dsw-alias-interactive-bg-active, var(--dsw-alias-interactive-bg-hover))' } : choiceItemStyle} onMouseEnter={event => { event.currentTarget.style.background = 'var(--dsw-alias-interactive-bg-hover, var(--dsw-alias-bg-layer-1))' }} onMouseLeave={event => { event.currentTarget.style.background = option.id === selectedEffortId ? 'var(--dsw-alias-interactive-bg-active, var(--dsw-alias-interactive-bg-hover))' : 'transparent' }} onClick={() => { onChooseEffort(option.id) }}>
                   <span>{option.label}</span>
                   {option.id === selectedEffortId ? <span aria-hidden="true">✓</span> : null}
                 </button>
@@ -408,8 +436,9 @@ export function CodexGlobalModel({ connection, t }: CodexGlobalModelProps) {
             activeMenu={openMenu}
             onToggle={() => { setOpenMenu(current => current === null ? 'root' : null) }}
             onOpenSubmenu={menu => { setOpenMenu(menu) }}
-            onChooseModel={id => { setDraftModel(id); setDraftEffort(''); setFeedback('idle'); setOpenMenu(null) }}
-            onChooseEffort={id => { setDraftEffort(id); setFeedback('idle'); setOpenMenu(null) }}
+            onCloseSubmenu={() => { setOpenMenu('root') }}
+            onChooseModel={id => { setDraftModel(id); setDraftEffort(''); setFeedback('idle') }}
+            onChooseEffort={id => { setDraftEffort(id); setFeedback('idle') }}
           />
           {selected === undefined && modelLabel !== '' ? <p style={bodyStyle}>{t('globalModelUnavailable')}</p> : null}
         </div>
