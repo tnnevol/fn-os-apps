@@ -21,11 +21,12 @@ function insertReference(
   const value: ReferenceInsert = {
     source: FNOS_REFERENCE_SOURCE,
     ref: reference.ref,
-    appearance: reference.kind === 'directory' ? 'folder' : 'file',
     // Keep the native DSH draft free of both the full NAS path and the
-    // display name. DSH retains the reference token for serialization while
-    // the fnOS reference rail renders the selected name as a block inside
-    // the composer card.
+    // display name and its native file/folder icon. DSH retains the
+    // reference token for serialization while the fnOS reference rail
+    // renders the selected name and icon as a block inside the composer
+    // card. Supplying appearance here would make DSH render a second,
+    // wrapping file/folder decoration in the input.
     label: '',
     clipboardText: reference.semanticPath,
   }

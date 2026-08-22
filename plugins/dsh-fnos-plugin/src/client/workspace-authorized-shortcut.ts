@@ -88,8 +88,10 @@ interface AuthorizedDirectoryDropdownProps {
 
 function menuText(text: string, color = 'var(--dsw-alias-label-tertiary)') {
   return createElement(SemiTooltip, { content: text, showArrow: true, mouseEnterDelay: 0.5 }, createElement('span', {
+    title: text,
     style: {
       display: 'block',
+      width: '100%',
       maxWidth: '220px',
       overflow: 'hidden',
       color,
@@ -130,6 +132,7 @@ function AuthorizedDirectoryDropdown({ dialog, t }: AuthorizedDirectoryDropdownP
             SemiDropdownItem,
             {
               key: directory.path,
+              title: directory.semanticPath,
               icon: createElement(IconFolderOpen, { size: 'small' }),
               onClick: () => { fillAfterOpening(dialog, directory.path) },
             },

@@ -87,9 +87,22 @@ body[${SEMI_DSH_THEME_ATTRIBUTE}] [data-composer-card]:has([data-dsh-fnos-input-
   padding-top: 46px;
 }
 
-body[${SEMI_DSH_THEME_ATTRIBUTE}] .semi-tree-option-list .semi-checkbox-inner-checked .semi-checkbox-inner-display {
-  background: var(--dsw-alias-state-business-primary, #4d8dff);
-  box-shadow: inset 0 0 0 1px var(--dsw-alias-state-business-primary, #4d8dff);
+/* Keep the tree check state monochrome and readable against both DSH themes.
+ * Semi uses the same display node for checked and indeterminate states; the
+ * inverse foreground makes both the tick and the indeterminate glyph visible. */
+body[${SEMI_DSH_THEME_ATTRIBUTE}] .semi-tree-option-list .semi-checkbox:hover .semi-checkbox-inner-display,
+body[${SEMI_DSH_THEME_ATTRIBUTE}] .semi-tree-option-list .semi-checkbox-inner-checked .semi-checkbox-inner-display,
+body[${SEMI_DSH_THEME_ATTRIBUTE}] .semi-tree-option-list .semi-checkbox-indeterminate .semi-checkbox-inner-display {
+  background: #111 !important;
+  border-color: #111 !important;
+  box-shadow: inset 0 0 0 1px #111 !important;
+  color: #fff !important;
+}
+
+body[${SEMI_DSH_THEME_ATTRIBUTE}] .semi-tree-option-list .semi-checkbox-inner-checked .semi-checkbox-inner-display svg,
+body[${SEMI_DSH_THEME_ATTRIBUTE}] .semi-tree-option-list .semi-checkbox-indeterminate .semi-checkbox-inner-display svg {
+  color: #fff !important;
+  fill: currentColor;
 }
 
 body[${SEMI_DSH_THEME_ATTRIBUTE}] .semi-tree-option-list .semi-tree-option-selected .semi-tree-option-label,

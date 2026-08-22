@@ -10,7 +10,7 @@ describe('dsh-fnos package contract', () => {
       devDependencies: { '@trimjs/web-app': string }
     }
     expect(manifest.name).toBe('@tnnevol/dsh-fnos')
-    expect(manifest.version).toBe('0.1.0-rc.8.0')
+    expect(manifest.version).toBe('0.1.1-rc.2.0')
     expect(manifest.dsh.bundle.patch).toBe('./cordis.patch.yml')
     expect(manifest.dsh.client.platform).toBe('web')
     expect(manifest.dsh.client.immediately).toBe(true)
@@ -57,14 +57,15 @@ describe('dsh-fnos package contract', () => {
     expect(semiTheme).toContain('color: var(--dsw-alias-label-primary, #fff)')
     expect(semiTheme).toContain('pointer-events: none')
     expect(semiTheme).toContain('overflow-x: auto')
-    expect(semiTheme).toContain('var(--dsw-alias-state-business-primary, #4d8dff)')
+    expect(semiTheme).toContain('background: #111 !important')
+    expect(semiTheme).toContain('color: #fff !important')
     expect(semiTheme).toContain('var(--dsw-shadow-lv3)')
   })
 
   it('keeps fnOS reference labels in the in-card rail instead of the native draft text', async () => {
     const actions = await readFile(new URL('../src/client/input-reference-actions.ts', import.meta.url), 'utf8')
     const dock = await readFile(new URL('../src/client/FnosInputReferencesDock.tsx', import.meta.url), 'utf8')
-    expect(actions).toContain("appearance: reference.kind === 'directory' ? 'folder' : 'file'")
+    expect(actions).not.toContain("appearance: reference.kind === 'directory' ? 'folder' : 'file'")
     expect(actions).toContain("label: ''")
     expect(dock).toContain('createPortal(content, composerCard)')
     expect(dock).toContain('data-dsh-fnos-input-references')
@@ -74,7 +75,7 @@ describe('dsh-fnos package contract', () => {
     const compatibility = JSON.parse(await readFile(new URL('../compatibility.json', import.meta.url), 'utf8')) as {
       dshPluginApi: { version: string, packages: string[] }
     }
-    expect(compatibility.dshPluginApi.version).toBe('0.1.0-rc.8')
+    expect(compatibility.dshPluginApi.version).toBe('0.1.1-rc.2')
     expect(compatibility.dshPluginApi.packages).toEqual([
       '@deepseek-ai/dsh-client-runtime',
       '@deepseek-ai/dsh-client-ui-theme',
