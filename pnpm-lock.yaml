@@ -15,6 +15,37 @@ importers:
         specifier: 1.6.4
         version: 1.6.4(@algolia/client-search@5.56.0)(@types/node@22.20.1)(@types/react@18.3.31)(lightningcss@1.33.0)(postcss@8.5.26)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(search-insights@2.17.3)(typescript@5.9.3)
 
+  packages/dsh-semi-ui:
+    dependencies:
+      '@douyinfe/semi-icons':
+        specifier: 2.90.2
+        version: 2.90.2(react@18.3.1)
+      '@douyinfe/semi-ui':
+        specifier: 2.90.2
+        version: 2.90.2(@floating-ui/dom@1.8.0)(@tiptap/suggestion@3.30.2(@floating-ui/dom@1.8.0)(@tiptap/core@3.30.2(@tiptap/pm@3.30.2))(@tiptap/pm@3.30.2))(@types/react-dom@19.2.4(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+    devDependencies:
+      '@types/node':
+        specifier: ^22.20.0
+        version: 22.20.1
+      '@types/react':
+        specifier: ^18.3.31
+        version: 18.3.31
+      '@types/react-dom':
+        specifier: ^19.2.4
+        version: 19.2.4(@types/react@18.3.31)
+      react:
+        specifier: ^18.3.1
+        version: 18.3.1
+      react-dom:
+        specifier: ^18.3.1
+        version: 18.3.1(react@18.3.1)
+      tsdown:
+        specifier: ^0.22.2
+        version: 0.22.14(@tsdown/css@0.22.14)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
   plugins/dsh-codex-auth-plugin:
     devDependencies:
       '@deepseek-ai/cordis':
@@ -95,9 +126,18 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: 3.18.1
         version: 3.18.1
+      '@douyinfe/semi-icons':
+        specifier: 2.90.2
+        version: 2.90.2(react@18.3.1)
+      '@douyinfe/semi-ui':
+        specifier: 2.90.2
+        version: 2.90.2(@floating-ui/dom@1.8.0)(@tiptap/suggestion@3.30.2(@floating-ui/dom@1.8.0)(@tiptap/core@3.30.2(@tiptap/pm@3.30.2))(@tiptap/pm@3.30.2))(@types/react-dom@19.2.4(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@earendil-works/pi-ai':
         specifier: 0.82.1
         version: 0.82.1(ws@8.21.3)(zod@4.4.3)
+      '@tnnevol/dsh-semi-ui':
+        specifier: workspace:*
+        version: link:../../packages/dsh-semi-ui
       '@types/node':
         specifier: ^22.20.0
         version: 22.20.1
@@ -118,13 +158,6 @@ importers:
         version: 4.1.10(@opentelemetry/api@1.9.0)(@types/node@22.20.1)(vite@8.2.1(@types/node@22.20.1))
 
   plugins/dsh-fnos-plugin:
-    dependencies:
-      '@douyinfe/semi-icons':
-        specifier: 2.90.2
-        version: 2.90.2(react@18.3.1)
-      '@douyinfe/semi-ui':
-        specifier: 2.90.2
-        version: 2.90.2(@floating-ui/dom@1.8.0)(@tiptap/suggestion@3.30.2(@floating-ui/dom@1.8.0)(@tiptap/core@3.30.2(@tiptap/pm@3.30.2))(@tiptap/pm@3.30.2))(@types/react-dom@19.2.4(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: ^4.0.1
@@ -168,6 +201,15 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: ^3.18.1
         version: 3.18.1
+      '@douyinfe/semi-icons':
+        specifier: 2.90.2
+        version: 2.90.2(react@18.3.1)
+      '@douyinfe/semi-ui':
+        specifier: 2.90.2
+        version: 2.90.2(@floating-ui/dom@1.8.0)(@tiptap/suggestion@3.30.2(@floating-ui/dom@1.8.0)(@tiptap/core@3.30.2(@tiptap/pm@3.30.2))(@tiptap/pm@3.30.2))(@types/react-dom@19.2.4(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@tnnevol/dsh-semi-ui':
+        specifier: workspace:*
+        version: link:../../packages/dsh-semi-ui
       '@trimjs/web-app':
         specifier: latest
         version: 0.4.2

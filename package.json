@@ -13,8 +13,9 @@
     "docs:preview": "vitepress preview docs",
     "check:sdd": "node scripts/sdd/check-docs.mjs",
     "check:docs": "pnpm run check:sdd && pnpm run docs:build",
+    "check:packages": "pnpm --filter './packages/*' run check",
     "check:plugins": "pnpm --filter './plugins/*' run check",
-    "check": "pnpm run check:sdd && pnpm run docs:build && pnpm run check:plugins"
+    "check": "pnpm run check:sdd && pnpm run docs:build && pnpm run check:packages && pnpm run check:plugins"
   },
   "engines": {
     "node": ">=24.0.0",

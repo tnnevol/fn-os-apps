@@ -99,6 +99,9 @@
     "react": "^18.2.0"
   },
   "devDependencies": {
+    "@douyinfe/semi-icons": "2.90.2",
+    "@douyinfe/semi-ui": "2.90.2",
+    "@tnnevol/dsh-semi-ui": "workspace:*",
     "@earendil-works/pi-ai": "0.82.1",
     "@deepseek-ai/cordis": "^4.0.1",
     "@deepseek-ai/dsh-api-remotes": "0.1.1-rc.2",

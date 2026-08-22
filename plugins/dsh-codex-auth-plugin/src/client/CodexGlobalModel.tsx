@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties, MouseEvent as ReactMouseEvent } from 'react'
 import type { ConnectionHandle, ModelCatalogModel, ModelProviderGroup } from '@deepseek-ai/dsh-client-connection/client'
 import { IconChevronDownOutline14 } from '@deepseek-ai/dsh-client-ui-primitives'
+import { DshButton } from '@tnnevol/dsh-semi-ui'
 import type { CodexAuthLocaleKey } from './locales.ts'
 import { CODEX_GLOBAL_MODEL_PATH } from '../auth-paths.ts'
 
@@ -293,10 +294,10 @@ function GlobalModelPicker({ modelMenuLabel, effortMenuLabel, modelLabel, modelP
   }
   return (
     <div style={{ position: 'relative', width: 'fit-content', maxWidth: '100%' }}>
-      <button type="button" aria-haspopup="menu" aria-expanded={open} style={pickerButtonStyle} onClick={onToggle}>
+      <DshButton htmlType="button" theme="borderless" type="tertiary" aria-haspopup="menu" aria-expanded={open} style={pickerButtonStyle} onClick={onToggle}>
         <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: modelLabel === '' ? 'var(--dsw-alias-label-dimmed)' : 'var(--dsw-alias-label-primary)' }}>{buttonValue}</span>
         <ChevronDown />
-      </button>
+      </DshButton>
       {open ? (
         <div role="menu" style={pickerPanelStyle}>
           <div style={pickerColumnStyle}>

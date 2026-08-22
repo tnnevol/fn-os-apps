@@ -2,10 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
-import TreeSelect from '@douyinfe/semi-ui/lib/es/treeSelect/index'
-import Tooltip from '@douyinfe/semi-ui/lib/es/tooltip/index'
-import IconFile from '@douyinfe/semi-icons/lib/es/icons/IconFile.js'
-import IconFolder from '@douyinfe/semi-icons/lib/es/icons/IconFolder.js'
+import { DshIconFile as IconFile, DshIconFolder as IconFolder, DshTooltip as Tooltip, DshTreeSelect as TreeSelect } from '@tnnevol/dsh-semi-ui'
 import { requestAuthorizedEntries, type AuthorizedEntriesResult } from './authorized-directories-client.ts'
 import { FnosColorLogo } from './FnosLogo.tsx'
 import { decodeFnosReference, type FnosInputReference, createFnosInputReference, uniqueFnosInputReferences, FNOS_REFERENCE_SOURCE } from './input-references.ts'

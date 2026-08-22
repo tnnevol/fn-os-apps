@@ -1,6 +1,6 @@
 /** Map Semi's design tokens to the DSH theme tokens used by the host. */
 
-export const SEMI_DSH_THEME_ATTRIBUTE = 'data-dsh-fnos-semi-theme'
+export const SEMI_DSH_THEME_ATTRIBUTE = 'data-dsh-semi-theme'
 
 const SEMI_DSH_THEME_CSS = `
 body[${SEMI_DSH_THEME_ATTRIBUTE}] {
@@ -58,10 +58,7 @@ body[${SEMI_DSH_THEME_ATTRIBUTE}] .semi-dropdown-wrapper {
   box-shadow: var(--dsw-shadow-lv3);
 }
 
-/* Semi's default Tooltip background uses the raw --semi-grey-7 token. That
- * token is not available in the host theme, so the declaration becomes
- * invalid and leaves the portal transparent. Use DSH semantic tokens instead
- * so the tooltip remains readable in both light and dark themes. */
+/* Keep portaled tooltips readable in both DSH themes. */
 body[${SEMI_DSH_THEME_ATTRIBUTE}] .semi-tooltip-wrapper {
   background-color: var(--dsw-alias-bg-layer-3, #2a2a2a);
   color: var(--dsw-alias-label-primary, #fff);
@@ -81,15 +78,12 @@ body[${SEMI_DSH_THEME_ATTRIBUTE}] .semi-tree-option-list > ul {
   min-width: max-content;
 }
 
-/* The reference rail is portaled into the composer card. Reserve the same
- * top row in DSH's native scrollport so the caret and draft stay below it. */
+/* Reserve the reference rail inside DSH's native composer scrollport. */
 body[${SEMI_DSH_THEME_ATTRIBUTE}] [data-composer-card]:has([data-dsh-fnos-input-references]) [data-input-scroll] {
   padding-top: 46px;
 }
 
-/* Keep the tree check state monochrome and readable against both DSH themes.
- * Semi uses the same display node for checked and indeterminate states; the
- * inverse foreground makes both the tick and the indeterminate glyph visible. */
+/* Keep the tree check state monochrome and readable against both DSH themes. */
 body[${SEMI_DSH_THEME_ATTRIBUTE}] .semi-tree-option-list .semi-checkbox:hover .semi-checkbox-inner-display,
 body[${SEMI_DSH_THEME_ATTRIBUTE}] .semi-tree-option-list .semi-checkbox-inner-checked .semi-checkbox-inner-display,
 body[${SEMI_DSH_THEME_ATTRIBUTE}] .semi-tree-option-list .semi-checkbox-indeterminate .semi-checkbox-inner-display {
@@ -138,13 +132,13 @@ body[${SEMI_DSH_THEME_ATTRIBUTE}] .semi-button-borderless:not(.semi-button-disab
 }
 `
 
-/** Install a reversible, body-scoped Semi theme bridge for the plugin. */
+/** Install a reversible, body-scoped Semi theme bridge for a DSH client. */
 export function installSemiDshTheme(): () => void {
   if (typeof document === 'undefined' || document.body === null) return () => undefined
 
   const previousAttribute = document.body.getAttribute(SEMI_DSH_THEME_ATTRIBUTE)
   const style = document.createElement('style')
-  style.dataset.dshFnos = 'semi-theme'
+  style.dataset.dshSemi = 'theme'
   style.textContent = SEMI_DSH_THEME_CSS
   document.body.setAttribute(SEMI_DSH_THEME_ATTRIBUTE, '')
   document.head.append(style)

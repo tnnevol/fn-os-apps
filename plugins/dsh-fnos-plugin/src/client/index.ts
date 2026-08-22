@@ -22,6 +22,7 @@ import { createThemePersistence } from './theme-persistence.ts'
 import { installWorkspaceAuthorizedShortcut } from './workspace-authorized-shortcut.ts'
 import { FNOS_AUTHORIZED_DIRECTORIES_SETTINGS_NAMESPACE } from '../authorized-directories-contract.ts'
 import type { FnosSettings, FnosTheme } from '../theme-contract.ts'
+import { installSemiDshTheme } from '@tnnevol/dsh-semi-ui'
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {
@@ -106,6 +107,7 @@ function createThemeController(
 }
 
 export function apply(ctx: ClientContext): void {
+  ctx.effect(() => installSemiDshTheme(), 'dsh-fnos: Semi DSH theme')
   const bridge = createThemeBridge()
   const fnosSettings = ctx.settingsScope.bind<FnosSettings>({
     namespace: FNOS_AUTHORIZED_DIRECTORIES_SETTINGS_NAMESPACE,

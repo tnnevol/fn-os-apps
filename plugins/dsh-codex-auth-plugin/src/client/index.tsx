@@ -15,6 +15,7 @@ import { CodexAuthRemoteSettingsScope } from './remote-settings-scope.ts'
 import { CODEX_AUTH_SETTINGS_NAMESPACE } from '../auth-paths.ts'
 import { en, zh } from './locales.ts'
 import type { CodexAuthLocaleKey } from './locales.ts'
+import { installSemiDshTheme } from '@tnnevol/dsh-semi-ui'
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {
@@ -26,6 +27,7 @@ export const name = 'dsh-codex-auth-plugin-client'
 export const inject = ['slots', 'locale', 'connection', 'remote', 'settingsScope']
 
 export function apply(ctx: ClientContext): void {
+  ctx.effect(() => installSemiDshTheme(), 'dsh-codex-auth-plugin: Semi DSH theme')
   ctx.effect(
     () => installCodexModelEditorPresentation(),
     'dsh-codex-auth-plugin: Codex model editor presentation',

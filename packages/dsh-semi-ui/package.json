@@ -1,0 +1,57 @@
+{
+  "name": "@tnnevol/dsh-semi-ui",
+  "displayName": "DSH Semi UI",
+  "description": "Shared Semi Design components themed for DeepSeek Harness.",
+  "version": "0.1.1-rc.2.0",
+  "author": "tnnevol",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tnnevol/fn-os-apps.git",
+    "directory": "packages/dsh-semi-ui"
+  },
+  "homepage": "https://github.com/tnnevol/fn-os-apps/tree/main/packages/dsh-semi-ui",
+  "documentation": "https://fnapps-doc.tnnevol.cn/plugins/",
+  "publishConfig": {
+    "access": "public"
+  },
+  "type": "module",
+  "license": "AGPL-3.0-only",
+  "engines": {
+    "node": "^22.19.0 || >=24.0.0"
+  },
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    }
+  },
+  "files": [
+    "lib",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsdown",
+    "typecheck": "tsc -p tsconfig.json",
+    "check": "pnpm run typecheck && pnpm run build",
+    "prepublishOnly": "pnpm run check"
+  },
+  "peerDependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "dependencies": {
+    "@douyinfe/semi-icons": "2.90.2",
+    "@douyinfe/semi-ui": "2.90.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.0",
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^19.2.4",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tsdown": "^0.22.2",
+    "typescript": "^5.9.3"
+  }
+}

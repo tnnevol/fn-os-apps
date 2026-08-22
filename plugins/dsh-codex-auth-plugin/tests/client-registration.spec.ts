@@ -11,6 +11,8 @@ describe('dsh-codex-auth-plugin rc.2 client registration', () => {
     expect(client).toContain('decodeCodexAuthSettings')
     expect(client).toContain('configScope')
     expect(client).toContain('installCodexModelEditorPresentation')
+    expect(client).toContain("from '@tnnevol/dsh-semi-ui'")
+    expect(client).toContain("installSemiDshTheme(), 'dsh-codex-auth-plugin: Semi DSH theme'")
     expect(client).not.toContain('id: \'dsh-codex-auth-plugin\'')
   })
 
@@ -64,6 +66,8 @@ describe('dsh-codex-auth-plugin rc.2 client registration', () => {
 
   it('opens the global model cascade on parent hover and keeps it open after leaf clicks', async () => {
     const picker = await readFile(new URL('../src/client/CodexGlobalModel.tsx', import.meta.url), 'utf8')
+    expect(picker).toContain("import { DshButton } from '@tnnevol/dsh-semi-ui'")
+    expect(picker).toContain('<DshButton htmlType="button"')
     expect(picker).toContain('onClick={onToggle}')
     expect(picker).toContain("onHover={() => { openSubmenu('model') }}")
     expect(picker).toContain("onHover={() => { openSubmenu('effort') }}")

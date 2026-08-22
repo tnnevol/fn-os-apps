@@ -2,15 +2,16 @@
 
 import { createElement, useCallback, useState, type ElementType } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
-import Dropdown from '@douyinfe/semi-ui/lib/es/dropdown/index.js'
-import IconButton from '@douyinfe/semi-ui/lib/es/iconButton/index.js'
-import Tooltip from '@douyinfe/semi-ui/lib/es/tooltip/index'
-import IconFolderOpen from '@douyinfe/semi-icons/lib/es/icons/IconFolderOpen.js'
+import {
+  DshDropdown as Dropdown,
+  DshIconButton as IconButton,
+  DshTooltip as Tooltip,
+  DshIconFolderOpen as IconFolderOpen,
+} from '@tnnevol/dsh-semi-ui'
 import type { AuthorizedDirectory } from '../authorized-directories-contract.ts'
 import { DirectoryRequestError, requestAuthorizedDirectories } from './authorized-directories-client.ts'
 import { FnosMonoLogo } from './FnosLogo.tsx'
 import type { FnosLocaleKey } from './locales.ts'
-import { installSemiDshTheme } from './semi-theme.ts'
 
 type Translate = (key: FnosLocaleKey) => string
 
@@ -205,7 +206,6 @@ function installButton(dialog: HTMLElement, t: Translate, roots: Set<{ mount: HT
 /** Observe DSH's native/browse picker and augment its path bar only. */
 export function installWorkspaceAuthorizedShortcut(t: Translate): () => void {
   if (typeof document === 'undefined' || document.body === null || typeof MutationObserver === 'undefined') return () => undefined
-  const uninstallSemiTheme = installSemiDshTheme()
   const roots = new Set<{ mount: HTMLElement, root: Root }>()
   let scheduled = false
   const scan = (): void => {
@@ -229,7 +229,6 @@ export function installWorkspaceAuthorizedShortcut(t: Translate): () => void {
   scan()
   return () => {
     observer.disconnect()
-    uninstallSemiTheme()
     for (const { mount, root } of roots) {
       root.unmount()
       mount.remove()

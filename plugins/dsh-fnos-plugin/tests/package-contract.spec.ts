@@ -7,7 +7,7 @@ describe('dsh-fnos package contract', () => {
       name: string
       version: string
       dsh: { bundle: { patch: string }, client: { platform: string, immediately: boolean, inject: string[] } }
-      devDependencies: { '@trimjs/web-app': string }
+      devDependencies: { '@trimjs/web-app': string, '@tnnevol/dsh-semi-ui': string }
     }
     expect(manifest.name).toBe('@tnnevol/dsh-fnos')
     expect(manifest.version).toBe('0.1.1-rc.2.0')
@@ -20,6 +20,7 @@ describe('dsh-fnos package contract', () => {
     expect(manifest.dsh.client.inject).toContain('@deepseek-ai/dsh-client-ui-workspace')
     expect(manifest.dsh.client.inject).not.toContain('@deepseek-ai/dsh-client-ui-directory-picker-browse')
     expect(manifest.devDependencies['@trimjs/web-app']).toBe('latest')
+    expect(manifest.devDependencies['@tnnevol/dsh-semi-ui']).toBe('workspace:*')
   })
 
   it('only registers itself and does not patch the official directory picker', async () => {
@@ -41,14 +42,18 @@ describe('dsh-fnos package contract', () => {
     expect(source).toContain('installWorkspaceAuthorizedShortcut')
     expect(source).not.toContain('directoryFlow')
     expect(shortcut).toContain('requestAuthorizedDirectories')
-    expect(shortcut).toContain("import Dropdown from '@douyinfe/semi-ui/lib/es/dropdown/index.js'")
-    expect(shortcut).toContain("import IconButton from '@douyinfe/semi-ui/lib/es/iconButton/index.js'")
+    expect(shortcut).toContain('DshDropdown as Dropdown')
+    expect(shortcut).toContain('DshIconButton as IconButton')
     expect(shortcut).toContain('onClick: load')
     expect(shortcut).toContain('onClick: () => { fillAfterOpening')
-    expect(shortcut).toContain("import { installSemiDshTheme } from './semi-theme.ts'")
+    expect(shortcut).not.toContain('installSemiDshTheme')
 
-    const semiTheme = await readFile(new URL('../src/client/semi-theme.ts', import.meta.url), 'utf8')
-    expect(semiTheme).toContain('data-dsh-fnos-semi-theme')
+    const client = await readFile(new URL('../src/client/index.ts', import.meta.url), 'utf8')
+    expect(client).toContain("from '@tnnevol/dsh-semi-ui'")
+    expect(client).toContain("installSemiDshTheme(), 'dsh-fnos: Semi DSH theme'")
+
+    const semiTheme = await readFile(new URL('../../../packages/dsh-semi-ui/src/theme.ts', import.meta.url), 'utf8')
+    expect(semiTheme).toContain('data-dsh-semi-theme')
     expect(semiTheme).toContain('--semi-color-bg-3: var(--dsw-alias-bg-layer-3)')
     expect(semiTheme).toContain('--semi-color-text-0: var(--dsw-alias-label-primary)')
     expect(semiTheme).toContain('.semi-dropdown-wrapper')

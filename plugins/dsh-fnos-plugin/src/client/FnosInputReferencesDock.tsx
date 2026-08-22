@@ -3,10 +3,7 @@
 import type { PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import Tooltip from '@douyinfe/semi-ui/lib/es/tooltip/index'
-import IconClose from '@douyinfe/semi-icons/lib/es/icons/IconClose.js'
-import IconFile from '@douyinfe/semi-icons/lib/es/icons/IconFile.js'
-import IconFolder from '@douyinfe/semi-icons/lib/es/icons/IconFolder.js'
+import { DshIconClose as IconClose, DshIconFile as IconFile, DshIconFolder as IconFolder, DshTooltip as Tooltip } from '@tnnevol/dsh-semi-ui'
 import { decodeFnosReference, FNOS_REFERENCE_SOURCE } from './input-references.ts'
 
 type InputReferencesDockProps = PropsRuntime<'conversation.input.dock'> & PropsLocale<'settings.dsh-fnos'>
