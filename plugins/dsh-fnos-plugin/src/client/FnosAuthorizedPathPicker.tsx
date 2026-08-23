@@ -74,6 +74,7 @@ export function FnosAuthorizedPathPicker({ input, insertReferences, t }: FnosAut
   const [treeData, setTreeData] = useState<TreeNode[]>([])
   const [desiredPaths, setDesiredPaths] = useState<string[] | undefined>()
   const entries = useRef(new Map<string, AuthorizedEntry>())
+  const insertedTreePaths = useRef(new Set<string>())
   const busy = input.phase === 'adjudicating' || input.phase === 'submitting'
   const value = desiredPaths ?? EMPTY_TREE_VALUE
   const treePanelWidth = useMemo(() => {
@@ -101,18 +102,30 @@ export function FnosAuthorizedPathPicker({ input, insertReferences, t }: FnosAut
 
   useEffect(() => {
     if (desiredPaths === undefined) return
-    const additions = desiredPaths
-      .map(path => entries.current.get(path))
-      .flatMap(entry => {
-        if (entry === undefined) return []
-        const reference = createFnosInputReference(entry.kind, entry.path, entry.semanticPath)
-        return reference === undefined ? [] : [reference]
+    const pending = desiredPaths
+      .filter(path => !insertedTreePaths.current.has(path))
+      .map(path => ({ path, entry: entries.current.get(path) }))
+      .flatMap(item => {
+        if (item.entry === undefined) return []
+        const reference = createFnosInputReference(item.entry.kind, item.entry.path, item.entry.semanticPath)
+        return reference === undefined ? [] : [{ path: item.path, reference }]
       })
-    if (additions.length > 0) {
-      insertReferences({ draft: input.draft, draftRev: input.draftRev }, additions)
+    if (pending.length === 0) return
+    if (insertReferences(
+      { draft: input.draft, draftRev: input.draftRev },
+      pending.map(item => item.reference),
+    )) {
+      for (const item of pending) insertedTreePaths.current.add(item.path)
     }
-    setDesiredPaths(undefined)
   }, [desiredPaths])
+
+  const handleTreeChange = useCallback((next: unknown) => {
+    const nextPaths = selectedPaths(next)
+    for (const path of insertedTreePaths.current) {
+      if (!nextPaths.includes(path)) insertedTreePaths.current.delete(path)
+    }
+    setDesiredPaths(nextPaths)
+  }, [])
 
   const loadData = useCallback(async (node: unknown) => {
     const key = typeof node === 'object' && node !== null && 'key' in node && typeof node.key === 'string'
@@ -132,8 +145,13 @@ export function FnosAuthorizedPathPicker({ input, insertReferences, t }: FnosAut
       treeData={treeData}
       value={value}
       loadData={loadData}
-       onVisibleChange={(visible: boolean) => { if (!visible) setDesiredPaths(undefined) }}
-       onChange={(next: unknown) => { setDesiredPaths(selectedPaths(next)) }}
+       onVisibleChange={(visible: boolean) => {
+         if (!visible) {
+           insertedTreePaths.current.clear()
+           setDesiredPaths(undefined)
+         }
+       }}
+       onChange={handleTreeChange}
       disabled={busy}
       size="small"
       borderless
