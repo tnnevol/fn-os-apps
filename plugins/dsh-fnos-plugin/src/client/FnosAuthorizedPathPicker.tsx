@@ -92,7 +92,6 @@ export function FnosAuthorizedPathPicker({ input, inputActions, insertReferences
   const [treeData, setTreeData] = useState<TreeNode[]>([])
   const [desiredPaths, setDesiredPaths] = useState<string[] | undefined>()
   const entries = useRef(new Map<string, AuthorizedEntry>())
-  const trailingSpaceRepairDraft = useRef<string>()
   const busy = input.phase === 'adjudicating' || input.phase === 'submitting'
   const currentReferences = useMemo(() => referenceEntries(input), [input])
   const currentPaths = useMemo(() => currentReferences.map(reference => reference.path), [currentReferences])
@@ -157,21 +156,6 @@ export function FnosAuthorizedPathPicker({ input, inputActions, insertReferences
     // Preserve DSH's official trailing separator after a reference.
     setDesiredPaths(undefined)
   }, [currentPaths, desiredPaths, input, inputActions, insertReferences])
-
-  useEffect(() => {
-    const fnosOccurrences = input.occurrences.filter(occurrence => occurrence.source === FNOS_REFERENCE_SOURCE)
-    if (fnosOccurrences.length === 0 || /\s$/u.test(input.draft)) {
-      trailingSpaceRepairDraft.current = undefined
-      return
-    }
-    const lastEnd = fnosOccurrences.reduce((end, occurrence) => Math.max(end, occurrence.offset + occurrence.length), 0)
-    if (lastEnd !== input.draft.length || trailingSpaceRepairDraft.current === input.draft) return
-    // Keep the official input transaction's trailing separator visible in the
-    // textarea even when the host commit arrives without the final gap. The
-    // guard prevents a rejected setDraft from causing an update loop.
-    trailingSpaceRepairDraft.current = input.draft
-    inputActions.setDraft(`${input.draft} `)
-  }, [input.draft, input.occurrences, inputActions])
 
   const loadData = useCallback(async (node: unknown) => {
     const key = typeof node === 'object' && node !== null && 'key' in node && typeof node.key === 'string'
