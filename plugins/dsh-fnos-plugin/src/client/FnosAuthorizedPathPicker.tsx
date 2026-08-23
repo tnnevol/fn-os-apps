@@ -5,7 +5,8 @@ import type { PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots
 import { DshIconFile as IconFile, DshIconFolder as IconFolder, DshTooltip as Tooltip, DshTreeSelect as TreeSelect } from '@tnnevol/dsh-semi-ui'
 import { requestAuthorizedEntries, type AuthorizedEntriesResult } from './authorized-directories-client.ts'
 import { FnosColorLogo } from './FnosLogo.tsx'
-import { type FnosInputReference, createFnosInputReference } from './input-references.ts'
+import { decodeFnosReference, FNOS_REFERENCE_SOURCE, type FnosInputReference, createFnosInputReference } from './input-references.ts'
+import { draftWithoutFnosOccurrence } from './input-reference-actions.ts'
 import type { AuthorizedEntry } from '../authorized-directories-contract.ts'
 import type { FnosLocaleKey } from './locales.ts'
 
@@ -70,11 +71,13 @@ export type FnosAuthorizedPathPickerProps = InputProps & {
 }
 
 /** Selection is immediate; closing the TreeSelect never discards a choice. */
-export function FnosAuthorizedPathPicker({ input, insertReferences, t }: FnosAuthorizedPathPickerProps) {
+export function FnosAuthorizedPathPicker({ input, inputActions, insertReferences, t }: FnosAuthorizedPathPickerProps) {
   const [treeData, setTreeData] = useState<TreeNode[]>([])
   const [desiredPaths, setDesiredPaths] = useState<string[] | undefined>()
   const entries = useRef(new Map<string, AuthorizedEntry>())
+  const operationBaselineOccurrenceIds = useRef(new Set<number>())
   const insertedTreePaths = useRef(new Set<string>())
+  const pendingRemovalPaths = useRef(new Set<string>())
   const busy = input.phase === 'adjudicating' || input.phase === 'submitting'
   const value = desiredPaths ?? EMPTY_TREE_VALUE
   const treePanelWidth = useMemo(() => {
@@ -119,10 +122,34 @@ export function FnosAuthorizedPathPicker({ input, insertReferences, t }: FnosAut
     }
   }, [desiredPaths])
 
+  useEffect(() => {
+    if (pendingRemovalPaths.current.size === 0) return
+    const fnosOccurrences = input.occurrences.filter(occurrence => occurrence.source === FNOS_REFERENCE_SOURCE)
+    const removable = fnosOccurrences
+      .filter(occurrence => {
+        if (operationBaselineOccurrenceIds.current.has(occurrence.occurrenceId)) return false
+        const decoded = decodeFnosReference(occurrence.ref)
+        return decoded !== undefined && pendingRemovalPaths.current.has(decoded.path)
+      })
+      .sort((left, right) => right.offset - left.offset)
+    if (removable.length === 0) return
+
+    let draft = input.draft
+    for (const occurrence of removable) {
+      const decoded = decodeFnosReference(occurrence.ref)
+      if (decoded !== undefined) pendingRemovalPaths.current.delete(decoded.path)
+      draft = draftWithoutFnosOccurrence(draft, occurrence, fnosOccurrences)
+    }
+    inputActions.setDraft(draft)
+  }, [desiredPaths, input.draft, input.occurrences, inputActions])
+
   const handleTreeChange = useCallback((next: unknown) => {
     const nextPaths = selectedPaths(next)
     for (const path of insertedTreePaths.current) {
-      if (!nextPaths.includes(path)) insertedTreePaths.current.delete(path)
+      if (!nextPaths.includes(path)) {
+        insertedTreePaths.current.delete(path)
+        pendingRemovalPaths.current.add(path)
+      }
     }
     setDesiredPaths(nextPaths)
   }, [])
@@ -146,10 +173,21 @@ export function FnosAuthorizedPathPicker({ input, insertReferences, t }: FnosAut
       value={value}
       loadData={loadData}
        onVisibleChange={(visible: boolean) => {
-         if (!visible) {
+         if (visible) {
+           operationBaselineOccurrenceIds.current = new Set(
+             input.occurrences
+               .filter(occurrence => occurrence.source === FNOS_REFERENCE_SOURCE)
+               .map(occurrence => occurrence.occurrenceId),
+           )
            insertedTreePaths.current.clear()
-           setDesiredPaths(undefined)
+           pendingRemovalPaths.current.clear()
+           setDesiredPaths(EMPTY_TREE_VALUE)
+           return
          }
+         operationBaselineOccurrenceIds.current.clear()
+         insertedTreePaths.current.clear()
+         pendingRemovalPaths.current.clear()
+         setDesiredPaths(undefined)
        }}
        onChange={handleTreeChange}
       disabled={busy}
