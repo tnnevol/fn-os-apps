@@ -176,6 +176,7 @@ export function apply(ctx: ClientContext): void {
         name: 'conversation.session.header.utilities',
         id: 'session-log-download',
         order: 0,
+        priority: -1,
         locale: namespace,
         inject: () => ({
           exportToComputer: (sessionId: SessionId) => sessionLogDownload.download(sessionId),
@@ -186,6 +187,7 @@ export function apply(ctx: ClientContext): void {
       name: 'settings.action',
       id: 'open-document',
       order: 0,
+      priority: -1,
       locale: namespace,
       inject: () => ({ t }),
     }, FnosSettingsDocumentAction))
