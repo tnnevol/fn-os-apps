@@ -5,8 +5,7 @@ import type { PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots
 import { DshIconFile as IconFile, DshIconFolder as IconFolder, DshTooltip as Tooltip, DshTreeSelect as TreeSelect } from '@tnnevol/dsh-semi-ui'
 import { requestAuthorizedEntries, type AuthorizedEntriesResult } from './authorized-directories-client.ts'
 import { FnosColorLogo } from './FnosLogo.tsx'
-import { decodeFnosReference, type FnosInputReference, createFnosInputReference, uniqueFnosInputReferences, FNOS_REFERENCE_SOURCE } from './input-references.ts'
-import { draftWithoutFnosOccurrence } from './input-reference-actions.ts'
+import { type FnosInputReference, createFnosInputReference } from './input-references.ts'
 import type { AuthorizedEntry } from '../authorized-directories-contract.ts'
 import type { FnosLocaleKey } from './locales.ts'
 
@@ -55,32 +54,13 @@ function updateChildren(nodes: readonly TreeNode[], key: string, children: TreeN
   })
 }
 
-function isSameOrDescendantPath(path: string, ancestor: string): boolean {
-  if (path === ancestor) return true
-  const prefix = ancestor === '/' ? '/' : `${ancestor}/`
-  return path.startsWith(prefix)
-}
-
 /**
- * Semi's related tree selection can report a checked ancestor together with
- * its checked descendant. Keep the deepest selected path so choosing
- * `fn-os-apps` never inserts its authorized parent `projects` as well.
+ * Keep every checked path so a parent and child can both be selected.
  */
 function selectedPaths(value: unknown): string[] {
   const values = Array.isArray(value) ? value : value === undefined || value === null ? [] : [value]
   const paths = [...new Set(values.flatMap(item => typeof item === 'string' && item.startsWith('/') ? [item] : []))]
-  return paths.filter(path => !paths.some(candidate => candidate !== path && isSameOrDescendantPath(candidate, path)))
-}
-
-function referenceEntries(input: InputProps['input']): FnosInputReference[] {
-  return uniqueFnosInputReferences(input.occurrences
-    .filter(occurrence => occurrence.source === FNOS_REFERENCE_SOURCE)
-    .flatMap(occurrence => {
-      const decoded = decodeFnosReference(occurrence.ref)
-      if (decoded === undefined) return []
-      const reference = createFnosInputReference(decoded.kind, decoded.path, decoded.path)
-      return reference === undefined ? [] : [reference]
-    }))
+  return paths
 }
 
 export type FnosAuthorizedPathPickerProps = InputProps & {
@@ -88,14 +68,12 @@ export type FnosAuthorizedPathPickerProps = InputProps & {
 }
 
 /** Selection is immediate; closing the TreeSelect never discards a choice. */
-export function FnosAuthorizedPathPicker({ input, inputActions, insertReferences, t }: FnosAuthorizedPathPickerProps) {
+export function FnosAuthorizedPathPicker({ input, insertReferences, t }: FnosAuthorizedPathPickerProps) {
   const [treeData, setTreeData] = useState<TreeNode[]>([])
   const [desiredPaths, setDesiredPaths] = useState<string[] | undefined>()
   const entries = useRef(new Map<string, AuthorizedEntry>())
   const busy = input.phase === 'adjudicating' || input.phase === 'submitting'
-  const currentReferences = useMemo(() => referenceEntries(input), [input])
-  const currentPaths = useMemo(() => currentReferences.map(reference => reference.path), [currentReferences])
-  const value = desiredPaths ?? currentPaths
+  const value = desiredPaths ?? []
   const treePanelWidth = useMemo(() => {
     const longestPath = [...entries.current.values()].reduce((longest, entry) => Math.max(longest, entry.semanticPath.length), 0)
     return `${Math.max(20, longestPath + 8)}ch`
@@ -121,27 +99,7 @@ export function FnosAuthorizedPathPicker({ input, inputActions, insertReferences
 
   useEffect(() => {
     if (desiredPaths === undefined) return
-    const wanted = new Set(desiredPaths)
-    const current = new Set(currentPaths)
-    const fnosOccurrences = input.occurrences.filter(occurrence => occurrence.source === FNOS_REFERENCE_SOURCE)
-    const removed = fnosOccurrences
-      .filter(occurrence => {
-        const decoded = decodeFnosReference(occurrence.ref)
-        return decoded !== undefined && !wanted.has(decoded.path)
-      })
-      .sort((left, right) => right.offset - left.offset)
-
-    if (removed.length > 0) {
-      let draft = input.draft
-      for (const occurrence of removed) {
-        draft = draftWithoutFnosOccurrence(draft, occurrence, fnosOccurrences)
-      }
-      inputActions.setDraft(draft)
-      return
-    }
-
     const additions = desiredPaths
-      .filter(path => !current.has(path))
       .map(path => entries.current.get(path))
       .flatMap(entry => {
         if (entry === undefined) return []
@@ -150,12 +108,9 @@ export function FnosAuthorizedPathPicker({ input, inputActions, insertReferences
       })
     if (additions.length > 0) {
       insertReferences({ draft: input.draft, draftRev: input.draftRev }, additions)
-      return
     }
-
-    // Preserve DSH's official trailing separator after a reference.
     setDesiredPaths(undefined)
-  }, [currentPaths, desiredPaths, input, inputActions, insertReferences])
+  }, [desiredPaths, input.draft, input.draftRev, insertReferences])
 
   const loadData = useCallback(async (node: unknown) => {
     const key = typeof node === 'object' && node !== null && 'key' in node && typeof node.key === 'string'
@@ -175,7 +130,8 @@ export function FnosAuthorizedPathPicker({ input, inputActions, insertReferences
       treeData={treeData}
       value={value}
       loadData={loadData}
-             onChange={(next: unknown) => { setDesiredPaths(selectedPaths(next)) }}
+       onVisibleChange={(visible: boolean) => { if (!visible) setDesiredPaths(undefined) }}
+       onChange={(next: unknown) => { setDesiredPaths(selectedPaths(next)) }}
       disabled={busy}
       size="small"
       borderless
