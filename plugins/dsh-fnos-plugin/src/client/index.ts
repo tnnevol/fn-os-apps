@@ -10,7 +10,6 @@ import type {} from '@deepseek-ai/dsh-client-ui-slots'
 import type {} from '@deepseek-ai/dsh-client-ui-theme/client'
 import { AuthorizedDirectoriesCard } from './AuthorizedDirectoriesCard.tsx'
 import { FnosInputPickerButton } from './FnosInputPickerButton.tsx'
-import { FnosInputReferencesDock } from './FnosInputReferencesDock.tsx'
 import { insertFnosReferences } from './input-reference-actions.ts'
 import { FNOS_REFERENCE_SOURCE, decodeFnosReference } from './input-references.ts'
 import type { FnosLocaleKey } from './locales.ts'
@@ -184,10 +183,4 @@ export function apply(ctx: ClientContext): void {
       insertReferences: (input, references) => insertFnosReferences(ctx, sessionId, references, input),
     }),
   }, FnosInputPickerButton))
-  ctx.slots.inject('conversation.input.dock', () => ctx.slots.register({
-    name: 'conversation.input.dock',
-    id: 'dsh-fnos-input-references',
-    order: 100,
-    locale: namespace,
-  }, FnosInputReferencesDock))
 }

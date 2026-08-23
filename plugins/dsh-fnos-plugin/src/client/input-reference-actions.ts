@@ -1,4 +1,4 @@
-/** Insert fnOS selections as structured, link-like references in the DSH input. */
+/** Insert fnOS selections as structured, official DSH references. */
 
 import type { ClientContext, SessionId } from '@deepseek-ai/dsh-client-runtime/client'
 import type { ReferenceInsert, TokenSpan } from '@deepseek-ai/dsh-client-ui-input-trigger/client'
@@ -42,7 +42,7 @@ export function draftWithoutFnosOccurrence(
   return prefix + separator + suffix
 }
 
-/** Move the native textarea caret after React commits the inserted chip text. */
+/** Move the native textarea caret after React commits the inserted reference. */
 export function restoreFnosInputCaret(position: number, expectedDraft: string): void {
   if (typeof document === 'undefined' || typeof requestAnimationFrame !== 'function') return
   const restore = (): void => {
@@ -80,12 +80,12 @@ function insertReference(
     ref: reference.ref,
     label,
     appearance: reference.kind === 'directory' ? 'folder' : 'file',
-    clipboardText: reference.semanticPath,
+    clipboardText: reference.clipboardText,
   }
   return actx.bail(actx, 'slash/input-insert-reference', { reference: value, span }) === true
 }
 
-/** Append selected files and folders as link-like native DSH references. */
+/** Append selected files and folders using DSH's official chip placeholder. */
 export function insertFnosReferences(
   ctx: ClientContext,
   sessionId: SessionId,

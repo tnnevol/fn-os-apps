@@ -52,6 +52,7 @@ describe('dsh-fnos package contract', () => {
     expect(client).toContain("from '@tnnevol/dsh-semi-ui'")
     expect(client).toContain("installSemiDshTheme(), 'dsh-fnos: Semi DSH theme'")
 
+
     const semiTheme = await readFile(new URL('../../../packages/dsh-semi-ui/src/theme.ts', import.meta.url), 'utf8')
     expect(semiTheme).toContain('data-dsh-semi-theme')
     expect(semiTheme).toContain('--semi-color-bg-3: var(--dsw-alias-bg-layer-3)')
@@ -65,8 +66,8 @@ describe('dsh-fnos package contract', () => {
      expect(semiTheme).toContain('semi-tree-option-list')
      expect(semiTheme).toContain('width: 100% !important')
     expect(semiTheme).toContain('semi-checkbox-unChecked:hover')
-     expect(semiTheme).toContain('data-dsh-fnos-link')
-     expect(semiTheme).toContain('gap: 0 !important')
+     expect(semiTheme).not.toContain('data-dsh-fnos-link')
+
      expect(semiTheme).not.toContain('data-dsh-fnos-input-references')
      expect(semiTheme).toContain('background: #111 !important')
     expect(semiTheme).toContain('color: #fff !important')
@@ -75,13 +76,12 @@ describe('dsh-fnos package contract', () => {
 
   it('keeps fnOS file and folder references in the native input draft', async () => {
     const actions = await readFile(new URL('../src/client/input-reference-actions.ts', import.meta.url), 'utf8')
-    const dock = await readFile(new URL('../src/client/FnosInputReferencesDock.tsx', import.meta.url), 'utf8')
     expect(actions).toContain("appearance: reference.kind === 'directory' ? 'folder' : 'file'")
     expect(actions).toContain('referenceLabel')
     expect(actions).toContain('restoreFnosInputCaret')
-    expect(dock).toContain('data-dsh-fnos-link')
-    expect(dock).toContain('MutationObserver')
-    expect(dock).not.toContain('createPortal')
+    expect(actions).toContain("slash/input-insert-reference")
+    expect(actions).toContain("appearance: reference.kind === 'directory' ? 'folder' : 'file'")
+    expect(actions).not.toContain('\\u00a0')
   })
 
   it('declares the DSH API version used by the client bridge', async () => {
