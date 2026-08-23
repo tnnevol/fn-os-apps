@@ -20,6 +20,8 @@ interface TreeNode {
   children?: TreeNode[]
 }
 
+const EMPTY_TREE_VALUE: string[] = []
+
 function displayName(value: string): string {
   const parts = value.split('/').filter(Boolean)
   return parts.at(-1) ?? value
@@ -73,7 +75,7 @@ export function FnosAuthorizedPathPicker({ input, insertReferences, t }: FnosAut
   const [desiredPaths, setDesiredPaths] = useState<string[] | undefined>()
   const entries = useRef(new Map<string, AuthorizedEntry>())
   const busy = input.phase === 'adjudicating' || input.phase === 'submitting'
-  const value = desiredPaths ?? []
+  const value = desiredPaths ?? EMPTY_TREE_VALUE
   const treePanelWidth = useMemo(() => {
     const longestPath = [...entries.current.values()].reduce((longest, entry) => Math.max(longest, entry.semanticPath.length), 0)
     return `${Math.max(20, longestPath + 8)}ch`

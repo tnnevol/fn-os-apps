@@ -84,7 +84,7 @@ describe('dsh-fnos package contract', () => {
     expect(actions).toContain("appearance: reference.kind === 'directory' ? 'folder' : 'file'")
     expect(actions).not.toContain('\\u00a0')
     const picker = await readFile(new URL('../src/client/FnosAuthorizedPathPicker.tsx', import.meta.url), 'utf8')
-    expect(picker).toContain('const value = desiredPaths ?? []')
+    expect(picker).toContain('const value = desiredPaths ?? EMPTY_TREE_VALUE')
     expect(picker).toContain('onVisibleChange={(visible: boolean) => { if (!visible) setDesiredPaths(undefined) }}')
     expect(picker).toContain('return paths')
   })
