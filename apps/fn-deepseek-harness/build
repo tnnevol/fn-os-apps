@@ -5,6 +5,7 @@ set -euo pipefail
 APP_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 MANIFEST="${APP_DIR}/manifest"
 BUMP_PART="${VERSION_BUMP:-patch}"
+FPK_COPY_DIR="${FPK_COPY_DIR:-/vol1/1000/Downloads}"
 
 fail() {
     echo "build: $*" >&2
@@ -75,4 +76,12 @@ if ! build_package; then
     exit 1
 fi
 
-echo "Built ${APP_DIR}/fn-deepseek-harness.fpk (version ${NEXT_VERSION})"
+OUTPUT_FPK="${APP_DIR}/fn-deepseek-harness.fpk"
+if [ -d "${FPK_COPY_DIR}" ]; then
+    cp -f "${OUTPUT_FPK}" "${FPK_COPY_DIR}/fn-deepseek-harness.fpk"
+    echo "Copied ${OUTPUT_FPK} to ${FPK_COPY_DIR}/fn-deepseek-harness.fpk"
+else
+    echo "FPK copy destination does not exist; skipped: ${FPK_COPY_DIR}" >&2
+fi
+
+echo "Built ${OUTPUT_FPK} (version ${NEXT_VERSION})"
