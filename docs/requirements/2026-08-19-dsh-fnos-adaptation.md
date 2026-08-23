@@ -33,6 +33,7 @@ DeepSeek Harness（DSH）原生面向通用 Node.js 和浏览器环境。作为 
 - 在 DSH 内容输入框右下区域提供选择 NAS 目录和文件的快捷入口，将选择结果作为输入引用回填。
 - FPK 安装阶段按发布清单自动集成插件：通过安装向导选择的 npm 源安装精确版本，未发布插件不在构建阶段编译、打包或复制到 DSH Web profile。
 - 为后续接入其他 fnOS JS SDK 能力保留清晰的 Host、Client 和应用权限边界。
+- 在 fnOS iframe 中将 DSH 官方配置文件打开操作适配到 fnOS 文件应用，避免调用 NAS 容器内不可用的本地编辑器。
 
 ## 涉及范围
 
@@ -60,6 +61,7 @@ DeepSeek Harness（DSH）原生面向通用 Node.js 和浏览器环境。作为 
 | FNOS-001-11 | P1 | 内容输入框选择 NAS 目录和文件 | 在 DSH 内容输入框右下区域增加有颜色的 fnOS 官方 logo 按钮；点击后支持多选 NAS 目录和文件，授权根目录一级节点展示完整语义路径、子节点展示末级名称；输入框内容中的文件夹/文件使用 DSH 原生结构化 chip 占位样式展示，悬停显示完整路径，不增加名称点击行为，插入后光标保持在引用内容之后，使用 DSH 原生结构化引用携带 URL 转义后的真实路径 | <Badge type="warning" text="待真实 NAS 验收" /> |
 | FNOS-001-12 | P1 | 上下文文件访问适配 | 点击 DSH 上下文、工具结果或生成文件中的路径后，在 fnOS iframe 内直接通过 `@trimjs/web-app` 打开文件，由 fnOS 文件应用和当前用户权限执行最终判断；独立浏览器继续使用 DSH 原生行为 | <Badge type="warning" text="待真实 NAS 验收" /> |
 | FNOS-001-13 | P1 | fnOS 宿主页面标题 | 监听 DSH Web 的 `document.title` 变化，并在 fnOS Web 宿主 iframe 中通过 NAS JS SDK `setTitle` 同步该标题；独立浏览器不调用该 SDK，不改变其页面标题 | <Badge type="warning" text="待真实 NAS 验收" /> |
+| FNOS-001-14 | P1 | fnOS 打开 DSH 配置文件 | 在 fnOS iframe 中通过 DSH settings Host 准备配置文件，再调用 fnOS 文件应用打开；独立浏览器不改变 DSH 原生配置文件操作 | <Badge type="warning" text="待真实 NAS 验收" /> |
 
 ## 交互和行为约束
 
@@ -78,6 +80,13 @@ DeepSeek Harness（DSH）原生面向通用 Node.js 和浏览器环境。作为 
 - 监听 `<title>` 元素变化，使会话标题切换后同步更新 fnOS 宿主标题。
 - 独立浏览器和非 Web 宿主环境不调用标题 SDK，保持 DSH 原有页面标题行为。
 - SDK 初始化或标题更新失败时只记录调试信息，不阻塞 DSH 工作台。
+
+### 打开 DSH 配置文件
+
+- Host 侧调用 DSH settings provider 的 `prepareDocument()`，仅返回当前配置文件的真实路径，不返回配置内容、Token 或内部 settings 数据。
+- fnOS iframe 内由 `@trimjs/web-app` 的 `openFile(path)` 交给 fnOS 文件应用打开，避免在 NAS 服务容器内调用 `open -t`、`xdg-open` 或浏览器文件关联。
+- 配置文件不存在时由 settings provider 负责准备；准备失败、路径不可用或 fnOS SDK 拒绝时显示可理解的错误。
+- 独立浏览器不调用 fnOS SDK，继续保留 DSH 官方配置文件打开行为。
 
 ### 授权目录
 
@@ -159,6 +168,7 @@ DeepSeek Harness（DSH）原生面向通用 Node.js 和浏览器环境。作为 
 - 不在 FNOS-001-11 中实现文件上传、文件复制/移动、NAS ACL 修改或会话附件持久化策略；这些能力如需接入应另立需求。
 - FNOS-001-11 首期不支持多选结果的批量上传或会话附件持久化；多选仅用于生成 DSH 可消费的路径/文件引用。
 - FNOS-001-12 不修改 DSH 官方文件打开实现，不通过安装 `xdg-utils` 解决 NAS 缺少 `xdg-open`，也不绕过 fnOS 授权目录边界。
+- FNOS-001-14 不读取或编辑 DSH 配置内容，不把配置路径以外的 Host 私有信息返回给 Client；独立浏览器不替换 DSH 官方配置文件操作。
 
 ## 验收条件与完成状态
 

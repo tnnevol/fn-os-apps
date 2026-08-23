@@ -59,6 +59,7 @@ export {
   FNOS_PATH_CONVERSION_PATH,
   FNOS_PATH_OPEN_VALIDATION_PATH,
 } from './authorized-directories-contract.ts'
+export { FNOS_SETTINGS_DOCUMENT_PATH } from './settings-document-contract.ts'
 export {
   accessiblePathsFromEnvironment,
   convertPathsForDisplay,

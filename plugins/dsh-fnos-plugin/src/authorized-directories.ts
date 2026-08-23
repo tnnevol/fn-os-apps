@@ -18,6 +18,7 @@ import {
   type AuthorizedEntriesResponse,
   type ReadablePath,
 } from './authorized-directories-contract.ts'
+import { FNOS_SETTINGS_DOCUMENT_PATH } from './settings-document-contract.ts'
 
 const BODY_LIMIT = 64 * 1024
 
@@ -731,7 +732,7 @@ async function validatePathsForConversion(req: IncomingMessage, paths: readonly 
   return [...paths]
 }
 
-/** Register list/delete routes only on the DSH Web profile. */
+/** Register fnOS settings/document and authorized-directory routes on the DSH Web profile. */
 export function registerAuthorizedDirectoryRoutes(ctx: Context): void {
   ctx.effect(() => {
     const authorize = (req: IncomingMessage, res: ServerResponse): boolean => {
@@ -748,6 +749,21 @@ export function registerAuthorizedDirectoryRoutes(ctx: Context): void {
           if (!authorize(req, res)) return
           try {
             json(res, 200, { directories: await loadAuthorizedDirectories(req) })
+          } catch (error: unknown) {
+            errorResponse(res, error)
+          }
+        },
+      }),
+      ctx.webServer.register({
+        kind: 'exact',
+        path: FNOS_SETTINGS_DOCUMENT_PATH,
+        handler: async (req, res) => {
+          if (req.method !== 'GET') return json(res, 405, { error: 'method not allowed' })
+          if (!authorize(req, res)) return
+          try {
+            const path = await ctx.settings.prepareDocument()
+            if (path === undefined) return json(res, 404, { error: 'fnos-settings-document-unavailable' })
+            json(res, 200, { path })
           } catch (error: unknown) {
             errorResponse(res, error)
           }

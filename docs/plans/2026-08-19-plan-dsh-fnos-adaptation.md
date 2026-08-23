@@ -135,6 +135,14 @@ const result = await sdk.pickSharedFile({
 4. 成功后重新调用 `list` 刷新列表。
 5. 删除操作只移除应用 ACL，不清理 DSH 会话、目录内容或 `DSH_HOME` 数据。
 
+### P1：fnOS 打开 DSH 配置文件（实施中）
+
+1. Host 通过 `ctx.settings.prepareDocument()` 准备 DSH 当前 settings provider 的配置文件，并在受信任的同源插件路由中返回单一真实路径。
+2. Client 在 fnOS 设置卡片提供打开配置文件入口；仅在 fnOS iframe 中初始化 `@trimjs/web-app`，调用 `ready()` 后使用 `openFile(path)` 交给 fnOS 文件应用。
+3. 配置文件准备失败、路由不可用或 SDK 打开失败时显示本地化错误，不回退到 NAS 容器内的原生编辑器。
+4. 独立浏览器不调用 fnOS SDK，保留 DSH 官方配置文件入口；Host 路由不返回配置内容、Token 或 settings 私有数据。
+5. 本地验证 Host 路由、准备失败、SDK 成功/失败和独立浏览器降级；真实 fnOS NAS 验证配置文件可以在文件应用中打开。
+
 ### P1：工作区快捷跳转授权目录（代码完成，待真实 NAS 验收）
 
 #### 1. 工作区入口与数据

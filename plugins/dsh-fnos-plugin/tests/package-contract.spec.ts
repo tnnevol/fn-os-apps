@@ -42,6 +42,17 @@ describe('dsh-fnos package contract', () => {
     expect(source).not.toContain("{busy ? t('deleting') : t('delete')}")
   })
 
+  it('adapts opening the DSH settings document to fnOS', async () => {
+    const host = await readFile(new URL('../src/authorized-directories.ts', import.meta.url), 'utf8')
+    const card = await readFile(new URL('../src/client/AuthorizedDirectoriesCard.tsx', import.meta.url), 'utf8')
+    const contract = await readFile(new URL('../src/settings-document-contract.ts', import.meta.url), 'utf8')
+    expect(host).toContain('ctx.settings.prepareDocument()')
+    expect(host).toContain('FNOS_SETTINGS_DOCUMENT_PATH')
+    expect(card).toContain('requestSettingsDocumentPath')
+    expect(card).toContain('sdk.openFile(path)')
+    expect(contract).toContain("'/plugins/dsh-fnos/settings/document'")
+  })
+
   it('keeps the original DSH workspace flow and augments it with a shortcut', async () => {
     const source = await readFile(new URL('../src/client/index.ts', import.meta.url), 'utf8')
     const shortcut = await readFile(new URL('../src/client/workspace-authorized-shortcut.ts', import.meta.url), 'utf8')
