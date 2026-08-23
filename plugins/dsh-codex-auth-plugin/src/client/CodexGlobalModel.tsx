@@ -1,6 +1,6 @@
 /** DSH-wide Codex default model controls. */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { CSSProperties } from 'react'
 import type { ConnectionHandle, ModelCatalogModel, ModelProviderGroup } from '@deepseek-ai/dsh-client-connection/client'
 import { IconChevronDownOutline14 } from '@deepseek-ai/dsh-client-ui-primitives'
@@ -77,10 +77,6 @@ const pickerButtonStyle: CSSProperties = {
 
 const UNSET_VALUE = '__dsh_cascader_unset__'
 
-interface CascaderRef {
-  open?: () => void
-}
-
 function GlobalModelPicker({ modelMenuLabel, effortMenuLabel, modelLabel, modelPlaceholder, effortLabel, selectedModelId, selectedEffortId, modelOptions, effortOptions, onChooseModel, onChooseEffort }: {
   modelMenuLabel: string
   effortMenuLabel: string
@@ -96,7 +92,6 @@ function GlobalModelPicker({ modelMenuLabel, effortMenuLabel, modelLabel, modelP
 }) {
   const modelValue = modelLabel === '' ? modelPlaceholder : modelLabel
   const buttonValue = effortLabel === '' ? modelValue : `${modelValue} · ${effortLabel}`
-  const cascaderRef = useRef<CascaderRef | null>(null)
   const treeData = [
     {
       value: 'model',
@@ -109,37 +104,41 @@ function GlobalModelPicker({ modelMenuLabel, effortMenuLabel, modelLabel, modelP
       children: effortOptions.map(option => ({ value: option.id || UNSET_VALUE, label: option.label })),
     },
   ]
-  const selectedPath = selectedEffortId !== ''
-    ? ['effort', selectedEffortId]
-    : ['model', selectedModelId || UNSET_VALUE]
+  const selectedPaths = [
+    ['model', selectedModelId || UNSET_VALUE],
+    ...(selectedEffortId === '' ? [] : [['effort', selectedEffortId]]),
+  ]
   const handleChange = (value: unknown): void => {
     if (!Array.isArray(value)) return
-    const path = value.map(String)
-    const parent = path[0]
-    const leaf = path.at(-1)
-    if (leaf === undefined || leaf === parent) return
-    if (parent === 'model') onChooseModel(leaf === UNSET_VALUE ? '' : leaf)
-    if (parent === 'effort') onChooseEffort(leaf === UNSET_VALUE ? '' : leaf)
-  }
-  const reopenAfterSelect = (): void => {
-    if (typeof requestAnimationFrame !== 'function') return
-    requestAnimationFrame(() => { cascaderRef.current?.open?.() })
+    const paths = Array.isArray(value[0]) ? value : [value]
+    const nextValues = new Map<string, string>()
+    for (const pathValue of paths) {
+      if (!Array.isArray(pathValue)) continue
+      const path = pathValue.map(String)
+      const parent = path[0]
+      const leaf = path.at(-1)
+      if (leaf === undefined || leaf === parent) continue
+      if (parent === 'model' || parent === 'effort') nextValues.set(parent, leaf === UNSET_VALUE ? '' : leaf)
+    }
+    const nextModelId = nextValues.get('model') ?? ''
+    const nextEffortId = nextValues.get('effort') ?? ''
+    if (nextModelId !== selectedModelId) onChooseModel(nextModelId)
+    if (nextEffortId !== selectedEffortId) onChooseEffort(nextEffortId)
   }
   return (
     <DshCascader
-      ref={cascaderRef}
       treeData={treeData}
-      value={selectedPath}
+      value={selectedPaths}
+      multiple
+      enableLeafClick
       showNext="hover"
       changeOnSelect={false}
-      motion={false}
       showClear={false}
       borderless
       size="small"
       dropdownClassName="dsh-codex-global-model-cascader"
       dropdownStyle={{ minWidth: 252, maxWidth: 'calc(100vw - 32px)', borderRadius: 10, overflow: 'hidden' }}
       onChange={handleChange}
-      onSelect={reopenAfterSelect}
       triggerRender={() => (
         <DshButton htmlType="button" theme="borderless" type="tertiary" aria-haspopup="menu" style={pickerButtonStyle}>
           <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: modelLabel === '' ? 'var(--dsw-alias-label-dimmed)' : 'var(--dsw-alias-label-primary)' }}>{buttonValue}</span>

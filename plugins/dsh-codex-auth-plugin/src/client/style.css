@@ -1,0 +1,38 @@
+.dsh-codex-global-model-cascader .semi-cascader-option-label-checkbox {
+  display: none !important;
+}
+
+.dsh-codex-global-model-cascader .semi-cascader-option:hover,
+.dsh-codex-global-model-cascader .semi-cascader-option-active,
+.dsh-codex-global-model-cascader .semi-cascader-option-active:hover {
+  background-color: var(--dsw-alias-interactive-bg-hover) !important;
+  color: var(--dsw-alias-label-primary) !important;
+}
+
+.dsh-codex-global-model-cascader .semi-cascader-option:active,
+.dsh-codex-global-model-cascader .semi-cascader-option:has(input[type='checkbox']:checked),
+.dsh-codex-global-model-cascader .semi-cascader-option:has(.semi-checkbox-checked),
+.dsh-codex-global-model-cascader .semi-cascader-option:has(.semi-checkbox-inner-checked),
+.dsh-codex-global-model-cascader .semi-cascader-option:has(input[type='checkbox']:checked):hover,
+.dsh-codex-global-model-cascader .semi-cascader-option:has(.semi-checkbox-checked):hover,
+.dsh-codex-global-model-cascader .semi-cascader-option:has(.semi-checkbox-inner-checked):hover {
+  background-color: var(--dsw-alias-interactive-bg-active) !important;
+  color: var(--dsw-alias-label-primary) !important;
+}
+
+.dsh-codex-global-model-cascader .semi-cascader-option-select,
+.dsh-codex-global-model-cascader .semi-cascader-option-label-highlight {
+  color: var(--dsw-alias-label-primary) !important;
+}
+
+.dsh-codex-global-model-cascader .semi-cascader-option-icon,
+.dsh-codex-global-model-cascader .semi-cascader-option-icon-active,
+.dsh-codex-global-model-cascader .semi-cascader-option-icon-empty {
+  color: var(--dsw-alias-label-secondary) !important;
+}
+
+.dsh-codex-global-model-cascader .semi-cascader-option-select .semi-cascader-option-icon,
+.dsh-codex-global-model-cascader .semi-cascader-option-active .semi-cascader-option-icon,
+.dsh-codex-global-model-cascader .semi-cascader-option-active .semi-cascader-option-icon-active {
+  color: var(--dsw-alias-label-primary) !important;
+}
