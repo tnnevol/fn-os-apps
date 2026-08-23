@@ -62,6 +62,8 @@ describe('dsh-fnos package contract', () => {
     expect(semiTheme).toContain('color: var(--dsw-alias-label-primary, #fff)')
     expect(semiTheme).toContain('pointer-events: none')
     expect(semiTheme).toContain('overflow-x: auto')
+     expect(semiTheme).toContain('semi-tree-option-list')
+     expect(semiTheme).toContain('width: max-content !important')
     expect(semiTheme).toContain('semi-checkbox-unChecked:hover')
      expect(semiTheme).toContain('data-dsh-fnos-link')
      expect(semiTheme).toContain('gap: 0 !important')
