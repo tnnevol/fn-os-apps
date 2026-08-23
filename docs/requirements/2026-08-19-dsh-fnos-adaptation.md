@@ -57,7 +57,7 @@ DeepSeek Harness（DSH）原生面向通用 Node.js 和浏览器环境。作为 
 | FNOS-001-08 | P2 | 扩展其他 fnOS 能力 | 在同一插件中按独立需求接入其他 fnOS JS SDK，不把未经确认的 SDK 能力混入本次发布 | 后续计划 |
 | FNOS-001-09 | P1 | FPK 安装阶段集成 DSH 插件 | 安装 FPK 时，只通过所选 npm 源安装发布清单中的插件精确版本并启用 bundle；未发布插件不参与 FPK 构建和安装，发布后加入清单才会自动集成 | <Badge type="warning" text="待真实 NAS 验收" /> |
 | FNOS-001-10 | P1 | 工作区快捷跳转已授权 fnOS 目录 | 在 DSH 原始工作区目录流程中展示有效授权目录；目录超过 10 个时提供搜索，并通过路径输入旁的黑白 fnOS logo 打开授权目录面板。选择结果写回原始路径输入并交回 DSH 原生 `onPicked`，由 DSH 复用已有工作区或登记新路径后打开；不修改 ACL、文件或会话数据 | <Badge type="warning" text="待真实 NAS 验收" /> |
-| FNOS-001-11 | P1 | 内容输入框选择 NAS 目录和文件 | 在 DSH 内容输入框右下区域增加有颜色的 fnOS 官方 logo 按钮；点击后支持多选 NAS 目录和文件，授权根目录一级节点展示完整语义路径、子节点展示末级名称；输入框内容中的文件夹/文件 icon 与名称之间使用 nbsp 间隔并以链接样式展示，悬停显示完整路径，不增加名称点击行为，插入后光标保持在引用内容之后，使用 DSH 原生结构化引用携带 URL 转义后的真实路径 | <Badge type="warning" text="待真实 NAS 验收" /> |
+| FNOS-001-11 | P1 | 内容输入框选择 NAS 目录和文件 | 在 DSH 内容输入框右下区域增加有颜色的 fnOS 官方 logo 按钮；点击后支持多选 NAS 目录和文件，授权根目录一级节点展示完整语义路径、子节点展示末级名称；输入框内容中的文件夹/文件 icon 与名称以链接样式展示，悬停显示完整路径，不增加名称点击行为，插入后光标保持在引用内容之后，使用 DSH 原生结构化引用携带 URL 转义后的真实路径 | <Badge type="warning" text="待真实 NAS 验收" /> |
 | FNOS-001-12 | P1 | 上下文文件访问适配 | 点击 DSH 上下文、工具结果或生成文件中的路径后，在 fnOS iframe 内直接通过 `@trimjs/web-app` 打开文件，由 fnOS 文件应用和当前用户权限执行最终判断；独立浏览器继续使用 DSH 原生行为 | <Badge type="warning" text="待真实 NAS 验收" /> |
 | FNOS-001-13 | P1 | fnOS 宿主页面标题 | 监听 DSH Web 的 `document.title` 变化，并在 fnOS Web 宿主 iframe 中通过 NAS JS SDK `setTitle` 同步该标题；独立浏览器不调用该 SDK，不改变其页面标题 | <Badge type="warning" text="待真实 NAS 验收" /> |
 

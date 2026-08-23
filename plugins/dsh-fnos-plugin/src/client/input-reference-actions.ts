@@ -4,16 +4,13 @@ import type { ClientContext, SessionId } from '@deepseek-ai/dsh-client-runtime/c
 import type { ReferenceInsert, TokenSpan } from '@deepseek-ai/dsh-client-ui-input-trigger/client'
 import { FNOS_REFERENCE_SOURCE, type FnosInputReference, type InputSnapshotForReference } from './input-references.ts'
 
-const FNOS_LABEL_GAP = '\u00a0'
-
 function displayName(value: string): string {
   const parts = value.split('/').filter(Boolean)
   return parts.at(-1) ?? value
 }
 
-/** Keep the visual icon/name gap in the native draft so the caret uses the same width. */
 function referenceLabel(value: string): string {
-  return `${FNOS_LABEL_GAP}${displayName(value)}`
+  return displayName(value)
 }
 
 export function trimFnosTrailingWhitespace(

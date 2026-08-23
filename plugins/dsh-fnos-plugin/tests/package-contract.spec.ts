@@ -77,7 +77,7 @@ describe('dsh-fnos package contract', () => {
     const actions = await readFile(new URL('../src/client/input-reference-actions.ts', import.meta.url), 'utf8')
     const dock = await readFile(new URL('../src/client/FnosInputReferencesDock.tsx', import.meta.url), 'utf8')
     expect(actions).toContain("appearance: reference.kind === 'directory' ? 'folder' : 'file'")
-    expect(actions).toContain('FNOS_LABEL_GAP')
+    expect(actions).toContain('referenceLabel')
     expect(actions).toContain('restoreFnosInputCaret')
     expect(dock).toContain('data-dsh-fnos-link')
     expect(dock).toContain('MutationObserver')
