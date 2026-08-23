@@ -37,6 +37,13 @@ export function fnosReferenceId(kind: FnosReferenceKind, path: string): string {
   return `${kind}:${encodeURIComponent(path)}`
 }
 
+/** Plain @ token used by DSH's official message echo renderer. */
+export function fnosReferenceDisplayText(reference: Pick<FnosInputReference, 'kind' | 'semanticPath'>): string {
+  const semanticPath = reference.semanticPath.trim().replace(/^@/u, '')
+  const path = reference.kind === 'directory' && !semanticPath.endsWith('/') ? `${semanticPath}/` : semanticPath
+  return `@${path}`
+}
+
 export function createFnosInputReference(
   kind: FnosReferenceKind,
   pathValue: unknown,

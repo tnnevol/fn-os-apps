@@ -2,7 +2,7 @@
 
 import type { ClientContext, SessionId } from '@deepseek-ai/dsh-client-runtime/client'
 import type { ReferenceInsert, TokenSpan } from '@deepseek-ai/dsh-client-ui-input-trigger/client'
-import { FNOS_REFERENCE_SOURCE, type FnosInputReference, type InputSnapshotForReference } from './input-references.ts'
+import { FNOS_REFERENCE_SOURCE, fnosReferenceDisplayText, type FnosInputReference, type InputSnapshotForReference } from './input-references.ts'
 
 function displayName(value: string): string {
   const parts = value.split('/').filter(Boolean)
@@ -80,7 +80,7 @@ function insertReference(
     ref: reference.ref,
     label,
     appearance: reference.kind === 'directory' ? 'folder' : 'file',
-    clipboardText: reference.clipboardText,
+    clipboardText: fnosReferenceDisplayText(reference),
   }
   return actx.bail(actx, 'slash/input-insert-reference', { reference: value, span }) === true
 }
