@@ -51,6 +51,8 @@ describe('dsh-fnos package contract', () => {
     expect(host).toContain('FNOS_SETTINGS_DOCUMENT_PATH')
     expect(action).toContain('requestSettingsDocumentPath')
     expect(action).toContain('sdk.openFile(path)')
+    expect(action).toContain('DshIconSetting as IconSetting')
+    expect(action).toContain('<IconSetting />')
     expect(index).toContain("id: 'open-document'")
     expect(index).toContain('priority: -1')
     expect(index).toContain('FnosSettingsDocumentAction')

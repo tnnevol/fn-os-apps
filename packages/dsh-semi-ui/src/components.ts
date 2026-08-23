@@ -10,3 +10,4 @@ export { default as DshIconClose } from '@douyinfe/semi-icons/lib/es/icons/IconC
 export { default as DshIconFile } from '@douyinfe/semi-icons/lib/es/icons/IconFile.js'
 export { default as DshIconFolder } from '@douyinfe/semi-icons/lib/es/icons/IconFolder.js'
 export { default as DshIconFolderOpen } from '@douyinfe/semi-icons/lib/es/icons/IconFolderOpen.js'
+export { default as DshIconSetting } from '@douyinfe/semi-icons/lib/es/icons/IconSetting.js'

@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from 'react'
 import type { PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
-import { DshButton } from '@tnnevol/dsh-semi-ui'
+import { DshButton, DshIconSetting as IconSetting } from '@tnnevol/dsh-semi-ui'
 import { isEmbeddedFnosFrame } from './sdk-carrier.ts'
 import { createTrimApp } from './sdk.ts'
 import { requestSettingsDocumentPath } from './settings-document-client.ts'
@@ -44,6 +44,7 @@ export function FnosSettingsDocumentAction({ t }: SettingsDocumentActionProps) {
       title={error ? t('settingsDocumentOpenFailed') : t('openSettingsDocument')}
       onClick={() => { void open() }}
     >
+      <IconSetting />
       {error ? t('settingsDocumentOpenFailed') : t('openSettingsDocument')}
     </DshButton>
   )
