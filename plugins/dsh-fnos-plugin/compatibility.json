@@ -7,6 +7,7 @@
     "version": "0.1.1-rc.2",
     "packages": [
       "@deepseek-ai/dsh-client-runtime",
+      "@deepseek-ai/dsh-session-log-export",
       "@deepseek-ai/dsh-client-ui-theme",
       "@deepseek-ai/dsh-client-ui-settings",
       "@deepseek-ai/dsh-client-locale",

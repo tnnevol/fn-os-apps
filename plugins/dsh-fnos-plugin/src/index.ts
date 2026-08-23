@@ -22,7 +22,7 @@ export const FNOS_AUTHORIZED_DIRECTORIES_SETTINGS_NS = settingsNamespace(
 const DSH_THEME_SETTINGS_NS = settingsNamespace('ui-theme')
 
 /** Host services required by the fnOS settings namespace and Web routes. */
-export const inject = ['webServer', 'settings']
+export const inject = ['webServer', 'settings', 'apiProxy']
 
 export function apply(ctx: Context): void {
   ctx.settings.register(FNOS_AUTHORIZED_DIRECTORIES_SETTINGS_NS, FnosSettingsSchema)

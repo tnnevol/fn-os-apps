@@ -1,6 +1,6 @@
 /** Browser half of the fnOS-specific DSH integration plugin. */
 
-import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
+import type { ClientContext, SessionId } from '@deepseek-ai/dsh-client-runtime/client'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type { InputTriggerServiceContract, InputTriggerSource } from '@deepseek-ai/dsh-client-ui-input-trigger/client'
@@ -10,11 +10,14 @@ import type {} from '@deepseek-ai/dsh-client-ui-slots'
 import type {} from '@deepseek-ai/dsh-client-ui-theme/client'
 import { AuthorizedDirectoriesCard } from './AuthorizedDirectoriesCard.tsx'
 import { FnosInputPickerButton } from './FnosInputPickerButton.tsx'
+import { FnosSessionLogHeaderAction } from './FnosSessionLogHeaderAction.tsx'
 import { insertFnosReferences } from './input-reference-actions.ts'
 import { FNOS_REFERENCE_SOURCE, fnosReferencePromptText } from './input-references.ts'
 import type { FnosLocaleKey } from './locales.ts'
 import { en, zh } from './locales.ts'
 import { installFnosPathOpener } from './path-opener.ts'
+import { FnosSettingsDocumentAction } from './FnosSettingsDocumentAction.tsx'
+import { isEmbeddedFnosFrame } from './sdk-carrier.ts'
 import { createTrimApp } from './sdk.ts'
 import { installFnosPageTitle } from './sdk-title.ts'
 import { createThemeBridge, type ThemeBridge } from './theme-bridge.ts'
@@ -31,9 +34,13 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
 }
 
 export const name = 'dsh-fnos-plugin-client'
-export const inject = ['theme', 'slots', 'locale', 'sessions', 'inputTriggers', 'workspaces', 'settingsScope']
+export const inject = ['theme', 'slots', 'locale', 'sessions', 'inputTriggers', 'workspaces', 'settingsScope', 'sessionLogDownload']
 
 const DARK_ATTRIBUTE = 'data-ds-dark-theme'
+
+type SessionLogDownloadController = {
+  download: (sessionId: SessionId) => Promise<void>
+}
 
 /**
  * Keep DSH's saved preference unchanged. When it is set to "system", apply
@@ -161,6 +168,28 @@ export function apply(ctx: ClientContext): void {
     return unregister
   }, 'dsh-fnos: fnOS input reference source')
 
+  if (isEmbeddedFnosFrame()) {
+    ctx.slots.inject('conversation.session.header.utilities', () => {
+      const sessionLogDownload = ctx.get('sessionLogDownload') as SessionLogDownloadController | undefined
+      if (sessionLogDownload === undefined) throw new Error('sessionLogDownload service is unavailable')
+      return ctx.slots.register({
+        name: 'conversation.session.header.utilities',
+        id: 'session-log-download',
+        order: 0,
+        locale: namespace,
+        inject: () => ({
+          exportToComputer: (sessionId: SessionId) => sessionLogDownload.download(sessionId),
+        }),
+      }, FnosSessionLogHeaderAction)
+    })
+    ctx.slots.inject('settings.action', () => ctx.slots.register({
+      name: 'settings.action',
+      id: 'open-document',
+      order: 0,
+      locale: namespace,
+      inject: () => ({ t }),
+    }, FnosSettingsDocumentAction))
+  }
   ctx.slots.inject('settings.plugin.item', () => ctx.slots.register({
     name: 'settings.plugin.item',
     key: 'dsh-fnos-authorized-directories',

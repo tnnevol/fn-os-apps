@@ -44,13 +44,31 @@ describe('dsh-fnos package contract', () => {
 
   it('adapts opening the DSH settings document to fnOS', async () => {
     const host = await readFile(new URL('../src/authorized-directories.ts', import.meta.url), 'utf8')
-    const card = await readFile(new URL('../src/client/AuthorizedDirectoriesCard.tsx', import.meta.url), 'utf8')
+    const action = await readFile(new URL('../src/client/FnosSettingsDocumentAction.tsx', import.meta.url), 'utf8')
     const contract = await readFile(new URL('../src/settings-document-contract.ts', import.meta.url), 'utf8')
+    const index = await readFile(new URL('../src/client/index.ts', import.meta.url), 'utf8')
     expect(host).toContain('ctx.settings.prepareDocument()')
     expect(host).toContain('FNOS_SETTINGS_DOCUMENT_PATH')
-    expect(card).toContain('requestSettingsDocumentPath')
-    expect(card).toContain('sdk.openFile(path)')
+    expect(action).toContain('requestSettingsDocumentPath')
+    expect(action).toContain('sdk.openFile(path)')
+    expect(index).toContain("id: 'open-document'")
+    expect(index).toContain('FnosSettingsDocumentAction')
     expect(contract).toContain("'/plugins/dsh-fnos/settings/document'")
+  })
+
+  it('replaces the fnOS Session log utility with a computer/NAS dropdown', async () => {
+    const index = await readFile(new URL('../src/client/index.ts', import.meta.url), 'utf8')
+    const action = await readFile(new URL('../src/client/FnosSessionLogHeaderAction.tsx', import.meta.url), 'utf8')
+    const host = await readFile(new URL('../src/authorized-directories.ts', import.meta.url), 'utf8')
+    const contract = await readFile(new URL('../src/session-log-export-contract.ts', import.meta.url), 'utf8')
+    expect(index).toContain("id: 'session-log-download'")
+    expect(index).toContain('FnosSessionLogHeaderAction')
+    expect(action).toContain('DshDropdown')
+    expect(action).toContain('DshTree')
+    expect(action).not.toContain('treeCheckable')
+    expect(host).toContain('ctx.get(\'apiProxy\')')
+    expect(host).toContain('includeDescendants: true')
+    expect(contract).toContain("'/plugins/dsh-fnos/session-log/export'")
   })
 
   it('keeps the original DSH workspace flow and augments it with a shortcut', async () => {
@@ -113,6 +131,7 @@ describe('dsh-fnos package contract', () => {
     expect(compatibility.dshPluginApi.version).toBe('0.1.1-rc.2')
     expect(compatibility.dshPluginApi.packages).toEqual([
       '@deepseek-ai/dsh-client-runtime',
+      '@deepseek-ai/dsh-session-log-export',
       '@deepseek-ai/dsh-client-ui-theme',
       '@deepseek-ai/dsh-client-ui-settings',
       '@deepseek-ai/dsh-client-locale',

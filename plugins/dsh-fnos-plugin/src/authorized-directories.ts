@@ -1,9 +1,10 @@
 /** Host routes for fnOS application shared-directory ACLs. */
 
 import type { IncomingMessage, ServerResponse } from 'node:http'
-import { constants as fsConstants, type Stats } from 'node:fs'
-import { access, readdir, realpath, stat } from 'node:fs/promises'
+import { constants as fsConstants, createWriteStream, type Stats } from 'node:fs'
+import { access, readdir, realpath, stat, unlink } from 'node:fs/promises'
 import { posix } from 'node:path'
+import { Writable } from 'node:stream'
 import type { Context } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-host-webserver'
 import { callFnOsApi, FnOsApiError } from './fnos-api.ts'
@@ -19,8 +20,15 @@ import {
   type ReadablePath,
 } from './authorized-directories-contract.ts'
 import { FNOS_SETTINGS_DOCUMENT_PATH } from './settings-document-contract.ts'
+import { FNOS_SESSION_LOG_EXPORT_PATH, type FnosSessionLogExportRequest } from './session-log-export-contract.ts'
 
 const BODY_LIMIT = 64 * 1024
+
+type FnosApiProxy = {
+  downloads: {
+    sessionLog: (request: { sessionId: string, includeDescendants?: boolean }, signal: AbortSignal) => Promise<Response>
+  }
+}
 
 /** Paths removed during this process must not be reintroduced from a stale env snapshot. */
 const removedAccessiblePaths = new Set<string>()
@@ -563,6 +571,38 @@ function openPathValue(value: unknown): string | undefined {
   return normalizePathForAuthorization((value as Record<string, unknown>).path)
 }
 
+function sessionLogExportRequest(value: unknown): FnosSessionLogExportRequest | undefined {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return undefined
+  const record = value as Record<string, unknown>
+  const sessionId = typeof record.sessionId === 'string' && record.sessionId.length > 0 && record.sessionId.length <= 256
+    ? record.sessionId
+    : undefined
+  const directory = normalizePathForAuthorization(record.directory)
+  return sessionId === undefined || directory === undefined ? undefined : { sessionId, directory }
+}
+
+function sessionLogExportFilename(sessionId: string): string {
+  const safeId = sessionId.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 120) || 'session'
+  return `dsh-session-${safeId}-${Date.now()}.zip`
+}
+
+async function writeSessionLogResponse(response: Response, target: string, signal: AbortSignal): Promise<void> {
+  if (!response.ok || response.body === null) {
+    throw new Error(`session log export returned HTTP ${response.status}`)
+  }
+  const stream = createWriteStream(target, { flags: 'wx', mode: 0o600 })
+  let completed = false
+  try {
+    await response.body.pipeTo(Writable.toWeb(stream), { signal })
+    completed = true
+  } finally {
+    if (!completed) {
+      stream.destroy()
+      await unlink(target).catch(() => undefined)
+    }
+  }
+}
+
 /** Read the optional directory field used by the authorized-entry listing. */
 function listingPathValue(value: unknown): string | undefined | null {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) return null
@@ -766,6 +806,56 @@ export function registerAuthorizedDirectoryRoutes(ctx: Context): void {
             json(res, 200, { path })
           } catch (error: unknown) {
             errorResponse(res, error)
+          }
+        },
+      }),
+      ctx.webServer.register({
+        kind: 'exact',
+        path: FNOS_SESSION_LOG_EXPORT_PATH,
+        handler: async (req, res) => {
+          if (req.method !== 'POST') return json(res, 405, { error: 'method not allowed' })
+          if (!authorize(req, res)) return
+          const request = sessionLogExportRequest(await readJsonBody(req))
+          if (request === undefined) return json(res, 400, { error: 'invalid-session-log-export-request' })
+
+          const validation = await validatePathForOpen(request.directory, req)
+          if (!validation.ok) {
+            const status = validation.failure === 'fnos-path-not-found' ? 404
+              : validation.failure === 'fnos-user-permission-unavailable' ? 503
+                : 403
+            return json(res, status, { error: validation.failure })
+          }
+          try {
+            const directoryStat = await stat(request.directory)
+            if (!directoryStat.isDirectory()) return json(res, 409, { error: 'fnos-session-log-target-not-directory' })
+            await access(request.directory, fsConstants.W_OK | fsConstants.X_OK)
+          } catch {
+            return json(res, 403, { error: 'fnos-session-log-target-not-writable' })
+          }
+
+          const abortController = new AbortController()
+          const abort = (): void => { abortController.abort() }
+          req.once('close', abort)
+          const target = posix.join(request.directory, sessionLogExportFilename(request.sessionId))
+          try {
+            const apiProxy = ctx.get('apiProxy') as FnosApiProxy | undefined
+            if (apiProxy === undefined) return json(res, 503, { error: 'fnos-session-log-export-unavailable' })
+            const response = await apiProxy.downloads.sessionLog(
+              { sessionId: request.sessionId, includeDescendants: true },
+              abortController.signal,
+            )
+            if (!response.ok) {
+              return json(res, response.status >= 400 ? response.status : 500, { error: 'fnos-session-log-export-unavailable' })
+            }
+            await writeSessionLogResponse(response, target, abortController.signal)
+            json(res, 201, { path: target })
+          } catch (error: unknown) {
+            if (!abortController.signal.aborted) {
+              console.error('[dsh-fnos] session log NAS export failed', error)
+              if (!res.writableEnded) json(res, 500, { error: 'fnos-session-log-export-failed' })
+            }
+          } finally {
+            req.off('close', abort)
           }
         },
       }),

@@ -5,9 +5,7 @@ import type { CSSProperties } from 'react'
 import type { PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type { FnosLocaleKey } from './locales.ts'
 import { diagnosePickerResult, isPickerCancellation, isPickerNoSelection, logPickerSdkEvent, logPickerSdkValue } from './picker-result.ts'
-import { isEmbeddedFnosFrame } from './sdk-carrier.ts'
 import { createTrimApp } from './sdk.ts'
-import { requestSettingsDocumentPath } from './settings-document-client.ts'
 import {
   DirectoryRequestError,
   requestAuthorizedDirectories,
@@ -230,26 +228,6 @@ export function AuthorizedDirectoriesCard({ t }: AuthorizedDirectoriesCardProps)
     }
   }, [refresh, t])
 
-  const openSettingsDocument = useCallback(async (): Promise<void> => {
-    if (!isEmbeddedFnosFrame()) return
-    setBusy(true)
-    try {
-      const path = await requestSettingsDocumentPath()
-      const sdk = createTrimApp()
-      await sdk.ready()
-      if (!sdk.isWeb || sdk.isStandaloneWeb) throw new Error('fnOS iframe SDK did not initialize its web carrier')
-      await sdk.openFile(path)
-    } catch (error: unknown) {
-      logAuthorizedDirectoryWarning('settings-document-open-failed', {
-        errorType: error instanceof Error ? error.name : typeof error,
-        message: error instanceof Error ? error.message : undefined,
-      })
-      setState(current => ({ status: 'error', directories: current.directories, code: t('settingsDocumentOpenFailed') }))
-    } finally {
-      setBusy(false)
-    }
-  }, [t])
-
   const removeDirectory = useCallback(async (path: string): Promise<void> => {
     if (!window.confirm(t('deleteConfirm'))) return
     setBusy(true)
@@ -284,9 +262,6 @@ export function AuthorizedDirectoriesCard({ t }: AuthorizedDirectoriesCardProps)
             <button type="button" style={primaryButtonStyle} disabled={busy || state.status === 'loading'} onClick={() => { void addDirectory() }}>
               {t('add')}
             </button>
-            <button type="button" style={buttonStyle} disabled={busy || state.status === 'loading' || !isEmbeddedFnosFrame()} onClick={() => { void openSettingsDocument() }}>
-               {t('openSettingsDocument')}
-             </button>
              <button type="button" style={buttonStyle} disabled={busy || state.status === 'loading'} onClick={() => { void refresh() }}>
               {t('refresh')}
             </button>

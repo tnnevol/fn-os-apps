@@ -1,5 +1,7 @@
 export {
   DshButton,
+  DshModal,
+  DshTree,
   DshCascader,
   DshDropdown,
   DshIconButton,

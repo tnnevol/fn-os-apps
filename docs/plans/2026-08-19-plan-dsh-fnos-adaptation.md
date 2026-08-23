@@ -143,6 +143,14 @@ const result = await sdk.pickSharedFile({
 4. 独立浏览器不调用 fnOS SDK，保留 DSH 官方配置文件入口；Host 路由不返回配置内容、Token 或 settings 私有数据。
 5. 本地验证 Host 路由、准备失败、SDK 成功/失败和独立浏览器降级；真实 fnOS NAS 验证配置文件可以在文件应用中打开。
 
+### P1：Session log 导出到电脑或 NAS（实施中）
+
+1. 通过 `conversation.session.header.utilities` 精确替换官方 `session-log-download` UI，使用共享 `@tnnevol/dsh-semi-ui` 的 Dropdown、Modal 和 Tree；不显示单选框，Session scope 内保持当前 `sessionId`。
+2. “导出到电脑”注入并调用 DSH 官方 `sessionLogDownload` controller，保留原有浏览器下载业务和 `/export` 命令。
+3. Host 新增 NAS 导出路由：校验 Session id 和目标授权目录，调用 `ctx.apiProxy.downloads.sessionLog()` 获取官方 ZIP Response，并以流式方式写入目标目录，避免浏览器缓存完整 ZIP。
+4. 复用 `/authorized-directories/entries` 的授权目录树数据；确认时 Host 再次执行授权根、当前用户 ACL、目录存在性、进程写权限和目标文件名校验。
+5. 覆盖取消、空目录、授权目录加载失败、ZIP 准备失败、写入失败和重复导出场景；本地验证 TypeScript、构建和单元测试，真实 fnOS NAS 验证 ZIP 可在所选目录生成。
+
 ### P1：工作区快捷跳转授权目录（代码完成，待真实 NAS 验收）
 
 #### 1. 工作区入口与数据
