@@ -33,6 +33,10 @@ npx skills add tnnevol/skills@fnnas-docs -g -y
 
 完整流程见 [`docs/guide/sdd-workflow.md`](docs/guide/sdd-workflow.md)。
 
+### DSH 插件插槽开发约定
+
+开发 DSH Client 插件时，先检查目标 Slot 的现有条目和 `priority`。列表插槽中相同 `id` 不能使用相同优先级，否则会导致插件加载失败。尤其注意 `conversation.composer.dock` 的内置会话步骤统计条目使用 `id: 'stats'`、`priority: 0`；需要置换它时必须使用不同优先级（例如 `priority: -1`，较低优先级生效），仅新增内容则使用自有 `id`，不要占用 `stats`。
+
 ### 创建新应用
 
 ```bash

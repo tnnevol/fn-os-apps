@@ -132,6 +132,7 @@ function GlobalModelPicker({ modelMenuLabel, effortMenuLabel, modelLabel, modelP
       value={selectedPath}
       showNext="hover"
       changeOnSelect={false}
+      motion={false}
       showClear={false}
       borderless
       size="small"

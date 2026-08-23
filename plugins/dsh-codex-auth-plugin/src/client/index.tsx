@@ -4,11 +4,14 @@ import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
 import type {} from '@deepseek-ai/dsh-api-remotes/client'
 import type { ConnectionHandle } from '@deepseek-ai/dsh-client-connection/client'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
+import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import type {} from '@deepseek-ai/dsh-client-ui-settings-plugins/client'
 import type {} from '@deepseek-ai/dsh-client-ui-slots'
 import { CodexAuthCard } from './CodexAuthCard.tsx'
 import type { CodexAuthCardInjected } from './CodexAuthCard.tsx'
+import { CodexUsageStatus } from './CodexUsageStatus.tsx'
+import type { CodexUsageStatusProps } from './CodexUsageStatus.tsx'
 import { decodeCodexAuthSettings } from '../settings-contract.ts'
 import { installCodexModelEditorPresentation } from './model-editor-presentation.ts'
 import { CodexAuthRemoteSettingsScope } from './remote-settings-scope.ts'
@@ -24,7 +27,7 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
 }
 
 export const name = 'dsh-codex-auth-plugin-client'
-export const inject = ['slots', 'locale', 'connection', 'remote', 'settingsScope']
+export const inject = ['slots', 'locale', 'connection', 'remote', 'settingsScope', 'timer']
 
 export function apply(ctx: ClientContext): void {
   ctx.effect(() => installSemiDshTheme(), 'dsh-codex-auth-plugin: Semi DSH theme')
@@ -36,6 +39,7 @@ export function apply(ctx: ClientContext): void {
   ctx.effect(() => ctx.locale.register(namespace, { zh, en }), 'dsh-codex-auth-plugin: locale')
   const t = ctx.locale.bind(namespace) as CodexAuthCardInjected['t']
   const connection = ctx.get('connection') as ConnectionHandle
+  const timer = ctx.get('timer') as CodexUsageStatusProps['timer']
   const remoteScope = connection.isLoopback ? undefined : new CodexAuthRemoteSettingsScope()
   const configScope = remoteScope ?? ctx.settingsScope.bind({
     namespace: CODEX_AUTH_SETTINGS_NAMESPACE,
@@ -54,4 +58,10 @@ export function apply(ctx: ClientContext): void {
     key: CODEX_AUTH_SETTINGS_NAMESPACE,
     inject: (): CodexAuthCardInjected => ({ t, configScope, connection }),
   }, CodexAuthCard))
+  ctx.slots.inject('conversation.composer.dock', () => ctx.slots.register({
+    name: 'conversation.composer.dock',
+    id: 'codex-usage',
+    order: 1,
+    inject: (): CodexUsageStatusProps => ({ t, timer }),
+  }, CodexUsageStatus))
 }
