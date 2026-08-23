@@ -161,6 +161,16 @@ export function FnosAuthorizedPathPicker({ input, inputActions, insertReferences
     setDesiredPaths(undefined)
   }, [currentPaths, desiredPaths, input, inputActions, insertReferences])
 
+  useEffect(() => {
+    const fnosOccurrences = input.occurrences.filter(occurrence => occurrence.source === FNOS_REFERENCE_SOURCE)
+    if (fnosOccurrences.length === 0 || /\s$/u.test(input.draft)) return
+    const lastEnd = fnosOccurrences.reduce((end, occurrence) => Math.max(end, occurrence.offset + occurrence.length), 0)
+    if (lastEnd !== input.draft.length) return
+    // Keep the official input transaction's trailing separator visible in the
+    // textarea even when the host commit arrives without the final gap.
+    inputActions.setDraft(`${input.draft} `)
+  }, [input.draft, input.occurrences, inputActions])
+
   const loadData = useCallback(async (node: unknown) => {
     const key = typeof node === 'object' && node !== null && 'key' in node && typeof node.key === 'string'
       ? node.key
