@@ -312,18 +312,22 @@ export function dataSharePathsFromEnvironment(env: NodeJS.ProcessEnv = process.e
 }
 
 /**
- * Resolve the fnOS application-owned install/data paths for this app. These
- * paths are read-only defaults, just like @appshare, and must not depend on a
- * user selecting them through the ACL management card first.
+ * Resolve the fnOS application-owned data paths for this app. The @app
+ * installation directory is intentionally excluded: it is an application
+ * implementation path, not a user-facing authorization root. The remaining
+ * app-managed data paths are read-only defaults, just like @appshare, and do
+ * not depend on a user selecting them through the ACL management card first.
  */
 export function defaultApplicationPathsFromEnvironment(env: NodeJS.ProcessEnv = process.env): string[] {
   const appName = (env.TRIM_APPNAME ?? env.APPNAME ?? 'fn-deepseek-harness').trim() || 'fn-deepseek-harness'
-  const candidates: string[] = [env.TRIM_APPDEST, env.TRIM_PKGHOME].filter((value): value is string => typeof value === 'string')
+  const candidates: string[] = [env.TRIM_PKGHOME].filter((value): value is string => typeof value === 'string')
   let volume = typeof env.TRIM_APPDEST_VOL === 'string' ? env.TRIM_APPDEST_VOL.trim().replace(/\/+$/u, '') : ''
-  const knownPath = [...candidates].find(value => /^\/[^/]+\/@app(?:home|share|data|conf)?\/[^/]+$/u.test(value))
+  const knownPath = [env.TRIM_APPDEST, ...candidates]
+    .filter((value): value is string => typeof value === 'string')
+    .find(value => /^\/[^/]+\/@app(?:center|home|share|data|conf)?\/[^/]+$/u.test(value))
   if (volume.length === 0 && knownPath !== undefined) volume = knownPath.slice(0, knownPath.indexOf('/@app'))
   if (volume.length > 0) {
-    for (const prefix of ['@app', '@apphome', '@appshare', '@appdata', '@appconf']) {
+    for (const prefix of ['@apphome', '@appshare', '@appdata', '@appconf']) {
       candidates.push(`${volume}/${prefix}/${appName}`)
     }
   }

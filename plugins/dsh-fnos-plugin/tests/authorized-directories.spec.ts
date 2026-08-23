@@ -83,13 +83,12 @@ describe('fnOS authorized-directory contract', () => {
     ])
   })
 
-  it('adds the app-owned @app family as default read-only roots', () => {
+  it('adds app-owned data paths as default read-only roots without the @app install path', () => {
     expect(defaultApplicationPathsFromEnvironment({
       TRIM_APPDEST_VOL: '/vol4',
-      TRIM_APPDEST: '/vol4/@app/fn-deepseek-harness',
+      TRIM_APPDEST: '/vol4/@appcenter/fn-deepseek-harness',
       TRIM_PKGHOME: '/vol4/@apphome/fn-deepseek-harness',
     })).toEqual([
-      '/vol4/@app/fn-deepseek-harness',
       '/vol4/@apphome/fn-deepseek-harness',
       '/vol4/@appshare/fn-deepseek-harness',
       '/vol4/@appdata/fn-deepseek-harness',
