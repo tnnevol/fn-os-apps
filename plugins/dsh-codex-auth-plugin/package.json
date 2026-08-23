@@ -2,7 +2,7 @@
   "name": "@tnnevol/dsh-codex-auth",
   "displayName": "Codex Auth",
   "description": "Standalone ChatGPT OAuth account management for DeepSeek Harness.",
-  "version": "0.1.1-rc.2.0",
+  "version": "0.1.1-rc.2.1",
   "author": "tnnevol",
   "repository": {
     "type": "git",
@@ -46,6 +46,7 @@
     "README.md"
   ],
   "scripts": {
+    "prebuild": "pnpm --filter @tnnevol/dsh-semi-ui run build",
     "build": "tsdown",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run",

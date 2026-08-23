@@ -18,6 +18,11 @@ declare module '@douyinfe/semi-ui/lib/es/iconButton/index.js' {
   export default IconButton
 }
 
+declare module '@douyinfe/semi-ui/lib/es/modal/index' {
+  const Modal: any
+  export default Modal
+}
+
 declare module '@douyinfe/semi-ui/lib/es/tooltip/index' {
   const Tooltip: any
   export default Tooltip
@@ -26,6 +31,11 @@ declare module '@douyinfe/semi-ui/lib/es/tooltip/index' {
 declare module '@douyinfe/semi-ui/lib/es/treeSelect/index' {
   const TreeSelect: any
   export default TreeSelect
+}
+
+declare module '@douyinfe/semi-ui/lib/es/tree/index' {
+  const Tree: any
+  export default Tree
 }
 
 declare module '@douyinfe/semi-icons/lib/es/icons/IconClose.js' {
@@ -46,4 +56,9 @@ declare module '@douyinfe/semi-icons/lib/es/icons/IconFolder.js' {
 declare module '@douyinfe/semi-icons/lib/es/icons/IconFolderOpen.js' {
   const IconFolderOpen: any
   export default IconFolderOpen
+}
+
+declare module '@douyinfe/semi-icons/lib/es/icons/IconSetting.js' {
+  const IconSetting: any
+  export default IconSetting
 }
