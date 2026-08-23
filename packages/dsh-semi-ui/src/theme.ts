@@ -130,15 +130,15 @@ body[${SEMI_DSH_THEME_ATTRIBUTE}] .semi-tooltip-wrapper .semi-tooltip-icon-arrow
 }
 
 body[${SEMI_DSH_THEME_ATTRIBUTE}] .semi-tree-option-list {
-  width: max-content !important;
-  min-width: max-content !important;
-  max-width: calc(100vw - 32px) !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
   overflow-x: auto;
 }
 
 body[${SEMI_DSH_THEME_ATTRIBUTE}] .semi-tree-option-list > ul {
-  width: max-content !important;
-  min-width: max-content !important;
+  width: 100% !important;
+  min-width: max-content;
 }
 
 /* Keep the fnOS picker trigger on shared DSH semantic tokens. */

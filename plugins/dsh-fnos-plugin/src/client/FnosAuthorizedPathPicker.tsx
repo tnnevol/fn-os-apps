@@ -96,6 +96,10 @@ export function FnosAuthorizedPathPicker({ input, inputActions, insertReferences
   const currentReferences = useMemo(() => referenceEntries(input), [input])
   const currentPaths = useMemo(() => currentReferences.map(reference => reference.path), [currentReferences])
   const value = desiredPaths ?? currentPaths
+  const treePanelWidth = useMemo(() => {
+    const longestPath = [...entries.current.values()].reduce((longest, entry) => Math.max(longest, entry.semanticPath.length), 0)
+    return `${Math.max(20, longestPath + 8)}ch`
+  }, [treeData])
 
   const applyEntries = useCallback((result: AuthorizedEntriesResult, parent?: string) => {
     for (const entry of result.entries) entries.current.set(entry.path, entry)
@@ -182,8 +186,8 @@ export function FnosAuthorizedPathPicker({ input, inputActions, insertReferences
       showClear={false}
       maxTagCount={0}
       dropdownMatchSelectWidth={false}
-      dropdownStyle={{ width: 'max-content', maxWidth: 'calc(100vw - 32px)', maxHeight: 320 }}
-      optionListStyle={{ width: 'max-content', maxWidth: 'calc(100vw - 32px)', minWidth: 'max-content', maxHeight: 280, overflowX: 'auto', overflowY: 'auto' }}
+      dropdownStyle={{ width: treePanelWidth, maxWidth: 'calc(100vw - 32px)', maxHeight: 320 }}
+      optionListStyle={{ width: '100%', maxWidth: '100%', maxHeight: 280, overflowX: 'auto', overflowY: 'auto' }}
       showLine={false}
       emptyContent={t('inputPickerEmpty')}
       searchPlaceholder={t('workspaceSearchPlaceholder')}
