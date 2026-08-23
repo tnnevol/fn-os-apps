@@ -260,16 +260,73 @@ function gatewayBridgeScript() {
     ].join('\n')
 }
 
+function gatewayBaseHref() {
+    return GATEWAY_PREFIX ? GATEWAY_PREFIX + '/' : '/'
+}
+
 function rewriteHtml(body) {
     let html = body.toString('utf8')
     html = html.replace(
         /(\b(?:src|href|action)=["'])(\/(?!\/)[^"']*)/gi,
         (_, prefix, path) => prefix + addGatewayPrefix(path)
     )
+
+    // Vite's module-preload dependency table contains paths such as
+    // "assets/langs/html-*.js".  Those paths are resolved against the
+    // document URL, so the base element is required when DSH is mounted
+    // below the fnOS gateway prefix rather than at `/`.
+    const base = '<base href="' + gatewayBaseHref() + '">'
+    if (!/<base\b[^>]*>/i.test(html)) {
+        html = /<head\b[^>]*>/i.test(html)
+            ? html.replace(/(<head\b[^>]*>)/i, '$1' + base)
+            : base + html
+    }
+
     const bridge = gatewayBridgeScript()
     return /<head\b[^>]*>/i.test(html)
         ? html.replace(/<head\b[^>]*>/i, (head) => head + bridge)
         : bridge + html
+}
+
+function rewriteCss(body) {
+    const css = body.toString('utf8')
+    return css.replace(
+        /url\(\s*(["']?)\/(assets\/[^)"']+)\1\s*\)/gi,
+        (_, quote, path) => 'url(' + quote + addGatewayPrefix('/' + path) + quote + ')'
+    )
+}
+
+function rewriteJavaScript(body, upstreamPath) {
+    let source = body.toString('utf8')
+    if (!upstreamPath.startsWith('/assets/')) return source
+
+    const lastSlash = upstreamPath.lastIndexOf('/')
+    const currentDirectory = upstreamPath.slice(0, lastSlash + 1) || '/'
+    const parentDirectory = currentDirectory.replace(/[^/]+\/$/, '') || '/'
+    const currentImportBase = addGatewayPrefix(currentDirectory)
+    const parentImportBase = addGatewayPrefix(parentDirectory)
+
+    // Make Vite's dependency-table entries independent of the document URL.
+    source = source.replace(
+        /(["'])assets\/(?=(?:langs\/|vendor-|fonts\/))/g,
+        (_, quote) => quote + addGatewayPrefix('/assets/')
+    )
+
+    // Make relative ESM imports explicit as well. Resolve ./ and ../ against
+    // the actual asset chunk directory; html -> css must stay in /langs/.
+    source = source.replace(
+        /(\bfrom\s*["'])\.\.\//g,
+        (_, prefix) => prefix + parentImportBase
+    )
+    source = source.replace(
+        /(\bfrom\s*["'])\.\//g,
+        (_, prefix) => prefix + currentImportBase
+    )
+    source = source.replace(
+        /(\bimport\s*\(\s*["'])\.\//g,
+        (_, prefix) => prefix + currentImportBase
+    )
+    return source
 }
 
 function applyLoopbackHeaders(headers) {
@@ -331,7 +388,11 @@ function proxyRequest(req, res) {
     }, (response) => {
         const contentType = String(response.headers['content-type'] || '').toLowerCase()
         const eventStream = contentType.startsWith('text/event-stream')
-        const rewriteBody = contentType.includes('text/html') && !eventStream
+        const rewriteBody = !eventStream && (
+            contentType.includes('text/html')
+            || contentType.includes('text/css')
+            || contentType.includes('javascript')
+        )
         const headers = copyResponseHeaders(response.headers, rewriteBody, eventStream)
 
         if (!rewriteBody) {
@@ -354,7 +415,16 @@ function proxyRequest(req, res) {
         response.on('data', (chunk) => chunks.push(chunk))
         response.on('error', (error) => sendBadGateway(res, error))
         response.on('end', () => {
-            const body = Buffer.from(rewriteHtml(Buffer.concat(chunks)))
+            const rawBody = Buffer.concat(chunks)
+            let rewrittenBody
+            if (contentType.includes('text/html')) {
+                rewrittenBody = rewriteHtml(rawBody)
+            } else if (contentType.includes('text/css')) {
+                rewrittenBody = rewriteCss(rawBody)
+            } else {
+                rewrittenBody = rewriteJavaScript(rawBody, upstreamPath)
+            }
+            const body = Buffer.from(rewrittenBody)
             headers['content-length'] = String(body.length)
             res.writeHead(response.statusCode || 502, response.statusMessage, headers)
             res.end(body)

@@ -44,7 +44,7 @@ dsh web --host <host> --port <port> --trusted-host <authority...>
 192.168.119.6:5666
 ```
 
-多个地址使用英文逗号分隔。应用代理会将根路径的 `/api`、`/plugins` 请求改写到 iframe 网关前缀，并处理 dsh HMR 使用的 `/plugins/events` EventSource。
+多个地址使用英文逗号分隔。应用代理会将根路径的 `/api`、`/plugins` 请求改写到 iframe 网关前缀，并处理 dsh HMR 使用的 `/plugins/events` EventSource。代理同时为 DSH 的 HTML、CSS 和 JavaScript 资源补齐 `/app/fn-deepseek-harness` 前缀，兼容 Vite 的 module-preload 和 `langs/*` 共享语法资源。
 
 ## DSH native 依赖构建
 
