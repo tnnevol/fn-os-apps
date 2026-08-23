@@ -99,19 +99,9 @@ export function insertFnosReferences(
   let draftRev = input.draftRev
   let inserted = false
 
-  const appendText = (text: string): boolean => {
-    const span: TokenSpan = { start: offset, end: offset, draftRev }
-    if (!insertText(ctx, sessionId, text, span)) return false
-    draft += text
-    offset += text.length
-    draftRev += 1
-    return true
-  }
-
+  // DSH's native insertion transaction appends the separating space after the
+  // reference. Do not add a prefix gap before the first selected reference.
   for (const reference of references) {
-    if (offset > 0 && !/\s/u.test(draft.at(-1) ?? '')) {
-      if (!appendText(' ')) return inserted
-    }
     const label = referenceLabel(reference.semanticPath)
     const span: TokenSpan = { start: offset, end: offset, draftRev }
     if (!insertReference(ctx, sessionId, reference, span)) return inserted
