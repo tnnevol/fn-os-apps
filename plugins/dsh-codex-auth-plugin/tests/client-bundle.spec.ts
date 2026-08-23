@@ -26,6 +26,7 @@ describe('dsh-codex-auth-plugin client artifact', () => {
     expect(handoff?.id).toBe('@tnnevol/dsh-codex-auth')
     const exports = handoff?.factory(specifier => {
       if (specifier === 'react') return React
+      if (specifier === 'react-dom') return {}
       if (specifier === 'react/jsx-runtime') return ReactJsxRuntime
       if (specifier === '@deepseek-ai/dsh-client-ui-primitives') {
         return { IconChevronDownOutline14: () => null }

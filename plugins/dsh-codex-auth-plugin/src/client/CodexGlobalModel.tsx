@@ -1,10 +1,10 @@
 /** DSH-wide Codex default model controls. */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { CSSProperties, MouseEvent as ReactMouseEvent } from 'react'
+import type { CSSProperties } from 'react'
 import type { ConnectionHandle, ModelCatalogModel, ModelProviderGroup } from '@deepseek-ai/dsh-client-connection/client'
 import { IconChevronDownOutline14 } from '@deepseek-ai/dsh-client-ui-primitives'
-import { DshButton } from '@tnnevol/dsh-semi-ui'
+import { DshButton, DshCascader } from '@tnnevol/dsh-semi-ui'
 import type { CodexAuthLocaleKey } from './locales.ts'
 import { CODEX_GLOBAL_MODEL_PATH } from '../auth-paths.ts'
 
@@ -26,8 +26,6 @@ const sectionStyle: CSSProperties = { display: 'flex', flexDirection: 'column', 
 const headingStyle: CSSProperties = { margin: 0, fontSize: 14, lineHeight: '20px', fontWeight: 600, color: 'var(--dsw-alias-label-primary)' }
 const bodyStyle: CSSProperties = { margin: 0, fontSize: 12, lineHeight: '18px', color: 'var(--dsw-alias-label-secondary)' }
 const fieldsStyle: CSSProperties = { display: 'flex', alignItems: 'center', minWidth: 0 }
-const fieldStyle: CSSProperties = { display: 'flex', flexDirection: 'column', gap: 5 }
-const labelStyle: CSSProperties = { fontSize: 12, lineHeight: '18px', color: 'var(--dsw-alias-label-secondary)' }
 const actionsStyle: CSSProperties = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }
 const buttonStyle: CSSProperties = { boxSizing: 'border-box', minHeight: 30, padding: '4px 12px', border: '1px solid var(--dsw-alias-border-l2)', borderRadius: 16, background: 'var(--dsw-alias-bg-layer-1)', color: 'var(--dsw-alias-label-primary)', font: 'inherit', fontSize: 12, cursor: 'pointer' }
 const primaryButtonStyle: CSSProperties = { ...buttonStyle, border: 0, background: 'var(--dsw-alias-button-primary-fill)', color: 'var(--dsw-alias-label-primary-foreground)' }
@@ -50,64 +48,9 @@ function codexModels(groups: readonly ModelProviderGroup[]): ModelCatalogModel[]
   return groups.find(group => group.id === 'openai-codex')?.models ?? []
 }
 
-type ChoiceMenuKind = 'root' | 'model' | 'effort'
-
 interface ChoiceOption {
   id: string
   label: string
-}
-
-const choiceButtonStyle: CSSProperties = {
-  boxSizing: 'border-box',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  gap: 8,
-  width: '100%',
-  minHeight: 34,
-  padding: '5px 9px',
-  border: '1px solid var(--dsw-alias-border-l2)',
-  borderRadius: 8,
-  background: 'var(--dsw-alias-bg-layer-1)',
-  color: 'var(--dsw-alias-label-primary)',
-  font: 'inherit',
-  fontSize: 13,
-  textAlign: 'left',
-  cursor: 'pointer',
-}
-
-const choicePanelStyle: CSSProperties = {
-  position: 'absolute',
-  zIndex: 20,
-  top: 'calc(100% + 6px)',
-  left: 0,
-  width: 'max(100%, 220px)',
-  maxHeight: 260,
-  overflowY: 'auto',
-  boxSizing: 'border-box',
-  padding: 6,
-  border: '1px solid var(--dsw-alias-border-l1, var(--dsw-alias-border-l2))',
-  borderRadius: 10,
-  background: 'var(--dsw-alias-bg-layer-3, var(--dsw-alias-bg-layer-2))',
-  boxShadow: 'var(--dsw-alias-shadow-popover, 0 12px 30px rgb(0 0 0 / 24%))',
-}
-
-const choiceItemStyle: CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  gap: 10,
-  width: '100%',
-  minHeight: 34,
-  padding: '6px 9px',
-  border: 0,
-  borderRadius: 7,
-  background: 'transparent',
-  color: 'var(--dsw-alias-label-primary)',
-  font: 'inherit',
-  fontSize: 13,
-  textAlign: 'left',
-  cursor: 'pointer',
 }
 
 function ChevronDown() {
@@ -116,56 +59,12 @@ function ChevronDown() {
   )
 }
 
-function ChoiceMenu({ label, value, selectedId = value, placeholder, options, open, onToggle, onChoose }: {
-  label: string
-  value: string
-  selectedId?: string
-  placeholder: string
-  options: readonly ChoiceOption[]
-  open: boolean
-  onToggle: () => void
-  onChoose: (id: string) => void
-}) {
-  return (
-    <div style={{ ...fieldStyle, position: 'relative' }}>
-      <span style={labelStyle}>{label}</span>
-      <button
-        type="button"
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        style={choiceButtonStyle}
-        onClick={onToggle}
-      >
-        <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: value === '' ? 'var(--dsw-alias-label-dimmed)' : 'inherit' }}>
-          {value || placeholder}
-        </span>
-        <ChevronDown />
-      </button>
-      {open ? (
-        <div role="listbox" aria-label={label} style={choicePanelStyle}>
-          {options.map(option => (
-            <button
-              key={option.id}
-              type="button"
-              role="option"
-              aria-selected={option.id === selectedId}
-              style={option.id === selectedId ? { ...choiceItemStyle, background: 'var(--dsw-alias-interactive-bg-active, var(--dsw-alias-interactive-bg-hover))' } : choiceItemStyle}
-              onMouseEnter={event => { event.currentTarget.style.background = 'var(--dsw-alias-interactive-bg-hover, var(--dsw-alias-bg-layer-1))' }}
-              onMouseLeave={event => { event.currentTarget.style.background = option.id === selectedId ? 'var(--dsw-alias-interactive-bg-active, var(--dsw-alias-interactive-bg-hover))' : 'transparent' }}
-              onClick={() => { onChoose(option.id) }}
-            >
-              <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{option.label}</span>
-              {option.id === selectedId ? <span aria-hidden="true">✓</span> : null}
-            </button>
-          ))}
-        </div>
-      ) : null}
-    </div>
-  )
-}
-
 const pickerButtonStyle: CSSProperties = {
-  ...choiceButtonStyle,
+  boxSizing: 'border-box',
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: 6,
   width: 'fit-content',
   maxWidth: '100%',
   minHeight: 30,
@@ -176,78 +75,13 @@ const pickerButtonStyle: CSSProperties = {
   fontSize: 14,
 }
 
-const pickerPanelStyle: CSSProperties = {
-  ...choicePanelStyle,
-  display: 'flex',
-  position: 'absolute',
-  gap: 0,
-  width: 'min(210px, calc(100vw - 32px))',
-  maxHeight: 260,
-  padding: 5,
-  overflow: 'visible',
+const UNSET_VALUE = '__dsh_cascader_unset__'
+
+interface CascaderRef {
+  open?: () => void
 }
 
-const pickerColumnStyle: CSSProperties = {
-  display: 'flex',
-  width: '100%',
-  flexDirection: 'column',
-  gap: 2,
-}
-
-const pickerSubmenuStyle: CSSProperties = {
-  position: 'absolute',
-  zIndex: 1,
-  top: 5,
-  left: 'calc(100% + 4px)',
-  width: '210px',
-  maxHeight: 250,
-  overflowY: 'auto',
-  boxSizing: 'border-box',
-  display: 'flex',
-  flexDirection: 'column',
-  gap: 2,
-  padding: 5,
-  border: '1px solid var(--dsw-alias-border-l1, var(--dsw-alias-border-l2))',
-  borderRadius: 10,
-  background: 'var(--dsw-alias-bg-layer-3, var(--dsw-alias-bg-layer-2))',
-  boxShadow: 'var(--dsw-alias-shadow-popover, 0 12px 30px rgb(0 0 0 / 24%))',
-}
-
-function PickerRow({ label, value, disabled, active, onClick, onHover, onLeave }: {
-  label: string
-  value: string
-  disabled?: boolean
-  active?: boolean
-  onClick: () => void
-  onHover?: () => void
-  onLeave?: (event: ReactMouseEvent<HTMLButtonElement>) => void
-}) {
-  return (
-    <button
-      type="button"
-      disabled={disabled}
-      style={{
-        ...choiceItemStyle,
-        minHeight: 34,
-        padding: '4px 8px',
-        background: active ? 'var(--dsw-alias-interactive-bg-active, var(--dsw-alias-interactive-bg-hover))' : 'transparent',
-        opacity: disabled ? 0.5 : 1,
-        cursor: disabled ? 'not-allowed' : 'pointer',
-      }}
-      onMouseEnter={event => { if (!disabled) { event.currentTarget.style.background = 'var(--dsw-alias-interactive-bg-hover, var(--dsw-alias-bg-layer-1))'; onHover?.() } }}
-      onMouseLeave={event => { event.currentTarget.style.background = active ? 'var(--dsw-alias-interactive-bg-active, var(--dsw-alias-interactive-bg-hover))' : 'transparent'; onLeave?.(event) }}
-      onClick={onClick}
-    >
-        <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 13 }}>{label}</span>
-      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, minWidth: 0, color: 'var(--dsw-alias-label-secondary)', fontSize: 13 }}>
-        <span style={{ maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{value}</span>
-        {!disabled ? <span aria-hidden="true" style={{ fontSize: 18, lineHeight: 1 }}>›</span> : null}
-      </span>
-    </button>
-  )
-}
-
-function GlobalModelPicker({ modelMenuLabel, effortMenuLabel, modelLabel, modelPlaceholder, effortLabel, selectedModelId, selectedEffortId, modelOptions, effortOptions, activeMenu, onToggle, onOpenSubmenu, onCloseSubmenu, onChooseModel, onChooseEffort }: {
+function GlobalModelPicker({ modelMenuLabel, effortMenuLabel, modelLabel, modelPlaceholder, effortLabel, selectedModelId, selectedEffortId, modelOptions, effortOptions, onChooseModel, onChooseEffort }: {
   modelMenuLabel: string
   effortMenuLabel: string
   modelLabel: string
@@ -257,76 +91,61 @@ function GlobalModelPicker({ modelMenuLabel, effortMenuLabel, modelLabel, modelP
   selectedEffortId: string
   modelOptions: readonly ChoiceOption[]
   effortOptions: readonly ChoiceOption[]
-  activeMenu: ChoiceMenuKind | null
-  onToggle: () => void
-  onOpenSubmenu: (menu: ChoiceMenuKind) => void
-  onCloseSubmenu: () => void
   onChooseModel: (id: string) => void
   onChooseEffort: (id: string) => void
 }) {
-  const open = activeMenu !== null
   const modelValue = modelLabel === '' ? modelPlaceholder : modelLabel
   const buttonValue = effortLabel === '' ? modelValue : `${modelValue} · ${effortLabel}`
-  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
-  const cancelScheduledClose = (): void => {
-    if (closeTimerRef.current === undefined) return
-    clearTimeout(closeTimerRef.current)
-    closeTimerRef.current = undefined
+  const cascaderRef = useRef<CascaderRef | null>(null)
+  const treeData = [
+    {
+      value: 'model',
+      label: modelMenuLabel,
+      children: modelOptions.map(option => ({ value: option.id || UNSET_VALUE, label: option.label })),
+    },
+    {
+      value: 'effort',
+      label: effortMenuLabel,
+      children: effortOptions.map(option => ({ value: option.id || UNSET_VALUE, label: option.label })),
+    },
+  ]
+  const selectedPath = selectedEffortId !== ''
+    ? ['effort', selectedEffortId]
+    : ['model', selectedModelId || UNSET_VALUE]
+  const handleChange = (value: unknown): void => {
+    if (!Array.isArray(value)) return
+    const path = value.map(String)
+    const parent = path[0]
+    const leaf = path.at(-1)
+    if (leaf === undefined || leaf === parent) return
+    if (parent === 'model') onChooseModel(leaf === UNSET_VALUE ? '' : leaf)
+    if (parent === 'effort') onChooseEffort(leaf === UNSET_VALUE ? '' : leaf)
   }
-  const scheduleSubmenuClose = (): void => {
-    cancelScheduledClose()
-    closeTimerRef.current = setTimeout(() => {
-      closeTimerRef.current = undefined
-      onCloseSubmenu()
-    }, 220)
-  }
-  useEffect(() => () => { cancelScheduledClose() }, [])
-
-  const openSubmenu = (menu: ChoiceMenuKind): void => {
-    cancelScheduledClose()
-    onOpenSubmenu(menu)
-  }
-
-  const closeSubmenuOnParentLeave = (event: ReactMouseEvent<HTMLButtonElement>): void => {
-    const target = event.relatedTarget
-    if (target instanceof Element && target.closest('[data-dsh-cascade-submenu]') !== null) return
-    scheduleSubmenuClose()
+  const reopenAfterSelect = (): void => {
+    if (typeof requestAnimationFrame !== 'function') return
+    requestAnimationFrame(() => { cascaderRef.current?.open?.() })
   }
   return (
-    <div style={{ position: 'relative', width: 'fit-content', maxWidth: '100%' }}>
-      <DshButton htmlType="button" theme="borderless" type="tertiary" aria-haspopup="menu" aria-expanded={open} style={pickerButtonStyle} onClick={onToggle}>
-        <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: modelLabel === '' ? 'var(--dsw-alias-label-dimmed)' : 'var(--dsw-alias-label-primary)' }}>{buttonValue}</span>
-        <ChevronDown />
-      </DshButton>
-      {open ? (
-        <div role="menu" style={pickerPanelStyle}>
-          <div style={pickerColumnStyle}>
-            <PickerRow label={modelMenuLabel} value={modelValue} active={activeMenu === 'model'} onClick={() => { openSubmenu('model') }} onHover={() => { openSubmenu('model') }} onLeave={closeSubmenuOnParentLeave} />
-            <PickerRow label={effortMenuLabel} value={effortLabel} active={activeMenu === 'effort'} onClick={() => { openSubmenu('effort') }} onHover={() => { openSubmenu('effort') }} onLeave={closeSubmenuOnParentLeave} />
-          </div>
-          {activeMenu === 'model' ? (
-            <div role="menu" aria-label={modelMenuLabel} data-dsh-cascade-submenu="model" style={pickerSubmenuStyle} onMouseEnter={cancelScheduledClose} onMouseLeave={onCloseSubmenu}>
-              {modelOptions.map(option => (
-                <button key={option.id} type="button" role="menuitemradio" aria-checked={option.id === selectedModelId} style={option.id === selectedModelId ? { ...choiceItemStyle, background: 'var(--dsw-alias-interactive-bg-active, var(--dsw-alias-interactive-bg-hover))' } : choiceItemStyle} onMouseEnter={event => { event.currentTarget.style.background = 'var(--dsw-alias-interactive-bg-hover, var(--dsw-alias-bg-layer-1))' }} onMouseLeave={event => { event.currentTarget.style.background = option.id === selectedModelId ? 'var(--dsw-alias-interactive-bg-active, var(--dsw-alias-interactive-bg-hover))' : 'transparent' }} onClick={() => { onChooseModel(option.id) }}>
-                  <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{option.label}</span>
-                  {option.id === selectedModelId ? <span aria-hidden="true">✓</span> : null}
-                </button>
-              ))}
-            </div>
-          ) : null}
-          {activeMenu === 'effort' ? (
-            <div role="menu" aria-label={effortMenuLabel} data-dsh-cascade-submenu="effort" style={pickerSubmenuStyle} onMouseEnter={cancelScheduledClose} onMouseLeave={onCloseSubmenu}>
-              {effortOptions.map(option => (
-                <button key={option.id} type="button" role="menuitemradio" aria-checked={option.id === selectedEffortId} style={option.id === selectedEffortId ? { ...choiceItemStyle, background: 'var(--dsw-alias-interactive-bg-active, var(--dsw-alias-interactive-bg-hover))' } : choiceItemStyle} onMouseEnter={event => { event.currentTarget.style.background = 'var(--dsw-alias-interactive-bg-hover, var(--dsw-alias-bg-layer-1))' }} onMouseLeave={event => { event.currentTarget.style.background = option.id === selectedEffortId ? 'var(--dsw-alias-interactive-bg-active, var(--dsw-alias-interactive-bg-hover))' : 'transparent' }} onClick={() => { onChooseEffort(option.id) }}>
-                  <span>{option.label}</span>
-                  {option.id === selectedEffortId ? <span aria-hidden="true">✓</span> : null}
-                </button>
-              ))}
-            </div>
-          ) : null}
-        </div>
-      ) : null}
-    </div>
+    <DshCascader
+      ref={cascaderRef}
+      treeData={treeData}
+      value={selectedPath}
+      showNext="hover"
+      changeOnSelect={false}
+      showClear={false}
+      borderless
+      size="small"
+      dropdownClassName="dsh-codex-global-model-cascader"
+      dropdownStyle={{ minWidth: 252, maxWidth: 'calc(100vw - 32px)', borderRadius: 10, overflow: 'hidden' }}
+      onChange={handleChange}
+      onSelect={reopenAfterSelect}
+      triggerRender={() => (
+        <DshButton htmlType="button" theme="borderless" type="tertiary" aria-haspopup="menu" style={pickerButtonStyle}>
+          <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: modelLabel === '' ? 'var(--dsw-alias-label-dimmed)' : 'var(--dsw-alias-label-primary)' }}>{buttonValue}</span>
+          <ChevronDown />
+        </DshButton>
+      )}
+    />
   )
 }
 
@@ -339,8 +158,6 @@ export function CodexGlobalModel({ connection, t }: CodexGlobalModelProps) {
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
   const [busy, setBusy] = useState(false)
   const [feedback, setFeedback] = useState<'idle' | 'saved' | 'error'>('idle')
-  const [openMenu, setOpenMenu] = useState<ChoiceMenuKind | null>(null)
-  const fieldsRef = useRef<HTMLDivElement>(null)
 
   const load = useCallback(async () => {
     setStatus('loading')
@@ -362,23 +179,6 @@ export function CodexGlobalModel({ connection, t }: CodexGlobalModelProps) {
   }, [connection])
 
   useEffect(() => { void load() }, [load])
-
-  useEffect(() => {
-    if (openMenu === null) return
-    const onPointerDown = (event: PointerEvent): void => {
-      if (event.target instanceof Node && fieldsRef.current?.contains(event.target)) return
-      setOpenMenu(null)
-    }
-    const onKeyDown = (event: KeyboardEvent): void => {
-      if (event.key === 'Escape') setOpenMenu(null)
-    }
-    document.addEventListener('pointerdown', onPointerDown)
-    document.addEventListener('keydown', onKeyDown)
-    return () => {
-      document.removeEventListener('pointerdown', onPointerDown)
-      document.removeEventListener('keydown', onKeyDown)
-    }
-  }, [openMenu])
 
   const selected = useMemo(() => models.find(model => model.id === draftModel), [draftModel, models])
   const efforts = selected?.reasoning?.efforts ?? []
@@ -423,7 +223,7 @@ export function CodexGlobalModel({ connection, t }: CodexGlobalModelProps) {
       {status === 'loading' ? <p style={bodyStyle}>{t('settingsLoading')}</p> : null}
       {status === 'error' ? <p style={errorStyle} role="alert">{t('globalModelLoadFailed')}</p> : null}
       {status === 'ready' ? (
-        <div ref={fieldsRef} style={fieldsStyle}>
+        <div style={fieldsStyle}>
           <GlobalModelPicker
             modelMenuLabel={t('globalModelModel')}
             effortMenuLabel={t('globalModelThinking')}
@@ -434,10 +234,6 @@ export function CodexGlobalModel({ connection, t }: CodexGlobalModelProps) {
             selectedEffortId={draftEffort}
             modelOptions={modelOptions}
             effortOptions={effortOptions}
-            activeMenu={openMenu}
-            onToggle={() => { setOpenMenu(current => current === null ? 'root' : null) }}
-            onOpenSubmenu={menu => { setOpenMenu(menu) }}
-            onCloseSubmenu={() => { setOpenMenu('root') }}
             onChooseModel={id => { setDraftModel(id); setDraftEffort(''); setFeedback('idle') }}
             onChooseEffort={id => { setDraftEffort(id); setFeedback('idle') }}
           />

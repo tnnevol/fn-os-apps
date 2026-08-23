@@ -1,4 +1,5 @@
 export { default as DshButton } from '@douyinfe/semi-ui/lib/es/button/index.js'
+export { default as DshCascader } from '@douyinfe/semi-ui/lib/es/cascader/index'
 export { default as DshDropdown } from '@douyinfe/semi-ui/lib/es/dropdown/index.js'
 export { default as DshIconButton } from '@douyinfe/semi-ui/lib/es/iconButton/index.js'
 export { default as DshTooltip } from '@douyinfe/semi-ui/lib/es/tooltip/index'

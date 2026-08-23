@@ -58,6 +58,65 @@ body[${SEMI_DSH_THEME_ATTRIBUTE}] .semi-dropdown-wrapper {
   box-shadow: var(--dsw-shadow-lv3);
 }
 
+body[${SEMI_DSH_THEME_ATTRIBUTE}] .semi-cascader,
+body[${SEMI_DSH_THEME_ATTRIBUTE}] .semi-cascader-popover,
+body[${SEMI_DSH_THEME_ATTRIBUTE}] .semi-cascader-option-lists,
+body[${SEMI_DSH_THEME_ATTRIBUTE}] .semi-cascader-option-list {
+  color: var(--dsw-alias-label-primary);
+  background: var(--dsw-alias-bg-layer-3);
+  border-color: var(--dsw-alias-border-l2);
+  border-radius: 10px;
+  box-shadow: var(--dsw-shadow-lv3);
+}
+
+body[${SEMI_DSH_THEME_ATTRIBUTE}] .semi-cascader-popover,
+body[${SEMI_DSH_THEME_ATTRIBUTE}] .semi-cascader-option-lists {
+  overflow: hidden;
+}
+
+/* Give the leaf panel extra room for model names without widening the trigger panel. */
+body[${SEMI_DSH_THEME_ATTRIBUTE}] .dsh-codex-global-model-cascader .semi-cascader-option-lists > .semi-cascader-option-list + .semi-cascader-option-list {
+  width: max-content !important;
+  min-width: 200px !important;
+  max-width: calc(100vw - 32px);
+  flex: 0 1 auto;
+  overflow-x: hidden;
+}
+
+body[${SEMI_DSH_THEME_ATTRIBUTE}] .dsh-codex-global-model-cascader .semi-cascader-option-lists > .semi-cascader-option-list + .semi-cascader-option-list .semi-cascader-option {
+  min-width: max-content;
+  white-space: nowrap;
+  word-break: normal;
+}
+
+body[${SEMI_DSH_THEME_ATTRIBUTE}] .dsh-codex-global-model-cascader .semi-cascader-option-lists {
+  height: 160px;
+}
+
+body[${SEMI_DSH_THEME_ATTRIBUTE}] .dsh-codex-global-model-cascader .semi-cascader-option-list {
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
+
+body[${SEMI_DSH_THEME_ATTRIBUTE}] .dsh-codex-global-model-cascader .semi-cascader-option-list > li {
+  padding-top: 5px;
+  padding-bottom: 5px;
+}
+
+body[${SEMI_DSH_THEME_ATTRIBUTE}] .dsh-codex-global-model-cascader .semi-cascader-option {
+  font-size: 13px;
+  line-height: 18px;
+}
+
+body[${SEMI_DSH_THEME_ATTRIBUTE}] .semi-cascader-option {
+  color: var(--dsw-alias-label-primary);
+}
+
+body[${SEMI_DSH_THEME_ATTRIBUTE}] .semi-cascader-option:hover,
+body[${SEMI_DSH_THEME_ATTRIBUTE}] .semi-cascader-option-active {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
 /* Keep portaled tooltips readable in both DSH themes. */
 body[${SEMI_DSH_THEME_ATTRIBUTE}] .semi-tooltip-wrapper {
   background-color: var(--dsw-alias-bg-layer-3, #2a2a2a);

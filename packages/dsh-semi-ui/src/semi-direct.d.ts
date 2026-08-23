@@ -3,6 +3,11 @@ declare module '@douyinfe/semi-ui/lib/es/button/index.js' {
   export default Button
 }
 
+declare module '@douyinfe/semi-ui/lib/es/cascader/index' {
+  const Cascader: any
+  export default Cascader
+}
+
 declare module '@douyinfe/semi-ui/lib/es/dropdown/index.js' {
   const Dropdown: any
   export default Dropdown
