@@ -140,7 +140,11 @@ async function installPublishedPlugins(publishedPlugins) {
       const installArgs = [
         'install',
         '--prefix', profileDirectory,
-        '--no-save',
+        // Keep published plugins as profile dependencies. The bundle list is
+        // only the activation order; without a saved dependency npm/pnpm can
+        // later prune node_modules while leaving a stale bundle name behind.
+        '--save-prod',
+        '--save-exact',
         '--package-lock=false',
         '--ignore-scripts',
         '--legacy-peer-deps',
