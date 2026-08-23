@@ -62,18 +62,24 @@ describe('dsh-fnos package contract', () => {
     expect(semiTheme).toContain('color: var(--dsw-alias-label-primary, #fff)')
     expect(semiTheme).toContain('pointer-events: none')
     expect(semiTheme).toContain('overflow-x: auto')
-    expect(semiTheme).toContain('background: #111 !important')
+    expect(semiTheme).toContain('semi-checkbox-unChecked:hover')
+     expect(semiTheme).toContain('data-dsh-fnos-link')
+     expect(semiTheme).toContain('gap: 0 !important')
+     expect(semiTheme).not.toContain('data-dsh-fnos-input-references')
+     expect(semiTheme).toContain('background: #111 !important')
     expect(semiTheme).toContain('color: #fff !important')
     expect(semiTheme).toContain('var(--dsw-shadow-lv3)')
   })
 
-  it('keeps fnOS reference labels in the in-card rail instead of the native draft text', async () => {
+  it('keeps fnOS file and folder references in the native input draft', async () => {
     const actions = await readFile(new URL('../src/client/input-reference-actions.ts', import.meta.url), 'utf8')
     const dock = await readFile(new URL('../src/client/FnosInputReferencesDock.tsx', import.meta.url), 'utf8')
-    expect(actions).not.toContain("appearance: reference.kind === 'directory' ? 'folder' : 'file'")
-    expect(actions).toContain("label: ''")
-    expect(dock).toContain('createPortal(content, composerCard)')
-    expect(dock).toContain('data-dsh-fnos-input-references')
+    expect(actions).toContain("appearance: reference.kind === 'directory' ? 'folder' : 'file'")
+    expect(actions).toContain('FNOS_LABEL_GAP')
+    expect(actions).toContain('restoreFnosInputCaret')
+    expect(dock).toContain('data-dsh-fnos-link')
+    expect(dock).toContain('MutationObserver')
+    expect(dock).not.toContain('createPortal')
   })
 
   it('declares the DSH API version used by the client bridge', async () => {

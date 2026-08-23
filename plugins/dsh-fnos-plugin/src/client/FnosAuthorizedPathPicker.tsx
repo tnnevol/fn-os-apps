@@ -6,6 +6,7 @@ import { DshIconFile as IconFile, DshIconFolder as IconFolder, DshTooltip as Too
 import { requestAuthorizedEntries, type AuthorizedEntriesResult } from './authorized-directories-client.ts'
 import { FnosColorLogo } from './FnosLogo.tsx'
 import { decodeFnosReference, type FnosInputReference, createFnosInputReference, uniqueFnosInputReferences, FNOS_REFERENCE_SOURCE } from './input-references.ts'
+import { draftWithoutFnosOccurrence, trimFnosTrailingWhitespace } from './input-reference-actions.ts'
 import type { AuthorizedEntry } from '../authorized-directories-contract.ts'
 import type { FnosLocaleKey } from './locales.ts'
 
@@ -129,7 +130,7 @@ export function FnosAuthorizedPathPicker({ input, inputActions, insertReferences
     if (removed.length > 0) {
       let draft = input.draft
       for (const occurrence of removed) {
-        draft = draft.slice(0, occurrence.offset) + draft.slice(occurrence.offset + occurrence.length)
+        draft = draftWithoutFnosOccurrence(draft, occurrence, fnosOccurrences)
       }
       inputActions.setDraft(draft)
       return
@@ -148,6 +149,11 @@ export function FnosAuthorizedPathPicker({ input, inputActions, insertReferences
       return
     }
 
+    const cleanedDraft = trimFnosTrailingWhitespace(input.draft, fnosOccurrences)
+    if (cleanedDraft !== input.draft) {
+      inputActions.setDraft(cleanedDraft)
+      return
+    }
     setDesiredPaths(undefined)
   }, [currentPaths, desiredPaths, input, inputActions, insertReferences])
 

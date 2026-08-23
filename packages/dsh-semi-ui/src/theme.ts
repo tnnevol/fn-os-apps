@@ -157,13 +157,64 @@ body[${SEMI_DSH_THEME_ATTRIBUTE}] .dsh-fnos-input-picker-trigger:focus-visible {
   outline-offset: 1px;
 }
 
-/* Reserve the reference rail inside DSH's native composer scrollport. */
-body[${SEMI_DSH_THEME_ATTRIBUTE}] [data-composer-card]:has([data-dsh-fnos-input-references]) [data-input-scroll] {
-  padding-top: 46px;
+/* Render fnOS references inside DSH's native input as link-like content. */
+body[${SEMI_DSH_THEME_ATTRIBUTE}] [data-dsh-fnos-link] {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  color: var(--dsw-alias-state-business-primary) !important;
+  cursor: text !important;
+  text-decoration: underline !important;
+  text-underline-offset: 2px;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0 !important;
+  width: max-content !important;
+  min-width: max-content !important;
+  max-width: none !important;
+  flex: 0 0 auto !important;
+  overflow: visible !important;
+  pointer-events: auto !important;
+  white-space: nowrap !important;
+  text-overflow: clip !important;
+  contain: none !important;
+  inline-size: max-content !important;
+  max-inline-size: none !important;
 }
 
-/* Keep the tree check state monochrome and readable against both DSH themes. */
-body[${SEMI_DSH_THEME_ATTRIBUTE}] .semi-tree-option-list .semi-checkbox:hover .semi-checkbox-inner-display,
+body[${SEMI_DSH_THEME_ATTRIBUTE}] [data-dsh-fnos-link] [class*='chipTriggerGlyph'] {
+  display: inline-block !important;
+  visibility: hidden !important;
+}
+
+body[${SEMI_DSH_THEME_ATTRIBUTE}] [data-dsh-fnos-link] > [class*='chipTrigger'] {
+  flex: 0 0 auto !important;
+  width: max-content !important;
+  min-width: 16px !important;
+  max-width: none !important;
+  overflow: visible !important;
+}
+
+body[${SEMI_DSH_THEME_ATTRIBUTE}] [data-dsh-fnos-link] > span:last-child {
+  display: inline-block !important;
+  width: max-content !important;
+  inline-size: max-content !important;
+  flex: 0 0 auto !important;
+  min-width: max-content !important;
+  max-width: none !important;
+  max-inline-size: none !important;
+  overflow: visible !important;
+  white-space: nowrap !important;
+}
+
+/* Keep checked states monochrome while preserving the host hover surface for unchecked controls. */
+body[${SEMI_DSH_THEME_ATTRIBUTE}] .semi-tree-option-list .semi-checkbox-unChecked:hover .semi-checkbox-inner-display {
+  background: var(--dsw-alias-interactive-bg-hover) !important;
+  border-color: var(--dsw-alias-border-l2) !important;
+  box-shadow: inset 0 0 0 1px var(--dsw-alias-border-l2) !important;
+  color: var(--dsw-alias-label-primary) !important;
+}
+
 body[${SEMI_DSH_THEME_ATTRIBUTE}] .semi-tree-option-list .semi-checkbox-inner-checked .semi-checkbox-inner-display,
 body[${SEMI_DSH_THEME_ATTRIBUTE}] .semi-tree-option-list .semi-checkbox-indeterminate .semi-checkbox-inner-display {
   background: #111 !important;
