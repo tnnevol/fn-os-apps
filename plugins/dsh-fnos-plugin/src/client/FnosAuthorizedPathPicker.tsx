@@ -110,7 +110,7 @@ export function FnosAuthorizedPathPicker({ input, insertReferences, t }: FnosAut
       insertReferences({ draft: input.draft, draftRev: input.draftRev }, additions)
     }
     setDesiredPaths(undefined)
-  }, [desiredPaths, input.draft, input.draftRev, insertReferences])
+  }, [desiredPaths])
 
   const loadData = useCallback(async (node: unknown) => {
     const key = typeof node === 'object' && node !== null && 'key' in node && typeof node.key === 'string'
