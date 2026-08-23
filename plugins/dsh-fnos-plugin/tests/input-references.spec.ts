@@ -3,6 +3,7 @@ import {
   createFnosInputReference,
   decodeFnosReference,
   fileUrlForPath,
+  fnosReferencePromptText,
   normalizeFnosPath,
   uniqueFnosInputReferences,
 } from '../src/client/input-references.ts'
@@ -32,7 +33,14 @@ describe('fnOS DSH input references', () => {
     expect(uniqueFnosInputReferences([first, second, undefined, third])).toEqual([first, third])
   })
 
-  it('keeps the model and clipboard path projection as a file URL', () => {
+  it('projects structured references as official echo tokens', () => {
+    const file = createFnosInputReference('file', '/vol1/1000/Downloads/trim-cli-skillv2.zip')!
+    const folder = createFnosInputReference('directory', '/vol1/1000/Downloads')!
+    expect(fnosReferencePromptText(file.ref)).toBe('@/vol1/1000/Downloads/trim-cli-skillv2.zip')
+    expect(fnosReferencePromptText(folder.ref)).toBe('@/vol1/1000/Downloads/')
+  })
+
+  it('keeps the clipboard path projection as a file URL', () => {
     const folder = createFnosInputReference('directory', '/vol6/1000/Documents', '/vol6/1000/Documents')!
     expect(folder.clipboardText).toBe('file:///vol6/1000/Documents')
     expect(decodeFnosReference(folder.ref)).toEqual({ kind: 'directory', path: '/vol6/1000/Documents' })

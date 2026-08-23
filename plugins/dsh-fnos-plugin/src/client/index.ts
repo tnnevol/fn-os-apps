@@ -11,7 +11,7 @@ import type {} from '@deepseek-ai/dsh-client-ui-theme/client'
 import { AuthorizedDirectoriesCard } from './AuthorizedDirectoriesCard.tsx'
 import { FnosInputPickerButton } from './FnosInputPickerButton.tsx'
 import { insertFnosReferences } from './input-reference-actions.ts'
-import { FNOS_REFERENCE_SOURCE, decodeFnosReference } from './input-references.ts'
+import { FNOS_REFERENCE_SOURCE, decodeFnosReference, fnosReferencePromptText } from './input-references.ts'
 import type { FnosLocaleKey } from './locales.ts'
 import { en, zh } from './locales.ts'
 import { installFnosPathOpener } from './path-opener.ts'
@@ -155,10 +155,7 @@ export function apply(ctx: ClientContext): void {
         const decoded = decodeFnosReference(ref)
         return decoded === undefined ? ref : decoded.path
       },
-      serialize: async ref => {
-        const decoded = decodeFnosReference(ref)
-        return decoded === undefined ? ref : decoded.path
-      },
+      serialize: async ref => fnosReferencePromptText(ref),
     },
   }
   const inputTriggers = ctx.get('inputTriggers') as InputTriggerServiceContract

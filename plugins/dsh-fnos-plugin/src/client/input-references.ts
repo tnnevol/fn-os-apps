@@ -58,6 +58,13 @@ export function createFnosInputReference(
 }
 
 /** Decode only references produced by this plugin. */
+export function fnosReferencePromptText(ref: string): string {
+  const decoded = decodeFnosReference(ref)
+  if (decoded === undefined) return ref
+  const path = decoded.kind === 'directory' && !decoded.path.endsWith('/') ? `${decoded.path}/` : decoded.path
+  return `@${path}`
+}
+
 export function decodeFnosReference(ref: string): { kind: FnosReferenceKind, path: string } | undefined {
   const separator = ref.indexOf(':')
   if (separator <= 0) return undefined
