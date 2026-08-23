@@ -182,8 +182,8 @@ export function FnosAuthorizedPathPicker({ input, inputActions, insertReferences
       showClear={false}
       maxTagCount={0}
       dropdownMatchSelectWidth={false}
-      dropdownStyle={{ width: 'max-content', minWidth: 260, maxWidth: 'calc(100vw - 32px)', maxHeight: 320 }}
-      optionListStyle={{ minWidth: 'max-content', maxHeight: 280, overflowX: 'auto', overflowY: 'auto' }}
+      dropdownStyle={{ width: 'max-content', maxWidth: 'calc(100vw - 32px)', maxHeight: 320 }}
+      optionListStyle={{ width: 'max-content', maxWidth: 'calc(100vw - 32px)', minWidth: 'max-content', maxHeight: 280, overflowX: 'auto', overflowY: 'auto' }}
       showLine={false}
       emptyContent={t('inputPickerEmpty')}
       searchPlaceholder={t('workspaceSearchPlaceholder')}
