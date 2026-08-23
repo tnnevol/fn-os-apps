@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import type { CSSProperties } from 'react'
 import type { PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type { FnosLocaleKey } from './locales.ts'
-import { diagnosePickerResult, isPickerCancellation, logPickerSdkEvent, logPickerSdkValue } from './picker-result.ts'
+import { diagnosePickerResult, isPickerCancellation, isPickerNoSelection, logPickerSdkEvent, logPickerSdkValue } from './picker-result.ts'
 import { createTrimApp } from './sdk.ts'
 import {
   DirectoryRequestError,
@@ -75,6 +75,15 @@ const pathRowStyle: CSSProperties = { display: 'flex', alignItems: 'center', jus
 const pathStyle: CSSProperties = { minWidth: 0, overflow: 'hidden', color: 'var(--dsw-alias-label-primary)', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: 13, textOverflow: 'ellipsis', whiteSpace: 'nowrap' }
 const readOnlyStyle: CSSProperties = { flex: '0 0 auto', color: 'var(--dsw-alias-label-tertiary)', fontSize: 12, whiteSpace: 'nowrap' }
 const dangerButtonStyle: CSSProperties = { ...buttonStyle, minHeight: 28, padding: '3px 9px', color: 'var(--dsw-alias-state-error-primary, #d92d20)', flex: '0 0 auto' }
+const AUTHORIZED_DIRECTORY_LOG_PREFIX = '[dsh-fnos][authorized-directories]'
+
+function logAuthorizedDirectoryEvent(stage: string, details: Record<string, unknown>): void {
+  console.info(AUTHORIZED_DIRECTORY_LOG_PREFIX, stage, details)
+}
+
+function logAuthorizedDirectoryWarning(stage: string, details: Record<string, unknown>): void {
+  console.warn(AUTHORIZED_DIRECTORY_LOG_PREFIX, stage, details)
+}
 
 function Chevron({ open }: { open: boolean }) {
   return (
@@ -109,6 +118,12 @@ async function jsonRequest<T>(path: string, method = 'GET', body?: unknown): Pro
 }
 
 function errorMessage(error: unknown, t: Translate, action: 'load' | 'pick' | 'delete'): string {
+  logAuthorizedDirectoryWarning('user-visible-error', {
+    action,
+    errorType: error instanceof Error ? error.name : typeof error,
+    code: error instanceof DirectoryRequestError ? error.code : undefined,
+    message: error instanceof Error ? error.message : undefined,
+  })
   if (error instanceof DirectoryRequestError) {
     if (error.code === 'fnos-authorized-directory-permission-denied') return t('permissionDenied')
     if (error.code === 'remote-web-origin-not-trusted') return t('originNotTrusted')
@@ -126,10 +141,18 @@ export function AuthorizedDirectoriesCard({ t }: AuthorizedDirectoriesCardProps)
   const [busy, setBusy] = useState(false)
 
   const refresh = useCallback(async (): Promise<void> => {
+    logAuthorizedDirectoryEvent('refresh-start', {})
     setState(current => ({ status: 'loading', directories: current.directories }))
     try {
-      setState({ status: 'ready', directories: await requestAuthorizedDirectories() })
+      const directories = await requestAuthorizedDirectories()
+      logAuthorizedDirectoryEvent('refresh-success', { count: directories.length })
+      setState({ status: 'ready', directories })
     } catch (error: unknown) {
+      logAuthorizedDirectoryWarning('refresh-failed', {
+        errorType: error instanceof Error ? error.name : typeof error,
+        code: error instanceof DirectoryRequestError ? error.code : undefined,
+        message: error instanceof Error ? error.message : undefined,
+      })
       setState(current => ({ status: 'error', directories: current.directories, code: errorMessage(error, t, 'load') }))
     }
   }, [t])
@@ -165,7 +188,18 @@ export function AuthorizedDirectoriesCard({ t }: AuthorizedDirectoriesCardProps)
       phase = 'pickSharedFile'
       const result = await sdk.pickSharedFile(params)
       const diagnosis = logPickerSdkValue('resolved', result)
-      if (diagnosis.outcome === 'cancelled') return
+      const noSelection = isPickerNoSelection(result)
+      logAuthorizedDirectoryEvent('picker-decision', {
+        outcome: diagnosis.outcome,
+        reason: diagnosis.reason,
+        code: diagnosis.code,
+        status: diagnosis.status,
+        noSelection,
+      })
+      if (diagnosis.outcome === 'cancelled' || noSelection) {
+        logAuthorizedDirectoryEvent('picker-silent-cancel', { reason: noSelection ? 'empty-success-data' : diagnosis.reason })
+        return
+      }
       if (diagnosis.outcome !== 'success') {
         throw new DirectoryRequestError(
           diagnosis.code === 1 ? 'fnos-authorized-directory-permission-denied' : 'fnos-authorized-directory-request-failed',
@@ -176,6 +210,17 @@ export function AuthorizedDirectoriesCard({ t }: AuthorizedDirectoriesCardProps)
     } catch (error: unknown) {
       const diagnosis = diagnosePickerResult(error)
       logPickerSdkEvent('rejected', { phase, diagnosis })
+      logAuthorizedDirectoryWarning('picker-catch', {
+        phase,
+        outcome: diagnosis.outcome,
+        reason: diagnosis.reason,
+        code: diagnosis.code,
+        message: diagnosis.message,
+      })
+      if (phase === 'pickSharedFile') {
+        logAuthorizedDirectoryEvent('picker-silent-cancel', { reason: diagnosis.reason, outcome: diagnosis.outcome })
+        return
+      }
       if (isPickerCancellation(error)) return
       setState(current => ({ status: 'error', directories: current.directories, code: errorMessage(error, t, 'pick') }))
     } finally {

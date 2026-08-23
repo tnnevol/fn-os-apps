@@ -31,4 +31,10 @@ describe('fnOS DSH input references', () => {
     const third = createFnosInputReference('directory', '/vol4/b', 'B')
     expect(uniqueFnosInputReferences([first, second, undefined, third])).toEqual([first, third])
   })
+
+  it('keeps the model and clipboard path projection as a file URL', () => {
+    const folder = createFnosInputReference('directory', '/vol6/1000/Documents', '/vol6/1000/Documents')!
+    expect(folder.clipboardText).toBe('file:///vol6/1000/Documents')
+    expect(decodeFnosReference(folder.ref)).toEqual({ kind: 'directory', path: '/vol6/1000/Documents' })
+  })
 })

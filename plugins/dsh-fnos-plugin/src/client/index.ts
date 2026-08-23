@@ -3,8 +3,8 @@
 import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
-import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import type { InputTriggerServiceContract, InputTriggerSource } from '@deepseek-ai/dsh-client-ui-input-trigger/client'
+import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import type {} from '@deepseek-ai/dsh-client-ui-settings-plugins/client'
 import type {} from '@deepseek-ai/dsh-client-ui-slots'
 import type {} from '@deepseek-ai/dsh-client-ui-theme/client'
@@ -17,6 +17,7 @@ import type { FnosLocaleKey } from './locales.ts'
 import { en, zh } from './locales.ts'
 import { installFnosPathOpener } from './path-opener.ts'
 import { createTrimApp } from './sdk.ts'
+import { installFnosPageTitle } from './sdk-title.ts'
 import { createThemeBridge, type ThemeBridge } from './theme-bridge.ts'
 import { createThemePersistence } from './theme-persistence.ts'
 import { installWorkspaceAuthorizedShortcut } from './workspace-authorized-shortcut.ts'
@@ -142,6 +143,7 @@ export function apply(ctx: ClientContext): void {
     createSdk: createTrimApp,
     message: key => t(key),
   }), 'dsh-fnos: fnOS path opener')
+  ctx.effect(() => installFnosPageTitle(createTrimApp), 'dsh-fnos: fnOS page title')
   ctx.effect(() => installWorkspaceAuthorizedShortcut(t), 'dsh-fnos: workspace authorized shortcut')
 
   const source: InputTriggerSource = {
@@ -156,9 +158,6 @@ export function apply(ctx: ClientContext): void {
       },
       serialize: async ref => {
         const decoded = decodeFnosReference(ref)
-        // The UI keeps only the readable filename in the composer. The model
-        // receives the original NAS path, which is the value the Host can
-        // resolve and the agent can use in its workspace context.
         return decoded === undefined ? ref : decoded.path
       },
     },

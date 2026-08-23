@@ -87,19 +87,54 @@ interface AuthorizedDirectoryDropdownProps {
   t: Translate
 }
 
-function menuText(text: string, color = 'var(--dsw-alias-label-tertiary)') {
-  return createElement(SemiTooltip, { content: text, showArrow: true, mouseEnterDelay: 0.5 }, createElement('span', {
-    title: text,
-    style: {
-      display: 'block',
-      width: '100%',
-      maxWidth: '220px',
-      overflow: 'hidden',
-      color,
-      textOverflow: 'ellipsis',
-      whiteSpace: 'nowrap',
+interface AuthorizedDirectoryMenuTextProps {
+  text: string
+  color: string
+}
+
+/**
+ * Keep each directory item's tooltip independently controlled. Semi's hover
+ * trigger can lose the later item when it is nested inside a Dropdown portal;
+ * a custom trigger also lets the tooltip render above the dropdown layer.
+ */
+function AuthorizedDirectoryMenuText({ text, color }: AuthorizedDirectoryMenuTextProps) {
+  const [visible, setVisible] = useState(false)
+  const show = useCallback(() => { setVisible(true) }, [])
+  const hide = useCallback(() => { setVisible(false) }, [])
+
+  return createElement(
+    SemiTooltip,
+    {
+      content: text,
+      trigger: 'custom',
+      visible,
+      onVisibleChange: setVisible,
+      position: 'left',
+      zIndex: 10001,
+      getPopupContainer: () => document.body,
+      showArrow: true,
     },
-  }, text))
+    createElement('span', {
+      title: text,
+      onMouseEnter: show,
+      onMouseLeave: hide,
+      onFocus: show,
+      onBlur: hide,
+      style: {
+        display: 'block',
+        width: '100%',
+        maxWidth: '220px',
+        overflow: 'hidden',
+        color,
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap',
+      },
+    }, text),
+  )
+}
+
+function menuText(text: string, color = 'var(--dsw-alias-label-tertiary)') {
+  return createElement(AuthorizedDirectoryMenuText, { text, color })
 }
 
 function AuthorizedDirectoryDropdown({ dialog, t }: AuthorizedDirectoryDropdownProps) {

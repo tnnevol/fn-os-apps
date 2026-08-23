@@ -6,6 +6,7 @@ import {
   accessiblePathsFromEnvironment,
   buildAuthorizedDirectories,
   dataSharePathsFromEnvironment,
+  defaultApplicationPathsFromEnvironment,
   gatewayUserId,
   mergeAuthorizedPaths,
   normalizeAuthorizedPath,
@@ -79,6 +80,20 @@ describe('fnOS authorized-directory contract', () => {
     expect(mergeAuthorizedPaths(['/vol4/share'], env.TRIM_DATA_ACCESSIBLE_PATHS, ['/vol2/media'])).toEqual([
       '/vol4/share',
       '/vol2/media',
+    ])
+  })
+
+  it('adds the app-owned @app family as default read-only roots', () => {
+    expect(defaultApplicationPathsFromEnvironment({
+      TRIM_APPDEST_VOL: '/vol4',
+      TRIM_APPDEST: '/vol4/@app/fn-deepseek-harness',
+      TRIM_PKGHOME: '/vol4/@apphome/fn-deepseek-harness',
+    })).toEqual([
+      '/vol4/@app/fn-deepseek-harness',
+      '/vol4/@apphome/fn-deepseek-harness',
+      '/vol4/@appshare/fn-deepseek-harness',
+      '/vol4/@appdata/fn-deepseek-harness',
+      '/vol4/@appconf/fn-deepseek-harness',
     ])
   })
 

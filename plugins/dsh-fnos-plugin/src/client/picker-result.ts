@@ -2,12 +2,13 @@
  * Diagnostics and result classification for the fnOS shared-directory picker.
  *
  * The SDK documents `undefined` as a possible picker result and documents
- * `{ code, msg, data }` as the bridge response. It does not document a
- * Chinese message or an empty `data` array as a cancellation signal, so this
- * module deliberately does not infer cancellation from either of them.
+ * `{ code, msg, data }` as the bridge response. Some NAS versions return the
+ * active close as a non-zero bridge response with an explicit cancellation
+ * message, so that typed response shape is classified as a silent cancellation.
  */
 
 const cancellationStatusPattern = /^(?:cancel(?:led|ed)?|abort(?:ed)?)$/iu
+const cancellationMessagePattern = /(?:cancel|abort|closed|取消|关闭)/iu
 const errorStatusPattern = /^(?:error|failed|failure|rejected)$/iu
 
 export type PickerResultOutcome = 'cancelled' | 'success' | 'error' | 'unknown'
@@ -119,6 +120,9 @@ export function diagnosePickerResult(value: unknown): PickerResultDiagnosis {
     if (value.name === 'AbortError' || value.name === 'CanceledError') {
       return diagnosisFor(value, 'cancelled', 'abort-error')
     }
+    if (cancellationMessagePattern.test(value.message)) {
+      return diagnosisFor(value, 'cancelled', 'explicit-cancel-error')
+    }
     return diagnosisFor(value, 'error', 'exception')
   }
 
@@ -131,6 +135,11 @@ export function diagnosePickerResult(value: unknown): PickerResultDiagnosis {
   }
   if (status !== undefined && errorStatusPattern.test(status)) {
     return diagnosisFor(value, 'error', 'explicit-error-status')
+  }
+
+  const message = stringField(record, 'msg') ?? stringField(record, 'message')
+  if (message !== undefined && Array.isArray(record.data) && record.data.length === 0 && cancellationMessagePattern.test(message)) {
+    return diagnosisFor(value, 'cancelled', 'explicit-cancel-message')
   }
 
   if (typeof record.code === 'number' && Number.isFinite(record.code)) {
@@ -147,6 +156,12 @@ export function diagnosePickerResult(value: unknown): PickerResultDiagnosis {
 /** Return true only when the SDK explicitly indicates that the picker closed. */
 export function isPickerCancellation(value: unknown): boolean {
   return diagnosePickerResult(value).outcome === 'cancelled'
+}
+
+/** The typed success response with no selected paths means the picker was dismissed. */
+export function isPickerNoSelection(value: unknown): boolean {
+  const record = asRecord(value)
+  return record?.code === 0 && Array.isArray(record.data) && record.data.length === 0
 }
 
 /** Write a non-sensitive invocation/result summary to the browser console. */

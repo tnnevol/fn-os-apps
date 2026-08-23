@@ -1,4 +1,4 @@
-/** fnOS file/directory references carried by DSH's native input machine. */
+/** fnOS file/directory selections carried by DSH structured references. */
 
 export const FNOS_REFERENCE_SOURCE = 'fnos-file'
 

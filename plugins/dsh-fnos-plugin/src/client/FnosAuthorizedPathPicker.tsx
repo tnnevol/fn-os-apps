@@ -25,8 +25,8 @@ function displayName(value: string): string {
   return parts.at(-1) ?? value
 }
 
-function nodeLabel(entry: AuthorizedEntry): ReactNode {
-  const name = displayName(entry.semanticPath)
+function nodeLabel(entry: AuthorizedEntry, showFullPath = false): ReactNode {
+  const name = showFullPath ? entry.semanticPath : displayName(entry.semanticPath)
   const Icon = entry.kind === 'directory' ? IconFolder : IconFile
   const content = (
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, minWidth: 'max-content' }}>
@@ -37,11 +37,11 @@ function nodeLabel(entry: AuthorizedEntry): ReactNode {
   return <Tooltip content={entry.semanticPath} showArrow mouseEnterDelay={0.5}>{content}</Tooltip>
 }
 
-function toNode(entry: AuthorizedEntry): TreeNode {
+function toNode(entry: AuthorizedEntry, showFullPath = false): TreeNode {
   return {
     key: entry.path,
     value: entry.path,
-    label: nodeLabel(entry),
+    label: nodeLabel(entry, showFullPath),
     isLeaf: entry.kind === 'file',
   }
 }
@@ -54,9 +54,21 @@ function updateChildren(nodes: readonly TreeNode[], key: string, children: TreeN
   })
 }
 
+function isSameOrDescendantPath(path: string, ancestor: string): boolean {
+  if (path === ancestor) return true
+  const prefix = ancestor === '/' ? '/' : `${ancestor}/`
+  return path.startsWith(prefix)
+}
+
+/**
+ * Semi's related tree selection can report a checked ancestor together with
+ * its checked descendant. Keep the deepest selected path so choosing
+ * `fn-os-apps` never inserts its authorized parent `projects` as well.
+ */
 function selectedPaths(value: unknown): string[] {
   const values = Array.isArray(value) ? value : value === undefined || value === null ? [] : [value]
-  return values.flatMap(item => typeof item === 'string' && item.startsWith('/') ? [item] : [])
+  const paths = [...new Set(values.flatMap(item => typeof item === 'string' && item.startsWith('/') ? [item] : []))]
+  return paths.filter(path => !paths.some(candidate => candidate !== path && isSameOrDescendantPath(candidate, path)))
 }
 
 function referenceEntries(input: InputProps['input']): FnosInputReference[] {
@@ -86,8 +98,10 @@ export function FnosAuthorizedPathPicker({ input, inputActions, insertReferences
 
   const applyEntries = useCallback((result: AuthorizedEntriesResult, parent?: string) => {
     for (const entry of result.entries) entries.current.set(entry.path, entry)
-    const children = result.entries.map(toNode)
-    setTreeData(current => parent === undefined ? children : updateChildren(current, parent, children))
+    const children = result.entries.map(entry => toNode(entry))
+    setTreeData(current => parent === undefined
+      ? result.entries.map(entry => toNode(entry, true))
+      : updateChildren(current, parent, children))
   }, [])
 
   useEffect(() => {
@@ -104,8 +118,8 @@ export function FnosAuthorizedPathPicker({ input, inputActions, insertReferences
     if (desiredPaths === undefined) return
     const wanted = new Set(desiredPaths)
     const current = new Set(currentPaths)
-    const removed = input.occurrences
-      .filter(occurrence => occurrence.source === FNOS_REFERENCE_SOURCE)
+    const fnosOccurrences = input.occurrences.filter(occurrence => occurrence.source === FNOS_REFERENCE_SOURCE)
+    const removed = fnosOccurrences
       .filter(occurrence => {
         const decoded = decodeFnosReference(occurrence.ref)
         return decoded !== undefined && !wanted.has(decoded.path)
@@ -133,6 +147,7 @@ export function FnosAuthorizedPathPicker({ input, inputActions, insertReferences
       insertReferences({ draft: input.draft, draftRev: input.draftRev }, additions)
       return
     }
+
     setDesiredPaths(undefined)
   }, [currentPaths, desiredPaths, input, inputActions, insertReferences])
 
@@ -150,18 +165,19 @@ export function FnosAuthorizedPathPicker({ input, inputActions, insertReferences
       aria-label={t('inputPicker')}
       multiple
       treeCheckable
+      checkRelation="unRelated"
       treeData={treeData}
       value={value}
       loadData={loadData}
-      onChange={(next: unknown) => { setDesiredPaths(selectedPaths(next)) }}
+             onChange={(next: unknown) => { setDesiredPaths(selectedPaths(next)) }}
       disabled={busy}
       size="small"
       borderless
       showClear={false}
       maxTagCount={0}
       dropdownMatchSelectWidth={false}
-      dropdownStyle={{ width: 260, maxHeight: 320 }}
-      optionListStyle={{ maxHeight: 280, overflowX: 'auto', overflowY: 'auto' }}
+      dropdownStyle={{ width: 'max-content', minWidth: 260, maxWidth: 'calc(100vw - 32px)', maxHeight: 320 }}
+      optionListStyle={{ minWidth: 'max-content', maxHeight: 280, overflowX: 'auto', overflowY: 'auto' }}
       showLine={false}
       emptyContent={t('inputPickerEmpty')}
       searchPlaceholder={t('workspaceSearchPlaceholder')}
@@ -171,6 +187,7 @@ export function FnosAuthorizedPathPicker({ input, inputActions, insertReferences
         <span
           aria-label={t('inputPicker')}
           title={t('inputPicker')}
+          className="dsh-fnos-input-picker-trigger"
           style={{
             display: 'inline-flex',
             alignItems: 'center',
@@ -178,8 +195,10 @@ export function FnosAuthorizedPathPicker({ input, inputActions, insertReferences
             width: 28,
             height: 28,
             borderRadius: 7,
-            background: '#fff',
-            color: '#111',
+            background: 'var(--dsw-alias-bg-layer-1)',
+            border: '1px solid var(--dsw-alias-border-l2)',
+            boxSizing: 'border-box',
+            color: 'var(--dsw-alias-label-primary)',
             cursor: busy ? 'not-allowed' : 'pointer',
             opacity: busy ? 0.45 : 1,
           }}

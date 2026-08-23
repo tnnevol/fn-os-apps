@@ -137,6 +137,26 @@ body[${SEMI_DSH_THEME_ATTRIBUTE}] .semi-tree-option-list > ul {
   min-width: max-content;
 }
 
+/* Keep the fnOS picker trigger on shared DSH semantic tokens. */
+body[${SEMI_DSH_THEME_ATTRIBUTE}] .dsh-fnos-input-picker-trigger {
+  background: var(--dsw-alias-bg-layer-1) !important;
+  border-color: var(--dsw-alias-border-l2) !important;
+  color: var(--dsw-alias-label-primary) !important;
+}
+
+body[${SEMI_DSH_THEME_ATTRIBUTE}] .dsh-fnos-input-picker-trigger:hover {
+  background: var(--dsw-alias-interactive-bg-hover) !important;
+}
+
+body[${SEMI_DSH_THEME_ATTRIBUTE}] .dsh-fnos-input-picker-trigger:active {
+  background: var(--dsw-alias-interactive-bg-active) !important;
+}
+
+body[${SEMI_DSH_THEME_ATTRIBUTE}] .dsh-fnos-input-picker-trigger:focus-visible {
+  outline: 2px solid var(--dsw-alias-state-business-primary);
+  outline-offset: 1px;
+}
+
 /* Reserve the reference rail inside DSH's native composer scrollport. */
 body[${SEMI_DSH_THEME_ATTRIBUTE}] [data-composer-card]:has([data-dsh-fnos-input-references]) [data-input-scroll] {
   padding-top: 46px;

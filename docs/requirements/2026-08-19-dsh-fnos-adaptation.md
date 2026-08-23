@@ -51,14 +51,15 @@ DeepSeek Harness（DSH）原生面向通用 Node.js 和浏览器环境。作为 
 | FNOS-001-01 | P0 | fnOS 应用入口与访问权限 | 从 NAS 桌面打开应用，以 iframe 方式进入 DSH Web；通过应用网关访问 DSH 服务，并由 fnOS 可编辑访问权限控制可访问用户 | <Badge type="warning" text="待完成" /> |
 | FNOS-001-02 | P0 | NAS 主题桥接 | DSH 选择“跟随系统”时跟随 NAS 当前主题和后续主题事件；选择浅色或深色时以 DSH 设置为准 | <Badge type="warning" text="待完成" /> |
 | FNOS-001-03 | P0 | 适配层独立维护 | fnOS SDK、主题桥接和应用资源由 FPK/插件提供，不修改官方 DSH 源码 | <Badge type="warning" text="待完成" /> |
-| FNOS-001-04 | P1 | 授权目录列表 | 在 DSH 设置的 fnOS 插件面板中展示当前已授权的 NAS 目录，并合并去重运行时授权环境变量；`TRIM_DATA_SHARE_PATHS` 中的应用共享目录只展示 | <Badge type="warning" text="待真实 NAS 验收" /> |
+| FNOS-001-04 | P1 | 授权目录列表 | 在 DSH 设置的 fnOS 插件面板中展示当前已授权的 NAS 目录，并合并去重运行时授权环境变量；应用默认安装目录族（`@app`、`@apphome`、`@appshare`、`@appdata`、`@appconf`）与 `TRIM_DATA_SHARE_PATHS` 中的目录直接展示且只读 | <Badge type="warning" text="待真实 NAS 验收" /> |
 | FNOS-001-05 | P1 | 添加授权目录 | 管理员通过 fnOS 目录选择器添加授权目录，授权成功后立即刷新列表，不要求保存或取消；取消或空结果静默结束 | <Badge type="warning" text="待真实 NAS 验收" /> |
 | FNOS-001-06 | P1 | 删除授权目录 | 管理员可取消指定目录的应用授权；操作只移除 ACL，不删除目录或文件，并提示潜在的工作区影响 | <Badge type="warning" text="待真实 NAS 验收" /> |
 | FNOS-001-08 | P2 | 扩展其他 fnOS 能力 | 在同一插件中按独立需求接入其他 fnOS JS SDK，不把未经确认的 SDK 能力混入本次发布 | 后续计划 |
 | FNOS-001-09 | P1 | FPK 安装阶段集成 DSH 插件 | 安装 FPK 时，只通过所选 npm 源安装发布清单中的插件精确版本并启用 bundle；未发布插件不参与 FPK 构建和安装，发布后加入清单才会自动集成 | <Badge type="warning" text="待真实 NAS 验收" /> |
 | FNOS-001-10 | P1 | 工作区快捷跳转已授权 fnOS 目录 | 在 DSH 原始工作区目录流程中展示有效授权目录；目录超过 10 个时提供搜索，并通过路径输入旁的黑白 fnOS logo 打开授权目录面板。选择结果写回原始路径输入并交回 DSH 原生 `onPicked`，由 DSH 复用已有工作区或登记新路径后打开；不修改 ACL、文件或会话数据 | <Badge type="warning" text="待真实 NAS 验收" /> |
-| FNOS-001-11 | P1 | 内容输入框选择 NAS 目录和文件 | 在 DSH 内容输入框右下区域增加有颜色的 fnOS 官方 logo 按钮；点击后支持多选 NAS 目录和文件，在输入框文案上方以文件夹/文件 icon 展示已选项，支持堆叠、悬停展开、横向滚动、移除和去重，并通过 DSH 原生引用机制携带 URL 转义后的真实路径 | <Badge type="warning" text="待真实 NAS 验收" /> |
+| FNOS-001-11 | P1 | 内容输入框选择 NAS 目录和文件 | 在 DSH 内容输入框右下区域增加有颜色的 fnOS 官方 logo 按钮；点击后支持多选 NAS 目录和文件，授权根目录一级节点展示完整语义路径、子节点展示末级名称；输入框内容中的文件夹/文件 icon 与名称之间使用 nbsp 间隔并以链接样式展示，悬停显示完整路径，不增加名称点击行为，插入后光标保持在引用内容之后，使用 DSH 原生结构化引用携带 URL 转义后的真实路径 | <Badge type="warning" text="待真实 NAS 验收" /> |
 | FNOS-001-12 | P1 | 上下文文件访问适配 | 点击 DSH 上下文、工具结果或生成文件中的路径后，在 fnOS iframe 内直接通过 `@trimjs/web-app` 打开文件，由 fnOS 文件应用和当前用户权限执行最终判断；独立浏览器继续使用 DSH 原生行为 | <Badge type="warning" text="待真实 NAS 验收" /> |
+| FNOS-001-13 | P1 | fnOS 宿主页面标题 | 监听 DSH Web 的 `document.title` 变化，并在 fnOS Web 宿主 iframe 中通过 NAS JS SDK `setTitle` 同步该标题；独立浏览器不调用该 SDK，不改变其页面标题 | <Badge type="warning" text="待真实 NAS 验收" /> |
 
 ## 交互和行为约束
 
@@ -71,14 +72,21 @@ DeepSeek Harness（DSH）原生面向通用 Node.js 和浏览器环境。作为 
 - DSH 显式选择浅色或深色时不写入 NAS 主题缓存，并清理旧缓存。由于 fnOS SDK 只返回 `light`/`dark` 最终值，未提供 NAS“跟随系统”偏好字段，无法在插件侧区分 NAS 的显式选择和跟随系统后的相同最终值。
 - 在独立浏览器运行 DSH 时找不到 fnOS SDK，适配层应安全降级，不阻塞 DSH 工作台。
 
+### fnOS 宿主页面标题
+
+- 在 fnOS Web 宿主 iframe 中等待 NAS JS SDK 初始化完成后读取 DSH 的 `document.title` 并调用 `setTitle(document.title)`。
+- 监听 `<title>` 元素变化，使会话标题切换后同步更新 fnOS 宿主标题。
+- 独立浏览器和非 Web 宿主环境不调用标题 SDK，保持 DSH 原有页面标题行为。
+- SDK 初始化或标题更新失败时只记录调试信息，不阻塞 DSH 工作台。
+
 ### 授权目录
 
 - 入口文案统一使用“授权目录”。
 - 展示已授权目录，并提供“添加授权目录”入口。
 - 授权目录变化成功后立即重新查询真实授权结果，不设置虚假的保存、取消或恢复按钮。
-- 授权列表合并 `TRIM_DATA_ACCESSIBLE_PATHS`、`TRIM_DATA_SHARE_PATHS` 与 fnOS 授权 API 后去重，并使用 `trim.file.convertPath` 展示可读路径。
+- 授权列表合并 `TRIM_DATA_ACCESSIBLE_PATHS`、`TRIM_DATA_SHARE_PATHS`、应用默认安装目录族（`@app`、`@apphome`、`@appshare`、`@appdata`、`@appconf`）与 fnOS 授权 API 后去重，并使用 `trim.file.convertPath` 展示可读路径。
 - `TRIM_DATA_SHARE_PATHS` 中的应用共享目录仅用于展示，不显示删除/取消授权入口，也不调用取消授权 API。
-- 取消目录选择器、关闭弹框或返回空授权结果时静默结束，不显示权限角色类红色警告。
+- 取消目录选择器、关闭弹框或 SDK 按 `AppBridgeResponse<string[]>` 返回 `code: 0` 且 `data: []` 时静默结束；授权选择器流程不在配置面板显示通用错误提示，详细结果只写入调试日志。
 - 删除前必须明确提示“只取消应用访问权限，不删除文件”。
 - 普通用户可以查看授权结果；添加和删除操作由 fnOS 权限控制。
 

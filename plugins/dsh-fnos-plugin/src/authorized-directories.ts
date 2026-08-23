@@ -302,6 +302,25 @@ export function dataSharePathsFromEnvironment(env: NodeJS.ProcessEnv = process.e
   return normalizeAuthorizedPaths(splitPathEnvironment(env[FNOS_DATA_SHARE_PATHS_ENV]))
 }
 
+/**
+ * Resolve the fnOS application-owned install/data paths for this app. These
+ * paths are read-only defaults, just like @appshare, and must not depend on a
+ * user selecting them through the ACL management card first.
+ */
+export function defaultApplicationPathsFromEnvironment(env: NodeJS.ProcessEnv = process.env): string[] {
+  const appName = (env.TRIM_APPNAME ?? env.APPNAME ?? 'fn-deepseek-harness').trim() || 'fn-deepseek-harness'
+  const candidates: string[] = [env.TRIM_APPDEST, env.TRIM_PKGHOME].filter((value): value is string => typeof value === 'string')
+  let volume = typeof env.TRIM_APPDEST_VOL === 'string' ? env.TRIM_APPDEST_VOL.trim().replace(/\/+$/u, '') : ''
+  const knownPath = [...candidates].find(value => /^\/[^/]+\/@app(?:home|share|data|conf)?\/[^/]+$/u.test(value))
+  if (volume.length === 0 && knownPath !== undefined) volume = knownPath.slice(0, knownPath.indexOf('/@app'))
+  if (volume.length > 0) {
+    for (const prefix of ['@app', '@apphome', '@appshare', '@appdata', '@appconf']) {
+      candidates.push(`${volume}/${prefix}/${appName}`)
+    }
+  }
+  return normalizeAuthorizedPaths(candidates)
+}
+
 /** Combine path sources without changing the first-seen order. */
 export function mergeAuthorizedPaths(...values: unknown[]): string[] {
   return normalizeAuthorizedPaths(values.flatMap(value => Array.isArray(value) ? value : splitPathEnvironment(value)))
@@ -501,7 +520,7 @@ async function convertDirectories(paths: string[], language: string, readOnlyPat
 }
 
 export async function loadAuthorizedDirectories(req: IncomingMessage): Promise<AuthorizedDirectory[]> {
-  const readOnlyPaths = dataSharePathsFromEnvironment()
+  const readOnlyPaths = mergeAuthorizedPaths(dataSharePathsFromEnvironment(), defaultApplicationPathsFromEnvironment())
   let accessiblePaths: string[] = []
   try {
     accessiblePaths = await loadAuthorizedDirectoryPaths()
@@ -554,9 +573,9 @@ function listingPathValue(value: unknown): string | undefined | null {
 async function resolvedAuthorizedRoots(): Promise<string[]> {
   let roots: string[]
   try {
-    roots = mergeAuthorizedPaths(await loadAuthorizedDirectoryPaths(), dataSharePathsFromEnvironment())
+    roots = mergeAuthorizedPaths(await loadAuthorizedDirectoryPaths(), dataSharePathsFromEnvironment(), defaultApplicationPathsFromEnvironment())
   } catch (error: unknown) {
-    const shares = dataSharePathsFromEnvironment()
+    const shares = mergeAuthorizedPaths(dataSharePathsFromEnvironment(), defaultApplicationPathsFromEnvironment())
     if (shares.length === 0) throw error
     roots = shares
   }

@@ -3,6 +3,7 @@ import {
   PICKER_SDK_LOG_PREFIX,
   diagnosePickerResult,
   isPickerCancellation,
+  isPickerNoSelection,
   logPickerSdkValue,
 } from '../src/client/picker-result.ts'
 
@@ -12,12 +13,19 @@ describe('fnOS shared-directory picker result', () => {
     expect(isPickerCancellation({ status: 'cancel' })).toBe(true)
     expect(isPickerCancellation({ status: 'canceled' })).toBe(true)
     expect(isPickerCancellation(new DOMException('The picker was closed', 'AbortError'))).toBe(true)
+    expect(isPickerCancellation(new Error('用户取消授权'))).toBe(true)
   })
 
-  it('treats the documented bridge response code as authoritative', () => {
+  it('silently treats an empty typed success response as no selection', () => {
+    expect(isPickerNoSelection({ code: 0, msg: '', data: [] })).toBe(true)
+    expect(isPickerNoSelection({ code: 0, msg: '', data: ['/vol4/share'] })).toBe(false)
+    expect(isPickerNoSelection({ code: 1, msg: '仅管理员可进行此操作', data: [] })).toBe(false)
+  })
+
+  it('silently treats an explicit active-close bridge response as cancellation', () => {
     expect(isPickerCancellation({ code: 0, msg: '', data: [] })).toBe(false)
     expect(isPickerCancellation({ code: 1, msg: '仅管理员可进行此操作', data: [] })).toBe(false)
-    expect(isPickerCancellation({ code: 2, msg: '用户取消选择', data: [] })).toBe(false)
+    expect(isPickerCancellation({ code: 2, msg: '用户取消选择', data: [] })).toBe(true)
     expect(isPickerCancellation({ code: 2, msg: '', data: [] })).toBe(false)
   })
 
@@ -26,6 +34,7 @@ describe('fnOS shared-directory picker result', () => {
     expect(isPickerCancellation(new Error('permission denied'))).toBe(false)
     expect(isPickerCancellation(null)).toBe(false)
     expect(isPickerCancellation({ msg: '用户取消选择' })).toBe(false)
+    expect(isPickerCancellation({ code: 2, msg: '用户取消选择', data: ['/vol4/share'] })).toBe(false)
   })
 
   it('summarizes the response without logging selected NAS paths', () => {

@@ -19,7 +19,7 @@ lastVerified: 2026-08-22
 
 ## 计划目标
 
-在不修改 DeepSeek Harness 官方源码的前提下，为 `fn-deepseek-harness` FPK、`@tnnevol/dsh-fnos` 和 `@tnnevol/dsh-codex-auth` 插件建立稳定的适配层。已完成的主题桥接作为 P0 基线；P1 已完成插件集成、授权目录管理、工作区快捷跳转和内容输入框 NAS 选择的插件侧代码，所有已实现能力还需真实 fnOS NAS 验收。工作区快捷跳转只接入 DSH 原始弹框公开的目录流程，不接管整个工作区选择器。
+在不修改 DeepSeek Harness 官方源码的前提下，为 `fn-deepseek-harness` FPK、`@tnnevol/dsh-fnos` 和 `@tnnevol/dsh-codex-auth` 插件建立稳定的适配层。已完成的主题桥接作为 P0 基线；P1 已完成插件集成、授权目录管理、工作区快捷跳转、内容输入框 NAS 选择和 fnOS 宿主标题设置的插件侧代码，所有已实现能力还需真实 fnOS NAS 验收。工作区快捷跳转只接入 DSH 原始弹框公开的目录流程，不接管整个工作区选择器。
 
 ## 实现范围和边界
 
@@ -97,7 +97,7 @@ fn-deepseek-harness 应用网关 ──────► DSH Web profile
 - 每次调用从应用运行环境读取 Token，只在 Host 侧使用，不写入 DSH 设置，也不返回给 Client。
 - 将 403、权限不足、路径不存在、网络失败和未知错误转换为稳定的用户可见错误。
 - 对路径进行规范化和重复项去重，删除时只允许操作当前查询结果中的授权目录。
-- 合并 `TRIM_DATA_ACCESSIBLE_PATHS`、`TRIM_DATA_SHARE_PATHS` 环境变量中的目录和 API 返回结果，并按规范化后的真实路径去重；`TRIM_DATA_SHARE_PATHS` 中声明的应用共享目录只展示，不允许删除或取消授权。授权列表用于确定应用边界，不单独作为当前用户对文件/目录有权限的结论。
+- 合并 `TRIM_DATA_ACCESSIBLE_PATHS`、`TRIM_DATA_SHARE_PATHS`、应用默认安装目录族（`@app`、`@apphome`、`@appshare`、`@appdata`、`@appconf`）和 API 返回结果，并按规范化后的真实路径去重；默认安装目录与 `TRIM_DATA_SHARE_PATHS` 中声明的应用共享目录只展示，不允许删除或取消授权。授权列表用于确定应用边界，不单独作为当前用户对文件/目录有权限的结论。
 - 目录展示调用 `trim.file.convertPath` 获取语义化路径；旧版 fnOS 无法转换时使用存储空间编号的可读回退文本，删除仍使用内部真实路径。
 - Host 路由固定为 `/plugins/dsh-fnos/authorized-directories` 和 `/plugins/dsh-fnos/authorized-directories/delete`，通过统一网关随 DSH `/plugins` 请求转发。
 - 删除前重新查询服务端列表并做精确匹配，避免把任意路径直接传给 fnOS 删除接口。
@@ -108,10 +108,10 @@ fn-deepseek-harness 应用网关 ──────► DSH Web profile
 
 - 首次展开时加载授权目录。
 - 展示加载中、空列表、正常列表和失败重试状态。
-- 每行展示 fnOS 转换后的语义化路径（过长时省略显示）；`TRIM_DATA_SHARE_PATHS` 目录显示“应用共享目录”状态且不提供删除按钮，其他授权目录提供删除按钮；Host 内部仍保留规范化真实路径用于删除。
+- 每行展示 fnOS 转换后的语义化路径（过长时省略显示）；默认安装目录族和 `TRIM_DATA_SHARE_PATHS` 目录显示“应用共享目录”状态且不提供删除按钮，其他授权目录提供删除按钮；Host 内部仍保留规范化真实路径用于删除。
 - 卡片提供「添加授权目录」和手动刷新入口。
 - 用户可以查看列表；新增和删除操作交给 fnOS 权限系统判断。
-- 目录选择器关闭、取消或返回空授权结果时静默结束，不展示权限角色类提示；真实的列表、删除和网络错误仍保留重试提示。
+- 目录选择器关闭、取消或按 `AppBridgeResponse<string[]>` 返回 `code: 0` 且 `data: []` 时静默结束；授权选择器流程不在配置面板显示通用错误提示，详细结果只写入调试日志，真实的列表、删除和网络错误仍保留重试提示。
 
 #### 4. 添加流程
 
@@ -272,8 +272,8 @@ const result = await sdk.pickSharedFile({
        ├─ 打开插件自有授权路径面板
        ├─ 在授权边界内导航并多选 NAS 目录或文件
        ├─ 通过 Host 转换可读路径
-       ├─ 在输入框文案上方展示文件夹/文件 icon 引用
-       ├─ 堆叠展示，悬停展开并横向滚动
+       ├─ 在输入框内容中展示带文件夹/文件 icon 的下划线链接样式引用
+       ├─ 一级授权根节点显示完整语义路径，子节点显示末级名称
        ├─ 支持移除并按真实路径去重
        ├─ 取消/关闭：保持输入框原内容
        └─ 成功：插入 DSH 原生文件引用，提交/复制时 URL 转义真实路径
@@ -282,10 +282,28 @@ const result = await sdk.pickSharedFile({
 交互约束：
 
 1. 彩色 fnOS logo 按钮固定在输入框右下操作区，不遮挡发送、附件或其他已有操作，并提供可访问名称、悬浮提示和键盘触发。
-2. 选择结果在输入框文案上方展示，目录使用文件夹 icon、文件使用文件 icon；选项较多时堆叠，悬停展开到最大可用宽度并支持横向滚动。
-3. 选择结果插入后保留用户已有文本；展示使用语义路径，真实路径由 DSH 引用 codec 在提交/复制时按输入契约 URL 转义。
-4. 每个引用支持移除，按规范化真实路径去重，不允许同一文件重复选择。
-5. Host 路由不可用时按钮安全降级，不禁用普通文本输入；整个流程不调用 fnOS SDK 文件/目录选择器。
+2. 选择结果直接展示在输入框内容中，icon 与名称间使用 nbsp 间隔，目录使用文件夹 icon、文件使用文件 icon，并以 link-like 下划线样式呈现；悬停显示完整路径。
+3. 授权目录 Tree 面板宽度随最长可见路径自适应增长，并受视口宽度限制，超长内容支持横向滚动。
+4. 选择结果插入后保留用户已有文本，并将原生 textarea 光标恢复到所有引用内容之后；展示使用语义路径，真实路径由 DSH 引用 codec 在提交/复制时按输入契约 URL 转义。
+5. 每个引用支持移除，按规范化真实路径去重，不允许同一文件重复选择。
+6. Host 路由不可用时按钮安全降级，不禁用普通文本输入；整个流程不调用 fnOS SDK 文件/目录选择器。
+
+### P1：fnOS 宿主页面标题
+
+实现步骤：
+
+1. 由 Client 创建 NAS JS SDK 实例，并仅在 `isWeb === true` 且 `isStandaloneWeb === false` 时继续。
+2. 等待 SDK `ready()` 完成后读取 DSH 的 `document.title`，调用 `setTitle(document.title)`。
+3. 通过 `<title>` 元素的 `MutationObserver` 监听 DSH 会话标题变化，并同步调用 NAS SDK；空标题回退为 `DeepSeek Harness`。
+4. SDK 初始化或调用失败只记录调试日志；独立浏览器不调用 SDK。
+5. 将标题桥接注册到当前插件 Fiber，插件停止、更新或卸载时断开 Observer 并取消未完成的异步更新。
+
+验收：
+
+- fnOS iframe 宿主标题与 DSH `document.title` 一致。
+- DSH 会话切换或标题变化后，fnOS 宿主标题同步更新。
+- 独立浏览器不调用 NAS SDK，原有 DSH 页面标题不变。
+- SDK 不可用时 DSH 页面仍可正常工作。
 
 ### P1：授权目录管理用户交互流程
 
@@ -320,7 +338,7 @@ const result = await sdk.pickSharedFile({
 
 - 应用数据仍由现有 `HOME`、`DSH_HOME` 和 `@appshare` 约定持久化；授权目录功能不重写数据目录。
 - 目录授权是 fnOS 应用 ACL，不等同于 DSH 工作区配置，也不触发文件复制或迁移。
-- `TRIM_DATA_ACCESSIBLE_PATHS` 是应用运行时可读取的冒号分隔授权路径；插件与 `trim.file.getSharedAccessibleFolders` 的结果合并后去重。`TRIM_DATA_SHARE_PATHS` 是应用资源声明的共享路径，会合并到授权目录列表中展示，但不允许从页面删除或取消授权。
+- `TRIM_DATA_ACCESSIBLE_PATHS` 是应用运行时可读取的冒号分隔授权路径；插件与 `trim.file.getSharedAccessibleFolders` 的结果合并后去重。应用默认安装目录族（`@app`、`@apphome`、`@appshare`、`@appdata`、`@appconf`）和 `TRIM_DATA_SHARE_PATHS` 是只读应用路径，会合并到授权目录列表中展示，但不允许从页面删除或取消授权。
 - Host 只返回目录展示所需的结构化字段，禁止返回 `TRIM_API_TOKEN`、Unix Socket 路径和内部堆栈。
 - 工作区快捷跳转只消费已授权目录列表，不因跳转自动申请 ACL，不传递 Token，不复制或移动目录内容；选中结果先回填 DSH 原始路径输入，再交由 DSH 原生 `onPicked` 复用或登记工作区。
 - 工作区列表展示语义路径，跳转使用与其对应的真实路径；授权被撤销、目录不存在或真实路径不可访问时返回可区分的错误状态。
@@ -396,6 +414,7 @@ P1 授权目录管理依赖 fnOS 前端 JS SDK 和应用共享授权 API。实�
 | 查询已授权目录 | `trim.file.getSharedAccessibleFolders` | [应用共享授权路径](https://developer.fnnas.com/api/authorization/shared-access) |
 | 删除授权目录 | `trim.file.delSharedAccessibleFolder` | [应用共享授权路径](https://developer.fnnas.com/api/authorization/shared-access) |
 | 转换可读路径 | `trim.file.convertPath` | [调用方式：后端 API](https://developer.fnnas.com/api/calling) |
+| 更新宿主页面标题 | `setTitle(title)` | [页面交互：设置页面标题](https://developer.fnnas.com/api/page/ui#设置页面标题) |
 
 - [fnOS 前端 JS SDK 包 `@trimjs/web-app`](https://www.npmjs.com/package/@trimjs/web-app)：插件构建时使用的 SDK 包；构建产物会随插件客户端 bundle 内置，包的安装、导出和版本信息以该页面为准。
 - [授权与文件概览](https://developer.fnnas.com/api/authorization/overview)：确认应用 ACL、授权路径和用户文件权限之间的边界。
@@ -425,6 +444,7 @@ P1 授权目录管理依赖 fnOS 前端 JS SDK 和应用共享授权 API。实�
 | FNOS-001-10 | FNOS-001-10-AC-01 | PLAN-FNOS-001-T10-01 | `client-bundle.spec.ts`、`package-contract.spec.ts`、NAS 工作区流程 | 待真实 NAS 验收 |
 | FNOS-001-11 | FNOS-001-11-AC-01 | PLAN-FNOS-001-T11-01 | `input-references.spec.ts`、`picker-result.spec.ts`、NAS 多选回填 | 待真实 NAS 验收 |
 | FNOS-001-12 | FNOS-001-12-AC-01 | PLAN-FNOS-001-T12-01 | `path-opener.spec.ts`、`sdk.spec.ts`、NAS 文件打开和 ACL | 待真实 NAS 验收 |
+| FNOS-001-13 | FNOS-001-13-AC-01 | PLAN-FNOS-001-T13-01 | `sdk.spec.ts`、NAS `setTitle` 和 iframe/独立浏览器验收 | 待真实 NAS 验收 |
 
 ## 完成状态
 
@@ -436,6 +456,7 @@ P1 授权目录管理依赖 fnOS 前端 JS SDK 和应用共享授权 API。实�
 | P1 工作区快捷跳转 | 代码完成，待真实 NAS 验收 | 已接入 DSH 原始 `directoryFlow` 插槽，完成授权目录、搜索、黑白 logo 授权面板、原始路径回填和 `onPicked` 委托；待真实 NAS 验证原始弹框及工作区复用/登记 |
 | P1 内容输入框 NAS 选择 | 代码完成，待真实 NAS 验收 | 已接入 DSH 输入区公开 slot、插件授权路径面板、Host 路径转换和原生引用 codec；待 NAS 验证授权路径读取及提交/复制链路 |
 | P1 上下文文件访问 | 代码完成，待真实 NAS 验收 | 已接入 `workspaces.openPath` 和 fnOS SDK 直接 `openFile`；待 NAS 验证文件/目录打开和 SDK 实际权限判断 |
+| P1 fnOS 宿主页面标题 | 代码完成，待真实 NAS 验收 | 已接入 DSH `document.title` 监听和 NAS `setTitle(title)`，仅在 fnOS Web iframe 中调用；待 NAS 验证宿主标题同步 |
 
 ## 变更记录
 
