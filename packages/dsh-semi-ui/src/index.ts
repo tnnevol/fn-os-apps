@@ -7,6 +7,7 @@ export {
   DshIconButton,
   DshTooltip,
   DshTreeSelect,
+  DshIconChangelog,
   DshIconClose,
   DshIconFile,
   DshIconFolder,

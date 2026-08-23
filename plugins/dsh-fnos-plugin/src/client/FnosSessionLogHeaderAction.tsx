@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import type { SessionId } from '@deepseek-ai/dsh-client-runtime/client'
 import type { PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
-import { DshButton, DshDropdown, DshIconFolder, DshModal, DshTree } from '@tnnevol/dsh-semi-ui'
+import { DshButton, DshDropdown, DshIconChangelog as IconChangelog, DshIconFolder, DshModal, DshTree } from '@tnnevol/dsh-semi-ui'
 import { requestAuthorizedEntries, type AuthorizedEntriesResult } from './authorized-directories-client.ts'
 import { exportSessionLogToNas } from './session-log-export-client.ts'
 import type { AuthorizedEntry } from '../authorized-directories-contract.ts'
@@ -11,8 +11,25 @@ import type { FnosLocaleKey } from './locales.ts'
 
 type Translate = (key: FnosLocaleKey) => string
 
+interface SessionLogDownloadEntry {
+  open: boolean
+  status: 'downloading' | 'success' | 'error'
+  error: string | null
+}
+
+interface SessionLogDownloadState {
+  bySession: Record<string, SessionLogDownloadEntry | undefined>
+}
+
+type SessionLogDownloadSelector = <Selected>(
+  selector: (state: SessionLogDownloadState) => Selected,
+  equality?: (left: Selected, right: Selected) => boolean,
+) => Selected
+
 type HeaderProps = PropsRuntime<'conversation.session.header.utilities'> & PropsLocale<'settings.dsh-fnos'> & {
   exportToComputer: (sessionId: SessionId) => Promise<void>
+  useSessionLogDownload: SessionLogDownloadSelector
+  dismissDownload: (sessionId: SessionId) => void
 }
 
 interface DirectoryTreeNode {
@@ -56,13 +73,23 @@ function directoryNodes(result: AuthorizedEntriesResult, showFullPath = false): 
     .map(entry => directoryNode(entry, showFullPath))
 }
 
-export function FnosSessionLogHeaderAction({ sessionId, exportToComputer, t }: HeaderProps) {
+export function FnosSessionLogHeaderAction({ sessionId, exportToComputer, useSessionLogDownload, dismissDownload, t }: HeaderProps) {
   const [nasDialogVisible, setNasDialogVisible] = useState(false)
   const [treeData, setTreeData] = useState<DirectoryTreeNode[]>([])
   const [selectedDirectory, setSelectedDirectory] = useState<string>()
   const [loading, setLoading] = useState(false)
   const [exporting, setExporting] = useState(false)
   const [error, setError] = useState<string>()
+  const browserDownload = useSessionLogDownload(state => state.bySession[String(sessionId)])
+  const browserStatus = browserDownload?.status
+  const browserDialogTitle = browserStatus === 'downloading'
+    ? t('sessionLogDialogPreparingTitle')
+    : browserStatus === 'success' ? t('sessionLogDialogSuccessTitle') : t('sessionLogDialogErrorTitle')
+  const browserDialogDescription = browserStatus === 'downloading'
+    ? t('sessionLogDialogPreparingDescription')
+    : browserStatus === 'success'
+      ? t('sessionLogDialogSuccessDescription')
+      : browserDownload?.error ?? t('sessionLogDialogCommandFailed')
 
   useEffect(() => {
     if (!nasDialogVisible) return
@@ -123,6 +150,8 @@ export function FnosSessionLogHeaderAction({ sessionId, exportToComputer, t }: H
     }
   }, [selectedDirectory, sessionId, t])
 
+  const nasExportEnabled = selectedDirectory !== undefined && !loading
+
   return (
     <>
       <DshDropdown
@@ -140,15 +169,35 @@ export function FnosSessionLogHeaderAction({ sessionId, exportToComputer, t }: H
           },
         ]}
       >
-        <DshButton size="small" type="tertiary">{t('sessionLog')}</DshButton>
+        <DshButton size="small" type="tertiary">
+          <span style={{ display: 'inline-flex', alignItems: 'center', marginRight: '6px' }}>
+            <IconChangelog />
+          </span>
+          {t('sessionLog')}
+        </DshButton>
       </DshDropdown>
+      <DshModal
+        visible={browserDownload?.open === true}
+        title={browserDialogTitle}
+        hasCancel={false}
+        okText={t('sessionLogDialogClose')}
+        onOk={() => { dismissDownload(sessionId) }}
+        onCancel={() => { dismissDownload(sessionId) }}
+        width={480}
+      >
+        <p>{browserDialogDescription}</p>
+      </DshModal>
       <DshModal
         visible={nasDialogVisible}
         title={t('sessionLogNasTitle')}
         okText={t('sessionLogNasConfirm')}
         cancelText={t('sessionLogNasCancel')}
         confirmLoading={exporting}
-        okButtonProps={{ disabled: selectedDirectory === undefined || loading }}
+        okButtonProps={{
+          type: 'primary',
+          disabled: !nasExportEnabled,
+          ...(nasExportEnabled ? { style: { color: 'var(--semi-color-white)' } } : {}),
+        }}
         onOk={() => { void confirmNasExport() }}
         onCancel={closeNasDialog}
         width={560}

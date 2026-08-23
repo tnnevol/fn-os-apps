@@ -6,6 +6,7 @@ export { default as DshIconButton } from '@douyinfe/semi-ui/lib/es/iconButton/in
 export { default as DshTooltip } from '@douyinfe/semi-ui/lib/es/tooltip/index'
 export { default as DshTree } from '@douyinfe/semi-ui/lib/es/tree/index'
 export { default as DshTreeSelect } from '@douyinfe/semi-ui/lib/es/treeSelect/index'
+export { default as DshIconChangelog } from '@douyinfe/semi-icons/lib/es/icons/IconHistory.js'
 export { default as DshIconClose } from '@douyinfe/semi-icons/lib/es/icons/IconClose.js'
 export { default as DshIconFile } from '@douyinfe/semi-icons/lib/es/icons/IconFile.js'
 export { default as DshIconFolder } from '@douyinfe/semi-icons/lib/es/icons/IconFolder.js'

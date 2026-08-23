@@ -38,8 +38,19 @@ export const inject = ['theme', 'slots', 'locale', 'sessions', 'inputTriggers', 
 
 const DARK_ATTRIBUTE = 'data-ds-dark-theme'
 
+type SessionLogDownloadState = {
+  bySession: Record<string, { open: boolean, status: 'downloading' | 'success' | 'error', error: string | null } | undefined>
+}
+
+type SessionLogDownloadStore = {
+  getSnapshot: () => SessionLogDownloadState
+  subscribe: (listener: () => void) => () => void
+}
+
 type SessionLogDownloadController = {
+  store: SessionLogDownloadStore
   download: (sessionId: SessionId) => Promise<void>
+  dismiss: (sessionId: SessionId) => void
 }
 
 /**
@@ -179,7 +190,9 @@ export function apply(ctx: ClientContext): void {
         priority: -1,
         locale: namespace,
         inject: () => ({
+          hooks: { sessionLogDownload: sessionLogDownload.store },
           exportToComputer: (sessionId: SessionId) => sessionLogDownload.download(sessionId),
+          dismissDownload: (sessionId: SessionId) => { sessionLogDownload.dismiss(sessionId) },
         }),
       }, FnosSessionLogHeaderAction)
     })
