@@ -37,8 +37,8 @@ describe('fnOS DSH input references', () => {
   it('projects structured references as official echo tokens', () => {
     const file = createFnosInputReference('file', '/vol1/1000/Downloads/trim-cli-skillv2.zip', 'codex-auth-plugin/analysis-codex-readonly-model-input.md')!
     const folder = createFnosInputReference('directory', '/vol1/1000/Downloads', 'codex-auth-plugin')!
-    expect(fnosReferenceDisplayText(file)).toBe('@codex-auth-plugin/analysis-codex-readonly-model-input.md')
-    expect(fnosReferenceDisplayText(folder)).toBe('@codex-auth-plugin/')
+    expect(fnosReferenceDisplayText(file)).toBe('@/vol1/1000/Downloads/trim-cli-skillv2.zip')
+    expect(fnosReferenceDisplayText(folder)).toBe('@/vol1/1000/Downloads/')
     expect(fnosReferencePromptText(file.ref)).toBe('@/vol1/1000/Downloads/trim-cli-skillv2.zip')
     expect(fnosReferencePromptText(folder.ref)).toBe('@/vol1/1000/Downloads/')
   })

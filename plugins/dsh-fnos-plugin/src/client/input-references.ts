@@ -37,10 +37,10 @@ export function fnosReferenceId(kind: FnosReferenceKind, path: string): string {
   return `${kind}:${encodeURIComponent(path)}`
 }
 
-/** Plain @ token used by DSH's official message echo renderer. */
-export function fnosReferenceDisplayText(reference: Pick<FnosInputReference, 'kind' | 'semanticPath'>): string {
-  const semanticPath = reference.semanticPath.trim().replace(/^@/u, '')
-  const path = reference.kind === 'directory' && !semanticPath.endsWith('/') ? `${semanticPath}/` : semanticPath
+/** Raw NAS @ token used by DSH's official message echo renderer. */
+export function fnosReferenceDisplayText(reference: Pick<FnosInputReference, 'kind' | 'path' | 'semanticPath'>): string {
+  const rawPath = reference.path.trim().replace(/^@/u, '')
+  const path = reference.kind === 'directory' && !rawPath.endsWith('/') ? `${rawPath}/` : rawPath
   return `@${path}`
 }
 
