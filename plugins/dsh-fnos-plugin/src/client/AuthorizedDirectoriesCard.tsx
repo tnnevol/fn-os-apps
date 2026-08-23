@@ -276,7 +276,7 @@ export function AuthorizedDirectoriesCard({ t }: AuthorizedDirectoriesCardProps)
                   <span title={directory.semanticPath} style={pathStyle}>{directory.semanticPath}</span>
                   {directory.removable ? (
                     <button type="button" style={dangerButtonStyle} disabled={busy} onClick={() => { void removeDirectory(directory.path) }}>
-                      {busy ? t('deleting') : t('delete')}
+                      {t('delete')}
                     </button>
                   ) : <span style={readOnlyStyle}>{t('sharedDirectory')}</span>}
                 </li>

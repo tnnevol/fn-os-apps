@@ -36,6 +36,12 @@ describe('dsh-fnos package contract', () => {
     expect(source).toMatch(/key:\s*'dsh-fnos-authorized-directories'[\s\S]{0,160}priority:\s*100/u)
   })
 
+  it('keeps the cancel-authorization label stable while adding a directory', async () => {
+    const source = await readFile(new URL('../src/client/AuthorizedDirectoriesCard.tsx', import.meta.url), 'utf8')
+    expect(source).toContain("{t('delete')}")
+    expect(source).not.toContain("{busy ? t('deleting') : t('delete')}")
+  })
+
   it('keeps the original DSH workspace flow and augments it with a shortcut', async () => {
     const source = await readFile(new URL('../src/client/index.ts', import.meta.url), 'utf8')
     const shortcut = await readFile(new URL('../src/client/workspace-authorized-shortcut.ts', import.meta.url), 'utf8')
