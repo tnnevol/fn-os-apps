@@ -64,6 +64,12 @@ describe('dsh-codex-auth-plugin rc.2 client registration', () => {
     expect(card).not.toContain('value.usedPercent')
   })
 
+  it('keeps the composer quota entry visible before usage data arrives', async () => {
+    const status = await readFile(new URL('../src/client/CodexUsageStatus.tsx', import.meta.url), 'utf8')
+    expect(status).toContain("const remaining = percent(window?.remainingPercent) ?? '—'")
+    expect(status).not.toContain('if (remaining === undefined) return null')
+  })
+
   it('uses Semi Cascader multi-select and keeps it open after leaf clicks', async () => {
     const picker = await readFile(new URL('../src/client/CodexGlobalModel.tsx', import.meta.url), 'utf8')
     expect(picker).toContain("import { DshButton, DshCascader } from '@tnnevol/dsh-semi-ui'")

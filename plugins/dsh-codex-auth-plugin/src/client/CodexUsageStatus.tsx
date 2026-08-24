@@ -98,9 +98,7 @@ export function CodexUsageStatus({ t, timer }: CodexUsageStatusProps) {
   }, [timer])
 
   const window = usage === undefined ? undefined : weeklyWindow(usage)
-  const remaining = percent(window?.remainingPercent)
-  if (remaining === undefined) return null
-
+  const remaining = percent(window?.remainingPercent) ?? '—'
   const reset = resetLabel(window)
   return (
     <span style={statusStyle} aria-label={t('usageStatus')}>
