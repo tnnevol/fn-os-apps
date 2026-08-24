@@ -73,6 +73,7 @@ describe('dsh-fnos package contract', () => {
     expect(action).toContain('DshIconChangelog as IconChangelog')
     expect(action).toContain('<IconChangelog />')
     expect(action).toContain("marginRight: '6px'")
+    expect(action).toContain("borderRadius: '32px'")
     expect(action).toContain("type: 'primary'")
     expect(action).toContain('nasExportEnabled')
     expect(theme).toContain('.semi-button-primary:not(.semi-button-disabled)')

@@ -169,7 +169,7 @@ export function FnosSessionLogHeaderAction({ sessionId, exportToComputer, useSes
           },
         ]}
       >
-        <DshButton size="small" type="tertiary">
+        <DshButton size="small" type="tertiary" style={{ borderRadius: '32px' }}>
           <span style={{ display: 'inline-flex', alignItems: 'center', marginRight: '6px' }}>
             <IconChangelog />
           </span>
