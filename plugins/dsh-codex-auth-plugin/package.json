@@ -2,7 +2,7 @@
   "name": "@tnnevol/dsh-codex-auth",
   "displayName": "Codex Auth",
   "description": "Standalone ChatGPT OAuth account management for DeepSeek Harness.",
-  "version": "0.1.1-rc.2.1",
+  "version": "0.1.1-rc.2.2",
   "author": "tnnevol",
   "repository": {
     "type": "git",
