@@ -9,9 +9,11 @@ NPM_BIN="${NODE_BIN}/npm"
 DSH_BIN="${NPM_CONFIG_PREFIX}/bin/dsh"
 DSH_PACKAGE="@deepseek-ai/dsh"
 DSH_VERSION="0.1.1-rc.2"
+DSH_ATTACHMENT_LOCAL_VERSION="0.1.1-rc.2"
 DSH_VERSION_FILE="${APP_DEST}/dsh-version"
 DSH_NODE_PTY_SCRIPT="${APP_DEST}/scripts/install-node-pty.sh"
 DSH_PLUGIN_SCRIPT="${APP_DEST}/scripts/install-dsh-plugins.mjs"
+DSH_ATTACHMENT_PATCH_SCRIPT="${APP_DEST}/scripts/patch-dsh-attachment-local.mjs"
 DSH_PUBLISHED_PLUGIN_MANIFEST="${APP_DEST}/published-dsh-plugins.json"
 DSH_PROFILE_DIRECTORY="${DSH_HOME}/profiles/web"
 PROXY_SCRIPT="${APP_DEST}/gateway-proxy.mjs"
@@ -79,6 +81,19 @@ install_published_dsh_plugins() {
     NPM_REGISTRY="${NPM_REGISTRY}" \
     "${NODE_BIN}/node" "${DSH_PLUGIN_SCRIPT}" \
         || fail_install "Unable to install the published DSH plugins"
+}
+
+patch_dsh_attachment_local() {
+    [ -f "${DSH_ATTACHMENT_PATCH_SCRIPT}" ] \
+        || fail_install "The dsh attachment patch script is not available at ${DSH_ATTACHMENT_PATCH_SCRIPT}"
+    [ -n "${TRIM_PKGVAR:-}" ] \
+        || fail_install "TRIM_PKGVAR is not available; cannot patch dsh attachment persistence"
+
+    DSH_ATTACHMENT_LOCAL_DIR="${DSH_PACKAGE_DIR}/node_modules/@deepseek-ai/dsh-attachment-local" \
+    DSH_ATTACHMENT_LOCAL_VERSION="${DSH_ATTACHMENT_LOCAL_VERSION}" \
+    TRIM_PKGVAR="${TRIM_PKGVAR}" \
+    "${NODE_BIN}/node" "${DSH_ATTACHMENT_PATCH_SCRIPT}" \
+        || fail_install "Unable to patch dsh attachment persistence"
 }
 
 read_package_version() {
@@ -194,6 +209,7 @@ main() {
         || fail_install "Installed ${DSH_PACKAGE} version ${LOCAL_VERSION:-unknown} does not match required ${DSH_VERSION}"
 
     run_node_pty_script "${RUN_NODE_PTY_DEPENDENCY_SCRIPTS}"
+    patch_dsh_attachment_local
     if [ ! -x "${DSH_BIN}" ] || ! "${DSH_BIN}" --help >/dev/null 2>&1; then
         fail_install "dsh installation verification failed: dsh --help"
     fi
