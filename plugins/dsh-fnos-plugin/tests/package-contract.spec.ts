@@ -138,6 +138,8 @@ describe('dsh-fnos package contract', () => {
     expect(actions).not.toContain('\\u00a0')
     const picker = await readFile(new URL('../src/client/FnosAuthorizedPathPicker.tsx', import.meta.url), 'utf8')
     expect(picker).toContain('const value = desiredPaths ?? EMPTY_TREE_VALUE')
+     expect(picker).toContain("maxWidth: 'min(560px, calc(100vw - 32px))'")
+     expect(picker).toContain("overflowX: 'auto'")
     expect(picker).toContain('insertedTreePaths.current.clear()')
     expect(picker).toContain('return paths')
   })

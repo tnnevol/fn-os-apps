@@ -196,7 +196,7 @@ export function FnosAuthorizedPathPicker({ input, inputActions, insertReferences
       showClear={false}
       maxTagCount={0}
       dropdownMatchSelectWidth={false}
-      dropdownStyle={{ width: treePanelWidth, maxWidth: 'calc(100vw - 32px)', maxHeight: 320 }}
+      dropdownStyle={{ width: treePanelWidth, maxWidth: 'min(560px, calc(100vw - 32px))', maxHeight: 320 }}
       optionListStyle={{ width: '100%', maxWidth: '100%', maxHeight: 280, overflowX: 'auto', overflowY: 'auto' }}
       showLine={false}
       emptyContent={t('inputPickerEmpty')}

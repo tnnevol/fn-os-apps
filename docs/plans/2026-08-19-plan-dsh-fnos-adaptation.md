@@ -184,7 +184,7 @@ const result = await sdk.pickSharedFile({
 
 #### 2. 目录/文件选择与回填
 
-1. 点击按钮直接打开按需加载的 Semi `TreeSelect`，不调用 `@trimjs/web-app` 的文件/目录选择器，也不显示文件/目录类型选择菜单。
+1. 点击按钮直接打开按需加载的 Semi `TreeSelect`，不调用 `@trimjs/web-app` 的文件/目录选择器，也不显示文件/目录类型选择菜单；TreeSelect 面板最大宽度为 560px，并通过 `optionListStyle.overflowX` 保留横向滚动。
 2. TreeSelect 通过 Host 同源路由 `/plugins/dsh-fnos/authorized-directories/entries` 懒加载授权根目录及其下级文件/目录，只允许在授权边界内导航和多选。
 3. 选择结果通过 Host 同源路由 `/plugins/dsh-fnos/paths/convert` 调用 `trim.file.convertPath`，浏览器只拿到 `{ path, semanticPath }`，不接触 `TRIM_API_TOKEN`。
 4. 通过 DSH `slash/input-insert-reference` 事件插入原生引用占位；在 `conversation.input.dock` 顶部按引用类型展示文件夹/文件 icon、名称块和 Tooltip，支持多选和逐项移除。
