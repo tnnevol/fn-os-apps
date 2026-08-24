@@ -150,6 +150,8 @@ const result = await sdk.pickSharedFile({
 3. Host 新增 NAS 导出路由：校验 Session id 和目标授权目录，调用 `ctx.apiProxy.downloads.sessionLog()` 获取官方 ZIP Response，并以流式方式写入目标目录，避免浏览器缓存完整 ZIP。
 4. 复用 `/authorized-directories/entries` 的授权目录树数据；确认时 Host 再次执行授权根、当前用户 ACL、目录存在性、进程写权限和目标文件名校验。
 5. 覆盖取消、空目录、授权目录加载失败、ZIP 准备失败、写入失败和重复导出场景；本地验证 TypeScript、构建和单元测试，真实 fnOS NAS 验证 ZIP 可在所选目录生成。
+6. 保留 DSH 官方电脑导出的 Session log 状态弹框（准备中、成功、失败和关闭），仅替换入口菜单，不丢失原有反馈。
+7. 共享 Semi 主题桥接统一覆盖所有 `primary` 按钮：浅色主题黑底白字，深色主题白底黑字；禁用按钮不覆盖 Semi 的禁用态。
 
 ### P1：工作区快捷跳转授权目录（代码完成，待真实 NAS 验收）
 

@@ -52,6 +52,23 @@ body[${SEMI_DSH_THEME_ATTRIBUTE}] .semi-icon {
   font-family: var(--dsw-font-family);
 }
 
+/* Primary actions are monochrome: black/white in light mode and inverted in dark mode. */
+body[${SEMI_DSH_THEME_ATTRIBUTE}]:not([data-ds-dark-theme]) .semi-button-primary:not(.semi-button-disabled),
+body[${SEMI_DSH_THEME_ATTRIBUTE}]:not([data-ds-dark-theme]) .semi-button-primary:not(.semi-button-disabled):hover,
+body[${SEMI_DSH_THEME_ATTRIBUTE}]:not([data-ds-dark-theme]) .semi-button-primary:not(.semi-button-disabled):active {
+  background: #000 !important;
+  border-color: #000 !important;
+  color: #fff !important;
+}
+
+body[${SEMI_DSH_THEME_ATTRIBUTE}][data-ds-dark-theme] .semi-button-primary:not(.semi-button-disabled),
+body[${SEMI_DSH_THEME_ATTRIBUTE}][data-ds-dark-theme] .semi-button-primary:not(.semi-button-disabled):hover,
+body[${SEMI_DSH_THEME_ATTRIBUTE}][data-ds-dark-theme] .semi-button-primary:not(.semi-button-disabled):active {
+  background: #fff !important;
+  border-color: #fff !important;
+  color: #000 !important;
+}
+
 body[${SEMI_DSH_THEME_ATTRIBUTE}] .semi-dropdown-wrapper {
   background: var(--dsw-alias-bg-layer-3);
   border: 1px solid var(--dsw-alias-border-l2);

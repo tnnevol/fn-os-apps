@@ -97,6 +97,7 @@ DeepSeek Harness（DSH）原生面向通用 Node.js 和浏览器环境。作为 
 - “导出到 NAS”打开 Semi Modal，内部使用 Tree 展示当前用户可访问的全部已授权目录；Tree 仅允许单选，不显示单选框。
 - 用户确认目录后，Host 复用 DSH 原生 Session log ZIP 生成业务，将根 Session、子 Session 和附件流式写入所选目录；目标目录必须再次通过应用授权、当前用户 ACL、目录存在性和进程写权限校验。
 - NAS 导出不返回 ZIP 内容给浏览器，不把 Token、内部服务对象或 Session 原始日志暴露给 Client；取消弹框不产生文件。
+- 所有 Semi `primary` 类型按钮统一使用单色反差：浅色主题黑底白字，深色主题白底黑字；禁用状态仍遵循组件的禁用语义。
 
 ### 授权目录
 

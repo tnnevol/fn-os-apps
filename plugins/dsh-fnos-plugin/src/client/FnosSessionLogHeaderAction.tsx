@@ -196,7 +196,6 @@ export function FnosSessionLogHeaderAction({ sessionId, exportToComputer, useSes
         okButtonProps={{
           type: 'primary',
           disabled: !nasExportEnabled,
-          ...(nasExportEnabled ? { style: { color: 'var(--semi-color-white)' } } : {}),
         }}
         onOk={() => { void confirmNasExport() }}
         onCancel={closeNasDialog}
