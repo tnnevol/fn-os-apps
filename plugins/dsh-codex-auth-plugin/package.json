@@ -10,7 +10,7 @@
     "directory": "plugins/dsh-codex-auth-plugin"
   },
   "homepage": "https://github.com/tnnevol/fn-os-apps/tree/main/plugins/dsh-codex-auth-plugin",
-  "documentation": "https://fnapps-doc.tnnevol.cn/plugins/",
+  "documentation": "https://fnapps-doc.tnnevol.cn/plugins/dsh-codex-auth",
   "bugs": {
     "url": "https://github.com/tnnevol/fn-os-apps/issues"
   },

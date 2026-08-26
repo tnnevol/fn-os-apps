@@ -56,6 +56,10 @@ const requirementsSidebar = [
       {
         text: '2026-08-19 DSH 飞牛 NAS 适配',
         link: '/requirements/2026-08-19-dsh-fnos-adaptation'
+      },
+      {
+        text: '2026-08-24 Codex 登录状态显示优化',
+        link: '/requirements/2026-08-24-codex-auth-status'
       }
     ]
   }
@@ -118,7 +122,11 @@ export default defineConfig({
       '/plugins/': [
         {
           text: 'Harness 插件',
-          items: [{ text: '插件总览', link: '/plugins/' }]
+          items: [
+            { text: '插件总览', link: '/plugins/' },
+            { text: 'dsh-fnos', link: '/plugins/dsh-fnos' },
+            { text: 'dsh-codex-auth', link: '/plugins/dsh-codex-auth' }
+          ]
         }
       ],
       '/development/': developmentSidebar,

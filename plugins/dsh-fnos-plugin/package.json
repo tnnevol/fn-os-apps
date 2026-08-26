@@ -10,7 +10,7 @@
     "directory": "plugins/dsh-fnos-plugin"
   },
   "homepage": "https://github.com/tnnevol/fn-os-apps/tree/main/plugins/dsh-fnos-plugin",
-  "documentation": "https://fnapps-doc.tnnevol.cn/plugins/",
+  "documentation": "https://fnapps-doc.tnnevol.cn/plugins/dsh-fnos",
   "bugs": {
     "url": "https://github.com/tnnevol/fn-os-apps/issues"
   },
