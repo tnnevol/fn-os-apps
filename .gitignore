@@ -11,7 +11,9 @@ Thumbs.db
 desktop.ini
 
 # 编辑器/IDE
-.vscode/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
 .idea/
 *.swp
 *.swo

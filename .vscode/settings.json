@@ -1,0 +1,10 @@
+{
+  "files.associations": {
+    "**/cmd/*": "shellscript"
+  },
+  "shellformat.path": "/opt/homebrew/bin/shfmt",
+  "shellformat.flag": "-i 4",
+  "[shellscript]": {
+    "editor.defaultFormatter": "foxundermoon.shell-format"
+  }
+}

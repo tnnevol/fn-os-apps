@@ -8,6 +8,7 @@
     "bump:major": "./bump major",
     "bump:minor": "./bump minor",
     "bump:patch": "./bump patch",
+    "lint:shell": "rg -l -0 --hidden --glob '!.git/**' --glob '!node_modules/**' --glob '!apps/fn-nvm/app/nvm/install.sh' '^#!.*(?:bash|sh)' . | xargs -0 shfmt -d -i 4",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
     "docs:preview": "vitepress preview docs",
