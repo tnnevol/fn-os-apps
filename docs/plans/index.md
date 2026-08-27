@@ -26,14 +26,14 @@
 计划文档统一放在 docs/plans/，文件名使用：
 
 ~~~text
-YYYY-MM-DD-plan-需求主题.md
+PLAN-FNOS-###-需求主题.md
 ~~~
 
-其中 plan 是固定标识，需求主题应与对应需求文档一致：
+编号前缀使用计划编号 `PLAN-FNOS-###`，其中 `FNOS-###` 必须与对应需求编号一致；需求主题应与对应需求文档一致：
 
 ~~~text
-docs/requirements/2026-08-19-dsh-fnos-adaptation.md
-docs/plans/2026-08-19-plan-dsh-fnos-adaptation.md
+docs/requirements/FNOS-001-dsh-fnos-adaptation.md
+docs/plans/PLAN-FNOS-001-dsh-fnos-adaptation.md
 ~~~
 
 ### Frontmatter、标题和元信息
@@ -42,11 +42,11 @@ docs/plans/2026-08-19-plan-dsh-fnos-adaptation.md
 
 ~~~yaml
 ---
-title: 2026-08-19-PLAN-DSH 飞牛 NAS 适配
+title: PLAN-FNOS-001 DSH 飞牛 NAS 适配
 description: DeepSeek Harness 在飞牛 fnOS 中的应用和专用插件适配实施计划。
 ---
 
-# 2026-08-19-PLAN-DSH 飞牛 NAS 适配
+# PLAN-FNOS-001 DSH 飞牛 NAS 适配
 ~~~
 
 一级标题后使用元信息表，字段固定为：
@@ -54,7 +54,7 @@ description: DeepSeek Harness 在飞牛 fnOS 中的应用和专用插件适配�
 | 字段 | 要求 |
 | --- | --- |
 | 计划编号 | 使用 PLAN-FNOS-###，与对应需求编号一一对应 |
-| 计划日期 | 与文件名日期一致 |
+| 计划日期 | 使用计划正式建立的日期，格式为 YYYY-MM-DD |
 | 对应需求 | 链接到完整需求文档 |
 | 计划状态 | 使用 分阶段实施 或能反映当前实施阶段的状态 |
 

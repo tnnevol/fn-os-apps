@@ -18,7 +18,7 @@ plugins/
 
 ## 飞牛 fnOS 专用插件
 
-fnOS DSH 适配的需求、状态和实现计划统一维护在文档站的 [FNOS-001：DSH 飞牛 NAS 适配](/requirements/2026-08-19-dsh-fnos-adaptation) 和 [对应计划](/plans/2026-08-19-plan-dsh-fnos-adaptation) 中。`fn-deepseek-harness` 只会从 npm 安装 FPK 发布清单中的已发布插件，不再编译或内置本工作空间中的未发布插件；本文件不再维护具体功能说明。
+fnOS DSH 适配的需求、状态和实现计划统一维护在文档站的 [FNOS-001：DSH 飞牛 NAS 适配](/requirements/FNOS-001-dsh-fnos-adaptation) 和 [对应计划](/plans/PLAN-FNOS-001-dsh-fnos-adaptation) 中。`fn-deepseek-harness` 只会从 npm 安装 FPK 发布清单中的已发布插件，不再编译或内置本工作空间中的未发布插件；本文件不再维护具体功能说明。
 
 ## 新增插件
 

@@ -4,7 +4,7 @@
 
 ## 安装
 
-请从[飞牛 fnpack 文档](https://developer.fnnas.com/docs/cli/fnpack/)下载适合开发机的版本，并将可执行文件放入 `PATH`。
+本项目本地开发使用 [fnpack 1.2.3](https://developer.fnnas.com/docs/cli/fnpack/)。请从官方页面下载适合开发机的版本，并将可执行文件放入 `PATH`。
 
 验证安装：
 

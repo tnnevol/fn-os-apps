@@ -1,8 +1,64 @@
 import { defineConfig } from 'vitepress'
+import d2 from 'vitepress-plugin-d2'
+import { FileType, Layout, Theme } from 'vitepress-plugin-d2/dist/config'
 import packageJson from '../../package.json'
 
 const repositoryName = process.env.GITHUB_REPOSITORY?.split('/')[1] || 'fn-os-apps'
 const base = process.env.DOCS_BASE || (process.env.GITHUB_ACTIONS === 'true' ? `/${repositoryName}/` : '/')
+
+const markStatusTableColumns = (md: Parameters<NonNullable<Parameters<typeof defineConfig>[0]['markdown']>['config']>[0]) => {
+  md.core.ruler.after('block', 'status-table-columns', (state) => {
+    const { tokens } = state
+
+    for (let tableStart = 0; tableStart < tokens.length; tableStart += 1) {
+      if (tokens[tableStart].type !== 'table_open') continue
+
+      const tableEnd = tokens.findIndex((token, index) => index > tableStart && token.type === 'table_close')
+      if (tableEnd === -1) continue
+
+      let headerColumn = 0
+      let statusColumn = -1
+
+      for (let index = tableStart + 1; index < tableEnd; index += 1) {
+        const token = tokens[index]
+        if (token.type === 'thead_close') break
+        if (token.type !== 'th_open') continue
+
+        const content = tokens[index + 1]?.type === 'inline' ? tokens[index + 1].content.trim() : ''
+        if (content === '状态') statusColumn = headerColumn
+        headerColumn += 1
+      }
+
+      if (statusColumn === -1) {
+        tableStart = tableEnd
+        continue
+      }
+
+      let cellColumn = 0
+      for (let index = tableStart + 1; index < tableEnd; index += 1) {
+        const token = tokens[index]
+        if (token.type === 'tr_open') cellColumn = 0
+        if (token.type !== 'th_open' && token.type !== 'td_open') continue
+
+        if (cellColumn === statusColumn) token.attrJoin('class', 'status-column')
+        cellColumn += 1
+      }
+
+      tableStart = tableEnd
+    }
+  })
+}
+
+const configureMarkdown = (md: Parameters<NonNullable<Parameters<typeof defineConfig>[0]['markdown']>['config']>[0]) => {
+  markStatusTableColumns(md)
+  md.use(d2, {
+    layout: Layout.ELK,
+    theme: Theme.NEUTRAL_DEFAULT,
+    darkTheme: Theme.DARK_MUAVE,
+    fileType: FileType.SVG,
+    directory: 'docs/.vitepress/cache/d2'
+  })
+}
 
 const appItems = [
   { text: '应用总览', link: '/apps/' },
@@ -26,12 +82,7 @@ const appItems = [
 const developmentSidebar = [
   {
     text: '开发指南',
-    items: [
-      { text: 'Manifest 配置', link: '/development/manifest' },
-      { text: '生命周期脚本', link: '/development/lifecycle' },
-      { text: '用户向导', link: '/development/wizard' },
-      { text: '权限与入口', link: '/development/permissions' }
-    ]
+    items: [{ text: '开发环境与脚本', link: '/development/environment-and-scripts' }]
   },
   {
     text: '构建发布',
@@ -54,12 +105,12 @@ const requirementsSidebar = [
     items: [
       { text: '规范', link: '/requirements/' },
       {
-        text: '2026-08-19 DSH 飞牛 NAS 适配',
-        link: '/requirements/2026-08-19-dsh-fnos-adaptation'
+        text: 'FNOS-001 DSH 飞牛 NAS 适配',
+        link: '/requirements/FNOS-001-dsh-fnos-adaptation'
       },
       {
-        text: '2026-08-24 Codex 登录状态显示优化',
-        link: '/requirements/2026-08-24-codex-auth-status'
+        text: 'FNOS-002 DSH 应用与插件优化',
+        link: '/requirements/FNOS-002-dsh-app-plugin-optimization'
       }
     ]
   }
@@ -71,8 +122,8 @@ const plansSidebar = [
     items: [
       { text: '规范', link: '/plans/' },
       {
-        text: '2026-08-19-PLAN-DSH 飞牛 NAS 适配',
-        link: '/plans/2026-08-19-plan-dsh-fnos-adaptation'
+        text: 'PLAN-FNOS-001 DSH 飞牛 NAS 适配',
+        link: '/plans/PLAN-FNOS-001-dsh-fnos-adaptation'
       }
     ]
   }
@@ -86,6 +137,9 @@ export default defineConfig({
   head: [['link', { rel: 'icon', href: `${base}icons/site-icon.png` }]],
   cleanUrls: true,
   lastUpdated: true,
+  markdown: {
+    config: configureMarkdown
+  },
   themeConfig: {
     siteTitle: 'fnOS Apps',
     logo: {
@@ -97,7 +151,7 @@ export default defineConfig({
       { text: '开始使用', link: '/guide/quick-start' },
       { text: '应用文档', link: '/apps/' },
       { text: 'Harness 插件', link: '/plugins/' },
-      { text: '开发指南', link: '/development/manifest' },
+      { text: '开发指南', link: '/development/environment-and-scripts' },
       { text: '需求清单', link: '/requirements/' },
       { text: '详细计划', link: '/plans/' }
     ],
@@ -125,7 +179,8 @@ export default defineConfig({
           items: [
             { text: '插件总览', link: '/plugins/' },
             { text: 'dsh-fnos', link: '/plugins/dsh-fnos' },
-            { text: 'dsh-codex-auth', link: '/plugins/dsh-codex-auth' }
+            { text: 'dsh-codex-auth', link: '/plugins/dsh-codex-auth' },
+            { text: 'DSH Semi UI', link: '/plugins/dsh-semi-ui' }
           ]
         }
       ],

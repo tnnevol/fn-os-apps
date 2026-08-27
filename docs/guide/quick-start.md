@@ -8,7 +8,7 @@
 | --- | --- |
 | Node.js | `>=24.0.0` |
 | pnpm | `>=11.16.0` |
-| fnpack | 按飞牛官方文档安装 |
+| [fnpack](https://developer.fnnas.com/docs/cli/fnpack/) | 本地使用 [`1.2.3`](https://developer.fnnas.com/docs/cli/fnpack/) |
 
 fnOS 设备侧还需要安装应用声明的运行时或中间件依赖，例如 Node.js、Python、Redis 等。
 

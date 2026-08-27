@@ -1,75 +1,112 @@
-# @tnnevol/dsh-fnos
+# fnOS
 
-`@tnnevol/dsh-fnos` 是为 `fn-deepseek-harness` 开发的 fnOS 专用插件，提供主题同步、授权目录、工作区快捷跳转和 NAS 文件访问能力。
+`@tnnevol/dsh-fnos` 补齐 DSH 在 fnOS 应用中的系统集成。当前插件版本为 `0.1.1-rc.2.2`，适配 DSH `0.1.1-rc.2`。
 
-## 功能
+## 安装
 
-### fnOS 主题同步
-
-- DSH 主题选择为“跟随系统”时，跟随 fnOS 当前主题和后续主题切换。
-- DSH 主题选择为“浅色”或“深色”时，以 DSH 设置为准，不被 NAS 主题覆盖。
-- 通过 `@trimjs/web-app` 的 `getPlatformConfig()` 获取初始主题，通过 `$on('os/theme')` 接收主题切换事件。
-- 主题变化只通过 SDK 的 `$on('os/theme')` 事件同步，不额外执行轮询。
-- 当 DSH 选择“跟随系统”且运行在真实 fnOS Web 宿主时，将 fnOS 当前生效主题写入 `dsh-fnos-authorized-directories` 设置中的 `systemTheme` 字段；下次 Web profile 返回首页时，Host 先用该缓存替换 DSH 官方首屏 bootstrap，避免先显示浏览器系统主题、再切换到 NAS 主题。
-- 该过程不会把 DSH 的 `system` 偏好改成固定的浅色或深色；显式选择浅色/深色时不写入 fnOS 主题缓存，并清理旧缓存。
-- fnOS SDK 当前只提供 NAS 的最终生效主题（`light`/`dark`），没有提供“NAS 是否选择跟随系统”的独立偏好字段，因此插件只能在 DSH 为 `system`、SDK 处于真实 fnOS Web 宿主且设置可写时执行缓存同步。
-- `@trimjs/web-app` 作为插件的构建依赖，随插件客户端 bundle 一起内置到 FPK；运行时不需要 NAS 安装 pnpm，也不需要访问外部 CDN。
-
-### 工作区快捷跳转
-
-- 保留 DSH 原始工作区弹框、菜单和工作区打开逻辑；插件只在路径栏左侧增加快捷入口。
-- 目录流程保留 DSH 原始的路径输入、目录列表、目录打开、确认和取消语义；插件使用无文字的 fnOS 黑白 logo 按钮。
-- 点击 fnOS logo 后打开插件自己的授权目录下拉面板，使用 fnOS 语义化路径展示；选中目录后将真实路径写回 DSH 原始路径输入框并触发原生 Enter 导航，随后仍由 DSH 原生 `onPicked` 完成工作区复用或登记。
-- 插件目录列表超过 10 个目录时提供搜索；该入口只展示当前已授权目录和应用共享目录，不申请新 ACL，不调用 fnOS SDK 目录选择器。
-- fnOS 插件只使用 DSH 公开的目录流程插槽，不通过 fnOS 应用 bundle 禁用或替换官方目录选择器，也不修改 DSH 官方源码；官方目录流程与 fnOS 目录入口的兼容性由真实 NAS 验收确认。
-
-### 内容输入框 NAS 文件和目录
-
-- 内容输入框左侧使用彩色 fnOS 官方 logo 作为 TreeSelect 入口，通过 DSH 的 `conversation.input.left` 插槽加入，不覆盖其他插件按钮。
-- 点击后打开按需加载的 Semi `TreeSelect`；树根和子目录通过 `/plugins/dsh-fnos/authorized-directories/entries` 懒加载，支持进入目录和多选。
-- 该入口不调用 fnOS SDK 文件/目录选择器，也不弹出“选择文件/选择目录”的二级菜单；只有授权范围内的 NAS 路径可被选择，完整路径通过 Tooltip 查看。
-- 选中的文件和目录以图标+名称块显示在输入框顶部，支持去重、取消勾选和逐项移除；输入文本不写入 NAS 路径，提交时 codec 将原始 NAS 路径发送到上下文。
-
-### 授权目录
-
-在「设置 → 插件 → fnOS」中：
-
-- 展开卡片时读取应用当前已授权的 NAS 目录，并使用 `trim.file.convertPath` 转换为语义化路径后展示。
-- 点击“添加授权目录”调用 fnOS `pickSharedFile()`，授权成功后立即重新读取列表。
-- 点击“取消授权”前会确认操作；只移除应用 ACL，不删除目录或文件。
-- `TRIM_DATA_SHARE_PATHS` 中的应用共享目录会出现在列表中，但仅展示，不提供删除/取消授权按钮。
-- 列表、添加和删除请求由插件 Host 侧调用 fnOS API，浏览器不会接触 `TRIM_API_TOKEN`。
-- 插件会合并 `TRIM_DATA_ACCESSIBLE_PATHS`、`TRIM_DATA_SHARE_PATHS` 与 fnOS 授权 API 的目录，按规范化路径去重。
-- 目录展示使用 `trim.file.convertPath` 的语义化路径，删除请求仍使用 Host 内部的真实路径。
-- 取消授权弹框或返回空结果时静默结束，不显示权限角色类红色警告。
-- fnOS API 不可用、权限不足或当前页面不是 NAS iframe 时，卡片展示可理解的错误并保留刷新入口。
-
-### 上下文文件访问
-
-点击 DSH 上下文、工具结果或生成文件中的路径时，插件会复用 DSH 的 `workspaces.openPath()` 入口。在 fnOS iframe 内，插件直接调用 `@trimjs/web-app` 的 `openFile(path)`，由 fnOS 文件应用和当前用户权限决定是否可以打开；不再先依据插件展示的授权目录列表做拦截，避免授权列表延迟或路径表示差异导致误报“尚未授权”。插件不调用 `xdg-open`，不会因为 NAS 缺少系统打开器而出现 `spawn xdg-open ENOENT`。独立浏览器仍使用 DSH 原生打开逻辑，便于本地调试。
-
-## FPK 集成
-
-FPK 只从 npm 安装发布清单中的插件。`@tnnevol/dsh-fnos` 发布后，需要将精确版本或 dist-tag 加入 `apps/fn-deepseek-harness/app/published-dsh-plugins.json`，安装和升级回调才会把它安装到 Web profile 并补齐 bundle 配置。
-
-## 本地调试
-
-在仓库根目录执行：
+`fn-deepseek-harness` 会在安装和升级时自动安装 npm `rc` 标签对应的版本。手动安装可执行：
 
 ```sh
-cd /absolute/path/to/fn-os-apps
-pnpm --filter @tnnevol/dsh-fnos run check
-pnpm --filter @tnnevol/dsh-fnos run build
-
-cd /absolute/path/to/deepseek-harness
-pnpm dsh plugin --profile web add /absolute/path/to/fn-os-apps/plugins/dsh-fnos-plugin
-pnpm dsh --profile web
+dsh plugin --profile web add @tnnevol/dsh-fnos@rc
+dsh --profile web --dump-config
 ```
 
-插件要求 DSH `0.1.1-rc.2`，可使用本地 DSH CLI 配合 `cordis.patch.yml` 调试。fnOS SDK 桥接只有在 fnOS micro app 宿主中启用，在独立浏览器中会安全跳过。
+插件不会禁用或修改 DSH 官方目录选择器。主题、文件授权和 fnOS 应用交互需要在 fnOS iframe 中运行；普通浏览器只能使用不依赖系统 SDK 的部分界面。
 
-## 项目链接
+## 主题与窗口
 
-- [插件源码](https://github.com/tnnevol/fn-os-apps/tree/main/plugins/dsh-fnos-plugin)
-- [插件 README](https://github.com/tnnevol/fn-os-apps/blob/main/plugins/dsh-fnos-plugin/README.md)
-- [提交问题](https://github.com/tnnevol/fn-os-apps/issues)
+当 DSH 主题设为「跟随系统」时，插件读取 fnOS 当前主题，并监听后续主题切换。DSH 明确选择浅色或深色后，以 DSH 设置为准。
+
+插件只使用 `@trimjs/web-app` 的主题事件，不做定时轮询。fnOS 当前生效主题会写入插件设置，供下一次 Web profile 启动时恢复首屏主题。插件还会把 DSH 页面标题同步到 fnOS 应用窗口。
+
+## 授权目录
+
+打开「设置 → 插件 → fnos」可以查看应用可访问的 NAS 目录：
+
+- 「添加授权目录」调用 fnOS 授权窗口，成功后立即刷新列表；
+- 可取消用户授予的目录权限，但不会删除目录或文件；
+- `TRIM_DATA_SHARE_PATHS` 提供的应用共享目录只展示，不提供取消按钮；
+- Host 合并 fnOS 授权结果、`TRIM_DATA_ACCESSIBLE_PATHS` 和 `TRIM_DATA_SHARE_PATHS`，规范化后去重；
+- 页面展示 fnOS 语义路径，读写和取消授权仍使用真实路径；
+- 用户取消授权窗口时静默结束，不显示错误提示。
+
+浏览器不会接触 `TRIM_API_TOKEN`。目录查询、授权变更和路径转换均由插件 Host 路由完成。
+
+## 工作区与上下文
+
+### 选择工作区
+
+插件保留 DSH 原始工作区弹框，只在路径栏左侧增加 fnOS 图标。点击图标可从已授权目录中快速选择一个路径，选择结果会写回 DSH 原始目录流程，再由 DSH 完成工作区打开或登记。
+
+该入口不会再次申请授权。目录较多时可以搜索，完整语义路径通过 Tooltip 查看。
+
+### 引用 NAS 文件和目录
+
+对话输入区左侧的彩色 fnOS 图标用于选择已授权的文件或目录。选择器支持目录懒加载和多选，选中项以文件或文件夹块显示在输入框上方；发送时，插件通过 DSH 的结构化引用把真实路径写入上下文。
+
+该功能不会把 NAS 路径直接写进可见输入文本，也不会占用或替换其他插件的输入按钮。
+
+## 打开文件与设置
+
+在 fnOS 中点击上下文、工具结果或生成文件里的路径时，插件通过 `@trimjs/web-app` 的 `openFile()` 交给系统文件应用处理。是否可以打开以 fnOS 当前用户的真实权限为准，不以插件列表缓存做预判，因此不会调用 NAS 中不存在的 `xdg-open`。
+
+设置页的「打开配置文件」同样通过 fnOS 文件应用打开当前 DSH 设置文件。离开 fnOS iframe 后，这些系统操作会安全跳过或回退到 DSH 原有行为。
+
+## 导出会话日志
+
+fnOS 环境中的 Session log 菜单提供两种导出方式：
+
+- 下载到当前电脑；
+- 导出 ZIP 到已授权的 NAS 目录。
+
+NAS 导出只允许选择插件返回的授权目录，写入失败时会保留原有会话数据并显示错误。
+
+## 运行边界
+
+| 场景 | 行为 |
+| --- | --- |
+| fnOS 应用 iframe | 启用主题、标题、授权目录、系统文件打开、设置文件打开和 NAS 日志导出 |
+| 普通浏览器访问 DSH | 不调用 fnOS 授权或文件 SDK，保留 DSH 原有打开方式 |
+| 应用共享目录 | 可读取和选择，只展示，不允许取消授权 |
+| 用户授权目录 | 可读取和选择，也可在确认后取消授权 |
+
+## 排查
+
+### 看不到 fnos 插件
+
+```sh
+dsh --profile web --dump-config | grep -n -C 3 'dsh-fnos'
+```
+
+如果出现 `cannot resolve profile bundle`，重新执行插件安装命令。不要保留指向开发机或旧 NAS 源码目录的 `link:`、`file:` 依赖。
+
+### 授权目录为空
+
+确认应用已获得文件访问权限，并从 fnOS 应用入口打开 DSH。直接访问 `127.0.0.1:3080` 或其他独立浏览器页面时，fnOS SDK 无法提供完整宿主能力。
+
+### 文件无法打开
+
+先在 fnOS 文件管理器中确认当前用户可以访问该真实路径。插件会直接调用系统 SDK；路径出现在授权目录列表中，不代表文件已存在或当前用户仍有读权限。
+
+### 主题没有同步
+
+确认 DSH 主题选择的是「跟随系统」，且页面运行在 fnOS 应用 iframe 中。明确选择浅色或深色时，插件不会覆盖 DSH 主题。
+
+## 本地开发
+
+```sh
+pnpm --filter @tnnevol/dsh-fnos run check
+dsh plugin --profile web add /absolute/path/to/fn-os-apps/plugins/dsh-fnos-plugin
+dsh web --no-open
+```
+
+独立浏览器适合检查构建和非 SDK 界面；主题、授权、系统文件打开和 NAS 导出仍需在真实 fnOS 环境验收。
+
+## 链接
+
+- [npm](https://www.npmjs.com/package/@tnnevol/dsh-fnos)
+- [源码](https://github.com/tnnevol/fn-os-apps/tree/main/plugins/dsh-fnos-plugin)
+- [fnOS JS SDK](https://developer.fnnas.com/)
+- [需求清单](/requirements/FNOS-001-dsh-fnos-adaptation)
+- [实现计划](/plans/PLAN-FNOS-001-dsh-fnos-adaptation)
+- [问题反馈](https://github.com/tnnevol/fn-os-apps/issues)

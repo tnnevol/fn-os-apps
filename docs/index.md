@@ -20,8 +20,8 @@ features:
     details: 查看仓库中各个 fnOS 应用的功能、依赖、安装方式和项目链接。
     link: /apps/
   - title: 开发指南
-    details: 了解 Manifest、生命周期、用户向导、权限和统一网关配置。
-    link: /development/manifest
+    details: 维护项目开发环境、构建脚本和发布流程。
+    link: /development/environment-and-scripts
   - title: 构建发布
     details: 使用 fnpack、本地 bump 脚本和 GitHub Actions 完成打包发布。
     link: /build/fnpack

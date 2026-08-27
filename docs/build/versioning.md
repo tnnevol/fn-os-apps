@@ -1,6 +1,6 @@
 # 版本管理
 
-根目录 `package.json` 维护项目当前版本，`bump` 脚本将版本同步到所有 `apps/*/manifest`，并更新 README 中的版本示例。
+根目录 `package.json` 维护项目当前版本。`bump` 脚本统一管理 `plugins/*` 之外的发布版本，将版本同步到 `packages/*/package.json` 和所有 `apps/*/manifest`，并更新 README 中的版本示例。
 
 ## 常用命令
 
@@ -16,9 +16,12 @@ pnpm run bump:patch
 
 1. 计算目标版本。
 2. 更新根 `package.json`。
-3. 更新所有应用 Manifest。
-4. 更新 README 中的 Release 和 Tag 示例。
-5. 创建版本提交和 Git Tag。
+3. 更新 `packages/*` 下共享包的版本。
+4. 更新所有 FPK 应用 Manifest。
+5. 更新 README 中的 Release 和 Tag 示例。
+6. 创建版本提交和项目 Git Tag。
+
+`plugins/*` 的版本独立维护，`bump` 不会修改插件版本。
 
 ## 仅修改文件
 

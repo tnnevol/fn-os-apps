@@ -1,4 +1,5 @@
 :root {
+  --vp-layout-max-width: 1660px;
   --vp-c-brand-1: #2563eb;
   --vp-c-brand-2: #1d4ed8;
   --vp-c-brand-3: #0891b2;
@@ -216,6 +217,11 @@
   background: transparent;
 }
 
+.VPDoc.has-aside .content-container {
+  width: 100%;
+  max-width: 1015px !important;
+}
+
 .vp-doc a {
   color: var(--vp-c-brand-2);
   text-decoration-color: rgba(37, 99, 235, 0.35);
@@ -263,6 +269,13 @@
   background: var(--docs-gradient-soft);
   color: var(--vp-c-text-1);
   font-weight: 650;
+  white-space: nowrap;
+}
+
+.vp-doc table th.status-column,
+.vp-doc table td.status-column {
+  width: 100px;
+  min-width: 100px;
   white-space: nowrap;
 }
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# 升级项目版本和 apps/ 目录下应用的 manifest version 字段。
+# 统一升级项目、非 plugins/ 工作空间包和 apps/ 下 FPK 应用的版本。
 # plugins/ 下的插件版本独立维护，禁止由本脚本更新。
 #
 # Usage:
@@ -20,6 +20,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PACKAGE_JSON="$SCRIPT_DIR/package.json"
 APPS_DIR="$SCRIPT_DIR/apps"
+PACKAGES_DIR="$SCRIPT_DIR/packages"
 
 # ── 参数解析 ──────────────────────────────────────────────
 MODE=""
@@ -164,6 +165,31 @@ else
   echo "  SAME  package.json ($PACKAGE_VERSION)"
 fi
 
+# ── 更新非插件工作空间包版本 ────────────────────────────
+if [ -d "$PACKAGES_DIR" ]; then
+  for package_json in "$PACKAGES_DIR"/*/package.json; do
+    [ -f "$package_json" ] || continue
+
+    package_name=$(basename "$(dirname "$package_json")")
+    package_version_line_count=$(grep -Ec '^[[:space:]]*"version"[[:space:]]*:' "$package_json" || true)
+    if [ "$package_version_line_count" -ne 1 ]; then
+      echo "Error: packages/$package_name/package.json 必须包含且只能包含一个 version 字段"
+      exit 1
+    fi
+
+    old_version=$(grep '^[[:space:]]*"version"[[:space:]]*:' "$package_json" | sed -E 's/^[^:]*:[[:space:]]*"([^"]+)".*$/\1/')
+    if [ "$old_version" = "$VERSION" ]; then
+      echo "  SAME  packages/$package_name ($old_version)"
+      SKIPPED=$((SKIPPED + 1))
+      continue
+    fi
+
+    sed -i '' -E "s/^([[:space:]]*\"version\"[[:space:]]*:[[:space:]]*\")[^\"]+(\"[, ]*)$/\1${VERSION}\2/" "$package_json"
+    echo "  OK    packages/$package_name: $old_version → $VERSION"
+    UPDATED=$((UPDATED + 1))
+  done
+fi
+
 for dir in "$APPS_DIR"/*/; do
   app="$(basename "$dir")"
   manifest="$dir/manifest"
@@ -204,6 +230,9 @@ if [ "$DO_COMMIT" = true ]; then
   echo ""
   cd "$SCRIPT_DIR"
   git add package.json apps/*/manifest README.md
+  if [ -d "$PACKAGES_DIR" ]; then
+    git add packages/*/package.json
+  fi
 
   if git diff --cached --quiet; then
     echo "No changes to commit."

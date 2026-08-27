@@ -19,7 +19,7 @@ description: fnOS Apps Monorepo 从代码优先维护转换为规格驱动开发
 
 - [`docs/requirements/index.md`](/requirements/) 已定义需求与计划边界、功能编号、优先级、状态和验收规则。
 - [`docs/plans/index.md`](/plans/) 已定义计划结构、实现范围、交互、风险、测试、发布和回滚要求。
-- [FNOS-001 需求](/requirements/2026-08-19-dsh-fnos-adaptation) 与 [PLAN-FNOS-001 计划](/plans/2026-08-19-plan-dsh-fnos-adaptation) 已形成一对需求/计划文档。
+- [FNOS-001 需求](/requirements/FNOS-001-dsh-fnos-adaptation) 与 [PLAN-FNOS-001 计划](/plans/PLAN-FNOS-001-dsh-fnos-adaptation) 已形成一对需求/计划文档。
 - DSH 插件包已经提供 `typecheck`、`test`、`build` 和 `check` 脚本，插件侧具备较好的实现验证基础。
 - 文档站已有 `pnpm run docs:build`，贡献指南已有 `git diff --check` 和文档构建要求。
 - 面向用户的应用和插件文档已经确定统一维护在 `docs/`，减少 README 多处漂移。
@@ -106,7 +106,7 @@ description: fnOS Apps Monorepo 从代码优先维护转换为规格驱动开发
 ```yaml
 ---
 id: FNOS-001
-title: 2026-08-19 DSH 飞牛 NAS 适配
+title: FNOS-001 DSH 飞牛 NAS 适配
 status: in-progress
 owner: tnnevol
 priority: mixed
@@ -165,8 +165,8 @@ PR 模板至少要求填写：变更类型、需求编号、计划编号、验�
 
 | 目标 SDD 产物 | 当前文件/目录 | 结论 |
 | --- | --- | --- |
-| 需求规范 | `docs/requirements/index.md`、`docs/requirements/2026-08-19-dsh-fnos-adaptation.md` | 已具备元数据、验收规则和功能编号 |
-| 实施计划 | `docs/plans/index.md`、`docs/plans/2026-08-19-plan-dsh-fnos-adaptation.md` | 已具备元数据和 P0/P1 追踪矩阵 |
+| 需求规范 | `docs/requirements/index.md`、`docs/requirements/FNOS-001-dsh-fnos-adaptation.md` | 已具备元数据、验收规则和功能编号 |
+| 实施计划 | `docs/plans/index.md`、`docs/plans/PLAN-FNOS-001-dsh-fnos-adaptation.md` | 已具备元数据和 P0/P1 追踪矩阵 |
 | 代码实现 | `plugins/*`、`apps/*` | 插件级验证和根级统一入口均已具备 |
 | 用户文档 | `docs/apps/`、`docs/plugins/`、`docs/guide/` | 已规定 `docs/` 为规范入口，需持续避免重复维护 |
 | 验收证据 | `docs/validation/README.md` | 已有统一记录模板，真实 NAS 记录待补齐 |

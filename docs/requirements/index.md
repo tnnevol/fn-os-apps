@@ -30,21 +30,21 @@
 需求文档统一放在 docs/requirements/，文件名使用：
 
 ~~~text
-YYYY-MM-DD-需求主题.md
+FNOS-###-需求主题.md
 ~~~
 
 规则：
 
-- 日期使用需求正式确认或开始记录的日期，格式固定为 YYYY-MM-DD。
+- 编号前缀使用需求主编号 `FNOS-###`，并在项目范围内保持唯一、连续。
 - 需求主题使用简短、明确的中文或英文短语，概括需求的核心对象和目标；英文或多词名称使用短横线连接。
 - 名称概括需求目标，不使用“修改”“临时”“test”等无法表达范围的名称。
-- 同一天存在多个需求时，使用不同的需求主题，不增加无意义的序号。
+- 日期不写入文件名前缀，需求正式确认或开始记录的日期保留在 Frontmatter 和元信息表中。
 
 示例：
 
 ~~~text
-docs/requirements/2026-08-19-dsh-fnos-adaptation.md
-docs/requirements/2026-08-20-dsh-workspace-access.md
+docs/requirements/FNOS-001-dsh-fnos-adaptation.md
+docs/requirements/FNOS-002-dsh-workspace-access.md
 ~~~
 
 ### Frontmatter、标题和元信息
@@ -53,11 +53,11 @@ docs/requirements/2026-08-20-dsh-workspace-access.md
 
 ~~~yaml
 ---
-title: 2026-08-19 DSH 飞牛 NAS 适配
+title: FNOS-001 DSH 飞牛 NAS 适配
 description: DeepSeek Harness 在飞牛 fnOS 中的应用、插件和 NAS 能力适配需求。
 ---
 
-# 2026-08-19 DSH 飞牛 NAS 适配
+# FNOS-001 DSH 飞牛 NAS 适配
 ~~~
 
 一级标题后使用元信息表，字段固定为：
@@ -65,7 +65,7 @@ description: DeepSeek Harness 在飞牛 fnOS 中的应用、插件和 NAS 能力
 | 字段 | 要求 |
 | --- | --- |
 | 需求编号 | 使用 FNOS-###，同一需求的功能使用 FNOS-###-## |
-| 提出日期 | 与文件名日期一致 |
+| 提出日期 | 使用需求正式确认或开始记录的日期，格式为 YYYY-MM-DD |
 | 需求状态 | 使用状态徽章，表示整个需求的当前阶段 |
 | 关联计划 | 已进入计划时链接到对应计划；未排期时写明“暂未进入计划” |
 
@@ -138,7 +138,7 @@ description: DeepSeek Harness 在飞牛 fnOS 中的应用、插件和 NAS 能力
 
 ## 当前需求整合结果
 
-截至 2026-08-24，历史上明确标记为规划、后续或待评估的 fnOS/DSH 适配内容已统一纳入 [FNOS-001：DSH 飞牛 NAS 适配](/requirements/2026-08-19-dsh-fnos-adaptation)，该需求的 P0/P1 已完成目标环境验证：
+截至 2026-08-24，历史上明确标记为规划、后续或待评估的 fnOS/DSH 适配内容已统一纳入 [FNOS-001：DSH 飞牛 NAS 适配](/requirements/FNOS-001-dsh-fnos-adaptation)，该需求的 P0/P1 已完成目标环境验证：
 
 | 历史内容 | 当前归属 | 状态 |
 | --- | --- | --- |
@@ -155,7 +155,7 @@ description: DeepSeek Harness 在飞牛 fnOS 中的应用、插件和 NAS 能力
 
 | 编号 | 需求文档 | 状态 |
 | --- | --- | --- |
-| FNOS-001 | [DSH 飞牛 NAS 适配](/requirements/2026-08-19-dsh-fnos-adaptation) | P0/P1 已完成验证 |
-| FNOS-002 | [Codex 登录状态显示优化](/requirements/2026-08-24-codex-auth-status)（含 NAS 引用空格保持） | 规划中，暂未进入计划 |
+| FNOS-001 | [DSH 飞牛 NAS 适配](/requirements/FNOS-001-dsh-fnos-adaptation) | P0/P1 已完成验证 |
+| FNOS-002 | [DSH 应用与插件优化](/requirements/FNOS-002-dsh-app-plugin-optimization)（含 Codex 状态、NAS 引用、共享 UI、FPK 网关和 fnOS 页面路由调研） | 规划中，暂未进入计划 |
 
 当前未发现其他明确的历史待开发需求未登记到需求文档中。新增需求先登记在对应需求文档，确认进入实施后再同步到详细计划；整合完成后，旧的拆分编号不再作为现行需求编号使用。

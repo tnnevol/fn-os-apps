@@ -12,11 +12,11 @@
 
 ### 官方文档
 
-涉及飞牛应用开发相关问题时，优先使用 `fnnas-docs` skill 查阅官方文档：
+涉及飞牛应用开发相关问题时，优先使用 [`fnnas-docs` Skill](https://github.com/tnnevol/skills/tree/main/skills/fnnas-docs) 查阅官方文档：
 
 ```bash
 # 安装技能（首次使用前执行一次）
-npx skills add tnnevol/skills@fnnas-docs -g -y
+pnpx skills add tnnevol/skills --skill fnnas-docs -g -y
 ```
 
 该 skill 覆盖了 manifest 配置、权限管理、入口配置、Docker/Native 构建、向导配置、网关认证、CLI 工具等完整开发文档。
@@ -77,7 +77,7 @@ fnpack create <appname> --template docker
 
 为应用添加 `wizard/uninstall` 向导，让用户在卸载时选择保留或删除数据，并在 `cmd/uninstall_callback` 中根据 `wizard_data_action` 环境变量执行对应逻辑。
 
-具体表单项类型和脚本流程参见 `fnnas-docs` skill 中的**用户向导**文档。
+具体表单项类型和脚本流程参见 [`fnnas-docs` Skill](https://github.com/tnnevol/skills/tree/main/skills/fnnas-docs) 中的**用户向导**文档。
 
 ### 本地测试
 
@@ -90,7 +90,7 @@ appcenter-cli install-local
 
 ### fnpack 打包
 
-**下载地址**：https://static2.fnnas.com/fnpack/
+**官方下载地址**：[飞牛 fnpack](https://developer.fnnas.com/docs/cli/fnpack/)
 **当前版本**：1.2.3
 
 ```bash
