@@ -187,16 +187,14 @@ fnpack build
 
 ### DeepSeek Harness
 
-本地可以直接运行 `fnpack build`。应用目录还提供包装脚本：
+本地直接使用 `fnpack` 构建：
 
 ```bash
 cd apps/fn-deepseek-harness
-./build
+fnpack build
 ```
 
-`./build` 会在构建前递增当前应用 Manifest 的版本，移除历史本地插件产物并调用 `fnpack build`；构建失败时恢复原版本。它只调整 DeepSeek Harness 应用版本，不用于正式 Release 的全项目版本同步。
-
-GitHub Actions 不调用该包装脚本。`.github/workflows/build-dsh-fn.yml` 会先使用 Node.js 24 执行 `.github/scripts/prepare-dsh-native.sh`，为固定 DSH 版本准备 `node-pty` 原生文件，再执行 `fnpack build`。修改 DSH 或 `node-pty` 版本时，应同步维护：
+`.github/workflows/build-dsh-fn.yml` 会先使用 Node.js 24 执行 `.github/scripts/prepare-dsh-native.sh`，为固定 DSH 版本准备 `node-pty` 原生文件，再执行 `fnpack build`。修改 DSH 或 `node-pty` 版本时，应同步维护：
 
 - `.github/config/dsh-native-<dsh-version>.env`
 - `.github/scripts/prepare-dsh-native.sh`

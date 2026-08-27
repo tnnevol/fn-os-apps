@@ -96,9 +96,7 @@ fn-deepseek-harness-v5.0.12-dsh-0.1.1-rc.2.fpk
 在当前应用目录执行：
 
 ```bash
-./build
+fnpack build
 ```
 
-构建脚本默认自动递增 patch 版本并生成 `fn-deepseek-harness.fpk`。也可以通过 `VERSION_BUMP=minor` 或 `VERSION_BUMP=major` 选择递增级别。构建前会清理历史版本残留的本地插件目录，构建失败时会恢复 manifest 版本。
-
-带内置 native 依赖的正式包仅由 tag workflow 生成。应用目录中的本地 `./build` 只执行 `fnpack build`，不会调用 native 依赖准备脚本；该脚本位于 `.github/scripts/`，仅供 GitHub Actions 在 Linux runner 上构建正式包使用。
+带内置 native 依赖的正式包仅由 tag workflow 生成。本地执行 `fnpack build` 不会调用 native 依赖准备脚本；该脚本位于 `.github/scripts/`，仅供 GitHub Actions 在 Linux runner 上构建正式包使用。
