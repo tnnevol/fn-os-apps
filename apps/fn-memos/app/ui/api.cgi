@@ -20,7 +20,7 @@ exec 2>/dev/null
 
 log() {
     mkdir -p "$(dirname "$LOG_FILE")" 2>/dev/null
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" >> "$LOG_FILE" 2>/dev/null
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" >>"$LOG_FILE" 2>/dev/null
 }
 
 output_json() {
@@ -40,9 +40,9 @@ get_current_version() {
 
 get_latest_version() {
     curl -fsSL --connect-timeout 5 --max-time 10 \
-        "https://github.com/usememos/memos/releases/latest" \
-        | grep -oP '/releases/tag/v\K[0-9]+\.[0-9]+\.[0-9]+' \
-        | head -1
+        "https://github.com/usememos/memos/releases/latest" |
+        grep -oP '/releases/tag/v\K[0-9]+\.[0-9]+\.[0-9]+' |
+        head -1
 }
 
 check_update() {
@@ -188,20 +188,20 @@ restart_app() {
 
     local CMD
     case "$MEMOS_STORAGE" in
-        mysql)
-            CMD="${MEMOS_BIN} --port ${MEMOS_PORT} --data ${DATA_DIR} --driver mysql --dsn \"${MEMOS_DSN}\""
-            ;;
-        postgres)
-            CMD="${MEMOS_BIN} --port ${MEMOS_PORT} --data ${DATA_DIR} --driver postgres --dsn \"${MEMOS_DSN}\""
-            ;;
-        *)
-            CMD="${MEMOS_BIN} --port ${MEMOS_PORT} --data ${DATA_DIR}"
-            ;;
+    mysql)
+        CMD="${MEMOS_BIN} --port ${MEMOS_PORT} --data ${DATA_DIR} --driver mysql --dsn \"${MEMOS_DSN}\""
+        ;;
+    postgres)
+        CMD="${MEMOS_BIN} --port ${MEMOS_PORT} --data ${DATA_DIR} --driver postgres --dsn \"${MEMOS_DSN}\""
+        ;;
+    *)
+        CMD="${MEMOS_BIN} --port ${MEMOS_PORT} --data ${DATA_DIR}"
+        ;;
     esac
 
-    bash -c "${CMD}" >> "${INFO_LOG}" 2>&1 &
+    bash -c "${CMD}" >>"${INFO_LOG}" 2>&1 &
     local new_pid=$!
-    printf "%s" "$new_pid" > "$PID_FILE"
+    printf "%s" "$new_pid" >"$PID_FILE"
     log "memos started with pid $new_pid: $CMD"
 
     sleep 3
@@ -236,18 +236,18 @@ fi
 log "request: method=$REQUEST_METHOD action=$ACTION"
 
 case "$ACTION" in
-    check)
-        check_update
-        ;;
-    upgrade)
-        do_upgrade
-        ;;
-    restart)
-        restart_app
-        ;;
-    *)
-        output_json '{"error":"unknown action"}'
-        ;;
+check)
+    check_update
+    ;;
+upgrade)
+    do_upgrade
+    ;;
+restart)
+    restart_app
+    ;;
+*)
+    output_json '{"error":"unknown action"}'
+    ;;
 esac
 
 exit 0

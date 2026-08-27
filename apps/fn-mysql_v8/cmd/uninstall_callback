@@ -16,16 +16,16 @@ fi
 # 根据用户选择处理数据
 if [ "$wizard_data_action" = "delete" ]; then
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] 删除 MySQL 应用数据 ..." >&2
-    
+
     # 删除数据目录 (TRIM_PKGHOME)
     rm -rf "${TRIM_PKGHOME:?}"
-    
+
     # 删除运行时目录 (TRIM_PKGVAR)
     rm -rf "${TRIM_PKGVAR:?}"
-    
+
     # 删除配置文件 (TRIM_PKGETC)
     rm -rf "${TRIM_PKGETC:?}"
-    
+
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] 所有 MySQL 数据已删除。" >&2
 else
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] 保留 MySQL 数据以供将来重新安装。" >&2

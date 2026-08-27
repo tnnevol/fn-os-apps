@@ -57,19 +57,19 @@ start_process() {
     (
         cd "${TRIM_APPDEST}" || exit 1
         GATEWAY_SOCKET="${SOCKET_PATH}" \
-        GATEWAY_PREFIX="${GATEWAY_PREFIX}" \
-        DSH_UPSTREAM_HOST="127.0.0.1" \
-        DSH_UPSTREAM_PORT="${PORT}" \
-        exec node "${PROXY_SCRIPT}"
+            GATEWAY_PREFIX="${GATEWAY_PREFIX}" \
+            DSH_UPSTREAM_HOST="127.0.0.1" \
+            DSH_UPSTREAM_PORT="${PORT}" \
+            exec node "${PROXY_SCRIPT}"
     ) &
-    printf "%s" "$!" > "${GATEWAY_PID_FILE}"
+    printf "%s" "$!" >"${GATEWAY_PID_FILE}"
 
     local -a dsh_args=(web)
     dsh_args+=(--host "${HOST}" --port "${PORT}")
     if [ -n "${TRUSTED_HOSTS}" ]; then
         local -a trusted_host_list
         local trusted_host
-        IFS=',' read -r -a trusted_host_list <<< "${TRUSTED_HOSTS}"
+        IFS=',' read -r -a trusted_host_list <<<"${TRUSTED_HOSTS}"
         for trusted_host in "${trusted_host_list[@]}"; do
             [ -n "${trusted_host}" ] || continue
             dsh_args+=(--trusted-host "${trusted_host}")
@@ -79,7 +79,7 @@ start_process() {
         cd "${TRIM_APPDEST}" || exit 1
         exec "${DSH_BIN}" "${dsh_args[@]}"
     ) &
-    printf "%s" "$!" > "${PID_FILE}"
+    printf "%s" "$!" >"${PID_FILE}"
     return 0
 }
 

@@ -80,8 +80,8 @@ NODE_BIN_PATH="$(command -v "${NODE_BIN}")"
 NODE_BIN_DIR="$(cd -- "$(dirname -- "${NODE_BIN_PATH}")" && pwd)"
 export PATH="${NODE_BIN_DIR}:${PATH}"
 ACTUAL_NODE_MAJOR="$("${NODE_BIN}" -p 'process.versions.node.split(".")[0]')"
-[ "${ACTUAL_NODE_MAJOR}" = "${EXPECTED_NODE_MAJOR}" ] \
-    || fail "Node.js ${EXPECTED_NODE_MAJOR} is required; found ${ACTUAL_NODE_MAJOR}"
+[ "${ACTUAL_NODE_MAJOR}" = "${EXPECTED_NODE_MAJOR}" ] ||
+    fail "Node.js ${EXPECTED_NODE_MAJOR} is required; found ${ACTUAL_NODE_MAJOR}"
 NODE_MAJOR="${ACTUAL_NODE_MAJOR}"
 
 log "Using fixed DSH native build inputs from ${NATIVE_CONFIG_FILE}"
@@ -144,15 +144,15 @@ log "Built node-pty@${NODE_PTY_VERSION}; native files copied to ${BUNDLE_VERSION
 
 NODE_PTY_VERSIONS="${NODE_PTY_VERSION}"
 
-printf '%s\n' "${DSH_VERSION}" > "${APP_DIR}/app/dsh-version"
-printf '%s\n' "${NODE_PTY_VERSIONS}" > "${APP_DIR}/app/node-pty-versions"
+printf '%s\n' "${DSH_VERSION}" >"${APP_DIR}/app/dsh-version"
+printf '%s\n' "${NODE_PTY_VERSIONS}" >"${APP_DIR}/app/node-pty-versions"
 
 if [ -n "${GITHUB_OUTPUT:-}" ]; then
     NODE_PTY_VERSIONS_CSV="${NODE_PTY_VERSIONS//$'\n'/,}"
     {
         echo "dsh_version=${DSH_VERSION}"
         echo "node_pty_versions=${NODE_PTY_VERSIONS_CSV}"
-    } >> "${GITHUB_OUTPUT}"
+    } >>"${GITHUB_OUTPUT}"
 fi
 
 log "Prepared fixed ${DSH_PACKAGE}@${DSH_VERSION} -> node-pty@${NODE_PTY_VERSION}"

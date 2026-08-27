@@ -1,16 +1,16 @@
 #!/bin/bash
 
 case "$1" in
-  start)
+start)
     exit 0
     ;;
-  stop)
+stop)
     exit 0
     ;;
-  status)
+status)
     exit 0
     ;;
-  *)
+*)
     exit 1
     ;;
 esac

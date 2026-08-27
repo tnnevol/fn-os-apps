@@ -24,7 +24,7 @@ ensure_containers_created() {
     docker compose -p "$TRIM_APPNAME" up -d 2>&1
     if [ $? -ne 0 ]; then
         echo "[DEBUG] docker compose up -d FAILED"
-        echo "Docker compose 创建容器失败" > "${TRIM_TEMP_LOGFILE}"
+        echo "Docker compose 创建容器失败" >"${TRIM_TEMP_LOGFILE}"
         return 1
     fi
     echo "[DEBUG] docker compose up -d OK"

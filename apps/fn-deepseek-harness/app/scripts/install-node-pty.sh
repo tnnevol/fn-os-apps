@@ -13,15 +13,18 @@ DSH_PACKAGE_DIR="${DSH_PACKAGE_DIR:?DSH_PACKAGE_DIR is required}"
 NPM_GLOBAL_ROOT="${NPM_GLOBAL_ROOT:?NPM_GLOBAL_ROOT is required}"
 
 case "${PACKAGE_MANAGER}" in
-    npm)
-        ;;
-    *)
-        printf '[%s] [install-node-pty] [ERROR] Unsupported package manager: %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "${PACKAGE_MANAGER}" >&2
-        exit 1
-        ;;
+npm)
+    ;;
+*)
+    printf '[%s] [install-node-pty] [ERROR] Unsupported package manager: %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "${PACKAGE_MANAGER}" >&2
+    exit 1
+    ;;
 esac
-[ -x "${PACKAGE_MANAGER_BIN}" ] \
-    || { printf '[%s] [install-node-pty] [ERROR] Package manager is not executable: %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "${PACKAGE_MANAGER_BIN}" >&2; exit 1; }
+[ -x "${PACKAGE_MANAGER_BIN}" ] ||
+    {
+        printf '[%s] [install-node-pty] [ERROR] Package manager is not executable: %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "${PACKAGE_MANAGER_BIN}" >&2
+        exit 1
+    }
 
 log_message() {
     local level="$1"
@@ -65,7 +68,7 @@ version_in_list() {
     local value
     while IFS= read -r value; do
         [ "${value}" = "${needle}" ] && return 0
-    done <<< "${list}"
+    done <<<"${list}"
     return 1
 }
 
@@ -74,9 +77,9 @@ validate_versions() {
     while IFS= read -r version; do
         [ -n "${version}" ] || continue
         case "${version}" in
-            *[![:alnum:]_.+-]*) fail "invalid packaged node-pty version: ${version}" ;;
+        *[![:alnum:]_.+-]*) fail "invalid packaged node-pty version: ${version}" ;;
         esac
-    done <<< "${NODE_PTY_VERSIONS}"
+    done <<<"${NODE_PTY_VERSIONS}"
 }
 
 node_pty_packages() {
@@ -106,7 +109,7 @@ restore_node_pty_scripts() {
     local original_path original_backup
     while IFS= read -r -d '' original_path && IFS= read -r -d '' original_backup; do
         cp -a "${original_backup}" "${original_path}" || return 1
-    done < "${map_file}"
+    done <"${map_file}"
 }
 
 run_dsh_dependency_scripts() {
@@ -120,13 +123,13 @@ run_dsh_dependency_scripts() {
         fi
     done < <(node_pty_packages)
 
-    [ "${#node_pty_package_files[@]}" -gt 0 ] \
-        || fail "Unable to locate any node-pty package before running dependency scripts"
+    [ "${#node_pty_package_files[@]}" -gt 0 ] ||
+        fail "Unable to locate any node-pty package before running dependency scripts"
 
-    backup_dir="$(mktemp -d "${DSH_HOME}/.node-pty-scripts.XXXXXX")" \
-        || fail "Unable to create a temporary node-pty script backup directory"
+    backup_dir="$(mktemp -d "${DSH_HOME}/.node-pty-scripts.XXXXXX")" ||
+        fail "Unable to create a temporary node-pty script backup directory"
     map_file="${backup_dir}/paths"
-    : > "${map_file}" || fail "Unable to create the node-pty script backup index"
+    : >"${map_file}" || fail "Unable to create the node-pty script backup index"
 
     if has_compiler; then
         use_compiler=1
@@ -142,7 +145,7 @@ run_dsh_dependency_scripts() {
                 rm -rf "${backup_dir}"
                 fail "Unable to back up node-pty package metadata"
             }
-            printf '%s\0%s\0' "${package_json}" "${backup_file}" >> "${map_file}" || {
+            printf '%s\0%s\0' "${package_json}" "${backup_file}" >>"${map_file}" || {
                 restore_node_pty_scripts "${map_file}" >/dev/null 2>&1 || true
                 rm -rf "${backup_dir}"
                 fail "Unable to record the node-pty package metadata backup"
@@ -207,12 +210,12 @@ install_bundled_node_pty() {
     while IFS= read -r -d '' package_json; do
         candidate_version="$(read_package_version "${package_json}")"
         [ -n "${candidate_version}" ] || continue
-        version_in_list "${candidate_version}" "${NODE_PTY_VERSIONS}" \
-            || fail "Installed node-pty ${candidate_version} is not present in the FPK dependency set"
+        version_in_list "${candidate_version}" "${NODE_PTY_VERSIONS}" ||
+            fail "Installed node-pty ${candidate_version} is not present in the FPK dependency set"
 
         bundle_dir="${DSH_NATIVE_BUNDLE}/${candidate_version}"
-        [ -f "${bundle_dir}/pty.node" ] \
-            || fail "The FPK does not contain node-pty ${candidate_version} native files"
+        [ -f "${bundle_dir}/pty.node" ] ||
+            fail "The FPK does not contain node-pty ${candidate_version} native files"
 
         local node_pty_dir
         node_pty_dir="$(dirname -- "${package_json}")"
@@ -225,15 +228,15 @@ install_bundled_node_pty() {
         fi
     done < <(node_pty_packages)
 
-    [ "${package_count}" -gt 0 ] \
-        || fail "Unable to locate any node-pty package in the installed dsh dependency tree"
+    [ "${package_count}" -gt 0 ] ||
+        fail "Unable to locate any node-pty package in the installed dsh dependency tree"
 
     local expected_version
     while IFS= read -r expected_version; do
         [ -n "${expected_version}" ] || continue
-        version_in_list "${expected_version}" "${found_versions}" \
-            || fail "Installed dsh dependency tree is missing node-pty ${expected_version}"
-    done <<< "${NODE_PTY_VERSIONS}"
+        version_in_list "${expected_version}" "${found_versions}" ||
+            fail "Installed dsh dependency tree is missing node-pty ${expected_version}"
+    done <<<"${NODE_PTY_VERSIONS}"
 
     log_info "Installed bundled node-pty versions: ${found_versions//$'\n'/,}."
 }

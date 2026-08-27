@@ -12,21 +12,21 @@ NVM_PROFILE_END="# <<< fn-nvm profile <<<"
 
 UID1000_ENTRY="$(getent passwd 1000 2>/dev/null || true)"
 if [ -z "$UID1000_ENTRY" ]; then
-    echo "Unable to find the passwd entry for UID 1000." > "${TRIM_TEMP_LOGFILE}"
+    echo "Unable to find the passwd entry for UID 1000." >"${TRIM_TEMP_LOGFILE}"
     exit 1
 fi
 IFS=: read -r UID1000_USER _ UID1000_UID UID1000_GID _ UID1000_HOME UID1000_SHELL <<EOF
 $UID1000_ENTRY
 EOF
 if [ -z "$UID1000_USER" ] || [ -z "$UID1000_HOME" ] || [ -z "$UID1000_GID" ]; then
-    echo "Unable to resolve UID 1000 user information." > "${TRIM_TEMP_LOGFILE}"
+    echo "Unable to resolve UID 1000 user information." >"${TRIM_TEMP_LOGFILE}"
     exit 1
 fi
 
 # cmd 阶段以 root 执行，但 NVM 数据需要由 UID 1000 用户继续管理。
 run_as_uid1000() {
     command -v runuser >/dev/null 2>&1 || {
-        echo "runuser is required to install NVM as UID 1000." > "${TRIM_TEMP_LOGFILE}"
+        echo "runuser is required to install NVM as UID 1000." >"${TRIM_TEMP_LOGFILE}"
         exit 1
     }
     runuser -u "$UID1000_USER" -- env \
@@ -41,7 +41,7 @@ log_msg() {
 
 fail_install() {
     if [ -n "${TRIM_TEMP_LOGFILE:-}" ]; then
-        echo "$1" > "$TRIM_TEMP_LOGFILE"
+        echo "$1" >"$TRIM_TEMP_LOGFILE"
     fi
     log_msg "ERROR: $1"
     exit 1
@@ -75,31 +75,31 @@ fi
 
 # 按官方安装脚本兼容 Bash 和 Zsh，选择 UID 1000 用户的 shell 配置文件。
 case "$UID1000_SHELL" in
-    *bash)
-        NVM_PROFILE_CANDIDATES=(
-            "${UID1000_HOME}/.bashrc"
-            "${UID1000_HOME}/.bash_profile"
-            "${UID1000_HOME}/.profile"
-        )
-        NVM_PROFILE_DEFAULT="${UID1000_HOME}/.bashrc"
-        ;;
-    *zsh)
-        NVM_PROFILE_CANDIDATES=(
-            "${UID1000_HOME}/.zshrc"
-            "${UID1000_HOME}/.zprofile"
-            "${UID1000_HOME}/.profile"
-        )
-        NVM_PROFILE_DEFAULT="${UID1000_HOME}/.zshrc"
-        ;;
-    *)
-        NVM_PROFILE_CANDIDATES=(
-            "${UID1000_HOME}/.profile"
-            "${UID1000_HOME}/.bashrc"
-            "${UID1000_HOME}/.zprofile"
-            "${UID1000_HOME}/.zshrc"
-        )
-        NVM_PROFILE_DEFAULT="${UID1000_HOME}/.profile"
-        ;;
+*bash)
+    NVM_PROFILE_CANDIDATES=(
+        "${UID1000_HOME}/.bashrc"
+        "${UID1000_HOME}/.bash_profile"
+        "${UID1000_HOME}/.profile"
+    )
+    NVM_PROFILE_DEFAULT="${UID1000_HOME}/.bashrc"
+    ;;
+*zsh)
+    NVM_PROFILE_CANDIDATES=(
+        "${UID1000_HOME}/.zshrc"
+        "${UID1000_HOME}/.zprofile"
+        "${UID1000_HOME}/.profile"
+    )
+    NVM_PROFILE_DEFAULT="${UID1000_HOME}/.zshrc"
+    ;;
+*)
+    NVM_PROFILE_CANDIDATES=(
+        "${UID1000_HOME}/.profile"
+        "${UID1000_HOME}/.bashrc"
+        "${UID1000_HOME}/.zprofile"
+        "${UID1000_HOME}/.zshrc"
+    )
+    NVM_PROFILE_DEFAULT="${UID1000_HOME}/.profile"
+    ;;
 esac
 
 NVM_PROFILE=""

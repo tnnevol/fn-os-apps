@@ -12,11 +12,11 @@ CNF_FILE="${TRIM_PKGETC}/mysql.cnf"
 MYSQL_PORT="${APP_PORT:-3306}"
 
 log_msg() {
-    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "${LOG_FILE}"
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >>"${LOG_FILE}"
 }
 
 user_error() {
-    echo "$1" > "${TRIM_TEMP_LOGFILE}"
+    echo "$1" >"${TRIM_TEMP_LOGFILE}"
     log_msg "USER ERROR: $1"
 }
 
@@ -51,9 +51,9 @@ start_process() {
     "${MYSQLD}" \
         --defaults-file="${CNF_FILE}" \
         --port="${MYSQL_PORT}" \
-        --user="${TRIM_USERNAME}" >> "${LOG_FILE}" 2>&1 &
+        --user="${TRIM_USERNAME}" >>"${LOG_FILE}" 2>&1 &
     local mysqld_pid=$!
-    printf "%s" "${mysqld_pid}" > "${PID_FILE}"
+    printf "%s" "${mysqld_pid}" >"${PID_FILE}"
     log_msg "mysqld started with PID=${mysqld_pid}, port=${MYSQL_PORT}"
     return 0
 }
@@ -63,7 +63,7 @@ stop_process() {
 
     if [ -r "${PID_FILE}" ]; then
         pid=$(head -n 1 "${PID_FILE}" | tr -d '[:space:]')
-        
+
         log_msg "pid=${pid}"
         if ! check_process "${pid}"; then
             # process not exist, delete pidfile
@@ -73,17 +73,17 @@ stop_process() {
         fi
 
         # Graceful shutdown via mysqladmin (MySQL specific)
-        if [ -n "${MYSQL_ROOT_PASSWORD}" ] && \
-           [ -f "${TRIM_PKGETC}/.root_password_set" ]; then
+        if [ -n "${MYSQL_ROOT_PASSWORD}" ] &&
+            [ -f "${TRIM_PKGETC}/.root_password_set" ]; then
             sudo -u "${TRIM_USERNAME}" "${MYSQLADMIN}" \
                 --socket="${SOCKET_FILE}" \
                 -u root -p"${MYSQL_ROOT_PASSWORD}" \
-                shutdown >> "${LOG_FILE}" 2>&1
+                shutdown >>"${LOG_FILE}" 2>&1
         else
             sudo -u "${TRIM_USERNAME}" "${MYSQLADMIN}" \
                 --socket="${SOCKET_FILE}" \
                 -u root \
-                shutdown >> "${LOG_FILE}" 2>&1
+                shutdown >>"${LOG_FILE}" 2>&1
         fi
 
         local count=0
@@ -109,9 +109,9 @@ stop_process() {
 check_process() {
     local pid=$1
     if kill -0 "${pid}" 2>/dev/null; then
-        return 0  # process exist
+        return 0 # process exist
     else
-        return 1  # process not exist
+        return 1 # process not exist
     fi
 }
 
@@ -123,7 +123,7 @@ status() {
         else
             # Process is not running but pidfile exists - clean it up
             rm -f "${PID_FILE}"
-        fi    
+        fi
     fi
 
     return 1

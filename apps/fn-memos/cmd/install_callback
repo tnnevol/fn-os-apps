@@ -11,7 +11,7 @@ mkdir -p "${TRIM_PKGVAR}/data"
 mkdir -p "${CNF_DIR}"
 
 # 持久化向导配置，供 CGI 重启时读取
-cat > "${CNF_FILE}" <<EOF
+cat >"${CNF_FILE}" <<EOF
 MEMOS_PORT="${wizard_port:-5230}"
 MEMOS_STORAGE="${wizard_storage_type:-local}"
 MEMOS_DSN="${wizard_dsn:-}"

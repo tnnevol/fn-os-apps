@@ -62,20 +62,20 @@ status() {
     if [ -f "${TRIM_PKGVAR}/restarting" ]; then
         return 0
     fi
-    
+
     # 使用 moviepilot status 命令检测实际运行状态
     local status_output
     status_output=$(bash -c "${STATUS_CMD}" 2>&1)
-    
+
     # 检查 Backend 和 Frontend 是否都在运行
-    if echo "$status_output" | grep -q "Backend:" && \
-       echo "$status_output" | grep -A5 "Backend:" | grep -q "running" && \
-       echo "$status_output" | grep -q "Frontend:" && \
-       echo "$status_output" | grep -A5 "Frontend:" | grep -q "running"; then
-        return 0  # 服务正在运行
+    if echo "$status_output" | grep -q "Backend:" &&
+        echo "$status_output" | grep -A5 "Backend:" | grep -q "running" &&
+        echo "$status_output" | grep -q "Frontend:" &&
+        echo "$status_output" | grep -A5 "Frontend:" | grep -q "running"; then
+        return 0 # 服务正在运行
     fi
-    
-    return 1  # 服务未运行
+
+    return 1 # 服务未运行
 }
 
 case $1 in
@@ -90,9 +90,9 @@ stop)
 status)
     # check application status command. exit 0 if running, exit 3 if not running
     fix_ownership
-    if status; then 
+    if status; then
         exit 0
-    else 
+    else
         exit 3
     fi
     ;;

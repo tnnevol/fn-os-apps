@@ -4,7 +4,7 @@
 # ctl_stop = false，飞牛框架不会调用此脚本
 
 case $1 in
-start|stop)
+start | stop)
     exit 0
     ;;
 status)

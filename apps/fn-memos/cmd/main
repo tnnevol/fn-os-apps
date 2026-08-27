@@ -10,19 +10,19 @@ DATA_DIR="${TRIM_PKGVAR}/data"
 
 # Build start command based on storage type
 case "${wizard_storage_type}" in
-    mysql)
-        CMD="${MEMOS_BIN} --port ${MEMOS_PORT} --data ${DATA_DIR} --driver mysql --dsn \"${wizard_dsn}\""
-        ;;
-    postgres)
-        CMD="${MEMOS_BIN} --port ${MEMOS_PORT} --data ${DATA_DIR} --driver postgres --dsn \"${wizard_dsn}\""
-        ;;
-    *)
-        CMD="${MEMOS_BIN} --port ${MEMOS_PORT} --data ${DATA_DIR}"
-        ;;
+mysql)
+    CMD="${MEMOS_BIN} --port ${MEMOS_PORT} --data ${DATA_DIR} --driver mysql --dsn \"${wizard_dsn}\""
+    ;;
+postgres)
+    CMD="${MEMOS_BIN} --port ${MEMOS_PORT} --data ${DATA_DIR} --driver postgres --dsn \"${wizard_dsn}\""
+    ;;
+*)
+    CMD="${MEMOS_BIN} --port ${MEMOS_PORT} --data ${DATA_DIR}"
+    ;;
 esac
 
 log_msg() {
-    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "${LOG_FILE}"
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >>"${LOG_FILE}"
 }
 
 start_process() {
@@ -31,8 +31,8 @@ start_process() {
     fi
 
     log_msg "Starting Memos (storage: ${wizard_storage_type:-local}) ..."
-    bash -c "${CMD}" >> "${LOG_FILE}" 2>&1 &
-    printf "%s" "$!" > "${PID_FILE}"
+    bash -c "${CMD}" >>"${LOG_FILE}" 2>&1 &
+    printf "%s" "$!" >"${PID_FILE}"
     log_msg "Memos started with pid $!"
     return 0
 }
@@ -51,7 +51,7 @@ stop_process() {
         fi
 
         log_msg "send TERM signal to PID:${pid}..."
-        kill -TERM ${pid} >> "${LOG_FILE}" 2>&1
+        kill -TERM ${pid} >>"${LOG_FILE}" 2>&1
 
         local count=0
         while check_process "${pid}" && [ $count -lt 10 ]; do

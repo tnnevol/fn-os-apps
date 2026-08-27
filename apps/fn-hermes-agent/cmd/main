@@ -16,7 +16,6 @@ DASHBOARD_CMD="${HERMES_CLI} dashboard --no-open --host $dashboard_host --port $
 DASHBOARD_STOP_CMD="${HERMES_CLI} dashboard --stop"
 DASHBOARD_STATUS_CMD="${HERMES_CLI} dashboard --status"
 
-
 # 获取 NAS 主用户（UID 1000），不存在则回退到应用专用用户
 if id -u 1000 &>/dev/null; then
     NAS_MAIN_USER=$(id -un 1000)
@@ -25,7 +24,6 @@ else
     NAS_MAIN_USER="$TRIM_USERNAME"
     NAS_MAIN_GROUP="$TRIM_GROUPNAME"
 fi
-
 
 # ── 工具函数 ────────────────────────────────────────────────────
 
@@ -51,7 +49,7 @@ dashboard_running() {
 # 启动进程：start_process <名称> <命令...>
 start_process() {
     local name="$1"
-    local component="${name##hermes }"  # 提取 gateway 或 dashboard
+    local component="${name##hermes }" # 提取 gateway 或 dashboard
     shift
     log_msg "$component" "Starting $name as $NAS_MAIN_USER..."
     runuser -u "$NAS_MAIN_USER" -- "$@" &
@@ -64,7 +62,7 @@ start_process() {
 stop_process() {
     local name="$1"
     local check_fn="$2"
-    local component="${name##hermes }"  # 提取 gateway 或 dashboard
+    local component="${name##hermes }" # 提取 gateway 或 dashboard
     shift 2
 
     # 优雅停止（以 NAS 主用户执行 hermes 停止子命令）
@@ -154,7 +152,7 @@ status)
     exit 3
     ;;
 *)
-    echo "Unknown command: $1" > "$TRIM_TEMP_LOGFILE"
+    echo "Unknown command: $1" >"$TRIM_TEMP_LOGFILE"
     exit 1
     ;;
 esac

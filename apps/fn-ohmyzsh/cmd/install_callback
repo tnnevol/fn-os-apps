@@ -11,39 +11,39 @@ set -e
 # 将 ZDOTDIR 指向系统 UID 1000 用户的 home 目录。
 UID1000_ENTRY="$(getent passwd 1000 2>/dev/null || true)"
 if [ -z "$UID1000_ENTRY" ]; then
-  echo "Unable to find the passwd entry for UID 1000." > "${TRIM_TEMP_LOGFILE}"
-  exit 1
+    echo "Unable to find the passwd entry for UID 1000." >"${TRIM_TEMP_LOGFILE}"
+    exit 1
 fi
 IFS=: read -r UID1000_USER _ UID1000_UID UID1000_GID _ UID1000_HOME UID1000_SHELL <<EOF
 $UID1000_ENTRY
 EOF
 if [ -z "$UID1000_USER" ] || [ -z "$UID1000_HOME" ] || [ ! -d "$UID1000_HOME" ]; then
-  echo "Unable to find the home directory for UID 1000." > "${TRIM_TEMP_LOGFILE}"
-  exit 1
+    echo "Unable to find the home directory for UID 1000." >"${TRIM_TEMP_LOGFILE}"
+    exit 1
 fi
 
 # cmd 阶段通常以 root 执行。涉及用户目录和应用用户数据的操作必须降权，
 # 避免生成 root 所有的 zsh 配置和 Oh My Zsh 文件。
 run_as_user() {
-  local username="$1"
-  local user_home="$2"
-  shift 2
+    local username="$1"
+    local user_home="$2"
+    shift 2
 
-  if [ "$(id -u)" -eq "$(id -u "$username")" ]; then
-    HOME="$user_home" USER="$username" LOGNAME="$username" "$@"
-  else
-    command -v runuser >/dev/null 2>&1 || {
-      echo "runuser is required to run commands as $username." > "${TRIM_TEMP_LOGFILE}"
-      exit 1
-    }
-    runuser -u "$username" -- env \
-      HOME="$user_home" USER="$username" LOGNAME="$username" \
-      ZDOTDIR="$user_home" "$@"
-  fi
+    if [ "$(id -u)" -eq "$(id -u "$username")" ]; then
+        HOME="$user_home" USER="$username" LOGNAME="$username" "$@"
+    else
+        command -v runuser >/dev/null 2>&1 || {
+            echo "runuser is required to run commands as $username." >"${TRIM_TEMP_LOGFILE}"
+            exit 1
+        }
+        runuser -u "$username" -- env \
+            HOME="$user_home" USER="$username" LOGNAME="$username" \
+            ZDOTDIR="$user_home" "$@"
+    fi
 }
 
 run_as_uid1000() {
-  run_as_user "$UID1000_USER" "$UID1000_HOME" "$@"
+    run_as_user "$UID1000_USER" "$UID1000_HOME" "$@"
 }
 
 ZDOTDIR="$UID1000_HOME"
@@ -54,27 +54,27 @@ ZSHRC_BACKUP="${ZDOTDIR}/.zshrc.pre-oh-my-zsh"
 # ── 工具函数 ──────────────────────────────────────────────
 
 command_exists() {
-  command -v "$@" >/dev/null 2>&1
+    command -v "$@" >/dev/null 2>&1
 }
 
 log_msg() {
-  echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >&2
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >&2
 }
 
 # ── 安装 zsh ──────────────────────────────────────────────
 
 if ! command_exists zsh; then
-  log_msg "zsh not found, installing via apt ..."
-  apt-get update -qq && apt-get install -y zsh
-  log_msg "zsh installed."
+    log_msg "zsh not found, installing via apt ..."
+    apt-get update -qq && apt-get install -y zsh
+    log_msg "zsh installed."
 fi
 
 # ── 安装 git（需支持 HTTPS）──────────────────────────────
 
 if ! command_exists git; then
-  log_msg "git not found, installing via apt ..."
-  apt-get install -y git
-  log_msg "git installed."
+    log_msg "git not found, installing via apt ..."
+    apt-get install -y git
+    log_msg "git installed."
 fi
 
 # ── 克隆 Oh My Zsh（来自 setup_ohmyzsh）──────────────────
@@ -83,46 +83,46 @@ fi
 umask g-w,o-w
 
 if [ -d "$ZSH" ]; then
-  log_msg "Oh My Zsh directory already exists at $ZSH, skipping clone."
+    log_msg "Oh My Zsh directory already exists at $ZSH, skipping clone."
 else
-  log_msg "Cloning Oh My Zsh to $ZSH ..."
+    log_msg "Cloning Oh My Zsh to $ZSH ..."
 
-  run_as_uid1000 git init --quiet "$ZSH" \
-  && run_as_uid1000 git -C "$ZSH" config core.eol lf \
-  && run_as_uid1000 git -C "$ZSH" config core.autocrlf false \
-  && run_as_uid1000 git -C "$ZSH" config fsck.zeroPaddedFilemode ignore \
-  && run_as_uid1000 git -C "$ZSH" config fetch.fsck.zeroPaddedFilemode ignore \
-  && run_as_uid1000 git -C "$ZSH" config receive.fsck.zeroPaddedFilemode ignore \
-  && run_as_uid1000 git -C "$ZSH" config oh-my-zsh.remote origin \
-  && run_as_uid1000 git -C "$ZSH" config oh-my-zsh.branch master \
-  && run_as_uid1000 git -C "$ZSH" remote add origin "https://github.com/ohmyzsh/ohmyzsh.git" \
-  && run_as_uid1000 git -C "$ZSH" fetch --depth=1 origin \
-  && run_as_uid1000 git -C "$ZSH" checkout -b master "origin/master" || {
-    [ ! -d "$ZSH" ] || { run_as_uid1000 rm -rf "$ZSH" 2>/dev/null; }
-    echo "Failed to clone Oh My Zsh repository." > "$TRIM_TEMP_LOGFILE"
-    exit 1
-  }
+    run_as_uid1000 git init --quiet "$ZSH" &&
+        run_as_uid1000 git -C "$ZSH" config core.eol lf &&
+        run_as_uid1000 git -C "$ZSH" config core.autocrlf false &&
+        run_as_uid1000 git -C "$ZSH" config fsck.zeroPaddedFilemode ignore &&
+        run_as_uid1000 git -C "$ZSH" config fetch.fsck.zeroPaddedFilemode ignore &&
+        run_as_uid1000 git -C "$ZSH" config receive.fsck.zeroPaddedFilemode ignore &&
+        run_as_uid1000 git -C "$ZSH" config oh-my-zsh.remote origin &&
+        run_as_uid1000 git -C "$ZSH" config oh-my-zsh.branch master &&
+        run_as_uid1000 git -C "$ZSH" remote add origin "https://github.com/ohmyzsh/ohmyzsh.git" &&
+        run_as_uid1000 git -C "$ZSH" fetch --depth=1 origin &&
+        run_as_uid1000 git -C "$ZSH" checkout -b master "origin/master" || {
+        [ ! -d "$ZSH" ] || { run_as_uid1000 rm -rf "$ZSH" 2>/dev/null; }
+        echo "Failed to clone Oh My Zsh repository." >"$TRIM_TEMP_LOGFILE"
+        exit 1
+    }
 
-  log_msg "Oh My Zsh cloned successfully."
+    log_msg "Oh My Zsh cloned successfully."
 
-  # 配置 git safe.directory，解决普通用户访问时的 dubious ownership 错误
-  git config --system --add safe.directory "$ZSH"
-  log_msg "Added $ZSH to git safe.directory"
+    # 配置 git safe.directory，解决普通用户访问时的 dubious ownership 错误
+    git config --system --add safe.directory "$ZSH"
+    log_msg "Added $ZSH to git safe.directory"
 fi
 
 # ── 生成 .zshrc（来自 setup_zshrc，去除交互确认）─────────
 
 if [ -f "$ZSHRC" ] || [ -h "$ZSHRC" ]; then
-  log_msg "$ZSHRC already exists, skipping generation."
+    log_msg "$ZSHRC already exists, skipping generation."
 else
-  log_msg "Generating .zshrc from template ..."
+    log_msg "Generating .zshrc from template ..."
 
-  run_as_uid1000 sh -c \
-    'sed "s|^export ZSH=.*$|export ZSH=\"$1\"|" "$2" > "$3"' \
-    sh "$ZSH" "$ZSH/templates/zshrc.zsh-template" "${ZSHRC}.tmp"
-  run_as_uid1000 mv -f "${ZSHRC}.tmp" "$ZSHRC"
+    run_as_uid1000 sh -c \
+        'sed "s|^export ZSH=.*$|export ZSH=\"$1\"|" "$2" > "$3"' \
+        sh "$ZSH" "$ZSH/templates/zshrc.zsh-template" "${ZSHRC}.tmp"
+    run_as_uid1000 mv -f "${ZSHRC}.tmp" "$ZSHRC"
 
-  log_msg ".zshrc generated at $ZSHRC"
+    log_msg ".zshrc generated at $ZSHRC"
 fi
 
 # ── 配置系统级 zsh 环境 ─────────────────────────────────
@@ -132,36 +132,36 @@ log_msg "Configuring system-level zsh environment ..."
 
 # 按原始脚本方案，仅为 UID 1000 用户切换默认 shell。
 if [ "$(basename -- "${UID1000_SHELL:-}")" != "zsh" ]; then
-  SHELL_BACKUP="${UID1000_HOME}/.shell.pre-oh-my-zsh"
-  if [ ! -e "$SHELL_BACKUP" ]; then
-    run_as_uid1000 sh -c 'printf "%s\\n" "$1" > "$2"' sh "$UID1000_SHELL" "$SHELL_BACKUP"
-    log_msg "Saved original shell for UID 1000 to $SHELL_BACKUP"
-  else
-    log_msg "Original shell backup already exists for UID 1000, keeping it"
-  fi
+    SHELL_BACKUP="${UID1000_HOME}/.shell.pre-oh-my-zsh"
+    if [ ! -e "$SHELL_BACKUP" ]; then
+        run_as_uid1000 sh -c 'printf "%s\\n" "$1" > "$2"' sh "$UID1000_SHELL" "$SHELL_BACKUP"
+        log_msg "Saved original shell for UID 1000 to $SHELL_BACKUP"
+    else
+        log_msg "Original shell backup already exists for UID 1000, keeping it"
+    fi
 
-  # chsh 修改系统账户数据库，回调通常以 root 执行；只有用户目录文件
-  # 操作需要降权。普通用户执行 chsh 可能触发 PAM 密码校验而失败。
-  if [ "$(id -u)" -eq 0 ]; then
-    if ! chsh -s "$ZSH_PATH" "$UID1000_USER"; then
-      echo "Failed to change default shell for UID 1000 to $ZSH_PATH." > "${TRIM_TEMP_LOGFILE}"
-      exit 1
+    # chsh 修改系统账户数据库，回调通常以 root 执行；只有用户目录文件
+    # 操作需要降权。普通用户执行 chsh 可能触发 PAM 密码校验而失败。
+    if [ "$(id -u)" -eq 0 ]; then
+        if ! chsh -s "$ZSH_PATH" "$UID1000_USER"; then
+            echo "Failed to change default shell for UID 1000 to $ZSH_PATH." >"${TRIM_TEMP_LOGFILE}"
+            exit 1
+        fi
+    else
+        if ! run_as_uid1000 chsh -s "$ZSH_PATH"; then
+            echo "Failed to change default shell for UID 1000 to $ZSH_PATH." >"${TRIM_TEMP_LOGFILE}"
+            exit 1
+        fi
     fi
-  else
-    if ! run_as_uid1000 chsh -s "$ZSH_PATH"; then
-      echo "Failed to change default shell for UID 1000 to $ZSH_PATH." > "${TRIM_TEMP_LOGFILE}"
-      exit 1
+    UID1000_SHELL_AFTER="$(getent passwd 1000 2>/dev/null | cut -d: -f7 || true)"
+    if [ "$(basename -- "${UID1000_SHELL_AFTER:-}")" = "zsh" ]; then
+        log_msg "Changed default shell for UID 1000 to $ZSH_PATH"
+    else
+        echo "UID 1000 default shell is still ${UID1000_SHELL_AFTER:-unknown} after chsh." >"${TRIM_TEMP_LOGFILE}"
+        exit 1
     fi
-  fi
-  UID1000_SHELL_AFTER="$(getent passwd 1000 2>/dev/null | cut -d: -f7 || true)"
-  if [ "$(basename -- "${UID1000_SHELL_AFTER:-}")" = "zsh" ]; then
-    log_msg "Changed default shell for UID 1000 to $ZSH_PATH"
-  else
-    echo "UID 1000 default shell is still ${UID1000_SHELL_AFTER:-unknown} after chsh." > "${TRIM_TEMP_LOGFILE}"
-    exit 1
-  fi
 else
-  log_msg "UID 1000 user's default shell is already zsh"
+    log_msg "UID 1000 user's default shell is already zsh"
 fi
 
 # 仅为 UID 1000 用户设置 ZDOTDIR，避免影响其他用户
@@ -170,15 +170,15 @@ ZDOTDIR_BEGIN="# >>> fn-ohmyzsh ZDOTDIR >>>"
 ZDOTDIR_END="# <<< fn-ohmyzsh ZDOTDIR <<<"
 
 if [ ! -f "$USER_ZSHENV" ] || ! grep -Fq "$ZDOTDIR_BEGIN" "$USER_ZSHENV"; then
-  run_as_uid1000 tee -a "$USER_ZSHENV" >/dev/null <<EOF
+    run_as_uid1000 tee -a "$USER_ZSHENV" >/dev/null <<EOF
 
 $ZDOTDIR_BEGIN
 export ZDOTDIR="$ZDOTDIR"
 $ZDOTDIR_END
 EOF
-  log_msg "Added UID 1000 ZDOTDIR configuration to $USER_ZSHENV"
+    log_msg "Added UID 1000 ZDOTDIR configuration to $USER_ZSHENV"
 else
-  log_msg "UID 1000 ZDOTDIR configuration already exists in $USER_ZSHENV"
+    log_msg "UID 1000 ZDOTDIR configuration already exists in $USER_ZSHENV"
 fi
 
 log_msg "System configuration complete."

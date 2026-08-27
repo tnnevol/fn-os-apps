@@ -13,19 +13,19 @@ BASE="/var/apps/fn-memos/target/www"
 URI_NO_QUERY="${REQUEST_URI%%\?*}"
 REL_PATH="/"
 case "$URI_NO_QUERY" in
-  *index.cgi*)
+*index.cgi*)
     REL_PATH="${URI_NO_QUERY#*index.cgi}"
     ;;
 esac
 
 # 缺省 index.html
 if [ -z "$REL_PATH" ] || [ "$REL_PATH" = "/" ]; then
-  REL_PATH="/index.html"
+    REL_PATH="/index.html"
 fi
 
 # 防 .. 越级
 case "$REL_PATH" in
-  *..*) 
+*..*)
     echo "Status: 400 Bad Request"
     echo "Content-Type: text/plain"
     echo ""
@@ -37,22 +37,22 @@ esac
 FILE="${BASE}${REL_PATH}"
 
 if [ ! -f "$FILE" ]; then
-  echo "Status: 404 Not Found"
-  echo "Content-Type: text/plain"
-  echo ""
-  echo "404 Not Found"
-  exit 0
+    echo "Status: 404 Not Found"
+    echo "Content-Type: text/plain"
+    echo ""
+    echo "404 Not Found"
+    exit 0
 fi
 
 # MIME type
 case "${FILE##*.}" in
-  html|htm) mime="text/html; charset=utf-8" ;;
-  css)      mime="text/css; charset=utf-8" ;;
-  js)       mime="application/javascript; charset=utf-8" ;;
-  png)      mime="image/png" ;;
-  jpg|jpeg) mime="image/jpeg" ;;
-  svg)      mime="image/svg+xml" ;;
-  *)        mime="application/octet-stream" ;;
+html | htm) mime="text/html; charset=utf-8" ;;
+css) mime="text/css; charset=utf-8" ;;
+js) mime="application/javascript; charset=utf-8" ;;
+png) mime="image/png" ;;
+jpg | jpeg) mime="image/jpeg" ;;
+svg) mime="image/svg+xml" ;;
+*) mime="application/octet-stream" ;;
 esac
 
 echo "Content-Type: $mime"

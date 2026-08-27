@@ -58,7 +58,7 @@ fail_install() {
     local formatted_message
     formatted_message="$(log_message ERROR "${message}")"
     if [ -n "${TRIM_TEMP_LOGFILE:-}" ]; then
-        printf '%s\n' "${formatted_message}" > "${TRIM_TEMP_LOGFILE}"
+        printf '%s\n' "${formatted_message}" >"${TRIM_TEMP_LOGFILE}"
     fi
     printf '%s\n' "${formatted_message}" >&2
     exit 1
@@ -68,32 +68,32 @@ install_published_dsh_plugins() {
     [ -f "${DSH_PLUGIN_SCRIPT}" ] || return 0
 
     if [ ! -f "${DSH_PROFILE_DIRECTORY}/package.json" ]; then
-        "${DSH_BIN}" --profile web --dump-config >/dev/null 2>&1 \
-            || fail_install "Unable to initialize the dsh web profile"
+        "${DSH_BIN}" --profile web --dump-config >/dev/null 2>&1 ||
+            fail_install "Unable to initialize the dsh web profile"
     fi
 
     DSH_PUBLISHED_PLUGIN_MANIFEST="${DSH_PUBLISHED_PLUGIN_MANIFEST}" \
-    DSH_PROFILE_DIRECTORY="${DSH_PROFILE_DIRECTORY}" \
-    DSH_INSTALL_PUBLISHED=1 \
-    PACKAGE_MANAGER="npm" \
-    PACKAGE_MANAGER_BIN="${NPM_BIN}" \
-    NPM_BIN="${NPM_BIN}" \
-    NPM_REGISTRY="${NPM_REGISTRY}" \
-    "${NODE_BIN}/node" "${DSH_PLUGIN_SCRIPT}" \
-        || fail_install "Unable to install the published DSH plugins"
+        DSH_PROFILE_DIRECTORY="${DSH_PROFILE_DIRECTORY}" \
+        DSH_INSTALL_PUBLISHED=1 \
+        PACKAGE_MANAGER="npm" \
+        PACKAGE_MANAGER_BIN="${NPM_BIN}" \
+        NPM_BIN="${NPM_BIN}" \
+        NPM_REGISTRY="${NPM_REGISTRY}" \
+        "${NODE_BIN}/node" "${DSH_PLUGIN_SCRIPT}" ||
+        fail_install "Unable to install the published DSH plugins"
 }
 
 patch_dsh_attachment_local() {
-    [ -f "${DSH_ATTACHMENT_PATCH_SCRIPT}" ] \
-        || fail_install "The dsh attachment patch script is not available at ${DSH_ATTACHMENT_PATCH_SCRIPT}"
-    [ -n "${TRIM_PKGVAR:-}" ] \
-        || fail_install "TRIM_PKGVAR is not available; cannot patch dsh attachment persistence"
+    [ -f "${DSH_ATTACHMENT_PATCH_SCRIPT}" ] ||
+        fail_install "The dsh attachment patch script is not available at ${DSH_ATTACHMENT_PATCH_SCRIPT}"
+    [ -n "${TRIM_PKGVAR:-}" ] ||
+        fail_install "TRIM_PKGVAR is not available; cannot patch dsh attachment persistence"
 
     DSH_ATTACHMENT_LOCAL_DIR="${DSH_PACKAGE_DIR}/node_modules/@deepseek-ai/dsh-attachment-local" \
-    DSH_ATTACHMENT_LOCAL_VERSION="${DSH_ATTACHMENT_LOCAL_VERSION}" \
-    TRIM_PKGVAR="${TRIM_PKGVAR}" \
-    "${NODE_BIN}/node" "${DSH_ATTACHMENT_PATCH_SCRIPT}" \
-        || fail_install "Unable to patch dsh attachment persistence"
+        DSH_ATTACHMENT_LOCAL_VERSION="${DSH_ATTACHMENT_LOCAL_VERSION}" \
+        TRIM_PKGVAR="${TRIM_PKGVAR}" \
+        "${NODE_BIN}/node" "${DSH_ATTACHMENT_PATCH_SCRIPT}" ||
+        fail_install "Unable to patch dsh attachment persistence"
 }
 
 read_package_version() {
@@ -111,43 +111,43 @@ try {
 read_trimmed_file() {
     local file="$1"
     [ -f "${file}" ] || return 0
-    tr -d '[:space:]' < "${file}"
+    tr -d '[:space:]' <"${file}"
 }
 
 validate_install_configuration() {
-    [ -f "${PROXY_SCRIPT}" ] \
-        || fail_install "DeepSeek Harness gateway proxy is not available at ${PROXY_SCRIPT}"
+    [ -f "${PROXY_SCRIPT}" ] ||
+        fail_install "DeepSeek Harness gateway proxy is not available at ${PROXY_SCRIPT}"
 
-    if { [ "${wizard_host+x}" = "x" ] || [ "${wizard_trusted_hosts+x}" = "x" ]; } \
-        && [ "${wizard_host:-127.0.0.1}" = "127.0.0.1" ] \
-        && [ -z "${wizard_trusted_hosts:-}" ]; then
+    if { [ "${wizard_host+x}" = "x" ] || [ "${wizard_trusted_hosts+x}" = "x" ]; } &&
+        [ "${wizard_host:-127.0.0.1}" = "127.0.0.1" ] &&
+        [ -z "${wizard_trusted_hosts:-}" ]; then
         fail_install "No trusted NAS Web host configured; set the trusted access address to the NAS host or host:port"
     fi
 }
 
 run_node_pty_script() {
     local run_dependency_scripts="$1"
-    [ -f "${DSH_NODE_PTY_SCRIPT}" ] \
-        || fail_install "The FPK node-pty installer is not available at ${DSH_NODE_PTY_SCRIPT}"
+    [ -f "${DSH_NODE_PTY_SCRIPT}" ] ||
+        fail_install "The FPK node-pty installer is not available at ${DSH_NODE_PTY_SCRIPT}"
 
     DSH_HOME="${DSH_HOME}" \
-    DSH_NATIVE_BUNDLE="${APP_DEST}/native/node-pty" \
-    NODE_PTY_VERSIONS_FILE="${APP_DEST}/node-pty-versions" \
-    DSH_PACKAGE_DIR="${DSH_PACKAGE_DIR}" \
-    NPM_GLOBAL_ROOT="${NPM_GLOBAL_ROOT}" \
-    NODE_BIN="${NODE_BIN}" \
-    NPM_BIN="${NPM_BIN}" \
-    PACKAGE_MANAGER="npm" \
-    PACKAGE_MANAGER_BIN="${NPM_BIN}" \
-    DSH_RUN_DEPENDENCY_SCRIPTS="${run_dependency_scripts}" \
-    bash "${DSH_NODE_PTY_SCRIPT}" \
-        || fail_install "Unable to prepare the bundled node-pty dependencies"
+        DSH_NATIVE_BUNDLE="${APP_DEST}/native/node-pty" \
+        NODE_PTY_VERSIONS_FILE="${APP_DEST}/node-pty-versions" \
+        DSH_PACKAGE_DIR="${DSH_PACKAGE_DIR}" \
+        NPM_GLOBAL_ROOT="${NPM_GLOBAL_ROOT}" \
+        NODE_BIN="${NODE_BIN}" \
+        NPM_BIN="${NPM_BIN}" \
+        PACKAGE_MANAGER="npm" \
+        PACKAGE_MANAGER_BIN="${NPM_BIN}" \
+        DSH_RUN_DEPENDENCY_SCRIPTS="${run_dependency_scripts}" \
+        bash "${DSH_NODE_PTY_SCRIPT}" ||
+        fail_install "Unable to prepare the bundled node-pty dependencies"
 }
 
 has_bundled_node_pty() {
-    [ "$(read_trimmed_file "${DSH_VERSION_FILE}")" = "${DSH_VERSION}" ] \
-        && [ -s "${APP_DEST}/node-pty-versions" ] \
-        && [ -d "${APP_DEST}/native/node-pty" ]
+    [ "$(read_trimmed_file "${DSH_VERSION_FILE}")" = "${DSH_VERSION}" ] &&
+        [ -s "${APP_DEST}/node-pty-versions" ] &&
+        [ -d "${APP_DEST}/native/node-pty" ]
 }
 
 main() {
@@ -157,14 +157,14 @@ main() {
 
     select_npm
 
-    mkdir -p "${DSH_HOME}/.npm-cache" "${NPM_CONFIG_PREFIX}" "${HOME}" \
-        || fail_install "Unable to prepare the dsh package manager directories"
+    mkdir -p "${DSH_HOME}/.npm-cache" "${NPM_CONFIG_PREFIX}" "${HOME}" ||
+        fail_install "Unable to prepare the dsh package manager directories"
 
     NPM_REGISTRY="${wizard_npm_registry:-https://registry.npmjs.org/}"
-    mkdir -p "$(dirname -- "${NPM_REGISTRY_FILE}")" \
-        || fail_install "Unable to prepare the npm registry configuration directory"
-    printf '%s\n' "${NPM_REGISTRY}" > "${NPM_REGISTRY_FILE}" \
-        || fail_install "Unable to save the npm registry configuration"
+    mkdir -p "$(dirname -- "${NPM_REGISTRY_FILE}")" ||
+        fail_install "Unable to prepare the npm registry configuration directory"
+    printf '%s\n' "${NPM_REGISTRY}" >"${NPM_REGISTRY_FILE}" ||
+        fail_install "Unable to save the npm registry configuration"
 
     validate_install_configuration
 
@@ -205,8 +205,8 @@ main() {
     fi
 
     LOCAL_VERSION="$(read_package_version "${DSH_PACKAGE_DIR}/package.json")"
-    [ "${LOCAL_VERSION}" = "${DSH_VERSION}" ] \
-        || fail_install "Installed ${DSH_PACKAGE} version ${LOCAL_VERSION:-unknown} does not match required ${DSH_VERSION}"
+    [ "${LOCAL_VERSION}" = "${DSH_VERSION}" ] ||
+        fail_install "Installed ${DSH_PACKAGE} version ${LOCAL_VERSION:-unknown} does not match required ${DSH_VERSION}"
 
     run_node_pty_script "${RUN_NODE_PTY_DEPENDENCY_SCRIPTS}"
     patch_dsh_attachment_local

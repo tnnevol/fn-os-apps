@@ -21,7 +21,7 @@ log() {
 }
 
 user_error() {
-    echo "$1" > "${TRIM_TEMP_LOGFILE}"
+    echo "$1" >"${TRIM_TEMP_LOGFILE}"
     log "USER ERROR: $1"
 }
 
@@ -80,7 +80,7 @@ if [ ! -x "${MYSQLD}" ]; then
     elif [ -d "${SERVER_DIR}/usr/lib/x86_64-linux-gnu/mysql/plugin" ]; then
         mkdir -p "${SERVER_DIR}/usr/lib/mysql"
         ln -sf "${SERVER_DIR}/usr/lib/x86_64-linux-gnu/mysql/plugin" \
-               "${SERVER_DIR}/usr/lib/mysql/plugin"
+            "${SERVER_DIR}/usr/lib/mysql/plugin"
         log "Linked plugin directory"
     fi
 
@@ -99,7 +99,7 @@ fi
 log "Overriding MySQL configuration files ..."
 
 # Override mysql.cnf (entry point with includedir)
-cat > "${CNF_FILE}" << EOF
+cat >"${CNF_FILE}" <<EOF
 # MySQL Server configuration file.
 # Managed by fn-mysql_v8 application
 
@@ -112,7 +112,7 @@ EOF
 log "Configuration written to ${CNF_FILE}"
 
 # Override mysqld.cnf (mysqld server configuration)
-cat > "${MYSQLD_CNF_FILE}" << EOF
+cat >"${MYSQLD_CNF_FILE}" <<EOF
 [mysqld]
 # Network
 bind-address            = 0.0.0.0

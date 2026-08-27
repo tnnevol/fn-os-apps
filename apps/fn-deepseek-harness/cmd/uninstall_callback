@@ -37,7 +37,7 @@ log_error() {
 
 fail_uninstall() {
     if [ -n "${TRIM_TEMP_LOGFILE:-}" ]; then
-        log_message ERROR "$1" > "${TRIM_TEMP_LOGFILE}"
+        log_message ERROR "$1" >"${TRIM_TEMP_LOGFILE}"
     fi
     log_error "$1"
     exit 1
@@ -50,11 +50,11 @@ clear_app_dir() {
 
     [ -n "${dir}" ] || return 0
     case "${dir}" in
-        *"${expected_suffix}")
-            ;;
-        *)
-            fail_uninstall "Refusing to clear unexpected ${kind} directory: ${dir}"
-            ;;
+    *"${expected_suffix}")
+        ;;
+    *)
+        fail_uninstall "Refusing to clear unexpected ${kind} directory: ${dir}"
+        ;;
     esac
 
     if [ -e "${dir}" ] || [ -L "${dir}" ]; then
@@ -64,16 +64,16 @@ clear_app_dir() {
         rm -rf -- \
             "${dir:?}"/* \
             "${dir:?}"/.[!.]* \
-            "${dir:?}"/..?* \
-            || fail_uninstall "Failed to clear ${kind} data: ${dir}"
+            "${dir:?}"/..?* ||
+            fail_uninstall "Failed to clear ${kind} data: ${dir}"
     fi
 }
 
 case "${KEEP_DATA}" in
-keep|yes|true|1)
+keep | yes | true | 1)
     log_info "Keeping DeepSeek Harness data in ${DSH_HOME}."
     ;;
-remove|no|false|0)
+remove | no | false | 0)
     if [ -z "${TRIM_APPDEST_VOL:-}" ]; then
         fail_uninstall "TRIM_APPDEST_VOL is not available; cannot remove DeepSeek Harness data"
     fi
@@ -83,7 +83,7 @@ remove|no|false|0)
         log_info "Uninstalling @deepseek-ai/dsh globally with npm."
         started_at="$(date +%s)"
         if "${NPM_BIN}" uninstall @deepseek-ai/dsh -g; then
-            elapsed="$(( $(date +%s) - started_at ))"
+            elapsed="$(($(date +%s) - started_at))"
             log_info "Global @deepseek-ai/dsh uninstall completed with npm (${elapsed}s)."
         else
             log_error "npm uninstall failed; the application npm directory will be removed."

@@ -32,7 +32,7 @@ log_msg() {
 }
 
 fail_install() {
-    echo "$1" > "$TRIM_TEMP_LOGFILE"
+    echo "$1" >"$TRIM_TEMP_LOGFILE"
     log_msg "ERROR: $1"
     exit 1
 }
@@ -90,8 +90,8 @@ check_git() {
     if ! command -v git &>/dev/null; then
         log_msg "git not found, installing via apt..."
         DEBIAN_FRONTEND=noninteractive apt-get update -qq >/dev/null 2>&1 || true
-        DEBIAN_FRONTEND=noninteractive apt-get install -y -qq git >/dev/null 2>&1 \
-            || fail_install "Failed to install git"
+        DEBIAN_FRONTEND=noninteractive apt-get install -y -qq git >/dev/null 2>&1 ||
+            fail_install "Failed to install git"
     fi
     log_msg "git $(git --version | awk '{print $3}') ready"
 }
@@ -112,9 +112,9 @@ discard_update_lockfile_churn() {
     local dirty_package_dirs=""
     while IFS= read -r path; do
         case "$path" in
-            *package.json)
-                dirty_package_dirs="${dirty_package_dirs}$(dirname "$path")"$'\n'
-                ;;
+        *package.json)
+            dirty_package_dirs="${dirty_package_dirs}$(dirname "$path")"$'\n'
+            ;;
         esac
     done <<EOF
 $dirty_diff
@@ -125,15 +125,15 @@ EOF
     local dirty_count=0
     while IFS= read -r path; do
         case "$path" in
-            *package-lock.json)
-                local lock_dir
-                lock_dir=$(dirname "$path")
-                case $'\n'"$dirty_package_dirs" in
-                    *$'\n'"$lock_dir"$'\n'*) continue ;;
-                esac
-                dirty_locks="${dirty_locks}${path}"$'\n'
-                dirty_count=$((dirty_count + 1))
-                ;;
+        *package-lock.json)
+            local lock_dir
+            lock_dir=$(dirname "$path")
+            case $'\n'"$dirty_package_dirs" in
+            *$'\n'"$lock_dir"$'\n'*) continue ;;
+            esac
+            dirty_locks="${dirty_locks}${path}"$'\n'
+            dirty_count=$((dirty_count + 1))
+            ;;
         esac
     done <<EOF
 $dirty_diff
@@ -198,13 +198,13 @@ clone_repo() {
         log_msg "Cloning hermes-agent ($BRANCH)..."
         log_msg "Trying SSH clone..."
         if GIT_SSH_COMMAND="ssh -o BatchMode=yes -o ConnectTimeout=5" \
-           git clone --depth 1 --branch "$BRANCH" "$REPO_URL_SSH" "$HERMES_REPO" 2>/dev/null; then
+            git clone --depth 1 --branch "$BRANCH" "$REPO_URL_SSH" "$HERMES_REPO" 2>/dev/null; then
             log_msg "Cloned via SSH"
         else
             rm -rf "$HERMES_REPO" 2>/dev/null
             log_msg "SSH failed, trying HTTPS..."
-            git clone --depth 1 --branch "$BRANCH" "$REPO_URL" "$HERMES_REPO" \
-                || fail_install "git clone failed"
+            git clone --depth 1 --branch "$BRANCH" "$REPO_URL" "$HERMES_REPO" ||
+                fail_install "git clone failed"
             log_msg "Cloned via HTTPS"
         fi
     fi
@@ -216,8 +216,8 @@ clone_repo() {
 setup_venv() {
     log_msg "Creating venv with Python 3.11..."
     if [ ! -d "$HERMES_VENV" ]; then
-        uv venv "$HERMES_VENV" --python 3.11 \
-            || fail_install "Failed to create venv"
+        uv venv "$HERMES_VENV" --python 3.11 ||
+            fail_install "Failed to create venv"
     fi
     log_msg "venv ready at $HERMES_VENV"
     export VIRTUAL_ENV="$HERMES_VENV"
@@ -283,16 +283,22 @@ PY
         local _BROKEN_EXTRAS=()
         local _SAFE_SPEC=".[all]"
         if [ -n "$_ALL_EXTRAS_CSV" ] && [ "${#_BROKEN_EXTRAS[@]}" -gt 0 ]; then
-            IFS=',' read -ra _ALL_EXTRAS_ARR <<< "$_ALL_EXTRAS_CSV"
+            IFS=',' read -ra _ALL_EXTRAS_ARR <<<"$_ALL_EXTRAS_CSV"
             local _SAFE_EXTRAS=()
             for _e in "${_ALL_EXTRAS_ARR[@]}"; do
                 local _skip=false
                 for _b in "${_BROKEN_EXTRAS[@]}"; do
-                    [ "$_e" = "$_b" ] && { _skip=true; break; }
+                    [ "$_e" = "$_b" ] && {
+                        _skip=true
+                        break
+                    }
                 done
                 [ "$_skip" = false ] && _SAFE_EXTRAS+=("$_e")
             done
-            _SAFE_SPEC=".[$(IFS=,; echo "${_SAFE_EXTRAS[*]}")]"
+            _SAFE_SPEC=".[$(
+                IFS=,
+                echo "${_SAFE_EXTRAS[*]}"
+            )]"
         fi
 
         if uv pip install -e "$_SAFE_SPEC" >&2; then
@@ -322,8 +328,8 @@ install_node_deps() {
         # Playwright Chromium（带超时，失败不阻塞）
         if [ -f "node_modules/.bin/playwright" ]; then
             log_msg "Installing Playwright Chromium (timeout 300s)..."
-            timeout 300 npx playwright install chromium >&2 \
-                || log_msg "Playwright install skipped or timed out (non-fatal)"
+            timeout 300 npx playwright install chromium >&2 ||
+                log_msg "Playwright install skipped or timed out (non-fatal)"
         fi
     fi
 }
@@ -331,7 +337,7 @@ install_node_deps() {
 setup_cli_wrapper() {
     mkdir -p "$APP_BIN"
     log_msg "Creating hermes CLI wrapper..."
-    cat > "${APP_BIN}/hermes" << HEREDOC
+    cat >"${APP_BIN}/hermes" <<HEREDOC
 #!/bin/bash
 export APP_DIR="${TRIM_APPDEST}/app"
 export HERMES_REPO="${APP_DIR}/hermes-agent"
@@ -358,7 +364,7 @@ setup_bash_profile() {
         return 0
     fi
     log_msg "Creating .bash_profile..."
-    cat > "$profile" << 'PROFILE_EOF'
+    cat >"$profile" <<'PROFILE_EOF'
 export PATH="\${PATH}"
 PROFILE_EOF
     log_msg ".bash_profile created at $profile"
@@ -372,129 +378,129 @@ get_provider_env_vars() {
     WIZARD_PROVIDER_KEY_ENV=""
 
     case "${1:-}" in
-        dashscope)
-            WIZARD_PROVIDER_URL_ENV="DASHSCOPE_BASE_URL"
-            WIZARD_PROVIDER_KEY_ENV="DASHSCOPE_API_KEY"
-            ;;
-        openrouter)
-            WIZARD_PROVIDER_URL_ENV="OPENROUTER_BASE_URL"
-            WIZARD_PROVIDER_KEY_ENV="OPENROUTER_API_KEY"
-            ;;
-        openai|custom)
-            WIZARD_PROVIDER_URL_ENV="OPENAI_BASE_URL"
-            WIZARD_PROVIDER_KEY_ENV="OPENAI_API_KEY"
-            ;;
-        anthropic)
-            WIZARD_PROVIDER_URL_ENV="ANTHROPIC_BASE_URL"
-            WIZARD_PROVIDER_KEY_ENV="ANTHROPIC_API_KEY"
-            ;;
-        gemini)
-            WIZARD_PROVIDER_URL_ENV="GEMINI_BASE_URL"
-            WIZARD_PROVIDER_KEY_ENV="GOOGLE_API_KEY"
-            ;;
-        deepseek)
-            WIZARD_PROVIDER_URL_ENV="DEEPSEEK_BASE_URL"
-            WIZARD_PROVIDER_KEY_ENV="DEEPSEEK_API_KEY"
-            ;;
-        kimi)
-            WIZARD_PROVIDER_URL_ENV="KIMI_BASE_URL"
-            WIZARD_PROVIDER_KEY_ENV="KIMI_API_KEY"
-            ;;
-        kimi_cn)
-            WIZARD_PROVIDER_URL_ENV="KIMI_BASE_URL"
-            WIZARD_PROVIDER_KEY_ENV="KIMI_CN_API_KEY"
-            ;;
-        zai)
-            WIZARD_PROVIDER_URL_ENV="GLM_BASE_URL"
-            WIZARD_PROVIDER_KEY_ENV="GLM_API_KEY"
-            ;;
-        minimax)
-            WIZARD_PROVIDER_URL_ENV="MINIMAX_BASE_URL"
-            WIZARD_PROVIDER_KEY_ENV="MINIMAX_API_KEY"
-            ;;
-        minimax_cn)
-            WIZARD_PROVIDER_URL_ENV="MINIMAX_CN_BASE_URL"
-            WIZARD_PROVIDER_KEY_ENV="MINIMAX_CN_API_KEY"
-            ;;
-        alibaba_coding_plan)
-            WIZARD_PROVIDER_URL_ENV="ALIBABA_CODING_PLAN_BASE_URL"
-            WIZARD_PROVIDER_KEY_ENV="ALIBABA_CODING_PLAN_API_KEY"
-            ;;
-        stepfun)
-            WIZARD_PROVIDER_URL_ENV="STEPFUN_BASE_URL"
-            WIZARD_PROVIDER_KEY_ENV="STEPFUN_API_KEY"
-            ;;
-        xai)
-            WIZARD_PROVIDER_URL_ENV="XAI_BASE_URL"
-            WIZARD_PROVIDER_KEY_ENV="XAI_API_KEY"
-            ;;
-        nvidia)
-            WIZARD_PROVIDER_URL_ENV="NVIDIA_BASE_URL"
-            WIZARD_PROVIDER_KEY_ENV="NVIDIA_API_KEY"
-            ;;
-        ollama_cloud)
-            WIZARD_PROVIDER_URL_ENV="OLLAMA_BASE_URL"
-            WIZARD_PROVIDER_KEY_ENV="OLLAMA_API_KEY"
-            ;;
-        lmstudio)
-            WIZARD_PROVIDER_URL_ENV="LM_BASE_URL"
-            WIZARD_PROVIDER_KEY_ENV="LM_API_KEY"
-            ;;
-        novita)
-            WIZARD_PROVIDER_URL_ENV="NOVITA_BASE_URL"
-            WIZARD_PROVIDER_KEY_ENV="NOVITA_API_KEY"
-            ;;
-        deepinfra)
-            WIZARD_PROVIDER_URL_ENV="DEEPINFRA_BASE_URL"
-            WIZARD_PROVIDER_KEY_ENV="DEEPINFRA_API_KEY"
-            ;;
-        huggingface)
-            WIZARD_PROVIDER_URL_ENV="HF_BASE_URL"
-            WIZARD_PROVIDER_KEY_ENV="HF_TOKEN"
-            ;;
-        gmi)
-            WIZARD_PROVIDER_URL_ENV="GMI_BASE_URL"
-            WIZARD_PROVIDER_KEY_ENV="GMI_API_KEY"
-            ;;
-        arcee)
-            WIZARD_PROVIDER_URL_ENV="ARCEE_BASE_URL"
-            WIZARD_PROVIDER_KEY_ENV="ARCEEAI_API_KEY"
-            ;;
-        xiaomi)
-            WIZARD_PROVIDER_URL_ENV="XIAOMI_BASE_URL"
-            WIZARD_PROVIDER_KEY_ENV="XIAOMI_API_KEY"
-            ;;
-        tokenhub)
-            WIZARD_PROVIDER_URL_ENV="TOKENHUB_BASE_URL"
-            WIZARD_PROVIDER_KEY_ENV="TOKENHUB_API_KEY"
-            ;;
-        kilocode)
-            WIZARD_PROVIDER_URL_ENV="KILOCODE_BASE_URL"
-            WIZARD_PROVIDER_KEY_ENV="KILOCODE_API_KEY"
-            ;;
-        opencode_zen)
-            WIZARD_PROVIDER_URL_ENV="OPENCODE_ZEN_BASE_URL"
-            WIZARD_PROVIDER_KEY_ENV="OPENCODE_ZEN_API_KEY"
-            ;;
-        opencode_go)
-            WIZARD_PROVIDER_URL_ENV="OPENCODE_GO_BASE_URL"
-            WIZARD_PROVIDER_KEY_ENV="OPENCODE_GO_API_KEY"
-            ;;
-        fireworks)
-            WIZARD_PROVIDER_KEY_ENV="FIREWORKS_API_KEY"
-            ;;
-        ai_gateway)
-            WIZARD_PROVIDER_URL_ENV="AI_GATEWAY_BASE_URL"
-            WIZARD_PROVIDER_KEY_ENV="AI_GATEWAY_API_KEY"
-            ;;
-        azure_foundry)
-            WIZARD_PROVIDER_URL_ENV="AZURE_FOUNDRY_BASE_URL"
-            WIZARD_PROVIDER_KEY_ENV="AZURE_FOUNDRY_API_KEY"
-            ;;
-        actual)
-            WIZARD_PROVIDER_URL_ENV="ACTUAL_BASE_URL"
-            WIZARD_PROVIDER_KEY_ENV="ACTUAL_API_KEY"
-            ;;
+    dashscope)
+        WIZARD_PROVIDER_URL_ENV="DASHSCOPE_BASE_URL"
+        WIZARD_PROVIDER_KEY_ENV="DASHSCOPE_API_KEY"
+        ;;
+    openrouter)
+        WIZARD_PROVIDER_URL_ENV="OPENROUTER_BASE_URL"
+        WIZARD_PROVIDER_KEY_ENV="OPENROUTER_API_KEY"
+        ;;
+    openai | custom)
+        WIZARD_PROVIDER_URL_ENV="OPENAI_BASE_URL"
+        WIZARD_PROVIDER_KEY_ENV="OPENAI_API_KEY"
+        ;;
+    anthropic)
+        WIZARD_PROVIDER_URL_ENV="ANTHROPIC_BASE_URL"
+        WIZARD_PROVIDER_KEY_ENV="ANTHROPIC_API_KEY"
+        ;;
+    gemini)
+        WIZARD_PROVIDER_URL_ENV="GEMINI_BASE_URL"
+        WIZARD_PROVIDER_KEY_ENV="GOOGLE_API_KEY"
+        ;;
+    deepseek)
+        WIZARD_PROVIDER_URL_ENV="DEEPSEEK_BASE_URL"
+        WIZARD_PROVIDER_KEY_ENV="DEEPSEEK_API_KEY"
+        ;;
+    kimi)
+        WIZARD_PROVIDER_URL_ENV="KIMI_BASE_URL"
+        WIZARD_PROVIDER_KEY_ENV="KIMI_API_KEY"
+        ;;
+    kimi_cn)
+        WIZARD_PROVIDER_URL_ENV="KIMI_BASE_URL"
+        WIZARD_PROVIDER_KEY_ENV="KIMI_CN_API_KEY"
+        ;;
+    zai)
+        WIZARD_PROVIDER_URL_ENV="GLM_BASE_URL"
+        WIZARD_PROVIDER_KEY_ENV="GLM_API_KEY"
+        ;;
+    minimax)
+        WIZARD_PROVIDER_URL_ENV="MINIMAX_BASE_URL"
+        WIZARD_PROVIDER_KEY_ENV="MINIMAX_API_KEY"
+        ;;
+    minimax_cn)
+        WIZARD_PROVIDER_URL_ENV="MINIMAX_CN_BASE_URL"
+        WIZARD_PROVIDER_KEY_ENV="MINIMAX_CN_API_KEY"
+        ;;
+    alibaba_coding_plan)
+        WIZARD_PROVIDER_URL_ENV="ALIBABA_CODING_PLAN_BASE_URL"
+        WIZARD_PROVIDER_KEY_ENV="ALIBABA_CODING_PLAN_API_KEY"
+        ;;
+    stepfun)
+        WIZARD_PROVIDER_URL_ENV="STEPFUN_BASE_URL"
+        WIZARD_PROVIDER_KEY_ENV="STEPFUN_API_KEY"
+        ;;
+    xai)
+        WIZARD_PROVIDER_URL_ENV="XAI_BASE_URL"
+        WIZARD_PROVIDER_KEY_ENV="XAI_API_KEY"
+        ;;
+    nvidia)
+        WIZARD_PROVIDER_URL_ENV="NVIDIA_BASE_URL"
+        WIZARD_PROVIDER_KEY_ENV="NVIDIA_API_KEY"
+        ;;
+    ollama_cloud)
+        WIZARD_PROVIDER_URL_ENV="OLLAMA_BASE_URL"
+        WIZARD_PROVIDER_KEY_ENV="OLLAMA_API_KEY"
+        ;;
+    lmstudio)
+        WIZARD_PROVIDER_URL_ENV="LM_BASE_URL"
+        WIZARD_PROVIDER_KEY_ENV="LM_API_KEY"
+        ;;
+    novita)
+        WIZARD_PROVIDER_URL_ENV="NOVITA_BASE_URL"
+        WIZARD_PROVIDER_KEY_ENV="NOVITA_API_KEY"
+        ;;
+    deepinfra)
+        WIZARD_PROVIDER_URL_ENV="DEEPINFRA_BASE_URL"
+        WIZARD_PROVIDER_KEY_ENV="DEEPINFRA_API_KEY"
+        ;;
+    huggingface)
+        WIZARD_PROVIDER_URL_ENV="HF_BASE_URL"
+        WIZARD_PROVIDER_KEY_ENV="HF_TOKEN"
+        ;;
+    gmi)
+        WIZARD_PROVIDER_URL_ENV="GMI_BASE_URL"
+        WIZARD_PROVIDER_KEY_ENV="GMI_API_KEY"
+        ;;
+    arcee)
+        WIZARD_PROVIDER_URL_ENV="ARCEE_BASE_URL"
+        WIZARD_PROVIDER_KEY_ENV="ARCEEAI_API_KEY"
+        ;;
+    xiaomi)
+        WIZARD_PROVIDER_URL_ENV="XIAOMI_BASE_URL"
+        WIZARD_PROVIDER_KEY_ENV="XIAOMI_API_KEY"
+        ;;
+    tokenhub)
+        WIZARD_PROVIDER_URL_ENV="TOKENHUB_BASE_URL"
+        WIZARD_PROVIDER_KEY_ENV="TOKENHUB_API_KEY"
+        ;;
+    kilocode)
+        WIZARD_PROVIDER_URL_ENV="KILOCODE_BASE_URL"
+        WIZARD_PROVIDER_KEY_ENV="KILOCODE_API_KEY"
+        ;;
+    opencode_zen)
+        WIZARD_PROVIDER_URL_ENV="OPENCODE_ZEN_BASE_URL"
+        WIZARD_PROVIDER_KEY_ENV="OPENCODE_ZEN_API_KEY"
+        ;;
+    opencode_go)
+        WIZARD_PROVIDER_URL_ENV="OPENCODE_GO_BASE_URL"
+        WIZARD_PROVIDER_KEY_ENV="OPENCODE_GO_API_KEY"
+        ;;
+    fireworks)
+        WIZARD_PROVIDER_KEY_ENV="FIREWORKS_API_KEY"
+        ;;
+    ai_gateway)
+        WIZARD_PROVIDER_URL_ENV="AI_GATEWAY_BASE_URL"
+        WIZARD_PROVIDER_KEY_ENV="AI_GATEWAY_API_KEY"
+        ;;
+    azure_foundry)
+        WIZARD_PROVIDER_URL_ENV="AZURE_FOUNDRY_BASE_URL"
+        WIZARD_PROVIDER_KEY_ENV="AZURE_FOUNDRY_API_KEY"
+        ;;
+    actual)
+        WIZARD_PROVIDER_URL_ENV="ACTUAL_BASE_URL"
+        WIZARD_PROVIDER_KEY_ENV="ACTUAL_API_KEY"
+        ;;
     esac
 }
 
@@ -508,8 +514,11 @@ set_env_value() {
 
     [ -n "$env_name" ] || return 0
     case "$env_name" in
-        [A-Z_][A-Z0-9_]*) ;;
-        *) log_msg "Skipping invalid environment variable name: $env_name"; return 1 ;;
+    [A-Z_][A-Z0-9_]*) ;;
+    *)
+        log_msg "Skipping invalid environment variable name: $env_name"
+        return 1
+        ;;
     esac
 
     temp_file=$(mktemp "${env_file}.tmp.XXXXXX")
@@ -527,7 +536,7 @@ set_env_value() {
         END {
             if (!found) print ENVIRON["ENV_NAME"] "=" ENVIRON["ENV_VALUE"]
         }
-    ' "$env_file" > "$temp_file"; then
+    ' "$env_file" >"$temp_file"; then
         rm -f "$temp_file"
         return 1
     fi
@@ -573,7 +582,7 @@ setup_hermes_home() {
 
     # 创建 SOUL.md（全局人格文件）
     if [ ! -f "${HERMES_HOME}/SOUL.md" ]; then
-        cat > "${HERMES_HOME}/SOUL.md" << 'SOUL_EOF'
+        cat >"${HERMES_HOME}/SOUL.md" <<'SOUL_EOF'
 You are Hermes Agent, an intelligent AI assistant created by Nous Research. You are helpful, knowledgeable, and direct. You assist users with a wide range of tasks including answering questions, writing and editing code, analyzing information, creative work, and executing actions via your tools. You communicate clearly, admit uncertainty when appropriate, and prioritize being genuinely useful over being verbose unless otherwise directed below. Be targeted and efficient in your exploration and investigations.
 SOUL_EOF
         log_msg "Created SOUL.md (edit to customize personality)"

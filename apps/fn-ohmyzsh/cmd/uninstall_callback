@@ -10,14 +10,14 @@
 # 与安装阶段保持一致，将 ZDOTDIR 指向系统 UID 1000 用户的 home 目录。
 UID1000_ENTRY="$(getent passwd 1000 2>/dev/null || true)"
 if [ -n "$UID1000_ENTRY" ]; then
-  IFS=: read -r UID1000_USER _ UID1000_UID UID1000_GID _ UID1000_HOME UID1000_SHELL <<EOF
+    IFS=: read -r UID1000_USER _ UID1000_UID UID1000_GID _ UID1000_HOME UID1000_SHELL <<EOF
 $UID1000_ENTRY
 EOF
 fi
 if [ -n "$UID1000_HOME" ] && [ -d "$UID1000_HOME" ]; then
-  ZDOTDIR="$UID1000_HOME"
+    ZDOTDIR="$UID1000_HOME"
 else
-  ZDOTDIR=""
+    ZDOTDIR=""
 fi
 ZSH="${TRIM_PKGHOME}/.oh-my-zsh"
 ZSHRC="${ZDOTDIR:+${ZDOTDIR}/.zshrc}"
@@ -27,31 +27,31 @@ USER_ZSHENV="${ZDOTDIR:+${ZDOTDIR}/.zshenv}"
 # ── 工具函数 ──────────────────────────────────────────────
 
 log_msg() {
-  echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >&2
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >&2
 }
 
 # cmd 阶段通常以 root 执行。用户目录中的备份、配置和应用数据由对应用户清理。
 run_as_user() {
-  local username="$1"
-  local user_home="$2"
-  shift 2
+    local username="$1"
+    local user_home="$2"
+    shift 2
 
-  if [ "$(id -u)" -eq "$(id -u "$username")" ]; then
-    HOME="$user_home" USER="$username" LOGNAME="$username" "$@"
-  else
-    if ! command -v runuser >/dev/null 2>&1; then
-      log_msg "runuser is required to run commands as $username"
-      return 1
+    if [ "$(id -u)" -eq "$(id -u "$username")" ]; then
+        HOME="$user_home" USER="$username" LOGNAME="$username" "$@"
+    else
+        if ! command -v runuser >/dev/null 2>&1; then
+            log_msg "runuser is required to run commands as $username"
+            return 1
+        fi
+        runuser -u "$username" -- env \
+            HOME="$user_home" USER="$username" LOGNAME="$username" \
+            ZDOTDIR="$user_home" "$@"
     fi
-    runuser -u "$username" -- env \
-      HOME="$user_home" USER="$username" LOGNAME="$username" \
-      ZDOTDIR="$user_home" "$@"
-  fi
 }
 
 run_as_uid1000() {
-  [ -n "$UID1000_USER" ] || return 1
-  run_as_user "$UID1000_USER" "$UID1000_HOME" "$@"
+    [ -n "$UID1000_USER" ] || return 1
+    run_as_user "$UID1000_USER" "$UID1000_HOME" "$@"
 }
 
 # ── 清理系统级 zsh 配置 ─────────────────────────────────
@@ -61,47 +61,47 @@ log_msg "Cleaning up system-level zsh configuration ..."
 # 按原始脚本方案，仅恢复 UID 1000 用户安装前的默认 shell。
 SHELL_BACKUP="${UID1000_HOME:+${UID1000_HOME}/.shell.pre-oh-my-zsh}"
 if [ -n "$SHELL_BACKUP" ] && [ -f "$SHELL_BACKUP" ]; then
-  old_shell=""
-  IFS= read -r old_shell < "$SHELL_BACKUP" || true
+    old_shell=""
+    IFS= read -r old_shell <"$SHELL_BACKUP" || true
 
-  if [ -n "$old_shell" ] && [ "$UID1000_SHELL" != "$old_shell" ]; then
-    if [ "$(id -u)" -eq 0 ]; then
-      chsh -s "$old_shell" "$UID1000_USER"
+    if [ -n "$old_shell" ] && [ "$UID1000_SHELL" != "$old_shell" ]; then
+        if [ "$(id -u)" -eq 0 ]; then
+            chsh -s "$old_shell" "$UID1000_USER"
+        else
+            run_as_uid1000 chsh -s "$old_shell"
+        fi
+        if [ "$?" -eq 0 ]; then
+            run_as_uid1000 rm -f "$SHELL_BACKUP" || true
+            log_msg "Restored default shell for UID 1000 to $old_shell"
+        else
+            log_msg "Failed to restore default shell for UID 1000 to $old_shell"
+        fi
+    elif [ -n "$old_shell" ]; then
+        run_as_uid1000 rm -f "$SHELL_BACKUP" || true
+        log_msg "UID 1000 user's shell is already $old_shell; removed backup"
     else
-      run_as_uid1000 chsh -s "$old_shell"
+        log_msg "Invalid shell backup for UID 1000: $SHELL_BACKUP"
     fi
-    if [ "$?" -eq 0 ]; then
-      run_as_uid1000 rm -f "$SHELL_BACKUP" || true
-      log_msg "Restored default shell for UID 1000 to $old_shell"
-    else
-      log_msg "Failed to restore default shell for UID 1000 to $old_shell"
-    fi
-  elif [ -n "$old_shell" ]; then
-    run_as_uid1000 rm -f "$SHELL_BACKUP" || true
-    log_msg "UID 1000 user's shell is already $old_shell; removed backup"
-  else
-    log_msg "Invalid shell backup for UID 1000: $SHELL_BACKUP"
-  fi
 fi
 
 # 移除 UID 1000 用户 .zshenv 中由本应用写入的配置块
 ZDOTDIR_BEGIN="# >>> fn-ohmyzsh ZDOTDIR >>>"
 ZDOTDIR_END="# <<< fn-ohmyzsh ZDOTDIR <<<"
 if [ -n "$USER_ZSHENV" ] && [ -f "$USER_ZSHENV" ] && grep -Fq "$ZDOTDIR_BEGIN" "$USER_ZSHENV"; then
-  if run_as_uid1000 sed -i "/^${ZDOTDIR_BEGIN}$/,/^${ZDOTDIR_END}$/d" "$USER_ZSHENV"; then
-    log_msg "Removed UID 1000 ZDOTDIR configuration from $USER_ZSHENV"
-  else
-    log_msg "Failed to remove UID 1000 ZDOTDIR configuration from $USER_ZSHENV"
-  fi
+    if run_as_uid1000 sed -i "/^${ZDOTDIR_BEGIN}$/,/^${ZDOTDIR_END}$/d" "$USER_ZSHENV"; then
+        log_msg "Removed UID 1000 ZDOTDIR configuration from $USER_ZSHENV"
+    else
+        log_msg "Failed to remove UID 1000 ZDOTDIR configuration from $USER_ZSHENV"
+    fi
 fi
 
 # 清理旧版本写入的全局 ZDOTDIR，但保留其他 zshenv 内容。
 LEGACY_ZSHENV="/etc/zsh/zshenv"
 LEGACY_ZDOTDIR="${TRIM_APPDEST_VOL}/@appshare/fn-ohmyzsh"
 if [ -f "$LEGACY_ZSHENV" ] && grep -Fq "export ZDOTDIR=\"${LEGACY_ZDOTDIR}\"" "$LEGACY_ZSHENV"; then
-  sed -i "\|^export ZDOTDIR=\"${LEGACY_ZDOTDIR}\"$|d" "$LEGACY_ZSHENV"
-  [ -s "$LEGACY_ZSHENV" ] || rm -f "$LEGACY_ZSHENV"
-  log_msg "Removed legacy global ZDOTDIR configuration"
+    sed -i "\|^export ZDOTDIR=\"${LEGACY_ZDOTDIR}\"$|d" "$LEGACY_ZSHENV"
+    [ -s "$LEGACY_ZSHENV" ] || rm -f "$LEGACY_ZSHENV"
+    log_msg "Removed legacy global ZDOTDIR configuration"
 fi
 
 log_msg "System cleanup complete."
@@ -109,45 +109,45 @@ log_msg "System cleanup complete."
 # ── 根据用户选择决定是否清理数据 ─────────────────────────
 
 if [ "$wizard_action" = "delete" ]; then
-  log_msg "User chose to delete all data."
+    log_msg "User chose to delete all data."
 
-  # 删除 Oh My Zsh 仓库
-  if [ -d "$ZSH" ]; then
-    log_msg "Removing $ZSH ..."
-    if run_as_uid1000 rm -rf "$ZSH"; then
-      log_msg "Oh My Zsh directory removed."
+    # 删除 Oh My Zsh 仓库
+    if [ -d "$ZSH" ]; then
+        log_msg "Removing $ZSH ..."
+        if run_as_uid1000 rm -rf "$ZSH"; then
+            log_msg "Oh My Zsh directory removed."
+        else
+            log_msg "Failed to remove Oh My Zsh directory."
+        fi
     else
-      log_msg "Failed to remove Oh My Zsh directory."
+        log_msg "Oh My Zsh directory not found at $ZSH, skipping."
     fi
-  else
-    log_msg "Oh My Zsh directory not found at $ZSH, skipping."
-  fi
 
-  # 删除 .zshrc
-  if [ -n "$ZSHRC" ] && [ -e "$ZSHRC" ]; then
-    log_msg "Removing $ZSHRC ..."
-    if run_as_uid1000 rm -f "$ZSHRC"; then
-      log_msg ".zshrc removed."
-    else
-      log_msg "Failed to remove .zshrc."
+    # 删除 .zshrc
+    if [ -n "$ZSHRC" ] && [ -e "$ZSHRC" ]; then
+        log_msg "Removing $ZSHRC ..."
+        if run_as_uid1000 rm -f "$ZSHRC"; then
+            log_msg ".zshrc removed."
+        else
+            log_msg "Failed to remove .zshrc."
+        fi
     fi
-  fi
 
-  # 删除备份文件
-  if [ -n "$ZSHRC_BACKUP" ] && [ -e "$ZSHRC_BACKUP" ]; then
-    log_msg "Removing backup $ZSHRC_BACKUP ..."
-    if run_as_uid1000 rm -f "$ZSHRC_BACKUP"; then
-      log_msg "Backup file removed."
-    else
-      log_msg "Failed to remove backup file."
+    # 删除备份文件
+    if [ -n "$ZSHRC_BACKUP" ] && [ -e "$ZSHRC_BACKUP" ]; then
+        log_msg "Removing backup $ZSHRC_BACKUP ..."
+        if run_as_uid1000 rm -f "$ZSHRC_BACKUP"; then
+            log_msg "Backup file removed."
+        else
+            log_msg "Failed to remove backup file."
+        fi
     fi
-  fi
 
-  log_msg "All data deleted."
+    log_msg "All data deleted."
 else
-  log_msg "User chose to keep data. Data preserved at:"
-  log_msg "  Oh My Zsh: $ZSH"
-  log_msg "  Config:    $ZSHRC"
+    log_msg "User chose to keep data. Data preserved at:"
+    log_msg "  Oh My Zsh: $ZSH"
+    log_msg "  Config:    $ZSHRC"
 fi
 
 log_msg "Uninstall complete."
