@@ -1,5 +1,7 @@
-import type { IncomingMessage } from 'node:http'
+import type { ClientRequest, IncomingMessage } from 'node:http'
 import { HOP_BY_HOP_HEADERS } from '../constants.js'
+
+const REMOVED_BROWSER_HEADERS = ['origin', 'sec-fetch-site'] as const
 
 export interface LoopbackContext {
   host: string
@@ -18,4 +20,18 @@ export function copyRequestHeaders(req: IncomingMessage, ctx: LoopbackContext): 
   for (const header of HOP_BY_HOP_HEADERS) delete headers[header]
   headers['accept-encoding'] = 'identity'
   return applyLoopbackHeaders(headers, ctx)
+}
+
+/** Apply the sanitized request headers to a request already initialized by http-proxy. */
+export function applyProxyRequestHeaders(proxyReq: ClientRequest, req: IncomingMessage, ctx: LoopbackContext): void {
+  const headers = copyRequestHeaders(req, ctx)
+  for (const header of REMOVED_BROWSER_HEADERS) proxyReq.removeHeader(header)
+  for (const [name, value] of Object.entries(headers)) {
+    if (value === undefined) continue
+    if (Array.isArray(value)) {
+      proxyReq.setHeader(name, value)
+    } else {
+      proxyReq.setHeader(name, value)
+    }
+  }
 }

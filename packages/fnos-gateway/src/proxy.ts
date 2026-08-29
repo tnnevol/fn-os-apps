@@ -2,7 +2,7 @@ import { createProxyMiddleware } from 'http-proxy-middleware'
 import type { RequestHandler } from 'http-proxy-middleware'
 import type { ServerResponse, IncomingMessage } from 'node:http'
 import type { GatewayOptions } from './types.js'
-import { copyRequestHeaders } from './middleware/request-headers.js'
+import { applyProxyRequestHeaders } from './middleware/request-headers.js'
 import { copyResponseHeaders } from './middleware/response-headers.js'
 import { rewriteHtml, rewriteCss, rewriteJavaScript } from './middleware/content-rewrite.js'
 import { gatewayBridgeScript } from './bridge-script.js'
@@ -35,17 +35,8 @@ export function createProxyHandler(options: GatewayOptions): RequestHandler {
     changeOrigin: false,
     selfHandleResponse: true,
     on: {
-      proxyReq: (proxyReq, req) => {
-        const headers = copyRequestHeaders(req, { host: upstreamHost, port: upstreamPort })
-        for (const [name, value] of Object.entries(headers)) {
-          if (value === undefined) continue
-          if (Array.isArray(value)) {
-            for (const item of value) proxyReq.appendHeader(name, item)
-          } else {
-            proxyReq.setHeader(name, value)
-          }
-        }
-      },
+      proxyReq: (proxyReq, req) => applyProxyRequestHeaders(proxyReq, req, { host: upstreamHost, port: upstreamPort }),
+      proxyReqWs: (proxyReq, req) => applyProxyRequestHeaders(proxyReq, req, { host: upstreamHost, port: upstreamPort }),
       proxyRes: (proxyRes, req, res) => {
         const contentType = String(proxyRes.headers['content-type'] || '').toLowerCase()
         const eventStream = contentType.startsWith('text/event-stream')
