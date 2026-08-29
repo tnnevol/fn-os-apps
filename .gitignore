@@ -46,3 +46,5 @@ apps/fn-deepseek-harness/app/native/node-pty/
 docs/.vitepress/cache/
 docs/.vitepress/.temp/
 docs/.vitepress/dist/
+
+.pnpm-store

@@ -1,0 +1,49 @@
+{
+  "name": "@tnnevol/fnos-gateway",
+  "displayName": "fnOS Gateway",
+  "description": "Unified gateway proxy for fnOS apps. Bundles connect and http-proxy-middleware into a single ESM file for FPK distribution.",
+  "version": "0.1.0",
+  "author": "tnnevol",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tnnevol/fn-os-apps.git",
+    "directory": "packages/fnos-gateway"
+  },
+  "homepage": "https://github.com/tnnevol/fn-os-apps/tree/main/packages/fnos-gateway",
+  "publishConfig": {
+    "access": "public"
+  },
+  "type": "module",
+  "license": "AGPL-3.0-only",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    }
+  },
+  "files": [
+    "lib",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsdown",
+    "build:app": "tsdown --config tsdown.app.config.ts",
+    "typecheck": "tsc -p tsconfig.json",
+    "check": "pnpm run typecheck && pnpm run build"
+  },
+  "dependencies": {
+    "connect": "^3.7.0",
+    "http-proxy-middleware": "^3.0.5"
+  },
+  "devDependencies": {
+    "@types/connect": "^3.4.38",
+    "@types/node": "^22.20.0",
+    "tsdown": "^0.22.2",
+    "typescript": "^5.9.3"
+  }
+}
