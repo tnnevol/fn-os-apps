@@ -20,28 +20,54 @@
 
   var connectionId = "@deepseek-ai/dsh-client-connection";
   function wrapLoader(loader) {
-    if (!loader || typeof loader.load !== "function" || loader.load.__fnosBridge) return loader;
+    if (!loader || typeof loader.load !== "function") return loader;
     var load = loader.load;
-    var bridged = function (handoff) {
-      if (handoff && handoff.id === connectionId && typeof handoff.factory === "function") {
-        var factory = handoff.factory;
-        handoff = Object.assign({}, handoff, { factory: function (require) {
-          var exports = factory(require);
-          if (exports && typeof exports.apply === "function") {
-            var apply = exports.apply;
-            exports.apply = function (ctx, value) {
-              var result = apply.call(this, ctx, value);
-              try { var connection = ctx.get("connection", false); Object.defineProperty(connection, "isLoopback", { configurable: true, value: true }); } catch (_) {}
-              return result;
-            };
-          }
-          return exports;
-        }});
-      }
-      return load.call(this, handoff);
-    };
-    Object.defineProperty(bridged, "__fnosBridge", { value: true });
-    try { loader.load = bridged; } catch (_) {}
+    if (load.__fnosBridge !== true) {
+      var bridged = function (handoff) {
+        if (handoff && handoff.id === connectionId && typeof handoff.factory === "function") {
+          var factory = handoff.factory;
+          handoff = Object.assign({}, handoff, { factory: function (require) {
+            var exports = factory(require);
+            if (exports && typeof exports.apply === "function") {
+              var apply = exports.apply;
+              exports.apply = function (ctx, value) {
+                var result = apply.call(this, ctx, value);
+                var connection;
+                try {
+                  connection = ctx.get("connection", false);
+                  Object.defineProperty(connection, "isLoopback", {
+                    configurable: true,
+                    enumerable: true,
+                    writable: true,
+                    value: true
+                  });
+                } catch (_) {
+                  if (connection) try { connection.isLoopback = true; } catch (_) {}
+                }
+                return result;
+              };
+            }
+            return exports;
+          }});
+        }
+        return load.call(this, handoff);
+      };
+      try { Object.defineProperty(bridged, "__fnosBridge", { value: true }); } catch (_) {}
+      try { loader.load = bridged; } catch (_) {}
+    }
+    var create = loader.create;
+    if (typeof create === "function" && create.__fnosBridge !== true) {
+      var bridgedCreate = function () {
+        var result = create.apply(this, arguments);
+        // ClientModuleSystem replaces the facade load method when create()
+        // switches from the pending queue to the live registry. Re-wrap that
+        // method before immediate bundles are prefetched and registered.
+        wrapLoader(this);
+        return result;
+      };
+      try { Object.defineProperty(bridgedCreate, "__fnosBridge", { value: true }); } catch (_) {}
+      try { loader.create = bridgedCreate; } catch (_) {}
+    }
     return loader;
   }
   var moduleLoader;

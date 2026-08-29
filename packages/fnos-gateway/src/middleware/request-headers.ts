@@ -1,7 +1,7 @@
 import type { ClientRequest, IncomingMessage } from 'node:http'
 import { HOP_BY_HOP_HEADERS } from '../constants.js'
 
-const REMOVED_BROWSER_HEADERS = ['origin', 'sec-fetch-site'] as const
+const LOOPBACK_ORIGIN_SCHEMES = new Set(['http:', 'https:'])
 
 export interface LoopbackContext {
   host: string
@@ -10,8 +10,17 @@ export interface LoopbackContext {
 
 export function applyLoopbackHeaders(headers: Record<string, string | string[] | undefined>, ctx: LoopbackContext): Record<string, string | string[] | undefined> {
   headers.host = `${ctx.host}:${ctx.port}`
-  delete headers.origin
-  delete headers['sec-fetch-site']
+  // DSH and plugin routes see the loopback authority on the second hop. Keep
+  // the browser's same-site marker, but translate a normal Origin to the same
+  // authority so strict same-origin plugin endpoints remain valid. Opaque or
+  // malformed origins are intentionally retained and rejected by DSH.
+  const origin = headers.origin
+  if (typeof origin === 'string') {
+    try {
+      const parsed = new URL(origin)
+      if (LOOPBACK_ORIGIN_SCHEMES.has(parsed.protocol)) headers.origin = `http://${headers.host}`
+    } catch {}
+  }
   return headers
 }
 
@@ -25,7 +34,8 @@ export function copyRequestHeaders(req: IncomingMessage, ctx: LoopbackContext): 
 /** Apply the sanitized request headers to a request already initialized by http-proxy. */
 export function applyProxyRequestHeaders(proxyReq: ClientRequest, req: IncomingMessage, ctx: LoopbackContext): void {
   const headers = copyRequestHeaders(req, ctx)
-  for (const header of REMOVED_BROWSER_HEADERS) proxyReq.removeHeader(header)
+  proxyReq.removeHeader('origin')
+  proxyReq.removeHeader('sec-fetch-site')
   for (const [name, value] of Object.entries(headers)) {
     if (value === undefined) continue
     if (Array.isArray(value)) {

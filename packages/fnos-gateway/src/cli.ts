@@ -43,9 +43,23 @@ if (webProcess !== undefined) server.once('listening', () => {
   void webProcess.start().then(snapshot => console.log(`[fnos-gateway] DSH Web state: ${snapshot.state}`))
 })
 
-const shutdown = (): void => {
-  void close().then(() => process.exit(0))
+let shuttingDown = false
+const shutdown = (exitCode = 0): void => {
+  if (shuttingDown) return
+  shuttingDown = true
+  void close().catch(error => {
+    console.error('[fnos-gateway] shutdown failed', error)
+    exitCode = 1
+  }).finally(() => process.exit(exitCode))
 }
 
-process.on('SIGTERM', shutdown)
-process.on('SIGINT', shutdown)
+process.once('SIGTERM', () => shutdown())
+process.once('SIGINT', () => shutdown())
+process.once('uncaughtException', error => {
+  console.error('[fnos-gateway] uncaught exception', error)
+  shutdown(1)
+})
+process.once('unhandledRejection', reason => {
+  console.error('[fnos-gateway] unhandled rejection', reason)
+  shutdown(1)
+})

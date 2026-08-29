@@ -1,8 +1,9 @@
 import { createServer, type Server } from 'node:http'
+import type { Socket } from 'node:net'
 import { unlinkSync } from 'node:fs'
 import connect from 'connect'
 import type { GatewayOptions, GatewayServer } from './types.js'
-import { pathRewriteMiddleware } from './middleware/path-rewrite.js'
+import { pathRewriteMiddleware, rewritePath } from './middleware/path-rewrite.js'
 import { createProxyHandler } from './proxy.js'
 import { PATH_ALLOWLIST_EVENTS_PATH } from './path-allowlist.js'
 import { WEB_CONTROL_START_PATH, WEB_CONTROL_STATUS_PATH } from './web-process.js'
@@ -51,12 +52,24 @@ export function createGateway(options: GatewayOptions): GatewayServer {
   app.use(pathRewriteMiddleware(gatewayPrefix))
   app.use(webControl(options))
   app.use(pathAllowlistEvents(options))
-  app.use(createProxyHandler(options))
+  const proxy = createProxyHandler(options)
+  app.use(proxy)
 
   const openSockets = new Set<import('node:net').Socket>()
   let stopping = false
 
   const server: Server = createServer(app)
+  // HTTP middleware is not invoked for an upgrade request. Attach the HPM
+  // upgrade handler explicitly so the first WebSocket connection works even
+  // before the browser has made a normal proxied request. Apply the same
+  // prefix rewrite used by the HTTP middleware because upgrade requests skip
+  // the connect middleware chain entirely.
+  server.on('upgrade', (req, socket, head) => {
+    req.url = rewritePath(req.url, gatewayPrefix)
+    // Node types the HTTP upgrade socket as Duplex, while HPM's public type
+    // uses net.Socket; the runtime object supplied by Node is a net socket.
+    proxy.upgrade(req, socket as Socket, head)
+  })
   server.on('connection', (socket) => {
     openSockets.add(socket)
     socket.once('close', () => openSockets.delete(socket))
