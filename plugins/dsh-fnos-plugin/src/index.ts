@@ -7,7 +7,8 @@ import z from '@deepseek-ai/schemastery'
 import { registerAuthorizedDirectoryRoutes } from './authorized-directories.ts'
 import { FNOS_AUTHORIZED_DIRECTORIES_SETTINGS_NAMESPACE } from './authorized-directories-contract.ts'
 import { injectCachedFnosTheme, type DshThemePreference } from './theme-bootstrap.ts'
-import { FNOS_SYSTEM_THEME_FIELD, isFnosTheme, type FnosSettings, type FnosTheme } from './theme-contract.ts'
+import { FNOS_GATEWAY_PROXY_PATHS_FIELD, FNOS_SYSTEM_THEME_FIELD, isFnosTheme, type FnosSettings, type FnosTheme } from './theme-contract.ts'
+import { registerGatewayProxyRoutes } from './gateway-proxy-routes.ts'
 
 /** Stable Host bundle name. */
 export const name = '@tnnevol/dsh-fnos'
@@ -15,6 +16,7 @@ export const name = '@tnnevol/dsh-fnos'
 /** Settings back the fnOS card and the cached pre-plugin theme bootstrap. */
 export const FnosSettingsSchema = z.object({
   [FNOS_SYSTEM_THEME_FIELD]: z.union(['light', 'dark']),
+  [FNOS_GATEWAY_PROXY_PATHS_FIELD]: z.array(z.string()),
 })
 export const FNOS_AUTHORIZED_DIRECTORIES_SETTINGS_NS = settingsNamespace(
   FNOS_AUTHORIZED_DIRECTORIES_SETTINGS_NAMESPACE,
@@ -25,8 +27,9 @@ const DSH_THEME_SETTINGS_NS = settingsNamespace('ui-theme')
 export const inject = ['webServer', 'settings', 'apiProxy']
 
 export function apply(ctx: Context): void {
-  ctx.settings.register(FNOS_AUTHORIZED_DIRECTORIES_SETTINGS_NS, FnosSettingsSchema)
+  const settings = ctx.settings.register(FNOS_AUTHORIZED_DIRECTORIES_SETTINGS_NS, FnosSettingsSchema)
   registerAuthorizedDirectoryRoutes(ctx)
+  registerGatewayProxyRoutes(ctx, settings)
   ctx.inject(['webServer'], httpCtx => {
     httpCtx.effect(
       () => httpCtx.webServer.tapIndex(html => injectCachedFnosTheme(
@@ -60,6 +63,7 @@ export {
   FNOS_PATH_OPEN_VALIDATION_PATH,
 } from './authorized-directories-contract.ts'
 export { FNOS_SETTINGS_DOCUMENT_PATH } from './settings-document-contract.ts'
+export { FNOS_GATEWAY_PROXY_PATHS_ROUTE, normalizeGatewayProxyPaths } from './gateway-proxy-contract.ts'
 export {
   accessiblePathsFromEnvironment,
   convertPathsForDisplay,

@@ -25,21 +25,21 @@ export function trimFnosTrailingWhitespace(
 export function draftWithoutFnosOccurrence(
   draft: string,
   occurrence: { offset: number, length: number },
-  occurrences: readonly { offset: number, length: number }[],
+  _occurrences: readonly { offset: number, length: number }[],
 ): string {
-  let start = occurrence.offset
+  const start = occurrence.offset
   const end = occurrence.offset + occurrence.length
-  const hasPreviousReference = occurrences.some(item => item.offset < occurrence.offset)
+  // DSH appends one separator after an inserted structured reference. Remove
+  // only that separator; whitespace owned by the user's existing draft stays.
   let after = end
-  while (/\s/u.test(draft[after] ?? '')) after += 1
-  if (hasPreviousReference) {
-    while (start > 0 && /\s/u.test(draft[start - 1] ?? '')) start -= 1
-  }
-  const prefix = draft.slice(0, start)
-  const suffix = draft.slice(after)
-  if (suffix.trim() === '') return prefix.replace(/\s+$/u, '')
-  const separator = prefix.length > 0 && !/\s$/u.test(prefix) ? ' ' : ''
-  return prefix + separator + suffix
+  if (/\s/u.test(draft[after] ?? '')) after += 1
+  return draft.slice(0, start) + draft.slice(after)
+}
+
+/** Add exactly one separator only when existing text touches the insertion. */
+export function fnosInsertionPrefix(draft: string, offset = draft.length): '' | ' ' {
+  if (offset <= 0 || /\s/u.test(draft[offset - 1] ?? '')) return ''
+  return ' '
 }
 
 /** Move the native textarea caret after React commits the inserted reference. */
@@ -99,8 +99,16 @@ export function insertFnosReferences(
   let draftRev = input.draftRev
   let inserted = false
 
-  // DSH's native insertion transaction appends the separating space after the
-  // reference. Do not add a prefix gap before the first selected reference.
+  const prefix = fnosInsertionPrefix(draft, offset)
+  if (prefix !== '') {
+    const span: TokenSpan = { start: offset, end: offset, draftRev }
+    if (!insertText(ctx, sessionId, prefix, span)) return false
+    draft += prefix
+    offset += prefix.length
+    draftRev += 1
+  }
+
+  // DSH's native insertion transaction owns the trailing separator.
   for (const reference of references) {
     const label = referenceLabel(reference.semanticPath)
     const span: TokenSpan = { start: offset, end: offset, draftRev }

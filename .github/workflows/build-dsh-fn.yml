@@ -33,6 +33,17 @@ jobs:
         with:
           node-version: 24
 
+      - name: Setup pnpm 11 for fnOS gateway build
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.16.0
+
+      - name: Install fnOS gateway build dependencies
+        run: pnpm install --filter @tnnevol/fnos-gateway... --frozen-lockfile
+
+      - name: Build bundled fnOS gateway
+        run: pnpm --filter @tnnevol/fnos-gateway run build:app
+
       - name: Install fnpack
         run: |
           curl -fsSL https://static2.fnnas.com/fnpack/fnpack-1.2.1-linux-amd64 -o fnpack

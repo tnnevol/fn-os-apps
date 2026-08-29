@@ -9,6 +9,7 @@ export {
   DshTreeSelect,
   DshIconChangelog,
   DshIconClose,
+  DshIconChevronDown,
   DshIconFile,
   DshIconFolder,
   DshIconFolderOpen,

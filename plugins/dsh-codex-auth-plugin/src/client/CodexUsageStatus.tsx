@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import type { CSSProperties } from 'react'
 import type { CodexAuthLocaleKey } from './locales.ts'
-import { CODEX_USAGE_PATH } from '../auth-paths.ts'
+import { CODEX_AUTH_STATUS_PATH, CODEX_USAGE_PATH } from '../auth-paths.ts'
 import { compactUsageWindow, FIVE_HOUR_WINDOW_SECONDS } from './usage-windows.ts'
 import type { CodexUsageWindow } from './usage-windows.ts'
 
@@ -16,6 +16,10 @@ type TimerService = {
 interface CodexUsage {
   secondaryWindow?: CodexUsageWindow
   primaryWindow?: CodexUsageWindow
+}
+
+interface CodexAuthStatus {
+  status?: string
 }
 
 const statusStyle: CSSProperties = {
@@ -49,15 +53,26 @@ function resetLabel(value: CodexUsageWindow | undefined): string | undefined {
   return undefined
 }
 
-async function readUsage(): Promise<CodexUsage | undefined> {
-  const response = await fetch(CODEX_USAGE_PATH, {
+async function readJson<T>(path: string): Promise<T | undefined> {
+  const response = await fetch(path, {
     method: 'GET',
     headers: { accept: 'application/json' },
     credentials: 'same-origin',
   })
   if (response.status === 401) return undefined
   if (!response.ok) throw new Error(`HTTP ${String(response.status)}`)
-  return await response.json() as CodexUsage
+  return await response.json() as T
+}
+
+/** Read one coherent snapshot so quota is never shown for a signed-out account. */
+export async function readSignedInUsage(): Promise<CodexUsage | undefined> {
+  const status = await readJson<CodexAuthStatus>(CODEX_AUTH_STATUS_PATH)
+  if (status?.status !== 'signed-in') return undefined
+  return await readJson<CodexUsage>(CODEX_USAGE_PATH)
+}
+
+async function readUsage(): Promise<CodexUsage | undefined> {
+  return await readSignedInUsage()
 }
 
 export interface CodexUsageStatusProps {
@@ -70,18 +85,21 @@ export function CodexUsageStatus({ t, timer }: CodexUsageStatusProps) {
 
   useEffect(() => {
     let active = true
+    let requestSequence = 0
     const refresh = async (): Promise<void> => {
+      const sequence = ++requestSequence
       try {
         const next = await readUsage()
-        if (active) setUsage(next)
+        if (active && sequence === requestSequence) setUsage(next)
       } catch {
-        if (active) setUsage(undefined)
+        if (active && sequence === requestSequence) setUsage(undefined)
       }
     }
     void refresh()
     const disposeInterval = timer.interval(() => { void refresh() }, 5 * 60 * 1_000)
     return () => {
       active = false
+      requestSequence += 1
       disposeInterval()
     }
   }, [timer])

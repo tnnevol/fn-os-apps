@@ -2,7 +2,7 @@
 id: PLAN-FNOS-002
 title: PLAN-FNOS-002 DSH 应用与插件优化
 description: Codex 状态、NAS 引用与 Tree 同步、Semi UI 总览插件、fnOS 统一网关、DSH Web 恢复和三方插件 API URL 反代配置的实施计划。
-status: planned
+status: validating
 owner: tnnevol
 targetVersion: 5.1.x
 lastVerified: 2026-08-29
@@ -15,7 +15,7 @@ lastVerified: 2026-08-29
 | 计划编号 | PLAN-FNOS-002 |
 | 计划日期 | 2026-08-28 |
 | 对应需求 | [FNOS-002 DSH 应用与插件优化](/requirements/FNOS-002-dsh-app-plugin-optimization) |
-| 计划状态 | <Badge type="info" text="规划中" /> |
+| 计划状态 | <Badge type="warning" text="待 NAS 验证" /> |
 
 ## 计划目标
 
@@ -373,57 +373,57 @@ SSE 路由由网关自身处理，不转发到 DSH。它经过 fnOS 统一网关
 
 | 任务 ID | 对应功能 | 实现内容 | 状态 |
 | --- | --- | --- | --- |
-| PLAN-FNOS-002-T01-01 | FNOS-002-01 | 明确 Auth Host 返回的登录、未登录、加载中和失败状态，Client 不再根据卡片是否存在猜测登录结果 | <Badge type="info" text="规划中" /> |
-| PLAN-FNOS-002-T01-02 | FNOS-002-01 | 将设置卡片和对话输入区的状态展示统一受“已登录”条件控制，登录与退出后立即刷新 | <Badge type="info" text="规划中" /> |
-| PLAN-FNOS-002-T01-03 | FNOS-002-01 | 提取统一窗口查找逻辑，按 18,000 秒识别五小时窗口、按 604,800 秒识别每周窗口 | <Badge type="info" text="规划中" /> |
-| PLAN-FNOS-002-T01-04 | FNOS-002-01 | 仅在已登录且识别到五小时窗口时渲染对应进度和重置时间，不增加用户配置开关 | <Badge type="info" text="规划中" /> |
-| PLAN-FNOS-002-T01-05 | FNOS-002-01 | 补充未登录、退出、鉴权失败、窗口乱序、无时长和请求失败测试 | <Badge type="info" text="规划中" /> |
+| PLAN-FNOS-002-T01-01 | FNOS-002-01 | 明确 Auth Host 返回的登录、未登录、加载中和失败状态，Client 不再根据卡片是否存在猜测登录结果 | <Badge type="tip" text="已完成" /> |
+| PLAN-FNOS-002-T01-02 | FNOS-002-01 | 将设置卡片和对话输入区的状态展示统一受“已登录”条件控制，登录与退出后立即刷新 | <Badge type="tip" text="已完成" /> |
+| PLAN-FNOS-002-T01-03 | FNOS-002-01 | 提取统一窗口查找逻辑，按 18,000 秒识别五小时窗口、按 604,800 秒识别每周窗口 | <Badge type="tip" text="已完成" /> |
+| PLAN-FNOS-002-T01-04 | FNOS-002-01 | 仅在已登录且识别到五小时窗口时渲染对应进度和重置时间，不增加用户配置开关 | <Badge type="tip" text="已完成" /> |
+| PLAN-FNOS-002-T01-05 | FNOS-002-01 | 补充未登录、退出、鉴权失败、窗口乱序、无时长和请求失败测试 | <Badge type="tip" text="已完成" /> |
 
 ### P1：NAS 引用与 Tree 状态
 
 | 任务 ID | 对应功能 | 实现内容 | 状态 |
 | --- | --- | --- | --- |
-| PLAN-FNOS-002-T02-01 | FNOS-002-02 | 将引用插入计算提取为纯函数，输入当前 draft、插入 span 和待插入引用，输出前缀分隔与新光标位置 | <Badge type="info" text="规划中" /> |
-| PLAN-FNOS-002-T02-02 | FNOS-002-02 | 插入首个引用前检查相邻字符；已有空白不新增，没有空白时只补一个空格 | <Badge type="info" text="规划中" /> |
-| PLAN-FNOS-002-T02-03 | FNOS-002-02 | 多选引用沿用 DSH structured reference 插入，引用之间保持一个分隔，不清理用户原有前导、尾随或连续空格 | <Badge type="info" text="规划中" /> |
-| PLAN-FNOS-002-T02-04 | FNOS-002-02 | 删除引用时只删除该引用和插件生成的必要分隔，不吞掉引用前后的用户文本与空格 | <Badge type="info" text="规划中" /> |
-| PLAN-FNOS-002-T02-05 | FNOS-002-02 | Tree 面板打开时记录已有 fnOS occurrence ID 作为基线，并为本次成功插入的路径维护 occurrence 关联 | <Badge type="info" text="规划中" /> |
-| PLAN-FNOS-002-T02-06 | FNOS-002-02 | 面板未关闭时监听 `input.occurrences`；本次关联 occurrence 消失后从 `desiredPaths` 移除对应路径，历史 occurrence 不参与同步 | <Badge type="info" text="规划中" /> |
-| PLAN-FNOS-002-T02-07 | FNOS-002-02 | 补充空 draft、空格、换行、多选、删除、光标恢复、历史同路径、本次删除、关闭重开和外部 draft 更新测试 | <Badge type="info" text="规划中" /> |
+| PLAN-FNOS-002-T02-01 | FNOS-002-02 | 将引用插入计算提取为纯函数，输入当前 draft、插入 span 和待插入引用，输出前缀分隔与新光标位置 | <Badge type="tip" text="已完成" /> |
+| PLAN-FNOS-002-T02-02 | FNOS-002-02 | 插入首个引用前检查相邻字符；已有空白不新增，没有空白时只补一个空格 | <Badge type="tip" text="已完成" /> |
+| PLAN-FNOS-002-T02-03 | FNOS-002-02 | 多选引用沿用 DSH structured reference 插入，引用之间保持一个分隔，不清理用户原有前导、尾随或连续空格 | <Badge type="tip" text="已完成" /> |
+| PLAN-FNOS-002-T02-04 | FNOS-002-02 | 删除引用时只删除该引用和插件生成的必要分隔，不吞掉引用前后的用户文本与空格 | <Badge type="tip" text="已完成" /> |
+| PLAN-FNOS-002-T02-05 | FNOS-002-02 | Tree 面板打开时记录已有 fnOS occurrence ID 作为基线，并为本次成功插入的路径维护 occurrence 关联 | <Badge type="tip" text="已完成" /> |
+| PLAN-FNOS-002-T02-06 | FNOS-002-02 | 面板未关闭时监听 `input.occurrences`；本次关联 occurrence 消失后从 `desiredPaths` 移除对应路径，历史 occurrence 不参与同步 | <Badge type="tip" text="已完成" /> |
+| PLAN-FNOS-002-T02-07 | FNOS-002-02 | 补充空 draft、空格、换行、多选、删除、光标恢复、历史同路径、本次删除、关闭重开和外部 draft 更新测试 | <Badge type="tip" text="已完成" /> |
 
 ### P1：Semi UI 总览插件
 
 | 任务 ID | 对应功能 | 实现内容 | 状态 |
 | --- | --- | --- | --- |
-| PLAN-FNOS-002-T03-01 | FNOS-002-03 | 创建 `plugins/dsh-semi-ui-showcase-plugin`，npm 包名使用 `@tnnevol/dsh-semi-ui-showcase`，建立独立 Client 插件构建入口 | <Badge type="info" text="规划中" /> |
-| PLAN-FNOS-002-T03-02 | FNOS-002-03 | 在设置插件列表注册“DSH Semi UI”轻量入口卡片，只展示说明和“打开组件总览”按钮 | <Badge type="info" text="规划中" /> |
-| PLAN-FNOS-002-T03-03 | FNOS-002-03 | 实现可清理的 Hash 路由控制器，识别 `#/plugins/semi-ui`，监听 `hashchange`、`popstate` 并接入浏览器历史记录 | <Badge type="info" text="规划中" /> |
-| PLAN-FNOS-002-T03-04 | FNOS-002-03 | 在 `shell.overlay` list slot 注册路由页面；仅路由命中时挂载全屏总览，不占用 DSH single slot | <Badge type="info" text="规划中" /> |
-| PLAN-FNOS-002-T03-05 | FNOS-002-03 | 页面增加标题、返回按钮和分类导航，按类别展示按钮、图标、提示、下拉、级联、树、树选择和弹框 | <Badge type="info" text="规划中" /> |
-| PLAN-FNOS-002-T03-06 | FNOS-002-03 | 每类组件覆盖默认、悬停、聚焦、选中、半选、禁用、加载和错误等适用状态 | <Badge type="info" text="规划中" /> |
-| PLAN-FNOS-002-T03-07 | FNOS-002-03 | 复用 `installSemiDshTheme()`，验证浅色、深色及系统主题切换，不在总览插件复制主题 CSS | <Badge type="info" text="规划中" /> |
-| PLAN-FNOS-002-T03-08 | FNOS-002-03 | 增加共享包公开导出、路由前进后退、刷新恢复、Slot 卸载、主题安装和构建产物测试，并更新插件文档 | <Badge type="info" text="规划中" /> |
+| PLAN-FNOS-002-T03-01 | FNOS-002-03 | 创建 `plugins/dsh-semi-ui-showcase-plugin`，npm 包名使用 `@tnnevol/dsh-semi-ui-showcase`，建立独立 Client 插件构建入口 | <Badge type="tip" text="已完成" /> |
+| PLAN-FNOS-002-T03-02 | FNOS-002-03 | 在设置插件列表注册“DSH Semi UI”轻量入口卡片，只展示说明和“打开组件总览”按钮 | <Badge type="tip" text="已完成" /> |
+| PLAN-FNOS-002-T03-03 | FNOS-002-03 | 实现可清理的 Hash 路由控制器，识别 `#/plugins/semi-ui`，监听 `hashchange`、`popstate` 并接入浏览器历史记录 | <Badge type="tip" text="已完成" /> |
+| PLAN-FNOS-002-T03-04 | FNOS-002-03 | 在 `shell.overlay` list slot 注册路由页面；仅路由命中时挂载全屏总览，不占用 DSH single slot | <Badge type="tip" text="已完成" /> |
+| PLAN-FNOS-002-T03-05 | FNOS-002-03 | 页面增加标题、返回按钮和分类导航，按类别展示按钮、图标、提示、下拉、级联、树、树选择和弹框 | <Badge type="tip" text="已完成" /> |
+| PLAN-FNOS-002-T03-06 | FNOS-002-03 | 每类组件覆盖默认、悬停、聚焦、选中、半选、禁用、加载和错误等适用状态 | <Badge type="tip" text="已完成" /> |
+| PLAN-FNOS-002-T03-07 | FNOS-002-03 | 复用 `installSemiDshTheme()`，验证浅色、深色及系统主题切换，不在总览插件复制主题 CSS | <Badge type="tip" text="已完成" /> |
+| PLAN-FNOS-002-T03-08 | FNOS-002-03 | 增加共享包公开导出、路由前进后退、刷新恢复、Slot 卸载、主题安装和构建产物测试，并更新插件文档 | <Badge type="tip" text="已完成" /> |
 
 ### P1：FPK 网关与插件路径
 
 | 任务 ID | 对应功能 | 实现内容 | 状态 |
 | --- | --- | --- | --- |
-| PLAN-FNOS-002-T04-01 | FNOS-002-04 | 完成 `packages/fnos-gateway` 分层，使用 `connect` 组织中间件、使用 `http-proxy-middleware` 代理 HTTP 与 WebSocket | <Badge type="info" text="规划中" /> |
-| PLAN-FNOS-002-T04-02 | FNOS-002-04 | 配置 tsdown 库构建和 FPK 构建，将单文件 ESM 产出到 `apps/fn-deepseek-harness/app/gateway-proxy.mjs` | <Badge type="info" text="规划中" /> |
-| PLAN-FNOS-002-T04-03 | FNOS-002-04 | 保留前缀剥离、Header 过滤、Location/HTML/CSS/JS 改写、SSE 心跳和优雅退出 | <Badge type="info" text="规划中" /> |
-| PLAN-FNOS-002-T04-04 | FNOS-002-04 | 在 fnOS 插件设置中增加三方插件 API URL 反代规则的草稿、添加、删除、保存和放弃交互 | <Badge type="info" text="规划中" /> |
-| PLAN-FNOS-002-T04-05 | FNOS-002-04 | fnOS 插件 Host 校验设置并原子生成 `${TRIM_PKGVAR}/gateway/path-allowlist.json` | <Badge type="info" text="规划中" /> |
-| PLAN-FNOS-002-T04-06 | FNOS-002-04 | 网关启动加载配置并监听父目录；配置有效时热替换内存快照，失败时保留最后一次有效值 | <Badge type="info" text="规划中" /> |
-| PLAN-FNOS-002-T04-07 | FNOS-002-04 | 增加网关内置 SSE 路由，将完整路径快照即时推送给已打开页面 | <Badge type="info" text="规划中" /> |
-| PLAN-FNOS-002-T04-08 | FNOS-002-04 | bridge 统一处理 `fetch`、XHR、`EventSource`、WebSocket 和动态脚本的绝对 URL 路径 | <Badge type="info" text="规划中" /> |
-| PLAN-FNOS-002-T04-09 | FNOS-002-04 | 调整 FPK 构建与 `cmd/main` 环境变量，验证生成产物、Unix Socket 和固定回环上游 | <Badge type="info" text="规划中" /> |
-| PLAN-FNOS-002-T04-10 | FNOS-002-04 | 在真实 fnOS NAS 验证代理、路径保存、即时生效、升级和回滚 | <Badge type="info" text="规划中" /> |
-| PLAN-FNOS-002-T04-11 | FNOS-002-04 | 调整 `cmd/main status`：以网关 PID 代表 FPK 运行状态，修复死亡但非空 PID 文件无法清理的问题 | <Badge type="info" text="规划中" /> |
-| PLAN-FNOS-002-T04-12 | FNOS-002-04 | 拆分网关和 DSH Web 的启动逻辑；网关已运行时只恢复 Web，不删除 Socket 或重复启动网关 | <Badge type="info" text="规划中" /> |
-| PLAN-FNOS-002-T04-13 | FNOS-002-04 | 在网关增加 DSH 健康状态和管理员恢复路由，上游不可用时提供独立恢复页面 | <Badge type="info" text="规划中" /> |
-| PLAN-FNOS-002-T04-14 | FNOS-002-04 | 使用启动锁、`app.pid.starting`、超时健康检查和原子 rename 管理 Web PID | <Badge type="info" text="规划中" /> |
-| PLAN-FNOS-002-T04-15 | FNOS-002-04 | 验证 Web 被终止、重复点击、启动失败、PID 复用、网关退出和 FPK stop/config_callback 场景 | <Badge type="info" text="规划中" /> |
-| PLAN-FNOS-002-T04-16 | FNOS-002-04 | 将 `BRIDGE_SCRIPT_BODY` 拆到 `src/client/bridge.js`；两个 tsdown 构建复用虚拟模块插件，在构建期读取并内联 Bridge | <Badge type="info" text="规划中" /> |
+| PLAN-FNOS-002-T04-01 | FNOS-002-04 | 完成 `packages/fnos-gateway` 分层，使用 `connect` 组织中间件、使用 `http-proxy-middleware` 代理 HTTP 与 WebSocket | <Badge type="tip" text="已完成" /> |
+| PLAN-FNOS-002-T04-02 | FNOS-002-04 | 配置 tsdown 库构建和 FPK 构建，将单文件 ESM 产出到 `apps/fn-deepseek-harness/app/gateway-proxy.mjs` | <Badge type="tip" text="已完成" /> |
+| PLAN-FNOS-002-T04-03 | FNOS-002-04 | 保留前缀剥离、Header 过滤、Location/HTML/CSS/JS 改写、SSE 心跳和优雅退出 | <Badge type="tip" text="已完成" /> |
+| PLAN-FNOS-002-T04-04 | FNOS-002-04 | 在 fnOS 插件设置中增加三方插件 API URL 反代规则的草稿、添加、删除、保存和放弃交互 | <Badge type="tip" text="已完成" /> |
+| PLAN-FNOS-002-T04-05 | FNOS-002-04 | fnOS 插件 Host 校验设置并原子生成 `${TRIM_PKGVAR}/gateway/path-allowlist.json` | <Badge type="tip" text="已完成" /> |
+| PLAN-FNOS-002-T04-06 | FNOS-002-04 | 网关启动加载配置并监听父目录；配置有效时热替换内存快照，失败时保留最后一次有效值 | <Badge type="tip" text="已完成" /> |
+| PLAN-FNOS-002-T04-07 | FNOS-002-04 | 增加网关内置 SSE 路由，将完整路径快照即时推送给已打开页面 | <Badge type="tip" text="已完成" /> |
+| PLAN-FNOS-002-T04-08 | FNOS-002-04 | bridge 统一处理 `fetch`、XHR、`EventSource`、WebSocket 和动态脚本的绝对 URL 路径 | <Badge type="tip" text="已完成" /> |
+| PLAN-FNOS-002-T04-09 | FNOS-002-04 | 调整 FPK 构建与 `cmd/main` 环境变量，验证生成产物、Unix Socket 和固定回环上游 | <Badge type="tip" text="已完成" /> |
+| PLAN-FNOS-002-T04-10 | FNOS-002-04 | 在真实 fnOS NAS 验证代理、路径保存、即时生效、升级和回滚 | <Badge type="warning" text="待 NAS 验证" /> |
+| PLAN-FNOS-002-T04-11 | FNOS-002-04 | 调整 `cmd/main status`：以网关 PID 代表 FPK 运行状态，修复死亡但非空 PID 文件无法清理的问题 | <Badge type="tip" text="已完成" /> |
+| PLAN-FNOS-002-T04-12 | FNOS-002-04 | 拆分网关和 DSH Web 的启动逻辑；网关已运行时只恢复 Web，不删除 Socket 或重复启动网关 | <Badge type="tip" text="已完成" /> |
+| PLAN-FNOS-002-T04-13 | FNOS-002-04 | 在网关增加 DSH 健康状态和管理员恢复路由，上游不可用时提供独立恢复页面 | <Badge type="tip" text="已完成" /> |
+| PLAN-FNOS-002-T04-14 | FNOS-002-04 | 使用启动锁、`app.pid.starting`、超时健康检查和原子 rename 管理 Web PID | <Badge type="tip" text="已完成" /> |
+| PLAN-FNOS-002-T04-15 | FNOS-002-04 | 验证 Web 被终止、重复点击、启动失败、PID 复用、网关退出和 FPK stop/config_callback 场景 | <Badge type="warning" text="待 NAS 验证" /> |
+| PLAN-FNOS-002-T04-16 | FNOS-002-04 | 将 `BRIDGE_SCRIPT_BODY` 拆到 `src/client/bridge.js`；两个 tsdown 构建复用虚拟模块插件，在构建期读取并内联 Bridge | <Badge type="tip" text="已完成" /> |
 
 ## 详细交互
 
@@ -738,10 +738,10 @@ pnpm --filter @tnnevol/dsh-codex-auth run build
 
 | 阶段 | 状态 | 完成条件 |
 | --- | --- | --- |
-| P1 Codex 登录与用量状态 | <Badge type="info" text="规划中" /> | 插件测试通过，并在登录、退出、异常及有无五小时窗口场景验证显示结果 |
-| P1 NAS 引用与 Tree 状态 | <Badge type="info" text="规划中" /> | 插入和删除引用不改动原有文本空格；删除本次引用同步 Tree，历史引用隔离；覆盖多选与生命周期测试 |
-| P1 Semi UI 总览插件 | <Badge type="info" text="规划中" /> | 设置入口可跳转独立路由，刷新与历史导航有效；插件可安装卸载，公共组件在浅色、深色和系统主题下显示正常 |
-| P1 FPK 网关、进程恢复与插件路径 | <Badge type="info" text="规划中" /> | 包测试与 FPK 构建通过，在真实 NAS 验证代理、Web 恢复、保存/放弃和已打开页面即时生效 |
+| P1 Codex 登录与用量状态 | <Badge type="tip" text="已实现" /> | 插件测试通过，并在登录、退出、异常及有无五小时窗口场景验证显示结果 |
+| P1 NAS 引用与 Tree 状态 | <Badge type="tip" text="已实现" /> | 插入和删除引用不改动原有文本空格；删除本次引用同步 Tree，历史引用隔离；覆盖多选与生命周期测试 |
+| P1 Semi UI 总览插件 | <Badge type="tip" text="已实现" /> | 设置入口可跳转独立路由，刷新与历史导航有效；插件可安装卸载，公共组件在浅色、深色和系统主题下显示正常 |
+| P1 FPK 网关、进程恢复与插件路径 | <Badge type="warning" text="待 NAS 验证" /> | 包测试与 FPK 构建通过，在真实 NAS 验证代理、Web 恢复、保存/放弃和已打开页面即时生效 |
 
 ## 变更记录
 
@@ -753,3 +753,4 @@ pnpm --filter @tnnevol/dsh-codex-auth run build
 | 2026-08-29 | 使用 VitePress FlowGrid 重绘架构流程，并增加常驻网关承载状态和 DSH Web 人工恢复计划 |
 | 2026-08-29 | 完善 Semi UI 总览计划：设置卡片改为入口，使用 `#/plugins/semi-ui` 与 `shell.overlay` 展示独立页面 |
 | 2026-08-29 | 增加 fnOS Tree 反向同步计划：面板打开期间按 occurrence 身份同步本次引用删除，并隔离历史选择状态 |
+| 2026-08-29 | 完成 P1 代码实现和本地构建，网关、恢复控制面与 fnOS Header 行为转入真实 NAS 验证 |

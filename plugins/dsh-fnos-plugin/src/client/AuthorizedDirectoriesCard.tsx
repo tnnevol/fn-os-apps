@@ -15,6 +15,7 @@ import {
   FNOS_AUTHORIZED_DIRECTORIES_PATH,
   type AuthorizedDirectory,
 } from '../authorized-directories-contract.ts'
+import { FNOS_GATEWAY_PROXY_PATHS_ROUTE } from '../gateway-proxy-contract.ts'
 
 type Translate = (key: FnosLocaleKey) => string
 
@@ -75,6 +76,7 @@ const pathRowStyle: CSSProperties = { display: 'flex', alignItems: 'center', jus
 const pathStyle: CSSProperties = { minWidth: 0, overflow: 'hidden', color: 'var(--dsw-alias-label-primary)', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: 13, textOverflow: 'ellipsis', whiteSpace: 'nowrap' }
 const readOnlyStyle: CSSProperties = { flex: '0 0 auto', color: 'var(--dsw-alias-label-tertiary)', fontSize: 12, whiteSpace: 'nowrap' }
 const dangerButtonStyle: CSSProperties = { ...buttonStyle, minHeight: 28, padding: '3px 9px', color: 'var(--dsw-alias-state-error-primary, #d92d20)', flex: '0 0 auto' }
+const textareaStyle: CSSProperties = { boxSizing: 'border-box', width: '100%', minHeight: 86, resize: 'vertical', padding: '9px 10px', border: '1px solid var(--dsw-alias-border-l2)', borderRadius: 8, background: 'var(--dsw-alias-bg-layer-1)', color: 'var(--dsw-alias-label-primary)', font: '13px/20px ui-monospace, SFMono-Regular, Menlo, monospace' }
 const AUTHORIZED_DIRECTORY_LOG_PREFIX = '[dsh-fnos][authorized-directories]'
 
 function logAuthorizedDirectoryEvent(stage: string, details: Record<string, unknown>): void {
@@ -139,6 +141,19 @@ export function AuthorizedDirectoriesCard({ t }: AuthorizedDirectoriesCardProps)
   const [open, setOpen] = useState(false)
   const [state, setState] = useState<LoadState>({ status: 'idle', directories: [] })
   const [busy, setBusy] = useState(false)
+  const [savedProxyPaths, setSavedProxyPaths] = useState('')
+  const [proxyPathsDraft, setProxyPathsDraft] = useState('')
+  const [proxyMessage, setProxyMessage] = useState<string>()
+
+  const loadProxyPaths = useCallback(async (): Promise<void> => {
+    try {
+      const result = await jsonRequest<{ paths?: string[] }>(FNOS_GATEWAY_PROXY_PATHS_ROUTE)
+      const text = Array.isArray(result.paths) ? result.paths.join('\n') : ''
+      setSavedProxyPaths(text)
+      setProxyPathsDraft(text)
+      setProxyMessage(undefined)
+    } catch { setProxyMessage(t('gatewayProxyFailed')) }
+  }, [t])
 
   const refresh = useCallback(async (): Promise<void> => {
     logAuthorizedDirectoryEvent('refresh-start', {})
@@ -158,8 +173,21 @@ export function AuthorizedDirectoriesCard({ t }: AuthorizedDirectoriesCardProps)
   }, [t])
 
   useEffect(() => {
-    if (open) void refresh()
-  }, [open, refresh])
+    if (open) { void refresh(); void loadProxyPaths() }
+  }, [loadProxyPaths, open, refresh])
+
+  const saveProxyPaths = useCallback(async (): Promise<void> => {
+    setBusy(true)
+    try {
+      const paths = proxyPathsDraft.split(/\r?\n/u).map(value => value.trim()).filter(Boolean)
+      const result = await jsonRequest<{ paths: string[] }>(FNOS_GATEWAY_PROXY_PATHS_ROUTE, 'PUT', { version: 1, paths })
+      const text = result.paths.join('\n')
+      setSavedProxyPaths(text)
+      setProxyPathsDraft(text)
+      setProxyMessage(t('gatewayProxySaved'))
+    } catch { setProxyMessage(t('gatewayProxyFailed')) }
+    finally { setBusy(false) }
+  }, [proxyPathsDraft, t])
 
   const addDirectory = useCallback(async (): Promise<void> => {
     setBusy(true)
@@ -283,6 +311,16 @@ export function AuthorizedDirectoriesCard({ t }: AuthorizedDirectoriesCardProps)
               ))}
             </ul>
           ) : null}
+          <div style={{ borderTop: '1px solid var(--dsw-alias-border-l2)', paddingTop: 12 }}>
+            <strong style={{ fontSize: 13 }}>{t('gatewayProxyTitle')}</strong>
+            <p style={{ ...bodyStyle, margin: '4px 0 8px' }}>{t('gatewayProxyDescription')}</p>
+            <textarea value={proxyPathsDraft} placeholder={t('gatewayProxyPlaceholder')} style={textareaStyle} disabled={busy} onChange={event => { setProxyPathsDraft(event.currentTarget.value); setProxyMessage(undefined) }} />
+            {proxyMessage === undefined ? null : <p style={{ ...bodyStyle, margin: '6px 0 0' }}>{proxyMessage}</p>}
+            <div style={{ ...rowStyle, justifyContent: 'flex-end', marginTop: 10 }}>
+              <button type="button" style={buttonStyle} disabled={busy || proxyPathsDraft === savedProxyPaths} onClick={() => { setProxyPathsDraft(savedProxyPaths); setProxyMessage(undefined) }}>{t('discard')}</button>
+              <button type="button" style={primaryButtonStyle} disabled={busy || proxyPathsDraft === savedProxyPaths} onClick={() => { void saveProxyPaths() }}>{t('save')}</button>
+            </div>
+          </div>
         </div>
       ) : null}
     </div>

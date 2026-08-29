@@ -1,6 +1,8 @@
 /** Map Semi's design tokens to the DSH theme tokens used by the host. */
 
 export const SEMI_DSH_THEME_ATTRIBUTE = 'data-dsh-semi-theme'
+const DSH_DARK_THEME_ATTRIBUTE = 'data-ds-dark-theme'
+const SEMI_THEME_MODE_ATTRIBUTE = 'theme-mode'
 
 const SEMI_DSH_THEME_CSS = `
 body[${SEMI_DSH_THEME_ATTRIBUTE}] {
@@ -52,21 +54,39 @@ body[${SEMI_DSH_THEME_ATTRIBUTE}] .semi-icon {
   font-family: var(--dsw-font-family);
 }
 
-/* Primary actions are monochrome: black/white in light mode and inverted in dark mode. */
-body[${SEMI_DSH_THEME_ATTRIBUTE}]:not([data-ds-dark-theme]) .semi-button-primary:not(.semi-button-disabled),
-body[${SEMI_DSH_THEME_ATTRIBUTE}]:not([data-ds-dark-theme]) .semi-button-primary:not(.semi-button-disabled):hover,
-body[${SEMI_DSH_THEME_ATTRIBUTE}]:not([data-ds-dark-theme]) .semi-button-primary:not(.semi-button-disabled):active {
-  background: #000 !important;
-  border-color: #000 !important;
-  color: #fff !important;
+/* Keep primary actions readable: dark buttons in light mode and light buttons in dark mode. */
+body[${SEMI_DSH_THEME_ATTRIBUTE}]:not([${DSH_DARK_THEME_ATTRIBUTE}]) .semi-button-primary:not(.semi-button-disabled) {
+  background: var(--dsw-static-neutral-bluish-1000) !important;
+  border-color: var(--dsw-static-neutral-bluish-1000) !important;
+  color: var(--dsw-static-neutral-bluish-00) !important;
 }
 
-body[${SEMI_DSH_THEME_ATTRIBUTE}][data-ds-dark-theme] .semi-button-primary:not(.semi-button-disabled),
-body[${SEMI_DSH_THEME_ATTRIBUTE}][data-ds-dark-theme] .semi-button-primary:not(.semi-button-disabled):hover,
-body[${SEMI_DSH_THEME_ATTRIBUTE}][data-ds-dark-theme] .semi-button-primary:not(.semi-button-disabled):active {
-  background: #fff !important;
-  border-color: #fff !important;
-  color: #000 !important;
+body[${SEMI_DSH_THEME_ATTRIBUTE}]:not([${DSH_DARK_THEME_ATTRIBUTE}]) .semi-button-primary:not(.semi-button-disabled):hover {
+  background: var(--dsw-static-neutral-bluish-750) !important;
+  border-color: var(--dsw-static-neutral-bluish-750) !important;
+}
+
+body[${SEMI_DSH_THEME_ATTRIBUTE}]:not([${DSH_DARK_THEME_ATTRIBUTE}]) .semi-button-primary:not(.semi-button-disabled):active {
+  background: var(--dsw-static-neutral-bluish-100) !important;
+  border-color: var(--dsw-static-neutral-bluish-100) !important;
+  color: var(--dsw-static-neutral-bluish-1000) !important;
+}
+
+body[${SEMI_DSH_THEME_ATTRIBUTE}][${DSH_DARK_THEME_ATTRIBUTE}] .semi-button-primary:not(.semi-button-disabled) {
+  background: var(--dsw-static-neutral-bluish-00) !important;
+  border-color: var(--dsw-static-neutral-bluish-00) !important;
+  color: var(--dsw-static-neutral-bluish-1000) !important;
+}
+
+body[${SEMI_DSH_THEME_ATTRIBUTE}][${DSH_DARK_THEME_ATTRIBUTE}] .semi-button-primary:not(.semi-button-disabled):hover {
+  background: var(--dsw-static-neutral-bluish-100) !important;
+  border-color: var(--dsw-static-neutral-bluish-100) !important;
+}
+
+body[${SEMI_DSH_THEME_ATTRIBUTE}][${DSH_DARK_THEME_ATTRIBUTE}] .semi-button-primary:not(.semi-button-disabled):active {
+  background: var(--dsw-static-neutral-bluish-750) !important;
+  border-color: var(--dsw-static-neutral-bluish-750) !important;
+  color: var(--dsw-static-neutral-bluish-00) !important;
 }
 
 body[${SEMI_DSH_THEME_ATTRIBUTE}] .semi-dropdown-wrapper {
@@ -136,14 +156,14 @@ body[${SEMI_DSH_THEME_ATTRIBUTE}] .semi-cascader-option-active {
 
 /* Keep portaled tooltips readable in both DSH themes. */
 body[${SEMI_DSH_THEME_ATTRIBUTE}] .semi-tooltip-wrapper {
-  background-color: var(--dsw-alias-bg-layer-3, #2a2a2a);
-  color: var(--dsw-alias-label-primary, #fff);
-  box-shadow: var(--dsw-shadow-lv3, 0 8px 24px rgba(0, 0, 0, 0.18));
+  background-color: var(--dsw-alias-tooltip-bg);
+  color: var(--dsw-static-neutral-bluish-00);
+  box-shadow: var(--dsw-shadow-lv3);
   pointer-events: none;
 }
 
 body[${SEMI_DSH_THEME_ATTRIBUTE}] .semi-tooltip-wrapper .semi-tooltip-icon-arrow {
-  color: var(--dsw-alias-bg-layer-3, #2a2a2a);
+  color: var(--dsw-alias-tooltip-bg);
 }
 
 body[${SEMI_DSH_THEME_ATTRIBUTE}] .semi-tree-option-list {
@@ -188,15 +208,15 @@ body[${SEMI_DSH_THEME_ATTRIBUTE}] .semi-tree-option-list .semi-checkbox-unChecke
 
 body[${SEMI_DSH_THEME_ATTRIBUTE}] .semi-tree-option-list .semi-checkbox-inner-checked .semi-checkbox-inner-display,
 body[${SEMI_DSH_THEME_ATTRIBUTE}] .semi-tree-option-list .semi-checkbox-indeterminate .semi-checkbox-inner-display {
-  background: #111 !important;
-  border-color: #111 !important;
-  box-shadow: inset 0 0 0 1px #111 !important;
-  color: #fff !important;
+  background: var(--dsw-alias-label-primary) !important;
+  border-color: var(--dsw-alias-label-primary) !important;
+  box-shadow: inset 0 0 0 1px var(--dsw-alias-label-primary) !important;
+  color: var(--dsw-alias-label-primary-foreground) !important;
 }
 
 body[${SEMI_DSH_THEME_ATTRIBUTE}] .semi-tree-option-list .semi-checkbox-inner-checked .semi-checkbox-inner-display svg,
 body[${SEMI_DSH_THEME_ATTRIBUTE}] .semi-tree-option-list .semi-checkbox-indeterminate .semi-checkbox-inner-display svg {
-  color: #fff !important;
+  color: var(--dsw-alias-label-primary-foreground) !important;
   fill: currentColor;
 }
 
@@ -238,15 +258,29 @@ export function installSemiDshTheme(): () => void {
   if (typeof document === 'undefined' || document.body === null) return () => undefined
 
   const previousAttribute = document.body.getAttribute(SEMI_DSH_THEME_ATTRIBUTE)
+  const previousThemeMode = document.body.getAttribute(SEMI_THEME_MODE_ATTRIBUTE)
   const style = document.createElement('style')
   style.dataset.dshSemi = 'theme'
   style.textContent = SEMI_DSH_THEME_CSS
+
+  // Semi's bundled dark palette is selected by `body[theme-mode=dark]`.
+  // DSH owns the authoritative theme state through `data-ds-dark-theme`, so
+  // mirror that attribute instead of allowing Semi to resolve the OS scheme.
+  const syncThemeMode = (): void => {
+    document.body?.setAttribute(SEMI_THEME_MODE_ATTRIBUTE, document.body.hasAttribute(DSH_DARK_THEME_ATTRIBUTE) ? 'dark' : 'light')
+  }
+  const observer = typeof MutationObserver === 'undefined' ? undefined : new MutationObserver(syncThemeMode)
+  observer?.observe(document.body, { attributes: true, attributeFilter: [DSH_DARK_THEME_ATTRIBUTE] })
+  syncThemeMode()
   document.body.setAttribute(SEMI_DSH_THEME_ATTRIBUTE, '')
   document.head.append(style)
 
   return () => {
+    observer?.disconnect()
     style.remove()
     if (previousAttribute === null) document.body?.removeAttribute(SEMI_DSH_THEME_ATTRIBUTE)
     else document.body?.setAttribute(SEMI_DSH_THEME_ATTRIBUTE, previousAttribute)
+    if (previousThemeMode === null) document.body?.removeAttribute(SEMI_THEME_MODE_ATTRIBUTE)
+    else document.body?.setAttribute(SEMI_THEME_MODE_ATTRIBUTE, previousThemeMode)
   }
 }

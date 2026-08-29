@@ -2,7 +2,7 @@
 id: FNOS-002
 title: FNOS-002 DSH 应用与插件优化
 description: 记录 Codex 登录与用量状态、NAS 引用、共享 UI、FPK 网关和 fnOS 应用跳转需求。
-status: planned
+status: validating
 owner: tnnevol
 targetVersion: 5.1.x
 lastVerified: 2026-08-29
@@ -14,7 +14,7 @@ lastVerified: 2026-08-29
 | --- | --- |
 | 需求编号 | FNOS-002 |
 | 提出日期 | 2026-08-24 |
-| 需求状态 | <Badge type="info" text="规划中" /> |
+| 需求状态 | <Badge type="warning" text="待 NAS 验证" /> |
 | 关联计划 | [PLAN-FNOS-002 DSH 应用与插件优化](/plans/PLAN-FNOS-002-dsh-app-plugin-optimization) |
 
 ## 需求背景与目标
@@ -47,10 +47,10 @@ DSH 在 fnOS 中运行后，还有几处使用体验需要调整。Codex 登录�
 
 | 编号 | 优先级 | 功能 | 用户行为 | 状态 |
 | --- | --- | --- | --- | --- |
-| FNOS-002-01 | P1 | Codex 登录与用量状态 | 未登录时不显示状态；登录和退出后及时更新；接口提供五小时窗口时自动显示对应状态 | <Badge type="info" text="规划中" /> |
-| FNOS-002-02 | P1 | NAS 引用与 Tree 状态 | 插入引用时保留原文空格；面板打开期间删除本次引用后同步 Tree，历史引用不参与本次勾选 | <Badge type="info" text="规划中" /> |
-| FNOS-002-03 | P1 | Semi UI 总览插件 | 点击插件入口后跳转到独立路由，查看共享组件及主题效果 | <Badge type="info" text="规划中" /> |
-| FNOS-002-04 | P1 | FPK 网关、进程恢复与 API URL 反代 | 使用专业代理中间件；DSH Web 退出后可从网关恢复；用户可配置三方插件 API URL 反代规则并即时生效 | <Badge type="info" text="规划中" /> |
+| FNOS-002-01 | P1 | Codex 登录与用量状态 | 未登录时不显示状态；登录和退出后及时更新；接口提供五小时窗口时自动显示对应状态 | <Badge type="tip" text="已实现" /> |
+| FNOS-002-02 | P1 | NAS 引用与 Tree 状态 | 插入引用时保留原文空格；面板打开期间删除本次引用后同步 Tree，历史引用不参与本次勾选 | <Badge type="tip" text="已实现" /> |
+| FNOS-002-03 | P1 | Semi UI 总览插件 | 点击插件入口后跳转到独立路由，查看共享组件及主题效果 | <Badge type="tip" text="已实现" /> |
+| FNOS-002-04 | P1 | FPK 网关、进程恢复与 API URL 反代 | 使用专业代理中间件；DSH Web 退出后可从网关恢复；用户可配置三方插件 API URL 反代规则并即时生效 | <Badge type="warning" text="待 NAS 验证" /> |
 | FNOS-002-05 | P2 | fnOS 应用跳转调研 | 确认能否打开其他应用或应用中心的指定详情页 | <Badge type="warning" text="需调研" /> |
 
 ## 交互和行为约束
@@ -122,7 +122,7 @@ DSH 在 fnOS 中运行后，还有几处使用体验需要调整。Codex 登录�
 
 | 阶段 | 状态 | 当前范围 | 下一步 |
 | --- | --- | --- | --- |
-| P1 应用与插件优化 | <Badge type="info" text="规划中" /> | Codex 状态、NAS 引用、UI 总览和网关代理 | 按 PLAN-FNOS-002 分阶段实现 |
+| P1 应用与插件优化 | <Badge type="warning" text="待 NAS 验证" /> | Codex 状态、NAS 引用、UI 总览和网关代理 | 在真实 fnOS 环境完成网关与恢复流程验收 |
 | P2 fnOS 应用跳转 | <Badge type="warning" text="需调研" /> | 已确认 SDK 存在跨应用桥接方法，应用中心详情页参数未公开 | 在真实 fnOS 环境验证稳定参数和兼容范围 |
 
 ## 变更记录
@@ -141,3 +141,4 @@ DSH 在 fnOS 中运行后，还有几处使用体验需要调整。Codex 登录�
 | 2026-08-29 | 明确 Semi UI 总览路由 | 插件入口跳转独立 Hash 路由，通过 `shell.overlay` 展示总览页面 |
 | 2026-08-29 | 增加 Tree 反向同步需求 | 输入框删除本次面板插入的引用时同步取消勾选，并隔离历史引用状态 |
 | 2026-08-29 | 调整 Bridge 源码组织 | 注入脚本改为独立 JS 文件维护，构建期读取并内联到单文件网关产物 |
+| 2026-08-29 | 完成 P1 开发 | 完成 Codex 状态、NAS 引用同步、Semi UI 总览和新网关代码，进入真实 NAS 验证 |

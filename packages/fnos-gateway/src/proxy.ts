@@ -8,20 +8,26 @@ import { rewriteHtml, rewriteCss, rewriteJavaScript } from './middleware/content
 import { gatewayBridgeScript } from './bridge-script.js'
 import { attachSseKeepalive } from './middleware/sse-keepalive.js'
 import { BAD_GATEWAY_MESSAGE } from './constants.js'
+import { recoveryPage } from './recovery-page.js'
 
-function sendBadGateway(res: ServerResponse, error: unknown): void {
+function sendBadGateway(res: ServerResponse, error: unknown, options?: GatewayOptions, req?: IncomingMessage): void {
   if (res.headersSent) {
     res.destroy()
     return
   }
   res.writeHead(502, { 'content-type': 'text/plain; charset=utf-8' })
   const message = error instanceof Error ? error.message : String(error)
+  if (options?.webProcess !== undefined && req?.method === 'GET' && String(req.headers.accept ?? '').includes('text/html')) {
+    const html = recoveryPage(options.gatewayPrefix, message)
+    res.writeHead(503, { 'content-type': 'text/html; charset=utf-8', 'content-length': String(Buffer.byteLength(html)) })
+    res.end(html)
+    return
+  }
   res.end(`${BAD_GATEWAY_MESSAGE}: ${message}`)
 }
 
 export function createProxyHandler(options: GatewayOptions): RequestHandler {
   const { upstreamHost, upstreamPort, gatewayPrefix, sseKeepaliveInterval = 15_000 } = options
-  const bridgeScript = gatewayBridgeScript(gatewayPrefix)
 
   return createProxyMiddleware({
     target: `http://${upstreamHost}:${upstreamPort}`,
@@ -71,6 +77,11 @@ export function createProxyHandler(options: GatewayOptions): RequestHandler {
           const rawBody = Buffer.concat(chunks)
           let rewrittenBody: string
           if (contentType.includes('text/html')) {
+            const bridgeScript = gatewayBridgeScript({
+              prefix: gatewayPrefix,
+              customPaths: options.pathAllowlist?.snapshot().paths ?? [],
+              eventsPath: '/__fnos-gateway/path-allowlist/events',
+            })
             rewrittenBody = rewriteHtml(rawBody, gatewayPrefix, bridgeScript)
           } else if (contentType.includes('text/css')) {
             rewrittenBody = rewriteCss(rawBody, gatewayPrefix)
@@ -86,7 +97,7 @@ export function createProxyHandler(options: GatewayOptions): RequestHandler {
       error: (err, _req, res) => {
         const target = res as ServerResponse | undefined
         if (target && typeof target.writeHead === 'function') {
-          sendBadGateway(target, err)
+          sendBadGateway(target, err, options, _req)
         }
       },
     },

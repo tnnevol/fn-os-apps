@@ -42,6 +42,8 @@ apps/fn-deepseek-harness/app/dsh-version
 apps/fn-deepseek-harness/app/node-pty-version
 apps/fn-deepseek-harness/app/node-pty-versions
 apps/fn-deepseek-harness/app/native/node-pty/
+# fnOS gateway bundle is generated from packages/fnos-gateway before FPK build
+apps/fn-deepseek-harness/app/gateway-proxy.mjs
 # VitePress 构建产物
 docs/.vitepress/cache/
 docs/.vitepress/.temp/

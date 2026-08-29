@@ -8,12 +8,15 @@
 | --- | --- | --- | --- | --- |
 | `@tnnevol/dsh-codex-auth` | `0.1.1-rc.2.2` | 使用 ChatGPT 账号登录 Codex，并把模型、用量和图片输入能力接入 DSH | [Codex Auth](/plugins/dsh-codex-auth) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/plugins/dsh-codex-auth-plugin) |
 | `@tnnevol/dsh-fnos` | `0.1.1-rc.2.2` | 在 fnOS 中补充主题、授权目录、NAS 文件访问和会话日志导出 | [fnOS](/plugins/dsh-fnos) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/plugins/dsh-fnos-plugin) |
+| `@tnnevol/dsh-semi-ui-showcase` | `0.1.1-rc.2.2` | 在独立路由中检查共享 Semi UI 组件和 DSH 主题效果 | [Semi UI 总览](/plugins/dsh-semi-ui-showcase) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/plugins/dsh-semi-ui-showcase-plugin) |
 
 两个插件均适配 DSH `0.1.1-rc.2`。npm 的 `latest` 标签可能仍指向旧版本，手动安装时请使用 `rc` 标签。
 
 ## 共享 UI
 
 [`@tnnevol/dsh-semi-ui`](/plugins/dsh-semi-ui) 统一封装插件使用的 Semi Design 组件，并将亮色、深色、交互色和浮层样式映射到 DSH 主题变量。它是仓库内部共享包，不是需要单独安装到 Web profile 的运行时插件。
+
+需要集中检查组件状态时，可安装 [`@tnnevol/dsh-semi-ui-showcase`](/plugins/dsh-semi-ui-showcase)。
 
 ## 在 fnOS 应用中安装
 

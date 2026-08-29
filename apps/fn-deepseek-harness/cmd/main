@@ -52,34 +52,25 @@ start_process() {
     fi
 
     rm -f "${SOCKET_PATH}"
+    mkdir -p "${TRIM_PKGVAR}/gateway"
     log_info "Starting DeepSeek Harness on ${HOST}:${PORT}..."
 
     (
         cd "${TRIM_APPDEST}" || exit 1
         GATEWAY_SOCKET="${SOCKET_PATH}" \
             GATEWAY_PREFIX="${GATEWAY_PREFIX}" \
+            GATEWAY_PATH_ALLOWLIST="${TRIM_PKGVAR}/gateway/path-allowlist.json" \
             DSH_UPSTREAM_HOST="127.0.0.1" \
             DSH_UPSTREAM_PORT="${PORT}" \
+            DSH_BIN="${DSH_BIN}" \
+            DSH_CWD="${TRIM_APPDEST}" \
+            DSH_PID_FILE="${PID_FILE}" \
+            DSH_START_LOCK_FILE="${TRIM_PKGVAR}/web-start.lock" \
+            DSH_WEB_HOST="${HOST}" \
+            DSH_TRUSTED_HOSTS="${TRUSTED_HOSTS}" \
             exec node "${PROXY_SCRIPT}"
     ) &
     printf "%s" "$!" >"${GATEWAY_PID_FILE}"
-
-    local -a dsh_args=(web)
-    dsh_args+=(--host "${HOST}" --port "${PORT}")
-    if [ -n "${TRUSTED_HOSTS}" ]; then
-        local -a trusted_host_list
-        local trusted_host
-        IFS=',' read -r -a trusted_host_list <<<"${TRUSTED_HOSTS}"
-        for trusted_host in "${trusted_host_list[@]}"; do
-            [ -n "${trusted_host}" ] || continue
-            dsh_args+=(--trusted-host "${trusted_host}")
-        done
-    fi
-    (
-        cd "${TRIM_APPDEST}" || exit 1
-        exec "${DSH_BIN}" "${dsh_args[@]}"
-    ) &
-    printf "%s" "$!" >"${PID_FILE}"
     return 0
 }
 
@@ -111,24 +102,23 @@ stop_pid() {
 }
 
 stop_process() {
-    stop_pid "${PID_FILE}"
     stop_pid "${GATEWAY_PID_FILE}"
+    # The gateway normally terminates its DSH child. Keep this fallback for a
+    # gateway crash during uninstall or package shutdown.
+    stop_pid "${PID_FILE}"
     rm -f "${SOCKET_PATH}"
     return 0
 }
 
 status() {
-    local dsh_pid
     local gateway_pid
-    dsh_pid=$(pid_from_file "${PID_FILE}")
     gateway_pid=$(pid_from_file "${GATEWAY_PID_FILE}")
 
-    if check_process "${dsh_pid}" && check_process "${gateway_pid}"; then
+    if check_process "${gateway_pid}"; then
         return 0
     fi
 
-    [ -n "${dsh_pid}" ] || rm -f "${PID_FILE}"
-    [ -n "${gateway_pid}" ] || rm -f "${GATEWAY_PID_FILE}"
+    rm -f "${GATEWAY_PID_FILE}"
     return 1
 }
 

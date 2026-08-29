@@ -33,8 +33,10 @@
   "scripts": {
     "build": "tsdown",
     "build:app": "tsdown --config tsdown.app.config.ts",
+    "build:fpk": "pnpm run build:app && cd ../../apps/fn-deepseek-harness && fnpack build",
     "typecheck": "tsc -p tsconfig.json",
-    "check": "pnpm run typecheck && pnpm run build"
+    "test": "vitest run",
+    "check": "pnpm run typecheck && pnpm run build && pnpm run test"
   },
   "dependencies": {
     "connect": "^3.7.0",
@@ -44,6 +46,7 @@
     "@types/connect": "^3.4.38",
     "@types/node": "^22.20.0",
     "tsdown": "^0.22.2",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.8"
   }
 }
