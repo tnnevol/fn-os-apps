@@ -56,18 +56,21 @@ describe('dsh-codex-auth-plugin rc.2 client registration', () => {
     expect(presentation).toContain('var(--dsw-alias-border-l4)')
   })
 
-  it('renders the weekly quota as remaining usage', async () => {
+  it('renders five-hour and weekly quotas as remaining usage in settings', async () => {
     const card = await readFile(new URL('../src/client/CodexAuthCard.tsx', import.meta.url), 'utf8')
     expect(card).toContain('remainingPercent')
+    expect(card).toContain("t('usageFiveHour')")
     expect(card).toContain("t('usageWeekly')")
     expect(card).toContain("t('usageRemaining')")
     expect(card).not.toContain('value.usedPercent')
   })
 
-  it('keeps the composer quota entry visible before usage data arrives', async () => {
+  it('shows one recognized quota window in the composer and hides otherwise', async () => {
     const status = await readFile(new URL('../src/client/CodexUsageStatus.tsx', import.meta.url), 'utf8')
-    expect(status).toContain("const remaining = percent(window?.remainingPercent) ?? '—'")
-    expect(status).not.toContain('if (remaining === undefined) return null')
+    expect(status).toContain('compactUsageWindow(usage)')
+    expect(status).toContain('if (window === undefined) return null')
+    expect(status).toContain("t('usageFiveHour')")
+    expect(status).toContain("t('usageWeekly')")
   })
 
   it('uses Semi Cascader multi-select and keeps it open after leaf clicks', async () => {

@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react'
 import type { CSSProperties } from 'react'
 import type { CodexAuthLocaleKey } from './locales.ts'
 import { CODEX_USAGE_PATH } from '../auth-paths.ts'
+import { compactUsageWindow, FIVE_HOUR_WINDOW_SECONDS } from './usage-windows.ts'
+import type { CodexUsageWindow } from './usage-windows.ts'
 
 type Translate = (key: CodexAuthLocaleKey) => string
 
@@ -11,16 +13,9 @@ type TimerService = {
   interval(callback: () => void, delay: number): () => void
 }
 
-interface UsageWindow {
-  remainingPercent?: number
-  limitWindowSeconds?: number
-  resetAfterSeconds?: number
-  resetAt?: number
-}
-
 interface CodexUsage {
-  secondaryWindow?: UsageWindow
-  primaryWindow?: UsageWindow
+  secondaryWindow?: CodexUsageWindow
+  primaryWindow?: CodexUsageWindow
 }
 
 const statusStyle: CSSProperties = {
@@ -39,18 +34,12 @@ const dividerStyle: CSSProperties = {
   background: 'var(--dsw-alias-label-dimmed)',
 }
 
-function weeklyWindow(usage: CodexUsage): UsageWindow | undefined {
-  const windows = [usage.primaryWindow, usage.secondaryWindow]
-  return windows.find(window => window?.limitWindowSeconds === 7 * 24 * 60 * 60)
-    ?? usage.secondaryWindow
-}
-
 function percent(value: number | undefined): string | undefined {
   if (value === undefined || !Number.isFinite(value)) return undefined
   return `${Math.round(Math.max(0, Math.min(100, value)))}%`
 }
 
-function resetLabel(value: UsageWindow | undefined): string | undefined {
+function resetLabel(value: CodexUsageWindow | undefined): string | undefined {
   if (value?.resetAt !== undefined && Number.isFinite(value.resetAt)) {
     return new Intl.DateTimeFormat(undefined, { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value.resetAt * 1_000))
   }
@@ -97,12 +86,14 @@ export function CodexUsageStatus({ t, timer }: CodexUsageStatusProps) {
     }
   }, [timer])
 
-  const window = usage === undefined ? undefined : weeklyWindow(usage)
-  const remaining = percent(window?.remainingPercent) ?? '—'
+  const window = usage === undefined ? undefined : compactUsageWindow(usage)
+  if (window === undefined) return null
+  const label = window.limitWindowSeconds === FIVE_HOUR_WINDOW_SECONDS ? t('usageFiveHour') : t('usageWeekly')
+  const remaining = percent(window.remainingPercent) ?? '—'
   const reset = resetLabel(window)
   return (
-    <span style={statusStyle} aria-label={t('usageStatus')}>
-      <span>{t('usageStatus')}</span>
+    <span style={statusStyle} aria-label={label}>
+      <span>{label}</span>
       <span style={dividerStyle} aria-hidden="true" />
       <span>{t('usageStatusRemaining')} {remaining}</span>
       {reset === undefined ? null : <><span style={dividerStyle} aria-hidden="true" /><span>{t('usageStatusReset')} {reset}</span></>}

@@ -11,6 +11,8 @@ import type { CodexAuthLocaleKey } from './locales.ts'
 import { CodexCapabilities } from './CodexCapabilities.tsx'
 import { CodexGlobalModel } from './CodexGlobalModel.tsx'
 import { copyTextToClipboard } from './copy-to-clipboard.ts'
+import { fiveHourWindow, weeklyWindow } from './usage-windows.ts'
+import type { CodexUsageWindow } from './usage-windows.ts'
 import {
   CODEX_AUTH_LOGIN_PATH,
   CODEX_AUTH_LOGOUT_PATH,
@@ -36,19 +38,12 @@ interface LoginChallenge {
   expiresInSeconds?: number
 }
 
-interface UsageWindow {
-  remainingPercent?: number
-  limitWindowSeconds?: number
-  resetAfterSeconds?: number
-  resetAt?: number
-}
-
 interface CodexUsage {
   planType?: string
   allowed?: boolean
   limitReached?: boolean
-  primaryWindow?: UsageWindow
-  secondaryWindow?: UsageWindow
+  primaryWindow?: CodexUsageWindow
+  secondaryWindow?: CodexUsageWindow
   credits?: { hasCredits?: boolean; unlimited?: boolean; balance?: string }
 }
 
@@ -187,15 +182,7 @@ function progressWidth(value: number | undefined): string {
   return `${Math.max(0, Math.min(100, value))}%`
 }
 
-function weeklyWindow(usage: CodexUsage): UsageWindow | undefined {
-  const windows = [usage.primaryWindow, usage.secondaryWindow]
-  // The WHAM response normally exposes the weekly quota as secondary_window.
-  // Prefer the explicit seven-day window when the API includes its duration.
-  return windows.find(window => window?.limitWindowSeconds === 7 * 24 * 60 * 60)
-    ?? usage.secondaryWindow
-}
-
-function resetLabel(window: UsageWindow | undefined, t: Translate): string | undefined {
+function resetLabel(window: CodexUsageWindow | undefined, t: Translate): string | undefined {
   if (window?.resetAt !== undefined && Number.isFinite(window.resetAt)) {
     const date = new Intl.DateTimeFormat(undefined, { dateStyle: 'long', timeStyle: 'short' }).format(new Date(window.resetAt * 1_000))
     return `${t('usageResetAt')} ${date}`
@@ -207,7 +194,7 @@ function resetLabel(window: UsageWindow | undefined, t: Translate): string | und
   return undefined
 }
 
-function UsageWindowView({ label, value, t }: { label: string; value: UsageWindow | undefined; t: Translate }) {
+function UsageWindowView({ label, value, t }: { label: string; value: CodexUsageWindow | undefined; t: Translate }) {
   if (value === undefined) return null
   const reset = resetLabel(value, t)
   return (
@@ -390,8 +377,11 @@ export function CodexAuthCard({ t, configScope, connection }: CodexAuthCardProps
               {usage.status === 'error' ? <p style={errorStyle}>{t('usageUnavailable')}</p> : null}
               {usage.status === 'ready' ? (
                 <>
+                  <UsageWindowView label={t('usageFiveHour')} value={fiveHourWindow(usage.usage)} t={t} />
                   <UsageWindowView label={t('usageWeekly')} value={weeklyWindow(usage.usage)} t={t} />
-                  {weeklyWindow(usage.usage) === undefined ? <p style={bodyStyle}>{t('usageNoWindow')}</p> : null}
+                  {fiveHourWindow(usage.usage) === undefined && weeklyWindow(usage.usage) === undefined
+                    ? <p style={bodyStyle}>{t('usageNoWindow')}</p>
+                    : null}
                 </>
               ) : null}
             </div>
