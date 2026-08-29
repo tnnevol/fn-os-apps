@@ -156,6 +156,6 @@ description: DeepSeek Harness 在飞牛 fnOS 中的应用、插件和 NAS 能力
 | 编号 | 需求文档 | 状态 |
 | --- | --- | --- |
 | FNOS-001 | [DSH 飞牛 NAS 适配](/requirements/FNOS-001-dsh-fnos-adaptation) | P0/P1 已完成验证 |
-| FNOS-002 | [DSH 应用与插件优化](/requirements/FNOS-002-dsh-app-plugin-optimization)（含 Codex 状态、NAS 引用、共享 UI、FPK 网关和 fnOS 页面路由调研） | 规划中，暂未进入计划 |
+| FNOS-002 | [DSH 应用与插件优化](/requirements/FNOS-002-dsh-app-plugin-optimization)（含 Codex 状态、NAS 引用、共享 UI、FPK 网关和 fnOS 页面路由调研） | P1 已进入计划；应用中心详情页跳转需调研 |
 
 当前未发现其他明确的历史待开发需求未登记到需求文档中。新增需求先登记在对应需求文档，确认进入实施后再同步到详细计划；整合完成后，旧的拆分编号不再作为现行需求编号使用。

@@ -3,6 +3,7 @@ import DefaultTheme from 'vitepress/theme'
 import ImageViewerP from '@miletorix/vitepress-image-viewer'
 import AppIcon from './components/AppIcon.vue'
 import VersionBadge from './components/VersionBadge.vue'
+import FlowGrid from './components/FlowGrid.vue'
 import '@miletorix/vitepress-image-viewer/style.css'
 import './custom.css'
 
@@ -29,6 +30,7 @@ export default {
   Layout: DocsLayout,
   enhanceApp({ app }) {
     app.component('AppIcon', AppIcon)
+    app.component('FlowGrid', FlowGrid)
     ImageViewerP(app, {
       autoShowThumbnails: false,
       transparentBg: true

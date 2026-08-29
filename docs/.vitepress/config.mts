@@ -124,6 +124,10 @@ const plansSidebar = [
       {
         text: 'PLAN-FNOS-001 DSH 飞牛 NAS 适配',
         link: '/plans/PLAN-FNOS-001-dsh-fnos-adaptation'
+      },
+      {
+        text: 'PLAN-FNOS-002 DSH 应用与插件优化',
+        link: '/plans/PLAN-FNOS-002-dsh-app-plugin-optimization'
       }
     ]
   }
