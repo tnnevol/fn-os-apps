@@ -23,6 +23,12 @@ describe('dsh-fnos package contract', () => {
     expect(manifest.devDependencies['@tnnevol/dsh-semi-ui']).toBe('workspace:*')
   })
 
+  it('does not block fnOS routes on the optional ApiProxy service', async () => {
+    const source = await readFile(new URL('../src/index.ts', import.meta.url), 'utf8')
+    expect(source).toMatch(/export const inject = \['webServer', 'settings'\]/u)
+    expect(source).not.toMatch(/export const inject = \['webServer', 'settings', 'apiProxy'\]/u)
+  })
+
   it('only registers itself and does not patch the official directory picker', async () => {
     const patch = await readFile(new URL('../cordis.patch.yml', import.meta.url), 'utf8')
     expect(patch).toContain('id: dsh-fnos')
