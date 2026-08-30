@@ -9,6 +9,7 @@ import { gatewayBridgeScript } from './bridge-script.js'
 import { attachSseKeepalive } from './middleware/sse-keepalive.js'
 import { BAD_GATEWAY_MESSAGE } from './constants.js'
 import { recoveryPage } from './recovery-page.js'
+import { WEB_CONTROL_RESTART_PATH } from './web-process.js'
 
 function sendBadGateway(res: ServerResponse, error: unknown, options?: GatewayOptions, req?: IncomingMessage): void {
   if (res.headersSent) {
@@ -72,6 +73,7 @@ export function createProxyHandler(options: GatewayOptions): RequestHandler {
               prefix: gatewayPrefix,
               customPaths: options.pathAllowlist?.snapshot().paths ?? [],
               eventsPath: '/__fnos-gateway/path-allowlist/events',
+              webRestartPath: WEB_CONTROL_RESTART_PATH,
             })
             rewrittenBody = rewriteHtml(rawBody, gatewayPrefix, bridgeScript)
           } else if (contentType.includes('text/css')) {

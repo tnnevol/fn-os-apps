@@ -3,6 +3,7 @@ import { spawn, type ChildProcess } from 'node:child_process'
 
 export const WEB_CONTROL_STATUS_PATH = '/__fnos-gateway/control/web/status'
 export const WEB_CONTROL_START_PATH = '/__fnos-gateway/control/web/start'
+export const WEB_CONTROL_RESTART_PATH = '/__fnos-gateway/control/web/restart'
 
 export interface WebProcessOptions {
   command: string
@@ -65,6 +66,7 @@ async function terminateChild(child: ChildProcess, command: string, timeoutMs = 
 
 export class WebProcessController {
   private starting: Promise<WebProcessSnapshot> | undefined
+  private restarting: Promise<WebProcessSnapshot> | undefined
   private child: ChildProcess | undefined
   private lastError: string | undefined
   private stopping = false
@@ -84,6 +86,16 @@ export class WebProcessController {
     if (current.state === 'running') return current
     this.starting = this.startLocked().finally(() => { this.starting = undefined })
     return await this.starting
+  }
+
+  async restart(): Promise<WebProcessSnapshot> {
+    if (this.restarting !== undefined) return await this.restarting
+    const operation = (async (): Promise<WebProcessSnapshot> => {
+      await this.stop()
+      return await this.start()
+    })()
+    this.restarting = operation.finally(() => { this.restarting = undefined })
+    return await this.restarting
   }
 
   private async startLocked(retry = true): Promise<WebProcessSnapshot> {

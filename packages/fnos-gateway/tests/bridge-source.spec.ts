@@ -55,6 +55,37 @@ describe('browser bridge source', () => {
 
     expect(requests).toEqual(['http://nas.example/app/fn-deepseek-harness/dsh-market/registry'])
   })
+  it('maps configured plugin paths used by static resource attributes', () => {
+    const window: Record<string, unknown> = {
+      location: { href: 'http://nas.example/app/fn-deepseek-harness/', origin: 'http://nas.example' },
+      fetch(input: unknown) { return Promise.resolve(input) },
+    }
+    function Xhr(): void {}
+    Xhr.prototype.open = function (): void {}
+    function Node(): void {}
+    Node.prototype.appendChild = function (node: unknown): unknown { return node }
+    Node.prototype.insertBefore = function (node: unknown): unknown { return node }
+    function Element(this: { attributes: Record<string, string>, tagName: string }): void {
+      this.attributes = {}
+      this.tagName = ''
+    }
+    Element.prototype.setAttribute = function (this: { attributes: Record<string, string> }, name: string, value: string): void { this.attributes[name] = value }
+    Element.prototype.getAttribute = function (this: { attributes: Record<string, string> }, name: string): string | null { return this.attributes[name] ?? null }
+    Element.prototype.append = function (): void {}
+
+    runInNewContext(`window.__FNOS_GATEWAY_CONFIG__ = ${JSON.stringify({ prefix: '/app/fn-deepseek-harness', customPaths: ['/dsh-market'], eventsPath: '/__fnos-gateway/path-allowlist/events' })};${source}`, {
+      window,
+      XMLHttpRequest: Xhr,
+      Node,
+      Element,
+      URL,
+    })
+
+    const image = new (Element as unknown as new () => { attributes: Record<string, string>, tagName: string, setAttribute: (name: string, value: string) => void })()
+    image.tagName = 'IMG'
+    image.setAttribute('src', '/dsh-market/icon')
+    expect(image.attributes.src).toBe('http://nas.example/app/fn-deepseek-harness/dsh-market/icon')
+  })
   it('cannot close the containing script through a configured path', () => {
     const serialized = serializeBridgeConfig({ paths: ['/<\/script>'] })
     expect(serialized).not.toContain('</script>')

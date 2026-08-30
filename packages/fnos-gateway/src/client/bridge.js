@@ -18,6 +18,20 @@
     return url;
   }
 
+  function isResourceAttribute(node, name) {
+    var tag = String(node && node.tagName || "").toUpperCase();
+    var attribute = String(name || "").toLowerCase();
+    return (attribute === "src" && (tag === "IMG" || tag === "SCRIPT" || tag === "IFRAME" || tag === "AUDIO" || tag === "VIDEO" || tag === "SOURCE" || tag === "TRACK"))
+      || (attribute === "href" && tag === "LINK")
+      || (attribute === "poster" && tag === "VIDEO")
+      || (attribute === "data" && tag === "OBJECT");
+  }
+  function mapResourceAttribute(node, name, value) {
+    if (!isResourceAttribute(node, name)) return value;
+    var mapped = mapUrl(value);
+    return mapped ? mapped.toString() : value;
+  }
+
   var connectionId = "@deepseek-ai/dsh-client-connection";
   function wrapLoader(loader) {
     if (!loader || typeof loader.load !== "function") return loader;
@@ -90,7 +104,34 @@
   };
   var nativeOpen = XMLHttpRequest.prototype.open;
   XMLHttpRequest.prototype.open = function () { var args = Array.prototype.slice.call(arguments); var mapped = mapUrl(args[1]); if (mapped) args[1] = mapped.toString(); return nativeOpen.apply(this, args); };
-  function scriptNode(node) { if (!node || node.nodeType !== 1 || node.tagName !== "SCRIPT") return; var mapped = mapUrl(node.getAttribute("src") || node.src); if (mapped) node.setAttribute("src", mapped.toString()); }
+  var nativeSetAttribute = Element.prototype.setAttribute;
+  if (nativeSetAttribute) Element.prototype.setAttribute = function (name, value) { return nativeSetAttribute.call(this, name, mapResourceAttribute(this, name, value)); };
+  function patchResourceProperty(owner, property) {
+    var constructor = window[owner];
+    var prototype = constructor && constructor.prototype;
+    var descriptor = prototype && Object.getOwnPropertyDescriptor(prototype, property);
+    if (!descriptor || typeof descriptor.set !== "function" || descriptor.set.__fnosBridge === true) return;
+    var setter = descriptor.set;
+    var bridgedSetter = function (value) { setter.call(this, mapResourceAttribute(this, property, value)); };
+    try { Object.defineProperty(bridgedSetter, "__fnosBridge", { value: true }); } catch (_) {}
+    try { Object.defineProperty(prototype, property, { configurable: descriptor.configurable, enumerable: descriptor.enumerable, get: descriptor.get, set: bridgedSetter }); } catch (_) {}
+  }
+  patchResourceProperty("HTMLImageElement", "src");
+  patchResourceProperty("HTMLScriptElement", "src");
+  patchResourceProperty("HTMLLinkElement", "href");
+  patchResourceProperty("HTMLIFrameElement", "src");
+  patchResourceProperty("HTMLMediaElement", "src");
+  patchResourceProperty("HTMLSourceElement", "src");
+  function scriptNode(node) {
+    if (!node || node.nodeType !== 1) return;
+    var attributes = ["src", "href", "poster", "data"];
+    for (var attribute of attributes) {
+      if (!isResourceAttribute(node, attribute)) continue;
+      var value = node.getAttribute && node.getAttribute(attribute);
+      var mapped = mapResourceAttribute(node, attribute, value);
+      if (mapped !== value && node.setAttribute) node.setAttribute(attribute, mapped);
+    }
+  }
   var appendChild = Node.prototype.appendChild;
   Node.prototype.appendChild = function (node) { scriptNode(node); return appendChild.call(this, node); };
   var append = Element.prototype.append;
@@ -99,6 +140,50 @@
   Node.prototype.insertBefore = function (node, reference) { scriptNode(node); return insertBefore.call(this, node, reference); };
   if (window.EventSource) window.EventSource = new Proxy(window.EventSource, { construct: function (target, args, receiver) { var mapped = mapUrl(args[0]); if (mapped) args[0] = mapped.toString(); return Reflect.construct(target, args, receiver); } });
   if (window.WebSocket) window.WebSocket = new Proxy(window.WebSocket, { construct: function (target, args, receiver) { var mapped = mapUrl(args[0]); if (mapped) { mapped.protocol = mapped.protocol === "https:" ? "wss:" : "ws:"; args[0] = mapped.toString(); } return Reflect.construct(target, args, receiver); } });
+
+  function mountRestartButton() {
+    if (!window.document || !document.body || document.getElementById("fnos-gateway-restart-web")) return true;
+    var sidebar = document.querySelector("aside") || document.querySelector('[data-testid*="sidebar"]') || document.querySelector('[class*="sidebar" i]');
+    if (!sidebar) return false;
+    var host = document.createElement("div");
+    host.id = "fnos-gateway-restart-web-host";
+    host.style.cssText = "margin:8px 12px 12px;";
+    var button = document.createElement("button");
+    button.id = "fnos-gateway-restart-web";
+    button.type = "button";
+    button.textContent = "重启 Web";
+    button.title = "重启 DeepSeek Harness Web 服务";
+    button.style.cssText = "width:100%;padding:7px 10px;border:1px solid var(--dsw-alias-border-primary,#d9d9d9);border-radius:8px;background:var(--dsw-alias-fill-primary,#fff);color:var(--dsw-alias-label-primary,#171717);font:inherit;cursor:pointer;";
+    button.onclick = async function () {
+      button.disabled = true;
+      button.textContent = "正在重启 Web…";
+      try {
+        var response = await nativeFetch(prefix + (config.webRestartPath || "/__fnos-gateway/control/web/restart"), { method: "POST", headers: { "x-requested-with": "fetch" } });
+        var value = await response.json();
+        if (!response.ok) throw new Error(value.error || "重启失败");
+        button.textContent = "Web 已重启";
+        setTimeout(function () { window.location.reload(); }, 300);
+      } catch (error) {
+        button.disabled = false;
+        button.textContent = "重启 Web";
+        button.title = error && error.message ? error.message : "重启失败";
+      }
+    };
+    host.appendChild(button);
+    sidebar.appendChild(host);
+    return true;
+  }
+  function watchForRestartButton() {
+    if (!window.document || !document.body) return;
+    if (mountRestartButton() || !window.MutationObserver) return;
+    var observer = new MutationObserver(function () { if (mountRestartButton()) observer.disconnect(); });
+    observer.observe(document.body, { childList: true, subtree: true });
+    setTimeout(function () { observer.disconnect(); }, 10_000);
+  }
+  if (window.document) {
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", watchForRestartButton, { once: true });
+    else setTimeout(watchForRestartButton, 0);
+  }
 
   try {
     var events = new EventSource(prefix + config.eventsPath);

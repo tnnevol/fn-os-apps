@@ -9,6 +9,6 @@ describe('DSH Web recovery page', () => {
     expect(html).toContain('id="restart"')
     expect(html).toContain('>重启 Web</button>')
     expect(html).toContain('正在重启 Web…')
-    expect(html).toContain('/app/fn-deepseek-harness/__fnos-gateway/control/web/start')
+    expect(html).toContain('/app/fn-deepseek-harness/__fnos-gateway/control/web/restart')
   })
 })

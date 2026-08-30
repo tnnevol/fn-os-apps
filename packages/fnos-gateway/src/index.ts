@@ -1,5 +1,5 @@
 export { createGateway } from './server.js'
 export type { GatewayOptions, GatewayServer } from './types.js'
 export { PathAllowlistStore, normalizeProxyPaths, PATH_ALLOWLIST_EVENTS_PATH } from './path-allowlist.js'
-export { WebProcessController, WEB_CONTROL_START_PATH, WEB_CONTROL_STATUS_PATH } from './web-process.js'
+export { WebProcessController, WEB_CONTROL_RESTART_PATH, WEB_CONTROL_START_PATH, WEB_CONTROL_STATUS_PATH } from './web-process.js'
 export type { WebProcessOptions, WebProcessSnapshot } from './web-process.js'

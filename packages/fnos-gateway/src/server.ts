@@ -6,19 +6,21 @@ import type { GatewayOptions, GatewayServer } from './types.js'
 import { pathRewriteMiddleware, rewritePath } from './middleware/path-rewrite.js'
 import { createProxyHandler } from './proxy.js'
 import { PATH_ALLOWLIST_EVENTS_PATH } from './path-allowlist.js'
-import { WEB_CONTROL_START_PATH, WEB_CONTROL_STATUS_PATH } from './web-process.js'
+import { WEB_CONTROL_RESTART_PATH, WEB_CONTROL_START_PATH, WEB_CONTROL_STATUS_PATH } from './web-process.js'
+import { attachSseKeepalive } from './middleware/sse-keepalive.js'
 
 function webControl(options: GatewayOptions): connect.NextHandleFunction {
   return (req, res, next) => {
     const path = req.url?.split('?', 1)[0]
-    if (path !== WEB_CONTROL_STATUS_PATH && path !== WEB_CONTROL_START_PATH) return next()
+    if (path !== WEB_CONTROL_STATUS_PATH && path !== WEB_CONTROL_START_PATH && path !== WEB_CONTROL_RESTART_PATH) return next()
     res.setHeader('content-type', 'application/json; charset=utf-8')
     if (options.webProcess === undefined) { res.statusCode = 404; res.end(JSON.stringify({ error: 'web-control-unavailable' })); return }
     if (path === WEB_CONTROL_STATUS_PATH && req.method === 'GET') { void options.webProcess.snapshot().then(value => res.end(JSON.stringify(value))); return }
-    if (path === WEB_CONTROL_START_PATH && req.method === 'POST') {
+    if ((path === WEB_CONTROL_START_PATH || path === WEB_CONTROL_RESTART_PATH) && req.method === 'POST') {
       const administrator = req.headers['x-requested-with'] === 'fetch' && String(req.headers['x-trim-isadmin'] ?? '').toLowerCase() === 'true'
       if (!administrator) { res.statusCode = 403; res.end(JSON.stringify({ error: 'administrator-required' })); return }
-      void options.webProcess.start().then(value => { res.statusCode = value.state === 'error' ? 503 : 200; res.end(JSON.stringify(value)) })
+      const operation = path === WEB_CONTROL_RESTART_PATH ? options.webProcess.restart() : options.webProcess.start()
+      void operation.then(value => { res.statusCode = value.state === 'error' ? 503 : 200; res.end(JSON.stringify(value)) })
       return
     }
     res.statusCode = 405; res.end(JSON.stringify({ error: 'method-not-allowed' }))
@@ -30,10 +32,25 @@ function pathAllowlistEvents(options: GatewayOptions): connect.NextHandleFunctio
     if (req.url?.split('?', 1)[0] !== PATH_ALLOWLIST_EVENTS_PATH) return next()
     if (req.method !== 'GET' || options.pathAllowlist === undefined) { res.statusCode = 404; res.end(); return }
     res.writeHead(200, { 'content-type': 'text/event-stream; charset=utf-8', 'cache-control': 'no-cache, no-transform', connection: 'keep-alive' })
+    res.flushHeaders()
+    const clearKeepalive = attachSseKeepalive(res, {
+      interval: options.sseKeepaliveInterval ?? 15_000,
+      comment: 'fnos-gateway path allowlist keep-alive',
+    })
+    let closed = false
     const unsubscribe = options.pathAllowlist.subscribe(snapshot => {
+      if (closed || res.destroyed || res.writableEnded) return
       res.write(`event: paths\ndata: ${JSON.stringify(snapshot)}\n\n`)
     })
-    req.once('close', unsubscribe)
+    const cleanup = (): void => {
+      if (closed) return
+      closed = true
+      clearKeepalive()
+      unsubscribe()
+    }
+    req.once('close', cleanup)
+    res.once('close', cleanup)
+    res.once('error', cleanup)
   }
 }
 
