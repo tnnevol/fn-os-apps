@@ -272,8 +272,8 @@ Node HTTP Server 只负责承载 Unix Socket；请求代理、WebSocket 升级�
       ]
     },
     {
-      label: '恢复页面',
-      detail: '网关直接返回页面，管理员点击“启动 Web”'
+      label: 'Web 端恢复入口',
+      detail: '网关直接返回页面，管理员点击“重启 Web”'
     },
     {
       label: '替换 Web 进程',
@@ -420,7 +420,7 @@ SSE 路由由网关自身处理，不转发到 DSH。它经过 fnOS 统一网关
 | PLAN-FNOS-002-T04-10 | FNOS-002-04 | 在真实 fnOS NAS 验证代理、路径保存、即时生效、升级和回滚 | <Badge type="warning" text="待 NAS 验证" /> |
 | PLAN-FNOS-002-T04-11 | FNOS-002-04 | 调整 `cmd/main status`：以网关 PID 代表 FPK 运行状态，修复死亡但非空 PID 文件无法清理的问题 | <Badge type="tip" text="已完成" /> |
 | PLAN-FNOS-002-T04-12 | FNOS-002-04 | 拆分网关和 DSH Web 的启动逻辑；网关已运行时只恢复 Web，不删除 Socket 或重复启动网关 | <Badge type="tip" text="已完成" /> |
-| PLAN-FNOS-002-T04-13 | FNOS-002-04 | 在网关增加 DSH 健康状态和管理员恢复路由，上游不可用时提供独立恢复页面 | <Badge type="tip" text="已完成" /> |
+| PLAN-FNOS-002-T04-13 | FNOS-002-04 | 在网关增加 DSH 健康状态、Web 端“重启 Web”按钮和管理员恢复路由，上游不可用时提供独立恢复页面 | <Badge type="tip" text="已完成" /> |
 | PLAN-FNOS-002-T04-14 | FNOS-002-04 | 使用启动锁、`app.pid.starting`、超时健康检查和原子 rename 管理 Web PID | <Badge type="tip" text="已完成" /> |
 | PLAN-FNOS-002-T04-15 | FNOS-002-04 | 验证 Web 被终止、重复点击、启动失败、PID 复用、网关退出和 FPK stop/config_callback 场景 | <Badge type="warning" text="待 NAS 验证" /> |
 | PLAN-FNOS-002-T04-16 | FNOS-002-04 | 将 `BRIDGE_SCRIPT_BODY` 拆到 `src/client/bridge.js`；两个 tsdown 构建复用虚拟模块插件，在构建期读取并内联 Bridge | <Badge type="tip" text="已完成" /> |
@@ -510,16 +510,16 @@ SSE 路由由网关自身处理，不转发到 DSH。它经过 fnOS 统一网关
 
 该列表不是权限名单。命中只代表 bridge 为三方插件 API 请求补充统一网关前缀，实际访问仍受 fnOS 登录态、DSH 路由和三方插件自身权限约束。
 
-### P1：DSH Web 恢复用户交互流程
+### P1：DSH Web 重启按钮用户交互流程
 
 1. DSH Web 正常时，网关透明代理请求，不展示额外状态或按钮。
 2. 网关发现上游连接失败后：
    - 已打开页面由 bridge 展示“DSH Web 已停止”的恢复提示。
    - 用户刷新或重新打开应用时，由网关直接返回独立恢复页面，不依赖 DSH 或 fnOS 插件加载。
-3. 管理员点击“启动 Web”后，页面向网关控制路由发送同源 POST 请求；普通用户只看到不可用状态，不能执行启动操作。
+3. 管理员在 Web 端点击“重启 Web”后，页面向网关控制路由发送同源 POST 请求；普通用户只看到不可用状态，不能执行重启操作。
 4. 网关取得启动锁后启动新的 DSH Web，把候选 PID 写入 `app.pid.starting`，并周期检查 PID 和 `127.0.0.1:3080`。
 5. 健康检查成功后，网关原子替换 `${TRIM_PKGVAR}/app.pid`，返回成功并重新加载 DSH 页面。
-6. 启动失败或超时后，网关终止候选进程、清理临时 PID 和启动锁，保留恢复页面及错误摘要，允许再次尝试。
+6. 重启失败或超时后，网关终止候选进程、清理临时 PID 和启动锁，保留恢复页面及错误摘要，允许再次点击“重启 Web”。
 7. 并发请求命中已有启动任务时复用当前状态，不再次创建进程。
 8. fnOS 执行 `cmd/main stop` 时，先阻止新的恢复操作，再停止 DSH Web 和网关，最后清理 PID、锁和 Socket。
 
@@ -622,7 +622,7 @@ SSE 路由由网关自身处理，不转发到 DSH。它经过 fnOS 统一网关
 | FPK 状态语义 | DSH Web 退出会让 fnOS 把整个应用标记为停止 | 以网关 PID 表示可管理的应用控制面，Web 状态单独展示 |
 | PID 复用 | 仅使用 `kill -0` 可能把无关进程误认为 DSH | 停止前核对 `/proc/<pid>/cmdline`，候选 PID 通过健康检查后再发布 |
 | 重复启动 | 多页面或重复点击可能创建多个 Web 进程 | 使用跨请求启动锁和共享启动状态，网关运行时不重复创建网关 |
-| 恢复入口依赖 | DSH 插件随 Web 一起退出，无法承担恢复 UI | 恢复页面和控制路由直接由常驻网关提供 |
+| 恢复入口依赖 | DSH 插件随 Web 一起退出，无法承担恢复 UI | Web 端“重启 Web”按钮、恢复页面和控制路由直接由常驻网关提供 |
 | NAS 引用分隔 | DSH 插入事务会自行追加尾随空格，重复补空格可能改动原文 | 纯函数计算前缀，测试 DSH 插入后的完整 draft，不对全文做 trim |
 | Tree 反向同步 | 仅按路径同步会把面板打开前的同路径历史引用误认为本次选择 | 以面板打开基线和 occurrence 身份维护本次关联，历史引用不进入 `desiredPaths` |
 | 输入快照时序 | 插入调用成功后 occurrence 可能在后续 revision 才出现，立即求差集会误取消勾选 | 增加 pending 关联阶段，收到对应 occurrence 或明确失败后再参与反向同步 |
@@ -705,7 +705,7 @@ pnpm --filter @tnnevol/dsh-codex-auth run build
 - 构建 FPK，确认生成的网关、fnOS 插件和 UI 配置正确打包。
 - 安装后确认 Socket 位于 `${TRIM_APPDEST}/app.sock`，公开入口保持 `/app/fn-deepseek-harness`。
 - 验证 fnOS 登录 Header、HTTP、SSE、WebSocket、静态资源、DSH 官方 API 和已安装插件 API。
-- 单独终止 DSH Web，确认 `cmd/main status` 仍返回运行、网关和 Socket 未重建，并能打开恢复页面。
+- 单独终止 DSH Web，确认 `cmd/main status` 仍返回运行、网关和 Socket 未重建，并能打开包含“重启 Web”按钮的恢复页面。
 - 分别使用管理员和普通用户访问恢复入口；只有管理员可执行启动，连续点击不会产生多个 Web PID。
 - 验证启动成功后正式 PID 原子更新并自动恢复 DSH 页面；模拟启动失败后，网关保持运行且临时 PID 和锁被清理。
 - 终止网关后确认 `cmd/main status` 返回未运行，fnOS 应用中心仍可重新启动整个应用。
