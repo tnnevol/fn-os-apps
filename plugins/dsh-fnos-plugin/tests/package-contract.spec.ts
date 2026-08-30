@@ -10,7 +10,7 @@ describe('dsh-fnos package contract', () => {
       devDependencies: { '@trimjs/web-app': string, '@tnnevol/dsh-semi-ui': string }
     }
     expect(manifest.name).toBe('@tnnevol/dsh-fnos')
-    expect(manifest.version).toBe('0.1.2-alpha.1')
+    expect(manifest.version).toBe('0.1.1-rc.2')
     expect(manifest.dsh.bundle.patch).toBe('./cordis.patch.yml')
     expect(manifest.dsh.client.platform).toBe('web')
     expect(manifest.dsh.client.immediately).toBe(true)
@@ -19,7 +19,7 @@ describe('dsh-fnos package contract', () => {
     expect(manifest.dsh.client.inject).toContain('@deepseek-ai/dsh-client-ui-settings-plugins')
     expect(manifest.dsh.client.inject).toContain('@deepseek-ai/dsh-client-ui-workspace')
     expect(manifest.dsh.client.inject).not.toContain('@deepseek-ai/dsh-client-ui-directory-picker-browse')
-    expect(manifest.devDependencies['@trimjs/web-app']).toBe('latest')
+    expect(manifest.devDependencies['@trimjs/web-app']).toBe('catalog:')
     expect(manifest.devDependencies['@tnnevol/dsh-semi-ui']).toBe('workspace:*')
   })
 
@@ -166,7 +166,7 @@ describe('dsh-fnos package contract', () => {
     const compatibility = JSON.parse(await readFile(new URL('../compatibility.json', import.meta.url), 'utf8')) as {
       dshPluginApi: { version: string, packages: string[] }
     }
-    expect(compatibility.dshPluginApi.version).toBe('0.1.2-alpha.1')
+    expect(compatibility.dshPluginApi.version).toBe('0.1.1-rc.2')
     expect(compatibility.dshPluginApi.packages).toEqual([
       '@deepseek-ai/dsh-client-runtime',
       '@deepseek-ai/dsh-session-log-export',

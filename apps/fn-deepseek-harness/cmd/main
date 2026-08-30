@@ -42,7 +42,7 @@ check_process() {
         local state
         state=$(awk '{print $3}' "/proc/${pid}/stat" 2>/dev/null)
         case "${state}" in
-        Z|X) return 1 ;;
+        Z | X) return 1 ;;
         esac
     fi
     kill -0 "$pid" 2>/dev/null

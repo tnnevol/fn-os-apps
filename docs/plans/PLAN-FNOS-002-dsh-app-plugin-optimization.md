@@ -188,7 +188,7 @@ Socket 文件只创建在 `${TRIM_APPDEST}`。用户可变配置写入 `${TRIM_P
 
 总览插件只消费共享包的公开导出，不从 Semi Design 深层路径再次引入组件。新增公共组件时，先在共享包统一封装和映射主题，再加入总览。
 
-DSH `0.1.2-alpha.1` 没有公开的 Router/Page 注册服务，因此总览使用 `#/plugins/semi-ui` 作为插件路由，并在 `shell.overlay` list slot 中渲染覆盖 AppFrame 的独立页面。Hash 不改变 fnOS 统一网关请求路径，直接刷新仍由原 DSH HTML 入口承载；不得注册或替换 `conversation`、`sidebar` 等 single slot。
+DSH `0.1.1-rc.2` 没有公开的 Router/Page 注册服务，因此总览使用 `#/plugins/semi-ui` 作为插件路由，并在 `shell.overlay` list slot 中渲染覆盖 AppFrame 的独立页面。Hash 不改变 fnOS 统一网关请求路径，直接刷新仍由原 DSH HTML 入口承载；不得注册或替换 `conversation`、`sidebar` 等 single slot。
 
 ### 统一网关请求
 
@@ -628,7 +628,7 @@ SSE 路由由网关自身处理，不转发到 DSH。它经过 fnOS 统一网关
 | Tree 反向同步 | 仅按路径同步会把面板打开前的同路径历史引用误认为本次选择 | 以面板打开基线和 occurrence 身份维护本次关联，历史引用不进入 `desiredPaths` |
 | 输入快照时序 | 插入调用成功后 occurrence 可能在后续 revision 才出现，立即求差集会误取消勾选 | 增加 pending 关联阶段，收到对应 occurrence 或明确失败后再参与反向同步 |
 | Semi UI 总览 | 总览插件和共享包可能循环依赖或重复打包 Semi | 总览插件单向依赖共享包，公共组件只从共享包导出，构建检查 bundle 契约 |
-| DSH 页面路由 | `0.1.2-alpha.1` 没有公开 Router/Page 注册服务，替换 single slot 会破坏官方页面 | 使用 Hash 路由和 `shell.overlay` list slot；精确匹配插件路由并完整清理监听与注册 |
+| DSH 页面路由 | `0.1.1-rc.2` 没有公开 Router/Page 注册服务，替换 single slot 会破坏官方页面 | 使用 Hash 路由和 `shell.overlay` list slot；精确匹配插件路由并完整清理监听与注册 |
 | Portal 主题 | Tooltip、Modal 等浮层不在设置卡片 DOM 内 | 继续使用 body 级主题属性和 DSH 语义 Token，浅色/深色分别截图验证 |
 | 认证状态竞争 | 退出后旧用量请求可能晚于状态更新返回 | 以最新认证快照或请求序号为准，未登录时丢弃旧用量结果 |
 | WHAM 用量接口 | 字段可能变化 | Host 规范化，只依赖已存在的安全字段 |

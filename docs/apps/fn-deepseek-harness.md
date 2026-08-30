@@ -39,7 +39,7 @@ FPK 安装和升级时会根据发布清单安装 npm `rc` 标签对应的插件
 - 默认端口为 `3080`，iframe 入口需要固定端口。
 - 使用 `127.0.0.1` 时，可信访问地址填写打开 NAS Web 时浏览器地址栏中的 host 或 host:port。
 - npm 官方源默认使用 `https://registry.npmjs.org/`；安装失败不会自动切换其他源。应用安装、升级和卸载流程统一使用 `nodejs_v24` 提供的 npm，不会安装或卸载 pnpm。
-- 安装时固定检查应用自己的 npm 全局目录中的 `@deepseek-ai/dsh@0.1.2-alpha.1`；本地存在该精确版本时复用，否则使用 npm 安装该固定版本，并使用 FPK 内置的 `node-pty@1.2.0-beta.15` native 文件。
+- 安装时固定检查应用自己的 npm 全局目录中的 `@deepseek-ai/dsh@0.1.1-rc.2`；本地存在该精确版本时复用，否则使用 npm 安装该固定版本，并使用 FPK 内置的 `node-pty@1.2.0-beta.15` native 文件。
 - 应用安装、升级和启动前会自动修复旧版 Web profile 的官方 bundle 基线（`@deepseek-ai/dsh-base`、`@deepseek-ai/dsh-web-app`），并保留已有的第三方插件和用户配置；这两个 bundle 缺失时，终端、Agent 循环和网页搜索设置卡片不会出现。安装器只维护官方 bundle 基线和发布清单中的插件，不会对 `@tnnevol/dsh-fnos` 执行额外的本地依赖迁移、删除或补丁操作。
 
 应用的 npm 镜像源、数据目录和环境变量详见应用目录中的 [README](https://github.com/tnnevol/fn-os-apps/blob/main/apps/fn-deepseek-harness/README.md)。
