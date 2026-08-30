@@ -66,4 +66,18 @@ describe('fnOS theme persistence', () => {
     expect(host.set).toHaveBeenCalledTimes(1)
     resolve()
   })
+
+  it('does not resend after a request resolves before the snapshot updates', async () => {
+    let resolve!: () => void
+    const host = makeScope()
+    host.set.mockImplementation(() => new Promise<void>(done => { resolve = done }))
+    const persistence = createThemePersistence(host.scope)
+
+    persistence.sync('system', 'dark')
+    resolve()
+    await new Promise<void>(queueMicrotask)
+    persistence.sync('system', 'dark')
+
+    expect(host.set).toHaveBeenCalledTimes(1)
+  })
 })
