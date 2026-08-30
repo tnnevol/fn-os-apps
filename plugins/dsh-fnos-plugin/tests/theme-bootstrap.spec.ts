@@ -1,9 +1,16 @@
 import { describe, expect, it } from 'vitest'
-import { cachedFnosThemeForBoot, injectCachedFnosTheme } from '../src/theme-bootstrap.ts'
+import { cachedFnosThemeForBoot, injectCachedFnosTheme, isDshThemePreference } from '../src/theme-bootstrap.ts'
 
 const html = '<body><script>const preference = "system"\nconst systemDark = preference === \'system\'</script><main /></body>'
 
 describe('fnOS theme bootstrap', () => {
+  it('does not treat third-party theme ids as persisted DSH preferences', () => {
+    expect(isDshThemePreference('light')).toBe(true)
+    expect(isDshThemePreference('dark')).toBe(true)
+    expect(isDshThemePreference('system')).toBe(true)
+    expect(isDshThemePreference('dream-skin')).toBe(false)
+  })
+
   it('uses the cached fnOS theme only for DSH system preference', () => {
     expect(cachedFnosThemeForBoot('system', 'dark')).toBe('dark')
     expect(cachedFnosThemeForBoot('system', 'light')).toBe('light')

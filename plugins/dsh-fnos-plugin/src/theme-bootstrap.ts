@@ -4,6 +4,11 @@ import { isFnosTheme, type FnosTheme } from './theme-contract.ts'
 
 export type DshThemePreference = FnosTheme | 'system'
 
+/** Third-party theme ids are runtime-only and must not touch fnOS settings. */
+export function isDshThemePreference(value: unknown): value is DshThemePreference {
+  return value === 'light' || value === 'dark' || value === 'system'
+}
+
 /**
  * Resolve the cached preference that is safe to use before the Client tree
  * starts. Explicit DSH preferences remain authoritative and never use the

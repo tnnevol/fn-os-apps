@@ -78,9 +78,9 @@ export const en = {
   workspaceNoMatch: 'No matching authorized directories.',
   workspaceLoadFailed: 'Unable to load authorized directories.',
   workspaceSelect: 'Select directory',
-  webRestart: 'Restart Web',
-  webRestarting: 'Restarting Web…',
-  webRestartFailed: 'Restart Web failed',
+  webRestart: 'Restart',
+  webRestarting: 'Restarting…',
+  webRestartFailed: 'Restart failed',
 }
 
 export type FnosLocaleKey = keyof typeof en
@@ -163,7 +163,7 @@ export const zh: { [Key in FnosLocaleKey]: string } = {
   workspaceNoMatch: '没有匹配的授权目录。',
   workspaceLoadFailed: '无法加载授权目录。',
   workspaceSelect: '选择目录',
-  webRestart: '重启 Web',
-  webRestarting: '正在重启 Web…',
-  webRestartFailed: '重启 Web 失败',
+  webRestart: '重启',
+  webRestarting: '正在重启…',
+  webRestartFailed: '重启失败',
 }

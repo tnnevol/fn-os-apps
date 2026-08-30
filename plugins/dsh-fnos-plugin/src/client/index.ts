@@ -27,6 +27,7 @@ import { createThemePersistence } from './theme-persistence.ts'
 import { installWorkspaceAuthorizedShortcut } from './workspace-authorized-shortcut.ts'
 import { FNOS_AUTHORIZED_DIRECTORIES_SETTINGS_NAMESPACE } from '../authorized-directories-contract.ts'
 import type { FnosSettings, FnosTheme } from '../theme-contract.ts'
+import { isDshThemePreference } from '../theme-bootstrap.ts'
 import { installSemiDshTheme } from '@tnnevol/dsh-semi-ui'
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
@@ -99,7 +100,7 @@ function createThemeController(
     const theme = ctx.theme
     const preference = theme.getTheme().preference
     if (preference !== 'system') {
-      persistence.sync(preference, null)
+      if (isDshThemePreference(preference)) persistence.sync(preference, null)
       clearSystemTheme()
       return
     }
