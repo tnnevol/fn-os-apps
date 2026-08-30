@@ -1,13 +1,13 @@
 # Codex Auth
 
-`@tnnevol/dsh-codex-auth` 为 DSH 提供 ChatGPT/Codex 登录、模型目录和账号用量。当前插件版本为 `0.1.1-rc.2.2`，适配 DSH `0.1.1-rc.2`。
+`@tnnevol/dsh-codex-auth` 为 DSH 提供 ChatGPT/Codex 登录、模型目录和账号用量。当前插件版本为 `0.1.2-alpha.1`，适配 DSH `0.1.2-alpha.1`。
 
 ## 安装
 
-`fn-deepseek-harness` 会在安装和升级时自动安装 npm `rc` 标签对应的版本。其他 DSH 环境可以执行：
+`fn-deepseek-harness` 会在安装和升级时自动安装 npm `alpha` 标签对应的版本。其他 DSH 环境可以执行：
 
 ```sh
-dsh plugin --profile web add @tnnevol/dsh-codex-auth@rc
+dsh plugin --profile web add @tnnevol/dsh-codex-auth@alpha
 dsh --profile web --dump-config
 ```
 
@@ -64,7 +64,7 @@ Web 设置通过同源插件路由访问 Host。使用 `fn-deepseek-harness` 时
 dsh --profile web --dump-config | grep -n -C 3 'dsh-codex-auth'
 ```
 
-如果出现 `cannot resolve profile bundle`，请重新执行 `dsh plugin --profile web add @tnnevol/dsh-codex-auth@rc`，不要只在 `package.json` 中手动补 bundle。
+如果出现 `cannot resolve profile bundle`，请重新执行 `dsh plugin --profile web add @tnnevol/dsh-codex-auth@alpha`，不要只在 `package.json` 中手动补 bundle。
 
 ### 模型目录没有 OpenAI Codex
 

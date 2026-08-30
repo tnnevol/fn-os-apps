@@ -111,6 +111,10 @@ const requirementsSidebar = [
       {
         text: 'FNOS-002 DSH 应用与插件优化',
         link: '/requirements/FNOS-002-dsh-app-plugin-optimization'
+      },
+      {
+        text: 'FNOS-003 DSH 版本统一升级',
+        link: '/requirements/FNOS-003-dsh-version-alignment'
       }
     ]
   }
@@ -128,6 +132,10 @@ const plansSidebar = [
       {
         text: 'PLAN-FNOS-002 DSH 应用与插件优化',
         link: '/plans/PLAN-FNOS-002-dsh-app-plugin-optimization'
+      },
+      {
+        text: 'PLAN-FNOS-003 DSH 版本统一升级',
+        link: '/plans/PLAN-FNOS-003-dsh-version-alignment'
       }
     ]
   }
