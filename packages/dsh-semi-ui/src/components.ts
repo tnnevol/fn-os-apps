@@ -1,4 +1,5 @@
 export { default as DshButton } from '@douyinfe/semi-ui/lib/es/button/index.js'
+export { default as DshButtonGroup } from '@douyinfe/semi-ui/lib/es/button/buttonGroup.js'
 export { default as DshModal } from '@douyinfe/semi-ui/lib/es/modal/index'
 export { default as DshCascader } from '@douyinfe/semi-ui/lib/es/cascader/index'
 export { default as DshDropdown } from '@douyinfe/semi-ui/lib/es/dropdown/index.js'
@@ -13,4 +14,5 @@ export { default as DshIconFile } from '@douyinfe/semi-icons/lib/es/icons/IconFi
 export { default as DshIconFolder } from '@douyinfe/semi-icons/lib/es/icons/IconFolder.js'
 export { default as DshIconFolderOpen } from '@douyinfe/semi-icons/lib/es/icons/IconFolderOpen.js'
 export { default as DshIconRefresh } from '@douyinfe/semi-icons/lib/es/icons/IconRefresh.js'
+export { default as DshIconRestart } from '@douyinfe/semi-icons/lib/es/icons/IconRestart.js'
 export { default as DshIconSetting } from '@douyinfe/semi-icons/lib/es/icons/IconSetting.js'

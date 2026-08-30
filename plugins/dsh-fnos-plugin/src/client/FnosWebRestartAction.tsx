@@ -1,7 +1,7 @@
 /** DSH sidebar action for restarting the upstream Web process through fnOS. */
 
 import { useCallback, useState } from 'react'
-import { DshButton, DshIconButton, DshIconRefresh, DshTooltip } from '@tnnevol/dsh-semi-ui'
+import { DshButton, DshButtonGroup, DshIconButton, DshIconRefresh, DshIconRestart } from '@tnnevol/dsh-semi-ui'
 import { isEmbeddedFnosFrame } from './sdk-carrier.ts'
 import type { FnosLocaleKey } from './locales.ts'
 
@@ -24,6 +24,10 @@ function gatewayControlUrl(path: string): string {
 export function FnosWebRestartAction({ wide, t }: FnosWebRestartActionProps) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(false)
+
+  const refresh = useCallback((): void => {
+    window.location.reload()
+  }, [])
 
   const restart = useCallback(async (): Promise<void> => {
     setBusy(true)
@@ -50,38 +54,65 @@ export function FnosWebRestartAction({ wide, t }: FnosWebRestartActionProps) {
 
   if (!isEmbeddedFnosFrame()) return null
 
-  const label = error ? t('webRestartFailed') : busy ? t('webRestarting') : t('webRestart')
-  const icon = <DshIconRefresh size={wide ? 'small' : 'default'} />
-  const control = wide
-    ? (
-      <DshButton
+  const restartLabel = error ? t('webRestartFailed') : busy ? t('webRestarting') : t('webRestart')
+  const refreshLabel = t('refresh')
+  const refreshIcon = <DshIconRefresh size={wide ? 'small' : 'default'} />
+  const restartIcon = <DshIconRestart size={wide ? 'small' : 'default'} />
+
+  if (wide) {
+    return (
+      <DshButtonGroup
         size="small"
         type="tertiary"
-        disabled={busy}
-        onClick={() => { void restart() }}
-        title={label}
-        style={{ width: '100%', borderRadius: '32px' }}
+        aria-label={`${refreshLabel} / ${restartLabel}`}
+        style={{ width: '100%' }}
       >
-        <span style={{ display: 'inline-flex', alignItems: 'center', marginRight: 6 }}>{icon}</span>
-        {label}
-      </DshButton>
+        <DshButton
+          type="tertiary"
+          disabled={busy}
+          icon={refreshIcon}
+          title={refreshLabel}
+          onClick={refresh}
+          style={{ flex: 1, minWidth: 0 }}
+        >
+          {refreshLabel}
+        </DshButton>
+        <DshButton
+          type="tertiary"
+          disabled={busy}
+          icon={restartIcon}
+          title={restartLabel}
+          onClick={() => { void restart() }}
+          style={{ flex: 1, minWidth: 0 }}
+        >
+          {restartLabel}
+        </DshButton>
+      </DshButtonGroup>
     )
-    : (
+  }
+
+  return (
+    <DshButtonGroup size="small" type="tertiary" aria-label={`${refreshLabel} / ${restartLabel}`}>
       <DshIconButton
         size="small"
         type="tertiary"
         theme="borderless"
         disabled={busy}
-        icon={icon}
-        aria-label={label}
-        title={label}
+        icon={refreshIcon}
+        aria-label={refreshLabel}
+        title={refreshLabel}
+        onClick={refresh}
+      />
+      <DshIconButton
+        size="small"
+        type="tertiary"
+        theme="borderless"
+        disabled={busy}
+        icon={restartIcon}
+        aria-label={restartLabel}
+        title={restartLabel}
         onClick={() => { void restart() }}
       />
-    )
-
-  return wide ? control : (
-    <DshTooltip content={label} position="right" showArrow>
-      {control}
-    </DshTooltip>
+    </DshButtonGroup>
   )
 }

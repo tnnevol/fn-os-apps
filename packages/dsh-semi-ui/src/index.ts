@@ -1,5 +1,6 @@
 export {
   DshButton,
+  DshButtonGroup,
   DshModal,
   DshTree,
   DshCascader,
@@ -14,6 +15,7 @@ export {
   DshIconFolder,
   DshIconFolderOpen,
   DshIconRefresh,
+  DshIconRestart,
   DshIconSetting,
 } from './components.ts'
 export { installSemiDshTheme, SEMI_DSH_THEME_ATTRIBUTE } from './theme.ts'

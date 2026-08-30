@@ -71,6 +71,7 @@ export default [
     alias: {
       '@douyinfe/semi-ui/lib/es/dropdown/index.js': join(semiUiRoot, 'lib/es/dropdown/index.js'),
       '@douyinfe/semi-ui/lib/es/button/index.js': join(semiUiRoot, 'lib/es/button/index.js'),
+      '@douyinfe/semi-ui/lib/es/button/buttonGroup.js': join(semiUiRoot, 'lib/es/button/buttonGroup.js'),
       '@douyinfe/semi-ui/lib/es/iconButton/index.js': join(semiUiRoot, 'lib/es/iconButton/index.js'),
       '@douyinfe/semi-ui/lib/es/tooltip/index': join(semiUiRoot, 'lib/es/tooltip/index.js'),
       '@douyinfe/semi-ui/lib/es/treeSelect/index': join(semiUiRoot, 'lib/es/treeSelect/index.js'),
@@ -78,6 +79,7 @@ export default [
       '@douyinfe/semi-icons/lib/es/icons/IconFile.js': join(semiIconsRoot, 'lib/es/icons/IconFile.js'),
       '@douyinfe/semi-icons/lib/es/icons/IconFolder.js': join(semiIconsRoot, 'lib/es/icons/IconFolder.js'),
       '@douyinfe/semi-icons/lib/es/icons/IconFolderOpen.js': join(semiIconsRoot, 'lib/es/icons/IconFolderOpen.js'),
+      '@douyinfe/semi-icons/lib/es/icons/IconRestart.js': join(semiIconsRoot, 'lib/es/icons/IconRestart.js'),
     },
     css: { inject: true, minify: true },
     onSuccess: inlineClientStyles,
