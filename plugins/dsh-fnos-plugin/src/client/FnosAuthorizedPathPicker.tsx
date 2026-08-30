@@ -7,7 +7,7 @@ import { requestAuthorizedEntries, type AuthorizedEntriesResult } from './author
 import { FnosColorLogo } from './FnosLogo.tsx'
 import { decodeFnosReference, FNOS_REFERENCE_SOURCE, type FnosInputReference, createFnosInputReference } from './input-references.ts'
 import { draftWithoutFnosOccurrence } from './input-reference-actions.ts'
-import { reconcileFnosOperationOccurrences } from './input-reference-operation.ts'
+import { reconcileFnosOperationOccurrences, type PendingFnosOccurrence, type TrackedFnosOccurrence } from './input-reference-operation.ts'
 import type { AuthorizedEntry } from '../authorized-directories-contract.ts'
 import type { FnosLocaleKey } from './locales.ts'
 
@@ -68,7 +68,7 @@ function selectedPaths(value: unknown): string[] {
 }
 
 export type FnosAuthorizedPathPickerProps = InputProps & {
-  insertReferences: (input: { draft: string, draftRev: number }, references: readonly FnosInputReference[]) => boolean
+  insertReferences: (input: { draft: string, draftRev: number }, references: readonly FnosInputReference[]) => readonly FnosInputReference[]
 }
 
 /** Selection is immediate; closing the TreeSelect never discards a choice. */
@@ -78,8 +78,8 @@ export function FnosAuthorizedPathPicker({ input, inputActions, insertReferences
   const entries = useRef(new Map<string, AuthorizedEntry>())
   const operationBaselineOccurrenceIds = useRef(new Set<number>())
   const insertedTreePaths = useRef(new Set<string>())
-  const pendingInsertedPaths = useRef(new Set<string>())
-  const currentOperationOccurrences = useRef(new Map<number, string>())
+  const pendingInsertedOccurrences = useRef(new Map<string, PendingFnosOccurrence>())
+  const currentOperationOccurrences = useRef(new Map<number, TrackedFnosOccurrence>())
   const pendingRemovalPaths = useRef(new Set<string>())
   const busy = input.phase === 'adjudicating' || input.phase === 'submitting'
   const value = desiredPaths ?? EMPTY_TREE_VALUE
@@ -117,27 +117,33 @@ export function FnosAuthorizedPathPicker({ input, inputActions, insertReferences
         return reference === undefined ? [] : [{ path: item.path, reference }]
       })
     if (pending.length === 0) return
-    for (const item of pending) pendingInsertedPaths.current.add(item.path)
-    if (insertReferences(
+    const inserted = insertReferences(
       { draft: input.draft, draftRev: input.draftRev },
       pending.map(item => item.reference),
-    )) {
-      for (const item of pending) insertedTreePaths.current.add(item.path)
-    } else {
-      for (const item of pending) pendingInsertedPaths.current.delete(item.path)
+    )
+    const insertedRefs = new Set(inserted.map(reference => reference.ref))
+    for (const item of pending) {
+      if (!insertedRefs.has(item.reference.ref)) continue
+      insertedTreePaths.current.add(item.path)
+      pendingInsertedOccurrences.current.set(item.reference.ref, {
+        path: item.path,
+        ref: item.reference.ref,
+        // The picker inserts at the end of the draft, so DSH owns the gap.
+        trailingSeparator: true,
+      })
     }
-  }, [desiredPaths, input.draft, input.draftRev, insertReferences])
+  }, [desiredPaths, input.draft, input.draftRev, insertReferences, treeData])
 
   useEffect(() => {
     if (desiredPaths === undefined) return
     const result = reconcileFnosOperationOccurrences({
       baselineOccurrenceIds: operationBaselineOccurrenceIds.current,
-      pendingPaths: pendingInsertedPaths.current,
+      pendingOccurrences: pendingInsertedOccurrences.current,
       trackedOccurrences: currentOperationOccurrences.current,
       occurrences: input.occurrences,
       pendingRemovalPaths: pendingRemovalPaths.current,
     })
-    pendingInsertedPaths.current = result.pendingPaths
+    pendingInsertedOccurrences.current = result.pendingOccurrences
     currentOperationOccurrences.current = result.trackedOccurrences
     if (result.removedPaths.size === 0) return
     for (const path of result.removedPaths) insertedTreePaths.current.delete(path)
@@ -148,7 +154,7 @@ export function FnosAuthorizedPathPicker({ input, inputActions, insertReferences
     if (pendingRemovalPaths.current.size === 0) return
     const fnosOccurrences = input.occurrences.filter(occurrence => occurrence.source === FNOS_REFERENCE_SOURCE)
     const removableIds = new Set([...currentOperationOccurrences.current]
-      .filter(([, path]) => pendingRemovalPaths.current.has(path))
+      .filter(([, occurrence]) => pendingRemovalPaths.current.has(occurrence.path))
       .map(([occurrenceId]) => occurrenceId))
     const removable = fnosOccurrences
       .filter(occurrence => removableIds.has(occurrence.occurrenceId))
@@ -158,11 +164,14 @@ export function FnosAuthorizedPathPicker({ input, inputActions, insertReferences
     let draft = input.draft
     for (const occurrence of removable) {
       const decoded = decodeFnosReference(occurrence.ref)
+      const tracked = currentOperationOccurrences.current.get(occurrence.occurrenceId)
       if (decoded !== undefined) {
         pendingRemovalPaths.current.delete(decoded.path)
         currentOperationOccurrences.current.delete(occurrence.occurrenceId)
       }
-      draft = draftWithoutFnosOccurrence(draft, occurrence, fnosOccurrences)
+      draft = draftWithoutFnosOccurrence(draft, occurrence, fnosOccurrences, {
+        removeTrailingSeparator: tracked?.trailingSeparator ?? true,
+      })
     }
     inputActions.setDraft(draft)
   }, [desiredPaths, input.draft, input.occurrences, inputActions])
@@ -204,7 +213,7 @@ export function FnosAuthorizedPathPicker({ input, inputActions, insertReferences
                .map(occurrence => occurrence.occurrenceId),
            )
            insertedTreePaths.current.clear()
-           pendingInsertedPaths.current.clear()
+           pendingInsertedOccurrences.current.clear()
            currentOperationOccurrences.current.clear()
            pendingRemovalPaths.current.clear()
            setDesiredPaths(EMPTY_TREE_VALUE)
@@ -212,7 +221,7 @@ export function FnosAuthorizedPathPicker({ input, inputActions, insertReferences
          }
          operationBaselineOccurrenceIds.current.clear()
          insertedTreePaths.current.clear()
-         pendingInsertedPaths.current.clear()
+         pendingInsertedOccurrences.current.clear()
          currentOperationOccurrences.current.clear()
          pendingRemovalPaths.current.clear()
          setDesiredPaths(undefined)

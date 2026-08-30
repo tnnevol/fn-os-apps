@@ -141,50 +141,6 @@
   if (window.EventSource) window.EventSource = new Proxy(window.EventSource, { construct: function (target, args, receiver) { var mapped = mapUrl(args[0]); if (mapped) args[0] = mapped.toString(); return Reflect.construct(target, args, receiver); } });
   if (window.WebSocket) window.WebSocket = new Proxy(window.WebSocket, { construct: function (target, args, receiver) { var mapped = mapUrl(args[0]); if (mapped) { mapped.protocol = mapped.protocol === "https:" ? "wss:" : "ws:"; args[0] = mapped.toString(); } return Reflect.construct(target, args, receiver); } });
 
-  function mountRestartButton() {
-    if (!window.document || !document.body || document.getElementById("fnos-gateway-restart-web")) return true;
-    var sidebar = document.querySelector("aside") || document.querySelector('[data-testid*="sidebar"]') || document.querySelector('[class*="sidebar" i]');
-    if (!sidebar) return false;
-    var host = document.createElement("div");
-    host.id = "fnos-gateway-restart-web-host";
-    host.style.cssText = "margin:8px 12px 12px;";
-    var button = document.createElement("button");
-    button.id = "fnos-gateway-restart-web";
-    button.type = "button";
-    button.textContent = "重启 Web";
-    button.title = "重启 DeepSeek Harness Web 服务";
-    button.style.cssText = "width:100%;padding:7px 10px;border:1px solid var(--dsw-alias-border-primary,#d9d9d9);border-radius:8px;background:var(--dsw-alias-fill-primary,#fff);color:var(--dsw-alias-label-primary,#171717);font:inherit;cursor:pointer;";
-    button.onclick = async function () {
-      button.disabled = true;
-      button.textContent = "正在重启 Web…";
-      try {
-        var response = await nativeFetch(prefix + (config.webRestartPath || "/__fnos-gateway/control/web/restart"), { method: "POST", headers: { "x-requested-with": "fetch" } });
-        var value = await response.json();
-        if (!response.ok) throw new Error(value.error || "重启失败");
-        button.textContent = "Web 已重启";
-        setTimeout(function () { window.location.reload(); }, 300);
-      } catch (error) {
-        button.disabled = false;
-        button.textContent = "重启 Web";
-        button.title = error && error.message ? error.message : "重启失败";
-      }
-    };
-    host.appendChild(button);
-    sidebar.appendChild(host);
-    return true;
-  }
-  function watchForRestartButton() {
-    if (!window.document || !document.body) return;
-    if (mountRestartButton() || !window.MutationObserver) return;
-    var observer = new MutationObserver(function () { if (mountRestartButton()) observer.disconnect(); });
-    observer.observe(document.body, { childList: true, subtree: true });
-    setTimeout(function () { observer.disconnect(); }, 10_000);
-  }
-  if (window.document) {
-    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", watchForRestartButton, { once: true });
-    else setTimeout(watchForRestartButton, 0);
-  }
-
   try {
     var events = new EventSource(prefix + config.eventsPath);
     events.addEventListener("paths", function (event) { try { var value = JSON.parse(event.data); customPaths = new Set(Array.isArray(value.paths) ? value.paths : []); } catch (_) {} });

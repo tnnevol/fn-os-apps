@@ -5,7 +5,6 @@ export interface GatewayBridgeConfig {
   prefix: string
   customPaths: readonly string[]
   eventsPath: string
-  webRestartPath: string
 }
 
 /** Inject the independently maintained browser bridge with JSON-safe config. */

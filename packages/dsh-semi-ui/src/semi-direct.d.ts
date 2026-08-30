@@ -58,6 +58,11 @@ declare module '@douyinfe/semi-icons/lib/es/icons/IconFolderOpen.js' {
   export default IconFolderOpen
 }
 
+declare module '@douyinfe/semi-icons/lib/es/icons/IconRefresh.js' {
+  const IconRefresh: any
+  export default IconRefresh
+}
+
 declare module '@douyinfe/semi-icons/lib/es/icons/IconSetting.js' {
   const IconSetting: any
   export default IconSetting

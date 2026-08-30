@@ -13,26 +13,27 @@ function referenceLabel(value: string): string {
   return displayName(value)
 }
 
-export function trimFnosTrailingWhitespace(
-  draft: string,
-  occurrences: readonly { offset: number, length: number }[],
-): string {
-  const last = occurrences.reduce((end, occurrence) => Math.max(end, occurrence.offset + occurrence.length), 0)
-  if (last === 0 || draft.slice(last).trim() !== '') return draft
-  return draft.slice(0, last)
+/**
+ * Keep the local draft projection aligned with DSH's input machine. The
+ * leading replacement character is rendered as the reference icon by DSH;
+ * it is not the literal `@` text shown in the composer.
+ */
+export function fnosReferenceDraftText(label: string): string {
+  return `\uFFFC${label}`
 }
 
 export function draftWithoutFnosOccurrence(
   draft: string,
   occurrence: { offset: number, length: number },
   _occurrences: readonly { offset: number, length: number }[],
+  options: { removeTrailingSeparator?: boolean } = {},
 ): string {
   const start = occurrence.offset
   const end = occurrence.offset + occurrence.length
   // DSH appends one separator after an inserted structured reference. Remove
   // only that separator; whitespace owned by the user's existing draft stays.
   let after = end
-  if (/\s/u.test(draft[after] ?? '')) after += 1
+  if (options.removeTrailingSeparator !== false && draft[after] === ' ') after += 1
   return draft.slice(0, start) + draft.slice(after)
 }
 
@@ -91,33 +92,38 @@ export function insertFnosReferences(
   sessionId: SessionId,
   references: readonly FnosInputReference[],
   input: InputSnapshotForReference,
-): boolean {
-  if (references.length === 0) return false
+): FnosInputReference[] {
+  if (references.length === 0) return []
 
   let draft = input.draft
   let offset = draft.length
   let draftRev = input.draftRev
-  let inserted = false
+  const inserted: FnosInputReference[] = []
 
   const prefix = fnosInsertionPrefix(draft, offset)
   if (prefix !== '') {
     const span: TokenSpan = { start: offset, end: offset, draftRev }
-    if (!insertText(ctx, sessionId, prefix, span)) return false
+    if (!insertText(ctx, sessionId, prefix, span)) return []
     draft += prefix
     offset += prefix.length
     draftRev += 1
   }
 
-  // DSH's native insertion transaction owns the trailing separator.
+  // DSH's native insertion transaction owns the trailing separator. Keep the
+  // same display projection and offset math locally so the next CAS span is
+  // based on the actual machine draft, not the clipboard/model projection.
   for (const reference of references) {
     const label = referenceLabel(reference.semanticPath)
     const span: TokenSpan = { start: offset, end: offset, draftRev }
-    if (!insertReference(ctx, sessionId, reference, span)) return inserted
-    draft += `@${label} `
-    offset += label.length + 2
+    if (!insertReference(ctx, sessionId, reference, span)) break
+    const displayText = fnosReferenceDraftText(label)
+    const tail = draft.slice(offset)
+    const gap = tail.length === 0 || tail[0] !== ' ' ? ' ' : ''
+    draft += displayText + gap
+    offset += displayText.length + gap.length
     draftRev += 1
-    inserted = true
+    inserted.push(reference)
   }
-  if (inserted) restoreFnosInputCaret(draft.length, draft)
+  if (inserted.length > 0) restoreFnosInputCaret(draft.length, draft)
   return inserted
 }

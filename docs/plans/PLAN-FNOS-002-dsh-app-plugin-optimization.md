@@ -5,7 +5,7 @@ description: Codex 状态、NAS 引用与 Tree 同步、Semi UI 总览插件、f
 status: validating
 owner: tnnevol
 targetVersion: 5.1.x
-lastVerified: 2026-08-29
+lastVerified: 2026-08-30
 ---
 
 # PLAN-FNOS-002 DSH 应用与插件优化
@@ -383,9 +383,9 @@ SSE 路由由网关自身处理，不转发到 DSH。它经过 fnOS 统一网关
 
 | 任务 ID | 对应功能 | 实现内容 | 状态 |
 | --- | --- | --- | --- |
-| PLAN-FNOS-002-T02-01 | FNOS-002-02 | 将引用插入计算提取为纯函数，输入当前 draft、插入 span 和待插入引用，输出前缀分隔与新光标位置 | <Badge type="tip" text="已完成" /> |
+| PLAN-FNOS-002-T02-01 | FNOS-002-02 | 按 DSH structured reference 合同计算占位符、label、分隔空格和 draftRev，逐项生成后续 CAS 插入位置 | <Badge type="tip" text="已完成" /> |
 | PLAN-FNOS-002-T02-02 | FNOS-002-02 | 插入首个引用前检查相邻字符；已有空白不新增，没有空白时只补一个空格 | <Badge type="tip" text="已完成" /> |
-| PLAN-FNOS-002-T02-03 | FNOS-002-02 | 多选引用沿用 DSH structured reference 插入，引用之间保持一个分隔，不清理用户原有前导、尾随或连续空格 | <Badge type="tip" text="已完成" /> |
+| PLAN-FNOS-002-T02-03 | FNOS-002-02 | 多选引用沿用 DSH structured reference 插入，使用 DSH 的占位符草稿长度推进偏移；引用之间保持一个分隔，不清理用户原有前导、尾随或连续空格 | <Badge type="tip" text="已完成" /> |
 | PLAN-FNOS-002-T02-04 | FNOS-002-02 | 删除引用时只删除该引用和插件生成的必要分隔，不吞掉引用前后的用户文本与空格 | <Badge type="tip" text="已完成" /> |
 | PLAN-FNOS-002-T02-05 | FNOS-002-02 | Tree 面板打开时记录已有 fnOS occurrence ID 作为基线，并为本次成功插入的路径维护 occurrence 关联 | <Badge type="tip" text="已完成" /> |
 | PLAN-FNOS-002-T02-06 | FNOS-002-02 | 面板未关闭时监听 `input.occurrences`；本次关联 occurrence 消失后从 `desiredPaths` 移除对应路径，历史 occurrence 不参与同步 | <Badge type="tip" text="已完成" /> |
@@ -755,3 +755,4 @@ pnpm --filter @tnnevol/dsh-codex-auth run build
 | 2026-08-29 | 完善 Semi UI 总览计划：设置卡片改为入口，使用 `#/plugins/semi-ui` 与 `shell.overlay` 展示独立页面 |
 | 2026-08-29 | 增加 fnOS Tree 反向同步计划：面板打开期间按 occurrence 身份同步本次引用删除，并隔离历史选择状态 |
 | 2026-08-29 | 完成 P1 代码实现和本地构建，网关、恢复控制面与 fnOS Header 行为转入真实 NAS 验证 |
+| 2026-08-30 | 修正 NAS 引用同步实现：匹配完整 ref、保留分隔空格归属、支持懒加载节点和部分插入，并补充 61 项插件测试 |

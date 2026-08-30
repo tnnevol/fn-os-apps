@@ -5,7 +5,7 @@ description: 记录 Codex 登录与用量状态、NAS 引用、共享 UI、FPK �
 status: validating
 owner: tnnevol
 targetVersion: 5.1.x
-lastVerified: 2026-08-29
+lastVerified: 2026-08-30
 ---
 
 # FNOS-002 DSH 应用与插件优化
@@ -143,3 +143,4 @@ DSH 在 fnOS 中运行后，还有几处使用体验需要调整。Codex 登录�
 | 2026-08-29 | 增加 Tree 反向同步需求 | 输入框删除本次面板插入的引用时同步取消勾选，并隔离历史引用状态 |
 | 2026-08-29 | 调整 Bridge 源码组织 | 注入脚本改为独立 JS 文件维护，构建期读取并内联到单文件网关产物 |
 | 2026-08-29 | 完成 P1 开发 | 完成 Codex 状态、NAS 引用同步、Semi UI 总览和新网关代码，进入真实 NAS 验证 |
+| 2026-08-30 | 完成 NAS 引用同步修正 | 按 DSH structured reference 的占位符和 draftRev 计算多选偏移，补齐懒加载节点插入、部分插入和分隔空格回归测试 |

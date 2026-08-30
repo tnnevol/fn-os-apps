@@ -6,6 +6,7 @@ import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type { InputTriggerServiceContract, InputTriggerSource } from '@deepseek-ai/dsh-client-ui-input-trigger/client'
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import type {} from '@deepseek-ai/dsh-client-ui-settings-plugins/client'
+import type {} from '@deepseek-ai/dsh-client-ui-sidebar/client'
 import type {} from '@deepseek-ai/dsh-client-ui-slots'
 import type {} from '@deepseek-ai/dsh-client-ui-theme/client'
 import { AuthorizedDirectoriesCard } from './AuthorizedDirectoriesCard.tsx'
@@ -17,6 +18,7 @@ import type { FnosLocaleKey } from './locales.ts'
 import { en, zh } from './locales.ts'
 import { installFnosPathOpener } from './path-opener.ts'
 import { FnosSettingsDocumentAction } from './FnosSettingsDocumentAction.tsx'
+import { FnosWebRestartAction } from './FnosWebRestartAction.tsx'
 import { isEmbeddedFnosFrame } from './sdk-carrier.ts'
 import { createTrimApp } from './sdk.ts'
 import { installFnosPageTitle } from './sdk-title.ts'
@@ -212,6 +214,14 @@ export function apply(ctx: ClientContext): void {
     priority: 100,
     inject: () => ({ t }),
   }, AuthorizedDirectoriesCard))
+  ctx.slots.inject('sidebar.footer.action', () => ctx.slots.register({
+    name: 'sidebar.footer.action',
+    id: 'dsh-fnos-web-restart',
+    order: 0,
+    priority: -1,
+    locale: namespace,
+    inject: () => ({ t }),
+  }, FnosWebRestartAction))
   ctx.slots.inject('conversation.input.left', () => ctx.slots.register({
     name: 'conversation.input.left',
     id: 'dsh-fnos-input-picker',

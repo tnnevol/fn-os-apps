@@ -8,17 +8,25 @@ export interface InputOccurrenceIdentity {
   ref: string
 }
 
+export interface PendingFnosOccurrence {
+  path: string
+  ref: string
+  trailingSeparator: boolean
+}
+
+export interface TrackedFnosOccurrence extends PendingFnosOccurrence {}
+
 export interface FnosOperationReconcileInput {
   baselineOccurrenceIds: ReadonlySet<number>
-  pendingPaths: ReadonlySet<string>
-  trackedOccurrences: ReadonlyMap<number, string>
+  pendingOccurrences: ReadonlyMap<string, PendingFnosOccurrence>
+  trackedOccurrences: ReadonlyMap<number, TrackedFnosOccurrence>
   occurrences: readonly InputOccurrenceIdentity[]
   pendingRemovalPaths?: ReadonlySet<string>
 }
 
 export interface FnosOperationReconcileResult {
-  pendingPaths: Set<string>
-  trackedOccurrences: Map<number, string>
+  pendingOccurrences: Map<string, PendingFnosOccurrence>
+  trackedOccurrences: Map<number, TrackedFnosOccurrence>
   removedPaths: Set<string>
 }
 
@@ -28,12 +36,12 @@ export interface FnosOperationReconcileResult {
  */
 export function reconcileFnosOperationOccurrences({
   baselineOccurrenceIds,
-  pendingPaths,
+  pendingOccurrences,
   trackedOccurrences,
   occurrences,
   pendingRemovalPaths = new Set(),
 }: FnosOperationReconcileInput): FnosOperationReconcileResult {
-  const nextPending = new Set(pendingPaths)
+  const nextPending = new Map(pendingOccurrences)
   const nextTracked = new Map(trackedOccurrences)
   const currentIds = new Set(occurrences.map(item => item.occurrenceId))
 
@@ -42,17 +50,19 @@ export function reconcileFnosOperationOccurrences({
       || baselineOccurrenceIds.has(occurrence.occurrenceId)
       || nextTracked.has(occurrence.occurrenceId)) continue
     const decoded = decodeFnosReference(occurrence.ref)
-    if (decoded === undefined || !nextPending.has(decoded.path)) continue
-    nextPending.delete(decoded.path)
-    nextTracked.set(occurrence.occurrenceId, decoded.path)
+    if (decoded === undefined) continue
+    const pending = [...nextPending.entries()].find(([, item]) => item.ref === occurrence.ref)
+    if (pending === undefined) continue
+    nextPending.delete(pending[0])
+    nextTracked.set(occurrence.occurrenceId, pending[1])
   }
 
   const removedPaths = new Set<string>()
-  for (const [occurrenceId, path] of nextTracked) {
+  for (const [occurrenceId, tracked] of nextTracked) {
     if (currentIds.has(occurrenceId)) continue
     nextTracked.delete(occurrenceId)
-    if (!pendingRemovalPaths.has(path)) removedPaths.add(path)
+    if (!pendingRemovalPaths.has(tracked.path)) removedPaths.add(tracked.path)
   }
 
-  return { pendingPaths: nextPending, trackedOccurrences: nextTracked, removedPaths }
+  return { pendingOccurrences: nextPending, trackedOccurrences: nextTracked, removedPaths }
 }

@@ -5,7 +5,7 @@ import type { FnosInputReference } from './input-references.ts'
 import { FnosAuthorizedPathPicker } from './FnosAuthorizedPathPicker.tsx'
 
 type InputPickerProps = PropsRuntime<'conversation.input.left'> & PropsLocale<'settings.dsh-fnos'> & {
-  insertReferences: (input: { draft: string, draftRev: number }, references: readonly FnosInputReference[]) => boolean
+  insertReferences: (input: { draft: string, draftRev: number }, references: readonly FnosInputReference[]) => readonly FnosInputReference[]
 }
 
 export function FnosInputPickerButton({ input, inputActions, session, insertReferences, t }: InputPickerProps) {

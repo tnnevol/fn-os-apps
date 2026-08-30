@@ -12,4 +12,5 @@ export { default as DshIconChevronDown } from '@douyinfe/semi-icons/lib/es/icons
 export { default as DshIconFile } from '@douyinfe/semi-icons/lib/es/icons/IconFile.js'
 export { default as DshIconFolder } from '@douyinfe/semi-icons/lib/es/icons/IconFolder.js'
 export { default as DshIconFolderOpen } from '@douyinfe/semi-icons/lib/es/icons/IconFolderOpen.js'
+export { default as DshIconRefresh } from '@douyinfe/semi-icons/lib/es/icons/IconRefresh.js'
 export { default as DshIconSetting } from '@douyinfe/semi-icons/lib/es/icons/IconSetting.js'

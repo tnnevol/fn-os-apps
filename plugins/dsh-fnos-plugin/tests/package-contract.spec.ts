@@ -40,6 +40,11 @@ describe('dsh-fnos package contract', () => {
   it('keeps the fnOS settings card after the built-in keyed cards', async () => {
     const source = await readFile(new URL('../src/client/index.ts', import.meta.url), 'utf8')
     expect(source).toMatch(/key:\s*'dsh-fnos-authorized-directories'[\s\S]{0,160}priority:\s*100/u)
+    expect(source).toContain("ctx.slots.inject('sidebar.footer.action'")
+    expect(source).toContain("id: 'dsh-fnos-web-restart'")
+    const restart = await readFile(new URL('../src/client/FnosWebRestartAction.tsx', import.meta.url), 'utf8')
+    expect(restart).toContain('/__fnos-gateway/control/web/restart')
+    expect(restart).toContain('isEmbeddedFnosFrame')
   })
 
   it('keeps the cancel-authorization label stable while adding a directory', async () => {
@@ -144,7 +149,8 @@ describe('dsh-fnos package contract', () => {
     expect(actions).toContain("appearance: reference.kind === 'directory' ? 'folder' : 'file'")
     expect(actions).toContain('referenceLabel')
     expect(actions).toContain('restoreFnosInputCaret')
-    expect(actions).toContain('draft += `@${label} `')
+    expect(actions).toContain('fnosReferenceDraftText')
+    expect(actions).toContain("return `\\uFFFC${label}`")
     expect(actions).toContain("slash/input-insert-reference")
     expect(actions).toContain("appearance: reference.kind === 'directory' ? 'folder' : 'file'")
     expect(actions).not.toContain('\\u00a0')
@@ -172,6 +178,7 @@ describe('dsh-fnos package contract', () => {
       '@deepseek-ai/dsh-client-ui-primitives',
       '@deepseek-ai/dsh-client-ui-workspace',
       '@deepseek-ai/dsh-client-ui-settings-plugins',
+      '@deepseek-ai/dsh-client-ui-sidebar',
       '@deepseek-ai/dsh-client-ui-slots',
       '@deepseek-ai/dsh-host-webserver',
       '@deepseek-ai/dsh-settings',

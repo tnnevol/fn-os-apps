@@ -13,6 +13,7 @@ export {
   DshIconFile,
   DshIconFolder,
   DshIconFolderOpen,
+  DshIconRefresh,
   DshIconSetting,
 } from './components.ts'
 export { installSemiDshTheme, SEMI_DSH_THEME_ATTRIBUTE } from './theme.ts'
