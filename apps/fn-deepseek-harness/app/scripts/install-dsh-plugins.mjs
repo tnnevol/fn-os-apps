@@ -127,8 +127,10 @@ function resolvePublishedVersion(plugin) {
 async function installPublishedPlugins(publishedPlugins) {
   for (const plugin of publishedPlugins) {
     const targetDirectory = packageDirectory(profileDirectory, plugin.name)
+    const existingManifest = await readPackageManifest(targetDirectory)
+    const hasLocalPlugin = existingManifest?.name === plugin.name
     let resolvedVersion = plugin.version
-    if (installPublished) {
+    if (installPublished && !hasLocalPlugin) {
       resolvedVersion = resolvePublishedVersion(plugin)
       logInfo(
         `Installing published ${plugin.name}@${resolvedVersion}`
@@ -164,10 +166,17 @@ async function installPublishedPlugins(publishedPlugins) {
         fail(`failed to install published ${plugin.name}@${resolvedVersion}`)
       }
       logInfo(`DONE: ${packageManager} ${installCommand} ${plugin.name}@${resolvedVersion} (${elapsed}s)`)
+    } else if (installPublished && hasLocalPlugin) {
+      logInfo(
+        `Keeping existing local ${plugin.name}@${existingManifest.version ?? 'unknown'}; `
+        + 'skipping published plugin installation.',
+      )
     }
 
     const installedManifest = await readPackageManifest(targetDirectory)
-    const expectedVersion = plugin.version ?? (installPublished ? resolvedVersion : undefined)
+    const expectedVersion = installPublished
+      ? (hasLocalPlugin ? undefined : (plugin.version ?? resolvedVersion))
+      : plugin.version
     const hasExpectedPackage = installedManifest?.name === plugin.name
       && (expectedVersion
         ? installedManifest.version === expectedVersion
@@ -226,7 +235,7 @@ try {
   const publishedPlugins = await loadPublishedPlugins()
   await installPublishedPlugins(publishedPlugins)
   await updateProfileBundles(publishedPlugins)
-  logInfo(`${installPublished ? 'Installed' : 'Verified'} ${publishedPlugins.length} published DSH plugin(s).`)
+  logInfo(`${installPublished ? 'Reconciled' : 'Verified'} ${publishedPlugins.length} published DSH plugin(s).`)
 } catch (error) {
   logError(error instanceof Error ? error.message : String(error))
   process.exitCode = 1
