@@ -450,27 +450,18 @@ importers:
       '@deepseek-ai/dsh-client-runtime':
         specifier: catalog:dsh
         version: 0.1.1-rc.2(601e9129357dc48738583e18d75d19b2)
+      '@deepseek-ai/dsh-client-ui-conversation':
+        specifier: catalog:dsh
+        version: 0.1.1-rc.2(b441692b8d185dbf8cce39ef789ff602)
       '@deepseek-ai/dsh-client-ui-layout':
         specifier: catalog:dsh
         version: 0.1.1-rc.2(@deepseek-ai/cordis@4.0.1)(@deepseek-ai/dsh-client-runtime@0.1.1-rc.2(601e9129357dc48738583e18d75d19b2))(@deepseek-ai/dsh-client-ui-theme@0.1.1-rc.2(a6c39110759121c55549be9a5dac7bf7))(@deepseek-ai/dsh-invariants@0.1.1-rc.2(@deepseek-ai/cordis@4.0.1))
-      '@deepseek-ai/dsh-client-ui-settings':
-        specifier: catalog:dsh
-        version: 0.1.1-rc.2(@deepseek-ai/cordis@4.0.1)(@deepseek-ai/dsh-api-remotes@0.1.1-rc.2(0037c360ed8ef45e74e856e82932995e))(@deepseek-ai/dsh-client-connection@0.1.1-rc.2)(@deepseek-ai/dsh-client-runtime@0.1.1-rc.2(601e9129357dc48738583e18d75d19b2))(@deepseek-ai/dsh-invariants@0.1.1-rc.2(@deepseek-ai/cordis@4.0.1))(@deepseek-ai/dsh-settings@0.1.1-rc.2(@deepseek-ai/cordis@4.0.1)(@deepseek-ai/dsh-brand@0.1.1-rc.2(@deepseek-ai/cordis@4.0.1)(@deepseek-ai/dsh-invariants@0.1.1-rc.2(@deepseek-ai/cordis@4.0.1)))(@deepseek-ai/dsh-invariants@0.1.1-rc.2(@deepseek-ai/cordis@4.0.1))(@deepseek-ai/schemastery@3.18.1))
-      '@deepseek-ai/dsh-client-ui-settings-plugins':
-        specifier: catalog:dsh
-        version: 0.1.1-rc.2(82a05e91338c2739cf35f94a3adf926b)
       '@deepseek-ai/dsh-client-ui-slots':
         specifier: catalog:dsh
         version: 0.1.1-rc.2(@deepseek-ai/cordis@4.0.1)(@deepseek-ai/dsh-invariants@0.1.1-rc.2(@deepseek-ai/cordis@4.0.1))
       '@deepseek-ai/dsh-client-ui-theme':
         specifier: catalog:dsh
         version: 0.1.1-rc.2(a6c39110759121c55549be9a5dac7bf7)
-      '@deepseek-ai/dsh-settings':
-        specifier: catalog:dsh
-        version: 0.1.1-rc.2(@deepseek-ai/cordis@4.0.1)(@deepseek-ai/dsh-brand@0.1.1-rc.2(@deepseek-ai/cordis@4.0.1)(@deepseek-ai/dsh-invariants@0.1.1-rc.2(@deepseek-ai/cordis@4.0.1)))(@deepseek-ai/dsh-invariants@0.1.1-rc.2(@deepseek-ai/cordis@4.0.1))(@deepseek-ai/schemastery@3.18.1)
-      '@deepseek-ai/schemastery':
-        specifier: 'catalog:'
-        version: 3.18.1
       '@douyinfe/semi-icons':
         specifier: 'catalog:'
         version: 2.90.2(react@18.3.1)

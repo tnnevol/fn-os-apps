@@ -115,7 +115,7 @@ export function CodexCapabilities({ scope, t }: CodexCapabilitiesProps) {
             checked={draft.enableImageTool}
             disabled={!editable}
             aria-label={t('enableImageRecognition')}
-            onChange={(event: { target: { checked?: boolean } }) => { updateImageTool(Boolean(event.target.checked)) }}
+            onChange={() => { updateImageTool(!draft.enableImageTool) }}
           >
             <span style={copyStyle}>
               <span style={labelStyle}>{t('enableImageRecognition')}</span>
@@ -127,7 +127,7 @@ export function CodexCapabilities({ scope, t }: CodexCapabilitiesProps) {
             checked={draft.enableImageUpload}
             disabled={!editable}
             aria-label={t('enableImageUpload')}
-            onChange={(event: { target: { checked?: boolean } }) => { updateImageUpload(Boolean(event.target.checked)) }}
+            onChange={() => { updateImageUpload(!draft.enableImageUpload) }}
           >
             <span style={copyStyle}>
               <span style={labelStyle}>{t('enableImageUpload')}</span>

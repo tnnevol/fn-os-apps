@@ -71,3 +71,73 @@
 .dsh-codex-global-model-cascader .semi-cascader-option-active .semi-cascader-option-icon-active {
   color: var(--dsw-alias-label-primary) !important;
 }
+
+.dsh-codex-usage-progress-track {
+  display: inline-flex;
+  width: 26px;
+  height: 26px;
+  align-items: center;
+  cursor: pointer;
+}
+
+.dsh-codex-usage-popover-trigger {
+  display: inline-flex;
+  align-items: center;
+}
+
+.dsh-codex-usage-progress-track .semi-progress-circle {
+  width: 26px;
+  height: 26px;
+}
+
+.dsh-codex-usage-progress-track .semi-progress-circle-text {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--dsw-alias-label-primary);
+}
+
+.dsh-codex-usage-popover {
+  box-sizing: border-box;
+  min-width: 264px;
+  padding: 12px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--dsw-alias-label-secondary);
+}
+
+.dsh-codex-usage-popover-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dsh-codex-usage-popover-empty {
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.dsh-codex-usage-popover-window {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dsh-codex-usage-popover-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--dsw-alias-label-primary);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.dsh-codex-usage-popover-reset {
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 11px;
+  line-height: 16px;
+}

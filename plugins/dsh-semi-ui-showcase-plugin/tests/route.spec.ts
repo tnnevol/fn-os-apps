@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { apply as applyHost, SEMI_UI_SHOWCASE_SETTINGS_NAMESPACE } from '../src/index.ts'
+import { apply as applyHost } from '../src/index.ts'
 import { SEMI_UI_SHOWCASE_HASH, ShowcaseRouteController } from '../src/client/route.ts'
 
 function fakeBrowser(hash = '#/') {
@@ -19,19 +19,19 @@ function fakeBrowser(hash = '#/') {
 }
 
 describe('Semi UI showcase hash route', () => {
-  it('serves a settings namespace so the showcase card is discoverable', () => {
-    const register = vi.fn()
-    applyHost({ settings: { register } } as never)
-    expect(register).toHaveBeenCalledTimes(1)
-    expect(register.mock.calls[0]?.[0]).toBe(SEMI_UI_SHOWCASE_SETTINGS_NAMESPACE)
+  it('does not register a plugin settings configuration panel', () => {
+    expect(() => { applyHost({} as never) }).not.toThrow()
   })
 
-  it('closes the settings shell before opening the showcase route', async () => {
-    const source = await import('node:fs/promises').then(({ readFile }) => readFile(new URL('../src/client/ShowcaseCard.tsx', import.meta.url), 'utf8'))
-    expect(source).toContain('[role="dialog"] button')
-    expect(source).toContain('button.textContent')
-    expect(source).not.toContain('new KeyboardEvent')
-    expect(source).toContain('closeDshSettings(); route.open()')
+  it('opens the showcase from the right-aligned session header utility slot', async () => {
+    const source = await import('node:fs/promises').then(({ readFile }) => readFile(new URL('../src/client/index.tsx', import.meta.url), 'utf8'))
+    const action = await import('node:fs/promises').then(({ readFile }) => readFile(new URL('../src/client/SemiUiHeaderAction.tsx', import.meta.url), 'utf8'))
+    expect(source).toContain("ctx.slots.inject('conversation.session.header.utilities'")
+    expect(source).toContain("name: 'conversation.session.header.utilities'")
+    expect(source).not.toContain("settings.plugin.item")
+    expect(source).not.toContain('ShowcaseCard')
+    expect(action).toContain('DshButton')
+    expect(action).toContain('route.open()')
   })
 
   it('uses the official theme toggle and left-side back button', async () => {
@@ -84,7 +84,7 @@ describe('Semi UI showcase hash route', () => {
     const source = await import('node:fs/promises').then(({ readFile }) => readFile(new URL('../src/client/ShowcasePage.tsx', import.meta.url), 'utf8'))
     expect(source).toContain('>组件</button>')
     for (const label of ['>主题</button>', '>设计转代码</button>', '>模板</button>', '>数据可视化</button>']) expect(source).not.toContain(label)
-    for (const label of ['Button 按钮', 'Cascader 级联选择', 'TreeSelect 树选择器', 'Checkbox 复选框', 'Tree 树形控件', 'Icon 图标', 'Modal 对话框', 'Tooltip 文字提示', 'Dropdown 下拉框']) expect(source).toContain(label)
+    for (const label of ['Button 按钮', 'Cascader 级联选择', 'TreeSelect 树选择器', 'Checkbox 复选框', 'Tree 树形控件', 'Icon 图标', 'Modal 对话框', 'Popover 浮层', 'Tooltip 文字提示', 'Dropdown 下拉框']) expect(source).toContain(label)
     for (const label of ['Typography 文字', 'Divider 分割线', 'Tabs 标签栏']) expect(source).not.toContain(label)
   })
 
@@ -99,6 +99,8 @@ describe('Semi UI showcase hash route', () => {
   it('covers the official Modal state families', async () => {
     const source = await import('node:fs/promises').then(({ readFile }) => readFile(new URL('../src/client/ShowcasePage.tsx', import.meta.url), 'utf8'))
     for (const prop of ['footerFill', 'maskClosable', 'okButtonProps', 'cancelButtonProps', 'header', 'footer', 'centered', 'fullScreen', 'bodyStyle']) expect(source).toContain(prop)
+    expect(source).toContain("{...(modalDemo === 'customFooter' ? { footer: modalFooter } : {})}")
+    expect(source).not.toContain("footer={modalDemo === 'customFooter' ? modalFooter : undefined}")
     for (const method of ['info', 'success', 'error', 'warning', 'confirm']) expect(source).toContain(`['${method}',`)
     expect(source).toContain('modalApi[method]')
   })
@@ -108,6 +110,15 @@ describe('Semi UI showcase hash route', () => {
     for (const label of ['Progress 进度条', 'Spin 加载器', 'Toast 提示']) expect(source).toContain(label)
     for (const section of ['progress-basic', 'progress-circle', 'progress-format', 'spin-basic', 'spin-size', 'spin-content', 'toast-basic', 'toast-status', 'toast-control']) expect(source).toContain(section)
     for (const method of ['DshToast.info', 'DshToast.success', 'DshToast.warning', 'DshToast.error', 'DshToast.close']) expect(source).toContain(method)
+  })
+
+  it('includes a working Popover showcase', async () => {
+    const source = await import('node:fs/promises').then(({ readFile }) => readFile(new URL('../src/client/ShowcasePage.tsx', import.meta.url), 'utf8'))
+    expect(source).toContain('DshPopover')
+    expect(source).toContain('Popover 浮层')
+    expect(source).toContain('trigger="click"')
+    expect(source).toContain('showArrow')
+    expect(source).toContain('popover-basic')
   })
 
   it('keeps the shared theme scoped to official component states', async () => {
@@ -121,6 +132,19 @@ describe('Semi UI showcase hash route', () => {
     expect(source).toContain('.semi-cascader-option-label-checkbox.semi-checkbox-indeterminate')
     expect(source).toContain('.semi-checkbox:not(.semi-checkbox-checked):not(.semi-checkbox-indeterminate):hover')
     expect(source).toContain('.semi-tree-option-disabled .semi-tree-option-label')
+    expect(source).toContain('.semi-popover-wrapper')
+    expect(source).toContain('--semi-color-fill-0')
+    expect(source).toContain('--semi-color-primary')
+    expect(source).toContain('--semi-color-primary-disabled')
+    expect(source).toContain('--semi-color-secondary-light-hover')
+    expect(source).toContain('--semi-color-tertiary-light-active')
+    expect(source).toContain('--semi-color-success: var(--dsw-alias-state-success-primary)')
+    expect(source).toContain('--semi-color-danger-light-default')
+    expect(source).toContain('--semi-color-warning-light-active')
+    expect(source).toContain('--semi-color-success-light-hover')
+    expect(source).toContain('--semi-color-text-2')
+    expect(source).not.toContain('!important')
+    expect(source).not.toContain('stroke: var(--semi-color-primary) !important')
     expect(source).toContain('--dsw-static-neutral-bluish-1000')
     expect(source).toContain('data-dsh-semi-theme-refcount')
   })

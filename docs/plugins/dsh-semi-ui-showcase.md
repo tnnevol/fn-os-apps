@@ -9,7 +9,7 @@ description: 在 DSH 中集中检查共享 Semi Design 组件及主题状态。
 
 ## 使用方式
 
-安装插件后，打开 `设置 → 插件 → DSH Semi UI`，点击“打开总览”。页面会进入 `#/plugins/semi-ui`，可通过浏览器前进、后退或页面右上角关闭按钮返回原页面。
+安装插件后，在任意会话的头部右侧点击 `Semi UI` 文本按钮。页面会进入 `#/plugins/semi-ui`，可通过浏览器前进、后退或页面左上角返回按钮回到原会话。
 
 总览包含按钮、图标、Tooltip、Dropdown、Cascader、Tree、TreeSelect 和 Modal，用于检查浅色、深色及系统主题下的基础状态和 Portal 浮层。
 

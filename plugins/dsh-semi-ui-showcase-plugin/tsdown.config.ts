@@ -56,6 +56,7 @@ export default [
       '@douyinfe/semi-ui/lib/es/cascader/index': join(semiUiRoot, 'lib/es/cascader/index.js'),
       '@douyinfe/semi-ui/lib/es/dropdown/index.js': join(semiUiRoot, 'lib/es/dropdown/index.js'),
       '@douyinfe/semi-ui/lib/es/iconButton/index.js': join(semiUiRoot, 'lib/es/iconButton/index.js'),
+      '@douyinfe/semi-ui/lib/es/popover/index': join(semiUiRoot, 'lib/es/popover/index.js'),
       '@douyinfe/semi-ui/lib/es/tooltip/index': join(semiUiRoot, 'lib/es/tooltip/index.js'),
       '@douyinfe/semi-ui/lib/es/treeSelect/index': join(semiUiRoot, 'lib/es/treeSelect/index.js'),
       '@douyinfe/semi-icons/lib/es/icons/IconHistory.js': join(semiIconsRoot, 'lib/es/icons/IconHistory.js'),

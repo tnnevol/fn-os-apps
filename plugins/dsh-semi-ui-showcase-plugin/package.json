@@ -40,8 +40,7 @@
     "client": {
       "inject": [
         "@deepseek-ai/dsh-client-ui-theme",
-        "@deepseek-ai/dsh-client-ui-settings",
-        "@deepseek-ai/dsh-client-ui-settings-plugins",
+        "@deepseek-ai/dsh-client-ui-conversation",
         "@deepseek-ai/dsh-client-ui-layout"
       ],
       "platform": "web",
@@ -50,26 +49,20 @@
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "catalog:",
-    "@deepseek-ai/dsh-settings": "catalog:dsh",
     "@deepseek-ai/dsh-client-runtime": "catalog:dsh",
+    "@deepseek-ai/dsh-client-ui-conversation": "catalog:dsh",
     "@deepseek-ai/dsh-client-ui-layout": "catalog:dsh",
-    "@deepseek-ai/dsh-client-ui-settings": "catalog:dsh",
-    "@deepseek-ai/dsh-client-ui-settings-plugins": "catalog:dsh",
     "@deepseek-ai/dsh-client-ui-slots": "catalog:dsh",
     "@deepseek-ai/dsh-client-ui-theme": "catalog:dsh",
-    "@deepseek-ai/schemastery": "catalog:",
     "react": "catalog:"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "catalog:",
-    "@deepseek-ai/dsh-settings": "catalog:dsh",
     "@deepseek-ai/dsh-client-runtime": "catalog:dsh",
+    "@deepseek-ai/dsh-client-ui-conversation": "catalog:dsh",
     "@deepseek-ai/dsh-client-ui-layout": "catalog:dsh",
-    "@deepseek-ai/dsh-client-ui-settings": "catalog:dsh",
-    "@deepseek-ai/dsh-client-ui-settings-plugins": "catalog:dsh",
     "@deepseek-ai/dsh-client-ui-slots": "catalog:dsh",
     "@deepseek-ai/dsh-client-ui-theme": "catalog:dsh",
-    "@deepseek-ai/schemastery": "catalog:",
     "@douyinfe/semi-icons": "catalog:",
     "@douyinfe/semi-ui": "catalog:",
     "@tnnevol/dsh-semi-ui": "workspace:*",

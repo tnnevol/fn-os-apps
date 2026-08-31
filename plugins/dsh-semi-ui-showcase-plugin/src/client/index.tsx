@@ -1,11 +1,10 @@
 import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
+import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type {} from '@deepseek-ai/dsh-client-ui-layout/client'
-import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
-import type {} from '@deepseek-ai/dsh-client-ui-settings-plugins/client'
 import type {} from '@deepseek-ai/dsh-client-ui-slots'
 import type {} from '@deepseek-ai/dsh-client-ui-theme/client'
 import { installSemiDshTheme } from '@tnnevol/dsh-semi-ui'
-import { ShowcaseCard } from './ShowcaseCard.tsx'
+import { SemiUiHeaderAction } from './SemiUiHeaderAction.tsx'
 import { ShowcasePage } from './ShowcasePage.tsx'
 import { ShowcaseRouteController } from './route.ts'
 import { ShowcaseThemeController } from './theme-preview.ts'
@@ -25,12 +24,12 @@ export function apply(ctx: ClientContext): void {
       theme.dispose()
     }
   }, 'dsh-semi-ui-showcase: theme preview state')
-  ctx.slots.inject('settings.plugin.item', () => ctx.slots.register({
-    name: 'settings.plugin.item',
-    key: 'dsh-semi-ui-showcase',
-    priority: 110,
+  ctx.slots.inject('conversation.session.header.utilities', () => ctx.slots.register({
+    name: 'conversation.session.header.utilities',
+    id: 'dsh-semi-ui-showcase',
+    order: 100,
     inject: () => ({ route }),
-  }, ShowcaseCard))
+  }, SemiUiHeaderAction))
   ctx.slots.inject('shell.overlay', () => ctx.slots.register({
     name: 'shell.overlay',
     id: 'dsh-semi-ui-showcase',

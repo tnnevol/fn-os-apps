@@ -12,6 +12,7 @@ export {
   DshSpin,
   DshToast,
   DshTooltip,
+  DshPopover,
   DshTreeSelect,
   DshIconChangelog,
   DshIconAlertCircle,

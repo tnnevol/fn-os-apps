@@ -12,6 +12,7 @@ import {
   DshIconCheckCircle,
   DshIconButton,
   DshIconClose,
+  DshIconElementStroked,
   DshIconFile,
   DshIconFolder,
   DshIconFolderOpen,
@@ -35,6 +36,7 @@ import {
   DshIconSetting,
   DshIconSun,
   DshModal,
+  DshPopover,
   DshProgress,
   DshSpin,
   DshToast,
@@ -46,7 +48,7 @@ import type { ShowcaseRouteController } from './route.ts'
 import type { ShowcaseThemeController } from './theme-preview.ts'
 
 type Category = 'buttons' | 'selection' | 'tree' | 'modal' | 'feedback'
-type ComponentItem = 'Button 按钮' | 'Cascader 级联选择' | 'TreeSelect 树选择器' | 'Checkbox 复选框' | 'Tree 树形控件' | 'Icon 图标' | 'Modal 对话框' | 'Tooltip 文字提示' | 'Dropdown 下拉框' | 'Progress 进度条' | 'Spin 加载器' | 'Toast 提示'
+type ComponentItem = 'Button 按钮' | 'Cascader 级联选择' | 'TreeSelect 树选择器' | 'Checkbox 复选框' | 'Tree 树形控件' | 'Icon 图标' | 'Modal 对话框' | 'Popover 浮层' | 'Tooltip 文字提示' | 'Dropdown 下拉框' | 'Progress 进度条' | 'Spin 加载器' | 'Toast 提示'
 type ModalDemo = 'basic' | 'footerFill' | 'mask' | 'buttonProps' | 'customFooter' | 'styled' | 'fullscreen'
 
 const page: CSSProperties = { position: 'absolute', inset: 0, overflow: 'auto', background: 'var(--dsw-alias-bg-base)', color: 'var(--dsw-alias-label-primary)' }
@@ -123,7 +125,7 @@ const sidebarGroups = [
   { title: '基础类', items: [{ icon: DshIconLabButton, label: 'Button 按钮', value: 'buttons' as Category }, { icon: DshIconLabHeart, label: 'Icon 图标', value: 'tree' as Category }] },
   { title: '输入类', items: [{ icon: DshIconLabCascader, label: 'Cascader 级联选择', value: 'selection' as Category }, { icon: DshIconLabTreeSelect, label: 'TreeSelect 树选择器', value: 'selection' as Category }, { icon: DshIconLabCheckbox, label: 'Checkbox 复选框', value: 'selection' as Category }] },
   { title: '导航类', items: [{ icon: DshIconLabTree, label: 'Tree 树形控件', value: 'tree' as Category }] },
-  { title: '反馈类', items: [{ icon: DshIconLabModal, label: 'Modal 对话框', value: 'modal' as Category }, { icon: DshIconLabProgress, label: 'Progress 进度条', value: 'feedback' as Category }, { icon: DshIconLabSpin, label: 'Spin 加载器', value: 'feedback' as Category }, { icon: DshIconLabToast, label: 'Toast 提示', value: 'feedback' as Category }, { icon: DshIconLabTooltip, label: 'Tooltip 文字提示', value: 'buttons' as Category }, { icon: DshIconLabDropdown, label: 'Dropdown 下拉框', value: 'buttons' as Category }] },
+  { title: '反馈类', items: [{ icon: DshIconLabModal, label: 'Modal 对话框', value: 'modal' as Category }, { icon: DshIconLabProgress, label: 'Progress 进度条', value: 'feedback' as Category }, { icon: DshIconLabSpin, label: 'Spin 加载器', value: 'feedback' as Category }, { icon: DshIconLabToast, label: 'Toast 提示', value: 'feedback' as Category }, { icon: DshIconLabTooltip, label: 'Tooltip 文字提示', value: 'buttons' as Category }, { icon: DshIconLabDropdown, label: 'Dropdown 下拉框', value: 'buttons' as Category }, { icon: DshIconElementStroked, label: 'Popover 浮层', value: 'buttons' as Category }] },
 ] as const
 
 function DemoCode({ children }: { children: string }): ReactNode {
@@ -146,6 +148,7 @@ export function ShowcasePage({ route, theme }: { route: ShowcaseRouteController;
   const [iconMode, setIconMode] = useState<IconMode>('all')
   const [toastId, setToastId] = useState<string>()
   const dropdownContent = useMemo(() => <div style={{ padding: 10, minWidth: 140 }}>DSH 主题浮层</div>, [])
+  const popoverContent = useMemo(() => <div style={{ display: 'grid', gap: 6, minWidth: 180, padding: 4 }}><strong>Popover 内容</strong><span style={{ color: 'var(--dsw-alias-label-secondary)' }}>这是由调用方传入的自定义内容。</span></div>, [])
   const nextTheme = themeSnapshot.active.colorScheme === 'dark' ? 'light' : 'dark'
   const themeToggleLabel = nextTheme === 'light' ? '切换到亮色模式' : '切换到暗色模式'
   const ThemeIcon = nextTheme === 'light' ? DshIconSun : DshIconMoon
@@ -173,9 +176,11 @@ export function ShowcasePage({ route, theme }: { route: ShowcaseRouteController;
                   ? '进度条用于展示操作的当前进度和状态，也可以表示任务或对象的完成度。'
                   : activeComponent === 'Spin 加载器'
                     ? '加载器用于告知用户内容正在加载，适用于时长不确定的异步操作。'
-                    : activeComponent === 'Toast 提示'
+              : activeComponent === 'Toast 提示'
                       ? 'Toast 用于对用户操作提供及时反馈，支持信息、成功、警告、错误和手动关闭。'
-                      : '下拉菜单用于承载一组可点击的操作项，默认通过点击触发。'
+                      : activeComponent === 'Popover 浮层'
+                        ? 'Popover 用于展示与当前操作相关的补充内容，支持点击触发和自定义内容。'
+                        : '下拉菜单用于承载一组可点击的操作项，默认通过点击触发。'
   const outlineItems: Array<[string, string]> = activeComponent === 'Button 按钮'
     ? [['如何引入', 'how-to'], ['按钮类型', 'button-types'], ['按钮主题', 'button-theme'], ['状态', 'button-states'], ['组合与浮层', 'button-overlays']]
     : activeComponent === 'Cascader 级联选择' || activeComponent === 'TreeSelect 树选择器'
@@ -194,7 +199,9 @@ export function ShowcasePage({ route, theme }: { route: ShowcaseRouteController;
                 ? [['基本用法', 'spin-basic'], ['尺寸', 'spin-size'], ['包裹内容', 'spin-content']]
                 : activeComponent === 'Toast 提示'
                   ? [['普通提示', 'toast-basic'], ['状态提示', 'toast-status'], ['手动关闭与堆叠', 'toast-control']]
-            : [['基本用法', activeComponent === 'Tooltip 文字提示' ? 'tooltip-basic' : 'dropdown-basic'], ['API 参考', activeComponent === 'Tooltip 文字提示' ? 'tooltip-basic' : 'dropdown-basic']]
+                : activeComponent === 'Popover 浮层'
+                  ? [['基本用法', 'popover-basic'], ['箭头与位置', 'popover-basic'], ['API 参考', 'popover-basic']]
+                  : [['基本用法', activeComponent === 'Tooltip 文字提示' ? 'tooltip-basic' : 'dropdown-basic'], ['API 参考', activeComponent === 'Tooltip 文字提示' ? 'tooltip-basic' : 'dropdown-basic']]
   const openModal = (demo: ModalDemo): void => {
     setModalDemo(demo)
     setModalVisible(true)
@@ -268,6 +275,17 @@ export function ShowcasePage({ route, theme }: { route: ShowcaseRouteController;
                 <h2 id="dropdown-basic" style={sectionTitle}>基本用法</h2>
                 <p style={sectionText}>点击触发下拉面板，菜单项使用 DSH 的悬停和激活变量。</p>
                 <DemoCard source={'<DshDropdown trigger="click" render={menu}>\n  <DshButton>打开菜单</DshButton>\n</DshDropdown>'}><DshDropdown trigger="click" render={dropdownContent}><DshButton type="secondary" theme="light">打开菜单</DshButton></DshDropdown></DemoCard>
+              </>
+            ) : null}
+
+            {activeComponent === 'Popover 浮层' ? (
+              <>
+                <h2 id="popover-basic" style={sectionTitle}>基本用法</h2>
+                <p style={sectionText}>Popover 用于展示补充信息或轻量交互内容，点击触发后不会影响当前页面上下文。</p>
+                <DemoCard source={'<DshPopover trigger="click" content={content}>\n  <DshButton>打开 Popover</DshButton>\n</DshPopover>'}><DshPopover trigger="click" position="top" showArrow content={popoverContent}><DshButton type="secondary" theme="light">打开 Popover</DshButton></DshPopover></DemoCard>
+                <h2 style={sectionTitle}>箭头与位置</h2>
+                <p style={sectionText}>使用 `position` 和 `showArrow` 控制浮层定位与指向，内容由 Popover 的 `content` 属性提供。</p>
+                <DemoCard source={'<DshPopover position="right" showArrow content="右侧内容">\n  <DshButton>右侧打开</DshButton>\n</DshPopover>'}><div style={demo}><DshPopover trigger="click" position="right" showArrow content={<span>右侧 Popover 内容</span>}><DshButton type="secondary" theme="light">右侧打开</DshButton></DshPopover><DshPopover trigger="hover" position="bottomLeft" content={<span>悬停显示内容</span>}><DshButton type="secondary" theme="light">悬停打开</DshButton></DshPopover></div></DemoCard>
               </>
             ) : null}
 
@@ -389,7 +407,7 @@ export function ShowcasePage({ route, theme }: { route: ShowcaseRouteController;
                 <h2 id="modal-methods" style={sectionTitle}>信息反馈状态</h2>
                 <p style={sectionText}>命令式 Modal 提供信息、成功、错误、警告和确认五种状态，图标与按钮颜色均使用 DSH 主题变量。</p>
                 <DemoCard source={'DshModal.info({ title: "信息", content: "..." })\nDshModal.success({ title: "成功", content: "..." })\nDshModal.error({ title: "错误", content: "..." })\nDshModal.warning({ title: "警告", content: "..." })\nDshModal.confirm({ title: "确认", content: "..." })'}><div style={demo}>{modalMethods.map(([method, label, Icon]) => <DshButton key={method} type={method === 'error' ? 'danger' : method === 'warning' ? 'warning' : 'primary'} theme="light" icon={<Icon />} onClick={() => { modalApi[method]({ title: `${label}状态`, content: `这是 ${label} Modal 的内容，用于验证图标、正文、按钮和遮罩状态。`, okText: '确定', cancelText: '取消' }) }}>{label}</DshButton>)}</div></DemoCard>
-                <DshModal title={modalDemo === 'customFooter' ? '自定义页脚' : modalDemo === 'fullscreen' ? '全屏对话框' : modalDemo === 'mask' ? '遮罩不可关闭' : modalDemo === 'buttonProps' ? '自定义按钮属性' : modalDemo === 'styled' ? '自定义样式' : modalDemo === 'footerFill' ? '底部撑满' : '基本对话框'} visible={modalVisible} centered={modalDemo === 'styled' || modalDemo === 'fullscreen'} fullScreen={modalDemo === 'fullscreen'} footerFill={modalDemo === 'footerFill'} maskClosable={modalDemo !== 'mask'} closeOnEsc okButtonProps={modalDemo === 'buttonProps' ? { size: 'small', type: 'warning' } : undefined} cancelButtonProps={modalDemo === 'buttonProps' ? { size: 'small', disabled: true } : undefined} header={modalDemo === 'customFooter' ? null : undefined} footer={modalDemo === 'customFooter' ? modalFooter : undefined} bodyStyle={modalDemo === 'styled' ? { maxHeight: 180, overflow: 'auto' } : undefined} onCancel={closeModal} onOk={closeModal}>{modalBody}</DshModal>
+                <DshModal {...(modalDemo === 'customFooter' ? { footer: modalFooter } : {})} title={modalDemo === 'customFooter' ? '自定义页脚' : modalDemo === 'fullscreen' ? '全屏对话框' : modalDemo === 'mask' ? '遮罩不可关闭' : modalDemo === 'buttonProps' ? '自定义按钮属性' : modalDemo === 'styled' ? '自定义样式' : modalDemo === 'footerFill' ? '底部撑满' : '基本对话框'} visible={modalVisible} centered={modalDemo === 'styled' || modalDemo === 'fullscreen'} fullScreen={modalDemo === 'fullscreen'} footerFill={modalDemo === 'footerFill'} maskClosable={modalDemo !== 'mask'} closeOnEsc okText="确定" cancelText="取消" okButtonProps={modalDemo === 'buttonProps' ? { size: 'small', type: 'warning' } : undefined} cancelButtonProps={modalDemo === 'buttonProps' ? { size: 'small', disabled: true } : undefined} header={modalDemo === 'customFooter' ? null : undefined} bodyStyle={modalDemo === 'styled' ? { maxHeight: 180, overflow: 'auto' } : undefined} onCancel={closeModal} onOk={closeModal}>{modalBody}</DshModal>
               </>
             ) : null}
           </div>

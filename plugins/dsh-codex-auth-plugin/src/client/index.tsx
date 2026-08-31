@@ -59,8 +59,8 @@ export function apply(ctx: ClientContext): void {
     key: CODEX_AUTH_SETTINGS_NAMESPACE,
     inject: (): CodexAuthCardInjected => ({ t, configScope, connection }),
   }, CodexAuthCard))
-  ctx.slots.inject('conversation.composer.dock', () => ctx.slots.register({
-    name: 'conversation.composer.dock',
+  ctx.slots.inject('conversation.input.right', () => ctx.slots.register({
+    name: 'conversation.input.right',
     id: 'codex-usage',
     order: 1,
     inject: (): CodexUsageStatusProps => ({ t, timer }),

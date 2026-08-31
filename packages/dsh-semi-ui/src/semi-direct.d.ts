@@ -28,6 +28,11 @@ declare module '@douyinfe/semi-ui/lib/es/modal/index' {
   export default Modal
 }
 
+declare module '@douyinfe/semi-ui/lib/es/popover/index' {
+  const Popover: any
+  export default Popover
+}
+
 declare module '@douyinfe/semi-ui/lib/es/tooltip/index' {
   const Tooltip: any
   export default Tooltip

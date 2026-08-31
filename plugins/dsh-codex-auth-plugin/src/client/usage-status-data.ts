@@ -21,9 +21,19 @@ async function readJson<T>(path: string): Promise<T | undefined> {
   return await response.json() as T
 }
 
+export async function readCodexSignedInStatus(): Promise<boolean> {
+  const status = await readJson<CodexAuthStatus>(CODEX_AUTH_STATUS_PATH)
+  return status?.status === 'signed-in'
+}
+
+export async function readCodexUsage(): Promise<CodexUsage> {
+  const usage = await readJson<CodexUsage>(CODEX_USAGE_PATH)
+  if (usage === undefined) throw new Error('Codex usage is unavailable')
+  return usage
+}
+
 /** Read one coherent snapshot so quota is never shown for a signed-out account. */
 export async function readSignedInUsage(): Promise<CodexUsage | undefined> {
-  const status = await readJson<CodexAuthStatus>(CODEX_AUTH_STATUS_PATH)
-  if (status?.status !== 'signed-in') return undefined
-  return await readJson<CodexUsage>(CODEX_USAGE_PATH)
+  if (!await readCodexSignedInStatus()) return undefined
+  return await readCodexUsage()
 }

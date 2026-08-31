@@ -113,8 +113,8 @@ const requirementsSidebar = [
         link: '/requirements/FNOS-002-dsh-app-plugin-optimization'
       },
       {
-        text: 'FNOS-003 DSH 版本统一升级',
-        link: '/requirements/FNOS-003-dsh-version-alignment'
+        text: 'FNOS-003 FPK 应用运行设置统一',
+        link: '/requirements/FNOS-003-fpk-runtime-settings'
       }
     ]
   }
@@ -134,8 +134,8 @@ const plansSidebar = [
         link: '/plans/PLAN-FNOS-002-dsh-app-plugin-optimization'
       },
       {
-        text: 'PLAN-FNOS-003 DSH 版本统一升级',
-        link: '/plans/PLAN-FNOS-003-dsh-version-alignment'
+        text: 'PLAN-FNOS-003 FPK 应用运行设置统一',
+        link: '/plans/PLAN-FNOS-003-fpk-runtime-settings'
       }
     ]
   }
