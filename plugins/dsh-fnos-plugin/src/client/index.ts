@@ -21,15 +21,16 @@ import { installFnosPathOpener } from './path-opener.ts'
 import { FnosSettingsDocumentAction } from './FnosSettingsDocumentAction.tsx'
 import { FnosWebRestartAction } from './FnosWebRestartAction.tsx'
 import { installFnosBrowserRefreshShortcut } from './browser-refresh-shortcut.ts'
+import { installFnosSettingsShortcut } from './settings-shortcut.ts'
 import { isEmbeddedFnosFrame } from './sdk-carrier.ts'
 import { createTrimApp } from './sdk.ts'
 import { installFnosPageTitle } from './sdk-title.ts'
-import { createThemeBridge, type ThemeBridge } from './theme-bridge.ts'
+import { createThemeBridge } from './theme-bridge.ts'
 import { createThemePersistence } from './theme-persistence.ts'
+import { createThemeController } from './theme-controller.ts'
 import { installWorkspaceAuthorizedShortcut } from './workspace-authorized-shortcut.ts'
 import { FNOS_AUTHORIZED_DIRECTORIES_SETTINGS_NAMESPACE } from '../authorized-directories-contract.ts'
 import type { FnosSettings, FnosTheme } from '../theme-contract.ts'
-import { isDshThemePreference } from '../theme-bootstrap.ts'
 import { installSemiDshTheme } from '@tnnevol/dsh-semi-ui'
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
@@ -40,8 +41,6 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
 
 export const name = 'dsh-fnos-plugin-client'
 export const inject = ['theme', 'slots', 'locale', 'sessions', 'inputTriggers', 'workspaces', 'settingsScope', 'sessionLogDownload']
-
-const DARK_ATTRIBUTE = 'data-ds-dark-theme'
 
 type SessionLogDownloadState = {
   bySession: Record<string, { open: boolean, status: 'downloading' | 'success' | 'error', error: string | null } | undefined>
@@ -56,77 +55,6 @@ type SessionLogDownloadController = {
   store: SessionLogDownloadStore
   download: (sessionId: SessionId) => Promise<void>
   dismiss: (sessionId: SessionId) => void
-}
-
-/**
- * Keep DSH's saved preference unchanged. When it is set to "system", apply
- * the fnOS theme to the document after the SDK bridge has supplied the real
- * NAS state and persist that resolved state for the next Host bootstrap. For
- * explicit light/dark preferences, DSH remains authoritative and the stale
- * fnOS snapshot is removed.
- */
-function createThemeController(
-  ctx: ClientContext,
-  bridge: ThemeBridge,
-  persistence: ReturnType<typeof createThemePersistence>,
-) {
-  let systemFallbackActive = false
-  let previousColorScheme: string | undefined
-  let previousDarkAttribute: boolean | undefined
-
-  const applySystemTheme = (theme: 'light' | 'dark'): void => {
-    if (typeof document === 'undefined') return
-    if (!systemFallbackActive) {
-      previousColorScheme = document.documentElement.style.colorScheme
-      previousDarkAttribute = document.body?.hasAttribute(DARK_ATTRIBUTE)
-    }
-    const dark = theme === 'dark'
-    document.documentElement.style.colorScheme = dark ? 'dark' : 'light'
-    document.body?.toggleAttribute(DARK_ATTRIBUTE, dark)
-    systemFallbackActive = true
-  }
-
-  const clearSystemTheme = (): void => {
-    if (systemFallbackActive && typeof document !== 'undefined') {
-      if (previousColorScheme === '') document.documentElement.style.removeProperty('color-scheme')
-      else if (previousColorScheme !== undefined) document.documentElement.style.colorScheme = previousColorScheme
-      if (previousDarkAttribute === true) document.body?.setAttribute(DARK_ATTRIBUTE, '')
-      else if (previousDarkAttribute === false) document.body?.removeAttribute(DARK_ATTRIBUTE)
-    }
-    previousColorScheme = undefined
-    previousDarkAttribute = undefined
-    systemFallbackActive = false
-  }
-
-  const refresh = (): void => {
-    const theme = ctx.theme
-    const preference = theme.getTheme().preference
-    if (preference !== 'system') {
-      if (isDshThemePreference(preference)) persistence.sync(preference, null)
-      clearSystemTheme()
-      return
-    }
-
-    const fnosTheme = bridge.getTheme()
-    persistence.sync(preference, fnosTheme)
-    if (fnosTheme === null) return
-
-    applySystemTheme(fnosTheme)
-    // DSH's ThemePresenter also listens to theme/change. Re-apply after the
-    // current event turn so the fnOS state wins regardless of listener order.
-    queueMicrotask(() => {
-      if (ctx.theme.getTheme().preference === 'system' && bridge.getTheme() === fnosTheme) {
-        applySystemTheme(fnosTheme)
-      }
-    })
-  }
-
-  return {
-    refresh,
-    dispose(): void {
-      clearSystemTheme()
-    },
-  }
 }
 
 export function apply(ctx: ClientContext): void {
@@ -167,6 +95,7 @@ export function apply(ctx: ClientContext): void {
   }), 'dsh-fnos: fnOS path opener')
   ctx.effect(() => installFnosPageTitle(createTrimApp), 'dsh-fnos: fnOS page title')
   ctx.effect(() => installFnosBrowserRefreshShortcut(), 'dsh-fnos: browser refresh shortcut')
+  ctx.effect(() => installFnosSettingsShortcut(), 'dsh-fnos: settings shortcut')
   ctx.effect(() => installWorkspaceAuthorizedShortcut(t), 'dsh-fnos: workspace authorized shortcut')
 
   const source: InputTriggerSource = {

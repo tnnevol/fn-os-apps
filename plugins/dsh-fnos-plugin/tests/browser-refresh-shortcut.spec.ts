@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { isBrowserRefreshShortcut } from '../src/client/browser-refresh-shortcut-matcher.ts'
+import { isSettingsShortcut } from '../src/client/settings-shortcut-matcher.ts'
 
 describe('fnOS browser refresh shortcut', () => {
   it('recognizes browser refresh shortcuts', () => {
@@ -13,5 +14,15 @@ describe('fnOS browser refresh shortcut', () => {
     expect(isBrowserRefreshShortcut({ key: 'r', ctrlKey: false, metaKey: false })).toBe(false)
     expect(isBrowserRefreshShortcut({ key: 'r', ctrlKey: false, metaKey: false })).toBe(false)
     expect(isBrowserRefreshShortcut({ key: 'F4', ctrlKey: true, metaKey: false })).toBe(false)
+  })
+
+  it('recognizes the platform settings shortcut', () => {
+    expect(isSettingsShortcut({ key: ',', ctrlKey: true, metaKey: false })).toBe(true)
+    expect(isSettingsShortcut({ key: ',', ctrlKey: false, metaKey: true })).toBe(true)
+  })
+
+  it('does not treat an unmodified comma as the settings shortcut', () => {
+    expect(isSettingsShortcut({ key: ',', ctrlKey: false, metaKey: false })).toBe(false)
+    expect(isSettingsShortcut({ key: '.', ctrlKey: true, metaKey: false })).toBe(false)
   })
 })

@@ -39,7 +39,8 @@ export function FnosSettingsDocumentAction({ t }: SettingsDocumentActionProps) {
   return (
     <DshButton
       size="small"
-      type="tertiary"
+      type="secondary"
+      theme="outline"
       className="dsh-fnos-settings-document-button"
       disabled={busy}
       title={error ? t('settingsDocumentOpenFailed') : t('openSettingsDocument')}

@@ -58,6 +58,7 @@ fnOS 应用侧边菜单提供「刷新」和「重启 Web」入口：
 
 - 「刷新」只刷新 DSH Web iframe，不刷新 iframe 外部的 fnOS 宿主页面；
 - 「重启 Web」由常驻网关恢复 DSH Web，完成健康检查后刷新 iframe；
+- 按下 macOS 的 `⌘ + ,` 或 Windows/Linux 的 `Ctrl + ,` 可打开 DSH 设置；
 - 已验证刷新和重启入口均可正常使用，Web 重启期间 FPK 应用保持启用。
 
 ## 导出会话日志

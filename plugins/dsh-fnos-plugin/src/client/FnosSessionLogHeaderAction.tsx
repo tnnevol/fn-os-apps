@@ -169,11 +169,11 @@ export function FnosSessionLogHeaderAction({ sessionId, exportToComputer, useSes
           },
         ]}
       >
-        <DshButton size="small" type="tertiary" className="dsh-fnos-session-log-button">
+        <DshButton size="default" type="primary" theme="outline" className="dsh-fnos-session-log-button">
+          {t('sessionLog')}
           <span className="dsh-fnos-session-log-button-icon">
             <IconChangelog />
           </span>
-          {t('sessionLog')}
         </DshButton>
       </DshDropdown>
       <DshModal
