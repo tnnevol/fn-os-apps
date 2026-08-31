@@ -32,18 +32,21 @@ export function installFnosBrowserRefreshShortcut(): () => void {
       hotKeys: [DshHotKeys.Keys.F5],
       preventDefault: true,
       onHotKey: handleHotKey,
+      getListenerTarget: () => window as unknown as HTMLElement,
       render: null,
     }),
     createElement(DshHotKeys, {
       hotKeys: [DshHotKeys.Keys.Control, DshHotKeys.Keys.R],
       preventDefault: true,
       onHotKey: handleHotKey,
+      getListenerTarget: () => window as unknown as HTMLElement,
       render: null,
     }),
     createElement(DshHotKeys, {
       hotKeys: [DshHotKeys.Keys.Meta, DshHotKeys.Keys.R],
       preventDefault: true,
       onHotKey: handleHotKey,
+      getListenerTarget: () => window as unknown as HTMLElement,
       render: null,
     }),
   ))
