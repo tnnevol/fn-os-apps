@@ -9,6 +9,7 @@ export {
   DshCascader,
   DshDropdown,
   DshIconButton,
+  DshHotKeys,
   DshSpin,
   DshToast,
   DshTooltip,

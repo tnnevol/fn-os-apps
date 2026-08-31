@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isBrowserRefreshShortcut } from '../src/client/browser-refresh-shortcut.ts'
+import { isBrowserRefreshShortcut } from '../src/client/browser-refresh-shortcut-matcher.ts'
 
 describe('fnOS browser refresh shortcut', () => {
   it('recognizes browser refresh shortcuts', () => {

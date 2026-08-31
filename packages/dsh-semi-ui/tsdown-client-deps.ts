@@ -30,6 +30,7 @@ export const dshSemiClientDeps = {
     '@douyinfe/semi-ui/lib/es/tag/index.js': join(semiUiRoot, 'lib/es/tag/index.js'),
     '@douyinfe/semi-ui/lib/es/dropdown/index.js': join(semiUiRoot, 'lib/es/dropdown/index.js'),
     '@douyinfe/semi-ui/lib/es/iconButton/index.js': join(semiUiRoot, 'lib/es/iconButton/index.js'),
+    '@douyinfe/semi-ui/lib/es/hotKeys/index.js': join(semiUiRoot, 'lib/es/hotKeys/index.js'),
     '@douyinfe/semi-ui/lib/es/spin/index': join(semiUiRoot, 'lib/es/spin/index.js'),
     '@douyinfe/semi-ui/lib/es/toast/index': join(semiUiRoot, 'lib/es/toast/index.js'),
     '@douyinfe/semi-ui/lib/es/tooltip/index': join(semiUiRoot, 'lib/es/tooltip/index.js'),

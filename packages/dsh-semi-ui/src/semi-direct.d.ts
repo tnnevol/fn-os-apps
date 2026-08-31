@@ -28,6 +28,11 @@ declare module '@douyinfe/semi-ui/lib/es/iconButton/index.js' {
   export default IconButton
 }
 
+declare module '@douyinfe/semi-ui/lib/es/hotKeys/index.js' {
+  const HotKeys: any
+  export default HotKeys
+}
+
 declare module '@douyinfe/semi-ui/lib/es/modal/index' {
   const Modal: any
   export default Modal
