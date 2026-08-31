@@ -37,6 +37,7 @@ export { default as DshIconRefresh2 } from '@douyinfe/semi-icons/lib/es/icons/Ic
 export { default as DshIconRestart } from '@douyinfe/semi-icons/lib/es/icons/IconRestart.js'
 export { default as DshIconSetting } from '@douyinfe/semi-icons/lib/es/icons/IconSetting.js'
 export { default as DshIconSun } from '@douyinfe/semi-icons/lib/es/icons/IconSun.js'
+export { default as DshIconSync } from '@douyinfe/semi-icons/lib/es/icons/IconSync.js'
 export { default as DshIconTreeTriangleRight } from '@douyinfe/semi-icons/lib/es/icons/IconTreeTriangleRight.js'
 export { default as DshIconLabButton } from '@douyinfe/semi-icons-lab/lib/es/icons/IconButton.js'
 export { default as DshIconLabCascader } from '@douyinfe/semi-icons-lab/lib/es/icons/IconCascader.js'

@@ -45,6 +45,8 @@ describe('dsh-fnos package contract', () => {
     const restart = await readFile(new URL('../src/client/FnosWebRestartAction.tsx', import.meta.url), 'utf8')
     expect(restart).toContain('DshButtonGroup')
     expect(restart).toContain('DshIconRefresh2')
+    expect(restart).toContain('DshIconSync')
+    expect(restart).toContain('spin={busy}')
     expect(restart).toContain('window.location.reload()')
     expect(restart).toContain("aria-label={refreshLabel}")
     expect(restart).toContain('/__fnos-gateway/control/web/restart')

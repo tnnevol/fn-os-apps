@@ -38,6 +38,7 @@ export {
   DshIconRestart,
   DshIconSetting,
   DshIconSun,
+  DshIconSync,
   DshIconTreeTriangleRight,
   DshIconLabButton,
   DshIconLabCascader,
