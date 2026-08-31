@@ -30,6 +30,14 @@
     return url;
   }
 
+  function mapCssUrls(value) {
+    if (typeof value !== "string" || value.indexOf("url(") < 0) return value;
+    return value.replace(/url\(\s*(["']?)(\/(?!\/)[^"')]+)\1\s*\)/gi, function (match, quote, path) {
+      var mapped = mapUrl(path);
+      return mapped ? "url(" + quote + mapped.toString() + quote + ")" : match;
+    });
+  }
+
   function isResourceAttribute(node, name) {
     var tag = String(node && node.tagName || "").toUpperCase();
     var attribute = String(name || "").toLowerCase();
@@ -39,6 +47,7 @@
       || (attribute === "data" && tag === "OBJECT");
   }
   function mapResourceAttribute(node, name, value) {
+    if (String(name || "").toLowerCase() === "style") return mapCssUrls(value);
     if (!isResourceAttribute(node, name)) return value;
     var mapped = mapUrl(value);
     return mapped ? mapped.toString() : value;
@@ -118,6 +127,36 @@
   XMLHttpRequest.prototype.open = function () { var args = Array.prototype.slice.call(arguments); var mapped = mapUrl(args[1]); if (mapped) args[1] = mapped.toString(); return nativeOpen.apply(this, args); };
   var nativeSetAttribute = Element.prototype.setAttribute;
   if (nativeSetAttribute) Element.prototype.setAttribute = function (name, value) { return nativeSetAttribute.call(this, name, mapResourceAttribute(this, name, value)); };
+  function patchCssStyleDeclaration() {
+    var constructor = window.CSSStyleDeclaration;
+    var prototype = constructor && constructor.prototype;
+    if (!prototype) return;
+    var setProperty = prototype.setProperty;
+    if (typeof setProperty === "function" && setProperty.__fnosBridge !== true) {
+      var bridgedSetProperty = function (name, value, priority) {
+        return setProperty.call(this, name, mapCssUrls(value), priority);
+      };
+      try { Object.defineProperty(bridgedSetProperty, "__fnosBridge", { value: true }); } catch (_) {}
+      try { prototype.setProperty = bridgedSetProperty; } catch (_) {}
+    }
+    var cssText = Object.getOwnPropertyDescriptor(prototype, "cssText");
+    if (cssText && typeof cssText.set === "function" && cssText.set.__fnosBridge !== true) {
+      var cssTextSetter = cssText.set;
+      var bridgedCssTextSetter = function (value) { cssTextSetter.call(this, mapCssUrls(value)); };
+      try { Object.defineProperty(bridgedCssTextSetter, "__fnosBridge", { value: true }); } catch (_) {}
+      try { Object.defineProperty(prototype, "cssText", { configurable: cssText.configurable, enumerable: cssText.enumerable, get: cssText.get, set: bridgedCssTextSetter }); } catch (_) {}
+    }
+    for (var property of Object.getOwnPropertyNames(prototype)) {
+      if (property === "constructor" || property === "cssText" || property === "setProperty") continue;
+      var descriptor = Object.getOwnPropertyDescriptor(prototype, property);
+      if (!descriptor || typeof descriptor.set !== "function" || descriptor.set.__fnosBridge === true) continue;
+      const setter = descriptor.set;
+      const bridgedSetter = function (value) { setter.call(this, mapCssUrls(value)); };
+      try { Object.defineProperty(bridgedSetter, "__fnosBridge", { value: true }); } catch (_) {}
+      try { Object.defineProperty(prototype, property, { configurable: descriptor.configurable, enumerable: descriptor.enumerable, get: descriptor.get, set: bridgedSetter }); } catch (_) {}
+    }
+  }
+  patchCssStyleDeclaration();
   function patchResourceProperty(owner, property) {
     var constructor = window[owner];
     var prototype = constructor && constructor.prototype;
@@ -134,6 +173,37 @@
   patchResourceProperty("HTMLIFrameElement", "src");
   patchResourceProperty("HTMLMediaElement", "src");
   patchResourceProperty("HTMLSourceElement", "src");
+  var textContent = Object.getOwnPropertyDescriptor(Node.prototype, "textContent");
+  if (textContent && typeof textContent.set === "function" && textContent.set.__fnosBridge !== true) {
+    var textContentSetter = textContent.set;
+    var bridgedTextContentSetter = function (value) {
+      var mapped = this && this.nodeType === 1 && this.tagName === "STYLE" ? mapCssUrls(value) : value;
+      textContentSetter.call(this, mapped);
+    };
+    try { Object.defineProperty(bridgedTextContentSetter, "__fnosBridge", { value: true }); } catch (_) {}
+    try { Object.defineProperty(Node.prototype, "textContent", { configurable: textContent.configurable, enumerable: textContent.enumerable, get: textContent.get, set: bridgedTextContentSetter }); } catch (_) {}
+  }
+  if (window.CSSStyleSheet) {
+    var styleSheetPrototype = window.CSSStyleSheet.prototype;
+    var insertRule = styleSheetPrototype.insertRule;
+    if (typeof insertRule === "function" && insertRule.__fnosBridge !== true) {
+      var bridgedInsertRule = function (rule, index) { return insertRule.call(this, mapCssUrls(rule), index); };
+      try { Object.defineProperty(bridgedInsertRule, "__fnosBridge", { value: true }); } catch (_) {}
+      try { styleSheetPrototype.insertRule = bridgedInsertRule; } catch (_) {}
+    }
+    var replaceSync = styleSheetPrototype.replaceSync;
+    if (typeof replaceSync === "function" && replaceSync.__fnosBridge !== true) {
+      var bridgedReplaceSync = function (text) { return replaceSync.call(this, mapCssUrls(text)); };
+      try { Object.defineProperty(bridgedReplaceSync, "__fnosBridge", { value: true }); } catch (_) {}
+      try { styleSheetPrototype.replaceSync = bridgedReplaceSync; } catch (_) {}
+    }
+    var replace = styleSheetPrototype.replace;
+    if (typeof replace === "function" && replace.__fnosBridge !== true) {
+      var bridgedReplace = function (text) { return replace.call(this, mapCssUrls(text)); };
+      try { Object.defineProperty(bridgedReplace, "__fnosBridge", { value: true }); } catch (_) {}
+      try { styleSheetPrototype.replace = bridgedReplace; } catch (_) {}
+    }
+  }
   function scriptNode(node) {
     if (!node || node.nodeType !== 1) return;
     var attributes = ["src", "href", "poster", "data"];
@@ -145,7 +215,11 @@
     }
   }
   var appendChild = Node.prototype.appendChild;
-  Node.prototype.appendChild = function (node) { scriptNode(node); return appendChild.call(this, node); };
+  Node.prototype.appendChild = function (node) {
+    if (this && this.tagName === "STYLE" && node && node.nodeType === 3) node.nodeValue = mapCssUrls(node.nodeValue);
+    scriptNode(node);
+    return appendChild.call(this, node);
+  };
   var append = Element.prototype.append;
   if (append) Element.prototype.append = function () { for (var node of arguments) scriptNode(node); return append.apply(this, arguments); };
   var insertBefore = Node.prototype.insertBefore;

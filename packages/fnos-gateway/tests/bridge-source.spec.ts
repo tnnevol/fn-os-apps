@@ -116,6 +116,8 @@ describe('browser bridge source', () => {
     image.tagName = 'IMG'
     image.setAttribute('src', '/dsh-pet-7340/pic/cursor-grab.png')
     expect(image.attributes.src).toBe('http://nas.example/app/fn-deepseek-harness/dsh-pet-7340/pic/cursor-grab.png')
+    image.setAttribute('style', "cursor: url('/dsh-pet-7340/pic/cursor-grab.png'), auto")
+    expect(image.attributes.style).toBe("cursor: url('http://nas.example/app/fn-deepseek-harness/dsh-pet-7340/pic/cursor-grab.png'), auto")
   })
   it('upgrades a prefixed same-host websocket to wss on an https page', () => {
     const websocketUrls: string[] = []

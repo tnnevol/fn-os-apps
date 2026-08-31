@@ -26,8 +26,8 @@ export function rewriteHtml(body: Buffer, gatewayPrefix: string, bridgeScript: s
 export function rewriteCss(body: Buffer, gatewayPrefix: string): string {
   const css = body.toString('utf8')
   return css.replace(
-    /url\(\s*(["']?)\/(assets\/[^)"']+)\1\s*\)/gi,
-    (_, quote, path) => 'url(' + quote + addGatewayPrefix('/' + path, gatewayPrefix) + quote + ')',
+    /url\(\s*(["']?)(\/(?!\/)[^)"']+)\1\s*\)/gi,
+    (match, quote, path) => 'url(' + quote + addGatewayPrefix(path, gatewayPrefix) + quote + ')',
   )
 }
 

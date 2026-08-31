@@ -49,14 +49,13 @@ export function createProxyHandler(options: GatewayOptions): RequestHandler {
         // Never run that response through the HTML rewriter for an image URL;
         // preserve the upstream status, body, and headers for the browser.
         const imageResource = isImageResourceRequest(req)
-        const rewriteBody = !eventStream && (
-          !imageResource
+        const rewriteBody = !eventStream
+          && !imageResource
           && (
           contentType.includes('text/html')
           || contentType.includes('text/css')
           || contentType.includes('javascript')
           )
-        )
         const headers = copyResponseHeaders(proxyRes.headers, {
           rewriteBody,
           eventStream,
