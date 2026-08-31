@@ -6,6 +6,7 @@ import type { SettingsScope } from '@deepseek-ai/dsh-client-runtime/client'
 import type { ConnectionHandle } from '@deepseek-ai/dsh-client-connection/client'
 import type { PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type {} from '@deepseek-ai/dsh-client-ui-settings-plugins/client'
+import { DshButton, DshProgress } from '@tnnevol/dsh-semi-ui'
 import type { CodexAuthSettingsConfig } from '../settings-contract.ts'
 import type { CodexAuthLocaleKey } from './locales.ts'
 import { CodexCapabilities } from './CodexCapabilities.tsx'
@@ -97,21 +98,7 @@ const errorStyle: CSSProperties = { ...bodyStyle, color: 'var(--dsw-alias-state-
 const cardBodyStyle: CSSProperties = { display: 'flex', flexDirection: 'column', gap: 14, borderTop: '1px solid var(--dsw-alias-border-l2)', margin: '0 16px', padding: '12px 0 8px' }
 const rowStyle: CSSProperties = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }
 const statusStyle: CSSProperties = { display: 'flex', alignItems: 'center', gap: 9, fontSize: 14, fontWeight: 500, color: 'var(--dsw-alias-label-primary)' }
-const buttonStyle: CSSProperties = { boxSizing: 'border-box', minHeight: 34, padding: '6px 14px', border: '1px solid var(--dsw-alias-border-l2)', borderRadius: 18, background: 'var(--dsw-alias-bg-layer-1)', color: 'var(--dsw-alias-label-primary)', font: 'inherit', fontSize: 14, cursor: 'pointer' }
 const codeStyle: CSSProperties = { display: 'inline-flex', alignItems: 'center', minHeight: 38, padding: '0 14px', border: '1px solid var(--dsw-alias-border-l2)', borderRadius: 8, background: 'var(--dsw-alias-bg-layer-1)', color: 'var(--dsw-alias-label-primary)', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: 18, fontWeight: 700, letterSpacing: '0.08em' }
-const primaryButtonStyle: CSSProperties = {
-  ...buttonStyle,
-  height: 36,
-  minHeight: 36,
-  padding: '0 14px',
-  border: 0,
-  background: 'var(--dsw-alias-button-primary-fill)',
-  color: 'var(--dsw-alias-label-primary-foreground)',
-  display: 'inline-flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  lineHeight: '22px',
-}
 const usageStyle: CSSProperties = { display: 'flex', flexDirection: 'column', gap: 10, paddingTop: 2 }
 const usageHeaderStyle: CSSProperties = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }
 const usageTitleStyle: CSSProperties = { color: 'var(--dsw-alias-label-primary)', fontSize: 14, fontWeight: 600 }
@@ -121,8 +108,6 @@ const usageWindowDetailsStyle: CSSProperties = { display: 'flex', minWidth: 0, f
 const usageWindowTitleStyle: CSSProperties = { color: 'var(--dsw-alias-label-primary)', fontSize: 14, fontWeight: 600 }
 const usageResetStyle: CSSProperties = { color: 'var(--dsw-alias-label-tertiary)', fontSize: 12 }
 const usageRemainingStyle: CSSProperties = { display: 'flex', alignItems: 'center', justifyContent: 'flex-end', flex: '1 1 220px', minWidth: 200, gap: 12 }
-const usageTrackStyle: CSSProperties = { overflow: 'hidden', flex: '1 1 140px', width: 192, minWidth: 100, maxWidth: 192, height: 8, borderRadius: 999, background: 'rgba(127, 127, 127, 0.28)' }
-const usageFillStyle: CSSProperties = { height: '100%', borderRadius: 'inherit', background: 'var(--dsw-alias-brand-primary)', transition: 'width 160ms ease' }
 const usageRemainingTextStyle: CSSProperties = { color: 'var(--dsw-alias-label-secondary)', fontSize: 14, whiteSpace: 'nowrap' }
 
 function Chevron({ open }: { open: boolean }) {
@@ -177,9 +162,9 @@ function percent(value: number | undefined): string {
   return `${Math.round(value)}%`
 }
 
-function progressWidth(value: number | undefined): string {
-  if (value === undefined || !Number.isFinite(value)) return '0%'
-  return `${Math.max(0, Math.min(100, value))}%`
+function progressPercent(value: number | undefined): number {
+  if (value === undefined || !Number.isFinite(value)) return 0
+  return Math.max(0, Math.min(100, value))
 }
 
 function resetLabel(window: CodexUsageWindow | undefined, t: Translate): string | undefined {
@@ -205,9 +190,14 @@ function UsageWindowView({ label, value, t }: { label: string; value: CodexUsage
           {reset === undefined ? null : <span style={usageResetStyle}>{reset}</span>}
         </div>
         <div style={usageRemainingStyle}>
-          <div role="progressbar" aria-label={label} aria-valuemin={0} aria-valuemax={100} aria-valuenow={value.remainingPercent} style={usageTrackStyle}>
-            <div style={{ ...usageFillStyle, width: progressWidth(value.remainingPercent) }} />
-          </div>
+          <DshProgress
+            percent={progressPercent(value.remainingPercent)}
+            size="small"
+            showInfo={false}
+            aria-label={label}
+            aria-valuetext={percent(value.remainingPercent)}
+            style={{ flex: '1 1 140px', minWidth: 100, maxWidth: 192, height: '8px' }}
+          />
           <span style={usageRemainingTextStyle}>{t('usageRemaining')} {percent(value.remainingPercent)}</span>
         </div>
       </div>
@@ -360,8 +350,8 @@ export function CodexAuthCard({ t, configScope, connection }: CodexAuthCardProps
             {status.status === 'loading' || status.status === 'remote-web-origin-not-trusted'
               ? null
               : status.status === 'signed-in'
-                ? <button type="button" style={buttonStyle} disabled={busy} onClick={() => { void signOut() }}>{busy ? t('working') : t('signOut')}</button>
-                : <button type="button" style={primaryButtonStyle} disabled={busy} onClick={() => { void signIn() }}>{busy ? t('working') : t('signIn')}</button>}
+                ? <DshButton htmlType="button" theme="outline" type="secondary" disabled={busy} loading={busy} onClick={() => { void signOut() }}>{busy ? t('working') : t('signOut')}</DshButton>
+                : <DshButton htmlType="button" theme="solid" type="primary" disabled={busy} loading={busy} onClick={() => { void signIn() }}>{busy ? t('working') : t('signIn')}</DshButton>}
           </div>
           {status.status === 'error' ? <p style={errorStyle}>{status.message}</p> : null}
           {status.status === 'remote-web-origin-not-trusted' ? <p style={errorStyle}>{t('remoteOrigin')}</p> : null}
@@ -369,9 +359,7 @@ export function CodexAuthCard({ t, configScope, connection }: CodexAuthCardProps
             <div style={usageStyle} aria-label={t('usageTitle')}>
               <div style={usageHeaderStyle}>
                 <span style={usageTitleStyle}>{t('usageTitle')}</span>
-                <button type="button" style={{ ...buttonStyle, minHeight: 28, padding: '3px 10px', fontSize: 12 }} onClick={() => { void refreshUsage() }}>
-                  {t('refreshUsage')}
-                </button>
+                <DshButton htmlType="button" theme="outline" type="secondary" size="small" onClick={() => { void refreshUsage() }}>{t('refreshUsage')}</DshButton>
               </div>
               {usage.status === 'loading' ? <p style={bodyStyle}>{t('usageLoading')}</p> : null}
               {usage.status === 'error' ? <p style={errorStyle}>{t('usageUnavailable')}</p> : null}
@@ -391,12 +379,18 @@ export function CodexAuthCard({ t, configScope, connection }: CodexAuthCardProps
               <p style={bodyStyle}>{t('authorizationCodeHelp')}</p>
               <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
                 <code aria-label={t('authorizationCodeLabel')} style={codeStyle}>{challenge.userCode}</code>
-                <button type="button" style={buttonStyle} onClick={() => { void copyAuthorizationCode() }}>
+                <DshButton htmlType="button" theme="outline" type="secondary" size="small" onClick={() => { void copyAuthorizationCode() }}>
                   {copyStatus === 'copied' ? t('authorizationCodeCopied') : t('copyAuthorizationCode')}
-                </button>
-                <a href={challenge.verificationUri} target="_blank" rel="noreferrer" style={{ ...buttonStyle, display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}>
+                </DshButton>
+                <DshButton
+                  htmlType="button"
+                  theme="outline"
+                  type="secondary"
+                  size="small"
+                  onClick={() => { window.open(challenge.verificationUri, '_blank', 'noopener,noreferrer') }}
+                >
                   {t('openAuthorization')}
-                </a>
+                </DshButton>
               </div>
               {copyStatus === 'failed' ? <p style={errorStyle}>{t('authorizationCodeCopyFailed')}</p> : null}
             </div>

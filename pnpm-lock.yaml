@@ -19,6 +19,9 @@ catalogs:
     '@douyinfe/semi-icons':
       specifier: 2.90.2
       version: 2.90.2
+    '@douyinfe/semi-icons-lab':
+      specifier: 2.90.2
+      version: 2.90.2
     '@douyinfe/semi-ui':
       specifier: 2.90.2
       version: 2.90.2
@@ -184,6 +187,9 @@ importers:
       '@douyinfe/semi-icons':
         specifier: 'catalog:'
         version: 2.90.2(react@18.3.1)
+      '@douyinfe/semi-icons-lab':
+        specifier: 'catalog:'
+        version: 2.90.2(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@douyinfe/semi-ui':
         specifier: 'catalog:'
         version: 2.90.2(@floating-ui/dom@1.8.0)(@tiptap/suggestion@3.30.2(@floating-ui/dom@1.8.0)(@tiptap/core@3.30.2(@tiptap/pm@3.30.2))(@tiptap/pm@3.30.2))(@types/react-dom@19.2.4(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -1568,6 +1574,12 @@ packages:
 
   '@douyinfe/semi-foundation@2.90.2':
     resolution: {integrity: sha512-wcVYxlaNB6uyQC07lV5uY8TTmCKwSqIBcbDdhqhclATdIvvIN13X9x9ZFOGQW6rpH7z8u0Bm8Lcr2nfpnM76lw==}
+
+  '@douyinfe/semi-icons-lab@2.90.2':
+    resolution: {integrity: sha512-QDIz4mvU0rXQ6+5500V6fBbORHR2Y+50mQGPoiip1lSqATwJuOuErj9RsG9rvOPqDS88Wp0blackyNUdUnk+Cg==}
+    peerDependencies:
+      react: '>=16.0.0'
+      react-dom: '>=16.0.0'
 
   '@douyinfe/semi-icons@2.90.2':
     resolution: {integrity: sha512-xQbjslyrEkmnibu/1ptTjpLU4OXLupt8mXO/bH2j7p7n4m287kJLbMbsPNJ/nI0yN2aTbqoLSptFzNLeghJmMw==}
@@ -5272,6 +5284,11 @@ snapshots:
       scroll-into-view-if-needed: 2.2.31
     transitivePeerDependencies:
       - supports-color
+
+  '@douyinfe/semi-icons-lab@2.90.2(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
+    dependencies:
+      react: 18.3.1
+      react-dom: 18.3.1(react@18.3.1)
 
   '@douyinfe/semi-icons@2.90.2(react@18.3.1)':
     dependencies:

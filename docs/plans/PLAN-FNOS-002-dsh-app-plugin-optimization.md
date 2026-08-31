@@ -15,7 +15,7 @@ lastVerified: 2026-08-30
 | 计划编号 | PLAN-FNOS-002 |
 | 计划日期 | 2026-08-28 |
 | 对应需求 | [FNOS-002 DSH 应用与插件优化](/requirements/FNOS-002-dsh-app-plugin-optimization) |
-| 计划状态 | <Badge type="warning" text="待 NAS 验证" /> |
+| 计划状态 | <Badge type="warning" text="部分 NAS 验证" /> |
 
 ## 计划目标
 
@@ -27,8 +27,6 @@ lastVerified: 2026-08-30
 - `FNOS-002-04`：使用 `connect` 与 `http-proxy-middleware` 重写 fnOS 统一网关代理；由常驻网关承载 FPK 状态并在 Web 左侧菜单提供 DSH Web 重启入口；由 fnOS 插件管理三方插件 API URL 反代规则，并让已打开的 DSH 页面立即取得最新配置。
 
 网关改版不修改 fnOS 的登录校验，不把路径列表作为访问控制，也不修改 DSH 官方源码。代理目标固定为应用内部的 DSH 回环服务 `127.0.0.1:3080`。
-
-`FNOS-002-05` 仍处于调研阶段，不进入本计划。当前 SDK 虽然存在跨应用桥接方法，但没有公开应用中心详情页的稳定参数契约。
 
 ## 实现范围和边界
 
@@ -422,7 +420,7 @@ SSE 路由由网关自身处理，不转发到 DSH。它经过 fnOS 统一网关
 | PLAN-FNOS-002-T04-12 | FNOS-002-04 | 拆分网关和 DSH Web 的启动逻辑；网关已运行时只恢复 Web，不删除 Socket 或重复启动网关 | <Badge type="tip" text="已完成" /> |
 | PLAN-FNOS-002-T04-13 | FNOS-002-04 | 在 Web 左侧菜单和网关恢复页提供“重启 Web”按钮，并增加管理员恢复路由 | <Badge type="tip" text="已完成" /> |
 | PLAN-FNOS-002-T04-14 | FNOS-002-04 | 使用启动锁、`app.pid.starting`、超时健康检查和原子 rename 管理 Web PID | <Badge type="tip" text="已完成" /> |
-| PLAN-FNOS-002-T04-15 | FNOS-002-04 | 验证 Web 被终止、重复点击、启动失败、PID 复用、网关退出和 FPK stop/config_callback 场景 | <Badge type="warning" text="待 NAS 验证" /> |
+| PLAN-FNOS-002-T04-15 | FNOS-002-04 | 验证 Web 被终止、重复点击、启动失败、PID 复用、网关退出和 FPK stop/config_callback 场景 | <Badge type="warning" text="部分验证" /> |
 | PLAN-FNOS-002-T04-16 | FNOS-002-04 | 将 `BRIDGE_SCRIPT_BODY` 拆到 `src/client/bridge.js`；两个 tsdown 构建复用虚拟模块插件，在构建期读取并内联 Bridge | <Badge type="tip" text="已完成" /> |
 
 ## 详细交互
@@ -742,7 +740,7 @@ pnpm --filter @tnnevol/dsh-codex-auth run build
 | P1 Codex 登录与用量状态 | <Badge type="tip" text="已实现" /> | 插件测试通过，并在登录、退出、异常及有无五小时窗口场景验证显示结果 |
 | P1 NAS 引用与 Tree 状态 | <Badge type="tip" text="已实现" /> | 插入和删除引用不改动原有文本空格；删除本次引用同步 Tree，历史引用隔离；覆盖多选与生命周期测试 |
 | P1 Semi UI 总览插件 | <Badge type="tip" text="已实现" /> | 设置入口可跳转独立路由，刷新与历史导航有效；插件可安装卸载，公共组件在浅色、深色和系统主题下显示正常 |
-| P1 FPK 网关、进程恢复与插件路径 | <Badge type="warning" text="待 NAS 验证" /> | 包测试与 FPK 构建通过，在真实 NAS 验证代理、Web 恢复、保存/放弃和已打开页面即时生效 |
+| P1 FPK 网关、进程恢复与插件路径 | <Badge type="warning" text="部分 NAS 验证" /> | 包测试与 FPK 构建通过；真实 NAS 已验证 Web 正常重启且 FPK 应用保持启用，剩余代理和配置场景继续验证 |
 
 ## 变更记录
 
@@ -756,3 +754,4 @@ pnpm --filter @tnnevol/dsh-codex-auth run build
 | 2026-08-29 | 增加 fnOS Tree 反向同步计划：面板打开期间按 occurrence 身份同步本次引用删除，并隔离历史选择状态 |
 | 2026-08-29 | 完成 P1 代码实现和本地构建，网关、恢复控制面与 fnOS Header 行为转入真实 NAS 验证 |
 | 2026-08-30 | 修正 NAS 引用同步实现：匹配完整 ref、保留分隔空格归属、支持懒加载节点和部分插入，并补充 61 项插件测试 |
+| 2026-08-30 | 合并需求编号并记录 NAS 验证结果：现行需求统一使用 FNOS-002-04，已验证 Web 正常重启且 FPK 应用状态保持启用 |

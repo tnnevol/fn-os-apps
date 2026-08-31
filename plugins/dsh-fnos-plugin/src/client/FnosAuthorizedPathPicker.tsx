@@ -196,15 +196,19 @@ export function FnosAuthorizedPathPicker({ input, inputActions, insertReferences
     applyEntries(result, key)
   }, [applyEntries])
 
+  // Keep parent/child checkbox state in Semi's TreeSelect instead of
+  // calculating indeterminate values in the plugin. This is the same
+  // relationship mode used by the official TreeSelect examples.
   return (
     <TreeSelect
       aria-label={t('inputPicker')}
       multiple
       treeCheckable
-      checkRelation="unRelated"
+      checkRelation="related"
       treeData={treeData}
       value={value}
       loadData={loadData}
+      dropdownClassName="dsh-fnos-authorized-path-picker"
        onVisibleChange={(visible: boolean) => {
          if (visible) {
            operationBaselineOccurrenceIds.current = new Set(
@@ -253,7 +257,7 @@ export function FnosAuthorizedPathPicker({ input, inputActions, insertReferences
             height: 28,
             borderRadius: 7,
             background: 'var(--dsw-alias-bg-layer-1)',
-            border: '1px solid var(--dsw-alias-border-l2)',
+            border: 'none',
             boxSizing: 'border-box',
             color: 'var(--dsw-alias-label-primary)',
             cursor: busy ? 'not-allowed' : 'pointer',

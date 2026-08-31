@@ -55,11 +55,12 @@ function setControlledInputValue(input: HTMLInputElement, value: string): void {
   setter.call(input, value)
   input.dispatchEvent(new Event('input', { bubbles: true }))
   input.dispatchEvent(new Event('change', { bubbles: true }))
-  // DSH's native picker commits the edited path on Enter. Dispatching the
-  // same browser event keeps the original picker navigation and validation
-  // flow intact after choosing a shortcut.
-  input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', bubbles: true }))
-  input.focus()
+  // Do not synthesize a keydown here. Browser extensions and host shells can
+  // reject untrusted keyboard events, which surfaces as "Untrusted event".
+  // DSH receives the controlled input/change updates and the following blur
+  // commits the same path-edit flow without impersonating a real key press.
+  input.focus({ preventScroll: true })
+  input.blur()
 }
 
 function fillAfterOpening(dialog: HTMLElement, path: string): void {

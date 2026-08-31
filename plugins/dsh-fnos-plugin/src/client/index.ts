@@ -1,5 +1,6 @@
 /** Browser half of the fnOS-specific DSH integration plugin. */
 
+import './style.css'
 import type { ClientContext, SessionId } from '@deepseek-ai/dsh-client-runtime/client'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'

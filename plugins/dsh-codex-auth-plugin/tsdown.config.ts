@@ -82,7 +82,9 @@ export default [
     alias: {
       '@douyinfe/semi-ui/lib/es/button/index.js': join(semiUiRoot, 'lib/es/button/index.js'),
       '@douyinfe/semi-ui/lib/es/button/buttonGroup.js': join(semiUiRoot, 'lib/es/button/buttonGroup.js'),
+      '@douyinfe/semi-ui/lib/es/checkbox/index.js': join(semiUiRoot, 'lib/es/checkbox/index.js'),
       '@douyinfe/semi-ui/lib/es/cascader/index': join(semiUiRoot, 'lib/es/cascader/index.js'),
+      '@douyinfe/semi-ui/lib/es/tag/index.js': join(semiUiRoot, 'lib/es/tag/index.js'),
       '@douyinfe/semi-ui/lib/es/dropdown/index.js': join(semiUiRoot, 'lib/es/dropdown/index.js'),
       '@douyinfe/semi-ui/lib/es/iconButton/index.js': join(semiUiRoot, 'lib/es/iconButton/index.js'),
       '@douyinfe/semi-ui/lib/es/tooltip/index': join(semiUiRoot, 'lib/es/tooltip/index.js'),

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { readSignedInUsage } from '../src/client/CodexUsageStatus.tsx'
+import { readSignedInUsage } from '../src/client/usage-status-data.ts'
 import { CODEX_AUTH_STATUS_PATH, CODEX_USAGE_PATH } from '../src/auth-paths.ts'
 
 afterEach(() => {

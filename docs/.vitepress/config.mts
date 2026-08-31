@@ -193,6 +193,7 @@ export default defineConfig({
             { text: 'dsh-fnos', link: '/plugins/dsh-fnos' },
             { text: 'dsh-codex-auth', link: '/plugins/dsh-codex-auth' },
             { text: 'DSH Semi UI', link: '/plugins/dsh-semi-ui' },
+            { text: 'Semi UI 组件总览', link: '/plugins/semi-ui' },
             { text: 'DSH Semi UI 总览', link: '/plugins/dsh-semi-ui-showcase' }
           ]
         }

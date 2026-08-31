@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from 'react'
 import type { CSSProperties } from 'react'
+import { DshTag, DshTooltip } from '@tnnevol/dsh-semi-ui'
 import type { CodexAuthLocaleKey } from './locales.ts'
-import { CODEX_AUTH_STATUS_PATH, CODEX_USAGE_PATH } from '../auth-paths.ts'
+import { readSignedInUsage } from './usage-status-data.ts'
+import type { CodexUsage } from './usage-status-data.ts'
 import { compactUsageWindow, FIVE_HOUR_WINDOW_SECONDS } from './usage-windows.ts'
 import type { CodexUsageWindow } from './usage-windows.ts'
 
@@ -13,29 +15,9 @@ type TimerService = {
   interval(callback: () => void, delay: number): () => void
 }
 
-interface CodexUsage {
-  secondaryWindow?: CodexUsageWindow
-  primaryWindow?: CodexUsageWindow
-}
-
-interface CodexAuthStatus {
-  status?: string
-}
-
 const statusStyle: CSSProperties = {
   display: 'inline-flex',
   alignItems: 'center',
-  gap: 8,
-  color: 'var(--dsw-alias-label-tertiary)',
-  fontSize: 12,
-  lineHeight: '18px',
-}
-
-const dividerStyle: CSSProperties = {
-  width: 3,
-  height: 3,
-  borderRadius: '50%',
-  background: 'var(--dsw-alias-label-dimmed)',
 }
 
 function percent(value: number | undefined): string | undefined {
@@ -53,28 +35,6 @@ function resetLabel(value: CodexUsageWindow | undefined): string | undefined {
   return undefined
 }
 
-async function readJson<T>(path: string): Promise<T | undefined> {
-  const response = await fetch(path, {
-    method: 'GET',
-    headers: { accept: 'application/json' },
-    credentials: 'same-origin',
-  })
-  if (response.status === 401) return undefined
-  if (!response.ok) throw new Error(`HTTP ${String(response.status)}`)
-  return await response.json() as T
-}
-
-/** Read one coherent snapshot so quota is never shown for a signed-out account. */
-export async function readSignedInUsage(): Promise<CodexUsage | undefined> {
-  const status = await readJson<CodexAuthStatus>(CODEX_AUTH_STATUS_PATH)
-  if (status?.status !== 'signed-in') return undefined
-  return await readJson<CodexUsage>(CODEX_USAGE_PATH)
-}
-
-async function readUsage(): Promise<CodexUsage | undefined> {
-  return await readSignedInUsage()
-}
-
 export interface CodexUsageStatusProps {
   t: Translate
   timer: TimerService
@@ -89,7 +49,7 @@ export function CodexUsageStatus({ t, timer }: CodexUsageStatusProps) {
     const refresh = async (): Promise<void> => {
       const sequence = ++requestSequence
       try {
-        const next = await readUsage()
+        const next = await readSignedInUsage()
         if (active && sequence === requestSequence) setUsage(next)
       } catch {
         if (active && sequence === requestSequence) setUsage(undefined)
@@ -109,12 +69,16 @@ export function CodexUsageStatus({ t, timer }: CodexUsageStatusProps) {
   const label = window.limitWindowSeconds === FIVE_HOUR_WINDOW_SECONDS ? t('usageFiveHour') : t('usageWeekly')
   const remaining = percent(window.remainingPercent) ?? '—'
   const reset = resetLabel(window)
+  const tooltip = [label, `${t('usageStatusRemaining')} ${remaining}`, reset === undefined ? undefined : `${t('usageStatusReset')} ${reset}`]
+    .filter((value): value is string => value !== undefined)
+    .join(' · ')
   return (
     <span style={statusStyle} aria-label={label}>
-      <span>{label}</span>
-      <span style={dividerStyle} aria-hidden="true" />
-      <span>{t('usageStatusRemaining')} {remaining}</span>
-      {reset === undefined ? null : <><span style={dividerStyle} aria-hidden="true" /><span>{t('usageStatusReset')} {reset}</span></>}
+      <DshTooltip content={tooltip} mouseEnterDelay={0.35} mouseLeaveDelay={0}>
+        <DshTag className="dsh-codex-usage-tag" size="small" type="light" color="grey" aria-label={tooltip}>
+          {t('usageStatusRemaining')} {remaining}
+        </DshTag>
+      </DshTooltip>
     </span>
   )
 }

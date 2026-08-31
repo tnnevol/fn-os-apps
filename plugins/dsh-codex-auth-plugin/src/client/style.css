@@ -2,6 +2,41 @@
   display: none !important;
 }
 
+/* Model names may be longer than the compact trigger. Keep this popup layout
+   local to the Codex picker; the shared theme only owns colors and tokens. */
+.dsh-codex-global-model-cascader .semi-cascader-option-lists > .semi-cascader-option-list + .semi-cascader-option-list {
+  width: max-content !important;
+  min-width: 200px !important;
+  max-width: calc(100vw - 32px);
+  flex: 0 1 auto;
+  overflow-x: hidden;
+}
+
+.dsh-codex-global-model-cascader .semi-cascader-option-lists > .semi-cascader-option-list + .semi-cascader-option-list .semi-cascader-option {
+  min-width: max-content;
+  white-space: nowrap;
+  word-break: normal;
+}
+
+.dsh-codex-global-model-cascader .semi-cascader-option-lists {
+  height: 160px;
+}
+
+.dsh-codex-global-model-cascader .semi-cascader-option-list {
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
+
+.dsh-codex-global-model-cascader .semi-cascader-option-list > li {
+  padding-top: 5px;
+  padding-bottom: 5px;
+}
+
+.dsh-codex-global-model-cascader .semi-cascader-option {
+  font-size: 13px;
+  line-height: 18px;
+}
+
 .dsh-codex-global-model-cascader .semi-cascader-option:hover,
 .dsh-codex-global-model-cascader .semi-cascader-option-active,
 .dsh-codex-global-model-cascader .semi-cascader-option-active:hover {

@@ -27,8 +27,6 @@ const headingStyle: CSSProperties = { margin: 0, fontSize: 14, lineHeight: '20px
 const bodyStyle: CSSProperties = { margin: 0, fontSize: 12, lineHeight: '18px', color: 'var(--dsw-alias-label-secondary)' }
 const fieldsStyle: CSSProperties = { display: 'flex', alignItems: 'center', minWidth: 0 }
 const actionsStyle: CSSProperties = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }
-const buttonStyle: CSSProperties = { boxSizing: 'border-box', minHeight: 30, padding: '4px 12px', border: '1px solid var(--dsw-alias-border-l2)', borderRadius: 16, background: 'var(--dsw-alias-bg-layer-1)', color: 'var(--dsw-alias-label-primary)', font: 'inherit', fontSize: 12, cursor: 'pointer' }
-const primaryButtonStyle: CSSProperties = { ...buttonStyle, border: 0, background: 'var(--dsw-alias-button-primary-fill)', color: 'var(--dsw-alias-label-primary-foreground)' }
 const errorStyle: CSSProperties = { ...bodyStyle, color: 'var(--dsw-alias-state-error-primary, #d92d20)' }
 const successStyle: CSSProperties = { ...bodyStyle, color: 'var(--dsw-alias-state-success-primary, #16825d)' }
 
@@ -246,8 +244,8 @@ export function CodexGlobalModel({ connection, t }: CodexGlobalModelProps) {
           {feedback === 'error' ? <span style={errorStyle}>{t('settingsSaveFailed')}</span> : null}
         </span>
         <span style={{ display: 'flex', gap: 8 }}>
-          <button type="button" style={buttonStyle} disabled={status === 'loading' || busy} onClick={() => { void load() }}>{t('refreshUsage')}</button>
-          <button type="button" style={primaryButtonStyle} disabled={!dirty || busy} onClick={() => { void save() }}>{busy ? t('saving') : t('setGlobalModel')}</button>
+          <DshButton htmlType="button" theme="outline" type="secondary" size="small" disabled={status === 'loading' || busy} onClick={() => { void load() }}>{t('refreshUsage')}</DshButton>
+          <DshButton htmlType="button" theme="solid" type="primary" disabled={!dirty || busy} loading={busy} onClick={() => { void save() }}>{busy ? t('saving') : t('setGlobalModel')}</DshButton>
         </span>
       </div>
     </section>

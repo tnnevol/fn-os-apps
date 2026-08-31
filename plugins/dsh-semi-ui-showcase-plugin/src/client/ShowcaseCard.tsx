@@ -9,9 +9,18 @@ const card: CSSProperties = { padding: 16, border: '1px solid var(--dsw-alias-bo
 const row: CSSProperties = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }
 
 function closeDshSettings(): void {
-  // DSH's settings shell owns the modal state and exposes Escape as its
-  // supported close contract to nested settings cards.
-  document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+  // Close through the settings shell's real button. Dispatching a synthetic
+  // Escape event is rejected by browser extensions that require trusted input.
+  const closeButton = [...document.querySelectorAll<HTMLButtonElement>('[role="dialog"] button')]
+    .find(button => {
+      const accessibleText = [
+        button.getAttribute('aria-label'),
+        button.getAttribute('title'),
+        button.textContent,
+      ].filter(Boolean).join(' ')
+      return /关闭|close/iu.test(accessibleText)
+    })
+  closeButton?.click()
 }
 
 export function ShowcaseCard({ route }: ShowcaseCardProps) {

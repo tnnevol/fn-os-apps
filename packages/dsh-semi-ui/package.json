@@ -43,6 +43,7 @@
   },
   "dependencies": {
     "@douyinfe/semi-icons": "catalog:",
+    "@douyinfe/semi-icons-lab": "catalog:",
     "@douyinfe/semi-ui": "catalog:"
   },
   "devDependencies": {

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react'
 import type { CSSProperties } from 'react'
 import type { SettingsScope, SettingsScopeSnapshot } from '@deepseek-ai/dsh-client-runtime/client'
+import { DshButton, DshCheckbox } from '@tnnevol/dsh-semi-ui'
 import type { CodexAuthSettingsConfig } from '../settings-contract.ts'
 import type { CodexAuthLocaleKey } from './locales.ts'
 
@@ -23,29 +24,10 @@ const bodyStyle: CSSProperties = { margin: 0, fontSize: 12, lineHeight: '18px', 
 const fieldsetStyle: CSSProperties = { display: 'flex', flexDirection: 'column', gap: 12, margin: 0, padding: 0, border: 0 }
 const rowStyle: CSSProperties = { display: 'flex', alignItems: 'flex-start', gap: 9, cursor: 'pointer' }
 const disabledRowStyle: CSSProperties = { ...rowStyle, cursor: 'not-allowed', opacity: 0.62 }
-const checkboxStyle: CSSProperties = { accentColor: 'var(--dsw-alias-button-primary-fill)' }
 const copyStyle: CSSProperties = { display: 'flex', flexDirection: 'column', gap: 2 }
 const labelStyle: CSSProperties = { fontSize: 13, lineHeight: '18px', fontWeight: 500, color: 'var(--dsw-alias-label-primary)' }
 const actionsStyle: CSSProperties = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }
 const buttonsStyle: CSSProperties = { display: 'flex', gap: 8 }
-const buttonStyle: CSSProperties = {
-  boxSizing: 'border-box',
-  minHeight: 30,
-  padding: '4px 12px',
-  border: '1px solid var(--dsw-alias-border-l2)',
-  borderRadius: 16,
-  background: 'var(--dsw-alias-bg-layer-1)',
-  color: 'var(--dsw-alias-label-primary)',
-  font: 'inherit',
-  fontSize: 12,
-  cursor: 'pointer',
-}
-const primaryButtonStyle: CSSProperties = {
-  ...buttonStyle,
-  border: 0,
-  background: 'var(--dsw-alias-button-primary-fill)',
-  color: 'var(--dsw-alias-label-primary-foreground)',
-}
 const errorStyle: CSSProperties = { ...bodyStyle, color: 'var(--dsw-alias-state-error-primary, #d92d20)' }
 const successStyle: CSSProperties = { ...bodyStyle, color: 'var(--dsw-alias-state-success-primary, #16825d)' }
 
@@ -128,37 +110,42 @@ export function CodexCapabilities({ scope, t }: CodexCapabilitiesProps) {
       {snapshot.status === 'ready' && !snapshot.writable ? <p style={errorStyle} role="alert">{t('settingsReadOnly')}</p> : null}
       {draft === undefined ? null : (
         <fieldset style={fieldsetStyle} disabled={!editable}>
-          <label style={rowStyle}>
-            <input
-              style={checkboxStyle}
-              type="checkbox"
-              checked={draft.enableImageTool}
-              onChange={event => { updateImageTool(event.currentTarget.checked) }}
-            />
+          <DshCheckbox
+            style={rowStyle}
+            checked={draft.enableImageTool}
+            disabled={!editable}
+            aria-label={t('enableImageRecognition')}
+            onChange={(event: { target: { checked?: boolean } }) => { updateImageTool(Boolean(event.target.checked)) }}
+          >
             <span style={copyStyle}>
               <span style={labelStyle}>{t('enableImageRecognition')}</span>
               <span style={bodyStyle}>{t('enableImageRecognitionHelp')}</span>
             </span>
-          </label>
-          <label style={rowStyle}>
-            <input
-              style={checkboxStyle}
-              type="checkbox"
-              checked={draft.enableImageUpload}
-              onChange={event => { updateImageUpload(event.currentTarget.checked) }}
-            />
+          </DshCheckbox>
+          <DshCheckbox
+            style={rowStyle}
+            checked={draft.enableImageUpload}
+            disabled={!editable}
+            aria-label={t('enableImageUpload')}
+            onChange={(event: { target: { checked?: boolean } }) => { updateImageUpload(Boolean(event.target.checked)) }}
+          >
             <span style={copyStyle}>
               <span style={labelStyle}>{t('enableImageUpload')}</span>
               <span style={bodyStyle}>{t('enableImageUploadHelp')}</span>
             </span>
-          </label>
-          <label style={disabledRowStyle} title={t('imageGenerationUnavailableHelp')}>
-            <input style={checkboxStyle} type="checkbox" checked={false} disabled aria-label={t('enableImageGeneration')} readOnly />
-            <span style={copyStyle}>
-              <span style={labelStyle}>{t('enableImageGeneration')}</span>
-              <span style={bodyStyle}>{t('imageGenerationUnavailableHelp')}</span>
-            </span>
-          </label>
+          </DshCheckbox>
+          <span style={disabledRowStyle} title={t('imageGenerationUnavailableHelp')}>
+            <DshCheckbox
+              checked={false}
+              disabled
+              aria-label={t('enableImageGeneration')}
+            >
+              <span style={copyStyle}>
+                <span style={labelStyle}>{t('enableImageGeneration')}</span>
+                <span style={bodyStyle}>{t('imageGenerationUnavailableHelp')}</span>
+              </span>
+            </DshCheckbox>
+          </span>
         </fieldset>
       )}
       <div style={actionsStyle}>
@@ -167,10 +154,10 @@ export function CodexCapabilities({ scope, t }: CodexCapabilitiesProps) {
           {feedback === 'error' ? <span style={errorStyle}>{t('settingsSaveFailed')}</span> : null}
         </span>
         <span style={buttonsStyle}>
-          <button type="button" style={buttonStyle} disabled={!dirty || busy} onClick={discard}>{t('discard')}</button>
-          <button type="button" style={primaryButtonStyle} disabled={!dirty || !snapshot.writable || busy} onClick={() => { void save() }}>
+          <DshButton htmlType="button" theme="outline" type="secondary" disabled={!dirty || busy} onClick={discard}>{t('discard')}</DshButton>
+          <DshButton htmlType="button" theme="solid" type="primary" disabled={!dirty || !snapshot.writable || busy} loading={busy} onClick={() => { void save() }}>
             {busy ? t('saving') : t('save')}
-          </button>
+          </DshButton>
         </span>
       </div>
     </section>

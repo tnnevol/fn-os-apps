@@ -71,6 +71,7 @@ export function FnosWebRestartAction({ wide, t }: FnosWebRestartActionProps) {
           type="tertiary"
           disabled={busy}
           icon={refreshIcon}
+          className="dsh-fnos-web-refresh"
           title={refreshLabel}
           onClick={refresh}
           style={{ flex: 1, minWidth: 0 }}
@@ -99,6 +100,7 @@ export function FnosWebRestartAction({ wide, t }: FnosWebRestartActionProps) {
         theme="borderless"
         disabled={busy}
         icon={refreshIcon}
+        className="dsh-fnos-web-refresh"
         aria-label={refreshLabel}
         title={refreshLabel}
         onClick={refresh}

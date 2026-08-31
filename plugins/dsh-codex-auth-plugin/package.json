@@ -46,6 +46,7 @@
     "README.md"
   ],
   "scripts": {
+    "pretypecheck": "pnpm --filter @tnnevol/dsh-semi-ui run build",
     "prebuild": "pnpm --filter @tnnevol/dsh-semi-ui run build",
     "build": "tsdown",
     "typecheck": "tsc -p tsconfig.json",
