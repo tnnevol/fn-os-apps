@@ -134,8 +134,8 @@ export function CodexCapabilities({ scope, t }: CodexCapabilitiesProps) {
           {feedback === 'error' ? <span className="dsh-codex-error">{t('settingsSaveFailed')}</span> : null}
         </span>
         <span className="dsh-codex-capabilities-buttons">
-          <DshButton htmlType="button" theme="outline" type="secondary" disabled={!dirty || busy} onClick={discard}>{t('discard')}</DshButton>
-          <DshButton htmlType="button" theme="solid" type="primary" disabled={!dirty || !snapshot.writable || busy} loading={busy} onClick={() => { void save() }}>
+          <DshButton htmlType="button" theme="outline" type="secondary" size="small" disabled={!dirty || busy} onClick={discard}>{t('discard')}</DshButton>
+          <DshButton htmlType="button" theme="solid" type="primary" size="small" disabled={!dirty || !snapshot.writable || busy} loading={busy} onClick={() => { void save() }}>
             {busy ? t('saving') : t('save')}
           </DshButton>
         </span>

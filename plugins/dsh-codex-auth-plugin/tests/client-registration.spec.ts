@@ -133,12 +133,19 @@ describe('dsh-codex-auth-plugin rc.2 client registration', () => {
     expect(picker).toContain('const cancel = (): void =>')
   })
 
-  it('uses the primary pill action for sign out', async () => {
+  it('uses pill actions and compact lower actions in the Codex settings card', async () => {
     const card = await readFile(new URL('../src/client/CodexAuthCard.tsx', import.meta.url), 'utf8')
+    const capabilities = await readFile(new URL('../src/client/CodexCapabilities.tsx', import.meta.url), 'utf8')
+    const globalModel = await readFile(new URL('../src/client/CodexGlobalModel.tsx', import.meta.url), 'utf8')
     const style = await readFile(new URL('../src/client/style.scss', import.meta.url), 'utf8')
     expect(card).toContain('theme="solid" type="primary"')
-    expect(card).toContain('className="dsh-codex-auth-pill-button"')
-    expect(style).toContain('var(--semi-border-radius-large)')
+    expect(capabilities).toContain('type="secondary" size="small"')
+    expect(capabilities).toContain('type="primary" size="small"')
+    expect(globalModel).toContain('type="secondary" size="small"')
+    expect(globalModel).toContain('type="primary" size="small"')
+    expect(style).toContain('.dsh-codex-auth-card .semi-button')
+    expect(style).not.toContain('border-radius: 7px')
+    expect(style).toContain('border-radius: var(--semi-border-radius-full)')
   })
 
   it('matches the DSH plugin card surfaces in both color modes', async () => {

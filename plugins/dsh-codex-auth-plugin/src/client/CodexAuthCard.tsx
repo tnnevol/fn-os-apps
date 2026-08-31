@@ -294,7 +294,7 @@ export function CodexAuthCard({ t, configScope, connection }: CodexAuthCardProps
             {status.status === 'loading' || status.status === 'remote-web-origin-not-trusted'
               ? null
               : status.status === 'signed-in'
-                ? <DshButton htmlType="button" theme="solid" type="primary" className="dsh-codex-auth-pill-button" disabled={busy} loading={busy} onClick={() => { void signOut() }}>{busy ? t('working') : t('signOut')}</DshButton>
+                ? <DshButton htmlType="button" theme="solid" type="primary" disabled={busy} loading={busy} onClick={() => { void signOut() }}>{busy ? t('working') : t('signOut')}</DshButton>
                 : <DshButton htmlType="button" theme="solid" type="primary" disabled={busy} loading={busy} onClick={() => { void signIn() }}>{busy ? t('working') : t('signIn')}</DshButton>}
           </div>
           {status.status === 'error' ? <p className="dsh-codex-auth-error">{status.message}</p> : null}

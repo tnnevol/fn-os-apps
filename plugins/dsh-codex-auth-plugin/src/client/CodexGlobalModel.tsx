@@ -224,8 +224,8 @@ export function CodexGlobalModel({ connection, t }: CodexGlobalModelProps) {
           {feedback === 'error' ? <span className="dsh-codex-error">{t('settingsSaveFailed')}</span> : null}
         </span>
         <span className="dsh-codex-global-model-buttons">
-          <DshButton htmlType="button" theme="outline" type="secondary" className="dsh-codex-global-model-cancel" disabled={!dirty || busy} onClick={cancel}>{t('cancel')}</DshButton>
-          <DshButton htmlType="button" theme="solid" type="primary" disabled={!dirty || busy} loading={busy} onClick={() => { void save() }}>{busy ? t('saving') : t('setGlobalModel')}</DshButton>
+          <DshButton htmlType="button" theme="outline" type="secondary" size="small" className="dsh-codex-global-model-cancel" disabled={!dirty || busy} onClick={cancel}>{t('cancel')}</DshButton>
+          <DshButton htmlType="button" theme="solid" type="primary" size="small" disabled={!dirty || busy} loading={busy} onClick={() => { void save() }}>{busy ? t('saving') : t('setGlobalModel')}</DshButton>
         </span>
       </div>
     </section>
