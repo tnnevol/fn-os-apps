@@ -33,6 +33,7 @@ export { default as DshIconList } from '@douyinfe/semi-icons/lib/es/icons/IconLi
 export { default as DshIconMoon } from '@douyinfe/semi-icons/lib/es/icons/IconMoon.js'
 export { default as DshIconModalStroked } from '@douyinfe/semi-icons/lib/es/icons/IconModalStroked.js'
 export { default as DshIconRefresh } from '@douyinfe/semi-icons/lib/es/icons/IconRefresh.js'
+export { default as DshIconRefresh2 } from '@douyinfe/semi-icons/lib/es/icons/IconRefresh2.js'
 export { default as DshIconRestart } from '@douyinfe/semi-icons/lib/es/icons/IconRestart.js'
 export { default as DshIconSetting } from '@douyinfe/semi-icons/lib/es/icons/IconSetting.js'
 export { default as DshIconSun } from '@douyinfe/semi-icons/lib/es/icons/IconSun.js'

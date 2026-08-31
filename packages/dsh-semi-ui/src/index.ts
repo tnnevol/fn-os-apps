@@ -34,6 +34,7 @@ export {
   DshIconMoon,
   DshIconModalStroked,
   DshIconRefresh,
+  DshIconRefresh2,
   DshIconRestart,
   DshIconSetting,
   DshIconSun,

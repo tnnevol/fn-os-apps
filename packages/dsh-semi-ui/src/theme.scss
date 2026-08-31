@@ -275,6 +275,20 @@ body[data-dsh-semi-theme] .dsh-fnos-web-actions > .semi-button-group-line {
   display: none;
 }
 
+/* The collapsed sidebar still renders the two actions as one group. Keep the
+   official small-button dimensions and center the group within the narrow
+   footer without applying a second size override. */
+body[data-dsh-semi-theme] .dsh-fnos-web-actions--collapsed {
+  justify-content: center;
+  gap: 4px;
+  padding: 0;
+  background: transparent;
+}
+
+body[data-dsh-semi-theme] .dsh-fnos-web-actions--collapsed > .semi-button {
+  flex: 0 0 auto;
+}
+
 body[data-dsh-semi-theme] .semi-dropdown-wrapper {
   background: var(--dsw-alias-bg-layer-3);
   border: 1px solid var(--dsw-alias-border-l2);

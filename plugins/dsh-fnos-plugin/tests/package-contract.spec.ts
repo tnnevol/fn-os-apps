@@ -44,6 +44,7 @@ describe('dsh-fnos package contract', () => {
     expect(source).toContain("id: 'dsh-fnos-web-restart'")
     const restart = await readFile(new URL('../src/client/FnosWebRestartAction.tsx', import.meta.url), 'utf8')
     expect(restart).toContain('DshButtonGroup')
+    expect(restart).toContain('DshIconRefresh2')
     expect(restart).toContain('window.location.reload()')
     expect(restart).toContain("aria-label={refreshLabel}")
     expect(restart).toContain('/__fnos-gateway/control/web/restart')
@@ -175,9 +176,12 @@ describe('dsh-fnos package contract', () => {
     expect(semiTheme).toContain('--semi-border-radius-full: 9999px;')
     expect(semiTheme).toContain('font-weight: 400;')
     expect(restart).toContain('className="dsh-fnos-web-actions"')
+    expect(restart).toContain('dsh-fnos-web-actions--collapsed')
     expect(restart).toContain('theme="borderless"')
     expect(semiTheme).not.toContain('!important')
     expect(semiTheme).toContain('var(--dsw-shadow-lv3)')
+    expect(semiTheme).toContain('.dsh-fnos-web-actions--collapsed')
+    expect(semiTheme).toContain('justify-content: center;')
   })
 
   it('keeps fnOS file and folder references in the native input draft', async () => {

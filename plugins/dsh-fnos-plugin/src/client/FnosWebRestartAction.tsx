@@ -1,7 +1,7 @@
 /** DSH sidebar action for restarting the upstream Web process through fnOS. */
 
 import { useCallback, useState } from 'react'
-import { DshButton, DshButtonGroup, DshIconButton, DshIconRefresh, DshIconRestart } from '@tnnevol/dsh-semi-ui'
+import { DshButton, DshButtonGroup, DshIconButton, DshIconRefresh, DshIconRefresh2 } from '@tnnevol/dsh-semi-ui'
 import { isEmbeddedFnosFrame } from './sdk-carrier.ts'
 import type { FnosLocaleKey } from './locales.ts'
 
@@ -57,7 +57,7 @@ export function FnosWebRestartAction({ wide, t }: FnosWebRestartActionProps) {
   const restartLabel = error ? t('webRestartFailed') : busy ? t('webRestarting') : t('webRestart')
   const refreshLabel = t('refresh')
   const refreshIcon = <DshIconRefresh size={wide ? 'small' : 'default'} />
-  const restartIcon = <DshIconRestart size={wide ? 'small' : 'default'} />
+  const restartIcon = <DshIconRefresh2 size={wide ? 'small' : 'default'} />
 
   if (wide) {
     return (
@@ -93,7 +93,12 @@ export function FnosWebRestartAction({ wide, t }: FnosWebRestartActionProps) {
   }
 
   return (
-    <DshButtonGroup size="small" type="tertiary" aria-label={`${refreshLabel} / ${restartLabel}`}>
+    <DshButtonGroup
+      size="small"
+      type="tertiary"
+      className="dsh-fnos-web-actions dsh-fnos-web-actions--collapsed"
+      aria-label={`${refreshLabel} / ${restartLabel}`}
+    >
       <DshIconButton
         size="small"
         type="tertiary"
