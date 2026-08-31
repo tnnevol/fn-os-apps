@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
-import type { ComponentType, CSSProperties, ReactNode } from 'react'
+import type { ComponentType, CSSProperties, MouseEvent, ReactNode } from 'react'
 import * as SemiIcons from '@douyinfe/semi-icons/lib/es/icons/index.js'
 import {
   DshButton,
@@ -12,6 +12,7 @@ import {
   DshIconCheckCircle,
   DshIconButton,
   DshIconClose,
+  DshIconChevronDown,
   DshIconElementStroked,
   DshIconFile,
   DshIconFolder,
@@ -77,6 +78,8 @@ const demo: CSSProperties = { display: 'flex', alignItems: 'center', flexWrap: '
 const stack: CSSProperties = { display: 'grid', gap: 24 }
 const demoBlock: CSSProperties = { display: 'grid', gap: 10 }
 const demoLabel: CSSProperties = { color: 'var(--dsw-alias-label-secondary)', fontSize: 13 }
+const dropdownApiTable: CSSProperties = { display: 'grid', gridTemplateColumns: 'minmax(120px, .7fr) minmax(180px, 1.3fr) minmax(110px, .7fr)', border: '1px solid var(--dsw-alias-border-l2)', borderRadius: 4, overflow: 'hidden', fontSize: 12 }
+const dropdownApiCell: CSSProperties = { padding: '10px 12px', borderBottom: '1px solid var(--dsw-alias-border-l2)' }
 const iconGrid: CSSProperties = { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(112px, 1fr))', gap: 8, maxHeight: 520, overflow: 'auto' }
 const iconTile: CSSProperties = { display: 'grid', justifyItems: 'center', alignContent: 'center', minHeight: 86, gap: 8, padding: '12px 8px', border: '1px solid var(--dsw-alias-border-l2)', borderRadius: 4, color: 'var(--dsw-alias-label-secondary)', textAlign: 'center' }
 const iconTileLabel: CSSProperties = { maxWidth: '100%', overflow: 'hidden', color: 'var(--dsw-alias-label-tertiary)', fontSize: 10, textOverflow: 'ellipsis', whiteSpace: 'nowrap' }
@@ -147,7 +150,45 @@ export function ShowcasePage({ route, theme }: { route: ShowcaseRouteController;
   const [activeComponent, setActiveComponent] = useState<ComponentItem>('Button 按钮')
   const [iconMode, setIconMode] = useState<IconMode>('all')
   const [toastId, setToastId] = useState<string>()
-  const dropdownContent = useMemo(() => <div style={{ padding: 10, minWidth: 140 }}>DSH 主题浮层</div>, [])
+  const [dropdownSelected, setDropdownSelected] = useState('插件')
+  const [dropdownEvent, setDropdownEvent] = useState('等待菜单操作')
+  const [dropdownCustomVisible, setDropdownCustomVisible] = useState(false)
+  const dropdownMenu = useMemo(() => (
+    <DshDropdown.Menu>
+      <DshDropdown.Title>工作区</DshDropdown.Title>
+      <DshDropdown.Item icon={<DshIconFolderOpen />} active={dropdownSelected === '插件'} onClick={() => { setDropdownSelected('插件'); setDropdownEvent('已选择：插件') }}>插件</DshDropdown.Item>
+      <DshDropdown.Item icon={<DshIconFile />} active={dropdownSelected === '文档'} onClick={() => { setDropdownSelected('文档'); setDropdownEvent('已选择：文档') }}>文档</DshDropdown.Item>
+      <DshDropdown.Item icon={<DshIconFolder />} disabled>应用（禁用）</DshDropdown.Item>
+      <DshDropdown.Divider />
+      <DshDropdown.Title>操作</DshDropdown.Title>
+      <DshDropdown.Item icon={<DshIconSetting />} type="primary" onClick={() => { setDropdownEvent('已打开设置') }}>设置</DshDropdown.Item>
+      <DshDropdown.Item icon={<DshIconRefresh />} type="warning" onClick={() => { setDropdownEvent('已刷新工作区') }}>刷新工作区</DshDropdown.Item>
+      <DshDropdown.Item icon={<DshIconAlertCircle />} type="danger" onClick={() => { setDropdownEvent('已执行危险操作') }}>删除缓存</DshDropdown.Item>
+    </DshDropdown.Menu>
+  ), [dropdownSelected])
+  const nestedDropdownMenu = useMemo(() => (
+    <DshDropdown.Menu>
+      <DshDropdown.Item>当前会话</DshDropdown.Item>
+      <DshDropdown.Item>全部会话</DshDropdown.Item>
+      <DshDropdown.Item disabled>已归档会话</DshDropdown.Item>
+    </DshDropdown.Menu>
+  ), [])
+  const dropdownEventMenu = useMemo(() => (
+    <DshDropdown.Menu>
+      <DshDropdown.Item onClick={() => { setDropdownEvent('onClick：选择了菜单项') }}>点击事件</DshDropdown.Item>
+      <DshDropdown.Item onMouseEnter={() => { setDropdownEvent('onMouseEnter：指针进入菜单项') }}>移入事件</DshDropdown.Item>
+      <DshDropdown.Item onMouseLeave={() => { setDropdownEvent('onMouseLeave：指针离开菜单项') }}>移出事件</DshDropdown.Item>
+      <DshDropdown.Item onContextMenu={(event: MouseEvent<HTMLLIElement>) => { event.preventDefault(); setDropdownEvent('onContextMenu：右键菜单项') }}>右键事件</DshDropdown.Item>
+    </DshDropdown.Menu>
+  ), [])
+  const dropdownJsonMenu = [
+    { node: 'title', name: '快捷操作' },
+    { node: 'item', name: '新建文件', type: 'primary', active: true, icon: <DshIconFile />, onClick: () => { setDropdownEvent('JSON 菜单：新建文件') } },
+    { node: 'item', name: '打开目录', type: 'secondary', icon: <DshIconFolderOpen />, onClick: () => { setDropdownEvent('JSON 菜单：打开目录') } },
+    { node: 'divider' },
+    { node: 'item', name: '清理缓存', type: 'danger', icon: <DshIconAlertCircle />, onClick: () => { setDropdownEvent('JSON 菜单：清理缓存') } },
+  ]
+  const dropdownSimpleMenu = useMemo(() => <DshDropdown.Menu><DshDropdown.Item>菜单项 1</DshDropdown.Item><DshDropdown.Item>菜单项 2</DshDropdown.Item><DshDropdown.Item>菜单项 3</DshDropdown.Item></DshDropdown.Menu>, [])
   const popoverContent = useMemo(() => <div style={{ display: 'grid', gap: 6, minWidth: 180, padding: 4 }}><strong>Popover 内容</strong><span style={{ color: 'var(--dsw-alias-label-secondary)' }}>这是由调用方传入的自定义内容。</span></div>, [])
   const nextTheme = themeSnapshot.active.colorScheme === 'dark' ? 'light' : 'dark'
   const themeToggleLabel = nextTheme === 'light' ? '切换到亮色模式' : '切换到暗色模式'
@@ -201,7 +242,9 @@ export function ShowcasePage({ route, theme }: { route: ShowcaseRouteController;
                   ? [['普通提示', 'toast-basic'], ['状态提示', 'toast-status'], ['手动关闭与堆叠', 'toast-control']]
                 : activeComponent === 'Popover 浮层'
                   ? [['基本用法', 'popover-basic'], ['箭头与位置', 'popover-basic'], ['API 参考', 'popover-basic']]
-                  : [['基本用法', activeComponent === 'Tooltip 文字提示' ? 'tooltip-basic' : 'dropdown-basic'], ['API 参考', activeComponent === 'Tooltip 文字提示' ? 'tooltip-basic' : 'dropdown-basic']]
+                  : activeComponent === 'Dropdown 下拉框'
+                    ? [['基本用法', 'dropdown-basic'], ['嵌套使用', 'dropdown-nested'], ['弹出位置', 'dropdown-position'], ['触发方式', 'dropdown-trigger'], ['触发事件', 'dropdown-events'], ['JSON 用法', 'dropdown-json'], ['API 参考', 'dropdown-api']]
+                    : [['基本用法', 'tooltip-basic'], ['API 参考', 'tooltip-basic']]
   const openModal = (demo: ModalDemo): void => {
     setModalDemo(demo)
     setModalVisible(true)
@@ -258,7 +301,7 @@ export function ShowcasePage({ route, theme }: { route: ShowcaseRouteController;
                 <p style={sectionText}>加载、禁用、块级和图标按钮均使用共享主题 Token。</p>
                 <DemoCard source={'<DshButton loading={loading}>保存</DshButton>\n<DshButton disabled>禁用</DshButton>\n<DshButton icon={<DshIconSetting />}>设置</DshButton>'}><div style={stack}><div style={demo}><DshButton type="primary" theme="solid" loading={buttonLoading}>保存</DshButton><DshButton type="secondary" theme="light" onClick={() => { setButtonLoading(value => !value) }}>{buttonLoading ? '关闭加载态' : '开启加载态'}</DshButton><DshButton type="secondary" theme="solid" disabled>禁用</DshButton><DshButton type="danger" theme="outline" disabled>禁用描边</DshButton><DshButton type="primary" theme="solid" block style={{ maxWidth: 260 }}>块级按钮</DshButton></div><div style={demo}><DshButton type="primary" theme="solid" icon={<DshIconSetting />}>设置</DshButton><DshButton type="secondary" theme="light" icon={<DshIconRefresh />} iconPosition="right">刷新</DshButton><DshIconButton type="primary" theme="solid" icon={<DshIconSetting />} aria-label="设置" /><DshIconButton type="secondary" theme="light" icon={<DshIconClose />} aria-label="关闭" disabled /></div></div></DemoCard>
                 <h2 id="button-overlays" style={sectionTitle}>按钮组合与浮层</h2>
-                <DemoCard source={'<DshButtonGroup>...</DshButtonGroup>\n<DshTooltip content="提示">...</DshTooltip>\n<DshDropdown trigger="click">...</DshDropdown>'}><div style={demo}><DshButtonGroup type="primary" theme="solid" aria-label="操作按钮组"><DshButton>保存</DshButton><DshButton>继续</DshButton><DshButton>更多</DshButton></DshButtonGroup><DshButtonGroup type="secondary" theme="light" size="small" aria-label="辅助操作按钮组"><DshButton>上一项</DshButton><DshButton>下一项</DshButton></DshButtonGroup><DshTooltip content="Tooltip 默认浮层，鼠标悬停查看"><DshButton type="secondary" theme="light">Tooltip</DshButton></DshTooltip><DshDropdown trigger="click" render={dropdownContent}><DshButton type="secondary" theme="light">Dropdown</DshButton></DshDropdown></div></DemoCard>
+                <DemoCard source={'<DshButtonGroup>...</DshButtonGroup>\n<DshTooltip content="提示">...</DshTooltip>\n<DshDropdown trigger="click">...</DshDropdown>'}><div style={demo}><DshButtonGroup type="primary" theme="solid" aria-label="操作按钮组"><DshButton>保存</DshButton><DshButton>继续</DshButton><DshButton>更多</DshButton></DshButtonGroup><DshButtonGroup type="secondary" theme="light" size="small" aria-label="辅助操作按钮组"><DshButton>上一项</DshButton><DshButton>下一项</DshButton></DshButtonGroup><DshTooltip content="Tooltip 默认浮层，鼠标悬停查看"><DshButton type="secondary" theme="light">Tooltip</DshButton></DshTooltip><DshDropdown trigger="click" render={dropdownMenu}><DshButton type="secondary" theme="light">Dropdown</DshButton></DshDropdown></div></DemoCard>
               </>
             ) : null}
 
@@ -273,8 +316,67 @@ export function ShowcasePage({ route, theme }: { route: ShowcaseRouteController;
             {activeComponent === 'Dropdown 下拉框' ? (
               <>
                 <h2 id="dropdown-basic" style={sectionTitle}>基本用法</h2>
-                <p style={sectionText}>点击触发下拉面板，菜单项使用 DSH 的悬停和激活变量。</p>
-                <DemoCard source={'<DshDropdown trigger="click" render={menu}>\n  <DshButton>打开菜单</DshButton>\n</DshDropdown>'}><DshDropdown trigger="click" render={dropdownContent}><DshButton type="secondary" theme="light">打开菜单</DshButton></DshDropdown></DemoCard>
+                <p style={sectionText}>Dropdown 默认通过悬停触发，也可以使用点击、聚焦或右键触发。菜单由 Menu、Title、Item 和 Divider 组合而成。</p>
+                <DemoCard source={'<DshDropdown showTick position="bottomLeft" render={\n  <DshDropdown.Menu>\n    <DshDropdown.Title>工作区</DshDropdown.Title>\n    <DshDropdown.Item icon={<DshIconFolder />}>插件</DshDropdown.Item>\n    <DshDropdown.Item disabled>应用</DshDropdown.Item>\n    <DshDropdown.Divider />\n    <DshDropdown.Item type="danger">删除</DshDropdown.Item>\n  </DshDropdown.Menu>\n}>\n  <DshButton>打开菜单</DshButton>\n</DshDropdown>'}>
+                  <DshDropdown trigger="click" showTick position="bottomLeft" render={dropdownMenu}>
+                    <DshButton type="secondary" theme="light" icon={<DshIconChevronDown />}>打开菜单</DshButton>
+                  </DshDropdown>
+                </DemoCard>
+
+                <h2 id="dropdown-nested" style={sectionTitle}>嵌套使用</h2>
+                <p style={sectionText}>嵌套 Dropdown 适合承载多级操作，子菜单可以从父菜单项的右侧展开。</p>
+                <DemoCard source={'<DshDropdown render={\n  <DshDropdown.Menu>\n    <DshDropdown position="rightTop" render={subMenu}>\n      <DshDropdown.Item>导出</DshDropdown.Item>\n    </DshDropdown>\n  </DshDropdown.Menu>\n}>...</DshDropdown>'}>
+                  <DshDropdown render={<DshDropdown.Menu><DshDropdown position="rightTop" trigger="hover" render={nestedDropdownMenu}><DshDropdown.Item icon={<DshIconFolderOpen />}>导出</DshDropdown.Item></DshDropdown><DshDropdown.Item>重命名</DshDropdown.Item><DshDropdown.Item disabled>移动到（禁用）</DshDropdown.Item></DshDropdown.Menu>}>
+                    <DshButton type="secondary" theme="light">打开多级菜单</DshButton>
+                  </DshDropdown>
+                </DemoCard>
+
+                <h2 id="dropdown-position" style={sectionTitle}>弹出位置</h2>
+                <p style={sectionText}>使用 `position` 调整菜单相对触发器的方向，常用位置包括 bottom、bottomLeft 和 bottomRight。</p>
+                <DemoCard source={'<DshDropdown position="bottom" />\n<DshDropdown position="bottomLeft" />\n<DshDropdown position="bottomRight" />'}>
+                  <div style={demo}>
+                    <DshDropdown trigger="click" position="bottom" render={dropdownSimpleMenu}><DshButton type="secondary" theme="light">bottom</DshButton></DshDropdown>
+                    <DshDropdown trigger="click" position="bottomLeft" render={dropdownSimpleMenu}><DshButton type="secondary" theme="light">bottomLeft</DshButton></DshDropdown>
+                    <DshDropdown trigger="click" position="bottomRight" render={dropdownSimpleMenu}><DshButton type="secondary" theme="light">bottomRight</DshButton></DshDropdown>
+                  </div>
+                </DemoCard>
+
+                <h2 id="dropdown-trigger" style={sectionTitle}>触发方式</h2>
+                <p style={sectionText}>官方 Dropdown 支持 hover、focus、click、custom 和 contextMenu 五种触发方式。</p>
+                <DemoCard source={'<DshDropdown trigger="hover" />\n<DshDropdown trigger="focus" />\n<DshDropdown trigger="click" />\n<DshDropdown trigger="custom" visible={visible} />\n<DshDropdown trigger="contextMenu" />'}>
+                  <div style={demo}>
+                    <DshDropdown trigger="hover" render={dropdownSimpleMenu}><DshButton type="secondary" theme="light">Hover</DshButton></DshDropdown>
+                    <DshDropdown trigger="focus" render={dropdownSimpleMenu}><DshButton type="secondary" theme="light">Focus</DshButton></DshDropdown>
+                    <DshDropdown trigger="click" render={dropdownSimpleMenu}><DshButton type="secondary" theme="light">Click</DshButton></DshDropdown>
+                    <DshDropdown trigger="custom" visible={dropdownCustomVisible} onVisibleChange={setDropdownCustomVisible} render={dropdownSimpleMenu}><DshButton type="secondary" theme="light" onClick={() => { setDropdownCustomVisible(value => !value) }}>Custom</DshButton></DshDropdown>
+                    <DshDropdown trigger="contextMenu" position="bottomRight" render={dropdownSimpleMenu}><DshButton type="secondary" theme="light">右键打开</DshButton></DshDropdown>
+                  </div>
+                </DemoCard>
+
+                <h2 id="dropdown-events" style={sectionTitle}>触发事件</h2>
+                <p style={sectionText}>菜单项支持 onClick、onMouseEnter、onMouseLeave 和 onContextMenu 事件，当前事件会显示在示例下方。</p>
+                <DemoCard source={'<DshDropdown.Item onClick={handleClick}>点击事件</DshDropdown.Item>\n<DshDropdown.Item onMouseEnter={handleEnter}>移入事件</DshDropdown.Item>\n<DshDropdown.Item onContextMenu={handleContextMenu}>右键事件</DshDropdown.Item>'}>
+                  <div style={stack}>
+                    <DshDropdown trigger="click" position="bottomLeft" render={dropdownEventMenu}><DshButton type="secondary" theme="light">打开事件菜单</DshButton></DshDropdown>
+                    <span style={{ color: 'var(--dsw-alias-label-tertiary)', fontSize: 12 }} role="status">{dropdownEvent}</span>
+                  </div>
+                </DemoCard>
+
+                <h2 id="dropdown-json" style={sectionTitle}>JSON 用法</h2>
+                <p style={sectionText}>简单菜单可以通过 `menu` 数组快速配置标题、菜单项、分隔线、图标、类型和激活态。</p>
+                <DemoCard source={'const menu = [\n  { node: "title", name: "快捷操作" },\n  { node: "item", name: "新建文件", type: "primary", active: true },\n  { node: "divider" },\n  { node: "item", name: "清理缓存", type: "danger" },\n]\n<DshDropdown menu={menu} showTick />'}>
+                  <DshDropdown trigger="click" showTick position="bottomLeft" menu={dropdownJsonMenu}><DshButton type="secondary" theme="light">打开 JSON 菜单</DshButton></DshDropdown>
+                </DemoCard>
+
+                <h2 id="dropdown-api" style={sectionTitle}>API 参考</h2>
+                <p style={sectionText}>以下是本页覆盖的核心属性和组合组件，完整 API 以 Semi 官方文档为准。</p>
+                <div style={dropdownApiTable} role="table" aria-label="Dropdown API 参考">
+                  <strong style={{ ...dropdownApiCell, background: 'var(--dsw-alias-fill-l2)' }}>属性</strong><strong style={{ ...dropdownApiCell, background: 'var(--dsw-alias-fill-l2)' }}>用途</strong><strong style={{ ...dropdownApiCell, background: 'var(--dsw-alias-fill-l2)' }}>示例</strong>
+                  <span style={dropdownApiCell}>trigger</span><span style={dropdownApiCell}>控制菜单的触发方式</span><code style={dropdownApiCell}>hover / focus / click / contextMenu</code>
+                  <span style={dropdownApiCell}>render / menu</span><span style={dropdownApiCell}>提供 React 菜单或 JSON 菜单</span><code style={dropdownApiCell}>DshDropdown.Menu</code>
+                  <span style={dropdownApiCell}>position</span><span style={dropdownApiCell}>调整浮层相对触发器的位置</span><code style={dropdownApiCell}>bottomLeft</code>
+                  <span style={dropdownApiCell}>showTick</span><span style={dropdownApiCell}>为 active 菜单项显示选中标记</span><code style={dropdownApiCell}>true</code>
+                </div>
               </>
             ) : null}
 

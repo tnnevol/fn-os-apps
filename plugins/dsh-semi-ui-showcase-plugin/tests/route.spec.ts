@@ -121,6 +121,13 @@ describe('Semi UI showcase hash route', () => {
     expect(source).toContain('popover-basic')
   })
 
+  it('covers the official Dropdown showcase families', async () => {
+    const source = await import('node:fs/promises').then(({ readFile }) => readFile(new URL('../src/client/ShowcasePage.tsx', import.meta.url), 'utf8'))
+    for (const section of ['dropdown-basic', 'dropdown-nested', 'dropdown-position', 'dropdown-trigger', 'dropdown-events', 'dropdown-json', 'dropdown-api']) expect(source).toContain(section)
+    for (const trigger of ['trigger="hover"', 'trigger="focus"', 'trigger="click"', 'trigger="custom"', 'trigger="contextMenu"']) expect(source).toContain(trigger)
+    for (const part of ['DshDropdown.Menu', 'DshDropdown.Title', 'DshDropdown.Item', 'DshDropdown.Divider', 'showTick', 'onMouseEnter', 'onMouseLeave', 'onContextMenu', 'menu={dropdownJsonMenu']) expect(source).toContain(part)
+  })
+
   it('keeps the shared theme scoped to official component states', async () => {
     const source = await import('node:fs/promises').then(({ readFile }) => readFile(new URL('../../../packages/dsh-semi-ui/src/theme.ts', import.meta.url), 'utf8'))
     expect(source).toContain('.semi-button.semi-button-primary.semi-button-solid')
