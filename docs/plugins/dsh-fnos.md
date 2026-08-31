@@ -52,6 +52,14 @@ dsh --profile web --dump-config
 
 设置页的「打开配置文件」同样通过 fnOS 文件应用打开当前 DSH 设置文件。离开 fnOS iframe 后，这些系统操作会安全跳过或回退到 DSH 原有行为。
 
+## 刷新与重启 Web
+
+fnOS 应用侧边菜单提供「刷新」和「重启 Web」入口：
+
+- 「刷新」只刷新 DSH Web iframe，不刷新 iframe 外部的 fnOS 宿主页面；
+- 「重启 Web」由常驻网关恢复 DSH Web，完成健康检查后刷新 iframe；
+- 已验证刷新和重启入口均可正常使用，Web 重启期间 FPK 应用保持启用。
+
 ## 导出会话日志
 
 fnOS 环境中的 Session log 菜单提供两种导出方式：

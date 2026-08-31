@@ -5,7 +5,7 @@ description: 记录 DSH 版本统一、Codex 登录与用量状态、NAS 引用�
 status: validating
 owner: tnnevol
 targetVersion: 5.1.x
-lastVerified: 2026-08-30
+lastVerified: 2026-08-31
 ---
 
 # FNOS-002 DSH 应用与插件优化
@@ -115,7 +115,7 @@ DSH 在 fnOS 中运行后，还有几处使用体验需要调整。Codex 登录�
 
 ### 当前 NAS 验证结果
 
-- 已验证 DSH Web 可以正常重启。
+- 已验证 DSH Web 左侧菜单的刷新和重启功能均正常；刷新只作用于 DSH Web iframe，不会刷新 iframe 外部的 fnOS 宿主页面。
 - 已验证 Web 重启期间 FPK 应用状态保持启用。
 - 网关代理、API URL 反代即时生效及升级回滚等其余场景仍按原验收条件继续验证。
 
@@ -146,3 +146,4 @@ DSH 在 fnOS 中运行后，还有几处使用体验需要调整。Codex 登录�
 | 2026-08-30 | 完成 NAS 引用同步修正 | 按 DSH structured reference 的占位符和 draftRev 计算多选偏移，补齐懒加载节点插入、部分插入和分隔空格回归测试 |
 | 2026-08-30 | 合并需求编号并完成 Web 恢复验证 | 移除已替换的 FNOS-002-05，统一使用 FNOS-002-04；真实 NAS 已验证 Web 正常重启且 FPK 应用保持启用 |
 | 2026-08-31 | 迁移版本统一需求 | 将原 FNOS-003 的 DSH、插件、依赖、FPK 和 native 版本约束并入本需求；FNOS-003 改用于 FPK 应用运行设置 |
+| 2026-08-31 | 同步刷新与重启验证状态 | 真实 fnOS 环境已验证侧边菜单刷新、重启均正常，刷新不会影响 iframe 外部页面 |
