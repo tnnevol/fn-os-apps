@@ -102,6 +102,8 @@ describe('dsh-codex-auth-plugin rc.2 client registration', () => {
     expect(style).toContain('.dsh-codex-usage-progress-track')
     expect(style).toContain('.semi-progress-circle-text')
     expect(style).toContain('color: var(--dsw-alias-label-primary)')
+    expect(style).toContain('.dsh-codex-auth-usage-progress.semi-progress-horizontal')
+    expect(style).toContain('height: 8px')
   })
 
   it('uses Semi Cascader multi-select and keeps it open after leaf clicks', async () => {
