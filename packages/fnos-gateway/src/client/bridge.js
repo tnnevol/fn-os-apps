@@ -3,8 +3,9 @@
   var prefix = config.prefix || "";
   var customPaths = new Set(config.customPaths || []);
   function boundary(pathname, candidate) { return pathname === candidate || pathname.indexOf(candidate + "/") === 0; }
+  function isImageResource(pathname) { return /\.(?:avif|bmp|gif|ico|jpe?g|png|svg|webp)$/i.test(pathname); }
   function gatewayPath(pathname) {
-    if (boundary(pathname, "/api") || boundary(pathname, "/plugins")) return true;
+    if (boundary(pathname, "/api") || boundary(pathname, "/plugins") || isImageResource(pathname)) return true;
     for (var candidate of customPaths) if (boundary(pathname, candidate)) return true;
     return false;
   }

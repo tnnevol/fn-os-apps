@@ -26,6 +26,11 @@ function sendBadGateway(res: ServerResponse, error: unknown, options?: GatewayOp
   res.end(`${BAD_GATEWAY_MESSAGE}: ${message}`)
 }
 
+function isImageResourceRequest(req: IncomingMessage): boolean {
+  const pathname = (req.url ?? '').split('?', 1)[0] ?? ''
+  return /\.(?:avif|bmp|gif|ico|jpe?g|png|svg|webp)$/iu.test(pathname)
+}
+
 export function createProxyHandler(options: GatewayOptions): RequestHandler {
   const { upstreamHost, upstreamPort, gatewayPrefix, sseKeepaliveInterval = 15_000 } = options
 
@@ -40,10 +45,17 @@ export function createProxyHandler(options: GatewayOptions): RequestHandler {
       proxyRes: (proxyRes, req, res) => {
         const contentType = String(proxyRes.headers['content-type'] || '').toLowerCase()
         const eventStream = contentType.startsWith('text/event-stream')
+        // A plugin may return a fallback HTML document for a missing asset.
+        // Never run that response through the HTML rewriter for an image URL;
+        // preserve the upstream status, body, and headers for the browser.
+        const imageResource = isImageResourceRequest(req)
         const rewriteBody = !eventStream && (
+          !imageResource
+          && (
           contentType.includes('text/html')
           || contentType.includes('text/css')
           || contentType.includes('javascript')
+          )
         )
         const headers = copyResponseHeaders(proxyRes.headers, {
           rewriteBody,
