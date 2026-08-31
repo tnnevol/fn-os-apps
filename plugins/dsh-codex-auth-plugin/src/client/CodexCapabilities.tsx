@@ -1,7 +1,6 @@
 /** Live optional-capability settings for the Codex Auth plugin. */
 
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react'
-import type { CSSProperties } from 'react'
 import type { SettingsScope, SettingsScopeSnapshot } from '@deepseek-ai/dsh-client-runtime/client'
 import { DshButton, DshCheckbox } from '@tnnevol/dsh-semi-ui'
 import type { CodexAuthSettingsConfig } from '../settings-contract.ts'
@@ -11,25 +10,6 @@ export interface CodexCapabilitiesProps {
   scope?: SettingsScope<CodexAuthSettingsConfig> | undefined
   t: (key: CodexAuthLocaleKey) => string
 }
-
-const sectionStyle: CSSProperties = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: 12,
-  borderTop: '1px solid var(--dsw-alias-border-l2)',
-  paddingTop: 14,
-}
-const headingStyle: CSSProperties = { margin: 0, fontSize: 14, lineHeight: '20px', fontWeight: 600, color: 'var(--dsw-alias-label-primary)' }
-const bodyStyle: CSSProperties = { margin: 0, fontSize: 12, lineHeight: '18px', color: 'var(--dsw-alias-label-secondary)' }
-const fieldsetStyle: CSSProperties = { display: 'flex', flexDirection: 'column', gap: 12, margin: 0, padding: 0, border: 0 }
-const rowStyle: CSSProperties = { display: 'flex', alignItems: 'flex-start', gap: 9, cursor: 'pointer' }
-const disabledRowStyle: CSSProperties = { ...rowStyle, cursor: 'not-allowed', opacity: 0.62 }
-const copyStyle: CSSProperties = { display: 'flex', flexDirection: 'column', gap: 2 }
-const labelStyle: CSSProperties = { fontSize: 13, lineHeight: '18px', fontWeight: 500, color: 'var(--dsw-alias-label-primary)' }
-const actionsStyle: CSSProperties = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }
-const buttonsStyle: CSSProperties = { display: 'flex', gap: 8 }
-const errorStyle: CSSProperties = { ...bodyStyle, color: 'var(--dsw-alias-state-error-primary, #d92d20)' }
-const successStyle: CSSProperties = { ...bodyStyle, color: 'var(--dsw-alias-state-success-primary, #16825d)' }
 
 const UNAVAILABLE_SNAPSHOT: SettingsScopeSnapshot<CodexAuthSettingsConfig> = {
   status: 'unavailable',
@@ -100,60 +80,60 @@ export function CodexCapabilities({ scope, t }: CodexCapabilitiesProps) {
   const editable = snapshot.status === 'ready' && snapshot.writable && !busy
 
   return (
-    <section style={sectionStyle} aria-labelledby="dsh-codex-capabilities-title">
+    <section className="dsh-codex-capabilities" aria-labelledby="dsh-codex-capabilities-title">
       <div>
-        <h3 id="dsh-codex-capabilities-title" style={headingStyle}>{t('capabilitiesTitle')}</h3>
-        <p style={{ ...bodyStyle, marginTop: 3 }}>{t('capabilitiesIntro')}</p>
+        <h3 id="dsh-codex-capabilities-title" className="dsh-codex-section-heading">{t('capabilitiesTitle')}</h3>
+        <p className="dsh-codex-body dsh-codex-capabilities-intro">{t('capabilitiesIntro')}</p>
       </div>
-      {loading ? <p style={bodyStyle} role="status">{t('settingsLoading')}</p> : null}
-      {snapshot.status === 'unavailable' ? <p style={errorStyle} role="alert">{t('settingsUnavailable')}</p> : null}
-      {snapshot.status === 'ready' && !snapshot.writable ? <p style={errorStyle} role="alert">{t('settingsReadOnly')}</p> : null}
+      {loading ? <p className="dsh-codex-body" role="status">{t('settingsLoading')}</p> : null}
+      {snapshot.status === 'unavailable' ? <p className="dsh-codex-error" role="alert">{t('settingsUnavailable')}</p> : null}
+      {snapshot.status === 'ready' && !snapshot.writable ? <p className="dsh-codex-error" role="alert">{t('settingsReadOnly')}</p> : null}
       {draft === undefined ? null : (
-        <fieldset style={fieldsetStyle} disabled={!editable}>
+        <fieldset className="dsh-codex-capabilities-fields" disabled={!editable}>
           <DshCheckbox
-            style={rowStyle}
+            className="dsh-codex-capability-row"
             checked={draft.enableImageTool}
             disabled={!editable}
             aria-label={t('enableImageRecognition')}
             onChange={() => { updateImageTool(!draft.enableImageTool) }}
           >
-            <span style={copyStyle}>
-              <span style={labelStyle}>{t('enableImageRecognition')}</span>
-              <span style={bodyStyle}>{t('enableImageRecognitionHelp')}</span>
+            <span className="dsh-codex-capability-copy">
+              <span className="dsh-codex-capability-label">{t('enableImageRecognition')}</span>
+              <span className="dsh-codex-body">{t('enableImageRecognitionHelp')}</span>
             </span>
           </DshCheckbox>
           <DshCheckbox
-            style={rowStyle}
+            className="dsh-codex-capability-row"
             checked={draft.enableImageUpload}
             disabled={!editable}
             aria-label={t('enableImageUpload')}
             onChange={() => { updateImageUpload(!draft.enableImageUpload) }}
           >
-            <span style={copyStyle}>
-              <span style={labelStyle}>{t('enableImageUpload')}</span>
-              <span style={bodyStyle}>{t('enableImageUploadHelp')}</span>
+            <span className="dsh-codex-capability-copy">
+              <span className="dsh-codex-capability-label">{t('enableImageUpload')}</span>
+              <span className="dsh-codex-body">{t('enableImageUploadHelp')}</span>
             </span>
           </DshCheckbox>
-          <span style={disabledRowStyle} title={t('imageGenerationUnavailableHelp')}>
+          <span className="dsh-codex-capability-row dsh-codex-capability-row--disabled" title={t('imageGenerationUnavailableHelp')}>
             <DshCheckbox
               checked={false}
               disabled
               aria-label={t('enableImageGeneration')}
             >
-              <span style={copyStyle}>
-                <span style={labelStyle}>{t('enableImageGeneration')}</span>
-                <span style={bodyStyle}>{t('imageGenerationUnavailableHelp')}</span>
+              <span className="dsh-codex-capability-copy">
+                <span className="dsh-codex-capability-label">{t('enableImageGeneration')}</span>
+                <span className="dsh-codex-body">{t('imageGenerationUnavailableHelp')}</span>
               </span>
             </DshCheckbox>
           </span>
         </fieldset>
       )}
-      <div style={actionsStyle}>
+      <div className="dsh-codex-capabilities-actions">
         <span aria-live="polite">
-          {feedback === 'saved' ? <span style={successStyle}>{t('settingsSaved')}</span> : null}
-          {feedback === 'error' ? <span style={errorStyle}>{t('settingsSaveFailed')}</span> : null}
+          {feedback === 'saved' ? <span className="dsh-codex-success">{t('settingsSaved')}</span> : null}
+          {feedback === 'error' ? <span className="dsh-codex-error">{t('settingsSaveFailed')}</span> : null}
         </span>
-        <span style={buttonsStyle}>
+        <span className="dsh-codex-capabilities-buttons">
           <DshButton htmlType="button" theme="outline" type="secondary" disabled={!dirty || busy} onClick={discard}>{t('discard')}</DshButton>
           <DshButton htmlType="button" theme="solid" type="primary" disabled={!dirty || !snapshot.writable || busy} loading={busy} onClick={() => { void save() }}>
             {busy ? t('saving') : t('save')}

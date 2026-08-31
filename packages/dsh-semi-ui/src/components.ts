@@ -49,3 +49,4 @@ export { default as DshIconLabTooltip } from '@douyinfe/semi-icons-lab/lib/es/ic
 export { default as DshIconLabToast } from '@douyinfe/semi-icons-lab/lib/es/icons/IconToast.js'
 export { default as DshIconLabTree } from '@douyinfe/semi-icons-lab/lib/es/icons/IconTree.js'
 export { default as DshIconLabTreeSelect } from '@douyinfe/semi-icons-lab/lib/es/icons/IconTreeSelect.js'
+export * as DshSemiIcons from '@douyinfe/semi-icons/lib/es/icons/index.js'

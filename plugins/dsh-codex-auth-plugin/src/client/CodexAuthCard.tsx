@@ -1,7 +1,6 @@
 /** Expandable account card for the DSH Plugins settings section. */
 
 import { useCallback, useEffect, useState } from 'react'
-import type { CSSProperties } from 'react'
 import type { SettingsScope } from '@deepseek-ai/dsh-client-runtime/client'
 import type { ConnectionHandle } from '@deepseek-ai/dsh-client-connection/client'
 import type { PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
@@ -62,57 +61,9 @@ export interface CodexAuthCardInjected {
 
 export type CodexAuthCardProps = PropsRuntime<'settings.plugin.item'> & Partial<CodexAuthCardInjected>
 
-const cardStyle: CSSProperties = {
-  overflow: 'hidden',
-  listStyle: 'none',
-  border: '1px solid var(--dsw-alias-border-l2)',
-  borderRadius: 12,
-  background: 'var(--dsw-alias-bg-layer-3)',
-  transition: 'border-color 160ms ease, background 160ms ease',
-}
-const cardOpenStyle: CSSProperties = {
-  background: 'var(--dsw-alias-bg-layer-2)',
-  borderColor: 'var(--dsw-alias-label-dimmed)',
-}
-const headerStyle: CSSProperties = {
-  boxSizing: 'border-box',
-  width: '100%',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  gap: 12,
-  border: 0,
-  padding: '14px 16px',
-  borderRadius: 12,
-  background: 'none',
-  color: 'var(--dsw-alias-label-primary)',
-  font: 'inherit',
-  textAlign: 'left',
-  cursor: 'pointer',
-}
-const headTextStyle: CSSProperties = { display: 'flex', minWidth: 0, flexDirection: 'column', gap: 4 }
-const nameStyle: CSSProperties = { fontSize: 15, lineHeight: '1.4', fontWeight: 600 }
-const descriptionStyle: CSSProperties = { fontSize: 13, lineHeight: '1.5', color: 'var(--dsw-alias-label-tertiary)' }
-const bodyStyle: CSSProperties = { margin: 0, fontSize: 13, lineHeight: '20px', color: 'var(--dsw-alias-label-secondary)' }
-const errorStyle: CSSProperties = { ...bodyStyle, color: 'var(--dsw-alias-state-error-primary, #d92d20)' }
-const cardBodyStyle: CSSProperties = { display: 'flex', flexDirection: 'column', gap: 14, borderTop: '1px solid var(--dsw-alias-border-l2)', margin: '0 16px', padding: '12px 0 8px' }
-const rowStyle: CSSProperties = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }
-const statusStyle: CSSProperties = { display: 'flex', alignItems: 'center', gap: 9, fontSize: 14, fontWeight: 500, color: 'var(--dsw-alias-label-primary)' }
-const codeStyle: CSSProperties = { display: 'inline-flex', alignItems: 'center', minHeight: 38, padding: '0 14px', border: '1px solid var(--dsw-alias-border-l2)', borderRadius: 8, background: 'var(--dsw-alias-bg-layer-1)', color: 'var(--dsw-alias-label-primary)', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: 18, fontWeight: 700, letterSpacing: '0.08em' }
-const usageStyle: CSSProperties = { display: 'flex', flexDirection: 'column', gap: 10, paddingTop: 2 }
-const usageHeaderStyle: CSSProperties = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }
-const usageTitleStyle: CSSProperties = { color: 'var(--dsw-alias-label-primary)', fontSize: 14, fontWeight: 600 }
-const usageWindowStyle: CSSProperties = { display: 'flex', flexDirection: 'column', gap: 5, border: '1px solid var(--dsw-alias-border-l2)', borderRadius: 12, padding: '14px 14px 15px', background: 'var(--dsw-alias-bg-layer-1)' }
-const usageWindowHeaderStyle: CSSProperties = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }
-const usageWindowDetailsStyle: CSSProperties = { display: 'flex', minWidth: 0, flexDirection: 'column', gap: 3 }
-const usageWindowTitleStyle: CSSProperties = { color: 'var(--dsw-alias-label-primary)', fontSize: 14, fontWeight: 600 }
-const usageResetStyle: CSSProperties = { color: 'var(--dsw-alias-label-tertiary)', fontSize: 12 }
-const usageRemainingStyle: CSSProperties = { display: 'flex', alignItems: 'center', justifyContent: 'flex-end', flex: '1 1 220px', minWidth: 200, gap: 12 }
-const usageRemainingTextStyle: CSSProperties = { color: 'var(--dsw-alias-label-secondary)', fontSize: 14, whiteSpace: 'nowrap' }
-
 function Chevron({ open }: { open: boolean }) {
   return (
-    <span aria-hidden="true" style={{ color: 'var(--dsw-alias-label-tertiary)', transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 160ms ease' }}>
+    <span aria-hidden="true" className={`dsh-codex-auth-chevron${open ? ' is-open' : ''}`}>
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M2.15 5.5 3 4.65l3.73 3.73a.38.38 0 0 0 .54 0L11 4.65l.85.85-2.73 2.73c-.58.58-.9.9-1.4 1.03a2.1 2.1 0 0 1-.94 0c-.5-.13-.82-.45-1.4-1.03L2.15 5.5Z" fill="currentColor" />
       </svg>
@@ -146,15 +97,8 @@ async function jsonRequest<T>(path: string, method = 'GET', body?: unknown): Pro
   return value as T
 }
 
-function dotStyle(status: AccountStatus['status']): CSSProperties {
-  const color = status === 'signed-in'
-    ? 'var(--dsw-alias-state-success-primary, #22a06b)'
-    : status === 'error' || status === 'remote-web-origin-not-trusted'
-      ? 'var(--dsw-alias-state-error-primary, #d92d20)'
-      : status === 'signing-in' || status === 'loading'
-        ? 'var(--dsw-alias-brand-primary, #1677ff)'
-        : 'var(--dsw-alias-label-dimmed, #9aa0a6)'
-  return { width: 9, height: 9, borderRadius: '50%', flex: '0 0 auto', background: color }
+function dotClass(status: AccountStatus['status']): string {
+  return `dsh-codex-auth-status-dot dsh-codex-auth-status-dot--${status}`
 }
 
 function percent(value: number | undefined): string {
@@ -183,22 +127,22 @@ function UsageWindowView({ label, value, t }: { label: string; value: CodexUsage
   if (value === undefined) return null
   const reset = resetLabel(value, t)
   return (
-    <div style={usageWindowStyle}>
-      <div style={usageWindowHeaderStyle}>
-        <div style={usageWindowDetailsStyle}>
-          <span style={usageWindowTitleStyle}>{label}</span>
-          {reset === undefined ? null : <span style={usageResetStyle}>{reset}</span>}
+    <div className="dsh-codex-auth-usage-window">
+      <div className="dsh-codex-auth-usage-window-header">
+        <div className="dsh-codex-auth-usage-window-details">
+          <span className="dsh-codex-auth-usage-window-title">{label}</span>
+          {reset === undefined ? null : <span className="dsh-codex-auth-usage-reset">{reset}</span>}
         </div>
-        <div style={usageRemainingStyle}>
+        <div className="dsh-codex-auth-usage-remaining">
           <DshProgress
             percent={progressPercent(value.remainingPercent)}
             size="small"
             showInfo={false}
             aria-label={label}
             aria-valuetext={percent(value.remainingPercent)}
-            style={{ flex: '1 1 140px', minWidth: 100, maxWidth: 192, height: '8px' }}
+            className="dsh-codex-auth-usage-progress"
           />
-          <span style={usageRemainingTextStyle}>{t('usageRemaining')} {percent(value.remainingPercent)}</span>
+          <span className="dsh-codex-auth-usage-remaining-text">{t('usageRemaining')} {percent(value.remainingPercent)}</span>
         </div>
       </div>
     </div>
@@ -326,59 +270,59 @@ export function CodexAuthCard({ t, configScope, connection }: CodexAuthCardProps
             : t('signedOut')
 
   return (
-    <li style={{ ...cardStyle, ...(open ? cardOpenStyle : {}) }}>
+    <li className={`dsh-codex-auth-card${open ? ' is-open' : ''}`}>
       <button
         type="button"
-        style={headerStyle}
+        className="dsh-codex-auth-card-header"
         aria-expanded={open}
         aria-label={`${t(open ? 'collapse' : 'expand')}: ${t('title')}`}
         onClick={() => { setOpen(!open) }}
       >
-        <span style={headTextStyle}>
-          <span style={nameStyle}>{t('title')}</span>
-          <span style={descriptionStyle}>{t('intro')}</span>
+        <span className="dsh-codex-auth-card-head-text">
+          <span className="dsh-codex-auth-card-name">{t('title')}</span>
+          <span className="dsh-codex-auth-card-description">{t('intro')}</span>
         </span>
         <Chevron open={open} />
       </button>
       {open ? (
-        <div style={cardBodyStyle}>
-          <div style={rowStyle}>
-            <div style={statusStyle} role="status">
-              <span aria-hidden="true" style={dotStyle(status.status)} />
+        <div className="dsh-codex-auth-card-body">
+          <div className="dsh-codex-auth-row">
+            <div className="dsh-codex-auth-status" role="status">
+              <span aria-hidden="true" className={dotClass(status.status)} />
               <span>{label}</span>
             </div>
             {status.status === 'loading' || status.status === 'remote-web-origin-not-trusted'
               ? null
               : status.status === 'signed-in'
-                ? <DshButton htmlType="button" theme="outline" type="secondary" disabled={busy} loading={busy} onClick={() => { void signOut() }}>{busy ? t('working') : t('signOut')}</DshButton>
+                ? <DshButton htmlType="button" theme="solid" type="primary" className="dsh-codex-auth-pill-button" disabled={busy} loading={busy} onClick={() => { void signOut() }}>{busy ? t('working') : t('signOut')}</DshButton>
                 : <DshButton htmlType="button" theme="solid" type="primary" disabled={busy} loading={busy} onClick={() => { void signIn() }}>{busy ? t('working') : t('signIn')}</DshButton>}
           </div>
-          {status.status === 'error' ? <p style={errorStyle}>{status.message}</p> : null}
-          {status.status === 'remote-web-origin-not-trusted' ? <p style={errorStyle}>{t('remoteOrigin')}</p> : null}
+          {status.status === 'error' ? <p className="dsh-codex-auth-error">{status.message}</p> : null}
+          {status.status === 'remote-web-origin-not-trusted' ? <p className="dsh-codex-auth-error">{t('remoteOrigin')}</p> : null}
           {usage.status !== 'hidden' && status.status === 'signed-in' ? (
-            <div style={usageStyle} aria-label={t('usageTitle')}>
-              <div style={usageHeaderStyle}>
-                <span style={usageTitleStyle}>{t('usageTitle')}</span>
+            <div className="dsh-codex-auth-usage" aria-label={t('usageTitle')}>
+              <div className="dsh-codex-auth-usage-header">
+                <span className="dsh-codex-auth-usage-title">{t('usageTitle')}</span>
                 <DshButton htmlType="button" theme="outline" type="secondary" size="small" onClick={() => { void refreshUsage() }}>{t('refreshUsage')}</DshButton>
               </div>
-              {usage.status === 'loading' ? <p style={bodyStyle}>{t('usageLoading')}</p> : null}
-              {usage.status === 'error' ? <p style={errorStyle}>{t('usageUnavailable')}</p> : null}
+              {usage.status === 'loading' ? <p className="dsh-codex-auth-body">{t('usageLoading')}</p> : null}
+              {usage.status === 'error' ? <p className="dsh-codex-auth-error">{t('usageUnavailable')}</p> : null}
               {usage.status === 'ready' ? (
                 <>
                   <UsageWindowView label={t('usageFiveHour')} value={fiveHourWindow(usage.usage)} t={t} />
                   <UsageWindowView label={t('usageWeekly')} value={weeklyWindow(usage.usage)} t={t} />
                   {fiveHourWindow(usage.usage) === undefined && weeklyWindow(usage.usage) === undefined
-                    ? <p style={bodyStyle}>{t('usageNoWindow')}</p>
+                    ? <p className="dsh-codex-auth-body">{t('usageNoWindow')}</p>
                     : null}
                 </>
               ) : null}
             </div>
           ) : null}
           {status.status === 'signing-in' && challenge !== undefined ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <p style={bodyStyle}>{t('authorizationCodeHelp')}</p>
-              <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-                <code aria-label={t('authorizationCodeLabel')} style={codeStyle}>{challenge.userCode}</code>
+            <div className="dsh-codex-auth-signing-in">
+              <p className="dsh-codex-auth-body">{t('authorizationCodeHelp')}</p>
+              <div className="dsh-codex-auth-signing-in-actions">
+                <code aria-label={t('authorizationCodeLabel')} className="dsh-codex-auth-code">{challenge.userCode}</code>
                 <DshButton htmlType="button" theme="outline" type="secondary" size="small" onClick={() => { void copyAuthorizationCode() }}>
                   {copyStatus === 'copied' ? t('authorizationCodeCopied') : t('copyAuthorizationCode')}
                 </DshButton>
@@ -392,7 +336,7 @@ export function CodexAuthCard({ t, configScope, connection }: CodexAuthCardProps
                   {t('openAuthorization')}
                 </DshButton>
               </div>
-              {copyStatus === 'failed' ? <p style={errorStyle}>{t('authorizationCodeCopyFailed')}</p> : null}
+              {copyStatus === 'failed' ? <p className="dsh-codex-auth-error">{t('authorizationCodeCopyFailed')}</p> : null}
             </div>
           ) : null}
           <CodexGlobalModel connection={connection} t={t} />

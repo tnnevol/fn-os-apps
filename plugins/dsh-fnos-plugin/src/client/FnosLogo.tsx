@@ -8,30 +8,19 @@ interface FnosLogoProps {
 
 /** The original blue mark used by the input-toolbar action. */
 export function FnosColorLogo({ size = 18, className }: FnosLogoProps) {
-  return <img aria-hidden="true" className={className} src={FNOS_MARK_DATA_URL} width={size} height={size} alt="" style={{ display: 'block', objectFit: 'contain' }} />
+  return <img aria-hidden="true" className={['dsh-fnos-color-logo', className].filter(Boolean).join(' ')} src={FNOS_MARK_DATA_URL} width={size} height={size} alt="" />
 }
 
 /** The same mark as a theme-aware black/white mask. */
 export function FnosMonoLogo({ size = 18, className }: FnosLogoProps) {
   return (
-    <span
+    <img
       aria-hidden="true"
-      className={className}
-      style={{
-        display: 'block',
-        width: size,
-        height: size,
-        flex: '0 0 auto',
-        backgroundColor: 'var(--dsw-alias-label-primary)',
-        WebkitMaskImage: `url("${FNOS_MARK_DATA_URL}")`,
-        maskImage: `url("${FNOS_MARK_DATA_URL}")`,
-        WebkitMaskRepeat: 'no-repeat',
-        maskRepeat: 'no-repeat',
-        WebkitMaskPosition: 'center',
-        maskPosition: 'center',
-        WebkitMaskSize: 'contain',
-        maskSize: 'contain',
-      }}
+      className={['dsh-fnos-mono-logo', className].filter(Boolean).join(' ')}
+      src={FNOS_MARK_DATA_URL}
+      width={size}
+      height={size}
+      data-size={size}
     />
   )
 }

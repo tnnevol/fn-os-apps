@@ -1,7 +1,7 @@
 /** Compact Codex quota readout for the conversation composer dock. */
 
 import { useEffect, useState } from 'react'
-import type { CSSProperties, KeyboardEvent } from 'react'
+import type { KeyboardEvent } from 'react'
 import { DshPopover, DshProgress, DshTooltip } from '@tnnevol/dsh-semi-ui'
 import type { CodexAuthLocaleKey } from './locales.ts'
 import { readCodexSignedInStatus, readCodexUsage } from './usage-status-data.ts'
@@ -13,11 +13,6 @@ type Translate = (key: CodexAuthLocaleKey) => string
 
 type TimerService = {
   interval(callback: () => void, delay: number): () => void
-}
-
-const statusStyle: CSSProperties = {
-  display: 'inline-flex',
-  alignItems: 'center',
 }
 
 function percent(value: number | undefined): string | undefined {
@@ -76,7 +71,7 @@ function UsageWindowDetails({ label, value, t }: { label: string; value: CodexUs
         showInfo={false}
         stroke="var(--dsw-alias-label-tertiary)"
         orbitStroke="var(--dsw-alias-border-l3)"
-        style={{ height: '8px' }}
+        className="dsh-codex-usage-popover-progress"
       />
       {reset === undefined ? null : <span className="dsh-codex-usage-popover-reset">{`${t('usageStatusReset')} ${reset}`}</span>}
     </div>
@@ -192,7 +187,7 @@ export function CodexUsageStatus({ t, timer }: CodexUsageStatusProps) {
         </DshTooltip>
       )
   return (
-    <span className="dsh-codex-usage-progress" style={statusStyle} aria-label={tooltip} aria-busy={usageState === 'loading'}>
+    <span className="dsh-codex-usage-progress" aria-label={tooltip} aria-busy={usageState === 'loading'}>
       <DshPopover
         trigger="custom"
         position="topRight"

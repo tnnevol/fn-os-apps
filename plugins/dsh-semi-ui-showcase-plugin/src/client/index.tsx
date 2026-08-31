@@ -8,6 +8,7 @@ import { SemiUiHeaderAction } from './SemiUiHeaderAction.tsx'
 import { ShowcasePage } from './ShowcasePage.tsx'
 import { ShowcaseRouteController } from './route.ts'
 import { ShowcaseThemeController } from './theme-preview.ts'
+import './style.scss'
 
 export const name = 'dsh-semi-ui-showcase-plugin-client'
 export const inject = ['slots', 'theme']

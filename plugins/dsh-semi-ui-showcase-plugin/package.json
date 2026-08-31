@@ -63,8 +63,6 @@
     "@deepseek-ai/dsh-client-ui-layout": "catalog:dsh",
     "@deepseek-ai/dsh-client-ui-slots": "catalog:dsh",
     "@deepseek-ai/dsh-client-ui-theme": "catalog:dsh",
-    "@douyinfe/semi-icons": "catalog:",
-    "@douyinfe/semi-ui": "catalog:",
     "@tnnevol/dsh-semi-ui": "workspace:*",
     "@types/node": "catalog:",
     "@types/react": "catalog:",

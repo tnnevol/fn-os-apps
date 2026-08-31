@@ -89,8 +89,6 @@
     "react": "catalog:"
   },
   "devDependencies": {
-    "@douyinfe/semi-icons": "catalog:",
-    "@douyinfe/semi-ui": "catalog:",
     "@tnnevol/dsh-semi-ui": "workspace:*",
     "@deepseek-ai/cordis": "catalog:",
     "@deepseek-ai/dsh-client-locale": "catalog:dsh",

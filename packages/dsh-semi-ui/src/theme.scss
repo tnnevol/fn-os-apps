@@ -1,0 +1,617 @@
+
+body[data-dsh-semi-theme] {
+  /* Semi's component states consume these public design tokens. Keep the
+     bridge at the theme root so the official component selectors remain in
+     control and host applications can override DSH aliases safely. */
+  --semi-color-white: var(--dsw-static-neutral-bluish-00);
+  --semi-color-black: var(--dsw-static-neutral-bluish-1000);
+  --semi-color-bg-0: var(--dsw-alias-bg-base);
+  --semi-color-bg-1: var(--dsw-alias-bg-layer-1);
+  --semi-color-bg-2: var(--dsw-alias-bg-layer-2);
+  --semi-color-bg-3: var(--dsw-alias-bg-layer-3);
+  --semi-color-bg-4: var(--dsw-alias-bg-layer-3);
+  --semi-color-nav-bg: var(--dsw-alias-bg-layer-1);
+  --semi-color-overlay-bg: var(--dsw-alias-bg-base);
+  --semi-color-border: var(--dsw-alias-border-l2);
+  --semi-color-fill-0: var(--dsw-alias-interactive-bg-hover);
+  --semi-color-fill-1: var(--dsw-alias-interactive-bg-active);
+  --semi-color-fill-2: var(--dsw-alias-interactive-bg-hover-solid);
+  --semi-color-disabled-fill: var(--dsw-alias-interactive-bg-hover);
+  --semi-color-text-0: var(--dsw-alias-label-primary);
+  --semi-color-text-1: var(--dsw-alias-label-secondary);
+  --semi-color-text-2: var(--dsw-alias-label-tertiary);
+  --semi-color-text-3: var(--dsw-alias-label-dimmed);
+  --semi-color-primary: var(--dsw-alias-button-primary-fill);
+  --semi-color-primary-hover: var(--dsw-alias-button-primary-hover);
+  --semi-color-primary-active: var(--dsw-alias-button-primary-dimmed);
+  --semi-color-primary-disabled: var(--dsw-alias-label-dimmed);
+  --semi-color-primary-light-default: var(--dsw-alias-interactive-bg-hover);
+  --semi-color-primary-light-hover: var(--dsw-alias-interactive-bg-active);
+  --semi-color-primary-light-active: var(--dsw-alias-interactive-bg-hover-solid);
+  --semi-color-secondary: var(--dsw-alias-button-contrast-fill);
+  --semi-color-secondary-hover: var(--dsw-alias-button-primary-hover);
+  --semi-color-secondary-active: var(--dsw-alias-button-primary-dimmed);
+  --semi-color-secondary-disabled: var(--dsw-alias-label-dimmed);
+  --semi-color-secondary-light-default: var(--dsw-alias-interactive-bg-hover);
+  --semi-color-secondary-light-hover: var(--dsw-alias-interactive-bg-active);
+  --semi-color-secondary-light-active: var(--dsw-alias-interactive-bg-hover-solid);
+  --semi-color-tertiary: var(--dsw-alias-button-tool-bar-fill);
+  --semi-color-tertiary-hover: var(--dsw-alias-button-tool-bar-hover);
+  --semi-color-tertiary-active: var(--dsw-alias-interactive-bg-active);
+  --semi-color-tertiary-light-default: var(--dsw-alias-interactive-bg-hover);
+  --semi-color-tertiary-light-hover: var(--dsw-alias-interactive-bg-active);
+  --semi-color-tertiary-light-active: var(--dsw-alias-interactive-bg-hover-solid);
+  --semi-color-default: var(--dsw-alias-bg-layer-3);
+  --semi-color-default-hover: var(--dsw-alias-interactive-bg-hover);
+  --semi-color-default-active: var(--dsw-alias-interactive-bg-active);
+  --semi-color-disabled-text: var(--dsw-alias-label-dimmed);
+  --semi-color-disabled-border: var(--dsw-alias-border-l1);
+  --semi-color-disabled-bg: var(--dsw-alias-bg-layer-2);
+  --semi-color-focus-border: var(--dsw-alias-state-business-primary);
+  --semi-color-link: var(--dsw-alias-state-business-primary);
+  --semi-color-link-hover: var(--dsw-alias-button-info-hover);
+  --semi-color-link-active: var(--dsw-alias-button-info-fill);
+  --semi-color-link-visited: var(--dsw-alias-button-info-fill);
+  --semi-color-shadow: var(--dsw-alias-border-l2);
+  --semi-color-danger: var(--dsw-alias-state-error-primary);
+  --semi-color-danger-hover: var(--dsw-alias-state-error-secondary);
+  --semi-color-danger-active: var(--dsw-alias-state-error-secondary);
+  --semi-color-danger-light-default: color-mix(in srgb, var(--dsw-alias-state-error-primary) 16%, var(--dsw-alias-bg-layer-3));
+  --semi-color-danger-light-hover: color-mix(in srgb, var(--dsw-alias-state-error-primary) 24%, var(--dsw-alias-bg-layer-3));
+  --semi-color-danger-light-active: color-mix(in srgb, var(--dsw-alias-state-error-primary) 32%, var(--dsw-alias-bg-layer-3));
+  --semi-color-info: var(--dsw-alias-state-business-primary);
+  --semi-color-info-hover: var(--dsw-alias-button-info-hover);
+  --semi-color-info-active: var(--dsw-alias-button-info-fill);
+  --semi-color-info-disabled: var(--dsw-alias-label-dimmed);
+  --semi-color-info-light-default: var(--dsw-alias-interactive-bg-hover);
+  --semi-color-info-light-hover: var(--dsw-alias-interactive-bg-active);
+  --semi-color-info-light-active: var(--dsw-alias-interactive-bg-hover-solid);
+  --semi-color-warning: var(--dsw-alias-state-warn-primary);
+  --semi-color-warning-hover: var(--dsw-alias-state-warn-primary);
+  --semi-color-warning-active: var(--dsw-alias-state-warn-primary);
+  --semi-color-warning-light-default: color-mix(in srgb, var(--dsw-alias-state-warn-primary) 16%, var(--dsw-alias-bg-layer-3));
+  --semi-color-warning-light-hover: color-mix(in srgb, var(--dsw-alias-state-warn-primary) 24%, var(--dsw-alias-bg-layer-3));
+  --semi-color-warning-light-active: color-mix(in srgb, var(--dsw-alias-state-warn-primary) 32%, var(--dsw-alias-bg-layer-3));
+  --semi-color-success: var(--dsw-alias-state-success-primary);
+  --semi-color-success-hover: var(--dsw-alias-state-success-primary);
+  --semi-color-success-active: var(--dsw-alias-state-success-primary);
+  --semi-color-success-disabled: var(--dsw-alias-label-dimmed);
+  --semi-color-success-light-default: color-mix(in srgb, var(--dsw-alias-state-success-primary) 16%, var(--dsw-alias-bg-layer-3));
+  --semi-color-success-light-hover: color-mix(in srgb, var(--dsw-alias-state-success-primary) 24%, var(--dsw-alias-bg-layer-3));
+  --semi-color-success-light-active: color-mix(in srgb, var(--dsw-alias-state-success-primary) 32%, var(--dsw-alias-bg-layer-3));
+  --semi-color-highlight-bg: var(--dsw-alias-interactive-bg-hover);
+  --semi-color-highlight: var(--dsw-alias-label-primary);
+  --semi-color-mode-minor-text: var(--dsw-alias-label-secondary);
+  --semi-shadow-elevated: var(--dsw-shadow-lv3);
+  --semi-border-radius-extra-small: 4px;
+  --semi-border-radius-small: 6px;
+  --semi-border-radius-medium: 8px;
+  --semi-border-radius-large: 12px;
+  --semi-border-radius-circle: 50%;
+  --semi-border-radius-full: 9999px;
+}
+
+body[data-dsh-semi-theme] .semi-dropdown,
+body[data-dsh-semi-theme] .semi-button,
+body[data-dsh-semi-theme] .semi-icon {
+  font-family: var(--dsw-font-family);
+}
+
+body[data-dsh-semi-theme] .semi-button {
+  --semi-border-radius-small: var(--semi-border-radius-large);
+}
+
+/* Semi compiles the three button font-weight Sass tokens into separate
+   selectors. Keep all sizes on the host's regular weight without changing the
+   component bundle or escalating selector priority. */
+body[data-dsh-semi-theme] .semi-button,
+body[data-dsh-semi-theme] .semi-button.semi-button-size-small,
+body[data-dsh-semi-theme] .semi-button.semi-button-size-large {
+  font-weight: 400;
+}
+
+/* Progress has its own official state tokens. Scope the DSH treatment to the
+   component so button, checkbox and feedback colors keep their own meanings. */
+body[data-dsh-semi-theme] .semi-progress {
+  --semi-color-fill-0: var(--dsw-alias-border-l3);
+  --semi-color-success: var(--dsw-alias-label-tertiary);
+}
+
+/* Keep filled Semi buttons aligned with DSH: light surfaces in light mode and
+   dark surfaces in dark mode, with the host border token on every button. */
+body[data-dsh-semi-theme]:not([data-ds-dark-theme]) .semi-button.semi-button-solid:not(.semi-button-disabled) {
+  background: var(--dsw-static-neutral-bluish-00);
+  border: 1px solid var(--dsw-alias-border-l2);
+  color: var(--dsw-static-neutral-bluish-1000);
+}
+
+body[data-dsh-semi-theme]:not([data-ds-dark-theme]) .semi-button.semi-button-solid:not(.semi-button-disabled):hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+  border-color: var(--dsw-alias-border-l2);
+}
+
+body[data-dsh-semi-theme]:not([data-ds-dark-theme]) .semi-button.semi-button-solid:not(.semi-button-disabled):active {
+  background: var(--dsw-alias-interactive-bg-active);
+  border-color: var(--dsw-alias-border-l2);
+}
+
+body[data-dsh-semi-theme][data-ds-dark-theme] .semi-button.semi-button-solid:not(.semi-button-disabled) {
+  background: var(--dsw-static-neutral-bluish-1000);
+  border: 1px solid var(--dsw-alias-border-l2);
+  color: var(--dsw-static-neutral-bluish-00);
+}
+
+body[data-dsh-semi-theme][data-ds-dark-theme] .semi-button.semi-button-solid:not(.semi-button-disabled):hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+  border-color: var(--dsw-alias-border-l2);
+}
+
+body[data-dsh-semi-theme][data-ds-dark-theme] .semi-button.semi-button-solid:not(.semi-button-disabled):active {
+  background: var(--dsw-alias-interactive-bg-active);
+  border-color: var(--dsw-alias-border-l2);
+}
+
+/* Keep primary and secondary actions visually distinct in both DSH themes. */
+body[data-dsh-semi-theme]:not([data-ds-dark-theme]) .semi-button.semi-button-primary.semi-button-solid:not(.semi-button-disabled) {
+  background: var(--dsw-static-neutral-bluish-1000);
+  background-color: var(--dsw-static-neutral-bluish-1000);
+  color: var(--dsw-static-neutral-bluish-00);
+}
+
+body[data-dsh-semi-theme]:not([data-ds-dark-theme]) .semi-button.semi-button-primary.semi-button-solid:not(.semi-button-disabled):hover {
+  background: var(--dsw-static-neutral-bluish-750);
+  background-color: var(--dsw-static-neutral-bluish-750);
+}
+
+body[data-dsh-semi-theme]:not([data-ds-dark-theme]) .semi-button.semi-button-primary.semi-button-solid:not(.semi-button-disabled):is(:active, :focus-visible) {
+  background: var(--dsw-static-neutral-bluish-750);
+  background-color: var(--dsw-static-neutral-bluish-750);
+  color: var(--dsw-static-neutral-bluish-00);
+}
+
+body[data-dsh-semi-theme][data-ds-dark-theme] .semi-button.semi-button-primary.semi-button-solid:not(.semi-button-disabled) {
+  background: var(--dsw-static-neutral-bluish-00);
+  background-color: var(--dsw-static-neutral-bluish-00);
+  color: var(--dsw-static-neutral-bluish-1000);
+}
+
+body[data-dsh-semi-theme][data-ds-dark-theme] .semi-button.semi-button-primary.semi-button-solid:not(.semi-button-disabled):hover {
+  background: var(--dsw-static-neutral-bluish-100);
+  background-color: var(--dsw-static-neutral-bluish-100);
+}
+
+body[data-dsh-semi-theme][data-ds-dark-theme] .semi-button.semi-button-primary.semi-button-solid:not(.semi-button-disabled):is(:active, :focus-visible) {
+  background: var(--dsw-static-neutral-bluish-750);
+  background-color: var(--dsw-static-neutral-bluish-750);
+  color: var(--dsw-static-neutral-bluish-00);
+}
+
+/* Preserve the semantic distinction between Semi button types. The shared
+   surface rule above intentionally normalizes neutral buttons, but status
+   buttons must continue to communicate warning and danger states. */
+body[data-dsh-semi-theme] .semi-button.semi-button-tertiary.semi-button-solid:not(.semi-button-disabled) {
+  background: var(--dsw-alias-button-tool-bar-fill);
+  background-color: var(--dsw-alias-button-tool-bar-fill);
+  color: var(--dsw-alias-label-primary);
+}
+
+body[data-dsh-semi-theme] .semi-button.semi-button-warning.semi-button-solid:not(.semi-button-disabled) {
+  background: var(--dsw-alias-state-warn-primary);
+  background-color: var(--dsw-alias-state-warn-primary);
+  border-color: var(--dsw-alias-state-warn-primary);
+  color: var(--dsw-static-neutral-bluish-00);
+}
+
+body[data-dsh-semi-theme] .semi-button.semi-button-warning.semi-button-solid:not(.semi-button-disabled):hover {
+  background: color-mix(in srgb, var(--dsw-alias-state-warn-primary), var(--dsw-static-neutral-bluish-1000) 12%);
+  background-color: color-mix(in srgb, var(--dsw-alias-state-warn-primary), var(--dsw-static-neutral-bluish-1000) 12%);
+}
+
+body[data-dsh-semi-theme] .semi-button.semi-button-danger.semi-button-solid:not(.semi-button-disabled) {
+  background: var(--dsw-alias-state-error-primary);
+  background-color: var(--dsw-alias-state-error-primary);
+  border-color: var(--dsw-alias-state-error-primary);
+  color: var(--dsw-static-neutral-bluish-00);
+}
+
+body[data-dsh-semi-theme] .semi-button.semi-button-danger.semi-button-solid:not(.semi-button-disabled):hover {
+  background: var(--dsw-alias-state-error-secondary);
+  background-color: var(--dsw-alias-state-error-secondary);
+}
+
+/* Keep Semi's light and outline themes distinct from solid actions. */
+body[data-dsh-semi-theme] .semi-button.semi-button-primary.semi-button-light:not(.semi-button-disabled),
+body[data-dsh-semi-theme] .semi-button.semi-button-secondary.semi-button-light:not(.semi-button-disabled),
+body[data-dsh-semi-theme] .semi-button.semi-button-tertiary.semi-button-light:not(.semi-button-disabled) {
+  background: var(--dsw-alias-interactive-bg-hover);
+  background-color: var(--dsw-alias-interactive-bg-hover);
+  border-color: transparent;
+  color: var(--dsw-alias-label-primary);
+}
+
+body[data-dsh-semi-theme] .semi-button.semi-button-primary.semi-button-light:not(.semi-button-disabled):hover,
+body[data-dsh-semi-theme] .semi-button.semi-button-secondary.semi-button-light:not(.semi-button-disabled):hover,
+body[data-dsh-semi-theme] .semi-button.semi-button-tertiary.semi-button-light:not(.semi-button-disabled):hover {
+  background: var(--dsw-alias-interactive-bg-active);
+  background-color: var(--dsw-alias-interactive-bg-active);
+}
+
+body[data-dsh-semi-theme] .semi-button.semi-button-primary.semi-button-borderless:not(.semi-button-disabled),
+body[data-dsh-semi-theme] .semi-button.semi-button-secondary.semi-button-borderless:not(.semi-button-disabled),
+body[data-dsh-semi-theme] .semi-button.semi-button-tertiary.semi-button-borderless:not(.semi-button-disabled) {
+  color: var(--dsw-alias-label-primary);
+}
+
+/* Keep the fnOS refresh action transparent while using the same DSH
+   interaction color on hover. Its size comes from Semi's size prop. */
+body[data-dsh-semi-theme] .semi-button.dsh-fnos-web-refresh,
+body[data-dsh-semi-theme] .semi-button.dsh-fnos-web-refresh:not(.semi-button-borderless):not(.semi-button-disabled) {
+  background: transparent;
+}
+
+body[data-dsh-semi-theme] .semi-button.dsh-fnos-web-refresh:not(.semi-button-disabled):hover,
+body[data-dsh-semi-theme] .semi-button.dsh-fnos-web-refresh:not(.semi-button-borderless):not(.semi-button-disabled):hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+/* The fnOS footer is a compact toolbar, not a filled button group. Give both
+   actions the same borderless surface and keep the two equal-width targets
+   easy to hit in the narrow sidebar. */
+body[data-dsh-semi-theme] .dsh-fnos-web-actions {
+  width: 100%;
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--semi-border-radius-large);
+  background: var(--dsw-alias-bg-layer-2);
+}
+
+body[data-dsh-semi-theme] .dsh-fnos-web-actions > .semi-button {
+  flex: 1 1 0;
+  min-width: 0;
+  border-radius: var(--semi-border-radius-large);
+}
+
+body[data-dsh-semi-theme] .dsh-fnos-web-actions > .semi-button-group-line {
+  display: none;
+}
+
+body[data-dsh-semi-theme] .semi-dropdown-wrapper {
+  background: var(--dsw-alias-bg-layer-3);
+  border: 1px solid var(--dsw-alias-border-l2);
+  box-shadow: var(--dsw-shadow-lv3);
+}
+
+body[data-dsh-semi-theme] .semi-popover-wrapper {
+  background: var(--dsw-specific-menu);
+  border: 1px solid var(--dsw-alias-border-inverted);
+  border-radius: 12px;
+  box-shadow: var(--dsw-shadow-lv3);
+  color: var(--dsw-alias-label-secondary);
+}
+
+body[data-dsh-semi-theme] .semi-popover-icon-arrow path:nth-child(1) {
+  fill: var(--dsw-alias-border-inverted);
+}
+
+body[data-dsh-semi-theme] .semi-popover-icon-arrow path:nth-child(2) {
+  fill: var(--dsw-specific-menu);
+}
+
+body[data-dsh-semi-theme] .semi-toast-content {
+  background-color: var(--dsw-alias-bg-layer-3);
+  border-color: var(--dsw-alias-border-l2);
+  box-shadow: var(--dsw-shadow-lv3);
+  color: var(--dsw-alias-label-primary);
+}
+
+body[data-dsh-semi-theme] .semi-toast-light.semi-toast-info .semi-toast-content,
+body[data-dsh-semi-theme] .semi-toast-light.semi-toast-success .semi-toast-content,
+body[data-dsh-semi-theme] .semi-toast-light.semi-toast-warning .semi-toast-content,
+body[data-dsh-semi-theme] .semi-toast-light.semi-toast-error .semi-toast-content {
+  background-color: var(--dsw-alias-bg-layer-3);
+}
+
+body[data-dsh-semi-theme] .semi-cascader,
+body[data-dsh-semi-theme] .semi-cascader-popover,
+body[data-dsh-semi-theme] .semi-cascader-option-lists,
+body[data-dsh-semi-theme] .semi-cascader-option-list {
+  color: var(--dsw-alias-label-primary);
+  background: var(--dsw-alias-bg-layer-3);
+  border-color: var(--dsw-alias-border-l2);
+  border-radius: 10px;
+  box-shadow: var(--dsw-shadow-lv3);
+}
+
+body[data-dsh-semi-theme] .semi-cascader-popover,
+body[data-dsh-semi-theme] .semi-cascader-option-lists {
+  overflow: hidden;
+}
+
+body[data-dsh-semi-theme] .semi-cascader-option {
+  color: var(--dsw-alias-label-primary);
+}
+
+body[data-dsh-semi-theme] .semi-cascader-option:hover,
+body[data-dsh-semi-theme] .semi-cascader-option-active {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+/* Keep portaled tooltips readable in both DSH themes. */
+body[data-dsh-semi-theme] .semi-tooltip-wrapper {
+  background-color: var(--dsw-alias-tooltip-bg);
+  color: var(--dsw-static-neutral-bluish-00);
+  box-shadow: var(--dsw-shadow-lv3);
+  pointer-events: none;
+}
+
+body[data-dsh-semi-theme] .semi-tooltip-wrapper .semi-tooltip-icon-arrow {
+  color: var(--dsw-alias-tooltip-bg);
+}
+
+/* Keep the fnOS picker trigger on shared DSH semantic tokens. */
+body[data-dsh-semi-theme] .dsh-fnos-input-picker-trigger {
+  background: var(--dsw-alias-bg-layer-1);
+  border: none;
+  color: var(--dsw-alias-label-primary);
+}
+
+body[data-dsh-semi-theme] .dsh-fnos-input-picker-trigger:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+body[data-dsh-semi-theme] .dsh-fnos-input-picker-trigger:active {
+  background: var(--dsw-alias-interactive-bg-active);
+}
+
+body[data-dsh-semi-theme] .dsh-fnos-input-picker-trigger:focus-visible {
+  outline: 2px solid var(--dsw-alias-state-business-primary);
+  outline-offset: 1px;
+}
+
+/* Use one monochrome checkbox treatment for standalone Checkbox, TreeSelect,
+   Tree and Cascader. This prevents each consumer from drifting visually. */
+body[data-dsh-semi-theme]:not([data-ds-dark-theme]) .semi-checkbox:not(.semi-checkbox-checked):not(.semi-checkbox-indeterminate):hover .semi-checkbox-inner-display,
+body[data-dsh-semi-theme]:not([data-ds-dark-theme]) .semi-checkbox-unChecked:hover .semi-checkbox-inner-display {
+  background: var(--dsw-alias-interactive-bg-hover);
+  border-color: var(--dsw-static-neutral-bluish-1000);
+  box-shadow: inset 0 0 0 1px var(--dsw-static-neutral-bluish-1000);
+  color: var(--dsw-static-neutral-bluish-1000);
+}
+
+body[data-dsh-semi-theme][data-ds-dark-theme] .semi-checkbox:not(.semi-checkbox-checked):not(.semi-checkbox-indeterminate):hover .semi-checkbox-inner-display,
+body[data-dsh-semi-theme][data-ds-dark-theme] .semi-checkbox-unChecked:hover .semi-checkbox-inner-display {
+  background: var(--dsw-alias-interactive-bg-hover);
+  border-color: var(--dsw-static-neutral-bluish-00);
+  box-shadow: inset 0 0 0 1px var(--dsw-static-neutral-bluish-00);
+  color: var(--dsw-static-neutral-bluish-00);
+}
+
+body[data-dsh-semi-theme]:not([data-ds-dark-theme]) .semi-checkbox.semi-checkbox-checked .semi-checkbox-inner-display,
+body[data-dsh-semi-theme]:not([data-ds-dark-theme]) .semi-checkbox.semi-checkbox-indeterminate .semi-checkbox-inner-display,
+body[data-dsh-semi-theme]:not([data-ds-dark-theme]) .semi-cascader-option-label-checkbox.semi-checkbox-checked .semi-checkbox-inner-display,
+body[data-dsh-semi-theme]:not([data-ds-dark-theme]) .semi-cascader-option-label-checkbox.semi-checkbox-indeterminate .semi-checkbox-inner-display,
+body[data-dsh-semi-theme]:not([data-ds-dark-theme]) .semi-checkbox .semi-checkbox-inner-checked .semi-checkbox-inner-display,
+body[data-dsh-semi-theme]:not([data-ds-dark-theme]) .semi-checkbox .semi-checkbox-indeterminate .semi-checkbox-inner-display {
+  background: var(--dsw-static-neutral-bluish-1000);
+  border-color: var(--dsw-static-neutral-bluish-00);
+  box-shadow: inset 0 0 0 1px var(--dsw-static-neutral-bluish-00);
+  color: var(--dsw-static-neutral-bluish-00);
+}
+
+body[data-dsh-semi-theme]:not([data-ds-dark-theme]) .semi-checkbox.semi-checkbox-checked .semi-checkbox-inner-display svg,
+body[data-dsh-semi-theme]:not([data-ds-dark-theme]) .semi-checkbox.semi-checkbox-indeterminate .semi-checkbox-inner-display svg,
+body[data-dsh-semi-theme]:not([data-ds-dark-theme]) .semi-cascader-option-label-checkbox.semi-checkbox-checked .semi-checkbox-inner-display svg,
+body[data-dsh-semi-theme]:not([data-ds-dark-theme]) .semi-cascader-option-label-checkbox.semi-checkbox-indeterminate .semi-checkbox-inner-display svg,
+body[data-dsh-semi-theme]:not([data-ds-dark-theme]) .semi-checkbox .semi-checkbox-inner-checked .semi-checkbox-inner-display svg,
+body[data-dsh-semi-theme]:not([data-ds-dark-theme]) .semi-checkbox .semi-checkbox-indeterminate .semi-checkbox-inner-display svg {
+  color: var(--dsw-static-neutral-bluish-00);
+  fill: currentColor;
+}
+
+body[data-dsh-semi-theme][data-ds-dark-theme] .semi-checkbox.semi-checkbox-checked .semi-checkbox-inner-display,
+body[data-dsh-semi-theme][data-ds-dark-theme] .semi-checkbox.semi-checkbox-indeterminate .semi-checkbox-inner-display,
+body[data-dsh-semi-theme][data-ds-dark-theme] .semi-cascader-option-label-checkbox.semi-checkbox-checked .semi-checkbox-inner-display,
+body[data-dsh-semi-theme][data-ds-dark-theme] .semi-cascader-option-label-checkbox.semi-checkbox-indeterminate .semi-checkbox-inner-display,
+body[data-dsh-semi-theme][data-ds-dark-theme] .semi-checkbox .semi-checkbox-inner-checked .semi-checkbox-inner-display,
+body[data-dsh-semi-theme][data-ds-dark-theme] .semi-checkbox .semi-checkbox-indeterminate .semi-checkbox-inner-display {
+  background: var(--dsw-static-neutral-bluish-00);
+  border-color: var(--dsw-static-neutral-bluish-1000);
+  box-shadow: inset 0 0 0 1px var(--dsw-static-neutral-bluish-1000);
+  color: var(--dsw-static-neutral-bluish-1000);
+}
+
+body[data-dsh-semi-theme][data-ds-dark-theme] .semi-checkbox.semi-checkbox-checked .semi-checkbox-inner-display svg,
+body[data-dsh-semi-theme][data-ds-dark-theme] .semi-checkbox.semi-checkbox-indeterminate .semi-checkbox-inner-display svg,
+body[data-dsh-semi-theme][data-ds-dark-theme] .semi-cascader-option-label-checkbox.semi-checkbox-checked .semi-checkbox-inner-display svg,
+body[data-dsh-semi-theme][data-ds-dark-theme] .semi-cascader-option-label-checkbox.semi-checkbox-indeterminate .semi-checkbox-inner-display svg,
+body[data-dsh-semi-theme][data-ds-dark-theme] .semi-checkbox .semi-checkbox-inner-checked .semi-checkbox-inner-display svg,
+body[data-dsh-semi-theme][data-ds-dark-theme] .semi-checkbox .semi-checkbox-indeterminate .semi-checkbox-inner-display svg {
+  color: var(--dsw-static-neutral-bluish-1000);
+  fill: currentColor;
+}
+
+body[data-dsh-semi-theme] .semi-tree-option-list .semi-tree-option-selected .semi-tree-option-label,
+body[data-dsh-semi-theme] .semi-tree-option-list .semi-tree-option-selected .semi-tree-option-label:hover,
+body[data-dsh-semi-theme] .semi-tree-option-list .semi-tree-option-selected .semi-tree-option-label:active {
+  background-color: var(--dsw-alias-interactive-bg-hover);
+}
+
+body[data-dsh-semi-theme] .semi-tree-option-list .semi-tree-option:hover .semi-tree-option-label {
+  background-color: var(--dsw-alias-interactive-bg-hover);
+}
+
+body[data-dsh-semi-theme] .semi-tree-option-list .semi-tree-option-selected .semi-tree-option-label-text {
+  color: var(--dsw-alias-label-primary);
+}
+
+/* Semi maps disabled Tree labels to its dimmed token. In DSH light mode that
+   token is intended for secondary metadata and is too close to the surface;
+   use the readable secondary label token for disabled labels in both themes. */
+body[data-dsh-semi-theme] .semi-tree-option-list .semi-tree-option-disabled .semi-tree-option-label,
+body[data-dsh-semi-theme] .semi-tree-option-list .semi-tree-option-disabled .semi-tree-option-label-text {
+  color: var(--dsw-alias-label-secondary);
+}
+
+body[data-dsh-semi-theme] .semi-dropdown-item {
+  color: var(--dsw-alias-label-primary);
+}
+
+body[data-dsh-semi-theme] .semi-dropdown-item:hover,
+body[data-dsh-semi-theme] .semi-dropdown-item-hover,
+body[data-dsh-semi-theme] .semi-dropdown-item:focus-visible {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+body[data-dsh-semi-theme] .semi-dropdown-item:active {
+  background: var(--dsw-alias-interactive-bg-active);
+}
+
+body[data-dsh-semi-theme] .semi-button-borderless {
+  color: var(--dsw-alias-label-primary);
+}
+
+body[data-dsh-semi-theme] .semi-button-borderless:not(.semi-button-disabled):hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+body[data-dsh-semi-theme] .semi-button-borderless:not(.semi-button-disabled):active {
+  background: var(--dsw-alias-interactive-bg-active);
+}
+
+/* Match Semi's theme matrix: the type communicates meaning, while the theme
+   controls whether the action is filled, outlined, or text-only. The rules
+   above keep DSH's primary action contrast; these rules prevent warning and
+   danger buttons from losing their semantic color in light/outline modes. */
+body[data-dsh-semi-theme] .semi-button.semi-button-warning.semi-button-light:not(.semi-button-disabled),
+body[data-dsh-semi-theme] .semi-button.semi-button-danger.semi-button-light:not(.semi-button-disabled) {
+  color: var(--dsw-alias-label-primary);
+  border-color: transparent;
+}
+
+body[data-dsh-semi-theme] .semi-button.semi-button-warning.semi-button-light:not(.semi-button-disabled) {
+  background: color-mix(in srgb, var(--dsw-alias-state-warn-primary) 16%, var(--dsw-alias-bg-layer-3));
+  background-color: color-mix(in srgb, var(--dsw-alias-state-warn-primary) 16%, var(--dsw-alias-bg-layer-3));
+}
+
+body[data-dsh-semi-theme] .semi-button.semi-button-danger.semi-button-light:not(.semi-button-disabled) {
+  background: color-mix(in srgb, var(--dsw-alias-state-error-primary) 16%, var(--dsw-alias-bg-layer-3));
+  background-color: color-mix(in srgb, var(--dsw-alias-state-error-primary) 16%, var(--dsw-alias-bg-layer-3));
+}
+
+body[data-dsh-semi-theme] .semi-button.semi-button-warning.semi-button-outline:not(.semi-button-disabled),
+body[data-dsh-semi-theme] .semi-button.semi-button-danger.semi-button-outline:not(.semi-button-disabled) {
+  background: transparent;
+  background-color: transparent;
+}
+
+body[data-dsh-semi-theme] .semi-button.semi-button-warning.semi-button-outline:not(.semi-button-disabled) {
+  border-color: var(--dsw-alias-state-warn-primary);
+  color: var(--dsw-alias-state-warn-primary);
+}
+
+body[data-dsh-semi-theme] .semi-button.semi-button-danger.semi-button-outline:not(.semi-button-disabled) {
+  border-color: var(--dsw-alias-state-error-primary);
+  color: var(--dsw-alias-state-error-primary);
+}
+
+body[data-dsh-semi-theme] .semi-button.semi-button-warning.semi-button-borderless:not(.semi-button-disabled) {
+  color: var(--dsw-alias-state-warn-primary);
+}
+
+body[data-dsh-semi-theme] .semi-button.semi-button-danger.semi-button-borderless:not(.semi-button-disabled) {
+  color: var(--dsw-alias-state-error-primary);
+}
+
+body[data-dsh-semi-theme] .semi-button.semi-button-primary.semi-button-outline:not(.semi-button-disabled),
+body[data-dsh-semi-theme] .semi-button.semi-button-secondary.semi-button-outline:not(.semi-button-disabled),
+body[data-dsh-semi-theme] .semi-button.semi-button-tertiary.semi-button-outline:not(.semi-button-disabled) {
+  background: transparent;
+  background-color: transparent;
+}
+
+body[data-dsh-semi-theme] .semi-button.semi-button-primary.semi-button-outline:not(.semi-button-disabled) {
+  border-color: var(--dsw-alias-label-primary);
+  color: var(--dsw-alias-label-primary);
+}
+
+body[data-dsh-semi-theme] .semi-button.semi-button-secondary.semi-button-outline:not(.semi-button-disabled) {
+  border-color: var(--dsw-alias-border-l2);
+  color: var(--dsw-alias-label-primary);
+}
+
+body[data-dsh-semi-theme] .semi-button.semi-button-tertiary.semi-button-outline:not(.semi-button-disabled) {
+  border-color: var(--dsw-alias-button-tool-bar-fill);
+  color: var(--dsw-alias-label-primary);
+}
+
+body[data-dsh-semi-theme] .semi-button.semi-button-tertiary.semi-button-solid:not(.semi-button-disabled) {
+  background: var(--dsw-alias-button-tool-bar-fill);
+  background-color: var(--dsw-alias-button-tool-bar-fill);
+  color: var(--dsw-alias-label-primary);
+}
+
+body[data-dsh-semi-theme] .semi-button.semi-button-warning:not(.semi-button-disabled):focus-visible {
+  outline: 2px solid var(--dsw-alias-state-warn-primary);
+  outline-offset: 2px;
+}
+
+body[data-dsh-semi-theme] .semi-button.semi-button-danger:not(.semi-button-disabled):focus-visible {
+  outline: 2px solid var(--dsw-alias-state-error-primary);
+  outline-offset: 2px;
+}
+
+/* Modal surfaces are portaled to body, so scope them to the same bridge used
+   by dropdowns and tooltips. This keeps the mask, content, close affordance,
+   and confirm variants readable when DSH switches theme. */
+body[data-dsh-semi-theme] .semi-modal-mask {
+  background: color-mix(in srgb, var(--dsw-alias-bg-base) 72%, transparent);
+}
+
+body[data-dsh-semi-theme] .semi-modal-content,
+body[data-dsh-semi-theme] .semi-modal-inner {
+  background: var(--dsw-alias-bg-layer-3);
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: var(--semi-border-radius-large);
+  box-shadow: var(--dsw-shadow-lv3);
+  color: var(--dsw-alias-label-primary);
+}
+
+body[data-dsh-semi-theme] .semi-modal-header,
+body[data-dsh-semi-theme] .semi-modal-body,
+body[data-dsh-semi-theme] .semi-modal-footer {
+  color: var(--dsw-alias-label-primary);
+}
+
+body[data-dsh-semi-theme] .semi-modal-header,
+body[data-dsh-semi-theme] .semi-modal-footer {
+  border-color: var(--dsw-alias-border-l2);
+}
+
+body[data-dsh-semi-theme] .semi-modal-close {
+  color: var(--dsw-alias-label-secondary);
+}
+
+body[data-dsh-semi-theme] .semi-modal-close:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+  color: var(--dsw-alias-label-primary);
+}
+
+body[data-dsh-semi-theme] .semi-modal-info-icon,
+body[data-dsh-semi-theme] .semi-modal-confirm-info-icon {
+  color: var(--dsw-alias-state-business-primary);
+}
+
+body[data-dsh-semi-theme] .semi-modal-success-icon,
+body[data-dsh-semi-theme] .semi-modal-confirm-success-icon {
+  color: var(--dsw-alias-state-success-primary);
+}
+
+body[data-dsh-semi-theme] .semi-modal-warning-icon,
+body[data-dsh-semi-theme] .semi-modal-confirm-warning-icon {
+  color: var(--dsw-alias-state-warn-primary);
+}
+
+body[data-dsh-semi-theme] .semi-modal-error-icon,
+body[data-dsh-semi-theme] .semi-modal-confirm-error-icon {
+  color: var(--dsw-alias-state-error-primary);
+}

@@ -1,13 +1,9 @@
 import { readFile, writeFile } from 'node:fs/promises'
-import { createRequire } from 'node:module'
 import { join } from 'node:path'
 import type { UserConfig } from 'tsdown'
+import { dshSemiClientDeps } from '../../packages/dsh-semi-ui/tsdown-client-deps.ts'
 
 const PLUGIN_ID = '@tnnevol/dsh-fnos'
-const require = createRequire(import.meta.url)
-const semiUiRoot = join(require.resolve('@douyinfe/semi-ui'), '..', '..', '..')
-const semiIconsRoot = join(require.resolve('@douyinfe/semi-icons'), '..', '..', '..')
-
 const CLIENT_EXTERNALS = [
   'react',
   'react/jsx-runtime',
@@ -65,22 +61,10 @@ export default [
     clean: false,
     sourcemap: false,
     deps: {
-      alwaysBundle: [/^@tnnevol\/dsh-semi-ui(?:\/|$)/u, /^@douyinfe\/semi-ui(?:\/|$)/u, /^@douyinfe\/semi-icons(?:\/|$)/u],
+      ...dshSemiClientDeps.deps,
       neverBundle: [...CLIENT_EXTERNALS],
     },
-    alias: {
-      '@douyinfe/semi-ui/lib/es/dropdown/index.js': join(semiUiRoot, 'lib/es/dropdown/index.js'),
-      '@douyinfe/semi-ui/lib/es/button/index.js': join(semiUiRoot, 'lib/es/button/index.js'),
-      '@douyinfe/semi-ui/lib/es/button/buttonGroup.js': join(semiUiRoot, 'lib/es/button/buttonGroup.js'),
-      '@douyinfe/semi-ui/lib/es/iconButton/index.js': join(semiUiRoot, 'lib/es/iconButton/index.js'),
-      '@douyinfe/semi-ui/lib/es/tooltip/index': join(semiUiRoot, 'lib/es/tooltip/index.js'),
-      '@douyinfe/semi-ui/lib/es/treeSelect/index': join(semiUiRoot, 'lib/es/treeSelect/index.js'),
-      '@douyinfe/semi-icons/lib/es/icons/IconClose.js': join(semiIconsRoot, 'lib/es/icons/IconClose.js'),
-      '@douyinfe/semi-icons/lib/es/icons/IconFile.js': join(semiIconsRoot, 'lib/es/icons/IconFile.js'),
-      '@douyinfe/semi-icons/lib/es/icons/IconFolder.js': join(semiIconsRoot, 'lib/es/icons/IconFolder.js'),
-      '@douyinfe/semi-icons/lib/es/icons/IconFolderOpen.js': join(semiIconsRoot, 'lib/es/icons/IconFolderOpen.js'),
-      '@douyinfe/semi-icons/lib/es/icons/IconRestart.js': join(semiIconsRoot, 'lib/es/icons/IconRestart.js'),
-    },
+    alias: dshSemiClientDeps.alias,
     css: { inject: true, minify: true },
     onSuccess: inlineClientStyles,
     define: {

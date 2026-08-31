@@ -40,12 +40,12 @@ export function FnosSettingsDocumentAction({ t }: SettingsDocumentActionProps) {
     <DshButton
       size="small"
       type="tertiary"
-      style={{ borderRadius: '32px' }}
+      className="dsh-fnos-settings-document-button"
       disabled={busy}
       title={error ? t('settingsDocumentOpenFailed') : t('openSettingsDocument')}
       onClick={() => { void open() }}
     >
-      <span style={{ display: 'inline-flex', alignItems: 'center', marginRight: '6px' }}>
+      <span className="dsh-fnos-settings-document-icon">
         <IconSetting />
       </span>
       {error ? t('settingsDocumentOpenFailed') : t('openSettingsDocument')}

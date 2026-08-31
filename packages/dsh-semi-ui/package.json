@@ -52,6 +52,7 @@
     "@types/react-dom": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
+    "sass": "catalog:",
     "tsdown": "catalog:",
     "typescript": "catalog:"
   }

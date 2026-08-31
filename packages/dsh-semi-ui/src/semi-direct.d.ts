@@ -1,3 +1,8 @@
+declare module '*.scss' {
+  const css: string
+  export default css
+}
+
 declare module '@douyinfe/semi-ui/lib/es/button/index.js' {
   const Button: any
   export default Button

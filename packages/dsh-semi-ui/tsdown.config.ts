@@ -9,6 +9,7 @@ export default {
   fixedExtension: false,
   dts: true,
   clean: true,
+  css: { inject: true, minify: true },
   deps: {
     neverBundle: ['react', 'react/jsx-runtime', 'react-dom', 'react-dom/client'],
   },

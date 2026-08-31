@@ -54,7 +54,7 @@ describe('Semi UI showcase hash route', () => {
 
   it('renders the complete Semi icon catalog with official icon groups', async () => {
     const source = await import('node:fs/promises').then(({ readFile }) => readFile(new URL('../src/client/ShowcasePage.tsx', import.meta.url), 'utf8'))
-    expect(source).toContain("@douyinfe/semi-icons/lib/es/icons/index.js")
+    expect(source).toContain('DshSemiIcons')
     for (const group of ['全部图标', '面性图标', '线性图标', 'AI 图标']) expect(source).toContain(group)
     expect(source).toContain('iconCatalog.filter')
     expect(source).toContain('size="extra-large"')
@@ -62,10 +62,25 @@ describe('Semi UI showcase hash route', () => {
     expect(source).toContain('fill={[')
   })
 
+  it('keeps Semi implementation dependencies behind the shared facade', async () => {
+    const pluginPackages = [
+      '../package.json',
+      '../../dsh-codex-auth-plugin/package.json',
+      '../../dsh-fnos-plugin/package.json',
+    ]
+    for (const packagePath of pluginPackages) {
+      const manifest = JSON.parse(await import('node:fs/promises').then(({ readFile }) => readFile(new URL(packagePath, import.meta.url), 'utf8'))) as Record<string, Record<string, string> | undefined>
+      const dependencies = Object.keys({ ...manifest.dependencies, ...manifest.devDependencies, ...manifest.peerDependencies })
+      expect(dependencies.filter(name => name.startsWith('@douyinfe/'))).toEqual([])
+    }
+    const source = await import('node:fs/promises').then(({ readFile }) => readFile(new URL('../src/client/ShowcasePage.tsx', import.meta.url), 'utf8'))
+    expect(source).not.toMatch(/(?:from|import)\s+['"]@douyinfe\//u)
+  })
+
   it('shows the Tree checkbox state in the component overview', async () => {
     const source = await import('node:fs/promises').then(({ readFile }) => readFile(new URL('../src/client/ShowcasePage.tsx', import.meta.url), 'utf8'))
     expect(source).toContain('<DshTree treeData={treeData} multiple')
-    expect(source).toContain('checkRelation="related"')
+    expect(source).toContain("checkRelation: 'related' as const")
     expect(source).toContain("defaultValue={['plugins']}")
   })
 
@@ -80,6 +95,18 @@ describe('Semi UI showcase hash route', () => {
     expect(source).toContain('DshIconButton')
   })
 
+  it('uses official Semi component names in code examples and stacks previews above code', async () => {
+    const source = await import('node:fs/promises').then(({ readFile }) => readFile(new URL('../src/client/ShowcasePage.tsx', import.meta.url), 'utf8'))
+    const style = await import('node:fs/promises').then(({ readFile }) => readFile(new URL('../src/client/style.scss', import.meta.url), 'utf8'))
+    expect(source).toContain(".replaceAll('@tnnevol/dsh-semi-ui', '@douyinfe/semi-ui')")
+    expect(source).toContain(".replace(/\\bDsh(?=[A-Z])/g, '')")
+    expect(style).toContain('grid-template-rows: auto auto')
+    expect(style).toContain('background: var(--semi-color-bg-0)')
+    expect(style).toContain('color: var(--semi-color-text-2)')
+    expect(style).toContain('padding: 24px')
+    expect(style).not.toContain('grid-template-columns: minmax(260px, .9fr) minmax(300px, 1.1fr)')
+  })
+
   it('lists only components that have a runtime showcase', async () => {
     const source = await import('node:fs/promises').then(({ readFile }) => readFile(new URL('../src/client/ShowcasePage.tsx', import.meta.url), 'utf8'))
     expect(source).toContain('>组件</button>')
@@ -90,15 +117,16 @@ describe('Semi UI showcase hash route', () => {
 
   it('covers selection validation and disabled states', async () => {
     const source = await import('node:fs/promises').then(({ readFile }) => readFile(new URL('../src/client/ShowcasePage.tsx', import.meta.url), 'utf8'))
-    expect(source).toContain('multiple defaultValue=')
-    expect(source).toContain('validateStatus="error"')
-    expect(source).toContain('validateStatus="success"')
-    expect(source).toContain('placeholder="禁用"')
+    expect(source).toContain('multiple: true')
+    expect(source).toContain("validateStatus: 'error' as const")
+    expect(source).toContain("validateStatus: 'success' as const")
+    expect(source).toContain("'禁用'")
   })
 
   it('covers the official Modal state families', async () => {
     const source = await import('node:fs/promises').then(({ readFile }) => readFile(new URL('../src/client/ShowcasePage.tsx', import.meta.url), 'utf8'))
-    for (const prop of ['footerFill', 'maskClosable', 'okButtonProps', 'cancelButtonProps', 'header', 'footer', 'centered', 'fullScreen', 'bodyStyle']) expect(source).toContain(prop)
+    for (const prop of ['footerFill', 'maskClosable', 'okButtonProps', 'cancelButtonProps', 'header', 'footer', 'centered', 'fullScreen']) expect(source).toContain(prop)
+    expect(source).toContain('dsh-semi-showcase-modal-scroll')
     expect(source).toContain("{...(modalDemo === 'customFooter' ? { footer: modalFooter } : {})}")
     expect(source).not.toContain("footer={modalDemo === 'customFooter' ? modalFooter : undefined}")
     for (const method of ['info', 'success', 'error', 'warning', 'confirm']) expect(source).toContain(`['${method}',`)
@@ -130,29 +158,10 @@ describe('Semi UI showcase hash route', () => {
 
   it('keeps the shared theme scoped to official component states', async () => {
     const source = await import('node:fs/promises').then(({ readFile }) => readFile(new URL('../../../packages/dsh-semi-ui/src/theme.ts', import.meta.url), 'utf8'))
-    expect(source).toContain('.semi-button.semi-button-primary.semi-button-solid')
-    expect(source).toContain('.semi-button.semi-button-warning.semi-button-light')
-    expect(source).toContain('.semi-button.semi-button-danger.semi-button-outline')
-    expect(source).toContain('semi-button-primary.semi-button-solid:not(.semi-button-disabled):is(:active, :focus-visible)')
-    expect(source).toContain('.semi-modal-info-icon')
-    expect(source).toContain('.semi-cascader-option-label-checkbox.semi-checkbox-checked')
-    expect(source).toContain('.semi-cascader-option-label-checkbox.semi-checkbox-indeterminate')
-    expect(source).toContain('.semi-checkbox:not(.semi-checkbox-checked):not(.semi-checkbox-indeterminate):hover')
-    expect(source).toContain('.semi-tree-option-disabled .semi-tree-option-label')
-    expect(source).toContain('.semi-popover-wrapper')
-    expect(source).toContain('--semi-color-fill-0')
-    expect(source).toContain('--semi-color-primary')
-    expect(source).toContain('--semi-color-primary-disabled')
-    expect(source).toContain('--semi-color-secondary-light-hover')
-    expect(source).toContain('--semi-color-tertiary-light-active')
-    expect(source).toContain('--semi-color-success: var(--dsw-alias-state-success-primary)')
-    expect(source).toContain('--semi-color-danger-light-default')
-    expect(source).toContain('--semi-color-warning-light-active')
-    expect(source).toContain('--semi-color-success-light-hover')
-    expect(source).toContain('--semi-color-text-2')
-    expect(source).not.toContain('!important')
-    expect(source).not.toContain('stroke: var(--semi-color-primary) !important')
-    expect(source).toContain('--dsw-static-neutral-bluish-1000')
+    const style = await import('node:fs/promises').then(({ readFile }) => readFile(new URL('../../../packages/dsh-semi-ui/src/theme.scss', import.meta.url), 'utf8'))
+    for (const token of ['.semi-button.semi-button-primary.semi-button-solid', '.semi-button.semi-button-warning.semi-button-light', '.semi-button.semi-button-danger.semi-button-outline', 'semi-button-primary.semi-button-solid:not(.semi-button-disabled):is(:active, :focus-visible)', '.semi-modal-info-icon', '.semi-cascader-option-label-checkbox.semi-checkbox-checked', '.semi-cascader-option-label-checkbox.semi-checkbox-indeterminate', '.semi-checkbox:not(.semi-checkbox-checked):not(.semi-checkbox-indeterminate):hover', '.semi-tree-option-disabled .semi-tree-option-label', '.semi-popover-wrapper', '--semi-color-fill-0', '--semi-color-primary', '--semi-color-primary-disabled', '--semi-color-secondary-light-hover', '--semi-color-tertiary-light-active', '--semi-color-success: var(--dsw-alias-state-success-primary)', '--semi-color-danger-light-default', '--semi-color-warning-light-active', '--semi-color-success-light-hover', '--semi-color-text-2', '--semi-border-radius-small: var(--semi-border-radius-large)', '--dsw-static-neutral-bluish-1000']) expect(style).toContain(token)
+    expect(style).not.toContain('!important')
+    expect(style).not.toContain('stroke: var(--semi-color-primary) !important')
     expect(source).toContain('data-dsh-semi-theme-refcount')
   })
 

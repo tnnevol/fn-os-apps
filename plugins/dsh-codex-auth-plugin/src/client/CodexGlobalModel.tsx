@@ -1,7 +1,6 @@
 /** DSH-wide Codex default model controls. */
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import type { CSSProperties } from 'react'
 import type { ConnectionHandle, ModelCatalogModel, ModelProviderGroup } from '@deepseek-ai/dsh-client-connection/client'
 import { IconChevronDownOutline14 } from '@deepseek-ai/dsh-client-ui-primitives'
 import { DshButton, DshCascader } from '@tnnevol/dsh-semi-ui'
@@ -21,14 +20,6 @@ export interface CodexGlobalModelProps {
   connection: ConnectionHandle
   t: (key: CodexAuthLocaleKey) => string
 }
-
-const sectionStyle: CSSProperties = { display: 'flex', flexDirection: 'column', gap: 12, borderTop: '1px solid var(--dsw-alias-border-l2)', paddingTop: 14 }
-const headingStyle: CSSProperties = { margin: 0, fontSize: 14, lineHeight: '20px', fontWeight: 600, color: 'var(--dsw-alias-label-primary)' }
-const bodyStyle: CSSProperties = { margin: 0, fontSize: 12, lineHeight: '18px', color: 'var(--dsw-alias-label-secondary)' }
-const fieldsStyle: CSSProperties = { display: 'flex', alignItems: 'center', minWidth: 0 }
-const actionsStyle: CSSProperties = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }
-const errorStyle: CSSProperties = { ...bodyStyle, color: 'var(--dsw-alias-state-error-primary, #d92d20)' }
-const successStyle: CSSProperties = { ...bodyStyle, color: 'var(--dsw-alias-state-success-primary, #16825d)' }
 
 async function request<T>(method: 'GET' | 'PUT', body?: unknown): Promise<T> {
   const response = await fetch(CODEX_GLOBAL_MODEL_PATH, {
@@ -53,24 +44,8 @@ interface ChoiceOption {
 
 function ChevronDown() {
   return (
-    <span aria-hidden="true" style={{ display: 'inline-flex', alignItems: 'center', color: 'var(--dsw-alias-label-tertiary)', lineHeight: 1 }}><IconChevronDownOutline14 size={14} /></span>
+    <span aria-hidden="true" className="dsh-codex-global-model-chevron"><IconChevronDownOutline14 size={14} /></span>
   )
-}
-
-const pickerButtonStyle: CSSProperties = {
-  boxSizing: 'border-box',
-  display: 'inline-flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  gap: 6,
-  width: 'fit-content',
-  maxWidth: '100%',
-  minHeight: 30,
-  padding: '3px 4px',
-  border: 0,
-  borderRadius: 7,
-  background: 'transparent',
-  fontSize: 14,
 }
 
 const UNSET_VALUE = '__dsh_cascader_unset__'
@@ -135,11 +110,10 @@ function GlobalModelPicker({ modelMenuLabel, effortMenuLabel, modelLabel, modelP
       borderless
       size="small"
       dropdownClassName="dsh-codex-global-model-cascader"
-      dropdownStyle={{ minWidth: 252, maxWidth: 'calc(100vw - 32px)', borderRadius: 10, overflow: 'hidden' }}
       onChange={handleChange}
       triggerRender={() => (
-        <DshButton htmlType="button" theme="borderless" type="tertiary" aria-haspopup="menu" style={pickerButtonStyle}>
-          <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: modelLabel === '' ? 'var(--dsw-alias-label-dimmed)' : 'var(--dsw-alias-label-primary)' }}>{buttonValue}</span>
+        <DshButton htmlType="button" theme="borderless" type="tertiary" aria-haspopup="menu" className="dsh-codex-global-model-picker-button">
+          <span className={`dsh-codex-global-model-picker-label${modelLabel === '' ? ' is-placeholder' : ''}`}>{buttonValue}</span>
           <ChevronDown />
         </DshButton>
       )}
@@ -212,16 +186,22 @@ export function CodexGlobalModel({ connection, t }: CodexGlobalModelProps) {
     }
   }
 
+  const cancel = (): void => {
+    setDraftModel(current?.model ?? '')
+    setDraftEffort(current?.reasoningEffort ?? '')
+    setFeedback('idle')
+  }
+
   return (
-    <section style={sectionStyle} aria-labelledby="dsh-codex-global-model-title">
+    <section className="dsh-codex-global-model" aria-labelledby="dsh-codex-global-model-title">
       <div>
-        <h3 id="dsh-codex-global-model-title" style={headingStyle}>{t('globalModelTitle')}</h3>
-        <p style={{ ...bodyStyle, marginTop: 3 }}>{t('globalModelIntro')}</p>
+        <h3 id="dsh-codex-global-model-title" className="dsh-codex-section-heading">{t('globalModelTitle')}</h3>
+        <p className="dsh-codex-body dsh-codex-global-model-intro">{t('globalModelIntro')}</p>
       </div>
-      {status === 'loading' ? <p style={bodyStyle}>{t('settingsLoading')}</p> : null}
-      {status === 'error' ? <p style={errorStyle} role="alert">{t('globalModelLoadFailed')}</p> : null}
+      {status === 'loading' ? <p className="dsh-codex-body">{t('settingsLoading')}</p> : null}
+      {status === 'error' ? <p className="dsh-codex-error" role="alert">{t('globalModelLoadFailed')}</p> : null}
       {status === 'ready' ? (
-        <div style={fieldsStyle}>
+        <div className="dsh-codex-global-model-fields">
           <GlobalModelPicker
             modelMenuLabel={t('globalModelModel')}
             effortMenuLabel={t('globalModelThinking')}
@@ -235,16 +215,16 @@ export function CodexGlobalModel({ connection, t }: CodexGlobalModelProps) {
             onChooseModel={id => { setDraftModel(id); setDraftEffort(''); setFeedback('idle') }}
             onChooseEffort={id => { setDraftEffort(id); setFeedback('idle') }}
           />
-          {selected === undefined && modelLabel !== '' ? <p style={bodyStyle}>{t('globalModelUnavailable')}</p> : null}
+          {selected === undefined && modelLabel !== '' ? <p className="dsh-codex-body">{t('globalModelUnavailable')}</p> : null}
         </div>
       ) : null}
-      <div style={actionsStyle}>
+      <div className="dsh-codex-global-model-actions">
         <span aria-live="polite">
-          {feedback === 'saved' ? <span style={successStyle}>{t('settingsSaved')}</span> : null}
-          {feedback === 'error' ? <span style={errorStyle}>{t('settingsSaveFailed')}</span> : null}
+          {feedback === 'saved' ? <span className="dsh-codex-success">{t('settingsSaved')}</span> : null}
+          {feedback === 'error' ? <span className="dsh-codex-error">{t('settingsSaveFailed')}</span> : null}
         </span>
-        <span style={{ display: 'flex', gap: 8 }}>
-          <DshButton htmlType="button" theme="outline" type="secondary" size="small" disabled={status === 'loading' || busy} onClick={() => { void load() }}>{t('refreshUsage')}</DshButton>
+        <span className="dsh-codex-global-model-buttons">
+          <DshButton htmlType="button" theme="outline" type="secondary" className="dsh-codex-global-model-cancel" disabled={!dirty || busy} onClick={cancel}>{t('cancel')}</DshButton>
           <DshButton htmlType="button" theme="solid" type="primary" disabled={!dirty || busy} loading={busy} onClick={() => { void save() }}>{busy ? t('saving') : t('setGlobalModel')}</DshButton>
         </span>
       </div>

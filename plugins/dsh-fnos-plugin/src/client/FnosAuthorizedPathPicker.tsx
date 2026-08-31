@@ -1,6 +1,6 @@
 /** Compact fnOS-authorized tree selector used by the DSH input toolbar. */
 
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import type { PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import { DshIconFile as IconFile, DshIconFolder as IconFolder, DshTooltip as Tooltip, DshTreeSelect as TreeSelect } from '@tnnevol/dsh-semi-ui'
 import { requestAuthorizedEntries, type AuthorizedEntriesResult } from './authorized-directories-client.ts'
@@ -33,9 +33,9 @@ function nodeLabel(entry: AuthorizedEntry, showFullPath = false): ReactNode {
   const name = showFullPath ? entry.semanticPath : displayName(entry.semanticPath)
   const Icon = entry.kind === 'directory' ? IconFolder : IconFile
   const content = (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, minWidth: 'max-content' }}>
+    <span className="dsh-fnos-tree-node-label">
       <Icon size="small" />
-      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
+      <span className="dsh-fnos-tree-node-label-text">{name}</span>
     </span>
   )
   return <Tooltip content={entry.semanticPath} showArrow mouseEnterDelay={0.5}>{content}</Tooltip>
@@ -83,11 +83,6 @@ export function FnosAuthorizedPathPicker({ input, inputActions, insertReferences
   const pendingRemovalPaths = useRef(new Set<string>())
   const busy = input.phase === 'adjudicating' || input.phase === 'submitting'
   const value = desiredPaths ?? EMPTY_TREE_VALUE
-  const treePanelWidth = useMemo(() => {
-    const longestPath = [...entries.current.values()].reduce((longest, entry) => Math.max(longest, entry.semanticPath.length), 0)
-    return `${Math.max(20, longestPath + 8)}ch`
-  }, [treeData])
-
   const applyEntries = useCallback((result: AuthorizedEntriesResult, parent?: string) => {
     for (const entry of result.entries) entries.current.set(entry.path, entry)
     const children = result.entries.map(entry => toNode(entry))
@@ -209,36 +204,34 @@ export function FnosAuthorizedPathPicker({ input, inputActions, insertReferences
       value={value}
       loadData={loadData}
       dropdownClassName="dsh-fnos-authorized-path-picker"
-       onVisibleChange={(visible: boolean) => {
-         if (visible) {
-           operationBaselineOccurrenceIds.current = new Set(
-             input.occurrences
-               .filter(occurrence => occurrence.source === FNOS_REFERENCE_SOURCE)
-               .map(occurrence => occurrence.occurrenceId),
-           )
-           insertedTreePaths.current.clear()
-           pendingInsertedOccurrences.current.clear()
-           currentOperationOccurrences.current.clear()
-           pendingRemovalPaths.current.clear()
-           setDesiredPaths(EMPTY_TREE_VALUE)
-           return
-         }
-         operationBaselineOccurrenceIds.current.clear()
-         insertedTreePaths.current.clear()
-         pendingInsertedOccurrences.current.clear()
-         currentOperationOccurrences.current.clear()
-         pendingRemovalPaths.current.clear()
-         setDesiredPaths(undefined)
-       }}
-       onChange={handleTreeChange}
+      onVisibleChange={(visible: boolean) => {
+        if (visible) {
+          operationBaselineOccurrenceIds.current = new Set(
+            input.occurrences
+              .filter(occurrence => occurrence.source === FNOS_REFERENCE_SOURCE)
+              .map(occurrence => occurrence.occurrenceId),
+          )
+          insertedTreePaths.current.clear()
+          pendingInsertedOccurrences.current.clear()
+          currentOperationOccurrences.current.clear()
+          pendingRemovalPaths.current.clear()
+          setDesiredPaths(EMPTY_TREE_VALUE)
+          return
+        }
+        operationBaselineOccurrenceIds.current.clear()
+        insertedTreePaths.current.clear()
+        pendingInsertedOccurrences.current.clear()
+        currentOperationOccurrences.current.clear()
+        pendingRemovalPaths.current.clear()
+        setDesiredPaths(undefined)
+      }}
+      onChange={handleTreeChange}
       disabled={busy}
       size="small"
       borderless
       showClear={false}
       maxTagCount={0}
       dropdownMatchSelectWidth={false}
-      dropdownStyle={{ width: treePanelWidth, maxWidth: 'min(560px, calc(100vw - 32px))', maxHeight: 320 }}
-      optionListStyle={{ width: '100%', maxWidth: '100%', maxHeight: 280, overflowX: 'auto', overflowY: 'auto' }}
       showLine={false}
       emptyContent={t('inputPickerEmpty')}
       searchPlaceholder={t('workspaceSearchPlaceholder')}
@@ -248,26 +241,12 @@ export function FnosAuthorizedPathPicker({ input, inputActions, insertReferences
         <span
           aria-label={t('inputPicker')}
           title={t('inputPicker')}
-          className="dsh-fnos-input-picker-trigger"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: 28,
-            height: 28,
-            borderRadius: 7,
-            background: 'var(--dsw-alias-bg-layer-1)',
-            border: 'none',
-            boxSizing: 'border-box',
-            color: 'var(--dsw-alias-label-primary)',
-            cursor: busy ? 'not-allowed' : 'pointer',
-            opacity: busy ? 0.45 : 1,
-          }}
+          className={`dsh-fnos-input-picker-trigger${busy ? ' is-busy' : ''}`}
         >
           <FnosColorLogo size={17} />
         </span>
       )}
-      style={{ width: 30, height: 30, padding: 0, background: 'transparent' }}
+      className="dsh-fnos-input-picker"
     />
   )
 }

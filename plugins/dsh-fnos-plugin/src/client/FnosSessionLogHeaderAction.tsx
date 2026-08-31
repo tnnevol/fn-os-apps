@@ -50,7 +50,7 @@ function directoryNode(entry: AuthorizedEntry, showFullPath = false, isLeaf = fa
     key: entry.path,
     value: entry.path,
     label: (
-      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, minWidth: 'max-content' }}>
+      <span className="dsh-fnos-session-log-tree-label">
         <DshIconFolder size="small" />
         <span>{showFullPath ? entry.semanticPath : displayName(entry.semanticPath)}</span>
       </span>
@@ -169,8 +169,8 @@ export function FnosSessionLogHeaderAction({ sessionId, exportToComputer, useSes
           },
         ]}
       >
-        <DshButton size="small" type="tertiary" style={{ borderRadius: '32px' }}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', marginRight: '6px' }}>
+        <DshButton size="small" type="tertiary" className="dsh-fnos-session-log-button">
+          <span className="dsh-fnos-session-log-button-icon">
             <IconChangelog />
           </span>
           {t('sessionLog')}
@@ -201,9 +201,9 @@ export function FnosSessionLogHeaderAction({ sessionId, exportToComputer, useSes
         onCancel={closeNasDialog}
         width={560}
       >
-        <div style={{ minHeight: 260 }}>
+        <div className="dsh-fnos-session-log-dialog-body">
           {loading ? <p>{t('sessionLogNasLoading')}</p> : null}
-          {error !== undefined ? <p style={{ color: 'var(--dsw-alias-state-error-primary)' }}>{error}</p> : null}
+          {error !== undefined ? <p className="dsh-fnos-session-log-error">{error}</p> : null}
           {!loading && error === undefined ? (
             <DshTree
               aria-label={t('sessionLogNasTreeLabel')}
@@ -215,7 +215,7 @@ export function FnosSessionLogHeaderAction({ sessionId, exportToComputer, useSes
                 if (selected) setSelectedDirectory(key)
               }}
               defaultExpandAll={false}
-              style={{ maxHeight: 340, overflow: 'auto' }}
+              className="dsh-fnos-session-log-tree"
               emptyContent={t('sessionLogNasEmpty')}
             />
           ) : null}

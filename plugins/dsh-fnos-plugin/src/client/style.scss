@@ -1,0 +1,265 @@
+/* Tree popup layout belongs to the fnOS picker feature, not the shared theme. */
+.dsh-fnos-authorized-path-picker {
+  .semi-tree-option-list {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow-x: auto;
+
+    > ul {
+      width: 100% !important;
+      min-width: max-content;
+    }
+  }
+}
+
+.dsh-fnos-color-logo {
+  display: block;
+  object-fit: contain;
+}
+
+.dsh-fnos-mono-logo {
+  display: block;
+  flex: 0 0 auto;
+  object-fit: contain;
+  filter: brightness(0);
+
+  body[data-ds-dark-theme] & { filter: brightness(0) invert(1); }
+}
+
+.dsh-fnos-session-log-tree-label {
+  display: inline-flex;
+  align-items: center;
+  min-width: max-content;
+  gap: 7px;
+}
+
+.dsh-fnos-session-log-button { border-radius: var(--semi-border-radius-large); }
+.dsh-fnos-session-log-button-icon { display: inline-flex; align-items: center; margin-right: 6px; }
+.dsh-fnos-session-log-dialog-body { min-height: 260px; }
+.dsh-fnos-session-log-error { color: var(--dsw-alias-state-error-primary); }
+.dsh-fnos-session-log-tree { max-height: 340px; overflow: auto; }
+.dsh-fnos-settings-document-button { border-radius: var(--semi-border-radius-large); }
+.dsh-fnos-settings-document-icon { display: inline-flex; align-items: center; margin-right: 6px; }
+
+.dsh-fnos-authorized-card {
+  overflow: hidden;
+  list-style: none;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 12px;
+  background: var(--dsw-alias-bg-layer-3);
+  transition: border-color 160ms ease, background 160ms ease;
+
+  &.is-open {
+    background: var(--dsw-alias-bg-layer-2);
+    border-color: var(--dsw-alias-label-dimmed);
+  }
+}
+
+.dsh-fnos-authorized-card-header {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 0;
+  border-radius: 12px;
+  background: none;
+  color: var(--dsw-alias-label-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dsh-fnos-authorized-card-head-text {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dsh-fnos-authorized-card-name {
+  font-size: 15px;
+  line-height: 1.4;
+  font-weight: 600;
+}
+
+.dsh-fnos-authorized-card-description {
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.dsh-fnos-authorized-chevron {
+  color: var(--dsw-alias-label-tertiary);
+  transition: transform 160ms ease;
+
+  &.is-open { transform: rotate(180deg); }
+}
+
+.dsh-fnos-authorized-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0 16px;
+  padding: 12px 0 8px;
+  border-top: 1px solid var(--dsw-alias-border-l2);
+}
+
+.dsh-fnos-authorized-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+
+  &--end { justify-content: flex-end; margin-top: 10px; }
+}
+
+.dsh-fnos-authorized-button {
+  box-sizing: border-box;
+  min-height: 30px;
+  padding: 4px 12px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 16px;
+  background: var(--dsw-alias-bg-layer-1);
+  color: var(--dsw-alias-label-primary);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+
+  &--primary {
+    border: 0;
+    background: var(--dsw-alias-button-primary-fill);
+    color: var(--dsw-alias-label-primary-foreground);
+  }
+
+  &--danger {
+    min-height: 28px;
+    padding: 3px 9px;
+    flex: 0 0 auto;
+    color: var(--dsw-alias-state-error-primary, #d92d20);
+  }
+}
+
+.dsh-fnos-authorized-body,
+.dsh-fnos-authorized-error {
+  margin: 0;
+  color: var(--dsw-alias-label-secondary);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.dsh-fnos-authorized-error { color: var(--dsw-alias-state-error-primary, #d92d20); }
+
+.dsh-fnos-authorized-path-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dsh-fnos-authorized-path-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 9px;
+  background: var(--dsw-alias-bg-layer-1);
+}
+
+.dsh-fnos-authorized-path {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--dsw-alias-label-primary);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dsh-fnos-authorized-read-only {
+  flex: 0 0 auto;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.dsh-fnos-authorized-gateway {
+  padding-top: 12px;
+  border-top: 1px solid var(--dsw-alias-border-l2);
+}
+
+.dsh-fnos-authorized-gateway-title { font-size: 13px; }
+.dsh-fnos-authorized-gateway-description { margin: 4px 0 8px; }
+.dsh-fnos-authorized-gateway-message { margin-top: 6px; }
+
+.dsh-fnos-authorized-textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 86px;
+  resize: vertical;
+  padding: 9px 10px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 8px;
+  background: var(--dsw-alias-bg-layer-1);
+  color: var(--dsw-alias-label-primary);
+  font: 13px/20px ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.dsh-fnos-tree-node-label {
+  display: inline-flex;
+  align-items: center;
+  min-width: max-content;
+  gap: 7px;
+}
+
+.dsh-fnos-tree-node-label-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dsh-fnos-input-picker {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  background: transparent;
+}
+
+.dsh-fnos-input-picker-trigger {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 7px;
+  background: var(--dsw-alias-bg-layer-1);
+  color: var(--dsw-alias-label-primary);
+  cursor: pointer;
+
+  &.is-busy {
+    cursor: not-allowed;
+    opacity: 0.45;
+  }
+}
+
+.dsh-fnos-authorized-path-picker {
+  width: min(560px, calc(100vw - 32px));
+  max-width: min(560px, calc(100vw - 32px));
+  max-height: 320px;
+
+  .semi-tree-option-list {
+    max-height: 280px;
+    overflow-x: auto;
+    overflow-y: auto;
+  }
+}

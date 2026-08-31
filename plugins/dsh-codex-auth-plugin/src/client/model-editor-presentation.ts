@@ -9,8 +9,6 @@ const REMOVE_MANUAL_ADD_ATTRIBUTE = 'data-dsh-codex-remove-manual-add'
 const PICKER_SELECTION_SYNCED_ATTRIBUTE = 'data-dsh-codex-selection-synced'
 const MODEL_ACTION_ATTRIBUTE = 'data-dsh-codex-model-action'
 const MODEL_DETAILS_ATTRIBUTE = 'data-dsh-codex-model-details'
-const STYLE_ID = 'dsh-codex-auth-model-editor'
-
 type ModelAction = 'fetch' | 'reset'
 
 const FETCH_MODEL_LABELS = new Set(['获取可用模型', '获取模型', 'Fetch available models', 'Fetch models'])
@@ -90,126 +88,6 @@ function candidateId(input: HTMLInputElement): string | undefined {
  * corresponding field wrappers; the model catalog remains the official editor.
  */
 export function installCodexModelEditorPresentation(): () => void {
-  const style = document.createElement('style')
-  style.id = STYLE_ID
-  style.textContent = `
-[${CODEX_EDITOR_ATTRIBUTE}="true"] div:has(> input[aria-label="API 密钥"]),
-[${CODEX_EDITOR_ATTRIBUTE}="true"] div:has(> input[aria-label="API Key"]),
-[${CODEX_EDITOR_ATTRIBUTE}="true"] div:has(> input[aria-label="API 地址"]),
-[${CODEX_EDITOR_ATTRIBUTE}="true"] div:has(> input[aria-label="API URL"]) {
-  display: none !important;
-}
-
-[${CODEX_PICKER_ATTRIBUTE}="true"] [${ADD_BUTTON_ATTRIBUTE}="true"] {
-  border: 0 !important;
-  background: var(--dsw-alias-button-primary-fill) !important;
-  color: var(--dsw-alias-label-primary-foreground) !important;
-}
-
-[${CODEX_PICKER_ATTRIBUTE}="true"] [${ADD_BUTTON_ATTRIBUTE}="true"]:hover:not(:disabled) {
-  background: var(--dsw-alias-button-primary-hover) !important;
-}
-
-[${CODEX_EDITOR_ATTRIBUTE}="true"] [${REMOVE_MANUAL_ADD_ATTRIBUTE}="true"] {
-  display: none !important;
-}
-
-[${CODEX_EDITOR_ATTRIBUTE}="true"] [${MODEL_DETAILS_ATTRIBUTE}="true"] > summary {
-  display: none !important;
-}
-
-[${CODEX_EDITOR_ATTRIBUTE}="true"] [${MODEL_DETAILS_ATTRIBUTE}="true"] {
-  display: contents !important;
-  border: 0 !important;
-  padding: 0 !important;
-}
-
-[${CODEX_EDITOR_ATTRIBUTE}="true"] [${MODEL_DETAILS_ATTRIBUTE}="true"] > :not(summary) {
-  display: contents !important;
-  border: 0 !important;
-  padding: 0 !important;
-}
-
-[${CODEX_EDITOR_ATTRIBUTE}="true"] [${MODEL_DETAILS_ATTRIBUTE}="true"] > :not(summary) > section[aria-label="模型目录"],
-[${CODEX_EDITOR_ATTRIBUTE}="true"] [${MODEL_DETAILS_ATTRIBUTE}="true"] > :not(summary) > section[aria-label="Models"] {
-  border-top: 0 !important;
-  padding-top: 0 !important;
-}
-
-[${CODEX_EDITOR_ATTRIBUTE}="true"] [${MODEL_DETAILS_ATTRIBUTE}="true"]:not([open]) > :not(summary) {
-  display: contents !important;
-}
-
-[${CODEX_EDITOR_ATTRIBUTE}="true"] [${MODEL_ACTION_ATTRIBUTE}="fetch"],
-[${CODEX_EDITOR_ATTRIBUTE}="true"] [${MODEL_ACTION_ATTRIBUTE}="reset"] {
-  box-sizing: border-box;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: 32px;
-  padding: 0 12px;
-  border: 1px solid var(--dsw-alias-border-l2);
-  border-radius: 16px;
-  background: var(--dsw-alias-bg-layer-1);
-  color: var(--dsw-alias-label-primary);
-  font: inherit;
-  font-size: 13px;
-  line-height: 20px;
-  cursor: pointer;
-}
-
-[${CODEX_EDITOR_ATTRIBUTE}="true"] [${MODEL_ACTION_ATTRIBUTE}="fetch"]:hover:not(:disabled),
-[${CODEX_EDITOR_ATTRIBUTE}="true"] [${MODEL_ACTION_ATTRIBUTE}="reset"]:hover:not(:disabled) {
-  background: var(--dsw-alias-interactive-bg-hover-solid);
-}
-
-[${CODEX_EDITOR_ATTRIBUTE}="true"] [${MODEL_ACTION_ATTRIBUTE}="fetch"]:disabled,
-[${CODEX_EDITOR_ATTRIBUTE}="true"] [${MODEL_ACTION_ATTRIBUTE}="reset"]:disabled {
-  opacity: 0.4;
-  cursor: default;
-}
-
-[${CODEX_EDITOR_ATTRIBUTE}="true"] div:has(> [${MODEL_ACTION_ATTRIBUTE}="fetch"]),
-[${CODEX_EDITOR_ATTRIBUTE}="true"] div:has(> [${MODEL_ACTION_ATTRIBUTE}="reset"]) {
-  justify-content: flex-start;
-  align-items: center;
-  gap: 15px;
-}
-
-[${CODEX_EDITOR_ATTRIBUTE}="true"] div:has(> [${MODEL_ACTION_ATTRIBUTE}="reset"]) > [${MODEL_ACTION_ATTRIBUTE}="reset"],
-[${CODEX_EDITOR_ATTRIBUTE}="true"] div:not(:has(> [${MODEL_ACTION_ATTRIBUTE}="reset"])):has(> [${MODEL_ACTION_ATTRIBUTE}="fetch"]) > [${MODEL_ACTION_ATTRIBUTE}="fetch"] {
-  margin-left: auto;
-}
-
-[${CODEX_PICKER_ATTRIBUTE}="true"] [${SELECT_ALL_ATTRIBUTE}="true"] {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 8px;
-  color: var(--dsw-alias-label-primary);
-  cursor: pointer;
-}
-
-[${CODEX_PICKER_ATTRIBUTE}="true"] input[type="checkbox"] {
-  flex: none;
-  width: 16px;
-  height: 16px;
-  margin: 3px 0 0;
-  accent-color: var(--dsw-alias-button-primary-fill);
-  cursor: pointer;
-}
-
-[${CODEX_PICKER_ATTRIBUTE}="true"] input[type="checkbox"]:focus-visible {
-  outline: 2px solid var(--dsw-alias-border-l4);
-  outline-offset: 2px;
-}
-
-[${CODEX_PICKER_ATTRIBUTE}="true"] input[type="checkbox"]:disabled {
-  cursor: default;
-}
-`
-  document.head.appendChild(style)
-
   let codexPickerPending = false
   const originalPlaceholders = new Map<HTMLInputElement, string>()
   const originalModelNameAttributes = new Map<HTMLInputElement, { readOnly: boolean; ariaReadOnly: string | null }>()
@@ -619,7 +497,6 @@ export function installCodexModelEditorPresentation(): () => void {
   return () => {
     observer.disconnect()
     document.removeEventListener('click', onClick, true)
-    document.getElementById(STYLE_ID)?.remove()
     for (const editor of document.querySelectorAll<HTMLElement>(`[${CODEX_EDITOR_ATTRIBUTE}]`)) {
       editor.removeAttribute(CODEX_EDITOR_ATTRIBUTE)
       restoreModelDetails(editor)

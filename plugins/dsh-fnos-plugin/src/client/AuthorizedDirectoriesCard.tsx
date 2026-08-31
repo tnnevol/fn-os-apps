@@ -1,7 +1,6 @@
 /** Settings card for the fnOS shared-directory authorization list. */
 
 import { useCallback, useEffect, useState } from 'react'
-import type { CSSProperties } from 'react'
 import type { PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type { FnosLocaleKey } from './locales.ts'
 import { diagnosePickerResult, isPickerCancellation, isPickerNoSelection, logPickerSdkEvent, logPickerSdkValue } from './picker-result.ts'
@@ -29,54 +28,6 @@ export type AuthorizedDirectoriesCardProps = PropsRuntime<'settings.plugin.item'
   t: Translate
 }
 
-const cardStyle: CSSProperties = {
-  overflow: 'hidden',
-  listStyle: 'none',
-  border: '1px solid var(--dsw-alias-border-l2)',
-  borderRadius: 12,
-  background: 'var(--dsw-alias-bg-layer-3)',
-  transition: 'border-color 160ms ease, background 160ms ease',
-}
-const cardOpenStyle: CSSProperties = {
-  background: 'var(--dsw-alias-bg-layer-2)',
-  borderColor: 'var(--dsw-alias-label-dimmed)',
-}
-const headerStyle: CSSProperties = {
-  boxSizing: 'border-box',
-  width: '100%',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  gap: 12,
-  border: 0,
-  padding: '14px 16px',
-  borderRadius: 12,
-  background: 'none',
-  color: 'var(--dsw-alias-label-primary)',
-  font: 'inherit',
-  textAlign: 'left',
-  cursor: 'pointer',
-}
-const headTextStyle: CSSProperties = { display: 'flex', minWidth: 0, flexDirection: 'column', gap: 4 }
-const nameStyle: CSSProperties = { fontSize: 15, lineHeight: '1.4', fontWeight: 600 }
-const descriptionStyle: CSSProperties = { fontSize: 13, lineHeight: '1.5', color: 'var(--dsw-alias-label-tertiary)' }
-const bodyStyle: CSSProperties = { margin: 0, fontSize: 13, lineHeight: '20px', color: 'var(--dsw-alias-label-secondary)' }
-const errorStyle: CSSProperties = { ...bodyStyle, color: 'var(--dsw-alias-state-error-primary, #d92d20)' }
-const cardBodyStyle: CSSProperties = { display: 'flex', flexDirection: 'column', gap: 12, borderTop: '1px solid var(--dsw-alias-border-l2)', margin: '0 16px', padding: '12px 0 8px' }
-const rowStyle: CSSProperties = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }
-const buttonStyle: CSSProperties = { boxSizing: 'border-box', minHeight: 30, padding: '4px 12px', border: '1px solid var(--dsw-alias-border-l2)', borderRadius: 16, background: 'var(--dsw-alias-bg-layer-1)', color: 'var(--dsw-alias-label-primary)', font: 'inherit', fontSize: 13, cursor: 'pointer' }
-const primaryButtonStyle: CSSProperties = {
-  ...buttonStyle,
-  border: 0,
-  background: 'var(--dsw-alias-button-primary-fill)',
-  color: 'var(--dsw-alias-label-primary-foreground)',
-}
-const pathListStyle: CSSProperties = { display: 'flex', flexDirection: 'column', gap: 8, margin: 0, padding: 0, listStyle: 'none' }
-const pathRowStyle: CSSProperties = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '10px 12px', border: '1px solid var(--dsw-alias-border-l2)', borderRadius: 9, background: 'var(--dsw-alias-bg-layer-1)' }
-const pathStyle: CSSProperties = { minWidth: 0, overflow: 'hidden', color: 'var(--dsw-alias-label-primary)', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: 13, textOverflow: 'ellipsis', whiteSpace: 'nowrap' }
-const readOnlyStyle: CSSProperties = { flex: '0 0 auto', color: 'var(--dsw-alias-label-tertiary)', fontSize: 12, whiteSpace: 'nowrap' }
-const dangerButtonStyle: CSSProperties = { ...buttonStyle, minHeight: 28, padding: '3px 9px', color: 'var(--dsw-alias-state-error-primary, #d92d20)', flex: '0 0 auto' }
-const textareaStyle: CSSProperties = { boxSizing: 'border-box', width: '100%', minHeight: 86, resize: 'vertical', padding: '9px 10px', border: '1px solid var(--dsw-alias-border-l2)', borderRadius: 8, background: 'var(--dsw-alias-bg-layer-1)', color: 'var(--dsw-alias-label-primary)', font: '13px/20px ui-monospace, SFMono-Regular, Menlo, monospace' }
 const AUTHORIZED_DIRECTORY_LOG_PREFIX = '[dsh-fnos][authorized-directories]'
 
 function logAuthorizedDirectoryEvent(stage: string, details: Record<string, unknown>): void {
@@ -89,7 +40,7 @@ function logAuthorizedDirectoryWarning(stage: string, details: Record<string, un
 
 function Chevron({ open }: { open: boolean }) {
   return (
-    <span aria-hidden="true" style={{ color: 'var(--dsw-alias-label-tertiary)', transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 160ms ease' }}>
+    <span aria-hidden="true" className={`dsh-fnos-authorized-chevron${open ? ' is-open' : ''}`}>
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M2.15 5.5 3 4.65l3.73 3.73a.38.38 0 0 0 .54 0L11 4.65l.85.85-2.73 2.73c-.58.58-.9.9-1.4 1.03a2.1 2.1 0 0 1-.94 0c-.5-.13-.82-.45-1.4-1.03L2.15 5.5Z" fill="currentColor" />
       </svg>
@@ -270,55 +221,55 @@ export function AuthorizedDirectoriesCard({ t }: AuthorizedDirectoriesCardProps)
   }, [refresh, t])
 
   return (
-    <div style={open ? { ...cardStyle, ...cardOpenStyle } : cardStyle}>
+    <div className={`dsh-fnos-authorized-card${open ? ' is-open' : ''}`}>
       <button
         type="button"
         aria-expanded={open}
         aria-controls="dsh-fnos-authorized-directories-body"
-        style={headerStyle}
+        className="dsh-fnos-authorized-card-header"
         onClick={() => setOpen(value => !value)}
       >
-        <span style={headTextStyle}>
-          <span style={nameStyle}>{t('title')}</span>
-          <span style={descriptionStyle}>{t('intro')}</span>
+        <span className="dsh-fnos-authorized-card-head-text">
+          <span className="dsh-fnos-authorized-card-name">{t('title')}</span>
+          <span className="dsh-fnos-authorized-card-description">{t('intro')}</span>
         </span>
         <Chevron open={open} />
       </button>
       {open ? (
-        <div id="dsh-fnos-authorized-directories-body" style={cardBodyStyle}>
-          <div style={rowStyle}>
-            <button type="button" style={primaryButtonStyle} disabled={busy || state.status === 'loading'} onClick={() => { void addDirectory() }}>
+        <div id="dsh-fnos-authorized-directories-body" className="dsh-fnos-authorized-card-body">
+          <div className="dsh-fnos-authorized-row">
+            <button type="button" className="dsh-fnos-authorized-button dsh-fnos-authorized-button--primary" disabled={busy || state.status === 'loading'} onClick={() => { void addDirectory() }}>
               {t('add')}
             </button>
-             <button type="button" style={buttonStyle} disabled={busy || state.status === 'loading'} onClick={() => { void refresh() }}>
+             <button type="button" className="dsh-fnos-authorized-button" disabled={busy || state.status === 'loading'} onClick={() => { void refresh() }}>
               {t('refresh')}
             </button>
           </div>
-          {state.status === 'loading' ? <p style={bodyStyle}>{t('loading')}</p> : null}
-          {state.status === 'error' ? <p style={errorStyle}>{state.code ?? t('loadFailed')}</p> : null}
-          {state.status !== 'loading' && state.directories.length === 0 ? <p style={bodyStyle}>{t('empty')}</p> : null}
+          {state.status === 'loading' ? <p className="dsh-fnos-authorized-body">{t('loading')}</p> : null}
+          {state.status === 'error' ? <p className="dsh-fnos-authorized-error">{state.code ?? t('loadFailed')}</p> : null}
+          {state.status !== 'loading' && state.directories.length === 0 ? <p className="dsh-fnos-authorized-body">{t('empty')}</p> : null}
           {state.directories.length > 0 ? (
-            <ul style={pathListStyle}>
+            <ul className="dsh-fnos-authorized-path-list">
               {state.directories.map(directory => (
-                <li key={directory.path} style={pathRowStyle}>
-                  <span title={directory.semanticPath} style={pathStyle}>{directory.semanticPath}</span>
+                <li key={directory.path} className="dsh-fnos-authorized-path-row">
+                  <span title={directory.semanticPath} className="dsh-fnos-authorized-path">{directory.semanticPath}</span>
                   {directory.removable ? (
-                    <button type="button" style={dangerButtonStyle} disabled={busy} onClick={() => { void removeDirectory(directory.path) }}>
+                    <button type="button" className="dsh-fnos-authorized-button dsh-fnos-authorized-button--danger" disabled={busy} onClick={() => { void removeDirectory(directory.path) }}>
                       {t('delete')}
                     </button>
-                  ) : <span style={readOnlyStyle}>{t('sharedDirectory')}</span>}
+                  ) : <span className="dsh-fnos-authorized-read-only">{t('sharedDirectory')}</span>}
                 </li>
               ))}
             </ul>
           ) : null}
-          <div style={{ borderTop: '1px solid var(--dsw-alias-border-l2)', paddingTop: 12 }}>
-            <strong style={{ fontSize: 13 }}>{t('gatewayProxyTitle')}</strong>
-            <p style={{ ...bodyStyle, margin: '4px 0 8px' }}>{t('gatewayProxyDescription')}</p>
-            <textarea value={proxyPathsDraft} placeholder={t('gatewayProxyPlaceholder')} style={textareaStyle} disabled={busy} onChange={event => { setProxyPathsDraft(event.currentTarget.value); setProxyMessage(undefined) }} />
-            {proxyMessage === undefined ? null : <p style={{ ...bodyStyle, margin: '6px 0 0' }}>{proxyMessage}</p>}
-            <div style={{ ...rowStyle, justifyContent: 'flex-end', marginTop: 10 }}>
-              <button type="button" style={buttonStyle} disabled={busy || proxyPathsDraft === savedProxyPaths} onClick={() => { setProxyPathsDraft(savedProxyPaths); setProxyMessage(undefined) }}>{t('discard')}</button>
-              <button type="button" style={primaryButtonStyle} disabled={busy || proxyPathsDraft === savedProxyPaths} onClick={() => { void saveProxyPaths() }}>{t('save')}</button>
+          <div className="dsh-fnos-authorized-gateway">
+            <strong className="dsh-fnos-authorized-gateway-title">{t('gatewayProxyTitle')}</strong>
+            <p className="dsh-fnos-authorized-body dsh-fnos-authorized-gateway-description">{t('gatewayProxyDescription')}</p>
+            <textarea value={proxyPathsDraft} placeholder={t('gatewayProxyPlaceholder')} className="dsh-fnos-authorized-textarea" disabled={busy} onChange={event => { setProxyPathsDraft(event.currentTarget.value); setProxyMessage(undefined) }} />
+            {proxyMessage === undefined ? null : <p className="dsh-fnos-authorized-body dsh-fnos-authorized-gateway-message">{proxyMessage}</p>}
+            <div className="dsh-fnos-authorized-row dsh-fnos-authorized-row--end">
+              <button type="button" className="dsh-fnos-authorized-button" disabled={busy || proxyPathsDraft === savedProxyPaths} onClick={() => { setProxyPathsDraft(savedProxyPaths); setProxyMessage(undefined) }}>{t('discard')}</button>
+              <button type="button" className="dsh-fnos-authorized-button dsh-fnos-authorized-button--primary" disabled={busy || proxyPathsDraft === savedProxyPaths} onClick={() => { void saveProxyPaths() }}>{t('save')}</button>
             </div>
           </div>
         </div>

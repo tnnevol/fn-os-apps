@@ -50,5 +50,6 @@ export {
   DshIconLabToast,
   DshIconLabTree,
   DshIconLabTreeSelect,
+  DshSemiIcons,
 } from './components.ts'
 export { installSemiDshTheme, SEMI_DSH_THEME_ATTRIBUTE } from './theme.ts'

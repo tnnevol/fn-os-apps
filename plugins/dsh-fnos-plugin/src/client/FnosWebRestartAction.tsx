@@ -64,27 +64,27 @@ export function FnosWebRestartAction({ wide, t }: FnosWebRestartActionProps) {
       <DshButtonGroup
         size="small"
         type="tertiary"
+        className="dsh-fnos-web-actions"
         aria-label={`${refreshLabel} / ${restartLabel}`}
-        style={{ width: '100%' }}
       >
         <DshButton
           type="tertiary"
+          theme="borderless"
           disabled={busy}
           icon={refreshIcon}
           className="dsh-fnos-web-refresh"
           title={refreshLabel}
           onClick={refresh}
-          style={{ flex: 1, minWidth: 0 }}
         >
           {refreshLabel}
         </DshButton>
         <DshButton
           type="tertiary"
+          theme="borderless"
           disabled={busy}
           icon={restartIcon}
           title={restartLabel}
           onClick={() => { void restart() }}
-          style={{ flex: 1, minWidth: 0 }}
         >
           {restartLabel}
         </DshButton>
