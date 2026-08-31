@@ -42,6 +42,7 @@ describe('dsh-fnos package contract', () => {
     expect(source).toMatch(/key:\s*'dsh-fnos-authorized-directories'[\s\S]{0,160}priority:\s*100/u)
     expect(source).toContain("ctx.slots.inject('sidebar.footer.action'")
     expect(source).toContain("id: 'dsh-fnos-web-restart'")
+    expect(source).toContain('installFnosBrowserRefreshShortcut')
     const restart = await readFile(new URL('../src/client/FnosWebRestartAction.tsx', import.meta.url), 'utf8')
     expect(restart).toContain('DshButtonGroup')
     expect(restart).toContain('DshIconRefresh2')
@@ -52,6 +53,11 @@ describe('dsh-fnos package contract', () => {
     expect(restart).toContain('/__fnos-gateway/control/web/restart')
     expect(restart).toContain('isEmbeddedFnosFrame')
     expect(restart).toContain('dsh-fnos-web-refresh')
+    const refreshShortcut = await readFile(new URL('../src/client/browser-refresh-shortcut.ts', import.meta.url), 'utf8')
+    expect(refreshShortcut).toContain("event.key === 'F5'")
+    expect(refreshShortcut).toContain("event.key.toLowerCase() === 'r'")
+    expect(refreshShortcut).toContain('event.preventDefault()')
+    expect(refreshShortcut).toContain('window.location.reload()')
   })
 
   it('keeps the cancel-authorization label stable while adding a directory', async () => {

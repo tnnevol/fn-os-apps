@@ -20,6 +20,7 @@ import { en, zh } from './locales.ts'
 import { installFnosPathOpener } from './path-opener.ts'
 import { FnosSettingsDocumentAction } from './FnosSettingsDocumentAction.tsx'
 import { FnosWebRestartAction } from './FnosWebRestartAction.tsx'
+import { installFnosBrowserRefreshShortcut } from './browser-refresh-shortcut.ts'
 import { isEmbeddedFnosFrame } from './sdk-carrier.ts'
 import { createTrimApp } from './sdk.ts'
 import { installFnosPageTitle } from './sdk-title.ts'
@@ -165,6 +166,7 @@ export function apply(ctx: ClientContext): void {
     message: key => t(key),
   }), 'dsh-fnos: fnOS path opener')
   ctx.effect(() => installFnosPageTitle(createTrimApp), 'dsh-fnos: fnOS page title')
+  ctx.effect(() => installFnosBrowserRefreshShortcut(), 'dsh-fnos: browser refresh shortcut')
   ctx.effect(() => installWorkspaceAuthorizedShortcut(t), 'dsh-fnos: workspace authorized shortcut')
 
   const source: InputTriggerSource = {
