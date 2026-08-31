@@ -35,8 +35,9 @@
     "build:app": "tsdown --config tsdown.app.config.ts",
     "build:fpk": "pnpm run build:app && cd ../../apps/fn-deepseek-harness && fnpack build",
     "typecheck": "tsc -p tsconfig.json",
-    "test": "vitest run",
-    "check": "pnpm run typecheck && pnpm run build && pnpm run test"
+    "test:unit": "vitest run --config vitest.config.ts",
+    "test": "pnpm run test:unit",
+    "check": "pnpm run typecheck && pnpm run build && pnpm run test:unit"
   },
   "dependencies": {
     "connect": "catalog:",

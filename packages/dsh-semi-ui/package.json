@@ -34,7 +34,9 @@
   "scripts": {
     "build": "tsdown",
     "typecheck": "tsc -p tsconfig.json",
-    "check": "pnpm run typecheck && pnpm run build",
+    "test:unit": "vitest run --config vitest.config.ts",
+    "test": "pnpm run test:unit",
+    "check": "pnpm run typecheck && pnpm run build && pnpm run test:unit",
     "prepublishOnly": "pnpm run check"
   },
   "peerDependencies": {
@@ -54,6 +56,7 @@
     "react-dom": "catalog:",
     "sass": "catalog:",
     "tsdown": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }

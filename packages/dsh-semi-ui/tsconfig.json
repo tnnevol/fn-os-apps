@@ -15,5 +15,5 @@
     "noEmit": true,
     "types": ["node", "react"]
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "tsdown.config.ts"]
+  "include": ["src/**/*.ts", "src/**/*.tsx", "tests/**/*.ts", "tests/**/*.tsx", "tsdown.config.ts"]
 }
