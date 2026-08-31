@@ -86,6 +86,31 @@ describe('browser bridge source', () => {
     image.setAttribute('src', '/dsh-market/icon')
     expect(image.attributes.src).toBe('http://nas.example/app/fn-deepseek-harness/dsh-market/icon')
   })
+  it('upgrades a prefixed same-host websocket to wss on an https page', () => {
+    const websocketUrls: string[] = []
+    const window: Record<string, unknown> = {
+      location: { href: 'https://nas.example/', origin: 'https://nas.example' },
+      fetch(input: unknown) { return Promise.resolve(input) },
+      WebSocket: function (this: unknown, url: string): void { websocketUrls.push(url) },
+    }
+    function Xhr(): void {}
+    Xhr.prototype.open = function (): void {}
+    function Node(): void {}
+    Node.prototype.appendChild = function (node: unknown): unknown { return node }
+    Node.prototype.insertBefore = function (node: unknown): unknown { return node }
+    function Element(): void {}
+    Element.prototype.append = function (): void {}
+
+    const context = {
+      window,
+      XMLHttpRequest: Xhr,
+      Node,
+      Element,
+      URL,
+    }
+    runInNewContext(`window.__FNOS_GATEWAY_CONFIG__ = ${JSON.stringify({ prefix: '/app/fn-deepseek-harness', customPaths: [], eventsPath: '/__fnos-gateway/path-allowlist/events' })};${source};new window.WebSocket('ws://nas.example/app/fn-deepseek-harness/api/events.mux');`, context)
+    expect(websocketUrls).toEqual(['wss://nas.example/app/fn-deepseek-harness/api/events.mux'])
+  })
   it('cannot close the containing script through a configured path', () => {
     const serialized = serializeBridgeConfig({ paths: ['/<\/script>'] })
     expect(serialized).not.toContain('</script>')

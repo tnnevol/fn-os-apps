@@ -12,9 +12,20 @@
     var url;
     try { url = new URL(String(value), window.location.href); } catch (_) { return null; }
     var page = new URL(window.location.href);
-    var sameWebSocketOrigin = (url.protocol === "ws:" || url.protocol === "wss:") && url.hostname === page.hostname && (url.port || (url.protocol === "wss:" ? "443" : "80")) === (page.port || (page.protocol === "https:" ? "443" : "80"));
-    if ((url.origin !== window.location.origin && !sameWebSocketOrigin) || boundary(url.pathname, prefix) || !gatewayPath(url.pathname)) return null;
-    url.pathname = prefix + url.pathname;
+    var sameWebSocketOrigin = false;
+    if (url.protocol === "ws:" || url.protocol === "wss:") {
+      var urlPort = url.port || (url.protocol === "wss:" ? "443" : "80");
+      var pagePort = page.port || (page.protocol === "https:" ? "443" : "80");
+      // DSH derives its WebSocket URL by changing the page origin scheme.
+      // When the page is HTTPS, that produces ws://host/... without an
+      // explicit port even though the browser must connect through WSS.
+      sameWebSocketOrigin = url.hostname === page.hostname
+        && (urlPort === pagePort || (!url.port && !page.port));
+    }
+    var alreadyPrefixed = prefix !== "" && boundary(url.pathname, prefix);
+    var gatewayCandidate = alreadyPrefixed ? (url.pathname.slice(prefix.length) || "/") : url.pathname;
+    if ((url.origin !== window.location.origin && !sameWebSocketOrigin) || !gatewayPath(gatewayCandidate)) return null;
+    if (!alreadyPrefixed) url.pathname = prefix + url.pathname;
     return url;
   }
 
@@ -139,7 +150,7 @@
   var insertBefore = Node.prototype.insertBefore;
   Node.prototype.insertBefore = function (node, reference) { scriptNode(node); return insertBefore.call(this, node, reference); };
   if (window.EventSource) window.EventSource = new Proxy(window.EventSource, { construct: function (target, args, receiver) { var mapped = mapUrl(args[0]); if (mapped) args[0] = mapped.toString(); return Reflect.construct(target, args, receiver); } });
-  if (window.WebSocket) window.WebSocket = new Proxy(window.WebSocket, { construct: function (target, args, receiver) { var mapped = mapUrl(args[0]); if (mapped) { mapped.protocol = mapped.protocol === "https:" ? "wss:" : "ws:"; args[0] = mapped.toString(); } return Reflect.construct(target, args, receiver); } });
+  if (window.WebSocket) window.WebSocket = new Proxy(window.WebSocket, { construct: function (target, args, receiver) { var mapped = mapUrl(args[0]); if (mapped) { var page = new URL(window.location.href); if (mapped.protocol === "https:" || (mapped.protocol === "ws:" && page.protocol === "https:")) mapped.protocol = "wss:"; else if (mapped.protocol === "http:" || mapped.protocol === "ws:") mapped.protocol = "ws:"; args[0] = mapped.toString(); } return Reflect.construct(target, args, receiver); } });
 
   try {
     var events = new EventSource(prefix + config.eventsPath);
