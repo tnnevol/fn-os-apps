@@ -78,9 +78,9 @@ describe('gateway server', () => {
   })
 
   it('does not rewrite an image URL response as HTML', async () => {
-    const body = '<img src="/asset.png">'
+    const body = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])
     const upstream = createServer((_req, res) => {
-      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' })
+      res.writeHead(200, { 'content-type': 'image/png', 'content-length': String(body.length) })
       res.end(body)
     })
     const upstreamPort = await listen(upstream)
@@ -98,7 +98,7 @@ describe('gateway server', () => {
     resources.push(async () => gateway.close())
     resources.push(async () => rm(directory, { recursive: true, force: true }))
 
-    const response = await new Promise<{ statusCode: number | undefined, headers: Record<string, string | string[] | undefined>, body: string }>((resolve, reject) => {
+    const response = await new Promise<{ statusCode: number | undefined, headers: Record<string, string | string[] | undefined>, body: Buffer }>((resolve, reject) => {
       const request = httpRequest({
         socketPath: gatewaySocket,
         path: `${GATEWAY_PREFIX}/dsh-pet-7340/pic/cursor-grab.png`,
@@ -109,7 +109,7 @@ describe('gateway server', () => {
         res.on('end', () => resolve({
           statusCode: res.statusCode,
           headers: res.headers,
-          body: Buffer.concat(chunks).toString('utf8'),
+          body: Buffer.concat(chunks),
         }))
         res.on('error', reject)
       })
@@ -118,7 +118,7 @@ describe('gateway server', () => {
     })
 
     expect(response.statusCode).toBe(200)
-    expect(response.headers['content-type']).toBe('text/html; charset=utf-8')
-    expect(response.body).toBe(body)
+    expect(response.headers['content-type']).toBe('image/png')
+    expect(response.body).toEqual(body)
   })
 })

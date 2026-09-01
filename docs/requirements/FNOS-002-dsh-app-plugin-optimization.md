@@ -5,7 +5,7 @@ description: 记录 DSH 版本统一、Codex 登录与用量状态、NAS 引用�
 status: validating
 owner: tnnevol
 targetVersion: 5.1.x
-lastVerified: 2026-08-31
+lastVerified: 2026-09-01
 ---
 
 # FNOS-002 DSH 应用与插件优化
@@ -14,7 +14,7 @@ lastVerified: 2026-08-31
 | --- | --- |
 | 需求编号 | FNOS-002 |
 | 提出日期 | 2026-08-24 |
-| 需求状态 | <Badge type="warning" text="部分 NAS 验证" /> |
+| 需求状态 | <Badge type="warning" text="部分 NAS 验证（7 条业务用例、157 条自动化测试通过）" /> |
 | 关联计划 | [PLAN-FNOS-002 DSH 应用与插件优化](/plans/PLAN-FNOS-002-dsh-app-plugin-optimization) |
 
 ## 需求背景与目标
@@ -115,15 +115,19 @@ DSH 在 fnOS 中运行后，还有几处使用体验需要调整。Codex 登录�
 
 ### 当前 NAS 验证结果
 
-- 已验证 DSH Web 左侧菜单的刷新和重启功能均正常；刷新只作用于 DSH Web iframe，不会刷新 iframe 外部的 fnOS 宿主页面。
-- 已验证 Web 重启期间 FPK 应用状态保持启用。
-- 网关代理、API URL 反代即时生效及升级回滚等其余场景仍按原验收条件继续验证。
+- 本地自动化测试已通过：39 个测试文件、157 条测试全部通过；该结果不替代真实 NAS 业务验收。
+- 已通过 7 条真实 NAS 浏览器用例，记录见[FNOS-002 NAS 浏览器验收记录](/validation/FNOS-002-nas-2026-09-01)。
+- 已验证 Codex 登录状态、五小时/每周用量、用量 Popover、设置刷新接口和会话输入区状态同步。
+- 已验证 NAS TreeSelect 授权目录、复选框选中/取消、设置快捷键、跟随系统切换浅色和未启用菜单隐藏。
+- 已验证 DSH Web 左侧刷新和重启；刷新只作用于 DSH Web iframe，不会刷新 iframe 外部的 fnOS 宿主页面，重启后页面约 15 秒恢复。
+- 已验证静态资源通过完整路径 `/app/fn-deepseek-harness/dsh-pet-7340/pic/cursor-grab.png` 返回 `200 image/png`。
+- API URL 反代即时生效、SSE/WebSocket、升级回滚、异常注入、权限差异和并发控制等场景仍按原验收条件继续验证。
 
 ### 状态看板
 
 | 阶段 | 状态 | 当前范围 | 下一步 |
 | --- | --- | --- | --- |
-| P1 应用与插件优化 | <Badge type="warning" text="部分 NAS 验证" /> | Codex 状态、NAS 引用、UI 总览、网关代理和版本统一 | 完成剩余网关代理、反代即时生效、版本升级和回滚验收 |
+| P1 应用与插件优化 | <Badge type="warning" text="部分 NAS 验证（7 条业务用例、157 条自动化测试通过）" /> | 自动化测试 157/157 通过；Codex 状态、NAS Tree、快捷键、主题、刷新/重启和静态资源已完成部分 NAS 验证 | 完成 API 反代即时生效、实时连接、权限、版本升级和回滚验收 |
 
 ## 变更记录
 
@@ -147,3 +151,5 @@ DSH 在 fnOS 中运行后，还有几处使用体验需要调整。Codex 登录�
 | 2026-08-30 | 合并需求编号并完成 Web 恢复验证 | 移除已替换的 FNOS-002-05，统一使用 FNOS-002-04；真实 NAS 已验证 Web 正常重启且 FPK 应用保持启用 |
 | 2026-08-31 | 迁移版本统一需求 | 将原 FNOS-003 的 DSH、插件、依赖、FPK 和 native 版本约束并入本需求；FNOS-003 改用于 FPK 应用运行设置 |
 | 2026-08-31 | 同步刷新与重启验证状态 | 真实 fnOS 环境已验证侧边菜单刷新、重启均正常，刷新不会影响 iframe 外部页面 |
+| 2026-09-01 | 增加真实 NAS 浏览器验收结果 | 7 条 FNOS-002 用例通过；补充用量、TreeSelect、快捷键、主题、刷新/重启和静态图片 Network 证据，其余场景保持待验证 |
+| 2026-09-01 | 更新自动化测试状态 | 根目录 `pnpm run test:unit` 通过，39 个测试文件、157 条自动化测试全部通过；未改变尚未完成真实 NAS 验收的业务用例状态 |

@@ -5,7 +5,7 @@ description: DSH 版本统一、Codex 状态、NAS 引用与 Tree 同步、Semi 
 status: validating
 owner: tnnevol
 targetVersion: 5.1.x
-lastVerified: 2026-08-31
+lastVerified: 2026-09-01
 ---
 
 # PLAN-FNOS-002 DSH 应用与插件优化
@@ -15,7 +15,7 @@ lastVerified: 2026-08-31
 | 计划编号 | PLAN-FNOS-002 |
 | 计划日期 | 2026-08-28 |
 | 对应需求 | [FNOS-002 DSH 应用与插件优化](/requirements/FNOS-002-dsh-app-plugin-optimization) |
-| 计划状态 | <Badge type="warning" text="部分 NAS 验证" /> |
+| 计划状态 | <Badge type="warning" text="部分 NAS 验证（7 条业务用例、157 条自动化测试通过）" /> |
 
 ## 计划目标
 
@@ -417,7 +417,7 @@ SSE 路由由网关自身处理，不转发到 DSH。它经过 fnOS 统一网关
 | PLAN-FNOS-002-T04-07 | FNOS-002-04 | 增加网关内置 SSE 路由，将完整路径快照即时推送给已打开页面 | <Badge type="tip" text="已完成" /> |
 | PLAN-FNOS-002-T04-08 | FNOS-002-04 | bridge 统一处理 `fetch`、XHR、`EventSource`、WebSocket 和动态脚本的绝对 URL 路径 | <Badge type="tip" text="已完成" /> |
 | PLAN-FNOS-002-T04-09 | FNOS-002-04 | 调整 FPK 构建与 `cmd/main` 环境变量，验证生成产物、Unix Socket 和固定回环上游 | <Badge type="tip" text="已完成" /> |
-| PLAN-FNOS-002-T04-10 | FNOS-002-04 | 在真实 fnOS NAS 验证代理、路径保存、即时生效、升级和回滚 | <Badge type="warning" text="待 NAS 验证" /> |
+| PLAN-FNOS-002-T04-10 | FNOS-002-04 | 在真实 fnOS NAS 验证代理、路径保存、即时生效、升级和回滚 | <Badge type="warning" text="部分 NAS 验证" /> |
 | PLAN-FNOS-002-T04-11 | FNOS-002-04 | 调整 `cmd/main status`：以网关 PID 代表 FPK 运行状态，修复死亡但非空 PID 文件无法清理的问题 | <Badge type="tip" text="已完成" /> |
 | PLAN-FNOS-002-T04-12 | FNOS-002-04 | 拆分网关和 DSH Web 的启动逻辑；网关已运行时只恢复 Web，不删除 Socket 或重复启动网关 | <Badge type="tip" text="已完成" /> |
 | PLAN-FNOS-002-T04-13 | FNOS-002-04 | 在 Web 左侧菜单和网关恢复页提供“重启 Web”按钮，并增加管理员恢复路由 | <Badge type="tip" text="已完成" /> |
@@ -701,10 +701,17 @@ pnpm --filter @tnnevol/dsh-fnos run build
 
 ```bash
 pnpm --filter @tnnevol/dsh-semi-ui run typecheck
+pnpm --filter @tnnevol/dsh-semi-ui run test:unit
 pnpm --filter @tnnevol/dsh-semi-ui run build
 ```
 
-总览插件的 `typecheck`、`test` 和 `build` 命令在包名确认并创建骨架后补入本节。
+总览插件执行：
+
+```bash
+pnpm --filter @tnnevol/dsh-semi-ui-showcase run typecheck
+pnpm --filter @tnnevol/dsh-semi-ui-showcase run test:unit
+pnpm --filter @tnnevol/dsh-semi-ui-showcase run build
+```
 
 ### Codex 插件检查
 
@@ -755,10 +762,11 @@ pnpm --filter @tnnevol/dsh-codex-auth run build
 
 | 阶段 | 状态 | 完成条件 |
 | --- | --- | --- |
+| 自动化测试质量门禁 | <Badge type="tip" text="已通过" /> | 根目录 `pnpm run test:unit` 的 39 个测试文件、157 条测试全部通过；不替代真实 NAS、FPK 和故障注入验收 |
 | P1 Codex 登录与用量状态 | <Badge type="tip" text="已实现" /> | 插件测试通过，并在登录、退出、异常及有无五小时窗口场景验证显示结果 |
 | P1 NAS 引用与 Tree 状态 | <Badge type="tip" text="已实现" /> | 插入和删除引用不改动原有文本空格；删除本次引用同步 Tree，历史引用隔离；覆盖多选与生命周期测试 |
 | P1 Semi UI 总览插件 | <Badge type="tip" text="已实现" /> | 设置入口可跳转独立路由，刷新与历史导航有效；插件可安装卸载，公共组件在浅色、深色和系统主题下显示正常 |
-| P1 FPK 网关、进程恢复与插件路径 | <Badge type="warning" text="部分 NAS 验证" /> | 包测试与 FPK 构建通过；真实 NAS 已验证侧边菜单刷新、Web 重启正常且 FPK 应用保持启用，刷新不会影响 iframe 外部页面，剩余代理和配置场景继续验证 |
+| P1 FPK 网关、进程恢复与插件路径 | <Badge type="warning" text="部分 NAS 验证（7 条业务用例、157 条自动化测试通过）" /> | 自动化测试 157/157 通过；真实 NAS 已验证刷新、Web 重启、完整静态图片路径和 DSH iframe 恢复，剩余代理、实时连接、权限和升级回滚场景继续验证 |
 | 版本统一（跨功能约束） | <Badge type="warning" text="待 FPK/NAS 验证" /> | 本地版本、依赖、安装回调、native 配置、发布清单和文档已统一为 `0.1.1-rc.2`，待目标 NAS 完成安装、升级和回滚验证 |
 
 ## 变更记录
@@ -776,3 +784,5 @@ pnpm --filter @tnnevol/dsh-codex-auth run build
 | 2026-08-30 | 合并需求编号并记录 NAS 验证结果：现行需求统一使用 FNOS-002-04，已验证 Web 正常重启且 FPK 应用状态保持启用 |
 | 2026-08-31 | 迁移版本统一计划 | 将原 PLAN-FNOS-003 的版本、依赖、FPK、native 和发布任务迁移为本计划的跨功能约束；FNOS-003 改用于 FPK 应用运行设置 |
 | 2026-08-31 | 同步刷新与重启验证状态 | 真实 fnOS 环境已验证侧边菜单刷新、重启均正常，刷新不会影响 iframe 外部页面 |
+| 2026-09-01 | 补充真实 NAS 浏览器验收 | 7 条用例通过；记录 Codex 用量、TreeSelect、快捷键、主题、刷新/重启和静态资源 Network 证据，T04-10 进入部分 NAS 验证 |
+| 2026-09-01 | 更新自动化测试状态 | 根目录 `pnpm run test:unit` 通过，39 个测试文件、157 条自动化测试全部通过；未将未完成真实环境验收的业务用例标记为通过 |

@@ -33,3 +33,7 @@ status: passed|failed|blocked
 5. 验收人和最终结论。
 
 当前 FNOS-001 的真实 NAS 记录应按功能 ID 分开，完成后回写对应需求和计划状态。
+
+## 当前记录
+
+- [FNOS-002 NAS 浏览器验收记录（2026-09-01）](/validation/FNOS-002-nas-2026-09-01)

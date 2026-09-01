@@ -141,6 +141,16 @@ const plansSidebar = [
   }
 ]
 
+const testCasesSidebar = [
+  {
+    text: '测试用例',
+    items: [
+      { text: '规范', link: '/test-cases/' },
+      { text: 'FNOS-002 测试用例明细', link: '/test-cases/FNOS-002-test-cases' }
+    ]
+  }
+]
+
 export default defineConfig({
   lang: 'zh-CN',
   title: 'fnOS Apps',
@@ -165,7 +175,8 @@ export default defineConfig({
       { text: 'Harness 插件', link: '/plugins/' },
       { text: '开发指南', link: '/development/environment-and-scripts' },
       { text: '需求清单', link: '/requirements/' },
-      { text: '详细计划', link: '/plans/' }
+      { text: '详细计划', link: '/plans/' },
+      { text: '测试用例', link: '/test-cases/' }
     ],
     sidebar: {
       '/guide/': [
@@ -203,6 +214,7 @@ export default defineConfig({
       '/troubleshooting': developmentSidebar,
       '/requirements/': requirementsSidebar,
       '/plans/': plansSidebar,
+      '/test-cases/': testCasesSidebar,
       '/contributing': [
         {
           text: '参与贡献',
