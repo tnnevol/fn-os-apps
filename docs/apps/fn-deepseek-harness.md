@@ -29,7 +29,7 @@ FPK 安装和升级时会根据发布清单安装 npm `rc` 标签对应的插件
 | 应用目录 | `apps/fn-deepseek-harness` |
 | 目标平台 | x86 |
 | 依赖 | `nodejs_v24` |
-| 启动命令 | `dsh web --host <host> --port <port> --trusted-host <authority...>` |
+| 启动命令 | `dsh web --no-open --host <host> --port <port> --trusted-host <authority...>` |
 
 ## 安装配置
 

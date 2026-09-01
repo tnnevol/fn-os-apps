@@ -34,8 +34,10 @@ ${DSH_HOME}/.npm-global/bin/dsh --help
 应用启动时执行：
 
 ```bash
-dsh web --host <host> --port <port> --trusted-host <authority...>
+dsh web --no-open --host <host> --port <port> --trusted-host <authority...>
 ```
+
+应用由 fnOS 网关托管 Web 页面，因此启动时使用 `--no-open` 禁止 DSH 在 NAS 服务进程中尝试打开本机浏览器。
 
 向导默认监听 `127.0.0.1`，端口默认 `3080`。选择 `127.0.0.1` 时，应用通过 fnOS 统一网关访问；“可信访问地址”应填写浏览器打开 NAS Web 时地址栏中的 `host` 或 `host:port`，例如：
 

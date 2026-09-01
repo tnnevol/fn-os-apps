@@ -2,6 +2,7 @@ import { createGateway } from './server.js'
 import { normalizePrefix } from './middleware/path-rewrite.js'
 import { PathAllowlistStore } from './path-allowlist.js'
 import { WebProcessController } from './web-process.js'
+import { buildDshWebArgs } from './dsh-web-args.js'
 
 const SOCKET_PATH = process.env.GATEWAY_SOCKET || '/var/apps/fn-deepseek-harness/target/app.sock'
 const UPSTREAM_HOST = process.env.DSH_UPSTREAM_HOST || '127.0.0.1'
@@ -13,8 +14,11 @@ const DSH_CWD = process.env.DSH_CWD || process.cwd()
 const DSH_PID_FILE = process.env.DSH_PID_FILE
 
 const trustedHosts = (process.env.DSH_TRUSTED_HOSTS || '').split(',').map(value => value.trim()).filter(Boolean)
-const dshArgs = ['web', '--host', process.env.DSH_WEB_HOST || '127.0.0.1', '--port', String(UPSTREAM_PORT)]
-for (const host of trustedHosts) dshArgs.push('--trusted-host', host)
+const dshArgs = buildDshWebArgs({
+  host: process.env.DSH_WEB_HOST || '127.0.0.1',
+  port: UPSTREAM_PORT,
+  trustedHosts,
+})
 const webProcess = DSH_BIN && DSH_PID_FILE ? new WebProcessController({
   command: DSH_BIN,
   args: dshArgs,
