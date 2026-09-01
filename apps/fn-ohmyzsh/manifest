@@ -1,5 +1,5 @@
 appname               = fn-ohmyzsh
-version               = 5.2.0
+version               = 5.2.1
 display_name          = Oh My Zsh
 desc                  = Oh My Zsh 是一个开源、社区驱动的 Zsh 配置管理框架，提供丰富的插件和主题。.zshrc 配置文件在 应用文件/fn-ohmyzsh/.zshrc 中配置
 changelog             = 将 ZDOTDIR 限定为 UID 1000 用户；迁移旧版 share 配置；完善安装、升级和卸载过程中的用户权限处理
