@@ -121,4 +121,55 @@ describe('gateway server', () => {
     expect(response.headers['content-type']).toBe('image/png')
     expect(response.body).toEqual(body)
   })
+
+  it('returns one HTML recovery response when the upstream connection fails', async () => {
+    const upstream = createServer((_req, res) => {
+      res.socket?.destroy()
+    })
+    const upstreamPort = await listen(upstream)
+    resources.push(async () => new Promise<void>(resolve => upstream.close(() => resolve())))
+
+    const directory = await mkdtemp(join(tmpdir(), 'fnos-gateway-'))
+    const gatewaySocket = join(directory, 'gateway.sock')
+    const webProcess = {
+      snapshot: async () => ({ state: 'stopped' as const }),
+      start: async () => ({ state: 'running' as const, pid: process.pid }),
+      restart: async () => ({ state: 'running' as const, pid: process.pid }),
+      stop: async () => undefined,
+    }
+    const gateway = createGateway({
+      socketPath: gatewaySocket,
+      gatewayPrefix: GATEWAY_PREFIX,
+      upstreamHost: '127.0.0.1',
+      upstreamPort,
+      webProcess: webProcess as never,
+    })
+    await once(gateway.server, 'listening')
+    resources.push(async () => gateway.close())
+    resources.push(async () => rm(directory, { recursive: true, force: true }))
+
+    const response = await new Promise<{ statusCode: number | undefined, headers: Record<string, string | string[] | undefined>, body: string }>((resolve, reject) => {
+      const request = httpRequest({
+        socketPath: gatewaySocket,
+        path: `${GATEWAY_PREFIX}/`,
+        method: 'GET',
+        headers: { accept: 'text/html' },
+      }, res => {
+        const chunks: Buffer[] = []
+        res.on('data', chunk => chunks.push(Buffer.from(chunk)))
+        res.on('end', () => resolve({
+          statusCode: res.statusCode,
+          headers: res.headers,
+          body: Buffer.concat(chunks).toString('utf8'),
+        }))
+        res.on('error', reject)
+      })
+      request.on('error', reject)
+      request.end()
+    })
+
+    expect(response.statusCode).toBe(503)
+    expect(response.headers['content-type']).toBe('text/html; charset=utf-8')
+    expect(response.body).toContain('DSH Web 未运行')
+  })
 })

@@ -11,11 +11,10 @@ import { BAD_GATEWAY_MESSAGE } from './constants.js'
 import { recoveryPage } from './recovery-page.js'
 
 function sendBadGateway(res: ServerResponse, error: unknown, options?: GatewayOptions, req?: IncomingMessage): void {
-  if (res.headersSent) {
+  if (res.headersSent || res.writableEnded || res.destroyed) {
     res.destroy()
     return
   }
-  res.writeHead(502, { 'content-type': 'text/plain; charset=utf-8' })
   const message = error instanceof Error ? error.message : String(error)
   if (options?.webProcess !== undefined && req?.method === 'GET' && String(req.headers.accept ?? '').includes('text/html')) {
     const html = recoveryPage(options.gatewayPrefix, message)
@@ -23,6 +22,7 @@ function sendBadGateway(res: ServerResponse, error: unknown, options?: GatewayOp
     res.end(html)
     return
   }
+  res.writeHead(502, { 'content-type': 'text/plain; charset=utf-8' })
   res.end(`${BAD_GATEWAY_MESSAGE}: ${message}`)
 }
 
