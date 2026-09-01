@@ -55,18 +55,54 @@ function setControlledInputValue(input: HTMLInputElement, value: string): void {
   setter.call(input, value)
   input.dispatchEvent(new Event('input', { bubbles: true }))
   input.dispatchEvent(new Event('change', { bubbles: true }))
-  // Do not synthesize a keydown here. Browser extensions and host shells can
-  // reject untrusted keyboard events, which surfaces as "Untrusted event".
-  // DSH receives the controlled input/change updates and the following blur
-  // commits the same path-edit flow without impersonating a real key press.
+  // Keep the editor focused. DSH cancels path editing when focus leaves the
+  // dialog, so blurring here discards the value before its submit flow can
+  // consume it.
   input.focus({ preventScroll: true })
-  input.blur()
+}
+
+interface PathSubmitEvent {
+  key: string
+  preventDefault: () => void
+}
+
+interface ReactInputProps {
+  onKeyDown?: (event: PathSubmitEvent) => void
+}
+
+/**
+ * Call DSH's own controlled-input submit callback after the value update has
+ * rendered. A synthetic KeyboardEvent is deliberately avoided: the host
+ * rejects untrusted keyboard events, while this reuses the handler already
+ * attached by the official directory browser.
+ */
+function submitPathInput(input: HTMLInputElement): boolean {
+  const propsKey = Object.getOwnPropertyNames(input).find(key => key.startsWith('__reactProps$'))
+  if (propsKey === undefined) return false
+  const props = (input as unknown as Record<string, unknown>)[propsKey]
+  if (props === null || typeof props !== 'object') return false
+  const onKeyDown = (props as ReactInputProps).onKeyDown
+  if (typeof onKeyDown !== 'function') return false
+  onKeyDown({ key: 'Enter', preventDefault: () => undefined })
+  return true
+}
+
+/** Submit the path through DSH's original Enter navigation after React settles the input value. */
+function submitAfterInputUpdate(dialog: HTMLElement): void {
+  let attempts = 0
+  const submit = (): void => {
+    const input = findPathInput(dialog)
+    if (input !== undefined && submitPathInput(input)) return
+    if (++attempts < 20) requestAnimationFrame(submit)
+  }
+  requestAnimationFrame(submit)
 }
 
 function fillAfterOpening(dialog: HTMLElement, path: string): void {
   const input = findPathInput(dialog)
   if (input !== undefined) {
     setControlledInputValue(input, path)
+    submitAfterInputUpdate(dialog)
     return
   }
   const editButton = [...dialog.querySelectorAll('button')].find(isPathControl)
@@ -76,6 +112,7 @@ function fillAfterOpening(dialog: HTMLElement, path: string): void {
     const next = findPathInput(dialog)
     if (next !== undefined) {
       setControlledInputValue(next, path)
+      submitAfterInputUpdate(dialog)
       return
     }
     if (++attempts < 20) requestAnimationFrame(fill)
@@ -171,6 +208,9 @@ function AuthorizedDirectoryDropdown({ dialog, t }: AuthorizedDirectoryDropdownP
               key: directory.path,
               title: directory.semanticPath,
               icon: createElement(IconFolderOpen, { size: 'small' }),
+              // Keep DSH's path editor focused. Its card-level blur handler
+              // treats focus moving into the dropdown portal as cancellation.
+              onMouseDown: (event: MouseEvent) => { event.preventDefault() },
               onClick: () => { fillAfterOpening(dialog, directory.path) },
             },
             menuText(directory.semanticPath, 'var(--dsw-alias-label-primary)'),

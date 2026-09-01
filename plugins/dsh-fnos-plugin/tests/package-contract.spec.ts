@@ -150,6 +150,10 @@ describe('dsh-fnos package contract', () => {
     expect(shortcut).toContain('DshIconButton as IconButton')
     expect(shortcut).toContain('onClick: load')
     expect(shortcut).toContain('onClick: () => { fillAfterOpening')
+    expect(shortcut).toContain('function submitPathInput')
+    expect(shortcut).toContain('submitAfterInputUpdate(dialog)')
+    expect(shortcut).toContain('onMouseDown: (event: MouseEvent) => { event.preventDefault() }')
+    expect(shortcut).not.toContain('input.blur()')
     expect(shortcut).not.toContain('new KeyboardEvent')
     expect(shortcut).not.toContain('installSemiDshTheme')
 
