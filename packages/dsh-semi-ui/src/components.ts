@@ -1,3 +1,31 @@
+import { createElement, type ComponentType, type CSSProperties, type ReactElement, type ReactNode } from 'react'
+import HotKeys from '@douyinfe/semi-ui/hotKeys'
+
+export interface DshHotKeysProps {
+  preventDefault?: boolean
+  hotKeys?: KeyboardEvent['key'][]
+  content?: string[]
+  onClick?: () => void
+  onHotKey?: (event: KeyboardEvent) => void
+  mergeMetaCtrl?: boolean
+  render?: ReactNode | (() => ReactNode)
+  getListenerTarget?: () => HTMLElement
+  className?: string
+  style?: CSSProperties
+}
+
+const DshHotKeysImplementation = HotKeys as unknown as ComponentType<DshHotKeysProps>
+
+/**
+ * Keep the official Semi HotKeys runtime while hiding its incompatible
+ * propTypes React class metadata from consumers that use a different React
+ * type boundary during package compilation.
+ */
+export const DshHotKeys = Object.assign(
+  (props: DshHotKeysProps): ReactElement | null => createElement(DshHotKeysImplementation, props),
+  { Keys: HotKeys.Keys },
+)
+
 export { default as DshButton } from '@douyinfe/semi-ui/button'
 export { default as DshButtonGroup } from '@douyinfe/semi-ui/lib/es/button/buttonGroup'
 export { default as DshCheckbox } from '@douyinfe/semi-ui/checkbox'
@@ -7,7 +35,6 @@ export { default as DshTag } from '@douyinfe/semi-ui/tag'
 export { default as DshCascader } from '@douyinfe/semi-ui/lib/es/cascader/index'
 export { default as DshDropdown } from '@douyinfe/semi-ui/dropdown'
 export { default as DshIconButton } from '@douyinfe/semi-ui/iconButton'
-export { default as DshHotKeys } from '@douyinfe/semi-ui/hotKeys'
 export { default as DshSpin } from '@douyinfe/semi-ui/lib/es/spin/index'
 export { default as DshToast } from '@douyinfe/semi-ui/lib/es/toast/index'
 export { default as DshTooltip } from '@douyinfe/semi-ui/lib/es/tooltip/index'
