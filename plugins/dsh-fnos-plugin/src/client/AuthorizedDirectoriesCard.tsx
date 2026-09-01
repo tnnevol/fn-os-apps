@@ -136,7 +136,9 @@ export function AuthorizedDirectoriesCard({ t }: AuthorizedDirectoriesCardProps)
       setSavedProxyPaths(text)
       setProxyPathsDraft(text)
       setProxyMessage(t('gatewayProxySaved'))
-    } catch { setProxyMessage(t('gatewayProxyFailed')) }
+    } catch (error: unknown) {
+      setProxyMessage(error instanceof DirectoryRequestError && error.code === 'invalid-gateway-proxy-paths' ? t('gatewayProxyInvalid') : t('gatewayProxyFailed'))
+    }
     finally { setBusy(false) }
   }, [proxyPathsDraft, t])
 

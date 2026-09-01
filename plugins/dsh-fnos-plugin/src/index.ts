@@ -63,7 +63,7 @@ export {
   FNOS_PATH_OPEN_VALIDATION_PATH,
 } from './authorized-directories-contract.ts'
 export { FNOS_SETTINGS_DOCUMENT_PATH } from './settings-document-contract.ts'
-export { FNOS_GATEWAY_PROXY_PATHS_ROUTE, normalizeGatewayProxyPaths } from './gateway-proxy-contract.ts'
+export { FNOS_GATEWAY_PROXY_PATHS_ROUTE, normalizeGatewayProxyPaths, validateGatewayProxyPaths } from './gateway-proxy-contract.ts'
 export {
   accessiblePathsFromEnvironment,
   convertPathsForDisplay,

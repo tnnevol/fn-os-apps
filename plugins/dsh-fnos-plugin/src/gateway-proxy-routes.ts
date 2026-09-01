@@ -4,7 +4,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http'
 import type { Context } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-host-webserver'
 import type { SettingsScope } from '@deepseek-ai/dsh-settings'
-import { FNOS_GATEWAY_PROXY_PATHS_FILE, FNOS_GATEWAY_PROXY_PATHS_ROUTE, normalizeGatewayProxyPaths, type GatewayProxyPathsDocument } from './gateway-proxy-contract.ts'
+import { FNOS_GATEWAY_PROXY_PATHS_FILE, FNOS_GATEWAY_PROXY_PATHS_ROUTE, normalizeGatewayProxyPaths, validateGatewayProxyPaths, type GatewayProxyPathsDocument } from './gateway-proxy-contract.ts'
 import type { FnosSettings } from './theme-contract.ts'
 
 function send(res: ServerResponse, status: number, value: unknown): void { res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' }); res.end(JSON.stringify(value)) }
@@ -46,7 +46,7 @@ export function registerGatewayProxyRoutes(ctx: Context, settings: SettingsScope
       if (file === undefined) return send(res, 503, { error: 'fnos-gateway-config-unavailable' })
       if (req.method === 'GET') return send(res, 200, { version: 1, paths: normalizeGatewayProxyPaths(settings.get().gatewayProxyPaths ?? []) ?? [] })
       if (req.method !== 'PUT') return send(res, 405, { error: 'method-not-allowed' })
-      const paths = normalizeGatewayProxyPaths(await body(req))
+      const paths = validateGatewayProxyPaths(await body(req))
       if (paths === undefined) return send(res, 400, { error: 'invalid-gateway-proxy-paths' })
       const document: GatewayProxyPathsDocument = { version: 1, paths }
       const previous = await readDocument(file)
