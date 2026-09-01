@@ -1,5 +1,5 @@
 appname               = fn-deepseek-harness
-version               = 5.1.10
+version               = 5.2.0
 display_name          = DeepSeek Harness
 desc                  = DeepSeek AI 开源的插件化智能代理工具，通过 Web UI 提供 dsh 操作界面。<br /><strong>安装错误排查</strong><br />1. 确认安装存储位置。例如安装在存储空间 4 时，路径为 <code>/vol4</code>；其中的数字请根据实际安装位置替换。<br />2. 优先查看日志：<code>/var/log/apps/fn-deepseek-harness.log</code>。<br />3. 三方插件可能导致安装失败。操作前请先备份相关文件或创建存储区域快照。打开 <code>/实际安装位置/@apphome/fn-deepseek-harness/profiles/web/package.json</code>，将 <code>bundles</code> 仅保留 <code>@deepseek-ai</code> 官方插件，并清空 <code>dependencies</code>，保存后再次尝试启动。如果曾为三方插件手动添加补丁，请将 <code>cordis.patch.yml</code> 和 <code>cordis.yml</code> 清空为 <code>[]</code> 后再重试。<br /><strong>重点排查文件</strong><br />1. <code>profiles/web/package.json</code><br />2. <code>cordis.patch.yml</code><br />3. <code>cordis.yml</code><br /><img src="https://picui.ogmua.cn/s1/2026/08/24/6a8be4f6744bb.webp" alt="安装错误排查文件位置示意图" />
 changelog             = 新增 fnOS 插件集成；统一管理所有插件的 UI 组件，复用定制的 DSH 主题。修复nas无法发送图片附件；修复配置文件无法打开；会话日志导出增加nas选项。

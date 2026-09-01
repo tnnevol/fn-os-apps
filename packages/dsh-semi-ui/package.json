@@ -2,7 +2,7 @@
   "name": "@tnnevol/dsh-semi-ui",
   "displayName": "DSH Semi UI",
   "description": "Shared Semi Design components themed for DeepSeek Harness.",
-  "version": "0.1.1-rc.3",
+  "version": "5.2.0",
   "author": "tnnevol",
   "repository": {
     "type": "git",
