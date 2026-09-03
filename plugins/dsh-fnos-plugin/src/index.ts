@@ -2,7 +2,6 @@
 
 import type { Context } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-host-webserver'
-import { settingsNamespace } from '@deepseek-ai/dsh-settings'
 import z from '@deepseek-ai/schemastery'
 import { registerAuthorizedDirectoryRoutes } from './authorized-directories.ts'
 import { FNOS_AUTHORIZED_DIRECTORIES_SETTINGS_NAMESPACE } from './authorized-directories-contract.ts'
@@ -18,10 +17,8 @@ export const FnosSettingsSchema = z.object({
   [FNOS_SYSTEM_THEME_FIELD]: z.union(['light', 'dark']),
   [FNOS_GATEWAY_PROXY_PATHS_FIELD]: z.array(z.string()),
 })
-export const FNOS_AUTHORIZED_DIRECTORIES_SETTINGS_NS = settingsNamespace(
-  FNOS_AUTHORIZED_DIRECTORIES_SETTINGS_NAMESPACE,
-)
-const DSH_THEME_SETTINGS_NS = settingsNamespace('ui-theme')
+export const FNOS_AUTHORIZED_DIRECTORIES_SETTINGS_NS = FNOS_AUTHORIZED_DIRECTORIES_SETTINGS_NAMESPACE
+const DSH_THEME_SETTINGS_NS = 'ui-theme'
 
 /** Host services required to register the fnOS settings namespace and Web routes. */
 export const inject = ['webServer', 'settings']

@@ -1,6 +1,6 @@
 /** Persist the resolved fnOS theme without changing DSH's theme preference. */
 
-import type { SettingsScope } from '@deepseek-ai/dsh-client-runtime/client'
+import type { SettingsScope } from '@deepseek-ai/dsh-client-ui-settings/client'
 import type { DshThemePreference } from '../theme-bootstrap.ts'
 import { FNOS_SYSTEM_THEME_FIELD, type FnosSettings, type FnosTheme } from '../theme-contract.ts'
 

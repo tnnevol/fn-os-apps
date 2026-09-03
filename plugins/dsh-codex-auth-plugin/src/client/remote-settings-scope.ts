@@ -1,6 +1,7 @@
 /** Host-backed settings scope for browsers opened through the NAS app proxy. */
 
-import type { SettingsScope, SettingsScopeSnapshot } from '@deepseek-ai/dsh-client-runtime/client'
+import type { SettingsScope, SettingsScopeSnapshot } from '@deepseek-ai/dsh-client-ui-settings/client'
+import type { SettingsPathOpView } from '@deepseek-ai/dsh-api-remotes/client'
 import { CODEX_AUTH_SETTINGS_PATH } from '../auth-paths.ts'
 import { decodeCodexAuthSettings } from '../settings-contract.ts'
 import type { CodexAuthSettingsConfig } from '../settings-contract.ts'
@@ -79,6 +80,30 @@ export class CodexAuthRemoteSettingsScope implements SettingsScope<CodexAuthSett
       const current = this.getSnapshot().value
       if (current === undefined) throw new Error('Codex settings are not loaded')
       const next = { ...current, [field]: value } as CodexAuthSettingsConfig
+      const accepted = await requestSettings('PUT', next)
+      if (this.disposed) return
+      this.publish({ ...this.snapshot, status: 'ready', value: accepted, writable: true })
+    })
+  }
+
+  mutate(ops: readonly SettingsPathOpView[], _expectedRevision?: number): Promise<void> {
+    return this.enqueue(async () => {
+      const current = this.getSnapshot().value
+      if (current === undefined) throw new Error('Codex settings are not loaded')
+      const next = { ...current }
+      for (const op of ops) {
+        if (op.path.length !== 1 || (op.path[0] !== 'enableImageTool' && op.path[0] !== 'enableImageUpload')) {
+          throw new Error(`Unsupported Codex settings path: ${op.path.join('.')}`)
+        }
+        const field = op.path[0]
+        if (op.op === 'unset') {
+          next[field] = false
+        } else if (typeof op.value !== 'boolean') {
+          throw new TypeError(`Codex setting ${field} must be boolean`)
+        } else {
+          next[field] = op.value
+        }
+      }
       const accepted = await requestSettings('PUT', next)
       if (this.disposed) return
       this.publish({ ...this.snapshot, status: 'ready', value: accepted, writable: true })

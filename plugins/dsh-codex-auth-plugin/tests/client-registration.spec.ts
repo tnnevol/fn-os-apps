@@ -1,13 +1,14 @@
 import { readFile } from 'node:fs/promises'
 import { describe, expect, it } from 'vitest'
 
-describe('dsh-codex-auth-plugin rc.2 client registration', () => {
+describe('dsh-codex-auth-plugin alpha.4 client registration', () => {
   it('uses the required key for the keyed settings plugin slot', async () => {
     const client = await readFile(new URL('../src/client/index.tsx', import.meta.url), 'utf8')
     expect(client).toContain("ctx.slots.inject('settings.plugin.item'")
     expect(client).toContain("name: 'settings.plugin.item'")
     expect(client).toContain('key: CODEX_AUTH_SETTINGS_NAMESPACE')
-    expect(client).toContain("'connection', 'remote', 'settingsScope'")
+    expect(client).toContain("'connection', 'remote', 'remote.session', 'settingsScope'")
+    expect(client).toContain('const remote = ctx.remote as unknown')
     expect(client).toContain('decodeCodexAuthSettings')
     expect(client).toContain('configScope')
     expect(client).toContain('installCodexModelEditorPresentation')

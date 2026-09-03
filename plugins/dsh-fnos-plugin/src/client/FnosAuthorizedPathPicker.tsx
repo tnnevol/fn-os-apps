@@ -1,7 +1,9 @@
 /** Compact fnOS-authorized tree selector used by the DSH input toolbar. */
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
-import type { PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
+import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
+import type { InputActions, InputState } from '@deepseek-ai/dsh-client-ui-conversation/client'
+import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
 import { DshIconFile as IconFile, DshIconFolder as IconFolder, DshTooltip as Tooltip, DshTreeSelect as TreeSelect } from '@tnnevol/dsh-semi-ui'
 import { requestAuthorizedEntries, type AuthorizedEntriesResult } from './authorized-directories-client.ts'
 import { FnosColorLogo } from './FnosLogo.tsx'
@@ -12,7 +14,10 @@ import type { AuthorizedEntry } from '../authorized-directories-contract.ts'
 import type { FnosLocaleKey } from './locales.ts'
 
 type Translate = (key: FnosLocaleKey) => string
-type InputProps = Pick<PropsRuntime<'conversation.input.left'>, 'input' | 'inputActions' | 'session'> & PropsLocale<'settings.dsh-fnos'>
+type InputProps = {
+  useInput: () => InputState
+  inputActions: InputActions
+} & PropsLocale<'settings.dsh-fnos'>
 
 interface TreeNode {
   key: string
@@ -72,7 +77,8 @@ export type FnosAuthorizedPathPickerProps = InputProps & {
 }
 
 /** Selection is immediate; closing the TreeSelect never discards a choice. */
-export function FnosAuthorizedPathPicker({ input, inputActions, insertReferences, t }: FnosAuthorizedPathPickerProps) {
+export function FnosAuthorizedPathPicker({ useInput, inputActions, insertReferences, t }: FnosAuthorizedPathPickerProps) {
+  const input = useInput()
   const [treeData, setTreeData] = useState<TreeNode[]>([])
   const [desiredPaths, setDesiredPaths] = useState<string[] | undefined>()
   const entries = useRef(new Map<string, AuthorizedEntry>())

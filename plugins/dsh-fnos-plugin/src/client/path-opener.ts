@@ -20,6 +20,11 @@ export interface PathOpenerOptions {
   message?: (key: PathOpenerMessageKey) => string
 }
 
+/** The alpha.4 remote face used by DSH's chat and tool views to open paths. */
+export interface PathOpenerRemote {
+  openWorkspacePath(request: { path: string }, signal?: AbortSignal): Promise<unknown>
+}
+
 const defaultMessages: Record<PathOpenerMessageKey, string> = {
   pathOpenUnavailable: 'Unable to open this path through fnOS.',
 }
@@ -76,5 +81,64 @@ export function installFnosPathOpener(
   workspaces.openPath = wrappedOpenPath
   return () => {
     if (workspaces.openPath === wrappedOpenPath) workspaces.openPath = originalOpenPath
+  }
+}
+
+/**
+ * Route the alpha.4 session path remote through fnOS while preserving DSH's
+ * result contract for the chat view. The old workspace service exposed
+ * `openPath`; alpha.4 moved the operation to `remote.session`.
+ */
+export function installFnosRemotePathOpener(
+  remote: PathOpenerRemote,
+  options: PathOpenerOptions,
+): () => void {
+  const originalOpenWorkspacePath = remote.openWorkspacePath
+  const createSdk = options.createSdk
+  let sdkPromise: Promise<PathOpenerSdk> | undefined
+
+  const getSdk = (): Promise<PathOpenerSdk> => sdkPromise ??= (async () => {
+    const sdk = createSdk()
+    await sdk.ready()
+    return sdk
+  })()
+
+  const wrappedOpenWorkspacePath = async (
+    request: { path: string },
+    signal?: AbortSignal,
+  ): Promise<unknown> => {
+    const embeddedFnosFrame = isEmbeddedFnosFrame()
+    let sdk: PathOpenerSdk
+    try {
+      sdk = await getSdk()
+    } catch (error) {
+      if (!embeddedFnosFrame) {
+        return originalOpenWorkspacePath.call(remote, request, signal)
+      }
+      return { ok: false, error: { code: 'gateway/internal', message: String(error) } }
+    }
+
+    if ((!sdk.isWeb || sdk.isStandaloneWeb) && !embeddedFnosFrame) {
+      return originalOpenWorkspacePath.call(remote, request, signal)
+    }
+
+    try {
+      if (!sdk.isWeb) throw new Error('fnOS iframe SDK did not initialize its web carrier')
+      await sdk.openFile(request.path)
+      return { ok: true, value: { opened: true } }
+    } catch (error) {
+      return {
+        ok: false,
+        error: {
+          code: 'gateway/internal',
+          message: error instanceof Error ? error.message : String(error),
+        },
+      }
+    }
+  }
+
+  remote.openWorkspacePath = wrappedOpenWorkspacePath
+  return () => {
+    if (remote.openWorkspacePath === wrappedOpenWorkspacePath) remote.openWorkspacePath = originalOpenWorkspacePath
   }
 }

@@ -1,11 +1,13 @@
 /** DSH-wide Codex default model controls. */
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import type { ConnectionHandle, ModelCatalogModel, ModelProviderGroup } from '@deepseek-ai/dsh-client-connection/client'
+import type { ConnectionHandle } from '@deepseek-ai/dsh-client-connection/client'
+import type { ModelCatalogModel, ModelProviderGroup } from '@deepseek-ai/dsh-api-session-controller/types'
 import { IconChevronDownOutline14 } from '@deepseek-ai/dsh-client-ui-primitives'
 import { DshButton, DshCascader } from '@tnnevol/dsh-semi-ui'
 import type { CodexAuthLocaleKey } from './locales.ts'
 import { CODEX_GLOBAL_MODEL_PATH } from '../auth-paths.ts'
+import { loadCodexModelCatalog } from './model-catalog.ts'
 
 interface GlobalModelValue {
   model: string
@@ -18,6 +20,7 @@ interface GlobalModelResponse {
 
 export interface CodexGlobalModelProps {
   connection: ConnectionHandle
+  remote: unknown
   t: (key: CodexAuthLocaleKey) => string
 }
 
@@ -33,7 +36,7 @@ async function request<T>(method: 'GET' | 'PUT', body?: unknown): Promise<T> {
   return payload as T
 }
 
-function codexModels(groups: readonly ModelProviderGroup[]): ModelCatalogModel[] {
+function codexModels(groups: readonly ModelProviderGroup[]): readonly ModelCatalogModel[] {
   return groups.find(group => group.id === 'openai-codex')?.models ?? []
 }
 
@@ -122,8 +125,8 @@ function GlobalModelPicker({ modelMenuLabel, effortMenuLabel, modelLabel, modelP
 }
 
 /** Set the model used by new DSH sessions and the host-backed agent entry point. */
-export function CodexGlobalModel({ connection, t }: CodexGlobalModelProps) {
-  const [models, setModels] = useState<ModelCatalogModel[]>([])
+export function CodexGlobalModel({ connection, remote, t }: CodexGlobalModelProps) {
+  const [models, setModels] = useState<readonly ModelCatalogModel[]>([])
   const [current, setCurrent] = useState<GlobalModelValue | undefined>()
   const [draftModel, setDraftModel] = useState('')
   const [draftEffort, setDraftEffort] = useState('')
@@ -136,10 +139,9 @@ export function CodexGlobalModel({ connection, t }: CodexGlobalModelProps) {
     try {
       const [global, catalog] = await Promise.all([
         request<GlobalModelResponse>('GET'),
-        connection.api.llm.models({}),
+        loadCodexModelCatalog(connection, remote),
       ])
-      if (!catalog.result.ok) throw new Error(catalog.result.error.message)
-      const available = codexModels(catalog.result.value.groups)
+      const available = codexModels(catalog.groups)
       setModels(available)
       setCurrent(global.globalModel)
       setDraftModel(global.globalModel?.model ?? '')
@@ -148,7 +150,7 @@ export function CodexGlobalModel({ connection, t }: CodexGlobalModelProps) {
     } catch {
       setStatus('error')
     }
-  }, [connection])
+  }, [connection, remote])
 
   useEffect(() => { void load() }, [load])
 

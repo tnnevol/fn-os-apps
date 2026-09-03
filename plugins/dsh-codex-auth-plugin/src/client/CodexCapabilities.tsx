@@ -1,7 +1,7 @@
 /** Live optional-capability settings for the Codex Auth plugin. */
 
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react'
-import type { SettingsScope, SettingsScopeSnapshot } from '@deepseek-ai/dsh-client-runtime/client'
+import type { SettingsScope, SettingsScopeSnapshot } from '@deepseek-ai/dsh-client-ui-settings/client'
 import { DshButton, DshCheckbox } from '@tnnevol/dsh-semi-ui'
 import type { CodexAuthSettingsConfig } from '../settings-contract.ts'
 import type { CodexAuthLocaleKey } from './locales.ts'

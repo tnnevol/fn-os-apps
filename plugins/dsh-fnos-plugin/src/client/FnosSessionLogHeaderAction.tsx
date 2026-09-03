@@ -1,7 +1,7 @@
 /** fnOS Session log menu: preserve DSH computer export and add NAS export. */
 
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
-import type { SessionId } from '@deepseek-ai/dsh-client-runtime/client'
+import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type { PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import { DshButton, DshDropdown, DshIconChangelog as IconChangelog, DshIconFolder, DshModal, DshTree } from '@tnnevol/dsh-semi-ui'
 import { requestAuthorizedEntries, type AuthorizedEntriesResult } from './authorized-directories-client.ts'
@@ -27,6 +27,7 @@ type SessionLogDownloadSelector = <Selected>(
 ) => Selected
 
 type HeaderProps = PropsRuntime<'conversation.session.header.utilities'> & PropsLocale<'settings.dsh-fnos'> & {
+  sessionId: SessionId
   exportToComputer: (sessionId: SessionId) => Promise<void>
   useSessionLogDownload: SessionLogDownloadSelector
   dismissDownload: (sessionId: SessionId) => void

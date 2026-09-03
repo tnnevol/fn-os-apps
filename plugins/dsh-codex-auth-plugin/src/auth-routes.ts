@@ -334,7 +334,7 @@ function decodeGlobalModelWrite(value: unknown): { model: string; reasoningEffor
   }
 }
 
-/** Register the plugin-owned bridge to DSH rc.8's shared Agent default model. */
+/** Register the plugin-owned bridge to DSH alpha.4's shared Agent default model. */
 export function registerCodexGlobalModelRoute(
   ctx: Context,
   defaultModel: DefaultModelService,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { installFnosPathOpener, type PathOpenerSdk } from '../src/client/path-opener.ts'
+import { installFnosPathOpener, installFnosRemotePathOpener, type PathOpenerSdk } from '../src/client/path-opener.ts'
 
 function sdk(options: Partial<PathOpenerSdk> = {}): PathOpenerSdk {
   return {

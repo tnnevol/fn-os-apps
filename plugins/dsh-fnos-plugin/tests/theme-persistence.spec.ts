@@ -1,4 +1,4 @@
-import type { SettingsScope, SettingsScopeSnapshot } from '@deepseek-ai/dsh-client-runtime/client'
+import type { SettingsScope, SettingsScopeSnapshot } from '@deepseek-ai/dsh-client-ui-settings/client'
 import { describe, expect, it, vi } from 'vitest'
 import { createThemePersistence } from '../src/client/theme-persistence.ts'
 import type { FnosSettings } from '../src/theme-contract.ts'
@@ -21,6 +21,7 @@ function makeScope(initial: Partial<SettingsScopeSnapshot<FnosSettings>> = {}) {
     subscribe: () => () => {},
     set,
     unset,
+    mutate: vi.fn(() => Promise.resolve()),
   }
   return {
     scope,

@@ -241,9 +241,10 @@ describe('dsh-fnos package contract', () => {
     const compatibility = JSON.parse(await readFile(new URL('../compatibility.json', import.meta.url), 'utf8')) as {
       dshPluginApi: { version: string, packages: string[] }
     }
-    expect(compatibility.dshPluginApi.version).toBe('0.1.1-rc.2')
+    expect(compatibility.dshPluginApi.version).toBe('0.1.2-alpha.4')
     expect(compatibility.dshPluginApi.packages).toEqual([
-      '@deepseek-ai/dsh-client-runtime',
+      '@deepseek-ai/dsh-api-remotes',
+      '@deepseek-ai/dsh-session',
       '@deepseek-ai/dsh-session-log-export',
       '@deepseek-ai/dsh-client-ui-theme',
       '@deepseek-ai/dsh-client-ui-settings',
@@ -251,6 +252,7 @@ describe('dsh-fnos package contract', () => {
       '@deepseek-ai/dsh-client-ui-conversation',
       '@deepseek-ai/dsh-client-ui-input-trigger',
       '@deepseek-ai/dsh-client-ui-primitives',
+      '@deepseek-ai/dsh-client-ui-renderer',
       '@deepseek-ai/dsh-client-ui-workspace',
       '@deepseek-ai/dsh-client-ui-settings-plugins',
       '@deepseek-ai/dsh-client-ui-sidebar',

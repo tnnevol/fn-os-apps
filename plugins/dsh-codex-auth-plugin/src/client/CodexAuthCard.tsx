@@ -1,7 +1,7 @@
 /** Expandable account card for the DSH Plugins settings section. */
 
 import { useCallback, useEffect, useState } from 'react'
-import type { SettingsScope } from '@deepseek-ai/dsh-client-runtime/client'
+import type { SettingsScope } from '@deepseek-ai/dsh-client-ui-settings/client'
 import type { ConnectionHandle } from '@deepseek-ai/dsh-client-connection/client'
 import type { PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type {} from '@deepseek-ai/dsh-client-ui-settings-plugins/client'
@@ -57,6 +57,7 @@ export interface CodexAuthCardInjected {
   t: Translate
   configScope: SettingsScope<CodexAuthSettingsConfig>
   connection: ConnectionHandle
+  remote: unknown
 }
 
 export type CodexAuthCardProps = PropsRuntime<'settings.plugin.item'> & Partial<CodexAuthCardInjected>
@@ -149,8 +150,8 @@ function UsageWindowView({ label, value, t }: { label: string; value: CodexUsage
   )
 }
 
-/** Render a standalone login/logout card in the rc.8 keyed Plugin slot. */
-export function CodexAuthCard({ t, configScope, connection }: CodexAuthCardProps) {
+/** Render a standalone login/logout card in the alpha.4 keyed Plugin slot. */
+export function CodexAuthCard({ t, configScope, connection, remote }: CodexAuthCardProps) {
   if (t === undefined) throw new Error('Codex auth card requires its translation function')
   if (connection === undefined) throw new Error('Codex auth card requires the DSH connection')
   const [open, setOpen] = useState(false)
@@ -339,7 +340,7 @@ export function CodexAuthCard({ t, configScope, connection }: CodexAuthCardProps
               {copyStatus === 'failed' ? <p className="dsh-codex-auth-error">{t('authorizationCodeCopyFailed')}</p> : null}
             </div>
           ) : null}
-          <CodexGlobalModel connection={connection} t={t} />
+          <CodexGlobalModel connection={connection} remote={remote} t={t} />
           <CodexCapabilities scope={configScope} t={t} />
         </div>
       ) : null}

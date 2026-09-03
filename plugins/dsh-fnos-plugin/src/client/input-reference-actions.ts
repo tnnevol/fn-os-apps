@@ -1,6 +1,7 @@
 /** Insert fnOS selections as structured, official DSH references. */
 
-import type { ClientContext, SessionId } from '@deepseek-ai/dsh-client-runtime/client'
+import type { Context as ClientContext } from '@deepseek-ai/cordis'
+import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type { ReferenceInsert, TokenSpan } from '@deepseek-ai/dsh-client-ui-input-trigger/client'
 import { FNOS_REFERENCE_SOURCE, fnosReferenceDisplayText, type FnosInputReference, type InputSnapshotForReference } from './input-references.ts'
 

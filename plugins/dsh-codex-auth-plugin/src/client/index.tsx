@@ -1,8 +1,9 @@
 /** Browser half of the standalone Codex OAuth plugin. */
 
 import './style.scss'
-import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
+import type { Context as ClientContext } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-api-remotes/client'
+import type { SlotRegistry } from '@deepseek-ai/dsh-client-ui-renderer/client'
 import type { ConnectionHandle } from '@deepseek-ai/dsh-client-connection/client'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
@@ -21,6 +22,14 @@ import { en, zh } from './locales.ts'
 import type { CodexAuthLocaleKey } from './locales.ts'
 import { installSemiDshTheme } from '@tnnevol/dsh-semi-ui'
 
+// Keep the renderer-provided slot service visible to consumers that resolve the
+// renderer package through a different peer dependency path.
+declare module '@deepseek-ai/cordis' {
+  interface Context {
+    slots: SlotRegistry
+  }
+}
+
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {
     'settings.dsh-codex-auth': CodexAuthLocaleKey
@@ -28,7 +37,7 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
 }
 
 export const name = 'dsh-codex-auth-plugin-client'
-export const inject = ['slots', 'locale', 'connection', 'remote', 'settingsScope', 'timer']
+export const inject = ['slots', 'locale', 'connection', 'remote', 'remote.session', 'settingsScope', 'timer']
 
 export function apply(ctx: ClientContext): void {
   ctx.effect(() => installSemiDshTheme(), 'dsh-codex-auth-plugin: Semi DSH theme')
@@ -40,6 +49,9 @@ export function apply(ctx: ClientContext): void {
   ctx.effect(() => ctx.locale.register(namespace, { zh, en }), 'dsh-codex-auth-plugin: locale')
   const t = ctx.locale.bind(namespace) as CodexAuthCardInjected['t']
   const connection = ctx.get('connection') as ConnectionHandle
+  // DSH exposes the merged Remote API on `ctx.remote`. Using `ctx.get('remote')`
+  // only resolves the base service and omits namespaces such as `session`.
+  const remote = ctx.remote as unknown
   const timer = ctx.get('timer') as CodexUsageStatusProps['timer']
   const remoteScope = connection.isLoopback ? undefined : new CodexAuthRemoteSettingsScope()
   const configScope = remoteScope ?? ctx.settingsScope.bind({
@@ -57,7 +69,7 @@ export function apply(ctx: ClientContext): void {
   ctx.slots.inject('settings.plugin.item', () => ctx.slots.register({
     name: 'settings.plugin.item',
     key: CODEX_AUTH_SETTINGS_NAMESPACE,
-    inject: (): CodexAuthCardInjected => ({ t, configScope, connection }),
+    inject: (): CodexAuthCardInjected => ({ t, configScope, connection, remote }),
   }, CodexAuthCard))
   ctx.slots.inject('conversation.input.right', () => ctx.slots.register({
     name: 'conversation.input.right',

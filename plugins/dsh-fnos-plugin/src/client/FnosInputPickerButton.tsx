@@ -8,6 +8,6 @@ type InputPickerProps = PropsRuntime<'conversation.input.left'> & PropsLocale<'s
   insertReferences: (input: { draft: string, draftRev: number }, references: readonly FnosInputReference[]) => readonly FnosInputReference[]
 }
 
-export function FnosInputPickerButton({ input, inputActions, session, insertReferences, t }: InputPickerProps) {
-  return <FnosAuthorizedPathPicker input={input} inputActions={inputActions} session={session} insertReferences={insertReferences} t={t} />
+export function FnosInputPickerButton({ useInput, inputActions, insertReferences, t }: InputPickerProps) {
+  return <FnosAuthorizedPathPicker useInput={useInput} inputActions={inputActions} insertReferences={insertReferences} t={t} />
 }

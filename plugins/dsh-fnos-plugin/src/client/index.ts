@@ -1,23 +1,27 @@
 /** Browser half of the fnOS-specific DSH integration plugin. */
 
 import './style.scss'
-import type { ClientContext, SessionId } from '@deepseek-ai/dsh-client-runtime/client'
+import type { Context as ClientContext } from '@deepseek-ai/cordis'
+import type {} from '@deepseek-ai/dsh-api-remotes/client'
+import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type { InputTriggerServiceContract, InputTriggerSource } from '@deepseek-ai/dsh-client-ui-input-trigger/client'
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import type {} from '@deepseek-ai/dsh-client-ui-settings-plugins/client'
 import type {} from '@deepseek-ai/dsh-client-ui-sidebar/client'
+import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import type {} from '@deepseek-ai/dsh-client-ui-slots'
 import type {} from '@deepseek-ai/dsh-client-ui-theme/client'
+import type {} from '@deepseek-ai/dsh-client-ui-workspace/client'
 import { AuthorizedDirectoriesCard } from './AuthorizedDirectoriesCard.tsx'
 import { FnosInputPickerButton } from './FnosInputPickerButton.tsx'
 import { FnosSessionLogHeaderAction } from './FnosSessionLogHeaderAction.tsx'
 import { insertFnosReferences } from './input-reference-actions.ts'
-import { FNOS_REFERENCE_SOURCE, fnosReferencePromptText } from './input-references.ts'
+import { FNOS_REFERENCE_SOURCE, fnosReferencePromptText, type FnosInputReference, type InputSnapshotForReference } from './input-references.ts'
 import type { FnosLocaleKey } from './locales.ts'
 import { en, zh } from './locales.ts'
-import { installFnosPathOpener } from './path-opener.ts'
+import { installFnosRemotePathOpener } from './path-opener.ts'
 import { FnosSettingsDocumentAction } from './FnosSettingsDocumentAction.tsx'
 import { FnosWebRestartAction } from './FnosWebRestartAction.tsx'
 import { installFnosBrowserRefreshShortcut } from './browser-refresh-shortcut.ts'
@@ -40,7 +44,7 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
 }
 
 export const name = 'dsh-fnos-plugin-client'
-export const inject = ['theme', 'slots', 'locale', 'sessions', 'inputTriggers', 'workspaces', 'settingsScope', 'sessionLogDownload']
+export const inject = ['theme', 'slots', 'locale', 'sessions', 'inputTriggers', 'remote', 'settingsScope', 'sessionLogDownload']
 
 type SessionLogDownloadState = {
   bySession: Record<string, { open: boolean, status: 'downloading' | 'success' | 'error', error: string | null } | undefined>
@@ -89,7 +93,7 @@ export function apply(ctx: ClientContext): void {
   ctx.effect(() => ctx.locale.register(namespace, { zh, en }), 'dsh-fnos: locale')
   const t = ctx.locale.bind(namespace) as (key: FnosLocaleKey) => string
 
-  ctx.effect(() => installFnosPathOpener(ctx.workspaces, {
+  ctx.effect(() => installFnosRemotePathOpener(ctx.remote.session, {
     createSdk: createTrimApp,
     message: key => t(key),
   }), 'dsh-fnos: fnOS path opener')
@@ -124,8 +128,9 @@ export function apply(ctx: ClientContext): void {
         order: 0,
         priority: -1,
         locale: namespace,
-        inject: () => ({
+        inject: (sessionId) => ({
           hooks: { sessionLogDownload: sessionLogDownload.store },
+          sessionId,
           exportToComputer: (sessionId: SessionId) => sessionLogDownload.download(sessionId),
           dismissDownload: (sessionId: SessionId) => { sessionLogDownload.dismiss(sessionId) },
         }),
@@ -160,8 +165,8 @@ export function apply(ctx: ClientContext): void {
     id: 'dsh-fnos-input-picker',
     order: 100,
     locale: namespace,
-    inject: (sessionId) => ({
-      insertReferences: (input, references) => insertFnosReferences(ctx, sessionId, references, input),
+    inject: (sessionId: string) => ({
+      insertReferences: (input: InputSnapshotForReference, references: readonly FnosInputReference[]) => insertFnosReferences(ctx, sessionId as SessionId, references, input),
     }),
   }, FnosInputPickerButton))
 }

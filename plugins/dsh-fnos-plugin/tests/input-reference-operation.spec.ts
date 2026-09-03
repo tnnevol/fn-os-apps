@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { fnosInsertionPrefix, draftWithoutFnosOccurrence, fnosReferenceDraftText, insertFnosReferences } from '../src/client/input-reference-actions.ts'
 import { reconcileFnosOperationOccurrences } from '../src/client/input-reference-operation.ts'
 import { createFnosInputReference, FNOS_REFERENCE_SOURCE, fnosReferenceId } from '../src/client/input-references.ts'
-import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
+import type { Context as ClientContext } from '@deepseek-ai/cordis'
 
 describe('fnOS reference insertion spacing', () => {
   it('adds a separator only when existing text touches the insertion point', () => {

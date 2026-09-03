@@ -1,6 +1,6 @@
 # Codex Auth
 
-`@tnnevol/dsh-codex-auth` 为 DSH 提供 ChatGPT/Codex 登录、模型目录和账号用量。当前插件版本为 `0.1.1-rc.2`，适配 DSH `0.1.1-rc.2`。
+`@tnnevol/dsh-codex-auth` 为 DSH 提供 ChatGPT/Codex 登录、模型目录和账号用量。当前插件版本为 `0.1.2-alpha.4`，适配 DSH `0.1.2-alpha.4`。
 
 ## 安装
 

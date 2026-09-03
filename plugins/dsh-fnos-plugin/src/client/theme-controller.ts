@@ -1,6 +1,6 @@
 /** Synchronizes fnOS's resolved theme while DSH follows its system preference. */
 
-import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
+import type { Context as ClientContext } from '@deepseek-ai/cordis'
 import { isDshThemePreference } from '../theme-bootstrap.ts'
 import type { ThemeBridge } from './theme-bridge.ts'
 import type { createThemePersistence } from './theme-persistence.ts'

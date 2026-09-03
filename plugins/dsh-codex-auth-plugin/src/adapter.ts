@@ -13,13 +13,13 @@ import { CODEX_PROVIDER } from './store.ts'
 /** Keep the Codex stream open while the provider is still producing output. */
 export const CODEX_STREAM_IDLE_TIMEOUT_MS = 300_000
 
-/** Match DSH rc.2's default request-level image payload bound. */
+/** Match DSH alpha.4's default request-level image payload bound. */
 export const CODEX_MAX_REQUEST_IMAGE_BYTES = 20 * 1024 * 1024
 
-/** Match DSH rc.2's default per-image total-pixel budget. */
+/** Match DSH alpha.4's default per-image total-pixel budget. */
 export const CODEX_REQUEST_IMAGE_PIXEL_BUDGET = 2048 * 2048
 
-/** Match DSH rc.2's default raw per-image byte budget. */
+/** Match DSH alpha.4's default raw per-image byte budget. */
 export const CODEX_REQUEST_IMAGE_MAX_BYTES = 1024 * 1024
 
 /**
@@ -67,7 +67,7 @@ export function createCodexAdapter(
   return new PiAiAdapter({
     profiles: () => profiles,
     resolveApiKey: async () => (await models.getAuth(CODEX_PROVIDER))?.auth.apiKey,
-    // DSH 0.1.1 requires every pi-ai adapter to provide an explicit auth
+    // DSH 0.1.2 requires every pi-ai adapter to provide an explicit auth
     // context. Codex credentials remain owned by this plugin's file-backed
     // store; the default context supplies only ambient env/file discovery.
     auth: {
