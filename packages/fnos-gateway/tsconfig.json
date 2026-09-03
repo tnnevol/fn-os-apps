@@ -14,5 +14,5 @@
     "noEmit": true,
     "types": ["node"]
   },
-  "include": ["src/**/*.ts", "tsdown.config.ts", "tsdown.app.config.ts"]
+  "include": ["src/**/*.ts", "tsdown.config.ts", "tsdown.app.config.ts", "tsdown.bridge.config.ts"]
 }

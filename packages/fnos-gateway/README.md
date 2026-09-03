@@ -13,19 +13,32 @@ packages/fnos-gateway/
 ├── src/
 │   ├── index.ts              # 库入口：导出 createGateway
 │   ├── cli.ts                # FPK 入口：读取环境变量并启动网关
-│   ├── server.ts             # Unix Socket + connect 服务
-│   ├── proxy.ts              # http-proxy-middleware 配置
-│   ├── bridge-script.ts      # 客户端 bridge 脚本
-│   ├── constants.ts          # 共享常量
-│   ├── types.ts              # 类型定义
-│   └── middleware/
+│   ├── client/
+│   │   └── bridge.ts         # bridge 源码，编译为 lib/client/bridge.js
+│   ├── config/
+│   │   ├── bridge-config.ts  # bridge 注入配置
+│   │   └── dsh-web-args.ts   # DSH Web 启动参数
+│   ├── constants/
+│   │   └── index.ts          # 共享常量
+│   ├── middleware/
 │       ├── path-rewrite.ts   # 路径前缀剥离
 │       ├── request-headers.ts # loopback 头注入
 │       ├── response-headers.ts # hop-by-hop 剥离
 │       ├── sse-keepalive.ts  # SSE 心跳
 │       └── content-rewrite.ts # HTML/CSS/JS 改写
+│   ├── server/
+│   │   ├── bridge-script.ts   # 客户端 bridge 注入脚本
+│   │   ├── gateway-server.ts  # Unix Socket + connect 服务
+│   │   ├── path-allowlist.ts  # 代理路径白名单
+│   │   ├── proxy.ts           # http-proxy-middleware 配置
+│   │   ├── recovery-page.ts   # DSH Web 故障恢复页
+│   │   └── web-process.ts     # DSH Web 进程控制
+│   └── types/
+│       ├── gateway.ts         # 网关类型定义
+│       └── virtual.d.ts       # 虚拟模块声明
 ├── package.json
 ├── tsconfig.json
+├── tsdown.bridge.config.ts   # 客户端 bridge 构建入口
 ├── tsdown.config.ts          # 库构建配置
 └── tsdown.app.config.ts      # FPK 构建配置（输出到 apps/fn-deepseek-harness/app）
 ```
@@ -39,6 +52,8 @@ pnpm --filter @tnnevol/fnos-gateway run build
 # 构建 FPK 入口到 apps/fn-deepseek-harness/app/gateway-proxy.mjs
 pnpm --filter @tnnevol/fnos-gateway run build:app
 ```
+
+`build:bridge` 会先将 `src/client/bridge.ts` 编译为 `lib/client/bridge.js`，随后网关构建读取该产物并将其注入 FPK Web 页面。`lib/` 属于构建产物，不应直接编辑。
 
 ## 环境变量
 

@@ -1,5 +1,5 @@
 import bridgeSource from 'virtual:fnos-gateway-bridge'
-import { serializeBridgeConfig } from './bridge-config.js'
+import { serializeBridgeConfig } from '../config/bridge-config.js'
 
 export interface GatewayBridgeConfig {
   prefix: string

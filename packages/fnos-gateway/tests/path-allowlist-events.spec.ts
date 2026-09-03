@@ -4,8 +4,8 @@ import { createConnection, type Socket } from 'node:net'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { afterEach, describe, expect, it } from 'vitest'
-import { createGateway } from '../src/server.ts'
-import { PATH_ALLOWLIST_EVENTS_PATH, PathAllowlistStore } from '../src/path-allowlist.ts'
+import { createGateway } from '../src/server/gateway-server.ts'
+import { PATH_ALLOWLIST_EVENTS_PATH, PathAllowlistStore } from '../src/server/path-allowlist.ts'
 
 const GATEWAY_PREFIX = '/app/fn-deepseek-harness'
 

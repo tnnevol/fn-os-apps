@@ -1,6 +1,6 @@
 import type { Server } from 'node:http'
-import type { PathAllowlistStore } from './path-allowlist.js'
-import type { WebProcessController } from './web-process.js'
+import type { PathAllowlistStore } from '../server/path-allowlist.js'
+import type { WebProcessController } from '../server/web-process.js'
 
 export interface GatewayOptions {
   socketPath: string

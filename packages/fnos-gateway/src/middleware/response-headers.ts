@@ -1,5 +1,5 @@
 import type { IncomingHttpHeaders } from 'node:http'
-import { HOP_BY_HOP_HEADERS } from '../constants.js'
+import { HOP_BY_HOP_HEADERS } from '../constants/index.js'
 import { rewriteLocation } from './path-rewrite.js'
 
 export interface ResponseHeaderOptions {

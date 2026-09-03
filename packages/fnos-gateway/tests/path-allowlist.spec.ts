@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { normalizeProxyPaths } from '../src/path-allowlist.ts'
+import { normalizeProxyPaths } from '../src/server/path-allowlist.ts'
 
 describe('gateway API URL proxy paths', () => {
   it('normalizes, de-duplicates and sorts custom absolute paths', () => {

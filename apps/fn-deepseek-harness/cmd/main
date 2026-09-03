@@ -2,6 +2,8 @@
 
 PID_FILE="${TRIM_PKGVAR}/app.pid"
 GATEWAY_PID_FILE="${TRIM_PKGVAR}/gateway.pid"
+RESTART_MARKER="${TRIM_PKGVAR}/internal-restart"
+RESTART_GRACE_SECONDS=120
 DSH_HOME="${TRIM_PKGHOME}"
 APP_HOME="${TRIM_APPDEST_VOL}/@appshare/fn-deepseek-harness"
 SOCKET_PATH="${TRIM_APPDEST}/app.sock"
@@ -54,8 +56,41 @@ pid_from_file() {
     head -n 1 "${file}" | tr -d '[:space:]'
 }
 
+process_group_id() {
+    local pid="$1"
+    [ -r "/proc/${pid}/stat" ] || return 0
+    awk '{ sub(/^.*\) /, ""); print $3 }' "/proc/${pid}/stat" 2>/dev/null
+}
+
+restart_in_progress() {
+    [ -r "${RESTART_MARKER}" ] || return 1
+
+    local started_at now elapsed
+    started_at=$(head -n 1 "${RESTART_MARKER}" | tr -d '[:space:]')
+    case "${started_at}" in
+    '' | *[!0-9]*)
+        rm -f "${RESTART_MARKER}"
+        return 1
+        ;;
+    esac
+
+    now=$(date +%s)
+    elapsed=$((now - started_at))
+    if [ "${elapsed}" -lt 0 ] || [ "${elapsed}" -gt "${RESTART_GRACE_SECONDS}" ]; then
+        rm -f "${RESTART_MARKER}"
+        return 1
+    fi
+    return 0
+}
+
+gateway_running() {
+    local gateway_pid
+    gateway_pid=$(pid_from_file "${GATEWAY_PID_FILE}")
+    check_process "${gateway_pid}"
+}
+
 start_process() {
-    if status; then
+    if gateway_running; then
         return 0
     fi
 
@@ -95,7 +130,13 @@ stop_pid() {
         return 0
     fi
 
-    kill -TERM "${pid}" 2>/dev/null || true
+    local group_id
+    group_id=$(process_group_id "${pid}")
+    if [ "${group_id}" = "${pid}" ]; then
+        kill -TERM -- "-${pid}" 2>/dev/null || true
+    else
+        kill -TERM "${pid}" 2>/dev/null || true
+    fi
 
     local count=0
     while check_process "${pid}" && [ "${count}" -lt 10 ]; do
@@ -104,12 +145,19 @@ stop_pid() {
     done
 
     if check_process "${pid}"; then
-        kill -KILL "${pid}" 2>/dev/null || true
+        if [ "${group_id}" = "${pid}" ]; then
+            kill -KILL -- "-${pid}" 2>/dev/null || true
+        else
+            kill -KILL "${pid}" 2>/dev/null || true
+        fi
     fi
     rm -f "${pid_file}"
 }
 
 stop_process() {
+    if [ "${FNOS_INTERNAL_RESTART:-0}" != "1" ]; then
+        rm -f "${RESTART_MARKER}"
+    fi
     stop_pid "${GATEWAY_PID_FILE}"
     # The gateway normally terminates its DSH child. Keep this fallback for a
     # gateway crash during uninstall or package shutdown.
@@ -119,10 +167,7 @@ stop_process() {
 }
 
 status() {
-    local gateway_pid
-    gateway_pid=$(pid_from_file "${GATEWAY_PID_FILE}")
-
-    if check_process "${gateway_pid}"; then
+    if gateway_running || restart_in_progress; then
         return 0
     fi
 
@@ -132,6 +177,9 @@ status() {
 
 case "$1" in
 start)
+    if gateway_running; then
+        exit 0
+    fi
     start_process
     ;;
 stop)

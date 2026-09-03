@@ -1,5 +1,5 @@
 import type { ClientRequest, IncomingMessage } from 'node:http'
-import { HOP_BY_HOP_HEADERS } from '../constants.js'
+import { HOP_BY_HOP_HEADERS } from '../constants/index.js'
 
 const LOOPBACK_ORIGIN_SCHEMES = new Set(['http:', 'https:'])
 

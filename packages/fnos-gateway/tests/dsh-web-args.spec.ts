@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildDshWebArgs } from '../src/dsh-web-args.ts'
+import { buildDshWebArgs } from '../src/config/dsh-web-args.ts'
 
 describe('DSH web command arguments', () => {
   it('prevents the service from opening a browser and forwards trusted hosts', () => {

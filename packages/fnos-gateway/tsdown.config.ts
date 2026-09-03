@@ -9,7 +9,9 @@ export default {
   target: 'node24',
   fixedExtension: false,
   dts: true,
-  clean: true,
+  // bridge:build creates lib/client/bridge.js before this config runs. Keep
+  // that browser artifact available for bridgeSourcePlugin and app builds.
+  clean: false,
   plugins: [bridgeSourcePlugin()],
   noExternal: ['connect', 'http-proxy-middleware'],
 } satisfies UserConfig

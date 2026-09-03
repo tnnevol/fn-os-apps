@@ -48,11 +48,14 @@ async function waitForChildExit(child: ChildProcess, timeoutMs: number): Promise
 
 async function terminatePid(pid: number, command: string, timeoutMs = 10_000): Promise<void> {
   if (!await isDshWebProcess(pid, command)) return
-  try { process.kill(pid, 'SIGTERM') } catch {}
+  // A detached child owns a process group named after its PID. Sending to
+  // the group works on both Linux (the NAS) and macOS (the development host).
+  // Fall back to the PID for old processes that were not detached.
+  try { process.kill(-pid, 'SIGTERM') } catch { try { process.kill(pid, 'SIGTERM') } catch {} }
   const deadline = Date.now() + timeoutMs
   while (Date.now() < deadline && await isDshWebProcess(pid, command)) await delay(250)
   if (await isDshWebProcess(pid, command)) {
-    try { process.kill(pid, 'SIGKILL') } catch {}
+    try { process.kill(-pid, 'SIGKILL') } catch { try { process.kill(pid, 'SIGKILL') } catch {} }
   }
 }
 
@@ -112,7 +115,10 @@ export class WebProcessController {
     let child: ChildProcess | undefined
     try {
       await rm(this.options.startingPidFile, { force: true })
-      const spawned = spawn(this.options.command, this.options.args, { cwd: this.options.cwd, env: process.env, stdio: 'inherit' })
+      // Keep DSH Web in its own process group so shutdown also terminates
+      // children started by the CLI instead of leaving a port-owning process
+      // behind after the fnOS app has been stopped.
+      const spawned = spawn(this.options.command, this.options.args, { cwd: this.options.cwd, env: process.env, stdio: 'inherit', detached: true })
       child = spawned
       this.child = spawned
       if (spawned.pid === undefined) throw new Error('DSH Web did not return a PID')

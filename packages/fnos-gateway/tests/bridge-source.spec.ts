@@ -1,10 +1,10 @@
 import { readFileSync } from 'node:fs'
 import { runInNewContext } from 'node:vm'
 import { describe, expect, it } from 'vitest'
-import { serializeBridgeConfig } from '../src/bridge-config.ts'
+import { serializeBridgeConfig } from '../src/config/bridge-config.ts'
 
-describe('browser bridge source', () => {
-  const source = readFileSync(new URL('../src/client/bridge.js', import.meta.url), 'utf8')
+describe('browser bridge artifact', () => {
+  const source = readFileSync(new URL('../lib/client/bridge.js', import.meta.url), 'utf8')
   it('is independent source with one runtime config handoff', () => {
     expect(source.match(/window\.__FNOS_GATEWAY_CONFIG__/gu)).toHaveLength(1)
     expect(source).toContain('XMLHttpRequest.prototype.open')

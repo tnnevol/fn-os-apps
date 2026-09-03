@@ -1,3 +1,7 @@
+// This file is injected as browser JavaScript by the gateway build. Keep the
+// runtime source JavaScript-compatible; the TypeScript extension provides
+// source ownership and lets the package track it with the rest of src.
+// @ts-nocheck
 (function (config) {
   "use strict";
   var prefix = config.prefix || "";

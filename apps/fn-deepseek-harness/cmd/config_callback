@@ -19,14 +19,25 @@ log_error() {
 APP_MAIN="${TRIM_APPDEST:-}/cmd/main"
 if [ -x "${APP_MAIN}" ] && "${APP_MAIN}" status >/dev/null 2>&1; then
     log_info "Restarting DeepSeek Harness after configuration changes."
-    "${APP_MAIN}" stop || {
+    mkdir -p "${TRIM_PKGVAR:-}" || {
+        log_error "Failed to prepare the internal restart marker directory."
+        exit 1
+    }
+    printf '%s\n' "$(date +%s)" >"${TRIM_PKGVAR}/internal-restart" || {
+        log_error "Failed to create the internal restart marker."
+        exit 1
+    }
+    FNOS_INTERNAL_RESTART=1 "${APP_MAIN}" stop || {
+        rm -f "${TRIM_PKGVAR}/internal-restart"
         log_error "Failed to stop DeepSeek Harness during configuration reload."
         exit 1
     }
     "${APP_MAIN}" start || {
+        rm -f "${TRIM_PKGVAR}/internal-restart"
         log_error "Failed to start DeepSeek Harness during configuration reload."
         exit 1
     }
+    rm -f "${TRIM_PKGVAR}/internal-restart"
     log_info "DeepSeek Harness configuration reload completed."
 else
     log_info "DeepSeek Harness is not running; configuration changes will apply on next start."

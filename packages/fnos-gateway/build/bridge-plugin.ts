@@ -10,8 +10,8 @@ export function bridgeSourcePlugin() {
     resolveId(id: string) { return id === VIRTUAL_ID ? RESOLVED_ID : null },
     async load(id: string) {
       if (id !== RESOLVED_ID) return null
-      const source = await readFile(fileURLToPath(new URL('../src/client/bridge.js', import.meta.url)), 'utf8')
-      if (!source.includes('window.__FNOS_GATEWAY_CONFIG__')) throw new Error('bridge.js is missing its config handoff')
+      const source = await readFile(fileURLToPath(new URL('../lib/client/bridge.js', import.meta.url)), 'utf8')
+      if (!source.includes('window.__FNOS_GATEWAY_CONFIG__')) throw new Error('lib/client/bridge.js is missing its config handoff')
       return `export default ${JSON.stringify(source)}`
     },
   }

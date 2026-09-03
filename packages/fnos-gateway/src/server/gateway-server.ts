@@ -2,12 +2,12 @@ import { createServer, type Server } from 'node:http'
 import type { Socket } from 'node:net'
 import { unlinkSync } from 'node:fs'
 import connect from 'connect'
-import type { GatewayOptions, GatewayServer } from './types.js'
-import { pathRewriteMiddleware, rewritePath } from './middleware/path-rewrite.js'
+import type { GatewayOptions, GatewayServer } from '../types/gateway.js'
+import { pathRewriteMiddleware, rewritePath } from '../middleware/path-rewrite.js'
 import { createProxyHandler } from './proxy.js'
 import { PATH_ALLOWLIST_EVENTS_PATH } from './path-allowlist.js'
 import { WEB_CONTROL_RESTART_PATH, WEB_CONTROL_START_PATH, WEB_CONTROL_STATUS_PATH } from './web-process.js'
-import { attachSseKeepalive } from './middleware/sse-keepalive.js'
+import { attachSseKeepalive } from '../middleware/sse-keepalive.js'
 
 function webControl(options: GatewayOptions): connect.NextHandleFunction {
   return (req, res, next) => {

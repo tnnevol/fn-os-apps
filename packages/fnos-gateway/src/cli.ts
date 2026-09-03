@@ -1,8 +1,8 @@
-import { createGateway } from './server.js'
+import { createGateway } from './server/gateway-server.js'
 import { normalizePrefix } from './middleware/path-rewrite.js'
-import { PathAllowlistStore } from './path-allowlist.js'
-import { WebProcessController } from './web-process.js'
-import { buildDshWebArgs } from './dsh-web-args.js'
+import { PathAllowlistStore } from './server/path-allowlist.js'
+import { WebProcessController } from './server/web-process.js'
+import { buildDshWebArgs } from './config/dsh-web-args.js'
 
 const SOCKET_PATH = process.env.GATEWAY_SOCKET || '/var/apps/fn-deepseek-harness/target/app.sock'
 const UPSTREAM_HOST = process.env.DSH_UPSTREAM_HOST || '127.0.0.1'

@@ -5,7 +5,7 @@ import { createConnection } from 'node:net'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { afterEach, describe, expect, it } from 'vitest'
-import { createGateway } from '../src/server.ts'
+import { createGateway } from '../src/server/gateway-server.ts'
 
 const GATEWAY_PREFIX = '/app/fn-deepseek-harness'
 

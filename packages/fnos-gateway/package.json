@@ -31,10 +31,13 @@
     "README.md"
   ],
   "scripts": {
-    "build": "tsdown",
-    "build:app": "tsdown --config tsdown.app.config.ts",
+    "build": "pnpm run build:bridge && pnpm run build:node",
+    "build:bridge": "tsdown --config tsdown.bridge.config.ts",
+    "build:node": "tsdown",
+    "build:app": "pnpm run build:bridge && tsdown --config tsdown.app.config.ts",
     "build:fpk": "pnpm run build:app && cd ../../apps/fn-deepseek-harness && fnpack build",
     "typecheck": "tsc -p tsconfig.json",
+    "pretest:unit": "pnpm run build:bridge",
     "test:unit": "vitest run --config vitest.config.ts",
     "test": "pnpm run test:unit",
     "check": "pnpm run typecheck && pnpm run build && pnpm run test:unit"
