@@ -5,10 +5,12 @@ import type { SettingsScope, SettingsScopeSnapshot } from '@deepseek-ai/dsh-clie
 import { DshButton, DshCheckbox } from '@tnnevol/dsh-semi-ui'
 import type { CodexAuthSettingsConfig } from '../settings-contract.ts'
 import type { CodexAuthLocaleKey } from './locales.ts'
+import { formatImageGenerationHelp } from './image-capability-message.ts'
 
 export interface CodexCapabilitiesProps {
   scope?: SettingsScope<CodexAuthSettingsConfig> | undefined
   t: (key: CodexAuthLocaleKey) => string
+  dshVersion?: string | undefined
 }
 
 const UNAVAILABLE_SNAPSHOT: SettingsScopeSnapshot<CodexAuthSettingsConfig> = {
@@ -22,7 +24,7 @@ const UNAVAILABLE_SNAPSHOT: SettingsScopeSnapshot<CodexAuthSettingsConfig> = {
 }
 
 /** Render the capability controls with the same Save/Discard contract as DSH settings. */
-export function CodexCapabilities({ scope, t }: CodexCapabilitiesProps) {
+export function CodexCapabilities({ scope, t, dshVersion }: CodexCapabilitiesProps) {
   const subscribe = useCallback((listener: () => void) => scope?.subscribe(listener) ?? (() => undefined), [scope])
   const getSnapshot = useCallback(() => scope?.getSnapshot() ?? UNAVAILABLE_SNAPSHOT, [scope])
   const snapshot = useSyncExternalStore(subscribe, getSnapshot, getSnapshot)
@@ -78,6 +80,7 @@ export function CodexCapabilities({ scope, t }: CodexCapabilitiesProps) {
 
   const loading = snapshot.status === 'loading'
   const editable = snapshot.status === 'ready' && snapshot.writable && !busy
+  const imageGenerationHelp = formatImageGenerationHelp(t, dshVersion)
 
   return (
     <section className="dsh-codex-capabilities" aria-labelledby="dsh-codex-capabilities-title">
@@ -114,7 +117,7 @@ export function CodexCapabilities({ scope, t }: CodexCapabilitiesProps) {
               <span className="dsh-codex-body">{t('enableImageUploadHelp')}</span>
             </span>
           </DshCheckbox>
-          <span className="dsh-codex-capability-row dsh-codex-capability-row--disabled" title={t('imageGenerationUnavailableHelp')}>
+          <span className="dsh-codex-capability-row dsh-codex-capability-row--disabled" title={imageGenerationHelp}>
             <DshCheckbox
               checked={false}
               disabled
@@ -122,7 +125,7 @@ export function CodexCapabilities({ scope, t }: CodexCapabilitiesProps) {
             >
               <span className="dsh-codex-capability-copy">
                 <span className="dsh-codex-capability-label">{t('enableImageGeneration')}</span>
-                <span className="dsh-codex-body">{t('imageGenerationUnavailableHelp')}</span>
+                <span className="dsh-codex-body">{imageGenerationHelp}</span>
               </span>
             </DshCheckbox>
           </span>

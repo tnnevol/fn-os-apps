@@ -23,12 +23,15 @@ import {
 type Translate = (key: CodexAuthLocaleKey) => string
 
 type AccountStatus =
-  | { status: 'loading' }
-  | { status: 'signed-out' }
-  | { status: 'signing-in' }
-  | { status: 'signed-in'; expiresAt?: string }
-  | { status: 'error'; message: string }
-  | { status: 'remote-web-origin-not-trusted' }
+  & { dshVersion?: string }
+  & (
+    | { status: 'loading' }
+    | { status: 'signed-out' }
+    | { status: 'signing-in' }
+    | { status: 'signed-in'; expiresAt?: string }
+    | { status: 'error'; message: string }
+    | { status: 'remote-web-origin-not-trusted' }
+  )
 
 interface LoginChallenge {
   type: 'device_code'
@@ -341,7 +344,7 @@ export function CodexAuthCard({ t, configScope, connection, remote }: CodexAuthC
             </div>
           ) : null}
           <CodexGlobalModel connection={connection} remote={remote} t={t} />
-          <CodexCapabilities scope={configScope} t={t} />
+          <CodexCapabilities scope={configScope} t={t} dshVersion={status.dshVersion} />
         </div>
       ) : null}
     </li>
