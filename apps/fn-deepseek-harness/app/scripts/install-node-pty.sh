@@ -253,14 +253,16 @@ install_bundled_node_pty() {
     log_info "Installed bundled node-pty versions: ${found_versions//$'\n'/,}."
 }
 
-validate_dsh_version
 NODE_PTY_VERSIONS="$(read_version_list)"
 NODE_PTY_VERSION_COUNT="$(printf '%s\n' "${NODE_PTY_VERSIONS}" | awk 'NF { count++ } END { print count + 0 }')"
 HAS_BUNDLED_NODE_PTY=0
 log_info "Checking bundled node-pty files for ${NODE_PTY_VERSION_COUNT} packaged version(s)."
 if [ "${NODE_PTY_VERSION_COUNT}" -gt 0 ] && [ -d "${DSH_NATIVE_BUNDLE}" ]; then
+    validate_dsh_version
     HAS_BUNDLED_NODE_PTY=1
     validate_versions
+elif [ "${NODE_PTY_VERSION_COUNT}" -gt 0 ] || [ -d "${DSH_NATIVE_BUNDLE}" ]; then
+    fail "The FPK node-pty native bundle is incomplete"
 fi
 
 if [ "${HAS_BUNDLED_NODE_PTY}" -eq 0 ] && ! has_compiler; then

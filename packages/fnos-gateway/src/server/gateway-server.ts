@@ -54,6 +54,29 @@ function pathAllowlistEvents(options: GatewayOptions): connect.NextHandleFunctio
   }
 }
 
+function webIndexAuthentication(options: GatewayOptions): connect.NextHandleFunction {
+  return (req, res, next) => {
+    if (req.method !== 'GET' || req.url?.split('?', 1)[0] !== '/') return next()
+
+    const requestUrl = new URL(req.url ?? '/', 'http://fnos-gateway.invalid')
+    if (requestUrl.searchParams.has('token')) return next()
+
+    const cookie = String(req.headers.cookie ?? '')
+    if (/(?:^|;\s*)dsh-auth-[^=;]+=/u.test(cookie)) return next()
+
+    const token = options.webProcess?.getLaunchToken?.()
+    if (token === undefined) return next()
+
+    const prefix = options.gatewayPrefix || ''
+    res.writeHead(303, {
+      location: `${prefix}/?token=${encodeURIComponent(token)}`,
+      'cache-control': 'no-store',
+      'referrer-policy': 'no-referrer',
+    })
+    res.end()
+  }
+}
+
 function removeSocket(socketPath: string): void {
   try {
     unlinkSync(socketPath)
@@ -69,6 +92,7 @@ export function createGateway(options: GatewayOptions): GatewayServer {
   app.use(pathRewriteMiddleware(gatewayPrefix))
   app.use(webControl(options))
   app.use(pathAllowlistEvents(options))
+  app.use(webIndexAuthentication(options))
   const proxy = createProxyHandler(options)
   app.use(proxy)
 

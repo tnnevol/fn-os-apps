@@ -40,8 +40,8 @@ export default [
   {
     entry: {
       index: 'src/index.ts',
-      auth: 'src/auth.ts',
-      'auth-paths': 'src/auth-paths.ts',
+      auth: 'src/host/auth.ts',
+      'auth-paths': 'src/contracts/auth-paths.ts',
     },
     outDir: 'lib',
     format: ['esm'],

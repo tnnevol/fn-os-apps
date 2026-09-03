@@ -9,7 +9,6 @@ NPM_BIN="${NODE_BIN}/npm"
 DSH_BIN="${NPM_CONFIG_PREFIX}/bin/dsh"
 DSH_PACKAGE="@deepseek-ai/dsh"
 DSH_VERSION="0.1.2-alpha.4"
-DSH_ATTACHMENT_LOCAL_VERSION="0.1.2-alpha.4"
 DSH_VERSION_FILE="${APP_DEST}/dsh-version"
 DSH_NODE_PTY_SCRIPT="${APP_DEST}/scripts/install-node-pty.sh"
 DSH_PLUGIN_SCRIPT="${APP_DEST}/scripts/install-dsh-plugins.mjs"
@@ -84,13 +83,21 @@ install_published_dsh_plugins() {
 }
 
 patch_dsh_attachment_local() {
+    local attachment_package_json attachment_local_version
     [ -f "${DSH_ATTACHMENT_PATCH_SCRIPT}" ] ||
         fail_install "The dsh attachment patch script is not available at ${DSH_ATTACHMENT_PATCH_SCRIPT}"
     [ -n "${TRIM_PKGVAR:-}" ] ||
         fail_install "TRIM_PKGVAR is not available; cannot patch dsh attachment persistence"
 
+    attachment_package_json="${DSH_PACKAGE_DIR}/node_modules/@deepseek-ai/dsh-attachment-local/package.json"
+    attachment_local_version="$(read_package_version "${attachment_package_json}")"
+    [ -n "${attachment_local_version}" ] ||
+        fail_install "The installed DSH dependency does not provide @deepseek-ai/dsh-attachment-local"
+
+    log_info "Patching installed @deepseek-ai/dsh-attachment-local@${attachment_local_version} for DSH ${DSH_VERSION}."
+
     DSH_ATTACHMENT_LOCAL_DIR="${DSH_PACKAGE_DIR}/node_modules/@deepseek-ai/dsh-attachment-local" \
-        DSH_ATTACHMENT_LOCAL_VERSION="${DSH_ATTACHMENT_LOCAL_VERSION}" \
+        DSH_ATTACHMENT_LOCAL_VERSION="${attachment_local_version}" \
         TRIM_PKGVAR="${TRIM_PKGVAR}" \
         "${NODE_BIN}/node" "${DSH_ATTACHMENT_PATCH_SCRIPT}" ||
         fail_install "Unable to patch dsh attachment persistence"

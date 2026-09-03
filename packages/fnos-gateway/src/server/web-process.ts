@@ -72,8 +72,15 @@ export class WebProcessController {
   private restarting: Promise<WebProcessSnapshot> | undefined
   private child: ChildProcess | undefined
   private lastError: string | undefined
+  private launchToken: string | undefined
+  private outputBuffer = ''
   private stopping = false
   constructor(readonly options: WebProcessOptions) {}
+
+  /** Return the current DSH process token captured from its startup URL. */
+  getLaunchToken(): string | undefined {
+    return this.launchToken
+  }
 
   async snapshot(): Promise<WebProcessSnapshot> {
     if (this.starting !== undefined) return { state: 'starting' }
@@ -118,10 +125,16 @@ export class WebProcessController {
       // Keep DSH Web in its own process group so shutdown also terminates
       // children started by the CLI instead of leaving a port-owning process
       // behind after the fnOS app has been stopped.
-      const spawned = spawn(this.options.command, this.options.args, { cwd: this.options.cwd, env: process.env, stdio: 'inherit', detached: true })
+      this.launchToken = undefined
+      this.outputBuffer = ''
+      const spawned = spawn(this.options.command, this.options.args, { cwd: this.options.cwd, env: process.env, stdio: ['ignore', 'pipe', 'pipe'], detached: true })
       child = spawned
       this.child = spawned
       if (spawned.pid === undefined) throw new Error('DSH Web did not return a PID')
+      spawned.stdout?.setEncoding('utf8')
+      spawned.stdout?.on('data', chunk => this.forwardOutput('stdout', chunk))
+      spawned.stderr?.setEncoding('utf8')
+      spawned.stderr?.on('data', chunk => this.forwardOutput('stderr', chunk))
       await writeFile(this.options.startingPidFile, String(spawned.pid), { mode: 0o600 })
       spawned.once('exit', () => {
         if (this.child === spawned) this.child = undefined
@@ -131,7 +144,14 @@ export class WebProcessController {
       while (Date.now() < deadline) {
         if (this.stopping) throw new Error('DSH Web start cancelled')
         if (spawned.exitCode !== null) throw new Error(`DSH Web exited with code ${String(spawned.exitCode)}`)
-        try { const response = await fetch(this.options.healthUrl, { signal: AbortSignal.timeout(1_000) }); if (response.ok) { await rename(this.options.startingPidFile, this.options.pidFile); this.lastError = undefined; return { state: 'running', pid: spawned.pid } } } catch {}
+        try {
+          const response = await fetch(this.healthCheckUrl(), { redirect: 'manual', signal: AbortSignal.timeout(1_000) })
+          if (response.ok || (response.status >= 300 && response.status < 400)) {
+            await rename(this.options.startingPidFile, this.options.pidFile)
+            this.lastError = undefined
+            return { state: 'running', pid: spawned.pid }
+          }
+        } catch {}
         await delay(500)
       }
       throw new Error('DSH Web health check timed out')
@@ -142,6 +162,7 @@ export class WebProcessController {
         this.child = undefined
       }
       await rm(this.options.startingPidFile, { force: true })
+      this.launchToken = undefined
       return { state: 'error', error: this.lastError }
     } finally {
       await lock.close()
@@ -163,8 +184,31 @@ export class WebProcessController {
         if (pid !== undefined) await terminatePid(pid, this.options.command, this.options.terminationTimeoutMs)
       }
       await Promise.all([rm(this.options.pidFile, { force: true }), rm(this.options.startingPidFile, { force: true }), rm(this.options.lockFile, { force: true })])
+      this.launchToken = undefined
+      this.outputBuffer = ''
     } finally {
       this.stopping = false
+    }
+  }
+
+  private healthCheckUrl(): string {
+    if (this.launchToken === undefined) return this.options.healthUrl
+    const url = new URL(this.options.healthUrl)
+    url.searchParams.set('token', this.launchToken)
+    return url.href
+  }
+
+  private forwardOutput(channel: 'stdout' | 'stderr', chunk: string): void {
+    process[channel].write(chunk)
+    this.outputBuffer = (this.outputBuffer + chunk).slice(-8_192)
+    for (const line of this.outputBuffer.split(/\r?\n/u)) {
+      const match = /^dsh web:\s+(https?:\/\/\S+)/u.exec(line.trim())
+      if (match === null) continue
+      try {
+        const url = new URL(match[1] ?? '')
+        const token = url.searchParams.get('token')
+        if (token !== null && token !== '') this.launchToken = token
+      } catch {}
     }
   }
 }

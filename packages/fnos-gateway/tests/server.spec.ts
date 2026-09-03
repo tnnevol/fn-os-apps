@@ -24,6 +24,77 @@ describe('gateway server', () => {
     while (resources.length > 0) await resources.pop()?.()
   })
 
+  it('redirects the first Web root request to the captured launch token', async () => {
+    let upstreamPath: string | undefined
+    const upstream = createServer((req, res) => {
+      upstreamPath = req.url
+      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' })
+      res.end('<!doctype html>')
+    })
+    const upstreamPort = await listen(upstream)
+    resources.push(async () => new Promise<void>(resolve => upstream.close(() => resolve())))
+
+    const directory = await mkdtemp(join(tmpdir(), 'fnos-gateway-'))
+    const gatewaySocket = join(directory, 'gateway.sock')
+    const webProcess = {
+      getLaunchToken: () => 'launch-token',
+      snapshot: async () => ({ state: 'running' as const, pid: process.pid }),
+      start: async () => ({ state: 'running' as const, pid: process.pid }),
+      restart: async () => ({ state: 'running' as const, pid: process.pid }),
+      stop: async () => undefined,
+    }
+    const gateway = createGateway({
+      socketPath: gatewaySocket,
+      gatewayPrefix: GATEWAY_PREFIX,
+      upstreamHost: '127.0.0.1',
+      upstreamPort,
+      webProcess: webProcess as never,
+    })
+    await once(gateway.server, 'listening')
+    resources.push(async () => gateway.close())
+    resources.push(async () => rm(directory, { recursive: true, force: true }))
+
+    const response = await new Promise<{ statusCode: number | undefined, location: string | undefined }>((resolve, reject) => {
+      const request = httpRequest({ socketPath: gatewaySocket, path: `${GATEWAY_PREFIX}/`, method: 'GET' }, res => {
+        res.resume()
+        res.on('end', () => resolve({ statusCode: res.statusCode, location: res.headers.location }))
+        res.on('error', reject)
+      })
+      request.on('error', reject)
+      request.end()
+    })
+
+    expect(response.statusCode).toBe(303)
+    expect(response.location).toBe(`${GATEWAY_PREFIX}/?token=launch-token`)
+
+    await new Promise<void>((resolve, reject) => {
+      const request = httpRequest({ socketPath: gatewaySocket, path: `${GATEWAY_PREFIX}/?token=launch-token`, method: 'GET' }, res => {
+        res.resume()
+        res.on('end', resolve)
+        res.on('error', reject)
+      })
+      request.on('error', reject)
+      request.end()
+    })
+    expect(upstreamPath).toBe('/?token=launch-token')
+
+    await new Promise<void>((resolve, reject) => {
+      const request = httpRequest({
+        socketPath: gatewaySocket,
+        path: `${GATEWAY_PREFIX}/`,
+        method: 'GET',
+        headers: { cookie: 'dsh-auth-test=valid' },
+      }, res => {
+        res.resume()
+        res.on('end', resolve)
+        res.on('error', reject)
+      })
+      request.on('error', reject)
+      request.end()
+    })
+    expect(upstreamPath).toBe('/')
+  })
+
   it('rewrites and proxies the first websocket upgrade', async () => {
     let upstreamPath: string | undefined
     let upstreamHeaders: Record<string, string | string[] | undefined> | undefined

@@ -5,10 +5,6 @@
     {
       "name": "@tnnevol/dsh-codex-auth",
       "distTag": "alpha"
-    },
-    {
-      "name": "@tnnevol/dsh-fnos",
-      "distTag": "alpha"
     }
   ]
 }

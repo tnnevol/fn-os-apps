@@ -3,11 +3,11 @@
 import type { Context } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-host-webserver'
 import z from '@deepseek-ai/schemastery'
-import { registerAuthorizedDirectoryRoutes } from './authorized-directories.ts'
-import { FNOS_AUTHORIZED_DIRECTORIES_SETTINGS_NAMESPACE } from './authorized-directories-contract.ts'
-import { injectCachedFnosTheme, type DshThemePreference } from './theme-bootstrap.ts'
-import { FNOS_GATEWAY_PROXY_PATHS_FIELD, FNOS_SYSTEM_THEME_FIELD, isFnosTheme, type FnosSettings, type FnosTheme } from './theme-contract.ts'
-import { registerGatewayProxyRoutes } from './gateway-proxy-routes.ts'
+import { registerAuthorizedDirectoryRoutes } from './host/authorized-directories.ts'
+import { FNOS_AUTHORIZED_DIRECTORIES_SETTINGS_NAMESPACE } from './contracts/authorized-directories-contract.ts'
+import { injectCachedFnosTheme, type DshThemePreference } from './host/theme-bootstrap.ts'
+import { FNOS_GATEWAY_PROXY_PATHS_FIELD, FNOS_SYSTEM_THEME_FIELD, isFnosTheme, type FnosSettings, type FnosTheme } from './contracts/theme-contract.ts'
+import { registerGatewayProxyRoutes } from './host/gateway-proxy-routes.ts'
 
 /** Stable Host bundle name. */
 export const name = '@tnnevol/dsh-fnos'
@@ -58,9 +58,9 @@ export {
   FNOS_AUTHORIZED_DIRECTORIES_SETTINGS_NAMESPACE,
   FNOS_PATH_CONVERSION_PATH,
   FNOS_PATH_OPEN_VALIDATION_PATH,
-} from './authorized-directories-contract.ts'
-export { FNOS_SETTINGS_DOCUMENT_PATH } from './settings-document-contract.ts'
-export { FNOS_GATEWAY_PROXY_PATHS_ROUTE, normalizeGatewayProxyPaths, validateGatewayProxyPaths } from './gateway-proxy-contract.ts'
+} from './contracts/authorized-directories-contract.ts'
+export { FNOS_SETTINGS_DOCUMENT_PATH } from './contracts/settings-document-contract.ts'
+export { FNOS_GATEWAY_PROXY_PATHS_ROUTE, normalizeGatewayProxyPaths, validateGatewayProxyPaths } from './contracts/gateway-proxy-contract.ts'
 export {
   accessiblePathsFromEnvironment,
   convertPathsForDisplay,
@@ -78,4 +78,4 @@ export {
   gatewayUserId,
   loadAuthorizedEntries,
   splitPathEnvironment,
-} from './authorized-directories.ts'
+} from './host/authorized-directories.ts'
