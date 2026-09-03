@@ -194,7 +194,7 @@ cd apps/fn-deepseek-harness
 fnpack build
 ```
 
-`.github/workflows/build-dsh-fn.yml` 会先使用 Node.js 24 执行 `.github/scripts/prepare-dsh-native.sh`，为固定 DSH 版本准备 `node-pty` 原生文件，再执行 `fnpack build`。修改 DSH 或 `node-pty` 版本时，应同步维护：
+`.github/workflows/build-dsh-fn.yml` 会先使用 Node.js 24 执行 `.github/scripts/prepare-dsh-native.sh`，为固定 DSH 版本准备 `node-pty` 原生文件，再执行 `fnpack build`。FPK 安装回调会把固定 DSH 版本传给 `install-node-pty.sh`，安装前校验 `dsh-version` 与 native 文件版本一致。修改 DSH 或 `node-pty` 版本时，应同步维护：
 
 - `.github/config/dsh-native-<dsh-version>.env`
 - `.github/scripts/prepare-dsh-native.sh`

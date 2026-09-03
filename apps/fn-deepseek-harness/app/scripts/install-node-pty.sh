@@ -7,6 +7,8 @@ NPM_BIN="${NPM_BIN:-${NODE_BIN}/npm}"
 PACKAGE_MANAGER="${PACKAGE_MANAGER:-npm}"
 PACKAGE_MANAGER_BIN="${PACKAGE_MANAGER_BIN:-${NPM_BIN}}"
 DSH_HOME="${DSH_HOME:?DSH_HOME is required}"
+DSH_VERSION="${DSH_VERSION:?DSH_VERSION is required}"
+DSH_VERSION_FILE="${DSH_VERSION_FILE:?DSH_VERSION_FILE is required}"
 DSH_NATIVE_BUNDLE="${DSH_NATIVE_BUNDLE:?DSH_NATIVE_BUNDLE is required}"
 NODE_PTY_VERSIONS_FILE="${NODE_PTY_VERSIONS_FILE:?NODE_PTY_VERSIONS_FILE is required}"
 DSH_PACKAGE_DIR="${DSH_PACKAGE_DIR:?DSH_PACKAGE_DIR is required}"
@@ -60,6 +62,16 @@ try {
 read_version_list() {
     [ -f "${NODE_PTY_VERSIONS_FILE}" ] || return 0
     awk 'NF { gsub(/[[:space:]]/, "", $0); print }' "${NODE_PTY_VERSIONS_FILE}"
+}
+
+validate_dsh_version() {
+    local packaged_version
+    [ -f "${DSH_VERSION_FILE}" ] ||
+        fail "The FPK DSH version file is not available: ${DSH_VERSION_FILE}"
+    packaged_version="$(tr -d '[:space:]' <"${DSH_VERSION_FILE}")"
+    [ "${packaged_version}" = "${DSH_VERSION}" ] ||
+        fail "The FPK native files target DSH ${packaged_version:-unknown}, expected ${DSH_VERSION}"
+    log_info "Preparing node-pty native files for DSH ${DSH_VERSION}."
 }
 
 version_in_list() {
@@ -241,6 +253,7 @@ install_bundled_node_pty() {
     log_info "Installed bundled node-pty versions: ${found_versions//$'\n'/,}."
 }
 
+validate_dsh_version
 NODE_PTY_VERSIONS="$(read_version_list)"
 NODE_PTY_VERSION_COUNT="$(printf '%s\n' "${NODE_PTY_VERSIONS}" | awk 'NF { count++ } END { print count + 0 }')"
 HAS_BUNDLED_NODE_PTY=0

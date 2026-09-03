@@ -4,10 +4,10 @@
 
 ## 安装
 
-`fn-deepseek-harness` 会在安装和升级时自动安装 npm `rc` 标签对应的版本。其他 DSH 环境可以执行：
+`fn-deepseek-harness` 会在安装和升级时自动安装 npm `alpha` 标签对应的版本。其他 DSH 环境可以执行：
 
 ```sh
-dsh plugin --profile web add @tnnevol/dsh-codex-auth@rc
+dsh plugin --profile web add @tnnevol/dsh-codex-auth@alpha
 dsh --profile web --dump-config
 ```
 
@@ -46,7 +46,7 @@ dsh --profile web --dump-config
 | 图片识别 | 注册 `view_image` 工具，让支持图片输入的 Codex 模型读取本地 PNG、JPEG、WebP 或 GIF |
 | 图片上传 | 允许支持图片输入的 Codex 模型接收粘贴或上传到对话的图片 |
 
-当前版本不提供图像生成。模型本身未声明图片输入能力时，即使打开开关也不能处理图片。
+当前版本（DSH `0.1.2-alpha.4`）不提供图像生成或图像输出，仅支持图片识别和图片上传。模型本身未声明图片输入能力时，即使打开开关也不能处理图片。
 
 ## 凭据与请求
 
@@ -64,7 +64,7 @@ Web 设置通过同源插件路由访问 Host。使用 `fn-deepseek-harness` 时
 dsh --profile web --dump-config | grep -n -C 3 'dsh-codex-auth'
 ```
 
-如果出现 `cannot resolve profile bundle`，请重新执行 `dsh plugin --profile web add @tnnevol/dsh-codex-auth@rc`，不要只在 `package.json` 中手动补 bundle。
+如果出现 `cannot resolve profile bundle`，请重新执行 `dsh plugin --profile web add @tnnevol/dsh-codex-auth@alpha`，不要只在 `package.json` 中手动补 bundle。
 
 ### 模型目录没有 OpenAI Codex
 

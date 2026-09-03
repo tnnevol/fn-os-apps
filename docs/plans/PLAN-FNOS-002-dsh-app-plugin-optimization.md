@@ -25,7 +25,7 @@ lastVerified: 2026-09-01
 - `FNOS-002-02`：修正 NAS 文件和目录引用的插入规则，并在 Tree 面板打开期间让本次引用删除状态反向同步到勾选节点，历史引用不参与当前选择。
 - `FNOS-002-03`：新增 DSH Semi UI 总览插件，集中展示 `@tnnevol/dsh-semi-ui` 的公共组件、状态和浅色/深色主题效果。
 - `FNOS-002-04`：使用 `connect` 与 `http-proxy-middleware` 重写 fnOS 统一网关代理；由常驻网关承载 FPK 状态并在 Web 左侧菜单提供 DSH Web 重启入口；由 fnOS 插件管理三方插件 API URL 反代规则，并让已打开的 DSH 页面立即取得最新配置。
-- 跨功能版本约束：将 DSH 运行时、插件、`@deepseek-ai/dsh-*` 依赖、native 产物、FPK 安装流程和发布文档统一到 `0.1.1-rc.2`，不清理用户数据或配置。
+- 跨功能版本约束：将 DSH 运行时、插件、`@deepseek-ai/dsh-*` 依赖、native 产物、FPK 安装流程和发布文档统一到 `0.1.2-alpha.4`，不清理用户数据或配置。
 
 网关改版不修改 fnOS 的登录校验，不把路径列表作为访问控制，也不修改 DSH 官方源码。代理目标固定为应用内部的 DSH 回环服务 `127.0.0.1:3080`。
 
@@ -188,7 +188,7 @@ Socket 文件只创建在 `${TRIM_APPDEST}`。用户可变配置写入 `${TRIM_P
 
 总览插件只消费共享包的公开导出，不从 Semi Design 深层路径再次引入组件。新增公共组件时，先在共享包统一封装和映射主题，再加入总览。
 
-DSH `0.1.1-rc.2` 没有公开的 Router/Page 注册服务，因此总览使用 `#/plugins/semi-ui` 作为插件路由，并在 `shell.overlay` list slot 中渲染覆盖 AppFrame 的独立页面。Hash 不改变 fnOS 统一网关请求路径，直接刷新仍由原 DSH HTML 入口承载；不得注册或替换 `conversation`、`sidebar` 等 single slot。
+DSH `0.1.2-alpha.4` 没有公开的 Router/Page 注册服务，因此总览使用 `#/plugins/semi-ui` 作为插件路由，并在 `shell.overlay` list slot 中渲染覆盖 AppFrame 的独立页面。Hash 不改变 fnOS 统一网关请求路径，直接刷新仍由原 DSH HTML 入口承载；不得注册或替换 `conversation`、`sidebar` 等 single slot。
 
 ### 统一网关请求
 
@@ -433,8 +433,8 @@ SSE 路由由网关自身处理，不转发到 DSH。它经过 fnOS 统一网关
 
 | 任务 ID | 实现内容 | 状态 |
 | --- | --- | --- |
-| PLAN-FNOS-002-TV-01 | 将 DSH 插件自身版本、`@deepseek-ai/dsh-*` peer/dev 依赖和 compatibility 声明统一为 `0.1.1-rc.2` | <Badge type="tip" text="已修改" /> |
-| PLAN-FNOS-002-TV-02 | 将 FPK 安装/升级回调固定到 `@deepseek-ai/dsh@0.1.1-rc.2`，发布清单只安装已发布的 rc 插件 | <Badge type="tip" text="已修改" /> |
+| PLAN-FNOS-002-TV-01 | 将 DSH 插件自身版本、`@deepseek-ai/dsh-*` peer/dev 依赖和 compatibility 声明统一为 `0.1.2-alpha.4` | <Badge type="tip" text="已修改" /> |
+| PLAN-FNOS-002-TV-02 | 将 FPK 安装/升级回调固定到 `@deepseek-ai/dsh@0.1.2-alpha.4`，发布清单只安装已发布的 alpha 插件 | <Badge type="tip" text="已修改" /> |
 | PLAN-FNOS-002-TV-03 | 同步 node-pty native 构建参数、FPK 构建产物、workspace 包版本和版本相关文档 | <Badge type="tip" text="已修改" /> |
 | PLAN-FNOS-002-TV-04 | 在真实 NAS 验证安装、升级、插件加载和版本回滚，确认 `DSH_HOME`、profile、凭据、工作区和插件配置保留 | <Badge type="warning" text="待 NAS 验证" /> |
 
@@ -643,7 +643,7 @@ SSE 路由由网关自身处理，不转发到 DSH。它经过 fnOS 统一网关
 | Tree 反向同步 | 仅按路径同步会把面板打开前的同路径历史引用误认为本次选择 | 以面板打开基线和 occurrence 身份维护本次关联，历史引用不进入 `desiredPaths` |
 | 输入快照时序 | 插入调用成功后 occurrence 可能在后续 revision 才出现，立即求差集会误取消勾选 | 增加 pending 关联阶段，收到对应 occurrence 或明确失败后再参与反向同步 |
 | Semi UI 总览 | 总览插件和共享包可能循环依赖或重复打包 Semi | 总览插件单向依赖共享包，公共组件只从共享包导出，构建检查 bundle 契约 |
-| DSH 页面路由 | `0.1.1-rc.2` 没有公开 Router/Page 注册服务，替换 single slot 会破坏官方页面 | 使用 Hash 路由和 `shell.overlay` list slot；精确匹配插件路由并完整清理监听与注册 |
+| DSH 页面路由 | `0.1.2-alpha.4` 没有公开 Router/Page 注册服务，替换 single slot 会破坏官方页面 | 使用 Hash 路由和 `shell.overlay` list slot；精确匹配插件路由并完整清理监听与注册 |
 | Portal 主题 | Tooltip、Modal 等浮层不在设置卡片 DOM 内 | 继续使用 body 级主题属性和 DSH 语义 Token，浅色/深色分别截图验证 |
 | 认证状态竞争 | 退出后旧用量请求可能晚于状态更新返回 | 以最新认证快照或请求序号为准，未登录时丢弃旧用量结果 |
 | WHAM 用量接口 | 字段可能变化 | Host 规范化，只依赖已存在的安全字段 |
@@ -737,7 +737,7 @@ pnpm --filter @tnnevol/dsh-codex-auth run build
 - 验证损坏 JSON 不清空当前有效路径，也不导致网关退出。
 - 验证应用升级保留 `${TRIM_PKGVAR}` 配置；回滚时不删除 DSH 设置、会话、工作区、授权目录或白名单 JSON。
 - 运行 `pnpm run check:docs`。
-- 校验 DSH、插件依赖、FPK 安装回调、native 配置、发布清单和文档均指向 `0.1.1-rc.2`；在 NAS 安装/升级后检查用户数据和插件配置未被清理。
+- 校验 DSH、插件依赖、FPK 安装回调、native 配置、发布清单和文档均指向 `0.1.2-alpha.4`；在 NAS 安装/升级后检查用户数据和插件配置未被清理。
 
 ## 参考资料
 
@@ -767,7 +767,7 @@ pnpm --filter @tnnevol/dsh-codex-auth run build
 | P1 NAS 引用与 Tree 状态 | <Badge type="tip" text="已实现" /> | 插入和删除引用不改动原有文本空格；删除本次引用同步 Tree，历史引用隔离；覆盖多选与生命周期测试 |
 | P1 Semi UI 总览插件 | <Badge type="tip" text="已实现" /> | 设置入口可跳转独立路由，刷新与历史导航有效；插件可安装卸载，公共组件在浅色、深色和系统主题下显示正常 |
 | P1 FPK 网关、进程恢复与插件路径 | <Badge type="warning" text="部分 NAS 验证（7 条业务用例、157 条自动化测试通过）" /> | 自动化测试 157/157 通过；真实 NAS 已验证刷新、Web 重启、完整静态图片路径和 DSH iframe 恢复，剩余代理、实时连接、权限和升级回滚场景继续验证 |
-| 版本统一（跨功能约束） | <Badge type="warning" text="待 FPK/NAS 验证" /> | 本地版本、依赖、安装回调、native 配置、发布清单和文档已统一为 `0.1.1-rc.2`，待目标 NAS 完成安装、升级和回滚验证 |
+| 版本统一（跨功能约束） | <Badge type="warning" text="待 FPK/NAS 验证" /> | 本地版本、依赖、安装回调、native 配置、发布清单和文档已统一为 `0.1.2-alpha.4`，待目标 NAS 完成安装、升级和回滚验证 |
 
 ## 变更记录
 

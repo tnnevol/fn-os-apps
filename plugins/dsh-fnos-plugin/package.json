@@ -47,7 +47,7 @@
     "test:unit": "vitest run --config vitest.config.ts",
     "test": "pnpm run test:unit",
     "check": "pnpm run typecheck && pnpm run build && pnpm run test:unit",
-    "publish:rc": "pnpm publish --tag rc --access public",
+    "publish:alpha": "pnpm publish --tag alpha --access public",
     "prepublishOnly": "pnpm run check"
   },
   "dsh": {

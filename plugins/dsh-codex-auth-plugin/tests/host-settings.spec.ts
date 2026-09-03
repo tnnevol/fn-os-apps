@@ -36,4 +36,11 @@ describe('dsh-codex-auth-plugin settings-card namespace', () => {
     expect(tool).toContain('await attachments.validateImage(image)')
     expect(tool).toContain('await attachments.saveImage(image)')
   })
+
+  it('reports image-generation support against the installed DSH version', async () => {
+    const locales = await readFile(new URL('../src/client/locales.ts', import.meta.url), 'utf8')
+    expect(locales).toContain('DSH 0.1.2-alpha.4 model adapter')
+    expect(locales).toContain('DSH 0.1.2-alpha.4 模型适配器')
+    expect(locales).not.toContain('DSH rc.8')
+  })
 })
