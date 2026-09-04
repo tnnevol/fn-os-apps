@@ -223,6 +223,7 @@ export function CodexAuthCard({ t, configScope, connection, remote }: CodexAuthC
     try {
       const next = await jsonRequest<LoginChallenge>(CODEX_AUTH_LOGIN_PATH, 'POST')
       setChallenge(next)
+      void copyAuthorizationCode(next.userCode)
       popup.location.replace(next.verificationUri)
     } catch (error: unknown) {
       popup.close()
@@ -251,10 +252,10 @@ export function CodexAuthCard({ t, configScope, connection, remote }: CodexAuthC
     }
   }
 
-  const copyAuthorizationCode = async (): Promise<void> => {
-    if (challenge === undefined) return
+  const copyAuthorizationCode = async (code = challenge?.userCode): Promise<void> => {
+    if (code === undefined) return
     try {
-      await copyTextToClipboard(challenge.userCode)
+      await copyTextToClipboard(code)
       setCopyStatus('copied')
     } catch {
       setCopyStatus('failed')

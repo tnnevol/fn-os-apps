@@ -21,7 +21,7 @@ lastVerified: 2026-09-01
 
 本计划实施四个已经确认进入开发的功能：
 
-- `FNOS-002-01`：统一 Codex 登录与用量状态；未登录时隐藏状态，登录后根据接口是否提供五小时窗口自动显示或隐藏对应额度。
+- `FNOS-002-01`：统一 Codex 登录与用量状态；未登录时隐藏状态，登录后根据接口是否提供五小时窗口自动显示或隐藏对应额度；取得一次性授权码后自动尝试复制到剪切板，失败时保留手动复制入口。
 - `FNOS-002-02`：修正 NAS 文件和目录引用的插入规则，并在 Tree 面板打开期间让本次引用删除状态反向同步到勾选节点，历史引用不参与当前选择。
 - `FNOS-002-03`：新增 DSH Semi UI 总览插件，集中展示 `@tnnevol/dsh-semi-ui` 的公共组件、状态和浅色/深色主题效果。
 - `FNOS-002-04`：使用 `connect` 与 `http-proxy-middleware` 重写 fnOS 统一网关代理；由常驻网关承载 FPK 状态并在 Web 左侧菜单提供 DSH Web 重启入口；由 fnOS 插件管理三方插件 API URL 反代规则，并让已打开的 DSH 页面立即取得最新配置。
@@ -378,6 +378,7 @@ SSE 路由由网关自身处理，不转发到 DSH。它经过 fnOS 统一网关
 | PLAN-FNOS-002-T01-03 | FNOS-002-01 | 提取统一窗口查找逻辑，按 18,000 秒识别五小时窗口、按 604,800 秒识别每周窗口 | <Badge type="tip" text="已完成" /> |
 | PLAN-FNOS-002-T01-04 | FNOS-002-01 | 仅在已登录且识别到五小时窗口时渲染对应进度和重置时间，不增加用户配置开关 | <Badge type="tip" text="已完成" /> |
 | PLAN-FNOS-002-T01-05 | FNOS-002-01 | 补充未登录、退出、鉴权失败、窗口乱序、无时长和请求失败测试 | <Badge type="tip" text="已完成" /> |
+| PLAN-FNOS-002-T01-06 | FNOS-002-01 | 登录接口返回授权码后自动复制到剪切板；复制失败时保留手动复制按钮并显示提示，补充成功/失败回归测试 | <Badge type="tip" text="已完成" /> |
 
 ### P1：NAS 引用与 Tree 状态
 
@@ -725,7 +726,7 @@ pnpm --filter @tnnevol/dsh-codex-auth run test
 pnpm --filter @tnnevol/dsh-codex-auth run build
 ```
 
-测试至少覆盖未登录、登录、退出、鉴权失败，以及五小时窗口位于 primary、位于 secondary、只有每周窗口、缺少时长和接口失败。
+测试至少覆盖未登录、登录、退出、鉴权失败，以及五小时窗口位于 primary、位于 secondary、只有每周窗口、缺少时长和接口失败；登录返回授权码时覆盖自动复制成功、剪切板拒绝和手动复制回退。
 
 ### FPK 与真实 NAS 验证
 
@@ -778,6 +779,7 @@ pnpm --filter @tnnevol/dsh-codex-auth run build
 | 日期 | 变更 |
 | --- | --- |
 | 2026-09-04 | 版本统一目标从 `0.1.2-alpha.4` 调整为 `0.1.2-rc.1`：pi-ai 对齐 `0.84.2`；FPK 回调、native 配置与 CI 同步；发布清单补入 `@tnnevol/dsh-fnos` 并统一 `rc` dist-tag；确认 fnos 插件 `remote.session` inject 修复（TV-05～TV-08）。 |
+| 2026-09-04 | 增加 Codex 授权码自动复制任务（T01-06）。 |
 | 2026-08-28 | 建立 PLAN-FNOS-002，纳入 Codex 五小时用量自动显隐 |
 | 2026-08-28 | 将原 FNOS-003 合并到 FNOS-002-04，确定 `connect + http-proxy-middleware`、tsdown FPK 产物、持久 JSON、`fs.watch + SSE` 即时更新和保存/放弃交互 |
 | 2026-08-28 | 将五小时用量并入 FNOS-002-01，并增加登录状态、NAS 引用空格和 Semi UI 总览插件计划 |

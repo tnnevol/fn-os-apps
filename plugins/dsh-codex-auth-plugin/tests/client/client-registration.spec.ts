@@ -61,6 +61,8 @@ describe('dsh-codex-auth-plugin alpha.4 client registration', () => {
   it('renders five-hour and weekly quotas as remaining usage in settings', async () => {
     const card = await readFile(new URL('../../src/components/CodexAuthCard.tsx', import.meta.url), 'utf8')
     expect(card).toContain('remainingPercent')
+    expect(card).toContain('void copyAuthorizationCode(next.userCode)')
+    expect(card).toContain('const copyAuthorizationCode = async (code = challenge?.userCode)')
     expect(card).toContain("t('usageFiveHour')")
     expect(card).toContain("t('usageWeekly')")
     expect(card).toContain("t('usageRemaining')")
