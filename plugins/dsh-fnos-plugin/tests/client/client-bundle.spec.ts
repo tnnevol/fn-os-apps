@@ -36,7 +36,9 @@ describe('dsh-fnos client artifact', () => {
       'src/client/index.ts',
       'src/client/services/theme-bridge.ts',
       'src/client/services/sdk.ts',
+      'src/components/FnosAuthorizedPathPicker.tsx',
     ].map(path => readFileSync(new URL(`../../${path}`, import.meta.url), 'utf8')).join('\n')
+    expect(pluginSource).toContain('useInput((state: InputState) => state)')
     expect(pluginSource).not.toContain('setInterval')
     expect(pluginSource).not.toContain('visibilitychange')
     const primitives = {

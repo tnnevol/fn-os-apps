@@ -14,8 +14,13 @@ import type { AuthorizedEntry } from '../contracts/authorized-directories-contra
 import type { FnosLocaleKey } from '../client/locales.ts'
 
 type Translate = (key: FnosLocaleKey) => string
+type InputSelector = <S>(
+  selector: (state: InputState) => S,
+  equality?: (left: S, right: S) => boolean,
+) => S
+
 type InputProps = {
-  useInput: () => InputState
+  useInput: InputSelector
   inputActions: InputActions
 } & PropsLocale<'settings.dsh-fnos'>
 
@@ -78,7 +83,7 @@ export type FnosAuthorizedPathPickerProps = InputProps & {
 
 /** Selection is immediate; closing the TreeSelect never discards a choice. */
 export function FnosAuthorizedPathPicker({ useInput, inputActions, insertReferences, t }: FnosAuthorizedPathPickerProps) {
-  const input = useInput()
+  const input = useInput((state: InputState) => state)
   const [treeData, setTreeData] = useState<TreeNode[]>([])
   const [desiredPaths, setDesiredPaths] = useState<string[] | undefined>()
   const entries = useRef(new Map<string, AuthorizedEntry>())

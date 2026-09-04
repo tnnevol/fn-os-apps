@@ -2,7 +2,7 @@
   "name": "@tnnevol/dsh-fnos",
   "displayName": "fnos",
   "description": "fnOS-specific integrations for DeepSeek Harness.",
-  "version": "0.1.2-rc.1",
+  "version": "0.1.2-rc.1.1",
   "author": "tnnevol",
   "repository": {
     "type": "git",
