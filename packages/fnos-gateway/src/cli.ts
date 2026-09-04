@@ -26,6 +26,7 @@ const webProcess = DSH_BIN && DSH_PID_FILE ? new WebProcessController({
   pidFile: DSH_PID_FILE,
   startingPidFile: `${DSH_PID_FILE}.starting`,
   lockFile: process.env.DSH_START_LOCK_FILE || `${DSH_PID_FILE}.lock`,
+  launchTokenFile: process.env.DSH_LAUNCH_TOKEN_FILE || `${DSH_PID_FILE}.token`,
   healthUrl: `http://${UPSTREAM_HOST}:${String(UPSTREAM_PORT)}/`,
 }) : undefined
 

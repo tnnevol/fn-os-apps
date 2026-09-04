@@ -109,6 +109,7 @@ start_process() {
             DSH_CWD="${TRIM_APPDEST}" \
             DSH_PID_FILE="${PID_FILE}" \
             DSH_START_LOCK_FILE="${TRIM_PKGVAR}/web-start.lock" \
+            DSH_LAUNCH_TOKEN_FILE="${TRIM_PKGVAR}/gateway/web.token" \
             DSH_WEB_HOST="${HOST}" \
             DSH_TRUSTED_HOSTS="${TRUSTED_HOSTS}" \
             exec node "${PROXY_SCRIPT}"

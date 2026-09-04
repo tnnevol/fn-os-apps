@@ -58,22 +58,26 @@ function webIndexAuthentication(options: GatewayOptions): connect.NextHandleFunc
   return (req, res, next) => {
     if (req.method !== 'GET' || req.url?.split('?', 1)[0] !== '/') return next()
 
-    const requestUrl = new URL(req.url ?? '/', 'http://fnos-gateway.invalid')
-    if (requestUrl.searchParams.has('token')) return next()
+    void (async () => {
+      const requestUrl = new URL(req.url ?? '/', 'http://fnos-gateway.invalid')
+      if (requestUrl.searchParams.has('token')) { next(); return }
 
-    const cookie = String(req.headers.cookie ?? '')
-    if (/(?:^|;\s*)dsh-auth-[^=;]+=/u.test(cookie)) return next()
+      const cookie = String(req.headers.cookie ?? '')
+      if (/(?:^|;\s*)dsh-auth-[^=;]+=/u.test(cookie)) { next(); return }
 
-    const token = options.webProcess?.getLaunchToken?.()
-    if (token === undefined) return next()
+      const webProcess = options.webProcess
+      let token = webProcess?.getLaunchToken?.()
+      if (token === undefined) token = await webProcess?.waitForLaunchToken?.()
+      if (token === undefined || res.destroyed || res.writableEnded) { next(); return }
 
-    const prefix = options.gatewayPrefix || ''
-    res.writeHead(303, {
-      location: `${prefix}/?token=${encodeURIComponent(token)}`,
-      'cache-control': 'no-store',
-      'referrer-policy': 'no-referrer',
-    })
-    res.end()
+      const prefix = options.gatewayPrefix || ''
+      res.writeHead(303, {
+        location: `${prefix}/?token=${encodeURIComponent(token)}`,
+        'cache-control': 'no-store',
+        'referrer-policy': 'no-referrer',
+      })
+      res.end()
+    })().catch(next)
   }
 }
 

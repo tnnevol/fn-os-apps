@@ -31,6 +31,27 @@ function isImageResourceRequest(req: IncomingMessage): boolean {
   return /\.(?:avif|bmp|gif|ico|jpe?g|png|svg|webp)$/iu.test(pathname)
 }
 
+function isUnauthenticatedWebRoot(req: IncomingMessage, proxyRes: IncomingMessage): boolean {
+  if (req.method !== 'GET' || proxyRes.statusCode !== 401) return false
+  try {
+    const url = new URL(req.url ?? '/', 'http://fnos-gateway.invalid')
+    return url.pathname === '/' && !url.searchParams.has('token')
+  } catch {
+    return false
+  }
+}
+
+function redirectToLaunchToken(res: ServerResponse, options: GatewayOptions, token: string): void {
+  if (res.headersSent || res.writableEnded || res.destroyed) return
+  const prefix = options.gatewayPrefix || ''
+  res.writeHead(303, {
+    location: `${prefix}/?token=${encodeURIComponent(token)}`,
+    'cache-control': 'no-store',
+    'referrer-policy': 'no-referrer',
+  })
+  res.end()
+}
+
 export function createProxyHandler(options: GatewayOptions): RequestHandler {
   const { upstreamHost, upstreamPort, gatewayPrefix, sseKeepaliveInterval = 15_000 } = options
 
@@ -43,6 +64,14 @@ export function createProxyHandler(options: GatewayOptions): RequestHandler {
       proxyReq: (proxyReq, req) => applyProxyRequestHeaders(proxyReq, req, { host: upstreamHost, port: upstreamPort }),
       proxyReqWs: (proxyReq, req) => applyProxyRequestHeaders(proxyReq, req, { host: upstreamHost, port: upstreamPort }),
       proxyRes: (proxyRes, req, res) => {
+        if (isUnauthenticatedWebRoot(req, proxyRes)) {
+          const token = options.webProcess?.getLaunchToken?.()
+          if (token !== undefined) {
+            proxyRes.resume()
+            redirectToLaunchToken(res, options, token)
+            return
+          }
+        }
         const contentType = String(proxyRes.headers['content-type'] || '').toLowerCase()
         const eventStream = contentType.startsWith('text/event-stream')
         // A plugin may return a fallback HTML document for a missing asset.

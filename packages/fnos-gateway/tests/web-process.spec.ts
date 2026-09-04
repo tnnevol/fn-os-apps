@@ -28,7 +28,7 @@ describe('DSH web process lifecycle', () => {
     if (address === null || typeof address === 'string') throw new Error('probe did not bind to a TCP port')
 
     const directory = await mkdtemp(join(tmpdir(), 'fnos-web-process-'))
-    const script = `console.log('dsh web: http://127.0.0.1:${address.port}/?token=${token}'); setInterval(() => {}, 1000)`
+    const script = `console.log('dsh web: [http://127.0.0.1:${address.port}/?token=${token}](http://127.0.0.1:${address.port}/?token=${token})'); setInterval(() => {}, 1000)`
     const controller = new WebProcessController({
       command: process.execPath,
       args: ['-e', script, 'web'],
@@ -36,14 +36,31 @@ describe('DSH web process lifecycle', () => {
       pidFile: join(directory, 'web.pid'),
       startingPidFile: join(directory, 'web.starting.pid'),
       lockFile: join(directory, 'web.lock'),
+      launchTokenFile: join(directory, 'web.token'),
       healthUrl: `http://127.0.0.1:${address.port}/`,
       healthTimeoutMs: 1_000,
       terminationTimeoutMs: 50,
     })
 
     try {
-      await expect(controller.start()).resolves.toMatchObject({ state: 'running' })
+      const startup = controller.start()
+      await expect(controller.waitForLaunchToken()).resolves.toBe(token)
+      await expect(startup).resolves.toMatchObject({ state: 'running' })
       expect(controller.getLaunchToken()).toBe(token)
+      expect(await readFile(join(directory, 'web.token'), 'utf8')).toBe(token)
+
+      const restored = new WebProcessController({
+        command: process.execPath,
+        args: ['-e', script, 'web'],
+        cwd: directory,
+        pidFile: join(directory, 'web.pid'),
+        startingPidFile: join(directory, 'web.starting.pid'),
+        lockFile: join(directory, 'web-restored.lock'),
+        launchTokenFile: join(directory, 'web.token'),
+        healthUrl: `http://127.0.0.1:${address.port}/`,
+      })
+      await expect(restored.start()).resolves.toMatchObject({ state: 'running' })
+      expect(restored.getLaunchToken()).toBe(token)
     } finally {
       await controller.stop()
       await rm(directory, { recursive: true, force: true })

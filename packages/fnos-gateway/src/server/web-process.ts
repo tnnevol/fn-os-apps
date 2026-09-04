@@ -12,6 +12,7 @@ export interface WebProcessOptions {
   pidFile: string
   startingPidFile: string
   lockFile: string
+  launchTokenFile?: string
   healthUrl: string
   healthTimeoutMs?: number
   terminationTimeoutMs?: number
@@ -82,8 +83,24 @@ export class WebProcessController {
     return this.launchToken
   }
 
+  /** Wait for the startup URL token when the iframe races DSH Web startup. */
+  async waitForLaunchToken(timeoutMs = 15_000): Promise<string | undefined> {
+    if (this.launchToken !== undefined) return this.launchToken
+    if (this.starting === undefined) return undefined
+    const deadline = Date.now() + timeoutMs
+    while (this.launchToken === undefined && this.starting !== undefined && Date.now() < deadline) {
+      await delay(Math.min(100, Math.max(1, deadline - Date.now())))
+    }
+    return this.launchToken
+  }
+
   async snapshot(): Promise<WebProcessSnapshot> {
+    await this.restoreLaunchToken()
     if (this.starting !== undefined) return { state: 'starting' }
+    return await this.currentSnapshot()
+  }
+
+  private async currentSnapshot(): Promise<WebProcessSnapshot> {
     const pid = await readPid(this.options.pidFile)
     if (pid !== undefined && await isDshWebProcess(pid, this.options.command)) return { state: 'running', pid }
     return this.lastError === undefined ? { state: 'stopped' } : { state: 'error', error: this.lastError }
@@ -92,9 +109,12 @@ export class WebProcessController {
   async start(): Promise<WebProcessSnapshot> {
     if (this.stopping) return { state: 'error', error: 'DSH Web stop is in progress' }
     if (this.starting !== undefined) return await this.starting
-    const current = await this.snapshot()
-    if (current.state === 'running') return current
-    this.starting = this.startLocked().finally(() => { this.starting = undefined })
+    this.starting = (async () => {
+      await this.restoreLaunchToken()
+      const current = await this.currentSnapshot()
+      if (current.state === 'running') return current
+      return await this.startLocked()
+    })().finally(() => { this.starting = undefined })
     return await this.starting
   }
 
@@ -127,6 +147,7 @@ export class WebProcessController {
       // behind after the fnOS app has been stopped.
       this.launchToken = undefined
       this.outputBuffer = ''
+      await rm(this.options.launchTokenFile ?? '', { force: true }).catch(() => undefined)
       const spawned = spawn(this.options.command, this.options.args, { cwd: this.options.cwd, env: process.env, stdio: ['ignore', 'pipe', 'pipe'], detached: true })
       child = spawned
       this.child = spawned
@@ -186,6 +207,7 @@ export class WebProcessController {
       await Promise.all([rm(this.options.pidFile, { force: true }), rm(this.options.startingPidFile, { force: true }), rm(this.options.lockFile, { force: true })])
       this.launchToken = undefined
       this.outputBuffer = ''
+      await rm(this.options.launchTokenFile ?? '', { force: true }).catch(() => undefined)
     } finally {
       this.stopping = false
     }
@@ -198,17 +220,35 @@ export class WebProcessController {
     return url.href
   }
 
+  private async restoreLaunchToken(): Promise<void> {
+    if (this.launchToken !== undefined || this.options.launchTokenFile === undefined) return
+    try {
+      const token = (await readFile(this.options.launchTokenFile, 'utf8')).trim()
+      if (token !== '') this.launchToken = token
+    } catch {}
+  }
+
+  private persistLaunchToken(token: string): void {
+    if (this.options.launchTokenFile === undefined) return
+    void writeFile(this.options.launchTokenFile, token, { mode: 0o600 }).catch(() => undefined)
+  }
+
   private forwardOutput(channel: 'stdout' | 'stderr', chunk: string): void {
     process[channel].write(chunk)
     this.outputBuffer = (this.outputBuffer + chunk).slice(-8_192)
     for (const line of this.outputBuffer.split(/\r?\n/u)) {
-      const match = /^dsh web:\s+(https?:\/\/\S+)/u.exec(line.trim())
-      if (match === null) continue
-      try {
-        const url = new URL(match[1] ?? '')
-        const token = url.searchParams.get('token')
-        if (token !== null && token !== '') this.launchToken = token
-      } catch {}
+      if (!/^dsh web:\s+/u.test(line.trim())) continue
+      const candidates = line.match(/https?:\/\/[^\s)\]]+/gu) ?? []
+      for (const candidate of candidates) {
+        try {
+          const token = new URL(candidate).searchParams.get('token')
+          if (token !== null && token !== '') {
+            this.launchToken = token
+            this.persistLaunchToken(token)
+            break
+          }
+        } catch {}
+      }
     }
   }
 }
