@@ -25,8 +25,14 @@ describe('DSH Semi UI facade', () => {
       'DshPopover',
     ] as const
 
-    for (const exportName of componentExports)
-      expect(componentsSource).toContain(`export { default as ${exportName} }`)
+    for (const exportName of componentExports) {
+      // DshHotKeys wraps the official HotKeys with a compatible props type
+      // instead of re-exporting it directly.
+      if (exportName === 'DshHotKeys')
+        expect(componentsSource).toContain('export const DshHotKeys')
+      else
+        expect(componentsSource).toContain(`export { default as ${exportName} }`)
+    }
   })
 
   it('exports the official icon catalog alongside the DSH aliases', () => {
