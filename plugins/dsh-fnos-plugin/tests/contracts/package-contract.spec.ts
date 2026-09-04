@@ -2,6 +2,13 @@ import { readFile } from 'node:fs/promises'
 import { describe, expect, it } from 'vitest'
 
 describe('dsh-fnos package contract', () => {
+  it('declares the remote session namespace before using it', async () => {
+    const source = await readFile(new URL('../../src/client/index.ts', import.meta.url), 'utf8')
+
+    expect(source).toMatch(/export const inject = \[[\s\S]*'remote', 'remote\.session'/u)
+    expect(source).toContain('ctx.remote.session')
+  })
+
   it('declares a bundle and an early web client with theme ordering', async () => {
     const manifest = JSON.parse(await readFile(new URL('../../package.json', import.meta.url), 'utf8')) as {
       name: string

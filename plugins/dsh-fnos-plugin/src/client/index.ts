@@ -44,7 +44,7 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
 }
 
 export const name = 'dsh-fnos-plugin-client'
-export const inject = ['theme', 'slots', 'locale', 'sessions', 'inputTriggers', 'remote', 'settingsScope', 'sessionLogDownload']
+export const inject = ['theme', 'slots', 'locale', 'sessions', 'inputTriggers', 'remote', 'remote.session', 'settingsScope', 'sessionLogDownload']
 
 type SessionLogDownloadState = {
   bySession: Record<string, { open: boolean, status: 'downloading' | 'success' | 'error', error: string | null } | undefined>
