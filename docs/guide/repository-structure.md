@@ -6,8 +6,10 @@
 ├── plugins/               # Agent 插件 workspace
 ├── docs/                  # VitePress 文档源文件
 ├── .github/workflows/     # GitHub Actions 构建与发布流程
-├── bump                   # 版本升级、提交和 Tag 脚本
-├── package.json           # 项目版本、Node/pnpm 约束和 npm scripts
+├── tooling/
+│   └── fn-os-apps-cli/    # fnos-apps CLI：版本、构建和 Release 工具
+├── turbo.json             # Turbo 任务依赖与缓存配置
+├── package.json           # 统一任务入口、项目版本和 Node/pnpm 约束
 ├── README.md              # 项目简介
 └── AGENTS.md              # 维护与开发约定
 ```

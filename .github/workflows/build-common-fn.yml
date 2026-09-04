@@ -67,6 +67,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Setup Node.js 24 for repository tasks
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Setup pnpm 11
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.16.0
+
+      - name: Install repository task dependencies
+        run: pnpm install --filter @tnnevol/fn-os-apps-cli --frozen-lockfile
+
       - name: Install fnpack
         run: |
           curl -fsSL https://static2.fnnas.com/fnpack/fnpack-1.2.1-linux-amd64 -o fnpack
@@ -75,8 +88,7 @@ jobs:
           fnpack --help
 
       - name: Build FPK
-        working-directory: apps/${{ matrix.app }}
-        run: fnpack build
+        run: pnpm exec fnos-apps build --fpk --app "${{ matrix.app }}"
 
       - name: Rename FPK with version
         id: rename

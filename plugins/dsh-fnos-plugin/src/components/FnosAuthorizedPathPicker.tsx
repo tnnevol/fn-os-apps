@@ -202,15 +202,13 @@ export function FnosAuthorizedPathPicker({ useInput, inputActions, insertReferen
     applyEntries(result, key)
   }, [applyEntries])
 
-  // Keep parent/child checkbox state in Semi's TreeSelect instead of
-  // calculating indeterminate values in the plugin. This is the same
-  // relationship mode used by the official TreeSelect examples.
+  // Keep every selected path independent. Semi's related mode collapses
+  // parent/child keys and prevents selecting both a directory and its child.
   return (
     <TreeSelect
       aria-label={t('inputPicker')}
       multiple
-      treeCheckable
-      checkRelation="related"
+      checkRelation="unRelated"
       treeData={treeData}
       value={value}
       loadData={loadData}

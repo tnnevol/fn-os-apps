@@ -194,7 +194,9 @@ describe('dsh-fnos package contract', () => {
 
     expect(semiTheme).not.toContain('data-dsh-fnos-input-references')
     expect(picker).toContain('borderless')
-    expect(picker).toContain('checkRelation="related"')
+    expect(picker).toContain('multiple')
+    expect(picker).toContain('checkRelation="unRelated"')
+    expect(picker).not.toContain('treeCheckable')
     expect(picker).not.toContain('new KeyboardEvent')
     expect(semiTheme).toContain('.dsh-fnos-input-picker-trigger')
     expect(semiTheme).toContain('border: none;')

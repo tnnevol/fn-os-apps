@@ -2,7 +2,7 @@
 
 ## 项目概述
 
-本仓库用于将第三方应用打包为飞牛 fnOS 应用商店格式。项目根目录 `package.json` 维护统一发布版本号，根目录 `bump` 脚本会同步更新各应用版本。
+本仓库用于将第三方应用打包为飞牛 fnOS 应用商店格式。项目根目录 `package.json` 维护统一任务入口，`tooling/fn-os-apps-cli` workspace 使用 TypeScript、tsdown、Turbo 和 bumpp 管理构建与发布版本。
 
 **技术栈**：fnOS Native 和 Docker 应用规范（bash 生命周期脚本 + JSON 配置；Docker 应用额外使用 docker-compose），非传统前后端项目。
 
@@ -29,7 +29,7 @@ pnpx skills add tnnevol/skills --skill fnnas-docs -g -y
 - 需求规格描述范围、优先级和可观察的验收条件；计划描述实现、测试、发布和回滚，不用代码或测试替代规格。
 - 每个 P0/P1 功能应保持需求、验收、计划任务、测试和目标环境证据的可追踪关系；涉及 fnOS 的功能必须区分本地验证和真实 NAS 验收。
 - 应用和插件面向用户的说明以 `docs/` 为唯一维护入口；`README.md` 只保留项目识别、开发入口或历史兼容内容。
-- 提交前运行 `pnpm run check:sdd` 和与改动相关的构建/测试；文档改动还需运行 `pnpm run docs:build` 与 `git diff --check`。
+- 提交前运行 `pnpm run check -- --all` 和与改动相关的构建/测试；文档改动还需运行 `pnpm run build -- --docs` 与 `git diff --check`。
 
 完整流程见 [`docs/guide/sdd-workflow.md`](docs/guide/sdd-workflow.md)。
 
@@ -116,54 +116,30 @@ fnpack build
 
 ### 版本发布
 
-项目根目录 `package.json` 维护版本号。使用根目录 `bump` 脚本或对应的 npm bump 脚本批量升级并自动 commit + tag。
+版本任务统一从根 `package.json` 进入，由 `fnos-apps` CLI 执行。首次运行会询问维护项目/FPK还是指定插件，也可直接指定区域：
 
 ```bash
-# 快速升级（基于当前版本号自动计算）
-./bump major          # 4.4.1 → 5.0.0
-./bump minor          # 4.4.1 → 4.5.0
-./bump patch          # 4.4.1 → 4.4.2
-
-# 指定版本号（支持 v 前缀或无前缀）
-./bump -t 4.5.0
-./bump -t v4.5.0
-./bump --tag v4.5.0
-
-# 仅修改文件，不自动 commit/tag
-./bump patch --no-commit
-
-# 自动 commit 但不打 tag
-./bump patch --no-tag
-
-# npm 脚本入口（任选其一）
-pnpm run bump:major
-pnpm run bump:minor
-pnpm run bump:patch
+pnpm run version
+pnpm run version -- project patch
+pnpm run version -- plugin fnos patch
 ```
 
-脚本执行后会自动：
-1. 更新根 `package.json` 的 version 字段
-2. 更新所有 `apps/*/manifest` 的 version 字段
-3. 更新 README.md 中的 Release 链接和 Tag 示例
-4. `git commit -m "chore: bump version to vX.Y.Z"`
-5. `git tag vX.Y.Z`
-
-最后手动推送：
+项目/FPK版本使用 `v<版本号>` Tag；插件版本使用 `plugin/<插件名>-v<版本号>` Tag。可追加 `--no-commit --no-tag` 只修改文件，默认不会自动 push。构建任务同样从根脚本进入：
 
 ```bash
-git push origin main && git push origin v4.5.0
+pnpm run build
+pnpm run build -- --fpk --app fn-deepseek-harness
+pnpm run build -- --plugin fnos
 ```
 
-推送 tag 后 GitHub Actions 自动执行：
-1. **discover** — 扫描 `apps/` 目录，收集所有应用名
-2. **build** — 为每个应用并行构建 `.fpk` 包
-3. **release** — 创建 GitHub Release 并附带所有 `.fpk` 包
+推送项目 Tag 后 GitHub Actions 通过根脚本构建 FPK，并使用 `changelogithub` 生成 Release 日志。
 
 ### CI/CD
 
 - **配置文件**：[.github/workflows/build-release.yml](.github/workflows/build-release.yml)
-- **Tag 格式**：`v<版本号>`（如 `v4.0.0`、`v4.1.0-rc1`）
-- **版本升级脚本**：[bump](bump)
+- **Tag 格式**：项目为 `v<版本号>`，插件为 `plugin/<插件名>-v<版本号>`
+- **任务编排**：`turbo.json` 与根 `package.json`
+- **版本与 Release 工具**：`tooling/fn-os-apps-cli` workspace，CLI 命令为 `fnos-apps`
 
 ---
 

@@ -8,7 +8,7 @@
 node --version
 pnpm --version
 pnpm install
-pnpm run docs:dev
+pnpm run start -- --docs
 ```
 
 ## fnpack 找不到

@@ -4,22 +4,16 @@
   "private": true,
   "description": "飞牛 fnOS 应用 Monorepo",
   "scripts": {
-    "bump": "./bump",
-    "bump:major": "./bump major",
-    "bump:minor": "./bump minor",
-    "bump:patch": "./bump patch",
+    "start": "pnpm exec fnos-apps start",
+    "build": "pnpm exec fnos-apps build",
+    "version": "pnpm exec fnos-apps version",
+    "typecheck": "turbo run typecheck",
     "lint:shell": "rg -l -0 --hidden --glob '!.git/**' --glob '!node_modules/**' --glob '!apps/fn-nvm/app/nvm/install.sh' '^#!.*(?:bash|sh)' . | xargs -0 shfmt -d -i 4",
-    "docs:dev": "vitepress dev docs",
-    "docs:build": "vitepress build docs",
     "docs:preview": "vitepress preview docs",
-    "test:unit": "pnpm --filter './packages/*' --filter './plugins/*' run test:unit",
-    "test": "pnpm run test:unit",
-    "check:sdd": "node scripts/sdd/check-docs.mjs",
-    "check:docs": "pnpm run check:sdd && pnpm run docs:build",
-    "check:packages": "pnpm --filter './packages/*' run check",
-    "check:plugins": "pnpm --filter './plugins/*' run check",
-    "build:fnos-gateway": "pnpm --filter @tnnevol/fnos-gateway run build:app",
-    "check": "pnpm run check:sdd && pnpm run docs:build && pnpm run check:packages && pnpm run check:plugins"
+    "test:unit": "turbo run test:unit",
+    "test": "turbo run test:unit",
+    "check": "pnpm exec fnos-apps check",
+    "release:notes": "pnpm exec fnos-apps release:notes"
   },
   "engines": {
     "node": ">=24.0.0",
@@ -28,6 +22,8 @@
   "packageManager": "pnpm@11.16.0",
   "devDependencies": {
     "@miletorix/vitepress-image-viewer": "catalog:",
+    "@tnnevol/fn-os-apps-cli": "workspace:*",
+    "turbo": "catalog:",
     "vitepress": "catalog:",
     "vitepress-plugin-d2": "catalog:",
     "vitest": "catalog:"

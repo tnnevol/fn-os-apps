@@ -3,6 +3,7 @@ packages:
   - 'docs'
   - 'packages/*'
   - 'plugins/*'
+  - 'tooling/*'
 
 catalog:
   '@deepseek-ai/cordis': ^4.0.2
@@ -12,6 +13,10 @@ catalog:
   '@douyinfe/semi-ui': 2.90.2
   '@earendil-works/pi-ai': 0.84.2
   '@miletorix/vitepress-image-viewer': 1.3.2
+  '@clack/prompts': 1.7.0
+  bumpp: 12.3.0
+  changelogithub: 15.0.5
+  turbo: 2.10.12
   '@trimjs/web-app': latest
   '@tsdown/css': ^0.22.14
   '@types/connect': ^3.4.38

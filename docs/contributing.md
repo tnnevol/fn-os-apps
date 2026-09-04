@@ -5,7 +5,7 @@
 1. 从 `main` 创建分支。
 2. 按 [SDD 维护规范](/guide/sdd-workflow) 判断是否需要更新需求和计划。
 3. 修改对应应用、插件或文档。
-4. 运行与改动相关的校验，包括 `pnpm run check:sdd`。
+4. 运行与改动相关的校验，包括 `pnpm run check -- --all`。
 5. 使用 Conventional Commits 创建提交。
 6. 推送分支并提交 Pull Request，填写仓库 PR 检查清单。
 
@@ -20,8 +20,7 @@
 ## 文档修改检查
 
 ```bash
-pnpm run check:sdd
-pnpm run docs:build
+pnpm run check -- --sdd --docs
 git diff --check
 ```
 

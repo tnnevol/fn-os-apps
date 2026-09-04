@@ -31,7 +31,7 @@ lastVerified: 2026-08-31
 | 应用清单 | `apps/*/manifest`、`wizard/install` | 盘点运行字段、安装字段、默认值和校验规则 |
 | 运行设置 | 目标应用 `wizard/config` | 为可修改运行参数生成 fnOS 应用设置表单 |
 | 生命周期 | `cmd/main`、`cmd/config_init`、`cmd/config_callback` | 读取配置、维护状态、保存后重载或重启 |
-| FPK 构建 | 应用构建脚本和 `pnpm run build:fpk` | 打包配置文件并验证安装产物 |
+| FPK 构建 | 应用构建脚本和根 `build` CLI 入口 | 打包配置文件并验证安装产物 |
 | 文档与测试 | `docs/`、应用测试目录 | 记录选择依据并验证设置、升级和 NAS 行为 |
 
 ## 目标架构和数据流
@@ -125,8 +125,8 @@ wizard/install 中的运行字段
 - 执行：
 
 ```bash
-pnpm run build:fpk
-pnpm run check:docs
+pnpm run build -- --fpk
+pnpm run check -- --sdd --docs
 ```
 
 ### 真实 NAS 验证

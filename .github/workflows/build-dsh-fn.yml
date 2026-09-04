@@ -38,11 +38,11 @@ jobs:
         with:
           version: 11.16.0
 
-      - name: Install fnOS gateway build dependencies
-        run: pnpm install --filter @tnnevol/fnos-gateway... --frozen-lockfile
+      - name: Install repository build dependencies
+        run: pnpm install --filter @tnnevol/fnos-gateway... --filter @tnnevol/fn-os-apps-cli --frozen-lockfile
 
       - name: Build bundled fnOS gateway
-        run: pnpm --filter @tnnevol/fnos-gateway run build:app
+        run: pnpm exec fnos-apps build:gateway
 
       - name: Install fnpack
         run: |
@@ -65,8 +65,7 @@ jobs:
         run: bash ../../.github/scripts/prepare-dsh-native.sh
 
       - name: Build FPK
-        working-directory: apps/fn-deepseek-harness
-        run: fnpack build
+        run: pnpm exec fnos-apps build --fpk --app fn-deepseek-harness
 
       - name: Rename FPK with DSH version
         id: rename

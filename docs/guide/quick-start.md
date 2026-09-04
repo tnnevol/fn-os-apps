@@ -20,10 +20,14 @@ cd fn-os-apps
 pnpm install
 ```
 
-## 启动文档站
+## 启动开发服务
 
 ```bash
-pnpm run docs:dev
+# 交互选择 DSH 插件或文档服务
+pnpm run start
+
+# 直接启动文档服务
+pnpm run start -- --docs
 ```
 
 默认会启动本地开发服务器，修改 `docs/` 下的 Markdown 后页面会自动更新。

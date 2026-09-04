@@ -2,6 +2,14 @@
 
 本页是 `fn-os-apps` 项目开发环境和构建脚本的维护入口。修改工具链或 CI 构建流程时，应同步更新本页，避免本地开发、fnOS 实机和 GitHub Actions 使用不同约定。
 
+## 开发指南导航
+
+- [Package 任务与 Turbo](./package-tasks-and-turbo)：解释根 `package.json`、`fnos-apps` CLI、Turbo 和 workspace package 的任务边界与时序。
+- [Manifest 配置](./manifest)：维护应用身份、版本、桌面入口和运行约束。
+- [生命周期脚本](./lifecycle)：实现安装、启动、升级、停止和卸载阶段的脚本契约。
+- [权限与入口](./permissions)：配置运行用户、资源目录、桌面入口和网关访问边界。
+- [用户向导](./wizard)：设计安装、配置、升级和卸载时的用户输入。
+
 ## 开发环境
 
 项目根目录是 pnpm workspace，版本约束以根目录配置为准：
@@ -93,8 +101,7 @@ Harness 插件开发还需要准备：
 ```bash
 dsh --version
 pnpm install
-pnpm run check:packages
-pnpm run check:plugins
+pnpm run check -- --packages --plugins
 ```
 
 本地联调时使用目标版本的 CLI 启动 Web Profile：
@@ -113,11 +120,13 @@ dsh --profile web --dump-config
 | 目录 | 职责 | 常用操作 |
 | --- | --- | --- |
 | `apps/*` | fnOS 应用、生命周期脚本、安装资源和 FPK 内容 | `fnpack build`、NAS 实机安装 |
-| `docs` | VitePress 文档站 | `pnpm run docs:dev`、`pnpm run docs:build` |
-| `packages/*` | 插件共享包，目前包含 DSH Semi UI | `pnpm run check:packages` |
-| `plugins/*` | DSH 等 Agent 生态插件 | `pnpm run check:plugins` |
+| `docs` | VitePress 文档站 | `pnpm run start -- --docs`、`pnpm run build -- --docs` |
+| `packages/*` | 插件共享包，目前包含 DSH Semi UI | `pnpm run check -- --packages` |
+| `plugins/*` | DSH 等 Agent 生态插件 | `pnpm run check -- --plugins` |
 
 `apps/*` 主要由 fnpack 管理，不要求每个应用都提供 `package.json`。Node.js 工作空间命令主要用于文档、共享包和插件。
+
+根 `package.json` 只作为稳定入口：`start`、`build`、`check` 和 `version` 交给 `fnos-apps` CLI；共享包和插件的实际 `build`、`dev`、`typecheck`、`test:unit`、`check` 任务分别写在各自的 `package.json`，依赖顺序和缓存由 `turbo.json` 管理。完整调用时序见 [Package 任务与 Turbo](./package-tasks-and-turbo)。
 
 ## 常用开发命令
 
@@ -127,18 +136,17 @@ dsh --profile web --dump-config
 
 ```bash
 d2 version
-pnpm run docs:dev
-pnpm run check:sdd
-pnpm run docs:build
+pnpm run start -- --docs
+pnpm run check -- --sdd
+pnpm run build -- --docs
 pnpm run docs:preview
 ```
 
 ### 共享包和插件
 
 ```bash
-pnpm run check:packages
-pnpm run check:plugins
-pnpm run check
+pnpm run check -- --packages --plugins
+pnpm run check -- --all
 ```
 
 只验证单个工作空间时使用过滤器：
@@ -204,27 +212,22 @@ fnpack build
 
 ## 版本与发布脚本
 
-根目录 `bump` 脚本负责统一管理 `plugins/*` 之外的发布版本，包括根项目版本、`packages/*` 共享包版本和所有 FPK 应用版本：
+版本任务由根目录 `fnos-apps` CLI 暴露，底层位于 `tooling/fn-os-apps-cli` workspace，使用 `bumpp` 分开维护项目/FPK 版本和插件版本：
 
 ```bash
-pnpm run bump:major
-pnpm run bump:minor
-pnpm run bump:patch
+# 项目与 FPK 版本
+pnpm run version -- project patch
+pnpm run version -- project minor
+
+# 指定插件版本
+pnpm run version -- plugin fnos patch
+pnpm run version -- plugin codex patch
+pnpm run version -- plugin showcase patch
 ```
 
-默认行为会更新根 `package.json`、`packages/*/package.json`、所有 `apps/*/manifest` 和 README 中的版本引用，然后自动创建 Commit 和项目 Tag。只修改文件时使用：
+项目版本命令更新根 `package.json`、`packages/*/package.json`、与当前版本匹配的应用 Manifest 和 README；插件版本命令只更新指定插件。两类命令均由 `bumpp` 创建对应提交和 Tag，插件 Tag 使用 `plugin/<插件名>-v<版本号>`，默认不自动 push。
 
-```bash
-./bump patch --no-commit
-```
-
-只创建版本提交、不创建 Tag 时使用：
-
-```bash
-./bump patch --no-tag
-```
-
-`plugins/*` 的版本与 DSH 兼容版本保持独立，由各插件自行维护；根目录 `bump` 不修改插件版本。
+需要只修改版本文件时，在命令末尾增加 `--no-commit --no-tag`。根目录自定义 `bump` 脚本已废弃，插件版本不会被项目/FPK 版本命令修改。
 
 推送 `v*` Tag 后：
 
@@ -264,16 +267,20 @@ builds.harness -> publish
 
 ```bash
 git diff --check
-pnpm run check:sdd
-pnpm run docs:build
-pnpm run check:packages
-pnpm run check:plugins
+pnpm run check -- --sdd
+pnpm run build -- --docs
+pnpm run check -- --packages --plugins
 ```
 
 涉及 FPK、权限、Docker、网关或生命周期的改动，还必须在真实 fnOS 环境完成安装、启动、停止、升级和卸载验证。
 
 ## 相关文档
 
+- [Package 任务与 Turbo](./package-tasks-and-turbo)
+- [Manifest 配置](./manifest)
+- [生命周期脚本](./lifecycle)
+- [权限与入口](./permissions)
+- [用户向导](./wizard)
 - [快速开始](/guide/quick-start)
 - [仓库结构](/guide/repository-structure)
 - [fnpack 打包](/build/fnpack)

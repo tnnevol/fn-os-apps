@@ -37,6 +37,9 @@ node_modules/
 # Node.js 构建产物
 lib/
 
+# Turbo 本地缓存
+.turbo/
+
 # fn-deepseek-harness 在 CI 构建时生成的 DSH native 依赖
 apps/fn-deepseek-harness/app/dsh-version
 apps/fn-deepseek-harness/app/node-pty-version

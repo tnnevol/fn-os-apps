@@ -82,7 +82,14 @@ const appItems = [
 const developmentSidebar = [
   {
     text: '开发指南',
-    items: [{ text: '开发环境与脚本', link: '/development/environment-and-scripts' }]
+    items: [
+      { text: '开发环境与脚本', link: '/development/environment-and-scripts' },
+      { text: 'Package 任务与 Turbo', link: '/development/package-tasks-and-turbo' },
+      { text: 'Manifest 配置', link: '/development/manifest' },
+      { text: '生命周期脚本', link: '/development/lifecycle' },
+      { text: '权限与入口', link: '/development/permissions' },
+      { text: '用户向导', link: '/development/wizard' }
+    ]
   },
   {
     text: '构建发布',

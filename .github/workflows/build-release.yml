@@ -126,109 +126,23 @@ jobs:
             -F draft=true \
             -F prerelease="$PRERELEASE" >/dev/null
 
-      - name: Generate release notes from uploaded FPKs
+      - name: Setup Node.js 24 for release tasks
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Setup pnpm 11
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.16.0
+
+      - name: Install release task dependencies
+        run: pnpm install --filter @tnnevol/fn-os-apps-cli --frozen-lockfile
+
+      - name: Generate and publish release notes
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REPOSITORY: ${{ github.repository }}
-          TAG: ${{ github.ref_name }}
-          RELEASE_ID: ${{ needs.prepare-release.outputs.release_id }}
-        run: |
-          set -euo pipefail
-
-          VERSION="${TAG#v}"
-          RELEASE_ASSETS=""
-          for ATTEMPT in 1 2 3 4 5; do
-            RELEASE_ASSETS="$(
-              gh api "repos/${REPOSITORY}/releases/${RELEASE_ID}" 2>/dev/null \
-                | jq -r '.assets[]?.name' \
-                || true
-            )"
-            if [ -n "$RELEASE_ASSETS" ]; then
-              break
-            fi
-            DELAY=$((ATTEMPT * 15))
-            echo "Release assets are not visible yet; retrying in ${DELAY}s (attempt ${ATTEMPT}/5)" >&2
-            sleep "$DELAY"
-          done
-          if [ -z "$RELEASE_ASSETS" ]; then
-            echo "ERROR: no FPK assets found in release ${RELEASE_ID}" >&2
-            exit 1
-          fi
-          PREV_TAG="$(git tag --sort=-version:refname | awk -v tag="$TAG" 'found { print; exit } $0 == tag { found = 1 }')"
-
-          printf '# 📦 fnOS Apps v%s\n\n| 应用 | 安装包 |\n|------|----------|\n' "$VERSION" > RELEASE_NOTES.md
-
-          for APP_DIR in apps/*/; do
-            APP="${APP_DIR%/}"
-            APP="${APP#apps/}"
-            [ -f "${APP_DIR}manifest" ] || continue
-
-            FPK_NAME=""
-            while IFS= read -r ASSET; do
-              case "$ASSET" in
-                "${APP}-${TAG}"*.fpk)
-                  FPK_NAME="$ASSET"
-                  break
-                  ;;
-              esac
-            done <<< "$RELEASE_ASSETS"
-
-            if [ -z "$FPK_NAME" ]; then
-              echo "ERROR: no FPK asset found for ${APP}" >&2
-              exit 1
-            fi
-
-            DISPLAY_NAME="$(sed -n 's/^display_name[[:space:]]*=[[:space:]]*//p' "${APP_DIR}manifest" | head -n 1)"
-            DISPLAY_NAME="${DISPLAY_NAME:-$APP}"
-            printf '| **%s** (`%s`) | %s |\n' "$DISPLAY_NAME" "$APP" "$FPK_NAME" >> RELEASE_NOTES.md
-          done
-
-          printf '\n## 🛠 安装方式\n\n1. 下载上方对应的 `.fpk` 安装包\n2. 打开飞牛 fnOS 应用中心\n3. 点击左下角 **手动安装** 按钮\n4. 选择下载好的 `.fpk` 文件完成安装\n' >> RELEASE_NOTES.md
-
-          printf '\n## 📝 提交记录\n\n' >> RELEASE_NOTES.md
-          if [ -n "$PREV_TAG" ]; then
-            git log --pretty=format:"- %s [%h](https://github.com/${REPOSITORY}/commit/%H)" "${PREV_TAG}..${TAG}" >> RELEASE_NOTES.md
-          else
-            git log --pretty=format:"- %s [%h](https://github.com/${REPOSITORY}/commit/%H)" --max-count=20 >> RELEASE_NOTES.md
-          fi
-          printf '\n' >> RELEASE_NOTES.md
-
-      - name: Publish release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REPOSITORY: ${{ github.repository }}
-          TAG: ${{ github.ref_name }}
-          RELEASE_ID: ${{ needs.prepare-release.outputs.release_id }}
-        run: |
-          set -euo pipefail
-
-          PRERELEASE=false
-          case "$TAG" in
-            *-rc*|*-beta*|*-alpha*) PRERELEASE=true ;;
-          esac
-
-          publish_release() {
-            local release_body
-            release_body="$(<RELEASE_NOTES.md)"
-            gh api --method PATCH "repos/${REPOSITORY}/releases/${RELEASE_ID}" \
-              -f name="Release ${TAG}" \
-              -f body="$release_body" \
-              -F draft=false \
-              -F prerelease="$PRERELEASE"
-          }
-
-          for ATTEMPT in 1 2 3 4 5; do
-            if publish_release; then
-              exit 0
-            fi
-            if [ "$ATTEMPT" -eq 5 ]; then
-              echo "ERROR: unable to publish the release after ${ATTEMPT} attempts" >&2
-              exit 1
-            fi
-            DELAY=$((ATTEMPT * 15))
-            echo "Release API failed; retrying in ${DELAY}s (attempt ${ATTEMPT}/5)" >&2
-            sleep "$DELAY"
-          done
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: pnpm run release:notes
 
   report-failure:
     name: Report failed release

@@ -1,7 +1,7 @@
 ---
 id: FNOS-002
 title: FNOS-002 DSH 应用与插件优化
-description: 记录 DSH 版本统一、Codex 登录与用量状态、NAS 引用、共享 UI、FPK 网关和 DSH Web 恢复需求。
+description: 记录 DSH 版本统一、Codex 登录与用量状态、NAS 引用、共享 UI、FPK 网关、任务编排和 DSH Web 恢复需求。
 status: validating
 owner: tnnevol
 targetVersion: 5.1.x
@@ -26,11 +26,19 @@ DSH 在 fnOS 中运行后，还有几处使用体验需要调整。Codex 登录�
 ## 需求目标
 
 - 统一 Codex 登录与用量状态：只在确认登录后显示状态，用量接口提供五小时窗口时自动显示对应状态，接口未提供时自动隐藏；登录取得一次性授权码后自动复制到剪切板。
-- NAS 文件和目录引用不改动用户已有文本；Tree 面板打开期间，当前操作插入的引用被删除时同步取消对应勾选。
+- NAS 文件和目录引用不改动用户已有文本；Tree 面板支持多个文件或目录独立选择，面板打开期间，当前操作插入的引用被删除时同步取消对应勾选。
 - 新增 DSH Semi UI 总览插件。
 - 使用 `connect` 与 `http-proxy-middleware` 重写 FPK 网关，通过 tsdown 生成可直接随 FPK 分发的单文件入口；浏览器 Bridge 使用独立 JS 源文件维护，网关常驻时在 Web 左侧菜单提供“重启 Web”按钮。
 - 由 fnOS 插件管理三方插件 API URL 反代配置，网关监听配置并将匹配的绝对 URL 请求改写到统一网关下的 DSH 服务。
 - 统一 DSH 运行时、插件、插件依赖、native 产物、FPK 安装流程和发布文档的目标版本为 `0.1.2-rc.1`，并保留用户数据与配置。
+- 将版本发布逻辑放入独立 `tooling/fn-os-apps-cli` pnpm workspace，通过 `fnos-apps` CLI 使用 `bumpp` 分别维护项目/FPK版本与插件版本；插件版本不得被项目或 FPK 版本命令隐式修改。
+- 修复 fnOS 聊天输入框授权路径选择器的多选行为，连续选择多个文件或目录时全部生成引用。
+- 引入 Turbo 统一包任务编排；根 `package.json` 提供统一任务入口，`tooling/fn-os-apps-cli` 通过 `fnos-apps` CLI 暴露任务，全部使用 TypeScript 与 tsdown。
+- 通过 `@clack/prompts` 在版本、构建和启动时询问目标区域；构建支持多选 FPK 和文档，并自动处理 DSH 网关和插件的 dsh-semi-ui 依赖。共享包不作为顶层构建选项，只由依赖它的主包通过 Turbo 自动编译。
+- 通过 `changelogithub` 在项目 Tag 发布时生成 Release 日志，移除 workflow 内手写日志生成逻辑。
+- 优化 `@tnnevol/fn-os-apps-cli` 目录结构：`src/index.ts` 只负责命令路由，版本、构建、启动、Release、SDD 检查和基础设施分别维护在职责明确的 TypeScript 模块中。
+- 根目录通过唯一的 `start` 入口统一启动插件开发 watch 和 VitePress 文档开发服务，插件启动自动包含共享 UI 依赖。
+- 开发指南菜单覆盖 FPK 应用配置、生命周期、权限、用户向导、环境脚本和任务编排；以时序图说明根 `package.json`、注入口 CLI、Turbo 与 workspace package 任务之间的调用关系。
 
 ## 涉及范围
 
@@ -41,7 +49,7 @@ DSH 在 fnOS 中运行后，还有几处使用体验需要调整。Codex 登录�
 | 共享 UI | `packages/dsh-semi-ui`、待新增总览插件 | 展示共享组件和主题效果 |
 | 网关源码包 | `packages/fnos-gateway` | 使用 `connect`、`http-proxy-middleware` 和 tsdown 维护网关源码、独立浏览器 Bridge 与构建入口 |
 | FPK 网关产物 | `apps/fn-deepseek-harness/app/gateway-proxy.mjs` | 监听 fnOS Unix Socket，代理 DSH HTTP、WebSocket 和流式请求 |
-| 项目文档 | `docs/` | 记录需求、调研结论和后续计划 |
+| 项目文档与任务工具 | `docs/`、根 `package.json`、`turbo.json`、`tooling/fn-os-apps-cli/` | 记录需求、任务编排、版本/构建询问和发布日志 |
 
 ## 功能列表
 
@@ -60,7 +68,9 @@ DSH 在 fnOS 中运行后，还有几处使用体验需要调整。Codex 登录�
 - FPK 安装/升级回调、node-pty native 配置、已发布插件清单和相关文档必须与该版本一致。
 - 已发布插件清单包含 `@tnnevol/dsh-codex-auth` 与 `@tnnevol/dsh-fnos`，统一使用 `rc` dist-tag；`0.1.2-rc.1` 发布前 `rc` 标签不得指向旧版本。
 - fnOS 插件客户端声明 `remote` 与 `remote.session` inject；任何访问 `ctx.remote.*` 命名空间的构建产物都必须携带对应 inject 声明，否则该插件视为损坏并需要重装。
+- 版本管理通过独立 `tooling/fn-os-apps-cli` workspace 中的 `bumpp` 执行；项目/FPK 版本命令只更新根项目、共享包和应用 Manifest，插件版本命令按指定插件独立更新、提交和打 Tag。
 - 版本检查和升级不得清理 `DSH_HOME`、profile、凭据、工作区或现有插件配置。
+- 构建任务由 Turbo 编排；插件构建先完成其 workspace 依赖（包括 `@tnnevol/dsh-semi-ui`），DSH FPK 构建先完成 fnOS Gateway，其他 FPK 不触发网关构建。
 - 共享 UI 包继续由 workspace 管理，不作为 DSH 运行时插件重复安装。
 
 ## 交互和行为约束
@@ -104,7 +114,9 @@ DSH 在 fnOS 中运行后，还有几处使用体验需要调整。Codex 登录�
 - Codex 登录状态在登录、退出和异常场景下显示正确；登录返回授权码后自动尝试复制，复制失败仍可手动复制。
 - 用量接口返回 18,000 秒窗口时显示五小时剩余额度和重置时间；未返回、字段不完整或请求失败时不显示该窗口。
 - 五小时窗口显隐不依赖用户设置，刷新用量后能根据最新接口响应自动变化。
-- NAS 文件和目录引用保留原文空格，不产生重复空格；面板打开期间删除本次引用会立即取消对应 Tree 勾选，历史引用不会进入当前选择状态。
+- NAS TreeSelect 可连续选择多个文件或目录，父子路径作为独立引用全部插入；面板打开期间删除本次引用会立即取消对应 Tree 勾选，历史引用不会进入当前选择状态。
+- 项目/FPK 与插件版本命令通过 `bumpp` 独立运行，分别只修改约定文件，不发生跨类别版本联动。
+- 根任务入口、workflow 调用和包任务名称保持一致；Release 日志由 `changelogithub` 根据 Conventional Commits 自动生成。
 - Semi UI 总览插件可正常安装和卸载；点击入口可进入独立总览路由，浏览器前进、后退和刷新有效，组件在浅色、深色主题下显示正常。
 - 新网关兼容 HTTP、WebSocket、SSE、插件 API 和静态资源，产物位于 FPK 的 `app` 目录，并在真实 fnOS 统一网关入口完成验证。
 - Bridge 可作为独立 JS 文件完成语法检查和单元测试；生成的单文件网关不包含未替换占位符，也不依赖 NAS 上不存在的 Bridge 源文件。

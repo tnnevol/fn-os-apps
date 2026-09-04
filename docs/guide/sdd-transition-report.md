@@ -21,7 +21,7 @@ description: fnOS Apps Monorepo 从代码优先维护转换为规格驱动开发
 - [`docs/plans/index.md`](/plans/) 已定义计划结构、实现范围、交互、风险、测试、发布和回滚要求。
 - [FNOS-001 需求](/requirements/FNOS-001-dsh-fnos-adaptation) 与 [PLAN-FNOS-001 计划](/plans/PLAN-FNOS-001-dsh-fnos-adaptation) 已形成一对需求/计划文档。
 - DSH 插件包已经提供 `typecheck`、`test`、`build` 和 `check` 脚本，插件侧具备较好的实现验证基础。
-- 文档站已有 `pnpm run docs:build`，贡献指南已有 `git diff --check` 和文档构建要求。
+- 文档站已有 `pnpm run build -- --docs`，贡献指南已有 `git diff --check` 和文档构建要求。
 - 面向用户的应用和插件文档已经确定统一维护在 `docs/`，减少 README 多处漂移。
 
 ### 转换前缺口
@@ -65,8 +65,8 @@ description: fnOS Apps Monorepo 从代码优先维护转换为规格驱动开发
 ### 已完成的第一阶段转换
 
 - 新增 [`SDD 维护规范`](/guide/sdd-workflow)，明确需求、计划、实现、验证、发布和例外规则。
-- 新增 `scripts/sdd/check-docs.mjs`，检查 SDD 文档结构、元信息、编号唯一性和内部链接。
-- 新增根级 `check:sdd`、`check:docs`、`check:plugins` 和 `check` 命令。
+- 新增 `tooling/fn-os-apps-cli/src/sdd/checker.ts`，由 `fnos-apps check --sdd` 检查 SDD 文档结构、元信息、编号唯一性和内部链接。
+- 新增统一 `fnos-apps check` 命令，支持交互选择或使用 `--sdd`、`--docs`、`--packages`、`--plugins`、`--all` 参数。
 - 新增 PR 模板、`sdd-check.yml` 和 `docs/validation/README.md`。
 - 为当前 FNOS-001 需求和计划补充 SDD 元数据，并在计划中加入 P0/P1 追踪矩阵。
 - 修正插件检查顺序为 `typecheck → build → test`，使根级质量门禁可重复执行。
@@ -131,20 +131,19 @@ FNOS-001 当前“待真实 NAS 验收”的 P0/P1 项目应优先生成这类�
 
 ### P1：增加 PR/CI 门禁
 
-已新增 PR 级工作流和根级检查命令：
+已新增 PR 级工作流和统一根级检查命令：
 
 ```json
 {
   "scripts": {
-    "check:sdd": "node scripts/sdd/check-docs.mjs",
-    "check:plugins": "pnpm --filter './plugins/*' run check",
-    "check:docs": "pnpm run check:sdd && pnpm run docs:build",
-    "check": "pnpm run check:sdd && pnpm run docs:build && pnpm run check:plugins"
+    "check": "pnpm exec fnos-apps check"
   }
 }
 ```
 
-`check:sdd` 当前做低风险静态检查：
+交互式运行 `pnpm run check` 选择检查范围；自动化或 Agent 运行参数化命令，例如 `pnpm run check -- --all`、`pnpm run check -- --sdd --docs` 或 `pnpm run check -- --plugins`。
+
+`check --sdd` 当前做低风险静态检查：
 
 - 需求/计划 frontmatter、标题和编号格式；
 - 需求与计划的一对一链接；
@@ -184,10 +183,9 @@ docs/
 └── guide/
     └── sdd-workflow.md # 批准后的长期维护规范
 
-scripts/
-└── sdd/
-    ├── check-docs.mjs  # 规格、计划、编号和链接校验
-    └── trace-report.mjs # 生成需求到测试/验收的追踪摘要
+tooling/
+└── fn-os-apps-cli/
+    └── src/sdd/checker.ts # 规格、计划、编号和链接校验
 
 .github/
 ├── pull_request_template.md
@@ -203,7 +201,7 @@ scripts/
 | --- | --- | --- |
 | 阶段 0：现状确认 | 已保留现有需求/计划体系，并在合并最新 main 后确认 SDD 适用范围 | 当前分支基于 `d6f55ad`，转换报告已更新 |
 | 阶段 1：规则固化 | 已增加 SDD 工作流、模板、PR 模板和 FNOS-001 追踪 ID | 新的 P0/P1 变更可按模板完整记录 |
-| 阶段 2：自动门禁 | 已增加 `check:sdd`、根级 `check` 和 PR 工作流首版 | 本地完整检查可发现规格、链接和构建问题 |
+| 阶段 2：自动门禁 | 已增加统一 `check`、参数化检查范围和 PR 工作流首版 | 本地完整检查可发现规格、链接和构建问题 |
 | 阶段 3：验收闭环 | 已增加 `docs/validation/` 模板，FNOS-001 的真实 NAS 证据待补齐并回写状态 | P0/P1 具备可复核的环境验收记录 |
 | 阶段 4：增量覆盖 | 历史应用按修改时机补齐基线和规格，新应用强制从规格开始 | 不阻塞旧应用，同时新改动不再脱离规格 |
 

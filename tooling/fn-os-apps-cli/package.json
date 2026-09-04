@@ -1,0 +1,29 @@
+{
+  "name": "@tnnevol/fn-os-apps-cli",
+  "private": true,
+  "description": "Release, build and repository maintenance CLI for fn-os-apps.",
+  "version": "0.0.0",
+  "type": "module",
+  "bin": {
+    "fnos-apps": "lib/index.mjs"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "typecheck": "tsc -p tsconfig.json",
+    "prepare": "tsdown"
+  },
+  "dependencies": {
+    "@clack/prompts": "catalog:",
+    "bumpp": "catalog:",
+    "changelogithub": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "turbo": "catalog:",
+    "tsdown": "catalog:",
+    "typescript": "catalog:"
+  }
+}

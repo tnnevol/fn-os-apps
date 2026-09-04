@@ -56,10 +56,10 @@
 
 ```bash
 pnpm install
-pnpm run docs:dev
+pnpm run start -- --docs
 ```
 
-生产构建使用 `pnpm run docs:build`，构建结果位于 `docs/.vitepress/dist/`。
+生产构建使用 `pnpm run build -- --docs`，构建结果位于 `docs/.vitepress/dist/`。
 
 ### 本地快速安装（开发阶段推荐）
 
@@ -102,7 +102,7 @@ appcenter-cli stop <appname>
 
 ## 版本发布
 
-通过 GitHub Actions 自动完成 FPK 构建和 Release 发布。项目根目录通过 `package.json` 维护当前版本号，根目录 `bump` 脚本负责同步更新应用版本。
+通过 GitHub Actions 自动完成 FPK 构建和 Release 发布。项目版本工具位于 `tooling/fn-os-apps-cli` workspace，通过 `fnos-apps` CLI 使用 `bumpp` 分别维护项目/FPK 版本和插件版本。
 
 ### Tag 命名规范
 
@@ -128,19 +128,21 @@ git push origin main
 2. **推送版本 Tag 触发发布**
 
 ```bash
-pnpm run bump:patch
+pnpm run version -- project patch
 git push origin main && git push origin v<版本号>
 ```
 
-`bump` 会同步更新根 `package.json`、所有 `apps/*/manifest` 和 README 中的版本示例，然后自动创建版本提交和 Tag。
+`version` 使用 `bumpp` 更新根 `package.json`、`packages/*/package.json`、与项目版本匹配的 `apps/*/manifest` 和 README 中的版本示例，然后创建项目提交和 `v<版本号>` Tag。插件版本不会被项目版本命令修改。
 
-也可以直接使用对应的 npm 脚本（任选其一）：
+插件需要单独指定目标插件维护版本：
 
 ```bash
-pnpm run bump:major
-pnpm run bump:minor
-pnpm run bump:patch
+pnpm run version -- plugin fnos patch
+pnpm run version -- plugin codex patch
+pnpm run version -- plugin showcase patch
 ```
+
+插件版本命令只修改指定插件，使用 `plugin/<插件名>-v<版本号>` Tag。
 
 3. **GitHub Actions 自动执行**
 

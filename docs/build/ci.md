@@ -6,14 +6,14 @@ GitHub Actions 配置位于 `.github/workflows/build-release.yml`，由版本 Ta
 
 1. 扫描 `apps/`，发现包含 `manifest` 的应用。
 2. 下载并验证 `fnpack`。
-3. 为每个应用并行执行 `fnpack build`。
+3. 通过根 `build` 任务的 FPK 模式为每个应用并行执行编译：`pnpm exec fnos-apps build --fpk --app <appname>`。
 4. 将产物重命名为 `<appname>-<tag>.fpk`。
-5. 上传构建产物并生成 GitHub Release。
+5. 上传构建产物并由根 `release:notes` 任务调用 `changelogithub` 生成 GitHub Release。
 
 ## 触发方式
 
 ```bash
-pnpm run bump:patch
+pnpm run version -- project patch
 git push origin main
 git push origin v<版本号>
 ```

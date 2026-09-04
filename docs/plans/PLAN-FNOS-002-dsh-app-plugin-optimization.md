@@ -22,7 +22,8 @@ lastVerified: 2026-09-01
 本计划实施四个已经确认进入开发的功能：
 
 - `FNOS-002-01`：统一 Codex 登录与用量状态；未登录时隐藏状态，登录后根据接口是否提供五小时窗口自动显示或隐藏对应额度；取得一次性授权码后自动尝试复制到剪切板，失败时保留手动复制入口。
-- `FNOS-002-02`：修正 NAS 文件和目录引用的插入规则，并在 Tree 面板打开期间让本次引用删除状态反向同步到勾选节点，历史引用不参与当前选择。
+- 版本脚本与插件版本发布流程由 `tooling/fn-os-apps-cli` workspace 中的 `fnos-apps` CLI 和 `bumpp` 负责，项目/FPK 与插件各自指定更新范围。
+- `FNOS-002-02`：修正 NAS 文件和目录引用的插入规则；TreeSelect 使用独立关系模式支持多个文件/目录（含父子路径）同时选择，并在面板打开期间让本次引用删除状态反向同步到勾选节点，历史引用不参与当前选择。
 - `FNOS-002-03`：新增 DSH Semi UI 总览插件，集中展示 `@tnnevol/dsh-semi-ui` 的公共组件、状态和浅色/深色主题效果。
 - `FNOS-002-04`：使用 `connect` 与 `http-proxy-middleware` 重写 fnOS 统一网关代理；由常驻网关承载 FPK 状态并在 Web 左侧菜单提供 DSH Web 重启入口；由 fnOS 插件管理三方插件 API URL 反代规则，并让已打开的 DSH 页面立即取得最新配置。
 - 跨功能版本约束：将 DSH 运行时、插件、`@deepseek-ai/dsh-*` 依赖、native 产物、FPK 安装流程和发布文档统一到 `0.1.2-rc.1`，不清理用户数据或配置。
@@ -45,7 +46,8 @@ lastVerified: 2026-09-01
 | Codex 状态 Host | `plugins/dsh-codex-auth-plugin/src/usage.ts`、认证路由 | 规范化登录状态与 Codex 用量窗口 |
 | Codex 状态 Client | `plugins/dsh-codex-auth-plugin/src/client/` | 只在已登录时显示状态，并根据接口响应显示五小时和每周用量 |
 | 版本与发布 | `plugins/*`、`apps/fn-deepseek-harness/cmd/install_callback`、`.github/config/`、`docs/` | 统一 DSH/插件版本契约、FPK 安装回调、node-pty native 配置、发布清单和文档 |
-| 文档与测试 | `docs/`、各包 `tests/` | 验证配置契约、代理行为、即时同步、构建与 NAS 运行 |
+| 版本脚本 workspace | `tooling/fn-os-apps-cli/`、根 `package.json`、`pnpm-workspace.yaml` | 使用 `bumpp` 分离项目/FPK 与插件版本更新、提交和 Tag |
+| 文档与测试 | `docs/`、各包 `tests/` | 验证配置契约、版本脚本、代理行为、即时同步、构建与 NAS 运行 |
 
 DSH 和 fnOS 官方项目只作为契约参考，不修改、不提交上游补丁。`apps/fn-deepseek-harness/app/gateway-proxy.mjs` 是构建产物，业务源码只在 `packages/fnos-gateway/src/` 中维护。
 
@@ -391,6 +393,7 @@ SSE 路由由网关自身处理，不转发到 DSH。它经过 fnOS 统一网关
 | PLAN-FNOS-002-T02-05 | FNOS-002-02 | Tree 面板打开时记录已有 fnOS occurrence ID 作为基线，并为本次成功插入的路径维护 occurrence 关联 | <Badge type="tip" text="已完成" /> |
 | PLAN-FNOS-002-T02-06 | FNOS-002-02 | 面板未关闭时监听 `input.occurrences`；本次关联 occurrence 消失后从 `desiredPaths` 移除对应路径，历史 occurrence 不参与同步 | <Badge type="tip" text="已完成" /> |
 | PLAN-FNOS-002-T02-07 | FNOS-002-02 | 补充空 draft、空格、换行、多选、删除、光标恢复、历史同路径、本次删除、关闭重开和外部 draft 更新测试 | <Badge type="tip" text="已完成" /> |
+| PLAN-FNOS-002-T02-08 | FNOS-002-02 | 将 TreeSelect 改为 `unRelated` 独立选择模式，移除无效 `treeCheckable` 属性，验证父子和多个兄弟节点均可同时选中 | <Badge type="tip" text="已完成" /> |
 
 ### P1：Semi UI 总览插件
 
@@ -426,6 +429,20 @@ SSE 路由由网关自身处理，不转发到 DSH。它经过 fnOS 统一网关
 | PLAN-FNOS-002-T04-15 | FNOS-002-04 | 验证 Web 被终止、重复点击、启动失败、PID 复用、网关退出和 FPK stop/config_callback 场景 | <Badge type="warning" text="部分验证" /> |
 | PLAN-FNOS-002-T04-16 | FNOS-002-04 | 将 `BRIDGE_SCRIPT_BODY` 拆到 `src/client/bridge.js`；两个 tsdown 构建复用虚拟模块插件，在构建期读取并内联 Bridge | <Badge type="tip" text="已完成" /> |
 
+### Turbo 任务与发布工具
+
+| 任务 ID | 实现内容 | 状态 |
+| --- | --- | --- |
+| PLAN-FNOS-002-TT-01 | 引入 Turbo，使用 `turbo.json` 声明 build、typecheck、test、check 和网关应用构建依赖；根 `package.json` 只提供统一任务入口 | <Badge type="tip" text="已完成" /> |
+| PLAN-FNOS-002-TT-02 | 合并版本入口为交互式 `version`，由 `@clack/prompts` 选择项目/FPK或插件区域，`tooling/fn-os-apps-cli` workspace 通过 `fnos-apps` CLI 暴露，全部使用 TypeScript 并由 tsdown 编译 | <Badge type="tip" text="已完成" /> |
+| PLAN-FNOS-002-TT-03 | 根目录仅暴露交互式 `build`；支持选择文档构建和复选 FPK，DSH FPK 自动先编译网关，插件通过 Turbo 自动先编译 `dsh-semi-ui`，共享包不进入顶层构建选择，移除 `fnos-gateway` 的 `build:fpk` | <Badge type="tip" text="已完成" /> |
+| PLAN-FNOS-002-TT-04 | 引入 `changelogithub`，由根 `release:notes` 任务生成 Tag 对应 Release 日志，移除 workflow 内手写 Release 日志生成 | <Badge type="tip" text="已完成" /> |
+| PLAN-FNOS-002-TT-05 | 将 `tooling/fn-os-apps-cli/src/index.ts` 收敛为命令路由，按 `commands/`、`config/`、`core/`、`ui/`、`sdd/` 拆分版本、构建、提示、进程和文档检查职责 | <Badge type="tip" text="已完成" /> |
+| PLAN-FNOS-002-TT-06 | 为 `@tnnevol/fn-os-apps-cli` 暴露 `fnos-apps` bin，根 `package.json` 的业务任务统一通过 `pnpm exec fnos-apps` 调用，workspace 更名为 `tooling/fn-os-apps-cli` | <Badge type="tip" text="已完成" /> |
+| PLAN-FNOS-002-TT-07 | 增加唯一根 `start` 入口，交互选择插件 Turbo watch 或 VitePress 文档服务；插件启动自动包含共享 UI 依赖并保持持续监听 | <Badge type="tip" text="已完成" /> |
+| PLAN-FNOS-002-TT-08 | 将 SDD、文档、共享包和插件检查统一收敛到 `fnos-apps check`，支持交互选择和 `--sdd`、`--docs`、`--packages`、`--plugins`、`--all` 参数 | <Badge type="tip" text="已完成" /> |
+| PLAN-FNOS-002-TT-09 | 重构开发指南全部子菜单，补充应用开发配置说明、统一任务操作手册和 `package.json` 注入口、CLI、Turbo、workspace package 的时序图 | <Badge type="tip" text="已完成" /> |
+
 ### 版本统一（跨功能发布约束）
 
 状态：<Badge type="warning" text="待 FPK/NAS 验证" />
@@ -442,6 +459,7 @@ SSE 路由由网关自身处理，不转发到 DSH。它经过 fnOS 统一网关
 | PLAN-FNOS-002-TV-06 | 将 FPK 安装/升级回调固定到 `@deepseek-ai/dsh@0.1.2-rc.1`，node-pty 维持 `1.2.0-beta.15`，native 配置文件与 CI 工作流同步改名 | <Badge type="tip" text="已修改" /> |
 | PLAN-FNOS-002-TV-07 | 已发布插件清单补入 `@tnnevol/dsh-fnos` 并与 `@tnnevol/dsh-codex-auth` 统一使用 `rc` dist-tag；插件发布脚本改用 `--tag rc` | <Badge type="tip" text="已修改" /> |
 | PLAN-FNOS-002-TV-08 | 确认 fnOS 插件客户端 `remote`/`remote.session` inject 声明完整（修复旧构建产物 `cannot get property "remote.session" without inject` 加载失败），并在 NAS 重装损坏副本 | <Badge type="warning" text="待 NAS 验证" /> |
+| PLAN-FNOS-002-TV-09 | 在 `scripts` pnpm workspace 以 TypeScript/tsdown 合并 `version` 入口，使用 `@clack/prompts` 选择项目/FPK或指定插件，再由 `bumpp` 分别指定文件、提交信息和 Tag，废弃根目录自定义 `bump` 脚本 | <Badge type="tip" text="已完成" /> |
 
 版本约束的验收以实际可安装、可启动和插件可加载为准；本地 package.json 一致不等于 NAS 验收完成。
 
@@ -685,7 +703,7 @@ pnpm --filter @tnnevol/fnos-gateway run build:app
 
 - Host 测试覆盖设置校验、原子 JSON 写入、失败回滚和启动补建。
 - Client 测试覆盖草稿、添加、删除、保存、放弃、保存失败和重新读取。
-- 引用测试覆盖已有文本无空格、已有空格、换行、多选引用、删除引用、插入失败和光标恢复。
+- 引用测试覆盖已有文本无空格、已有空格、换行、多选引用、删除引用、插入失败和光标恢复；TreeSelect 集成/契约测试覆盖多个兄弟节点及父子路径同时选择且不丢失。
 - Tree 同步测试覆盖本次单选/多选引用被直接删除、部分删除、历史引用删除、历史同路径与本次引用并存、异步 revision、关闭重开、会话切换和卸载清理。
 - 运行：
 
@@ -741,7 +759,7 @@ pnpm --filter @tnnevol/dsh-codex-auth run build
 - 删除路径并保存，确认已打开页面立即停止对该路径补前缀。
 - 验证损坏 JSON 不清空当前有效路径，也不导致网关退出。
 - 验证应用升级保留 `${TRIM_PKGVAR}` 配置；回滚时不删除 DSH 设置、会话、工作区、授权目录或白名单 JSON。
-- 运行 `pnpm run check:docs`。
+- 运行 `pnpm run check -- --sdd --docs`。
 - 校验 DSH、插件依赖、FPK 安装回调、native 配置、发布清单和文档均指向 `0.1.2-rc.1`；在 NAS 安装/升级后检查用户数据和插件配置未被清理。
 
 ## 参考资料

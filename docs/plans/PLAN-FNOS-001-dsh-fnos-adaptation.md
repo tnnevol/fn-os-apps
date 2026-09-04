@@ -166,7 +166,7 @@ pnpm --filter @tnnevol/dsh-codex-auth run build
 - 构建 FPK，确认 Scope、发布清单和安装脚本正确，包内没有未发布插件源码。
 - 验证全新安装、升级、重复启动和插件自动加载，不覆盖用户 profile。
 - 在真实 NAS 验证 iframe、网关、SSE、主题、授权目录、工作区、输入引用、文件打开、标题和 Session log 导出。
-- 运行 `pnpm run check:sdd` 和 `pnpm run docs:build`。
+- 运行 `pnpm run check -- --sdd` 和 `pnpm run build -- --docs`。
 
 ### 升级和回滚
 
