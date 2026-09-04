@@ -50,7 +50,7 @@ describe('dsh-codex-auth-plugin settings-card namespace', () => {
     expect(capabilities).toContain('dshVersion?: string | undefined')
     expect(capabilities).toContain('formatImageGenerationHelp(t, dshVersion)')
     expect(message).toContain("replace('{version}', dshVersion ?? 'unknown')")
-    expect(locales).not.toContain('0.1.2-alpha.4')
+    expect(locales).not.toContain('0.1.2-rc.1')
     expect(locales).not.toContain('DSH rc.8')
   })
 })

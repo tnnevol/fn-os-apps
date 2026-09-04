@@ -2,7 +2,7 @@
   "name": "@tnnevol/dsh-semi-ui-showcase",
   "displayName": "DSH Semi UI Showcase",
   "description": "Component showcase for the shared DSH-themed Semi Design package.",
-  "version": "0.1.2-alpha.4",
+  "version": "0.1.2-rc.1",
   "author": "tnnevol",
   "repository": {
     "type": "git",
@@ -11,20 +11,32 @@
   },
   "homepage": "https://github.com/tnnevol/fn-os-apps/tree/main/plugins/dsh-semi-ui-showcase-plugin",
   "documentation": "https://fnapps-doc.tnnevol.cn/plugins/dsh-semi-ui-showcase",
-  "publishConfig": { "access": "public" },
+  "publishConfig": {
+    "access": "public"
+  },
   "type": "module",
   "license": "AGPL-3.0-only",
-  "engines": { "node": "^22.19.0 || >=24.0.0" },
+  "engines": {
+    "node": "^22.19.0 || >=24.0.0"
+  },
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "exports": {
-    ".": { "types": "./lib/index.d.ts", "default": "./lib/index.js" },
+    ".": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    },
     "./client": "./lib/client.js",
     "./cordis.patch.yml": "./cordis.patch.yml",
     "./compatibility.json": "./compatibility.json",
     "./package.json": "./package.json"
   },
-  "files": ["lib", "compatibility.json", "cordis.patch.yml", "README.md"],
+  "files": [
+    "lib",
+    "compatibility.json",
+    "cordis.patch.yml",
+    "README.md"
+  ],
   "scripts": {
     "pretypecheck": "pnpm --filter @tnnevol/dsh-semi-ui run build",
     "prebuild": "pnpm --filter @tnnevol/dsh-semi-ui run build",
@@ -33,11 +45,13 @@
     "test:unit": "vitest run --config vitest.config.ts",
     "test": "pnpm run test:unit",
     "check": "pnpm run typecheck && pnpm run build && pnpm run test:unit",
-    "publish:alpha": "pnpm publish --tag alpha --access public",
-    "prepublishOnly": "pnpm run check"
+    "prepublishOnly": "pnpm run check",
+    "publish:rc": "pnpm publish --tag rc --access public"
   },
   "dsh": {
-    "bundle": { "patch": "./cordis.patch.yml" },
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
     "client": {
       "inject": [
         "@deepseek-ai/dsh-client-ui-theme",

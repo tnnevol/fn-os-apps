@@ -4,7 +4,11 @@
   "plugins": [
     {
       "name": "@tnnevol/dsh-codex-auth",
-      "distTag": "alpha"
+      "distTag": "rc"
+    },
+    {
+      "name": "@tnnevol/dsh-fnos",
+      "distTag": "rc"
     }
   ]
 }
