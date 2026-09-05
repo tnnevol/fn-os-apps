@@ -1,0 +1,14 @@
+{
+  "name": "@tnnevol/fn-os-apps-docs",
+  "private": true,
+  "description": "VitePress documentation for fn-os-apps.",
+  "scripts": {
+    "dev": "vitepress dev",
+    "build": "vitepress build"
+  },
+  "devDependencies": {
+    "@miletorix/vitepress-image-viewer": "catalog:",
+    "vitepress": "catalog:",
+    "vitepress-plugin-d2": "catalog:"
+  }
+}
