@@ -15,10 +15,10 @@ DeepSeek Harness 是 DeepSeek AI 开源的插件化智能代理工具。本应�
 
 ## Harness 插件
 
-FPK 安装和升级时会根据发布清单安装 npm `rc` 标签对应的插件：
+FPK 安装和升级时会根据发布清单按精确版本安装插件：
 
-- `@tnnevol/dsh-codex-auth`：ChatGPT/Codex 登录、模型目录、全局模型、用量和图片输入；
-- `@tnnevol/dsh-fnos`：fnOS 主题、授权目录、NAS 文件访问和会话日志导出。
+- `@tnnevol/dsh-codex-auth@0.1.2-rc.1`：ChatGPT/Codex 登录、模型目录、全局模型、用量和图片输入；
+- `@tnnevol/dsh-fnos@0.1.2-rc.1.1`：fnOS 主题、授权目录、NAS 文件访问和会话日志导出。
 
 插件功能、兼容版本和排查命令统一维护在[插件总览](/plugins/)中，应用文档不再重复记录插件内部实现。
 

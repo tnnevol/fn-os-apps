@@ -458,7 +458,7 @@ SSE 路由由网关自身处理，不转发到 DSH。它经过 fnOS 统一网关
 | PLAN-FNOS-002-TV-04 | 在真实 NAS 验证安装、升级、插件加载和版本回滚，确认 `DSH_HOME`、profile、凭据、工作区和插件配置保留 | <Badge type="warning" text="待 NAS 验证" /> |
 | PLAN-FNOS-002-TV-05 | 将 DSH 插件版本、`@deepseek-ai/dsh-*` catalog 依赖和 compatibility 声明从 `0.1.2-alpha.4` 统一到 `0.1.2-rc.1`，并把 `@earendil-works/pi-ai` 对齐到 DSH rc.1 锁定的 `0.84.2` | <Badge type="tip" text="已修改" /> |
 | PLAN-FNOS-002-TV-06 | 将 FPK 安装/升级回调固定到 `@deepseek-ai/dsh@0.1.2-rc.1`，node-pty 维持 `1.2.0-beta.15`，native 配置文件与 CI 工作流同步改名 | <Badge type="tip" text="已修改" /> |
-| PLAN-FNOS-002-TV-07 | 已发布插件清单补入 `@tnnevol/dsh-fnos` 并与 `@tnnevol/dsh-codex-auth` 统一使用 `rc` dist-tag；插件发布脚本改用 `--tag rc` | <Badge type="tip" text="已修改" /> |
+| PLAN-FNOS-002-TV-07 | 已发布插件清单补入 `@tnnevol/dsh-fnos`，并按精确版本固定安装：`@tnnevol/dsh-codex-auth@0.1.2-rc.1`、`@tnnevol/dsh-fnos@0.1.2-rc.1.1`；插件发布脚本改用 `--tag rc` | <Badge type="tip" text="已修改" /> |
 | PLAN-FNOS-002-TV-08 | 确认 fnOS 插件客户端 `remote`/`remote.session` inject 声明完整（修复旧构建产物 `cannot get property "remote.session" without inject` 加载失败），并在 NAS 重装损坏副本 | <Badge type="warning" text="待 NAS 验证" /> |
 | PLAN-FNOS-002-TV-09 | 在 `scripts` pnpm workspace 以 TypeScript/tsdown 合并 `version` 入口，使用 `@clack/prompts` 选择项目/FPK或指定插件，再由 `bumpp` 分别指定文件、提交信息和 Tag，废弃根目录自定义 `bump` 脚本 | <Badge type="tip" text="已完成" /> |
 
@@ -797,7 +797,7 @@ pnpm --filter @tnnevol/dsh-codex-auth run build
 
 | 日期 | 变更 |
 | --- | --- |
-| 2026-09-04 | 版本统一目标从 `0.1.2-alpha.4` 调整为 `0.1.2-rc.1`：pi-ai 对齐 `0.84.2`；FPK 回调、native 配置与 CI 同步；发布清单补入 `@tnnevol/dsh-fnos` 并统一 `rc` dist-tag；确认 fnos 插件 `remote.session` inject 修复（TV-05～TV-08）。 |
+| 2026-09-04 | 版本统一目标从 `0.1.2-alpha.4` 调整为 `0.1.2-rc.1`：pi-ai 对齐 `0.84.2`；FPK 回调、native 配置与 CI 同步；发布清单补入 `@tnnevol/dsh-fnos` 并按精确版本固定安装（codex-auth `0.1.2-rc.1`、fnos `0.1.2-rc.1.1`）；确认 fnos 插件 `remote.session` inject 修复（TV-05～TV-08）。 |
 | 2026-09-04 | 增加 Codex 授权码自动复制任务（T01-06）。 |
 | 2026-08-28 | 建立 PLAN-FNOS-002，纳入 Codex 五小时用量自动显隐 |
 | 2026-08-28 | 将原 FNOS-003 合并到 FNOS-002-04，确定 `connect + http-proxy-middleware`、tsdown FPK 产物、持久 JSON、`fs.watch + SSE` 即时更新和保存/放弃交互 |

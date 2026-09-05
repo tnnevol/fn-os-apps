@@ -1,6 +1,6 @@
 # fnOS
 
-`@tnnevol/dsh-fnos` 补齐 DSH 在 fnOS 应用中的系统集成。当前插件版本为 `0.1.2-rc.1`，适配 DSH `0.1.2-rc.1`。
+`@tnnevol/dsh-fnos` 补齐 DSH 在 fnOS 应用中的系统集成。当前插件版本为 `0.1.2-rc.1.1`，适配 DSH `0.1.2-rc.1`。
 
 ## 安装
 

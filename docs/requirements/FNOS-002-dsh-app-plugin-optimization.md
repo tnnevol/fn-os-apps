@@ -67,7 +67,7 @@ DSH 在 fnOS 中运行后，还有几处使用体验需要调整。Codex 登录�
 
 - DSH 运行时、DSH 插件及 `@deepseek-ai/dsh-*` 依赖统一使用 `0.1.2-rc.1`；`@earendil-works/pi-ai` 与 DSH `0.1.2-rc.1` 的锁定一致，使用 `0.84.2`。
 - FPK 安装/升级回调、node-pty native 配置、已发布插件清单和相关文档必须与该版本一致。
-- 已发布插件清单包含 `@tnnevol/dsh-codex-auth` 与 `@tnnevol/dsh-fnos`，统一使用 `rc` dist-tag；`0.1.2-rc.1` 发布前 `rc` 标签不得指向旧版本。
+- 已发布插件清单包含 `@tnnevol/dsh-codex-auth` 与 `@tnnevol/dsh-fnos`，按精确版本固定安装：codex-auth 为 `0.1.2-rc.1`，fnos 为 `0.1.2-rc.1.1`；后续发布新版本时需同步更新该清单。
 - fnOS 插件客户端声明 `remote` 与 `remote.session` inject；任何访问 `ctx.remote.*` 命名空间的构建产物都必须携带对应 inject 声明，否则该插件视为损坏并需要重装。
 - 版本管理通过独立 `tooling/fn-os-apps-cli` workspace 中的 `bumpp` 执行；项目/FPK 版本命令只更新根项目、共享包和应用 Manifest，插件版本命令按指定插件独立更新、提交和打 Tag。
 - 版本检查和升级不得清理 `DSH_HOME`、profile、凭据、工作区或现有插件配置。
