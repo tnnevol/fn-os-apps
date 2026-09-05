@@ -32,6 +32,7 @@ DSH 在 fnOS 中运行后，还有几处使用体验需要调整。Codex 登录�
 - 由 fnOS 插件管理三方插件 API URL 反代配置，网关监听配置并将匹配的绝对 URL 请求改写到统一网关下的 DSH 服务。
 - 统一 DSH 运行时、插件、插件依赖、native 产物、FPK 安装流程和发布文档的目标版本为 `0.1.2-rc.1`，并保留用户数据与配置。
 - 将版本发布逻辑放入独立 `tooling/fn-os-apps-cli` pnpm workspace，通过 `fn-apps-cli` CLI 使用 `bumpp` 分别维护项目/FPK版本与插件版本；插件版本不得被项目或 FPK 版本命令隐式修改。
+- 通过 `fn-apps-cli publish` 交互选择一个或多个 DSH 插件，并在所有选择完成后统一使用 `rc` dist-tag 发布 npm 包。
 - 修复 fnOS 聊天输入框授权路径选择器的多选行为，连续选择多个文件或目录时全部生成引用。
 - 引入 Turbo 统一包任务编排；根 `package.json` 提供统一任务入口，`tooling/fn-os-apps-cli` 通过 `fn-apps-cli` CLI 暴露任务，全部使用 TypeScript 与 tsdown。
 - 通过 `@clack/prompts` 在版本、构建和启动时询问目标区域；构建支持多选 FPK 和文档，并自动处理 DSH 网关和插件的 dsh-semi-ui 依赖。共享包不作为顶层构建选项，只由依赖它的主包通过 Turbo 自动编译。
@@ -117,6 +118,7 @@ DSH 在 fnOS 中运行后，还有几处使用体验需要调整。Codex 登录�
 - NAS TreeSelect 可连续选择多个文件或目录，父子路径作为独立引用全部插入；面板打开期间删除本次引用会立即取消对应 Tree 勾选，历史引用不会进入当前选择状态。
 - 项目/FPK 与插件版本命令通过 `bumpp` 独立运行，分别只修改约定文件，不发生跨类别版本联动。
 - 根任务入口、workflow 调用和包任务名称保持一致；Release 日志由 `changelogithub` 根据 Conventional Commits 自动生成。
+- `pnpm run publish` 可交互选择一个或多个 DSH 插件，完成全部询问后统一使用 `rc` dist-tag 发布 npm 包。
 - Semi UI 总览插件可正常安装和卸载；点击入口可进入独立总览路由，浏览器前进、后退和刷新有效，组件在浅色、深色主题下显示正常。
 - 新网关兼容 HTTP、WebSocket、SSE、插件 API 和静态资源，产物位于 FPK 的 `app` 目录，并在真实 fnOS 统一网关入口完成验证。
 - Bridge 可作为独立 JS 文件完成语法检查和单元测试；生成的单文件网关不包含未替换占位符，也不依赖 NAS 上不存在的 Bridge 源文件。

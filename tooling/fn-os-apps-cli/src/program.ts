@@ -16,5 +16,6 @@ Examples:
   fn-apps-cli build --docs
   fn-apps-cli check --all
   fn-apps-cli check --sdd --plugins
+  fn-apps-cli publish --plugin fnos
   fn-apps-cli version project patch
 `)

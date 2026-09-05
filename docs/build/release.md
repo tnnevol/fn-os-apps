@@ -21,6 +21,17 @@ chore: release v5.0.7
 v5.0.7
 ```
 
+## 发布 npm 插件
+
+当前 npm 发布仅支持 `rc` dist-tag。CLI 会先询问要发布的插件，所有选择完成后再统一发布：
+
+```bash
+pnpm run publish
+pnpm run publish -- --plugin fnos
+```
+
+该命令调用各插件的 `publish:rc` 脚本，不会发布共享的 `dsh-semi-ui` 包。
+
 ## 推送并触发构建
 
 ```bash

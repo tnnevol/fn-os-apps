@@ -97,6 +97,20 @@ export async function askPlugins(): Promise<string[] | undefined> {
   return result as string[]
 }
 
+export async function askPublishPlugins(): Promise<PluginTarget[] | undefined> {
+  const result = await multiselect({
+    message: '选择要发布的 npm 插件（可多选）',
+    required: true,
+    options: pluginTargets.map(target => ({ value: target.value, label: target.label })),
+  })
+  if (isCancel(result)) {
+    cancel('已取消 npm 发布')
+    return undefined
+  }
+  const selected = new Set(result as string[])
+  return pluginTargets.filter(target => selected.has(target.value))
+}
+
 export async function askFpkApps(apps: string[]): Promise<string[] | undefined> {
   const result = await multiselect({
     message: '选择要编译的 FPK 应用（可多选）',

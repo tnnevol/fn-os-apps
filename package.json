@@ -13,6 +13,7 @@
     "test:unit": "turbo run test:unit",
     "test": "turbo run test:unit",
     "check": "pnpm exec fn-apps-cli check",
+    "publish": "pnpm exec fn-apps-cli publish",
     "release:notes": "pnpm exec fn-apps-cli release:notes"
   },
   "engines": {

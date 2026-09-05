@@ -40,4 +40,4 @@ pnpm run version -- plugin showcase patch
 2. 根据发布目标选择 `version -- project` 或 `version -- plugin <name>`。
 3. 检查版本文件、提交和 Tag。
 4. 推送提交和 Tag，触发对应的 CI/发布流程。
-5. 插件发布前运行对应插件的 `check`，再使用正确的 npm dist-tag 发布。
+5. 插件发布前运行对应插件的 `check`，再使用 `pnpm run publish` 发布当前 `rc` dist-tag。
