@@ -185,6 +185,7 @@ export function CodexAuthCard({ t, configScope, connection, remote }: CodexAuthC
   const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'failed'>('idle')
   const [usage, setUsage] = useState<UsageState>({ status: 'hidden' })
   const [modelRefresh, setModelRefresh] = useState<ModelRefreshState>({ status: 'idle' })
+  const [catalogRefreshKey, setCatalogRefreshKey] = useState(0)
 
   const refreshModels = useCallback(async (): Promise<void> => {
     if (status.status !== 'signed-in' || modelRefresh.status === 'busy') return
@@ -192,6 +193,7 @@ export function CodexAuthCard({ t, configScope, connection, remote }: CodexAuthC
     try {
       const response = await jsonRequest<ModelRefreshResponse>(CODEX_MODEL_REFRESH_PATH, 'POST')
       setModelRefresh({ status: 'done', count: response.models.length })
+      setCatalogRefreshKey(current => current + 1)
     } catch (error: unknown) {
       setModelRefresh({
         status: 'error',
@@ -383,7 +385,7 @@ export function CodexAuthCard({ t, configScope, connection, remote }: CodexAuthC
               {copyStatus === 'failed' ? <p className="dsh-codex-auth-error">{t('authorizationCodeCopyFailed')}</p> : null}
             </div>
           ) : null}
-          <CodexGlobalModel connection={connection} remote={remote} t={t} />
+          <CodexGlobalModel connection={connection} remote={remote} catalogRefreshKey={catalogRefreshKey} t={t} />
           {status.status === 'signed-in' ? (
             <section className="dsh-codex-model-refresh" aria-labelledby="dsh-codex-model-refresh-title">
               <div className="dsh-codex-model-refresh-header">
