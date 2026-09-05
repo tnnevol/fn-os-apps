@@ -2,7 +2,7 @@
   "name": "@tnnevol/dsh-semi-ui-showcase",
   "displayName": "DSH Semi UI Showcase",
   "description": "Component showcase for the shared DSH-themed Semi Design package.",
-  "version": "0.1.2-rc.1",
+  "version": "0.1.2-rc.1.2",
   "author": "tnnevol",
   "repository": {
     "type": "git",
