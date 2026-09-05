@@ -18,6 +18,8 @@ describe('DSH Semi UI facade', () => {
       'DshCascader',
       'DshDropdown',
       'DshIconButton',
+      'DshInput',
+      'DshSwitch',
       'DshHotKeys',
       'DshSpin',
       'DshToast',
