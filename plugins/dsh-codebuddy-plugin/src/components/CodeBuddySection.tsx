@@ -7,8 +7,10 @@
  */
 
 import { useCallback, useEffect, useState } from 'react'
-import { DshButton, DshInput, DshSwitch } from '@tnnevol/dsh-semi-ui'
+import type { FocusEvent } from 'react'
+import { DshButton, DshForm, DshInputNumber, DshSwitch } from '@tnnevol/dsh-semi-ui'
 import { CODEBUDDY_AUTH_CHANNEL } from '../client/constants.ts'
+
 import type { CodeBuddyLocaleKey } from '../client/locales.ts'
 import type { AuthStatus, ConnectionRpc, LoginPoll, LoginStart, RpcErr } from '../client/rpc.ts'
 import { describeRpcError } from '../client/rpc.ts'
@@ -56,6 +58,16 @@ function StatusRow({ label, value }: { label: string; value: string }) {
   )
 }
 
+function PreferenceLabel({ title, description }: { title: string; description: string }) {
+  return (
+    <span className="dsh-codebuddy-form-label">
+      <span className="dsh-codebuddy-form-label-title">{title}</span>
+      <span className="dsh-codebuddy-form-label-description">{description}</span>
+    </span>
+  )
+}
+
+
 export interface CodeBuddySectionProps {
   rpc: ConnectionRpc
   t: Translate
@@ -68,18 +80,12 @@ export function CodeBuddySection({ rpc, t }: CodeBuddySectionProps) {
   const [loginState, setLoginState] = useState<string | undefined>(undefined)
   const [showUsage, setShowUsage] = useState<boolean>(getUsagePref())
   const [customLimit, setCustomLimitState] = useState<number | undefined>(getCustomLimit())
-  const [limitText, setLimitText] = useState<string>(customLimit === undefined ? '' : String(customLimit))
-  const [dangerPct, setDangerPctState] = useState<number>(getDangerPct())
-  const [dangerText, setDangerText] = useState<string>(String(getDangerPct()))
+  const [dangerPct, setDangerPctState] = useState<number | undefined>(getDangerPct())
 
   useEffect(() => subscribeUsagePref(() => {
     setShowUsage(getUsagePref())
-    const next = getCustomLimit()
-    setCustomLimitState(next)
-    setLimitText(next === undefined ? '' : String(next))
-    const danger = getDangerPct()
-    setDangerPctState(danger)
-    setDangerText(String(danger))
+    setCustomLimitState(getCustomLimit())
+    setDangerPctState(getDangerPct())
   }), [])
 
   const refresh = useCallback(async () => {
@@ -204,62 +210,83 @@ export function CodeBuddySection({ rpc, t }: CodeBuddySectionProps) {
             </div>
           )}
 
-      {/* Usage preferences: UI-only, configurable whether or not signed in. */}
-      <div className="dsh-codebuddy-prefRow">
-        <div className="dsh-codebuddy-prefRowText">
-          <div className="dsh-codebuddy-prefTitle">{t('showUsage')}</div>
-          <div className="dsh-codebuddy-prefDesc">{t('showUsageDesc')}</div>
-        </div>
-        <DshSwitch
-          checked={showUsage}
-          onChange={(checked) => { setUsagePref(checked) }}
-          aria-label={t('showUsage')}
-        />
-      </div>
-      <div className="dsh-codebuddy-prefRow">
-        <div className="dsh-codebuddy-prefRowText">
-          <div className="dsh-codebuddy-prefTitle">{t('customLimit')}</div>
-          <div className="dsh-codebuddy-prefDesc">{t('customLimitDesc')}</div>
-        </div>
-        <DshInput
-          type="number"
-          className="dsh-codebuddy-prefInput"
-          value={limitText}
-          placeholder={t('customLimitPlaceholder')}
-          onChange={(value) => { setLimitText(String(value)) }}
-          onBlur={() => {
-            const parsed = Number(limitText)
-            if (limitText.length === 0 || !Number.isFinite(parsed) || parsed <= 0) {
-              setCustomLimit(undefined)
-            } else {
-              setCustomLimit(parsed)
-            }
-          }}
-        />
-      </div>
-      <div className="dsh-codebuddy-prefRow">
-        <div className="dsh-codebuddy-prefRowText">
-          <div className="dsh-codebuddy-prefTitle">{t('dangerPct')}</div>
-          <div className="dsh-codebuddy-prefDesc">{t('dangerPctDesc')}</div>
-        </div>
-        <DshInput
-          type="number"
-          className="dsh-codebuddy-prefInput"
-          value={dangerText}
-          onChange={(value) => { setDangerText(String(value)) }}
-          onBlur={() => {
-            const parsed = Number(dangerText)
-            if (!Number.isFinite(parsed) || parsed < 1 || parsed > 100) {
-              setDangerPct(undefined)
-              setDangerText(String(getDangerPct()))
-            } else {
-              const clamped = Math.round(parsed)
-              setDangerPct(clamped)
-              setDangerText(String(clamped))
-            }
-          }}
-        />
-      </div>
+      {/* Usage preferences: UI-only, configurable whether or not signed in.
+          The form keeps a tight label / control grid; Semi drives the layout
+          so the rows line up across plugins without per-row styles. */}
+      <DshForm className="dsh-codebuddy-pref-form">
+        <DshForm.Slot
+          label={<PreferenceLabel title={t('showUsage')} description={t('showUsageDesc')} />}
+          labelPosition="left"
+          className="dsh-codebuddy-pref-field"
+        >
+          <DshSwitch
+            checked={showUsage}
+            onChange={(checked: boolean) => { setShowUsage(checked); setUsagePref(checked) }}
+            aria-label={t('showUsage')}
+          />
+        </DshForm.Slot>
+        <DshForm.Slot
+          label={<PreferenceLabel title={t('customLimit')} description={t('customLimitDesc')} />}
+          labelPosition="left"
+          className="dsh-codebuddy-pref-field"
+        >
+          <DshInputNumber
+            className="dsh-codebuddy-pref-control"
+            placeholder={t('customLimitPlaceholder')}
+            {...customLimit === undefined ? {} : { value: customLimit }}
+            min={1}
+            onChange={(value: number | string) => {
+              const next = typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : undefined
+              setCustomLimitState(next)
+              setCustomLimit(next)
+            }}
+            onBlur={(event: FocusEvent<HTMLInputElement>) => {
+              const raw = event.target.value
+              const parsed = Number(raw)
+              if (raw.length === 0 || !Number.isFinite(parsed) || parsed <= 0) {
+                setCustomLimitState(undefined)
+                setCustomLimit(undefined)
+              } else {
+                const clamped = Math.round(parsed)
+                setCustomLimitState(clamped)
+                setCustomLimit(clamped)
+              }
+            }}
+          />
+        </DshForm.Slot>
+        <DshForm.Slot
+          label={<PreferenceLabel title={t('dangerPct')} description={t('dangerPctDesc')} />}
+          labelPosition="left"
+          className="dsh-codebuddy-pref-field"
+        >
+          <DshInputNumber
+            className="dsh-codebuddy-pref-control"
+            {...dangerPct === undefined ? {} : { value: dangerPct }}
+            min={1}
+            max={100}
+            onChange={(value: number | string) => {
+              const next = typeof value === 'number' && Number.isFinite(value) && value >= 1 && value <= 100
+                ? Math.round(value)
+                : undefined
+              setDangerPctState(next)
+              setDangerPct(next)
+            }}
+            onBlur={(event: FocusEvent<HTMLInputElement>) => {
+              const raw = event.target.value
+              const parsed = Number(raw)
+              if (!Number.isFinite(parsed) || parsed < 1 || parsed > 100) {
+                const fallback = getDangerPct()
+                setDangerPctState(fallback)
+                setDangerPct(fallback)
+              } else {
+                const clamped = Math.round(parsed)
+                setDangerPctState(clamped)
+                setDangerPct(clamped)
+              }
+            }}
+          />
+        </DshForm.Slot>
+      </DshForm>
     </div>
   )
 }

@@ -73,39 +73,58 @@
   margin-top: 8px;
 }
 
-/* Usage preference rows. */
-.dsh-codebuddy-prefRow {
+/* Usage preference form: Semi drives label / control alignment. Keep the
+   label column flexible so CJK text never collapses into one character per
+   line, while controls stay at their natural width on the right. */
+.dsh-codebuddy-pref-form {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 0;
+  flex-direction: column;
+}
+
+.dsh-codebuddy-pref-field {
+  display: flex;
+  align-items: flex-start;
+  padding: 12px 0;
   border-bottom: 1px solid var(--dsw-alias-border-l2);
 }
 
-.dsh-codebuddy-prefRowText {
+.dsh-codebuddy-pref-field .semi-form-field-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  padding: 0 24px 0 0;
+  white-space: normal;
+}
+
+.dsh-codebuddy-pref-field .semi-form-field-main {
+  flex: 0 0 auto;
+  width: auto;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.dsh-codebuddy-form-label {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  flex: 1;
   min-width: 0;
-  padding-right: 48px;
 }
 
-.dsh-codebuddy-prefTitle {
+.dsh-codebuddy-form-label-title {
   color: var(--dsw-alias-label-primary);
   font-size: 14px;
   font-weight: 400;
   line-height: 22px;
 }
 
-.dsh-codebuddy-prefDesc {
+.dsh-codebuddy-form-label-description {
   color: var(--dsw-alias-label-secondary);
   font-size: 12px;
   font-weight: 400;
   line-height: 18px;
 }
 
-.dsh-codebuddy-prefInput {
+.dsh-codebuddy-pref-control {
   width: 120px;
 }
 
@@ -134,17 +153,28 @@
   outline-offset: 2px;
 }
 
+/* Mirrors the Codex plugin's usage popover surface: a flat, borderless card
+   so both providers read as one DSH pattern in the composer dock. */
+.dsh-codebuddy-usage-popover {
+  box-sizing: border-box;
+  min-width: 264px;
+  padding: 12px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--dsw-alias-label-secondary);
+}
+
 .dsh-codebuddy-usage-popover-content {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  min-width: 180px;
-  padding: 4px 2px;
+  gap: 12px;
 }
 
 .dsh-codebuddy-usage-popover-empty {
-  color: var(--dsw-alias-label-secondary);
-  font-size: 13px;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 12px;
   line-height: 18px;
 }
 
@@ -160,16 +190,27 @@
   justify-content: space-between;
   gap: 12px;
   color: var(--dsw-alias-label-primary);
-  font-size: 13px;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.dsh-codebuddy-usage-popover-amounts {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--dsw-alias-label-secondary);
+  font-size: 12px;
   line-height: 18px;
 }
 
 .dsh-codebuddy-usage-popover-progress {
+  height: 8px;
   width: 100%;
 }
 
 .dsh-codebuddy-usage-popover-reset {
-  color: var(--dsw-alias-label-secondary);
-  font-size: 12px;
-  line-height: 18px;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 11px;
+  line-height: 16px;
 }

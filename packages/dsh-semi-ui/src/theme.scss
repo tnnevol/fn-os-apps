@@ -117,6 +117,29 @@ body[data-dsh-semi-theme] .semi-progress {
   --semi-color-success: var(--dsw-alias-label-tertiary);
 }
 
+/* Switch toggles read as a control, not a success state: the DSH native
+   switch turns the brand color on and stays neutral off, so a checked Semi
+   switch must not light up green. The off-state background cannot collapse
+   into the page surface, and the knob must keep a strong contrast in both
+   DSH themes (Semi bakes it to a fixed white). Scope the tokens to the
+   component so other success-colored surfaces keep their meanings. */
+body[data-dsh-semi-theme] .semi-switch {
+  --semi-color-success: var(--dsw-alias-brand-primary);
+  --semi-color-success-hover: var(--dsw-alias-brand-primary);
+  --semi-color-success-active: var(--dsw-alias-brand-primary);
+  --semi-color-fill-0: var(--dsw-alias-label-tertiary);
+  --semi-color-fill-1: var(--dsw-alias-label-tertiary);
+  --semi-color-fill-2: var(--dsw-alias-label-tertiary);
+}
+
+body[data-dsh-semi-theme]:not([data-ds-dark-theme]) .semi-switch-knob {
+  background-color: var(--dsw-static-neutral-bluish-00);
+}
+
+body[data-dsh-semi-theme][data-ds-dark-theme] .semi-switch-knob {
+  background-color: var(--dsw-static-neutral-bluish-1000);
+}
+
 /* Keep filled Semi buttons aligned with DSH: light surfaces in light mode and
    dark surfaces in dark mode, with the host border token on every button. */
 body[data-dsh-semi-theme]:not([data-ds-dark-theme]) .semi-button.semi-button-solid:not(.semi-button-disabled) {

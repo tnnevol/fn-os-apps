@@ -49,14 +49,23 @@ function usageSummary(label: string, window: UsageWindow, t: Translate): string 
 
 function UsageWindowDetails({ label, value, t }: { label: string; value: UsageWindow | undefined; t: Translate }) {
   if (value === undefined) return null
-  const remaining = percent(value.usedPercent) ?? '—'
+  const remaining = percent(value.usedPercent === undefined ? undefined : 100 - value.usedPercent) ?? '—'
   const reset = resetLabel(value, t)
+  const amounts = value.used !== undefined || value.limit !== undefined
+    ? `${value.used !== undefined ? formatAmount(value.used) : '—'} / ${value.limit !== undefined ? formatAmount(value.limit) : '—'}`
+    : undefined
   return (
     <div className="dsh-codebuddy-usage-popover-window">
       <div className="dsh-codebuddy-usage-popover-heading">
         <span>{label}</span>
         <span>{`${t('usageRemaining')} ${remaining}`}</span>
       </div>
+      {amounts === undefined ? null : (
+        <div className="dsh-codebuddy-usage-popover-amounts">
+          <span>{t('usageUsed')}</span>
+          <span>{amounts}</span>
+        </div>
+      )}
       <DshProgress
         percent={progressPercent(value.usedPercent)}
         showInfo={false}
@@ -84,6 +93,7 @@ function UsagePopover({ windows, fallback, t }: { windows: UsageWindow[]; fallba
     </div>
   )
 }
+
 
 export interface CodeBuddyUsageStatusProps {
   t: Translate
@@ -139,7 +149,6 @@ export function CodeBuddyUsageStatus({ t, timer, rpc }: CodeBuddyUsageStatusProp
   }, [rpc, showUsage, timer])
 
   const primary = usage?.primary
-  const windows = usage?.windows ?? []
   // A custom cap overrides the meter's reported limit.
   const limit = customLimit ?? primary?.limit
   const usedPct = primary !== undefined && primary.used !== undefined && limit !== undefined && limit > 0
@@ -154,6 +163,12 @@ export function CodeBuddyUsageStatus({ t, timer, rpc }: CodeBuddyUsageStatusProp
         ...(usedPct === undefined ? {} : { usedPercent: usedPct }),
         ...(primary.resetsAt === undefined ? {} : { resetsAt: primary.resetsAt }),
       }
+  // The popover's windows carry the custom cap too: the primary entry is
+  // replaced with the derived view so the percentages inside the popover agree
+  // with the composer ring instead of flipping back to the reported limit.
+  const popoverWindows: UsageWindow[] = (usage?.windows ?? []).map(window =>
+    primary !== undefined && window === primary && derived !== undefined ? derived : window,
+  )
 
   useEffect(() => {
     if (derived === undefined && popoverOpen) setPopoverOpen(false)
@@ -203,7 +218,7 @@ export function CodeBuddyUsageStatus({ t, timer, rpc }: CodeBuddyUsageStatusProp
       <DshPopover
         trigger="custom"
         position="topRight"
-        content={<UsagePopover windows={windows} fallback={currentSummary} t={t} />}
+        content={<UsagePopover windows={popoverWindows} fallback={currentSummary} t={t} />}
         contentClassName="dsh-codebuddy-usage-popover"
         visible={popoverOpen}
         onVisibleChange={setPopoverOpen}
