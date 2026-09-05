@@ -1,0 +1,46 @@
+diff --git a/dist/index.js b/dist/index.js
+index 1ac2856c647938e5cd87bba595380cfc3ad1efe4..188125b54e78409d51f157536000f5c0bbf69042 100644
+--- a/dist/index.js
++++ b/dist/index.js
+@@ -3,6 +3,7 @@ import { spawnSync } from "child_process";
+ import { writeFileSync, unlinkSync, existsSync, mkdirSync, readFileSync } from "fs";
+ import path from "path";
+ import { Layout, FileType, Theme } from "./config.js";
++let d2WarningShown = false;
+ /**
+  * Function to parse diagram config located in code block.
+  * @param code Diagram D2 code.
+@@ -127,8 +128,10 @@ export default function d2(md, defaultConfig = {}) {
+             if (existsSync(cacheFilePath)) {
+                 return readFileSync(cacheFilePath, { encoding: "utf-8" });
+             }
+-            // Generate unique filename for diagram image output file
+-            const imageFilePath = path.join(outputDir, `d2-diagram-${Date.now()}.${fileType.toLowerCase()}`);
++            // Generate unique filename for diagram image output file. BASE64_SVG is
++            // an HTML encoding mode, so D2 must still write a real SVG file.
++            const outputFileType = fileType === FileType.BASE64_SVG ? FileType.SVG : fileType;
++            const imageFilePath = path.join(outputDir, `d2-diagram-${Date.now()}.${outputFileType.toLowerCase()}`);
+             // Write the D2 diagram code to a temporary .d2 file
+             const tempD2FilePath = path.join(outputDir, "temp.d2");
+             writeFileSync(tempD2FilePath, code);
+@@ -180,10 +183,16 @@ export default function d2(md, defaultConfig = {}) {
+                 args.push(`--font-semibold=${config.fontSemiBold}`);
+             }
+             // Run D2 command to generate output diagram image file
+-            const command = spawnSync("d2", args, { encoding: "utf-8", stdio: "pipe" });
+-            // Log any error with D2 command
+-            if (command.status !== 0) {
+-                console.error(`Error: Failed to generate D2 diagram.\n${command.stderr}`);
++            const command = spawnSync(process.env.D2_BIN ?? "d2", args, { encoding: "utf-8", stdio: "pipe" });
++            // Fall back to the original code fence when D2 is unavailable or fails.
++            // This keeps VitePress usable while preserving the diagram source.
++            if (command.error || command.status !== 0 || !existsSync(imageFilePath)) {
++                if (!d2WarningShown) {
++                    console.warn(`Unable to render D2 diagram; install D2 or set D2_BIN.\n${command.error?.message ?? command.stderr ?? "unknown D2 error"}`);
++                    d2WarningShown = true;
++                }
++                if (existsSync(tempD2FilePath)) unlinkSync(tempD2FilePath);
++                return originalFence(tokens, idx, options, env, slf);
+             }
+             // Get media type from file type
+             let mediaType;

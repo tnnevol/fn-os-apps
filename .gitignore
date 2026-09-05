@@ -52,4 +52,7 @@ docs/.vitepress/cache/
 docs/.vitepress/.temp/
 docs/.vitepress/dist/
 
+# DSH 运行时状态（含凭据），不属于本仓库
+data/
+
 .pnpm-store

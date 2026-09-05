@@ -59,7 +59,7 @@ const configureMarkdown = (md: Parameters<NonNullable<Parameters<typeof defineCo
     scale: 1,
     // 输出为 img 可识别的 Base64 SVG，由 image viewer 提供放大、拖拽和全屏预览。
     fileType: FileType.BASE64_SVG,
-    directory: 'docs/.vitepress/cache/d2'
+    directory: '.vitepress/cache/d2'
   })
 }
 
@@ -167,6 +167,11 @@ export default defineConfig({
   title: 'fnOS Apps',
   description: '飞牛 fnOS 应用开发、构建与使用文档。',
   base,
+  vite: {
+    server: {
+      port: 9876
+    }
+  },
   head: [['link', { rel: 'icon', href: `${base}icons/site-icon.png` }]],
   cleanUrls: true,
   lastUpdated: true,
