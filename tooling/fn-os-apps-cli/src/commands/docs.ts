@@ -1,10 +1,9 @@
+import { join } from 'node:path'
 import { repositoryRoot } from '../config/paths.js'
 import { runCommand } from '../core/process.js'
 
-export function runDocsBuild(): Promise<void> {
-  return runCommand('pnpm', ['exec', 'vitepress', 'build', 'docs'], repositoryRoot)
-}
+const docsRoot = join(repositoryRoot, 'docs')
 
-export function runDocsDev(): Promise<void> {
-  return runCommand('pnpm', ['exec', 'vitepress', 'dev', 'docs'], repositoryRoot)
+export function runDocsBuild(): Promise<void> {
+  return runCommand('pnpm', ['exec', 'vitepress', 'build'], docsRoot)
 }

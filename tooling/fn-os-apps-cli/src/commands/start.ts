@@ -5,7 +5,6 @@ import { optionValue } from '../core/args.js'
 import { runTurboWatch } from '../core/turbo.js'
 import { findPluginTarget } from '../config/targets.js'
 import { askPlugins, askStartSelection, type StartSelection } from '../ui/prompts.js'
-import { runDocsDev } from './docs.js'
 
 export async function runStart(args: string[]): Promise<void> {
   const explicitDocs = args.includes('--docs')
@@ -23,16 +22,19 @@ export async function runStart(args: string[]): Promise<void> {
     selection = prompted
   }
 
-  const tasks: Promise<void>[] = []
-  if (selection.includes('docs')) tasks.push(runDocsDev())
+  let pluginFilters: string[] | undefined
   if (selection.includes('plugins')) {
     const plugin = optionValue(args, '--plugin')
     const target = plugin === undefined ? undefined : findPluginTarget(plugin)
     if (plugin !== undefined && target === undefined) throw new Error(`Unknown plugin: ${plugin}`)
-    const filters = target === undefined ? await askPlugins() : [target.filter]
-    if (filters !== undefined) tasks.push(runTurboWatch('dev', filters))
+    pluginFilters = target === undefined ? await askPlugins() : [target.filter]
   }
-  await Promise.all(tasks)
+
+  const devFilters = [
+    ...(selection.includes('docs') ? ['./docs'] : []),
+    ...(pluginFilters ?? []),
+  ]
+  if (devFilters.length > 0) await runTurboWatch('dev', devFilters)
 }
 
 program

@@ -18,6 +18,7 @@
 | `pnpm run build` | 构建 harness 插件、FPK 应用和文档 | 可选 |
 | `pnpm run check` | 检查 SDD、文档、共享包和 harness 插件 | 可选 |
 | `pnpm run version` | 维护项目/FPK 或单个 harness 插件版本 | 可选 |
+| `pnpm run publish` | 交互选择并发布 DSH 插件 npm 包（当前 `rc`） | 可选 |
 | `pnpm run release:notes` | 使用 `changelogithub` 生成 Release | 否 |
 | `pnpm run typecheck` | 通过 Turbo 执行所有包的类型检查 | 否 |
 | `pnpm run test:unit` | 通过 Turbo 执行单元测试 | 否 |
@@ -208,7 +209,7 @@ pnpm run build -- --docs
 pnpm run docs:preview
 ```
 
-`start` 是文档开发服务的唯一根入口；没有根 `dev` 命令。修改 `docs/` 下的 Markdown 后，VitePress 会自动更新页面。
+`start` 是开发服务的唯一根入口；交互选择完成后，CLI 通过 Turbo 的 `dev` 任务统一启动插件和 `docs` workspace 的 VitePress 服务，文档开发端口固定为 `9876`。修改 `docs/` 下的 Markdown 后，VitePress 会自动更新页面。D2 图需要系统可执行文件 `d2`；如果它不在 `PATH`，可通过 `D2_BIN=/path/to/d2` 指定。D2 暂不可用时，文档服务会保留原始 D2 代码块而不会启动失败。
 
 ## 根脚本与 Turbo
 
@@ -224,6 +225,7 @@ pnpm run docs:preview
     "test:unit": "turbo run test:unit",
     "test": "turbo run test:unit",
     "check": "pnpm exec fn-apps-cli check",
+    "publish": "pnpm exec fn-apps-cli publish",
     "release:notes": "pnpm exec fn-apps-cli release:notes"
   }
 }
@@ -234,7 +236,7 @@ pnpm run docs:preview
 | 任务 | 调度方式 | 关键行为 |
 | --- | --- | --- |
 | `build` | `fn-apps-cli` → `turbo run build` | `^build` 先构建 workspace 依赖 |
-| `start` | `fn-apps-cli` → `turbo watch dev` | `dev` 持续监听，依赖先完成 `^build` |
+| `start` | `fn-apps-cli` → `turbo watch dev` | 统一传入 docs/插件 filters，TUI 分别显示持续任务；watch 任务自行完成初始构建 |
 | `typecheck` | 根脚本 → `turbo run typecheck` | `^typecheck` 先检查依赖 |
 | `test:unit` | 根脚本 → `turbo run test:unit` | 先完成当前包 `build` |
 | `test` | 根脚本 → `turbo run test:unit` | 当前仓库的兼容别名 |

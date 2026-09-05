@@ -18,6 +18,7 @@
   "scripts": {
     "build": "pnpm exec fn-apps-cli build",
     "check": "pnpm exec fn-apps-cli check",
+    "publish": "pnpm exec fn-apps-cli publish",
     "start": "pnpm exec fn-apps-cli start"
   }
 }
@@ -61,6 +62,7 @@ restore -> summary
 - `test:unit` 依赖当前包的 `build`，避免测试使用过期产物。
 - `check` 汇总当前包的 `typecheck`、`build` 和 `test:unit`；多个独立包之间由 Turbo 自动并行调度。
 - 全局 `ui` 设置为 `tui`；多任务并行时使用终端任务面板分别查看日志，避免不同任务的输出混合在同一条流中。
+- 交互命令会先完成所有主选项和子选项询问，再统一启动已选任务，避免任务执行期间继续等待输入。
 
 ## 各 Turbo 任务步骤
 
@@ -125,7 +127,7 @@ status -> fail: 否
 
 ### `start`
 
-`start` 是用户可见的开发启动入口；CLI 先让用户选择插件和/或文档，再分别启动 Turbo watch 与 VitePress 服务。插件启动内部使用 Turbo 的 `dev` 任务。
+`start` 是用户可见的开发启动入口；CLI 先让用户选择插件和/或文档，再把对应的 filters 一次性交给同一个 `turbo watch dev` 进程。文档和插件任务因此都显示在同一个 TUI 中。
 
 ```d2
 direction: down
@@ -138,29 +140,31 @@ select: {
 }
 plugins: "harness 插件：选择目标"
 docs: "文档：VitePress"
-pluginTurbo: "turbo watch dev --filter=harness 插件..."
-pluginDeps: "^build：先完成共享 UI 依赖"
-pluginWatch: "harness 插件 + dsh-semi-ui：tsdown --watch"
+turbo: "turbo watch dev（同一 TUI）"
+filters: "组合 filters：./docs + harness 插件..."
+pluginWatch: "harness 插件 + dsh-semi-ui：tsdown --watch（含初始构建）"
+docsWatch: "docs package：vitepress dev"
 changeStatus: {
   label: "有源文件变化？"
   shape: diamond
 }
 rebuild: "是：重新生成 lib/**"
 keep: "否：保持监听"
-docsRun: "vitepress dev docs"
 services: "开发服务持续运行"
 
 command -> cli -> select
 select -> plugins: harness 插件
 select -> docs: 文档
-plugins -> pluginTurbo -> pluginDeps -> pluginWatch -> changeStatus
+plugins -> turbo
+docs -> turbo
+turbo -> filters
+filters -> pluginWatch -> changeStatus
+filters -> docsWatch -> services
 changeStatus -> rebuild: 是
 changeStatus -> keep: 否
 rebuild -> changeStatus
 keep -> changeStatus
 pluginWatch -> services
-
-docs -> docsRun -> services
 ```
 
 ### `typecheck`
@@ -462,7 +466,7 @@ pnpm run start -- --plugin fnos
 pnpm run start -- --docs
 ```
 
-插件启动使用 `turbo watch dev`，插件和 `@tnnevol/dsh-semi-ui` 的 `dev` 任务均为 `tsdown --watch`。文档开发服务由 VitePress 单独启动；两者可以在交互提示中同时选择。
+插件和文档均通过同一个 `turbo watch dev` 进程启动：插件和 `@tnnevol/dsh-semi-ui` 的 `dev` 任务为 `tsdown --watch`，`docs` workspace 的 `dev` 任务为 `vitepress dev`。两者在 TUI 中分别显示。
 
 ```d2
 developer: 开发者

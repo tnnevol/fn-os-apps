@@ -37,37 +37,35 @@ async function buildFpkApps(apps: string[]): Promise<void> {
   }
 }
 
-async function buildSelectedPlugins(filter?: string): Promise<void> {
+async function selectPluginFilters(filter?: string): Promise<string[] | undefined> {
   if (filter !== undefined) {
     const target = findPluginTarget(filter)
     if (target === undefined) throw new Error(`Unknown plugin: ${filter}`)
-    await runTurbo('build', [target.filter])
-    return
+    return [target.filter]
   }
-  const selected = await askPlugins()
-  if (selected !== undefined) await runTurbo('build', selected)
+  return askPlugins()
 }
 
-async function buildSelectedFpk(app?: string): Promise<void> {
+async function selectFpkApps(app?: string): Promise<string[] | undefined> {
   const apps = await listFpkApps()
   if (app !== undefined) {
     if (!apps.includes(app)) throw new Error(`Unknown FPK application: ${app}`)
-    await buildFpkApps([app])
-    return
+    return [app]
   }
-  const selected = await askFpkApps(apps)
-  if (selected !== undefined) await buildFpkApps(selected)
+  return askFpkApps(apps)
 }
 
 export async function runBuild(args: string[]): Promise<void> {
   const app = optionValue(args, '--app')
   const plugin = optionValue(args, '--plugin')
   if (args.includes('--fpk')) {
-    await buildSelectedFpk(app)
+    const apps = await selectFpkApps(app)
+    if (apps !== undefined) await buildFpkApps(apps)
     return
   }
   if (args.includes('--plugin')) {
-    await buildSelectedPlugins(plugin)
+    const filters = await selectPluginFilters(plugin)
+    if (filters !== undefined) await runTurbo('build', filters)
     return
   }
   if (args.includes('--docs')) {
@@ -77,9 +75,15 @@ export async function runBuild(args: string[]): Promise<void> {
 
   const selection = await askBuildSelection()
   if (selection === undefined) return
-  if (selection.includes('plugins')) await buildSelectedPlugins()
-  if (selection.includes('fpk')) await buildSelectedFpk()
-  if (selection.includes('docs')) await runDocsBuild()
+
+  const pluginFilters = selection.includes('plugins') ? await selectPluginFilters() : undefined
+  const fpkApps = selection.includes('fpk') ? await selectFpkApps() : undefined
+
+  const tasks: Promise<void>[] = []
+  if (pluginFilters !== undefined) tasks.push(runTurbo('build', pluginFilters))
+  if (fpkApps !== undefined) tasks.push(buildFpkApps(fpkApps))
+  if (selection.includes('docs')) tasks.push(runDocsBuild())
+  await Promise.all(tasks)
 }
 
 export { listFpkApps, buildFpkApps }
