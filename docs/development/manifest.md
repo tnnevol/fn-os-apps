@@ -39,7 +39,7 @@ service_port          = 5230
 | 字段 | 作用 | 维护要求 |
 | --- | --- | --- |
 | `appname` | 应用唯一标识 | 与应用目录名及相关入口 ID 保持一致 |
-| `version` | 应用版本号 | 使用根 `fnos-apps version` 项目/FPK 流程维护 |
+| `version` | 应用版本号 | 使用根 `fn-apps-cli version` 项目/FPK 流程维护 |
 | `display_name` | 应用中心显示名称 | 面向用户，避免包含内部构建信息 |
 | `desc` | 应用描述 | 说明用途和核心能力，不写无法验证的承诺 |
 | `platform` | 目标架构 | 按实际 FPK 产物填写，例如 `x86`、`arm` 或 `all` |

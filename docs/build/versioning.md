@@ -1,6 +1,6 @@
 # 版本管理
 
-版本命令由根目录 `fnos-apps` CLI 暴露，实现在 `tooling/fn-os-apps-cli` workspace，通过根目录的 `fnos-apps` CLI 调用 [`bumpp`](https://github.com/antfu-collective/bumpp) 管理版本文件。项目/FPK 版本与插件版本是相互独立的两套发布流程，插件不会被项目版本命令隐式修改。
+版本命令由根目录 `fn-apps-cli` CLI 暴露，实现在 `tooling/fn-os-apps-cli` workspace，通过根目录的 `fn-apps-cli` CLI 调用 [`bumpp`](https://github.com/antfu-collective/bumpp) 管理版本文件。项目/FPK 版本与插件版本是相互独立的两套发布流程，插件不会被项目版本命令隐式修改。
 
 ## 项目与 FPK 版本
 

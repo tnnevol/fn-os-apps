@@ -22,7 +22,7 @@ lastVerified: 2026-09-01
 本计划实施四个已经确认进入开发的功能：
 
 - `FNOS-002-01`：统一 Codex 登录与用量状态；未登录时隐藏状态，登录后根据接口是否提供五小时窗口自动显示或隐藏对应额度；取得一次性授权码后自动尝试复制到剪切板，失败时保留手动复制入口。
-- 版本脚本与插件版本发布流程由 `tooling/fn-os-apps-cli` workspace 中的 `fnos-apps` CLI 和 `bumpp` 负责，项目/FPK 与插件各自指定更新范围。
+- 版本脚本与插件版本发布流程由 `tooling/fn-os-apps-cli` workspace 中的 `fn-apps-cli` CLI 和 `bumpp` 负责，项目/FPK 与插件各自指定更新范围。
 - `FNOS-002-02`：修正 NAS 文件和目录引用的插入规则；TreeSelect 使用独立关系模式支持多个文件/目录（含父子路径）同时选择，并在面板打开期间让本次引用删除状态反向同步到勾选节点，历史引用不参与当前选择。
 - `FNOS-002-03`：新增 DSH Semi UI 总览插件，集中展示 `@tnnevol/dsh-semi-ui` 的公共组件、状态和浅色/深色主题效果。
 - `FNOS-002-04`：使用 `connect` 与 `http-proxy-middleware` 重写 fnOS 统一网关代理；由常驻网关承载 FPK 状态并在 Web 左侧菜单提供 DSH Web 重启入口；由 fnOS 插件管理三方插件 API URL 反代规则，并让已打开的 DSH 页面立即取得最新配置。
@@ -434,14 +434,14 @@ SSE 路由由网关自身处理，不转发到 DSH。它经过 fnOS 统一网关
 | 任务 ID | 实现内容 | 状态 |
 | --- | --- | --- |
 | PLAN-FNOS-002-TT-01 | 引入 Turbo，使用 `turbo.json` 声明 build、typecheck、test、check 和网关应用构建依赖；根 `package.json` 只提供统一任务入口 | <Badge type="tip" text="已完成" /> |
-| PLAN-FNOS-002-TT-02 | 合并版本入口为交互式 `version`，由 `@clack/prompts` 选择项目/FPK或插件区域，`tooling/fn-os-apps-cli` workspace 通过 `fnos-apps` CLI 暴露，全部使用 TypeScript 并由 tsdown 编译 | <Badge type="tip" text="已完成" /> |
+| PLAN-FNOS-002-TT-02 | 合并版本入口为交互式 `version`，由 `@clack/prompts` 选择项目/FPK或插件区域，`tooling/fn-os-apps-cli` workspace 通过 `fn-apps-cli` CLI 暴露，全部使用 TypeScript 并由 tsdown 编译 | <Badge type="tip" text="已完成" /> |
 | PLAN-FNOS-002-TT-03 | 根目录仅暴露交互式 `build`；支持选择文档构建和复选 FPK，DSH FPK 自动先编译网关，插件通过 Turbo 自动先编译 `dsh-semi-ui`，共享包不进入顶层构建选择，移除 `fnos-gateway` 的 `build:fpk` | <Badge type="tip" text="已完成" /> |
 | PLAN-FNOS-002-TT-04 | 引入 `changelogithub`，由根 `release:notes` 任务生成 Tag 对应 Release 日志，移除 workflow 内手写 Release 日志生成 | <Badge type="tip" text="已完成" /> |
-| PLAN-FNOS-002-TT-05 | 将 `tooling/fn-os-apps-cli/src/index.ts` 收敛为命令路由，按 `commands/`、`config/`、`core/`、`ui/`、`sdd/` 拆分版本、构建、提示、进程和文档检查职责 | <Badge type="tip" text="已完成" /> |
-| PLAN-FNOS-002-TT-06 | 为 `@tnnevol/fn-os-apps-cli` 暴露 `fnos-apps` bin，根 `package.json` 的业务任务统一通过 `pnpm exec fnos-apps` 调用，workspace 更名为 `tooling/fn-os-apps-cli` | <Badge type="tip" text="已完成" /> |
+| PLAN-FNOS-002-TT-05 | 由独立 `program.ts` 暴露 Commander 实例，各 `commands/*.ts` 模块注册命令并实现 `action`，`src/index.ts` 统一加载并解析；按 `commands/`、`config/`、`core/`、`ui/`、`sdd/` 拆分版本、构建、提示、进程和文档检查职责 | <Badge type="tip" text="已完成" /> |
+| PLAN-FNOS-002-TT-06 | 为 `@tnnevol/fn-os-apps-cli` 暴露 `fn-apps-cli` bin，根 `package.json` 的业务任务统一通过 `pnpm exec fn-apps-cli` 调用，workspace 更名为 `tooling/fn-os-apps-cli` | <Badge type="tip" text="已完成" /> |
 | PLAN-FNOS-002-TT-07 | 增加唯一根 `start` 入口，交互选择插件 Turbo watch 或 VitePress 文档服务；插件启动自动包含共享 UI 依赖并保持持续监听 | <Badge type="tip" text="已完成" /> |
-| PLAN-FNOS-002-TT-08 | 将 SDD、文档、共享包和插件检查统一收敛到 `fnos-apps check`，支持交互选择和 `--sdd`、`--docs`、`--packages`、`--plugins`、`--all` 参数 | <Badge type="tip" text="已完成" /> |
-| PLAN-FNOS-002-TT-09 | 重构开发指南全部子菜单，补充应用开发配置说明、统一任务操作手册和 `package.json` 注入口、CLI、Turbo、workspace package 的时序图 | <Badge type="tip" text="已完成" /> |
+| PLAN-FNOS-002-TT-08 | 将 SDD、文档、共享包和插件检查统一收敛到 `fn-apps-cli check`，支持交互选择和 `--sdd`、`--docs`、`--packages`、`--plugins`、`--all` 参数 | <Badge type="tip" text="已完成" /> |
+| PLAN-FNOS-002-TT-09 | 重构开发指南全部子菜单，补充应用开发配置说明、统一任务操作手册，以及 `package.json` 入口、CLI、Turbo、workspace package 和 GitHub Workflow 的流程图与依赖关系图 | <Badge type="tip" text="已完成" /> |
 
 ### 版本统一（跨功能发布约束）
 

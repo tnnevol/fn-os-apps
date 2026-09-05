@@ -55,7 +55,10 @@ const configureMarkdown = (md: Parameters<NonNullable<Parameters<typeof defineCo
     layout: Layout.ELK,
     theme: Theme.NEUTRAL_DEFAULT,
     darkTheme: Theme.DARK_MUAVE,
-    fileType: FileType.SVG,
+    // 固定 SVG 的固有宽高，避免 image viewer 中 img 无法计算尺寸。
+    scale: 1,
+    // 输出为 img 可识别的 Base64 SVG，由 image viewer 提供放大、拖拽和全屏预览。
+    fileType: FileType.BASE64_SVG,
     directory: 'docs/.vitepress/cache/d2'
   })
 }
@@ -85,6 +88,7 @@ const developmentSidebar = [
     items: [
       { text: '开发环境与脚本', link: '/development/environment-and-scripts' },
       { text: 'Package 任务与 Turbo', link: '/development/package-tasks-and-turbo' },
+      { text: 'GitHub Workflow', link: '/development/github-workflows' },
       { text: 'Manifest 配置', link: '/development/manifest' },
       { text: '生命周期脚本', link: '/development/lifecycle' },
       { text: '权限与入口', link: '/development/permissions' },

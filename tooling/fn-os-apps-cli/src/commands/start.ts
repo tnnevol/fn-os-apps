@@ -1,3 +1,6 @@
+import { type OptionValues } from 'commander'
+import { program } from '../program.js'
+import { addBooleanArgs, addOptionalValueArg } from '../core/command-args.js'
 import { optionValue } from '../core/args.js'
 import { runTurboWatch } from '../core/turbo.js'
 import { findPluginTarget } from '../config/targets.js'
@@ -31,3 +34,15 @@ export async function runStart(args: string[]): Promise<void> {
   }
   await Promise.all(tasks)
 }
+
+program
+  .command('start')
+  .description('Start plugin watch and/or the documentation dev server')
+  .option('--plugin [plugin]', 'watch one plugin, or prompt for plugins')
+  .option('--docs', 'start the documentation dev server')
+  .action(async (options: OptionValues) => {
+    const args: string[] = []
+    addOptionalValueArg(args, options, 'plugin')
+    addBooleanArgs(args, options, ['docs'])
+    await runStart(args)
+  })

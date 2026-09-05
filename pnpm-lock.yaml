@@ -55,6 +55,9 @@ catalogs:
     changelogithub:
       specifier: 15.0.5
       version: 15.0.5
+    commander:
+      specifier: 14.0.1
+      version: 14.0.1
     connect:
       specifier: ^3.7.0
       version: 3.7.0
@@ -531,6 +534,9 @@ importers:
       changelogithub:
         specifier: 'catalog:'
         version: 15.0.5
+      commander:
+        specifier: 'catalog:'
+        version: 14.0.1
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -2712,6 +2718,10 @@ packages:
 
   comma-separated-tokens@2.0.3:
     resolution: {integrity: sha512-Fu4hJdvzeylCfQPp9SGWidpzrMs7tTrlu6Vb8XGaRGck8QSNZJJp538Wrb60Lax4fPwR64ViY468OIUTbRlGZg==}
+
+  commander@14.0.1:
+    resolution: {integrity: sha512-2JkV3gUZUVrbNA+1sjBOYLsMZ5cEEl8GTFP2a4AVz5hvasAMCQ1D2l2le/cX+pV4N6ZU17zjUahLpIXRrnWL8A==}
+    engines: {node: '>=20'}
 
   commander@8.3.0:
     resolution: {integrity: sha512-OkTL9umf+He2DZkUq8f8J9of7yL6RJKI24dVITBmNfZBmri9zYZQrKkuXiKhyfPSu8tUhnVBB1iKXevvnlR4Ww==}
@@ -6504,6 +6514,8 @@ snapshots:
   colorette@2.0.20: {}
 
   comma-separated-tokens@2.0.3: {}
+
+  commander@14.0.1: {}
 
   commander@8.3.0: {}
 

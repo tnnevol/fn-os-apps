@@ -31,14 +31,14 @@ DSH 在 fnOS 中运行后，还有几处使用体验需要调整。Codex 登录�
 - 使用 `connect` 与 `http-proxy-middleware` 重写 FPK 网关，通过 tsdown 生成可直接随 FPK 分发的单文件入口；浏览器 Bridge 使用独立 JS 源文件维护，网关常驻时在 Web 左侧菜单提供“重启 Web”按钮。
 - 由 fnOS 插件管理三方插件 API URL 反代配置，网关监听配置并将匹配的绝对 URL 请求改写到统一网关下的 DSH 服务。
 - 统一 DSH 运行时、插件、插件依赖、native 产物、FPK 安装流程和发布文档的目标版本为 `0.1.2-rc.1`，并保留用户数据与配置。
-- 将版本发布逻辑放入独立 `tooling/fn-os-apps-cli` pnpm workspace，通过 `fnos-apps` CLI 使用 `bumpp` 分别维护项目/FPK版本与插件版本；插件版本不得被项目或 FPK 版本命令隐式修改。
+- 将版本发布逻辑放入独立 `tooling/fn-os-apps-cli` pnpm workspace，通过 `fn-apps-cli` CLI 使用 `bumpp` 分别维护项目/FPK版本与插件版本；插件版本不得被项目或 FPK 版本命令隐式修改。
 - 修复 fnOS 聊天输入框授权路径选择器的多选行为，连续选择多个文件或目录时全部生成引用。
-- 引入 Turbo 统一包任务编排；根 `package.json` 提供统一任务入口，`tooling/fn-os-apps-cli` 通过 `fnos-apps` CLI 暴露任务，全部使用 TypeScript 与 tsdown。
+- 引入 Turbo 统一包任务编排；根 `package.json` 提供统一任务入口，`tooling/fn-os-apps-cli` 通过 `fn-apps-cli` CLI 暴露任务，全部使用 TypeScript 与 tsdown。
 - 通过 `@clack/prompts` 在版本、构建和启动时询问目标区域；构建支持多选 FPK 和文档，并自动处理 DSH 网关和插件的 dsh-semi-ui 依赖。共享包不作为顶层构建选项，只由依赖它的主包通过 Turbo 自动编译。
 - 通过 `changelogithub` 在项目 Tag 发布时生成 Release 日志，移除 workflow 内手写日志生成逻辑。
-- 优化 `@tnnevol/fn-os-apps-cli` 目录结构：`src/index.ts` 只负责命令路由，版本、构建、启动、Release、SDD 检查和基础设施分别维护在职责明确的 TypeScript 模块中。
+- 优化 `@tnnevol/fn-os-apps-cli` 目录结构：由独立的 `program.ts` 暴露 Commander `program` 实例，各 `commands/*.ts` 模块注册命令并实现 `action`，`src/index.ts` 统一加载并解析命令。
 - 根目录通过唯一的 `start` 入口统一启动插件开发 watch 和 VitePress 文档开发服务，插件启动自动包含共享 UI 依赖。
-- 开发指南菜单覆盖 FPK 应用配置、生命周期、权限、用户向导、环境脚本和任务编排；以时序图说明根 `package.json`、注入口 CLI、Turbo 与 workspace package 任务之间的调用关系。
+- 开发指南菜单覆盖 FPK 应用配置、生命周期、权限、用户向导、环境脚本、任务编排和 GitHub Workflow；以流程图和依赖关系图说明根 `package.json`、入口 CLI、Turbo、workspace package 与 CI Workflow 之间的调用关系。
 
 ## 涉及范围
 

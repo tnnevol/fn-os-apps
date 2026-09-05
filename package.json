@@ -4,16 +4,16 @@
   "private": true,
   "description": "飞牛 fnOS 应用 Monorepo",
   "scripts": {
-    "start": "pnpm exec fnos-apps start",
-    "build": "pnpm exec fnos-apps build",
-    "version": "pnpm exec fnos-apps version",
+    "start": "pnpm exec fn-apps-cli start",
+    "build": "pnpm exec fn-apps-cli build",
+    "version": "pnpm exec fn-apps-cli version",
     "typecheck": "turbo run typecheck",
     "lint:shell": "rg -l -0 --hidden --glob '!.git/**' --glob '!node_modules/**' --glob '!apps/fn-nvm/app/nvm/install.sh' '^#!.*(?:bash|sh)' . | xargs -0 shfmt -d -i 4",
     "docs:preview": "vitepress preview docs",
     "test:unit": "turbo run test:unit",
     "test": "turbo run test:unit",
-    "check": "pnpm exec fnos-apps check",
-    "release:notes": "pnpm exec fnos-apps release:notes"
+    "check": "pnpm exec fn-apps-cli check",
+    "release:notes": "pnpm exec fn-apps-cli release:notes"
   },
   "engines": {
     "node": ">=24.0.0",

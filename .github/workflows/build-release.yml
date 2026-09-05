@@ -8,7 +8,7 @@ on:
 permissions:
   contents: write
 
-# 推送 v* tag 后先创建草稿 Release，再调用可复用 workflow 构建并上传 FPK，最后发布 Release。
+# 推送 v* tag 后先创建草稿 Release，再调用可复用 workflow 构建并上传 FPK，最后由 changelogithub 生成说明并发布 Release。
 jobs:
   prepare-release:
     name: Create draft release
@@ -42,15 +42,11 @@ jobs:
             RELEASE_ID="$(get_release_id)"
             if [ -n "$RELEASE_ID" ]; then
               gh api --method PATCH "repos/${REPOSITORY}/releases/${RELEASE_ID}" \
-                -f name="Release ${TAG}" \
-                -f body="正在构建 fnOS 应用安装包，请稍候。" \
                 -F draft=true \
                 -F prerelease="$PRERELEASE" >/dev/null
             else
               RELEASE_ID="$(gh api --method POST "repos/${REPOSITORY}/releases" \
                 -f tag_name="$TAG" \
-                -f name="Release ${TAG}" \
-                -f body="正在构建 fnOS 应用安装包，请稍候。" \
                 -F draft=true \
                 -F prerelease="$PRERELEASE" \
                 --jq '.id' 2>/dev/null)" || return 1
@@ -99,33 +95,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Mark FPK upload complete
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REPOSITORY: ${{ github.repository }}
-          TAG: ${{ github.ref_name }}
-          RELEASE_ID: ${{ needs.prepare-release.outputs.release_id }}
-        run: |
-          set -euo pipefail
-
-          PRERELEASE=false
-          case "$TAG" in
-            *-rc*|*-beta*|*-alpha*) PRERELEASE=true ;;
-          esac
-
-          RELEASE_BODY=$(cat <<EOF
-          ## 📦 fnOS Apps ${TAG}
-
-          FPK 安装包已全部上传，正在生成 Release 说明，请稍候。
-          EOF
-          )
-
-          gh api --method PATCH "repos/${REPOSITORY}/releases/${RELEASE_ID}" \
-            -f name="Release ${TAG}" \
-            -f body="$RELEASE_BODY" \
-            -F draft=true \
-            -F prerelease="$PRERELEASE" >/dev/null
-
       - name: Setup Node.js 24 for release tasks
         uses: actions/setup-node@v4
         with:
@@ -139,6 +108,7 @@ jobs:
       - name: Install release task dependencies
         run: pnpm install --filter @tnnevol/fn-os-apps-cli --frozen-lockfile
 
+      # changelogithub 是成功 Release body 的唯一来源，避免与 workflow 自定义说明互相覆盖。
       - name: Generate and publish release notes
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -165,7 +135,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          RELEASE_BODY=$(cat <<EOF
+          cat >> "$GITHUB_STEP_SUMMARY" <<EOF
           ## ❌ fnOS Apps ${TAG} 构建未完成
 
           FPK 构建或 Release 发布流程失败，当前 Release 保持草稿状态。请查看 [GitHub Actions 运行日志](${RUN_URL}) 后重试。
@@ -177,11 +147,8 @@ jobs:
           | 构建 DeepSeek Harness | ${DSH_RESULT} |
           | 发布 Release | ${PUBLISH_RESULT} |
           EOF
-          )
 
           gh api --method PATCH "repos/${REPOSITORY}/releases/${RELEASE_ID}" \
-            -f name="Release ${TAG}（构建失败）" \
-            -f body="$RELEASE_BODY" \
             -F draft=true >/dev/null
 
       - name: Log failure when draft release was not created

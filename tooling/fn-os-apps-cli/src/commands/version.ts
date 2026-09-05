@@ -1,5 +1,8 @@
 import { intro, outro } from '@clack/prompts'
+import { type OptionValues } from 'commander'
 import { versionBump } from 'bumpp'
+import { program } from '../program.js'
+import { addBooleanArgs, addNegatedArgs } from '../core/command-args.js'
 import { projectVersionFiles, repositoryRoot } from '../config/paths.js'
 import { findPluginTarget } from '../config/targets.js'
 import { parseVersionOptions } from '../core/args.js'
@@ -40,3 +43,20 @@ export async function runVersion(args: string[]): Promise<void> {
   })
   outro(`${current.name}: ${result.currentVersion} -> ${result.newVersion}`)
 }
+
+program
+  .command('version [args...]')
+  .description('Version the project/FPK area or one DSH plugin')
+  .option('--no-commit', 'only update version files')
+  .option('--no-tag', 'do not create a version tag')
+  .option('--no-push', 'do not push tags')
+  .option('--yes', 'skip the version confirmation')
+  .action(async (args: string[], options: OptionValues) => {
+    addNegatedArgs(args, options, [
+      ['commit', '--no-commit'],
+      ['tag', '--no-tag'],
+      ['push', '--no-push'],
+    ])
+    addBooleanArgs(args, options, ['yes'])
+    await runVersion(args)
+  })

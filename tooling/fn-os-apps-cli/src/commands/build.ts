@@ -1,9 +1,12 @@
 import { readFile, readdir } from 'node:fs/promises'
 import { join } from 'node:path'
+import { type OptionValues } from 'commander'
+import { program } from '../program.js'
 import { repositoryRoot } from '../config/paths.js'
 import { findPluginTarget } from '../config/targets.js'
 import { runDocsBuild } from './docs.js'
 import { optionValue } from '../core/args.js'
+import { addBooleanArgs, addOptionalValueArg } from '../core/command-args.js'
 import { runCommand } from '../core/process.js'
 import { runTurbo } from '../core/turbo.js'
 import { askBuildSelection, askFpkApps, askPlugins } from '../ui/prompts.js'
@@ -80,3 +83,18 @@ export async function runBuild(args: string[]): Promise<void> {
 }
 
 export { listFpkApps, buildFpkApps }
+
+program
+  .command('build')
+  .description('Select plugins, FPK applications, or documentation to build')
+  .option('--plugin [plugin]', 'build one plugin, or prompt for plugins')
+  .option('--fpk', 'build FPK applications')
+  .option('--app <app>', 'select one FPK application')
+  .option('--docs', 'build documentation')
+  .action(async (options: OptionValues) => {
+    const args: string[] = []
+    addOptionalValueArg(args, options, 'plugin')
+    addBooleanArgs(args, options, ['fpk', 'docs'])
+    if (options.app !== undefined) args.push('--app', options.app)
+    await runBuild(args)
+  })

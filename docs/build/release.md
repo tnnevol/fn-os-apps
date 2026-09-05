@@ -2,7 +2,7 @@
 
 ## 发布新版本
 
-在工作区干净且应用改动已完成后，使用根目录的 `fnos-apps` CLI 执行项目版本升级：
+在工作区干净且应用改动已完成后，使用根目录的 `fn-apps-cli` CLI 执行项目版本升级：
 
 ```bash
 pnpm run version -- project patch

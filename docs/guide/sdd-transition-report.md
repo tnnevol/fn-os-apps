@@ -65,8 +65,8 @@ description: fnOS Apps Monorepo 从代码优先维护转换为规格驱动开发
 ### 已完成的第一阶段转换
 
 - 新增 [`SDD 维护规范`](/guide/sdd-workflow)，明确需求、计划、实现、验证、发布和例外规则。
-- 新增 `tooling/fn-os-apps-cli/src/sdd/checker.ts`，由 `fnos-apps check --sdd` 检查 SDD 文档结构、元信息、编号唯一性和内部链接。
-- 新增统一 `fnos-apps check` 命令，支持交互选择或使用 `--sdd`、`--docs`、`--packages`、`--plugins`、`--all` 参数。
+- 新增 `tooling/fn-os-apps-cli/src/sdd/checker.ts`，由 `fn-apps-cli check --sdd` 检查 SDD 文档结构、元信息、编号唯一性和内部链接。
+- 新增统一 `fn-apps-cli check` 命令，支持交互选择或使用 `--sdd`、`--docs`、`--packages`、`--plugins`、`--all` 参数。
 - 新增 PR 模板、`sdd-check.yml` 和 `docs/validation/README.md`。
 - 为当前 FNOS-001 需求和计划补充 SDD 元数据，并在计划中加入 P0/P1 追踪矩阵。
 - 修正插件检查顺序为 `typecheck → build → test`，使根级质量门禁可重复执行。
@@ -136,7 +136,7 @@ FNOS-001 当前“待真实 NAS 验收”的 P0/P1 项目应优先生成这类�
 ```json
 {
   "scripts": {
-    "check": "pnpm exec fnos-apps check"
+    "check": "pnpm exec fn-apps-cli check"
   }
 }
 ```

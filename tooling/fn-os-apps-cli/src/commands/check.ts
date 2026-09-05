@@ -1,3 +1,6 @@
+import { type OptionValues } from 'commander'
+import { program } from '../program.js'
+import { addBooleanArgs } from '../core/command-args.js'
 import { runCheckSdd } from './check-sdd.js'
 import { runDocsBuild } from './docs.js'
 import { runTurbo } from '../core/turbo.js'
@@ -36,3 +39,17 @@ export async function runCheck(args: string[]): Promise<void> {
   if (turboFilters.length > 0) tasks.push(runTurbo('check', turboFilters))
   await Promise.all(tasks)
 }
+
+program
+  .command('check')
+  .description('Select SDD, docs, packages, or plugins to validate')
+  .option('--all', 'run every check')
+  .option('--sdd', 'check SDD documents')
+  .option('--docs', 'build project documentation')
+  .option('--packages', 'check shared packages')
+  .option('--plugins', 'check DSH plugins')
+  .action(async (options: OptionValues) => {
+    const args: string[] = []
+    addBooleanArgs(args, options, ['all', 'sdd', 'docs', 'packages', 'plugins'])
+    await runCheck(args)
+  })

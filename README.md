@@ -102,7 +102,7 @@ appcenter-cli stop <appname>
 
 ## 版本发布
 
-通过 GitHub Actions 自动完成 FPK 构建和 Release 发布。项目版本工具位于 `tooling/fn-os-apps-cli` workspace，通过 `fnos-apps` CLI 使用 `bumpp` 分别维护项目/FPK 版本和插件版本。
+通过 GitHub Actions 自动完成 FPK 构建和 Release 发布。项目版本工具位于 `tooling/fn-os-apps-cli` workspace，通过 `fn-apps-cli` CLI 使用 `bumpp` 分别维护项目/FPK 版本和插件版本。
 
 ### Tag 命名规范
 

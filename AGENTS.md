@@ -116,7 +116,7 @@ fnpack build
 
 ### 版本发布
 
-版本任务统一从根 `package.json` 进入，由 `fnos-apps` CLI 执行。首次运行会询问维护项目/FPK还是指定插件，也可直接指定区域：
+版本任务统一从根 `package.json` 进入，由 `fn-apps-cli` CLI 执行。首次运行会询问维护项目/FPK还是指定插件，也可直接指定区域：
 
 ```bash
 pnpm run version
@@ -139,7 +139,7 @@ pnpm run build -- --plugin fnos
 - **配置文件**：[.github/workflows/build-release.yml](.github/workflows/build-release.yml)
 - **Tag 格式**：项目为 `v<版本号>`，插件为 `plugin/<插件名>-v<版本号>`
 - **任务编排**：`turbo.json` 与根 `package.json`
-- **版本与 Release 工具**：`tooling/fn-os-apps-cli` workspace，CLI 命令为 `fnos-apps`
+- **版本与 Release 工具**：`tooling/fn-os-apps-cli` workspace，CLI 命令为 `fn-apps-cli`
 
 ---
 
