@@ -79,107 +79,6 @@
   }
 }
 
-/* Codex model editor presentation is scoped by runtime data attributes. */
-[data-dsh-codex-auth-editor='true'] {
-  div:has(> input[aria-label='API 密钥']),
-  div:has(> input[aria-label='API Key']),
-  div:has(> input[aria-label='API 地址']),
-  div:has(> input[aria-label='API URL']) {
-    display: none !important;
-  }
-
-  [data-dsh-codex-remove-manual-add='true'] { display: none !important; }
-
-  [data-dsh-codex-model-details='true'] {
-    display: contents !important;
-    padding: 0 !important;
-    border: 0 !important;
-
-    > summary { display: none !important; }
-
-    > :not(summary) {
-      display: contents !important;
-      padding: 0 !important;
-      border: 0 !important;
-    }
-
-    > :not(summary) > section[aria-label='模型目录'],
-    > :not(summary) > section[aria-label='Models'] {
-      padding-top: 0 !important;
-      border-top: 0 !important;
-    }
-
-    &:not([open]) > :not(summary) { display: contents !important; }
-  }
-
-  [data-dsh-codex-model-action='fetch'],
-  [data-dsh-codex-model-action='reset'] {
-    box-sizing: border-box;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    height: 32px;
-    padding: 0 12px;
-    border: 1px solid var(--dsw-alias-border-l2);
-    border-radius: var(--semi-border-radius-full);
-    background: var(--dsw-alias-bg-layer-1);
-    color: var(--dsw-alias-label-primary);
-    font: inherit;
-    font-size: 13px;
-    line-height: 20px;
-    cursor: pointer;
-
-    &:hover:not(:disabled) { background: var(--dsw-alias-interactive-bg-hover-solid); }
-    &:disabled { cursor: default; opacity: 0.4; }
-  }
-
-  div:has(> [data-dsh-codex-model-action='fetch']),
-  div:has(> [data-dsh-codex-model-action='reset']) {
-    align-items: center;
-    justify-content: flex-start;
-    gap: 15px;
-  }
-
-  div:has(> [data-dsh-codex-model-action='reset']) > [data-dsh-codex-model-action='reset'],
-  div:not(:has(> [data-dsh-codex-model-action='reset'])):has(> [data-dsh-codex-model-action='fetch']) > [data-dsh-codex-model-action='fetch'] {
-    margin-left: auto;
-  }
-}
-
-[data-dsh-codex-model-picker='true'] {
-  [data-dsh-codex-add-models='true'] {
-    border: 0 !important;
-    background: var(--dsw-alias-button-primary-fill) !important;
-    color: var(--dsw-alias-label-primary-foreground) !important;
-
-    &:hover:not(:disabled) { background: var(--dsw-alias-button-primary-hover) !important; }
-  }
-
-  [data-dsh-codex-select-all='true'] {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 8px;
-    color: var(--dsw-alias-label-primary);
-    cursor: pointer;
-  }
-
-  input[type='checkbox'] {
-    width: 16px;
-    height: 16px;
-    flex: none;
-    margin: 3px 0 0;
-    accent-color: var(--dsw-alias-button-primary-fill);
-    cursor: pointer;
-
-    &:focus-visible {
-      outline: 2px solid var(--dsw-alias-border-l4);
-      outline-offset: 2px;
-    }
-
-    &:disabled { cursor: default; }
-  }
-}
 
 .dsh-codex-global-model-chevron {
   display: inline-flex;
@@ -288,72 +187,26 @@
   }
 }
 
-.dsh-codex-auth-card {
-  overflow: hidden;
-  list-style: none;
-  border: 1px solid var(--dsw-alias-border-l2);
-  border-radius: 12px;
-  background: var(--dsw-alias-bg-layer-3);
-  transition: border-color 160ms ease, background 160ms ease;
-
-  &.is-open {
-    background: var(--dsw-alias-bg-layer-2);
-    border-color: var(--dsw-alias-label-dimmed);
-  }
-}
-
-.dsh-codex-auth-card-header {
-  box-sizing: border-box;
+.dsh-codex-auth-section {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  gap: 12px;
-  padding: 14px 16px;
-  border: 0;
-  border-radius: 12px;
-  background: none;
-  color: var(--dsw-alias-label-primary);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-
-.dsh-codex-auth-card-head-text {
-  display: flex;
-  min-width: 0;
   flex-direction: column;
-  gap: 4px;
+  gap: 12px;
+  padding: 8px 0;
 }
 
-.dsh-codex-auth-card-name {
-  font-size: 15px;
-  line-height: 1.4;
+.dsh-codex-auth-section-title {
+  margin: 0;
+  color: var(--dsw-alias-label-primary);
+  font-size: 20px;
+  line-height: 28px;
   font-weight: 600;
 }
 
-.dsh-codex-auth-card-description {
-  color: var(--dsw-alias-label-tertiary);
+.dsh-codex-auth-section-desc {
+  margin: 0;
+  color: var(--dsw-alias-label-secondary);
   font-size: 13px;
-  line-height: 1.5;
-}
-
-.dsh-codex-auth-chevron {
-  color: var(--dsw-alias-label-tertiary);
-  transition: transform 160ms ease;
-
-  &.is-open {
-    transform: rotate(180deg);
-  }
-}
-
-.dsh-codex-auth-card-body {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  margin: 0 16px;
-  padding: 12px 0 8px;
-  border-top: 1px solid var(--dsw-alias-border-l2);
+  line-height: 20px;
 }
 
 .dsh-codex-auth-row {
@@ -397,80 +250,7 @@
 
 .dsh-codex-auth-error { color: var(--dsw-alias-state-error-primary, #d92d20); }
 
-.dsh-codex-auth-card .semi-button { border-radius: var(--semi-border-radius-full); }
-
-.dsh-codex-auth-usage {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding-top: 2px;
-}
-
-.dsh-codex-auth-usage-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.dsh-codex-auth-usage-title,
-.dsh-codex-auth-usage-window-title {
-  color: var(--dsw-alias-label-primary);
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.dsh-codex-auth-usage-window {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  padding: 14px 14px 15px;
-  border: 1px solid var(--dsw-alias-border-l2);
-  border-radius: 12px;
-  background: var(--dsw-alias-bg-layer-1);
-}
-
-.dsh-codex-auth-usage-window-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 16px;
-}
-
-.dsh-codex-auth-usage-window-details {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.dsh-codex-auth-usage-reset {
-  color: var(--dsw-alias-label-tertiary);
-  font-size: 12px;
-}
-
-.dsh-codex-auth-usage-remaining {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  flex: 1 1 220px;
-  min-width: 200px;
-  gap: 12px;
-}
-
-.dsh-codex-auth-usage-progress.semi-progress-horizontal {
-  flex: 1 1 140px;
-  min-width: 100px;
-  max-width: 192px;
-  height: 8px;
-}
-
-.dsh-codex-auth-usage-remaining-text {
-  color: var(--dsw-alias-label-secondary);
-  font-size: 14px;
-  white-space: nowrap;
-}
+.dsh-codex-auth-section .semi-button { border-radius: var(--semi-border-radius-full); }
 
 .dsh-codex-auth-signing-in {
   display: flex;

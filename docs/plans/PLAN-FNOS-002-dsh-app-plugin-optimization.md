@@ -439,6 +439,15 @@ SSE 路由由网关自身处理，不转发到 DSH。它经过 fnOS 统一网关
 | PLAN-FNOS-002-T05-04 | FNOS-002-05 | Client Codex Auth 卡片增加“刷新模型目录”入口：已登录时触发、展示结果与错误，未登录时引导先登录 | <Badge type="tip" text="已完成" /> |
 | PLAN-FNOS-002-T05-05 | FNOS-002-05 | 补充单元测试：响应归一化、思考级别归并、写入载荷、失败回退、路由鉴权与客户端交互 | <Badge type="warning" text="部分验证（待真实环境）" /> |
 
+### P1：Codex Auth 设置页与模型选择 UI 调整
+
+| 任务 ID | 对应功能 | 实现内容 | 状态 |
+| --- | --- | --- | --- |
+| PLAN-FNOS-002-T06-01 | FNOS-002-01/05 | 将 Codex Auth 从设置插件列表卡片迁移为 `settings.section` 独立设置页（侧栏入口，同 CodeBuddy），登录与能力控制整页展示 | <Badge type="tip" text="已完成" /> |
+| PLAN-FNOS-002-T06-02 | FNOS-002-01 | 移除设置页内「通用使用限额」区块；用量状态只保留在对话输入区右侧的紧凑展示 | <Badge type="tip" text="已完成" /> |
+| PLAN-FNOS-002-T06-03 | FNOS-002-05 | 移除对「设置 → 模型」OpenAI Codex 编辑器的 DOM 定制（`model-editor-presentation` 及关联样式），Codex 模型经 DSH 官方消息框模型选择器选择 | <Badge type="tip" text="已完成" /> |
+| PLAN-FNOS-002-T06-04 | FNOS-002-01/05 | 同步更新 client 注册断言与设置页相关单元测试，更新插件与需求文档 | <Badge type="warning" text="部分验证（待真实环境）" /> |
+
 ### Turbo 任务与发布工具
 
 | 任务 ID | 实现内容 | 状态 |

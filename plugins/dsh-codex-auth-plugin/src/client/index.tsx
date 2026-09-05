@@ -10,12 +10,11 @@ import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import type {} from '@deepseek-ai/dsh-client-ui-settings-plugins/client'
 import type {} from '@deepseek-ai/dsh-client-ui-slots'
-import { CodexAuthCard } from '../components/CodexAuthCard.tsx'
-import type { CodexAuthCardInjected } from '../components/CodexAuthCard.tsx'
+import { CodexAuthSection } from '../components/CodexAuthSection.tsx'
+import type { CodexAuthSectionProps } from '../components/CodexAuthSection.tsx'
 import { CodexUsageStatus } from '../components/CodexUsageStatus.tsx'
 import type { CodexUsageStatusProps } from '../components/CodexUsageStatus.tsx'
 import { decodeCodexAuthSettings } from '../contracts/settings-contract.ts'
-import { installCodexModelEditorPresentation } from './services/model-editor-presentation.ts'
 import { CodexAuthRemoteSettingsScope } from './services/remote-settings-scope.ts'
 import { CODEX_AUTH_SETTINGS_NAMESPACE } from '../contracts/auth-paths.ts'
 import { en, zh } from './locales.ts'
@@ -41,13 +40,9 @@ export const inject = ['slots', 'locale', 'connection', 'remote', 'remote.sessio
 
 export function apply(ctx: ClientContext): void {
   ctx.effect(() => installSemiDshTheme(), 'dsh-codex-auth-plugin: Semi DSH theme')
-  ctx.effect(
-    () => installCodexModelEditorPresentation(),
-    'dsh-codex-auth-plugin: Codex model editor presentation',
-  )
   const namespace = 'settings.dsh-codex-auth'
   ctx.effect(() => ctx.locale.register(namespace, { zh, en }), 'dsh-codex-auth-plugin: locale')
-  const t = ctx.locale.bind(namespace) as CodexAuthCardInjected['t']
+  const t = ctx.locale.bind(namespace) as CodexAuthSectionProps['t']
   const connection = ctx.get('connection') as ConnectionHandle
   // DSH exposes the merged Remote API on `ctx.remote`. Using `ctx.get('remote')`
   // only resolves the base service and omits namespaces such as `session`.
@@ -66,11 +61,13 @@ export function apply(ctx: ClientContext): void {
       }
     }, 'dsh-codex-auth-plugin: remote settings scope')
   }
-  ctx.slots.inject('settings.plugin.item', () => ctx.slots.register({
-    name: 'settings.plugin.item',
-    key: CODEX_AUTH_SETTINGS_NAMESPACE,
-    inject: (): CodexAuthCardInjected => ({ t, configScope, connection, remote }),
-  }, CodexAuthCard))
+  ctx.slots.inject('settings.section', () => ctx.slots.register({
+    name: 'settings.section',
+    id: 'codex-auth',
+    order: 24,
+    label: () => t('title'),
+    inject: (): CodexAuthSectionProps => ({ t, configScope, connection, remote }),
+  }, CodexAuthSection))
   ctx.slots.inject('conversation.input.right', () => ctx.slots.register({
     name: 'conversation.input.right',
     id: 'codex-usage',
