@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "engines": {
+    "node": "^22.19.0 || >=24.0.0"
+  },
+  "dshPluginApi": {
+    "version": "0.1.2-rc.1",
+    "packages": [
+      "@deepseek-ai/dsh-home-paths",
+      "@deepseek-ai/dsh-llm"
+    ]
+  }
+}

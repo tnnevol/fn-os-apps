@@ -1,0 +1,15 @@
+# The @tnnevol/dsh-codebuddy bundle patch.
+#
+# Applied as ONE insert after the in-box bundle layers, so this row lands on
+# top of them without touching any row they own. Registering a provider needs
+# no change to the `llm` row — this plugin injects the `llm` service and calls
+# `ctx.llm.registerAdapter()` when it activates.
+#
+# Config is omitted deliberately — every field of the plugin's Config is
+# optional and the shipped defaults reach the public CodeBuddy service. There
+# is no credential field by design; sign in through the Web Settings →
+# CodeBuddy page.
+
+- insert:
+    - id: dsh-codebuddy
+      name: '@tnnevol/dsh-codebuddy'

@@ -295,6 +295,61 @@ importers:
         specifier: 'catalog:'
         version: 4.1.10(@opentelemetry/api@1.9.0)(@types/node@22.20.1)(vite@8.2.1(@types/node@22.20.1)(jiti@2.7.0)(sass@1.103.1)(yaml@2.9.0))
 
+  plugins/dsh-codebuddy-plugin:
+    dependencies:
+      eventsource-parser:
+        specifier: ^3.1.0
+        version: 3.1.1
+    devDependencies:
+      '@deepseek-ai/cordis':
+        specifier: 'catalog:'
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.7)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@deepseek-ai/dsh-client-connection':
+        specifier: catalog:dsh
+        version: 0.1.2-rc.1(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-invariants@0.1.2-rc.1(@deepseek-ai/cordis@4.0.2))
+      '@deepseek-ai/dsh-client-locale':
+        specifier: catalog:dsh
+        version: 0.1.2-rc.1(@deepseek-ai/cordis@4.0.2)
+      '@deepseek-ai/dsh-client-ui-conversation':
+        specifier: catalog:dsh
+        version: 0.1.2-rc.1(@deepseek-ai/cordis@4.0.2)(typescript@5.9.3)
+      '@deepseek-ai/dsh-client-ui-renderer':
+        specifier: catalog:dsh
+        version: 0.1.2-rc.1(@deepseek-ai/cordis@4.0.2)(react@18.3.1)
+      '@deepseek-ai/dsh-client-ui-settings':
+        specifier: catalog:dsh
+        version: 0.1.2-rc.1(@deepseek-ai/cordis@4.0.2)
+      '@deepseek-ai/dsh-client-ui-slots':
+        specifier: catalog:dsh
+        version: 0.1.2-rc.1(@deepseek-ai/cordis@4.0.2)
+      '@deepseek-ai/dsh-home-paths':
+        specifier: catalog:dsh
+        version: 0.1.2-rc.1(@deepseek-ai/cordis@4.0.2)
+      '@deepseek-ai/dsh-llm':
+        specifier: catalog:dsh
+        version: 0.1.2-rc.1(@deepseek-ai/cordis@4.0.2)
+      '@tnnevol/dsh-semi-ui':
+        specifier: workspace:*
+        version: link:../../packages/dsh-semi-ui
+      '@types/node':
+        specifier: 'catalog:'
+        version: 22.20.1
+      '@types/react':
+        specifier: 'catalog:'
+        version: 18.3.31
+      react:
+        specifier: 'catalog:'
+        version: 18.3.1
+      tsdown:
+        specifier: 'catalog:'
+        version: 0.22.14(@tsdown/css@0.22.14)(typescript@5.9.3)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.10(@opentelemetry/api@1.9.0)(@types/node@22.20.1)(vite@8.2.1(@types/node@22.20.1)(jiti@2.7.0)(sass@1.103.1)(yaml@2.9.0))
+
   plugins/dsh-codex-auth-plugin:
     devDependencies:
       '@deepseek-ai/cordis':
@@ -2935,6 +2990,10 @@ packages:
 
   eventemitter3@4.0.7:
     resolution: {integrity: sha512-8guHBZCwKnFhYdHr2ysuRWErTwhoN2X8XELRlrRwpmfeY2jjuUN4taQMsULKUVo1K4DvZl+0pgfyoysHxvmvEw==}
+
+  eventsource-parser@3.1.1:
+    resolution: {integrity: sha512-EKN1vKAMcZ8MlYMpaNuxN6R9yakzH6uajHcHVTqWJzvu5pWw9DyhbP35HH8MVBQ+dZjAfDxk+A8NiR9KWaXiyQ==}
+    engines: {node: '>=18.0.0'}
 
   expect-type@1.4.0:
     resolution: {integrity: sha512-KfYbmpRm0VbLjEvVa9yGwCi9GI34xvi7A/HXYWQO65CSD2u3MczUJSuwXKFIxlGsgBQizV9q5J9NHj4VG0n+pA==}
@@ -6726,6 +6785,8 @@ snapshots:
       '@types/estree': 1.0.9
 
   eventemitter3@4.0.7: {}
+
+  eventsource-parser@3.1.1: {}
 
   expect-type@1.4.0: {}
 

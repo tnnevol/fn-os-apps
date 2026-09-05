@@ -1,0 +1,175 @@
+/* CodeBuddy client styling. Colors ride the DSH design tokens via the shared
+   Semi bridge; these rules only own layout and plugin-scoped geometry. */
+
+.dsh-codebuddy-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 8px 0;
+}
+
+.dsh-codebuddy-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dsh-codebuddy-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--dsw-alias-label-primary);
+}
+
+.dsh-codebuddy-desc {
+  margin: 0;
+  color: var(--dsw-alias-label-secondary);
+  font-size: 14px;
+  line-height: 22px;
+}
+
+.dsh-codebuddy-muted {
+  margin: 0;
+  color: var(--dsw-alias-label-secondary);
+  font-size: 14px;
+}
+
+.dsh-codebuddy-error {
+  margin: 0;
+  color: var(--dsw-alias-label-danger, #e5484d);
+  font-size: 14px;
+}
+
+.dsh-codebuddy-status {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dsh-codebuddy-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--dsw-alias-border-l2);
+}
+
+.dsh-codebuddy-row-label {
+  color: var(--dsw-alias-label-secondary);
+  font-size: 14px;
+  min-width: 160px;
+}
+
+.dsh-codebuddy-row-value {
+  color: var(--dsw-alias-label-primary);
+  font-size: 14px;
+  flex: 1;
+  word-break: break-all;
+}
+
+.dsh-codebuddy-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+/* Usage preference rows. */
+.dsh-codebuddy-prefRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--dsw-alias-border-l2);
+}
+
+.dsh-codebuddy-prefRowText {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+  padding-right: 48px;
+}
+
+.dsh-codebuddy-prefTitle {
+  color: var(--dsw-alias-label-primary);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 22px;
+}
+
+.dsh-codebuddy-prefDesc {
+  color: var(--dsw-alias-label-secondary);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 18px;
+}
+
+.dsh-codebuddy-prefInput {
+  width: 120px;
+}
+
+/* Composer usage indicator. */
+.dsh-codebuddy-usage-progress {
+  display: inline-flex;
+  align-items: center;
+}
+
+.dsh-codebuddy-usage-progress-track {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dsh-codebuddy-usage-popover-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.dsh-codebuddy-usage-popover-trigger:focus-visible {
+  outline: 1.5px solid var(--dsw-alias-brand-primary);
+  outline-offset: 2px;
+}
+
+.dsh-codebuddy-usage-popover-content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 180px;
+  padding: 4px 2px;
+}
+
+.dsh-codebuddy-usage-popover-empty {
+  color: var(--dsw-alias-label-secondary);
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.dsh-codebuddy-usage-popover-window {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dsh-codebuddy-usage-popover-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--dsw-alias-label-primary);
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.dsh-codebuddy-usage-popover-progress {
+  width: 100%;
+}
+
+.dsh-codebuddy-usage-popover-reset {
+  color: var(--dsw-alias-label-secondary);
+  font-size: 12px;
+  line-height: 18px;
+}

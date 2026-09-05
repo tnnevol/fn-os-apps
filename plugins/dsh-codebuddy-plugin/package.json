@@ -1,0 +1,101 @@
+{
+  "name": "@tnnevol/dsh-codebuddy",
+  "displayName": "CodeBuddy",
+  "description": "Tencent CodeBuddy provider plugin for DeepSeek Harness, with browser OAuth sign-in and quota display.",
+  "version": "0.1.2-rc.1",
+  "author": "tnnevol",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tnnevol/fn-os-apps.git",
+    "directory": "plugins/dsh-codebuddy-plugin"
+  },
+  "homepage": "https://github.com/tnnevol/fn-os-apps/tree/main/plugins/dsh-codebuddy-plugin",
+  "documentation": "https://fnapps-doc.tnnevol.cn/plugins/dsh-codebuddy",
+  "bugs": {
+    "url": "https://github.com/tnnevol/fn-os-apps/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "type": "module",
+  "license": "AGPL-3.0-only",
+  "engines": {
+    "node": "^22.19.0 || >=24.0.0"
+  },
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./client": "./lib/client.js",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./compatibility.json": "./compatibility.json",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "compatibility.json",
+    "cordis.patch.yml",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsdown",
+    "dev": "tsdown --watch",
+    "typecheck": "tsc -p tsconfig.json",
+    "test:unit": "vitest run --config vitest.config.ts",
+    "test": "pnpm run test:unit",
+    "check": "pnpm run typecheck && pnpm run test:unit",
+    "prepublishOnly": "pnpm run check",
+    "publish:rc": "pnpm publish --tag rc --access public"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-client-connection",
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-conversation",
+        "@deepseek-ai/dsh-client-ui-renderer",
+        "@deepseek-ai/dsh-client-ui-settings"
+      ],
+      "platform": "web"
+    }
+  },
+  "dependencies": {
+    "eventsource-parser": "^3.1.0"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "catalog:",
+    "@deepseek-ai/dsh-home-paths": "catalog:dsh",
+    "@deepseek-ai/dsh-llm": "catalog:dsh",
+    "@deepseek-ai/dsh-client-connection": "catalog:dsh",
+    "@deepseek-ai/dsh-client-locale": "catalog:dsh",
+    "@deepseek-ai/dsh-client-ui-conversation": "catalog:dsh",
+    "@deepseek-ai/dsh-client-ui-renderer": "catalog:dsh",
+    "@deepseek-ai/dsh-client-ui-settings": "catalog:dsh",
+    "@deepseek-ai/dsh-client-ui-slots": "catalog:dsh",
+    "react": "catalog:"
+  },
+  "devDependencies": {
+    "@tnnevol/dsh-semi-ui": "workspace:*",
+    "@deepseek-ai/cordis": "catalog:",
+    "@deepseek-ai/dsh-home-paths": "catalog:dsh",
+    "@deepseek-ai/dsh-llm": "catalog:dsh",
+    "@deepseek-ai/dsh-client-connection": "catalog:dsh",
+    "@deepseek-ai/dsh-client-locale": "catalog:dsh",
+    "@deepseek-ai/dsh-client-ui-conversation": "catalog:dsh",
+    "@deepseek-ai/dsh-client-ui-renderer": "catalog:dsh",
+    "@deepseek-ai/dsh-client-ui-settings": "catalog:dsh",
+    "@deepseek-ai/dsh-client-ui-slots": "catalog:dsh",
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "react": "catalog:",
+    "tsdown": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}
