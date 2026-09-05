@@ -45,7 +45,7 @@ export { hasDisclosedCapacity } from './types.ts'
 export type * from './types.ts'
 
 /** Cordis plugin name. */
-export const name = 'llm-codebuddy'
+export const name = 'dsh-codebuddy'
 
 /** This plugin needs the LLM seam to register its route on. */
 export const inject = ['llm']
@@ -128,7 +128,7 @@ export function apply(ctx: Context, config: Config = {}): void {
   void session.isLoggedIn().then((loggedIn) => {
     if (loggedIn) return
     ctx.logger.info(
-      'llm-codebuddy: no CodeBuddy session stored; sign in through the Settings'
+      'dsh-codebuddy: no CodeBuddy session stored; sign in through the Settings'
       + ' → CodeBuddy page in the Web UI (no API key needed).',
     )
   }).catch(() => {
