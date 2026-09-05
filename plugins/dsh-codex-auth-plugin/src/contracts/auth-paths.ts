@@ -11,3 +11,5 @@ export const CODEX_USAGE_PATH = '/plugins/dsh-codex-auth-plugin/auth/usage'
 export const CODEX_AUTH_SETTINGS_PATH = '/plugins/dsh-codex-auth-plugin/auth/settings'
 /** Same-origin endpoint for the DSH-wide Codex default model selection. */
 export const CODEX_GLOBAL_MODEL_PATH = '/plugins/dsh-codex-auth-plugin/auth/global-model'
+/** Same-origin endpoint that refreshes the OpenAI Codex route's model catalog. */
+export const CODEX_MODEL_REFRESH_PATH = '/plugins/dsh-codex-auth-plugin/auth/refresh-models'

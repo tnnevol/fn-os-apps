@@ -587,3 +587,23 @@
 }
 
 .dsh-codex-global-model-cancel { min-width: 68px; }
+
+.dsh-codex-model-refresh {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 14px;
+  border-top: 1px solid var(--dsw-alias-border-l2);
+}
+
+.dsh-codex-model-refresh-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.dsh-codex-model-refresh-intro { margin-top: 3px; }
+
+.dsh-codex-model-refresh-status[aria-live='polite'] { min-height: 18px; }

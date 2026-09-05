@@ -8,7 +8,7 @@ import type {} from '@deepseek-ai/dsh-host-webserver'
 import type {} from '@deepseek-ai/dsh-llm'
 import type {} from '@deepseek-ai/dsh-agent-default-model'
 import type {} from '@deepseek-ai/dsh-tools'
-import { registerCodexAuthRoutes, registerCodexGlobalModelRoute, registerCodexSettingsRoute } from './host/auth-routes.ts'
+import { registerCodexAuthRoutes, registerCodexGlobalModelRoute, registerCodexModelRefreshRoute, registerCodexSettingsRoute } from './host/auth-routes.ts'
 import { CodexCredentialMirror } from './host/credential-mirror.ts'
 import { CodexCredentialStore, CODEX_AUTH_FILENAME, CODEX_PROVIDER, codexAuthPath } from './host/store.ts'
 import { CODEX_AUTH_SETTINGS_NS, CodexAuthSettingsSchema } from './host/settings.ts'
@@ -35,6 +35,7 @@ export function apply(ctx: Context): void {
   }, 'dsh-codex-auth: credential mirror')
   registerCodexAuthRoutes(ctx, store, mirror)
   registerCodexSettingsRoute(ctx, settings)
+  registerCodexModelRefreshRoute(ctx, store, { update: (ns, patch) => ctx.settings.update(ns, patch) })
   registerCodexGlobalModelRoute(ctx, ctx.agentDefaultModel, ctx.llm)
 
   let stopped = false

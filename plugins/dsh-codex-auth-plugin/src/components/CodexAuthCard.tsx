@@ -17,10 +17,13 @@ import {
   CODEX_AUTH_LOGIN_PATH,
   CODEX_AUTH_LOGOUT_PATH,
   CODEX_AUTH_STATUS_PATH,
+  CODEX_MODEL_REFRESH_PATH,
   CODEX_USAGE_PATH,
 } from '../contracts/auth-paths.ts'
 
 type Translate = (key: CodexAuthLocaleKey) => string
+
+const CODEX_MODEL_REFRESH_FAILED_CODE = 'codex-model-refresh-failed'
 
 type AccountStatus =
   & { dshVersion?: string }
@@ -55,6 +58,24 @@ type UsageState =
   | { status: 'loading' }
   | { status: 'ready'; usage: CodexUsage }
   | { status: 'error' }
+
+interface RefreshedCodexModel {
+  id: string
+  name: string
+  reasoningEfforts: Record<string, string> | false
+}
+
+interface ModelRefreshResponse {
+  ok: true
+  models: RefreshedCodexModel[]
+  skipped: string[]
+}
+
+type ModelRefreshState =
+  | { status: 'idle' }
+  | { status: 'busy' }
+  | { status: 'done'; count: number }
+  | { status: 'error'; message: string }
 
 export interface CodexAuthCardInjected {
   t: Translate
@@ -163,7 +184,25 @@ export function CodexAuthCard({ t, configScope, connection, remote }: CodexAuthC
   const [challenge, setChallenge] = useState<LoginChallenge | undefined>()
   const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'failed'>('idle')
   const [usage, setUsage] = useState<UsageState>({ status: 'hidden' })
+  const [modelRefresh, setModelRefresh] = useState<ModelRefreshState>({ status: 'idle' })
 
+  const refreshModels = useCallback(async (): Promise<void> => {
+    if (status.status !== 'signed-in' || modelRefresh.status === 'busy') return
+    setModelRefresh({ status: 'busy' })
+    try {
+      const response = await jsonRequest<ModelRefreshResponse>(CODEX_MODEL_REFRESH_PATH, 'POST')
+      setModelRefresh({ status: 'done', count: response.models.length })
+    } catch (error: unknown) {
+      setModelRefresh({
+        status: 'error',
+        message: error instanceof AccountRequestError
+          ? error.code === CODEX_MODEL_REFRESH_FAILED_CODE
+            ? t('modelRefreshFailed')
+            : error.message
+          : error instanceof Error ? error.message : t('modelRefreshFailed'),
+      })
+    }
+  }, [status.status, modelRefresh.status, t])
   const refreshUsage = useCallback(async (): Promise<void> => {
     if (status.status !== 'signed-in') return
     setUsage(current => current.status === 'ready' ? current : { status: 'loading' })
@@ -345,6 +384,34 @@ export function CodexAuthCard({ t, configScope, connection, remote }: CodexAuthC
             </div>
           ) : null}
           <CodexGlobalModel connection={connection} remote={remote} t={t} />
+          {status.status === 'signed-in' ? (
+            <section className="dsh-codex-model-refresh" aria-labelledby="dsh-codex-model-refresh-title">
+              <div className="dsh-codex-model-refresh-header">
+                <div>
+                  <h3 id="dsh-codex-model-refresh-title" className="dsh-codex-section-heading">{t('modelRefreshTitle')}</h3>
+                  <p className="dsh-codex-body dsh-codex-model-refresh-intro">{t('modelRefreshIntro')}</p>
+                </div>
+                <DshButton
+                  htmlType="button"
+                  theme="outline"
+                  type="secondary"
+                  size="small"
+                  disabled={modelRefresh.status === 'busy'}
+                  loading={modelRefresh.status === 'busy'}
+                  onClick={() => { void refreshModels() }}
+                >
+                  {modelRefresh.status === 'busy' ? t('modelRefreshing') : t('modelRefreshAction')}
+                </DshButton>
+              </div>
+              <p className="dsh-codex-body dsh-codex-model-refresh-status" aria-live="polite">
+                {modelRefresh.status === 'done'
+                  ? t('modelRefreshDone').replace('{count}', String(modelRefresh.count))
+                  : modelRefresh.status === 'error'
+                    ? modelRefresh.message
+                    : ''}
+              </p>
+            </section>
+          ) : null}
           <CodexCapabilities scope={configScope} t={t} dshVersion={status.dshVersion} />
         </div>
       ) : null}

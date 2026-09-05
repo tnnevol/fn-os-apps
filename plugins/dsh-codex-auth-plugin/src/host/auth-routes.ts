@@ -15,9 +15,11 @@ import {
   CODEX_AUTH_SETTINGS_PATH,
   CODEX_AUTH_STATUS_PATH,
   CODEX_GLOBAL_MODEL_PATH,
+  CODEX_MODEL_REFRESH_PATH,
   CODEX_USAGE_PATH,
 } from '../contracts/auth-paths.ts'
 import { CodexUsageService } from './usage.ts'
+import { refreshCodexModelCatalog } from './model-refresh.ts'
 import type { SettingsScope } from '@deepseek-ai/dsh-settings'
 import { decodeCodexAuthSettings } from '../contracts/settings-contract.ts'
 import type { CodexAuthSettingsConfig } from '../contracts/settings-contract.ts'
@@ -27,6 +29,7 @@ export const REMOTE_WEB_ORIGIN_NOT_TRUSTED = 'remote-web-origin-not-trusted'
 export const CODEX_USAGE_UNAVAILABLE = 'codex-usage-unavailable'
 export const CODEX_SETTINGS_INVALID = 'codex-settings-invalid'
 export const CODEX_GLOBAL_MODEL_INVALID = 'codex-global-model-invalid'
+export const CODEX_MODEL_REFRESH_FAILED = 'codex-model-refresh-failed'
 
 const CODEX_SETTINGS_BODY_LIMIT = 8 * 1024
 
@@ -341,6 +344,47 @@ function decodeGlobalModelWrite(value: unknown): { model: string; reasoningEffor
     model: record.model.trim(),
     ...(typeof record.reasoningEffort === 'string' ? { reasoningEffort: record.reasoningEffort } : {}),
   }
+}
+
+/**
+ * Register the endpoint that refreshes the OpenAI Codex route model catalog
+ * from the signed-in ChatGPT account and writes it into the llm-pi-ai user
+ * settings layer.
+ */
+export function registerCodexModelRefreshRoute(
+  ctx: Context,
+  store: CodexCredentialStore,
+  settings: { update(ns: string, patch: object): Promise<void> },
+): void {
+  const llmPiAiNamespace = 'llm-pi-ai'
+  ctx.effect(() => {
+    const authorize = (req: IncomingMessage, res: ServerResponse): boolean => {
+      if (trustedRequest(req)) return true
+      json(res, 403, { error: REMOTE_WEB_ORIGIN_NOT_TRUSTED })
+      return false
+    }
+    const dispose = ctx.webServer.register({
+      kind: 'exact',
+      path: CODEX_MODEL_REFRESH_PATH,
+      handler: async (req, res) => {
+        if (req.method !== 'POST') return json(res, 405, { error: 'method not allowed' })
+        if (!authorize(req, res)) return
+        try {
+          const { models, skipped } = await refreshCodexModelCatalog(store)
+          await settings.update(llmPiAiNamespace, {
+            providers: {
+              [CODEX_PROVIDER]: { models: models as unknown[] },
+            },
+          })
+          json(res, 200, { ok: true, models, skipped })
+        } catch (error: unknown) {
+          const message = safeMessage(error)
+          json(res, 502, { error: CODEX_MODEL_REFRESH_FAILED, message })
+        }
+      },
+    })
+    return dispose
+  }, 'dsh-codex-auth-plugin: Codex model catalog refresh route')
 }
 
 /** Register the plugin-owned bridge to DSH alpha.4's shared Agent default model. */

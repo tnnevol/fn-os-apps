@@ -429,6 +429,16 @@ SSE 路由由网关自身处理，不转发到 DSH。它经过 fnOS 统一网关
 | PLAN-FNOS-002-T04-15 | FNOS-002-04 | 验证 Web 被终止、重复点击、启动失败、PID 复用、网关退出和 FPK stop/config_callback 场景 | <Badge type="warning" text="部分验证" /> |
 | PLAN-FNOS-002-T04-16 | FNOS-002-04 | 将 `BRIDGE_SCRIPT_BODY` 拆到 `src/client/bridge.js`；两个 tsdown 构建复用虚拟模块插件，在构建期读取并内联 Bridge | <Badge type="tip" text="已完成" /> |
 
+### P1：Codex 动态模型目录
+
+| 任务 ID | 对应功能 | 实现内容 | 状态 |
+| --- | --- | --- | --- |
+| PLAN-FNOS-002-T05-01 | FNOS-002-05 | Host 新增模型目录刷新服务：复用 OAuth 凭据调用 `chatgpt.com/backend-api/codex/models`，归一化当前账号可用模型与思考级别 | <Badge type="tip" text="已完成" /> |
+| PLAN-FNOS-002-T05-02 | FNOS-002-05 | 将上游模型归一化为 llm-pi-ai OpenAI Codex profile entry（slug/名称/输入模态/上下文/思考级别 wire 值），处理 DSH 思考级别能力范围（含接口返回 `ultra` 的归并策略） | <Badge type="tip" text="已完成" /> |
+| PLAN-FNOS-002-T05-03 | FNOS-002-05 | 新增 Web 路由触发刷新并把归一化列表写入 `llm-pi-ai.providers.openai-codex` 配置（触发适配器 snapshot 重建），失败时保留上一次有效列表 | <Badge type="tip" text="已完成" /> |
+| PLAN-FNOS-002-T05-04 | FNOS-002-05 | Client Codex Auth 卡片增加“刷新模型目录”入口：已登录时触发、展示结果与错误，未登录时引导先登录 | <Badge type="tip" text="已完成" /> |
+| PLAN-FNOS-002-T05-05 | FNOS-002-05 | 补充单元测试：响应归一化、思考级别归并、写入载荷、失败回退、路由鉴权与客户端交互 | <Badge type="warning" text="部分验证（待真实环境）" /> |
+
 ### Turbo 任务与发布工具
 
 | 任务 ID | 实现内容 | 状态 |
