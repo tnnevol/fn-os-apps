@@ -16,23 +16,65 @@ export async function runVersion(args: string[]): Promise<void> {
   if (area === undefined) return
 
   const areaArgs = explicitArea === undefined ? args : args.slice(1)
-  const target = area === 'plugin'
-    ? areaArgs[0] === undefined ? await askPlugin() : findPluginTarget(areaArgs[0])
+  const explicitPlugin = area === 'plugin' ? areaArgs[0] : undefined
+  const explicitTarget = explicitPlugin === undefined ? undefined : findPluginTarget(explicitPlugin)
+  const targets = area === 'plugin'
+    ? explicitPlugin === undefined ? await askPlugin() : explicitTarget === undefined ? undefined : [explicitTarget]
     : undefined
-  if (area === 'plugin' && target === undefined) {
-    throw new Error(`Unknown plugin: ${areaArgs[0] ?? '(none)'}`)
+  if (area === 'plugin') {
+    if (targets === undefined) {
+      throw new Error(`Unknown plugin: ${explicitPlugin ?? '(none)'}`)
+    }
+    if (targets.length === 0) return
   }
 
   const versionArgs = area === 'plugin' ? areaArgs.slice(1) : areaArgs
   const options = parseVersionOptions(versionArgs)
-  const packagePath = target?.path ?? 'package.json'
+
+  if (targets !== undefined) {
+    for (const target of targets) {
+      await versionPlugin(target, versionArgs, options)
+    }
+  } else {
+    await versionProject(versionArgs, options)
+  }
+}
+
+async function versionPlugin(
+  target: NonNullable<ReturnType<typeof findPluginTarget>>,
+  versionArgs: string[],
+  options: ReturnType<typeof parseVersionOptions>,
+): Promise<void> {
+  const packagePath = target.path
   const current = await readPackageInfo(packagePath)
-  const commitPrefix = target === undefined ? 'chore: release v' : `chore(plugin): release ${current.name} v`
-  const tagPrefix = target === undefined ? 'v' : `plugin/${target.slug}-v`
+  const commitPrefix = `chore(plugin): release ${current.name} v`
+  const tagPrefix = `plugin/${target.slug}-v`
 
   const result = await versionBump({
     cwd: repositoryRoot,
-    files: target === undefined ? projectVersionFiles : [target.path],
+    files: [target.path],
+    currentVersion: current.version,
+    release: options.release,
+    commit: options.noCommit ? false : `${commitPrefix}%s`,
+    tag: options.noTag ? false : `${tagPrefix}%s`,
+    push: false,
+    ignoreScripts: true,
+    confirm: options.confirm,
+  })
+  outro(`${current.name}: ${result.currentVersion} -> ${result.newVersion}`)
+}
+
+async function versionProject(
+  versionArgs: string[],
+  options: ReturnType<typeof parseVersionOptions>,
+): Promise<void> {
+  const current = await readPackageInfo('package.json')
+  const commitPrefix = 'chore: release v'
+  const tagPrefix = 'v'
+
+  const result = await versionBump({
+    cwd: repositoryRoot,
+    files: projectVersionFiles,
     currentVersion: current.version,
     release: options.release,
     commit: options.noCommit ? false : `${commitPrefix}%s`,

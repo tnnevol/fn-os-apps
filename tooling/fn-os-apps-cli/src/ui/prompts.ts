@@ -1,5 +1,6 @@
 import { cancel, isCancel, multiselect, select } from '@clack/prompts'
 import { pluginTargets, type PluginTarget } from '../config/targets.js'
+import type { FpkApp } from '../config/workspace.js'
 
 export type ReleaseArea = 'project' | 'plugin'
 export type BuildSelection = 'plugins' | 'fpk' | 'docs'
@@ -11,7 +12,7 @@ export async function askReleaseArea(): Promise<ReleaseArea | undefined> {
     message: '选择要维护版本的区域',
     options: [
       { value: 'project', label: '项目 / FPK', hint: '根项目、共享包、应用 Manifest' },
-      { value: 'plugin', label: 'DSH 插件', hint: '单独维护指定插件版本' },
+      { value: 'plugin', label: 'DSH 插件', hint: '可多选维护插件版本' },
     ],
   })
   if (isCancel(result)) {
@@ -21,16 +22,18 @@ export async function askReleaseArea(): Promise<ReleaseArea | undefined> {
   return result as ReleaseArea
 }
 
-export async function askPlugin(): Promise<PluginTarget | undefined> {
-  const result = await select({
-    message: '选择要维护版本的插件',
+export async function askPlugin(): Promise<PluginTarget[] | undefined> {
+  const result = await multiselect({
+    message: '选择要维护版本的插件（可多选）',
+    required: true,
     options: pluginTargets.map(target => ({ value: target.value, label: target.label })),
   })
   if (isCancel(result)) {
     cancel('已取消版本维护')
     return undefined
   }
-  return pluginTargets.find(target => target.value === result)
+  const selected = new Set(result as string[])
+  return pluginTargets.filter(target => selected.has(target.value))
 }
 
 export async function askCheckSelection(): Promise<CheckSelection[] | undefined> {
@@ -111,19 +114,20 @@ export async function askPublishPlugins(): Promise<PluginTarget[] | undefined> {
   return pluginTargets.filter(target => selected.has(target.value))
 }
 
-export async function askFpkApps(apps: string[]): Promise<string[] | undefined> {
+export async function askFpkApps(apps: FpkApp[]): Promise<FpkApp[] | undefined> {
   const result = await multiselect({
     message: '选择要编译的 FPK 应用（可多选）',
     required: true,
     options: apps.map(app => ({
-      value: app,
-      label: app,
-      ...(app === 'fn-deepseek-harness' ? { hint: '自动先编译 fnOS Gateway' } : {}),
+      value: app.name,
+      label: app.label,
+      ...(app.requiresGateway ? { hint: '自动先编译 fnOS Gateway' } : {}),
     })),
   })
   if (isCancel(result)) {
     cancel('已取消 FPK 构建')
     return undefined
   }
-  return result as string[]
+  const selected = new Set(result as string[])
+  return apps.filter(app => selected.has(app.name))
 }

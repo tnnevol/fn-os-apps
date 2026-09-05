@@ -1,9 +1,9 @@
-import { readFile, readdir } from 'node:fs/promises'
 import { join } from 'node:path'
 import { type OptionValues } from 'commander'
 import { program } from '../program.js'
 import { repositoryRoot } from '../config/paths.js'
 import { findPluginTarget } from '../config/targets.js'
+import { readFpkApps, readGatewayName, type FpkApp } from '../config/workspace.js'
 import { runDocsBuild } from './docs.js'
 import { optionValue } from '../core/args.js'
 import { addBooleanArgs, addOptionalValueArg } from '../core/command-args.js'
@@ -11,29 +11,19 @@ import { runCommand } from '../core/process.js'
 import { runTurbo } from '../core/turbo.js'
 import { askBuildSelection, askFpkApps, askPlugins } from '../ui/prompts.js'
 
-async function listFpkApps(): Promise<string[]> {
-  const appsDirectory = join(repositoryRoot, 'apps')
-  const entries = await readdir(appsDirectory, { withFileTypes: true })
-  const apps: string[] = []
-  for (const entry of entries) {
-    if (!entry.isDirectory()) continue
-    try {
-      await readFile(join(appsDirectory, entry.name, 'manifest'), 'utf8')
-      apps.push(entry.name)
-    } catch {
-      // A directory without a manifest is not an FPK application.
-    }
-  }
-  return apps.sort()
+function listFpkApps(): FpkApp[] {
+  return readFpkApps()
 }
 
-async function buildFpkApps(apps: string[]): Promise<void> {
-  if (apps.includes('fn-deepseek-harness')) {
-    await runTurbo('build:app', ['@tnnevol/fnos-gateway'])
+async function buildFpkApps(apps: FpkApp[]): Promise<void> {
+  if (apps.some(app => app.requiresGateway)) {
+    const gatewayName = readGatewayName()
+    if (gatewayName === undefined) throw new Error('Unable to resolve the fnOS Gateway package')
+    await runTurbo('build:app', [gatewayName])
   }
   for (const app of apps) {
-    console.log(`\nBuilding FPK: ${app}`)
-    await runCommand('fnpack', ['build'], join(repositoryRoot, 'apps', app))
+    console.log(`\nBuilding FPK: ${app.name}`)
+    await runCommand('fnpack', ['build'], join(repositoryRoot, 'apps', app.name))
   }
 }
 
@@ -46,11 +36,12 @@ async function selectPluginFilters(filter?: string): Promise<string[] | undefine
   return askPlugins()
 }
 
-async function selectFpkApps(app?: string): Promise<string[] | undefined> {
-  const apps = await listFpkApps()
+async function selectFpkApps(app?: string): Promise<FpkApp[] | undefined> {
+  const apps = listFpkApps()
   if (app !== undefined) {
-    if (!apps.includes(app)) throw new Error(`Unknown FPK application: ${app}`)
-    return [app]
+    const selected = apps.find(candidate => candidate.name === app)
+    if (selected === undefined) throw new Error(`Unknown FPK application: ${app}`)
+    return [selected]
   }
   return askFpkApps(apps)
 }
@@ -86,7 +77,7 @@ export async function runBuild(args: string[]): Promise<void> {
   await Promise.all(tasks)
 }
 
-export { listFpkApps, buildFpkApps }
+export { listFpkApps, buildFpkApps, type FpkApp }
 
 program
   .command('build')
