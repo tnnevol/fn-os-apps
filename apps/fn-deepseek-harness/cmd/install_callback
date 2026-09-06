@@ -14,6 +14,7 @@ DSH_NODE_PTY_SCRIPT="${APP_DEST}/scripts/install-node-pty.sh"
 DSH_PLUGIN_SCRIPT="${APP_DEST}/scripts/install-dsh-plugins.mjs"
 DSH_ATTACHMENT_PATCH_SCRIPT="${APP_DEST}/scripts/patch-dsh-attachment-local.mjs"
 DSH_PUBLISHED_PLUGIN_MANIFEST="${APP_DEST}/published-dsh-plugins.json"
+DSH_BUNDLED_PLUGIN_DIRECTORY="${APP_DEST}/bundled-dsh-plugins"
 DSH_PROFILE_DIRECTORY="${DSH_HOME}/profiles/web"
 PROXY_SCRIPT="${APP_DEST}/gateway-proxy.mjs"
 NPM_REGISTRY_FILE="${APP_HOME}/.fn-deepseek-harness/npm-registry"
@@ -72,6 +73,7 @@ install_published_dsh_plugins() {
     fi
 
     DSH_PUBLISHED_PLUGIN_MANIFEST="${DSH_PUBLISHED_PLUGIN_MANIFEST}" \
+        DSH_BUNDLED_PLUGIN_DIRECTORY="${DSH_BUNDLED_PLUGIN_DIRECTORY}" \
         DSH_PROFILE_DIRECTORY="${DSH_PROFILE_DIRECTORY}" \
         DSH_INSTALL_PUBLISHED=1 \
         PACKAGE_MANAGER="npm" \

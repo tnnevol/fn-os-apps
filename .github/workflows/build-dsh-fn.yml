@@ -65,7 +65,7 @@ jobs:
         run: bash ../../.github/scripts/prepare-dsh-native.sh
 
       - name: Build FPK
-        run: pnpm exec fn-apps-cli build --fpk --app fn-deepseek-harness
+        run: pnpm exec fn-apps-cli build --fpk --app fn-deepseek-harness --skip-bundle-dsh-plugins
 
       - name: Rename FPK with DSH version
         id: rename

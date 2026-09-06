@@ -11,6 +11,7 @@ NPM_REGISTRY_FILE="${APP_HOME}/.fn-deepseek-harness/npm-registry"
 INSTALL_CALLBACK="${TRIM_APPDEST}/cmd/install_callback"
 DSH_PLUGIN_SCRIPT="${TRIM_APPDEST}/scripts/install-dsh-plugins.mjs"
 DSH_PUBLISHED_PLUGIN_MANIFEST="${TRIM_APPDEST}/published-dsh-plugins.json"
+DSH_BUNDLED_PLUGIN_DIRECTORY="${TRIM_APPDEST}/bundled-dsh-plugins"
 DSH_PROFILE_DIRECTORY="${DSH_HOME}/profiles/web"
 
 export DSH_HOME
@@ -56,6 +57,7 @@ elif [ -x "${NODE_BIN}/node" ] && [ -f "${DSH_PLUGIN_SCRIPT}" ]; then
         "${DSH_HOME}/.npm-global/bin/dsh" --profile web --dump-config >/dev/null 2>&1 || exit 1
     fi
     DSH_PUBLISHED_PLUGIN_MANIFEST="${DSH_PUBLISHED_PLUGIN_MANIFEST}" \
+        DSH_BUNDLED_PLUGIN_DIRECTORY="${DSH_BUNDLED_PLUGIN_DIRECTORY}" \
         DSH_PROFILE_DIRECTORY="${DSH_PROFILE_DIRECTORY}" \
         DSH_INSTALL_PUBLISHED=1 \
         PACKAGE_MANAGER="npm" \

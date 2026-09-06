@@ -1,4 +1,4 @@
-import { cancel, isCancel, multiselect, select } from '@clack/prompts'
+import { cancel, confirm, isCancel, multiselect, select } from '@clack/prompts'
 import { pluginTargets, type PluginTarget } from '../config/targets.js'
 import type { FpkApp } from '../config/workspace.js'
 
@@ -130,4 +130,16 @@ export async function askFpkApps(apps: FpkApp[]): Promise<FpkApp[] | undefined> 
   }
   const selected = new Set(result as string[])
   return apps.filter(app => selected.has(app.name))
+}
+
+export async function askBundleDshPlugins(): Promise<boolean | undefined> {
+  const result = await confirm({
+    message: '是否将 DSH 清单插件内置到 FPK 包中？',
+    initialValue: true,
+  })
+  if (isCancel(result)) {
+    cancel('已取消 FPK 构建')
+    return undefined
+  }
+  return result
 }

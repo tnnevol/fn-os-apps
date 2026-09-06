@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { spawnSync } from 'node:child_process'
-import { readFile, writeFile } from 'node:fs/promises'
+import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
 const profileDirectory = process.env.DSH_PROFILE_DIRECTORY
@@ -11,6 +11,7 @@ const packageManager = 'npm'
 const packageManagerBin = npmBin
 const npmRegistry = process.env.NPM_REGISTRY || 'https://registry.npmjs.org/'
 const installPublished = process.env.DSH_INSTALL_PUBLISHED === '1'
+const bundledPluginDirectory = process.env.DSH_BUNDLED_PLUGIN_DIRECTORY
 
 function logMessage(level, message) {
   const now = new Date()
@@ -65,6 +66,12 @@ function packageDirectory(baseDirectory, packageName) {
   return join(baseDirectory, 'node_modules', ...packageName.split('/'))
 }
 
+function bundledPackageDirectory(packageName) {
+  if (!bundledPluginDirectory) return undefined
+  validatePackageName(packageName)
+  return join(bundledPluginDirectory, ...packageName.split('/'))
+}
+
 async function readPackageManifest(packageDirectoryPath) {
   try {
     return JSON.parse(await readFile(join(packageDirectoryPath, 'package.json'), 'utf8'))
@@ -72,6 +79,39 @@ async function readPackageManifest(packageDirectoryPath) {
     if (error?.code === 'ENOENT') return undefined
     throw error
   }
+}
+
+async function installBundledPlugin(plugin, bundledDirectory, bundledManifest, targetDirectory) {
+  if (bundledManifest.name !== plugin.name) {
+    fail(`bundled plugin at ${bundledDirectory} has unexpected package name ${bundledManifest.name}`)
+  }
+  if (typeof bundledManifest.version !== 'string' || bundledManifest.version.length === 0) {
+    fail(`bundled plugin ${plugin.name} does not declare a version`)
+  }
+  if (plugin.version && bundledManifest.version !== plugin.version) {
+    logInfo(
+      `Bundled ${plugin.name}@${bundledManifest.version} differs from manifest ${plugin.version}; `
+      + 'using the bundled plugin as the FPK-local source.',
+    )
+  }
+
+  await rm(targetDirectory, { recursive: true, force: true })
+  await mkdir(join(targetDirectory, '..'), { recursive: true })
+  await cp(bundledDirectory, targetDirectory, { recursive: true })
+  logInfo(
+    `Using bundled ${plugin.name}@${bundledManifest.version ?? 'unknown'}; `
+    + 'replaced the profile plugin installation.',
+  )
+}
+
+async function updateProfileDependency(packageName, version) {
+  const profileManifestPath = join(profileDirectory, 'package.json')
+  const profileManifest = JSON.parse(await readFile(profileManifestPath, 'utf8'))
+  profileManifest.dependencies = {
+    ...(profileManifest.dependencies ?? {}),
+    [packageName]: version,
+  }
+  await writeFile(profileManifestPath, `${JSON.stringify(profileManifest, null, 2)}\n`)
 }
 
 async function loadPublishedPlugins() {
@@ -127,11 +167,33 @@ function resolvePublishedVersion(plugin) {
 async function installPublishedPlugins(publishedPlugins) {
   for (const plugin of publishedPlugins) {
     const targetDirectory = packageDirectory(profileDirectory, plugin.name)
-    const existingManifest = await readPackageManifest(targetDirectory)
-    const hasLocalPlugin = existingManifest?.name === plugin.name
+    let existingManifest = await readPackageManifest(targetDirectory)
+    const bundledDirectory = bundledPackageDirectory(plugin.name)
+    const bundledManifest = bundledDirectory
+      ? await readPackageManifest(bundledDirectory)
+      : undefined
+    let hasLocalPlugin = existingManifest?.name === plugin.name
     let resolvedVersion = plugin.version
-    if (installPublished && !hasLocalPlugin) {
+    let hasRequiredVersion = hasLocalPlugin && plugin.version === existingManifest.version
+    if (installPublished && bundledManifest) {
+      await installBundledPlugin(plugin, bundledDirectory, bundledManifest, targetDirectory)
+      await updateProfileDependency(plugin.name, bundledManifest.version)
+      existingManifest = bundledManifest
+      hasLocalPlugin = true
+      resolvedVersion = bundledManifest.version
+      hasRequiredVersion = true
+    } else if (installPublished && hasLocalPlugin && !plugin.version) {
       resolvedVersion = resolvePublishedVersion(plugin)
+      hasRequiredVersion = existingManifest.version === resolvedVersion
+    }
+    if (installPublished && !hasRequiredVersion) {
+      resolvedVersion ??= resolvePublishedVersion(plugin)
+      if (hasLocalPlugin) {
+        logInfo(
+          `Local ${plugin.name}@${existingManifest.version ?? 'unknown'} does not match required ${resolvedVersion}; `
+          + 'reinstalling the published plugin.',
+        )
+      }
       logInfo(
         `Installing published ${plugin.name}@${resolvedVersion}`
         + (plugin.distTag ? ` (dist-tag ${plugin.distTag})` : '')
@@ -166,16 +228,16 @@ async function installPublishedPlugins(publishedPlugins) {
         fail(`failed to install published ${plugin.name}@${resolvedVersion}`)
       }
       logInfo(`DONE: ${packageManager} ${installCommand} ${plugin.name}@${resolvedVersion} (${elapsed}s)`)
-    } else if (installPublished && hasLocalPlugin) {
+    } else if (installPublished && hasRequiredVersion) {
       logInfo(
         `Keeping existing local ${plugin.name}@${existingManifest.version ?? 'unknown'}; `
-        + 'skipping published plugin installation.',
+        + `matches required ${resolvedVersion}; skipping published plugin installation.`,
       )
     }
 
     const installedManifest = await readPackageManifest(targetDirectory)
     const expectedVersion = installPublished
-      ? (hasLocalPlugin ? undefined : (plugin.version ?? resolvedVersion))
+      ? resolvedVersion
       : plugin.version
     const hasExpectedPackage = installedManifest?.name === plugin.name
       && (expectedVersion

@@ -12,7 +12,7 @@
 
 发布的 FPK 固定适配 `@deepseek-ai/dsh@0.1.2-rc.1`，并固定预编译 `node-pty@1.2.0-beta.15`。安装回调只接受本地精确版本 `0.1.2-rc.1`；本地没有该版本时才从安装向导选择的 npm 源使用 npm 安装固定版本。安装完成后，回调会从已安装 DSH 依赖树读取 `@deepseek-ai/dsh-attachment-local` 的实际版本，再应用 fnOS 持久化补丁，不假设它与 DSH 使用相同版本号。`app/scripts/install-node-pty.sh` 会暂时跳过 node-pty 的 native 生命周期脚本，执行 DSH 依赖树中其他包的生命周期脚本，再写入构建机生成的 native 文件，因此 NAS 不需要安装 g++ 或重新编译。
 
-FPK 只处理 [`app/published-dsh-plugins.json`](app/published-dsh-plugins.json) 中声明的已发布插件。安装和升级阶段使用安装向导选择的 npm 源：只有 `profile web` 中缺少清单插件时，才会通过 npm 按清单中的精确版本安装；已有本地插件会被保留，不会被线上包覆盖；随后统一补齐 `dsh.profile.bundles`。应用启动只校验已安装版本，不会每次启动联网。当前清单固定安装 `@tnnevol/dsh-codex-auth@0.1.2-rc.1` 与 `@tnnevol/dsh-fnos@0.1.2-rc.1.1`，与内置 DSH `0.1.2-rc.1` 保持一致的版本固定策略；后续发布新版本时需同步更新该清单。未发布插件不会在 FPK 构建阶段编译、打包或复制到 Web profile，发布后需要先加入该清单才会随应用安装。
+FPK 只处理 [`app/published-dsh-plugins.json`](app/published-dsh-plugins.json) 中声明的已发布插件。安装和升级阶段使用安装向导选择的 npm 源：脚本会比较 `profile web` 中插件 `package.json` 的版本与清单版本，缺少插件或版本不一致时，才会通过 npm 按清单中的精确版本重新安装；版本一致的本地插件会被保留，不会重复安装。若 FPK 包含 `app/bundled-dsh-plugins`，安装回调会优先用其中的插件包替换 profile 中已有的 npm 插件，并同步 profile 依赖版本；随后统一补齐 `dsh.profile.bundles`。应用启动只校验已安装版本，不会每次启动联网。当前清单固定安装 `@tnnevol/dsh-codex-auth@0.1.2-rc.1` 与 `@tnnevol/dsh-fnos@0.1.2-rc.1.1`，与内置 DSH `0.1.2-rc.1` 保持一致的版本固定策略；后续发布新版本时需同步更新该清单。未发布插件不会在 FPK 构建阶段编译、打包或复制到 Web profile，发布后需要先加入该清单才会随应用安装。
 
 最终固定使用应用全局路径中的 `dsh` 并执行 `dsh --help` 验证：
 
@@ -100,5 +100,7 @@ fn-deepseek-harness-v<app-version>-dsh-0.1.2-rc.1.fpk
 ```bash
 fnpack build
 ```
+
+通过仓库 CLI 构建时，选择 `fn-deepseek-harness` 后会询问是否将清单中的插件编译到 FPK，默认选择“是”。GitHub Actions 使用 `--skip-bundle-dsh-plugins` 跳过询问，因此发布的 FPK 不包含内置插件包，安装时会从 npm 源按清单版本安装。
 
 带内置 native 依赖的正式包仅由 tag workflow 生成。本地执行 `fnpack build` 不会调用 native 依赖准备脚本；该脚本位于 `.github/scripts/`，仅供 GitHub Actions 在 Linux runner 上构建正式包使用。
