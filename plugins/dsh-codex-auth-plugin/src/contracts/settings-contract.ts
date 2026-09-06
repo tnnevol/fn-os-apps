@@ -8,9 +8,10 @@ export interface CodexAuthSettingsConfig {
   enableImageUpload: boolean
 }
 
+/** Keep the plugin's initial image-capability state aligned with DSH's default UI behavior. */
 export const DEFAULT_CODEX_AUTH_SETTINGS: Readonly<CodexAuthSettingsConfig> = Object.freeze({
-  enableImageTool: false,
-  enableImageUpload: false,
+  enableImageTool: true,
+  enableImageUpload: true,
 })
 
 function isRecord(value: unknown): value is Record<string, unknown> {

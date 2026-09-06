@@ -15,6 +15,8 @@ export interface FnosInputReference {
 export interface InputSnapshotForReference {
   readonly draft: string
   readonly draftRev: number
+  /** Clipboard-projection occurrence lengths, used to derive detect offsets. */
+  readonly occurrences?: readonly { readonly length: number }[]
 }
 
 /** Keep only absolute, NUL-free paths that can be passed to the Host route. */

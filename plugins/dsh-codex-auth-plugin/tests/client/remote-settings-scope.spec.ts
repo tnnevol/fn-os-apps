@@ -11,7 +11,7 @@ describe('Codex Auth remote settings scope', () => {
       const method = init?.method ?? 'GET'
       const settings = method === 'PUT'
         ? JSON.parse(String(init?.body)) as Record<string, boolean>
-        : { enableImageTool: false, enableImageUpload: false }
+        : { enableImageTool: true, enableImageUpload: true }
       return new Response(JSON.stringify(settings), { status: 200, headers: { 'content-type': 'application/json' } })
     })
     vi.stubGlobal('fetch', fetchMock)
@@ -22,7 +22,7 @@ describe('Codex Auth remote settings scope', () => {
       status: 'ready',
       writable: true,
       mode: 'host',
-      value: { enableImageTool: false, enableImageUpload: false },
+      value: { enableImageTool: true, enableImageUpload: true },
     })
 
     await scope.set('enableImageTool', true)

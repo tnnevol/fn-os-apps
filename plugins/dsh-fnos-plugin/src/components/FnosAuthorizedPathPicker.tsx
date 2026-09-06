@@ -78,7 +78,7 @@ function selectedPaths(value: unknown): string[] {
 }
 
 export type FnosAuthorizedPathPickerProps = InputProps & {
-  insertReferences: (input: { draft: string, draftRev: number }, references: readonly FnosInputReference[]) => readonly FnosInputReference[]
+  insertReferences: (input: { draft: string, draftRev: number, occurrences?: readonly { readonly length: number }[] }, references: readonly FnosInputReference[]) => readonly FnosInputReference[]
 }
 
 /** Selection is immediate; closing the TreeSelect never discards a choice. */
@@ -112,9 +112,8 @@ export function FnosAuthorizedPathPicker({ useInput, inputActions, insertReferen
     return () => { cancelled = true }
   }, [applyEntries])
 
-  useEffect(() => {
-    if (desiredPaths === undefined) return
-    const pending = desiredPaths
+  const insertSelectedPaths = useCallback((paths: readonly string[]): void => {
+    const pending = paths
       .filter(path => !insertedTreePaths.current.has(path))
       .map(path => ({ path, entry: entries.current.get(path) }))
       .flatMap(item => {
@@ -124,7 +123,7 @@ export function FnosAuthorizedPathPicker({ useInput, inputActions, insertReferen
       })
     if (pending.length === 0) return
     const inserted = insertReferences(
-      { draft: input.draft, draftRev: input.draftRev },
+      { draft: input.draft, draftRev: input.draftRev, occurrences: input.occurrences },
       pending.map(item => item.reference),
     )
     const insertedRefs = new Set(inserted.map(reference => reference.ref))
@@ -138,7 +137,14 @@ export function FnosAuthorizedPathPicker({ useInput, inputActions, insertReferen
         trailingSeparator: true,
       })
     }
-  }, [desiredPaths, input.draft, input.draftRev, insertReferences, treeData])
+  }, [input.draft, input.draftRev, input.occurrences, insertReferences])
+
+  useEffect(() => {
+    if (desiredPaths === undefined) return
+    // Async-loaded children may not be present in entries.current during the
+    // selection event. Retry when treeData or the input snapshot changes.
+    insertSelectedPaths(desiredPaths)
+  }, [desiredPaths, insertSelectedPaths, treeData])
 
   useEffect(() => {
     if (desiredPaths === undefined) return
@@ -191,7 +197,10 @@ export function FnosAuthorizedPathPicker({ useInput, inputActions, insertReferen
       }
     }
     setDesiredPaths(nextPaths)
-  }, [])
+    // Commit a batch in the same event that produced it. This preserves every
+    // selected path even if Semi closes the dropdown before React effects run.
+    insertSelectedPaths(nextPaths)
+  }, [insertSelectedPaths])
 
   const loadData = useCallback(async (node: unknown) => {
     const key = typeof node === 'object' && node !== null && 'key' in node && typeof node.key === 'string'

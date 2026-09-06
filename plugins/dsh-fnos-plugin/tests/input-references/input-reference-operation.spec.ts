@@ -55,6 +55,30 @@ describe('fnOS reference insertion spacing', () => {
     expect(calls[1]?.payload.reference.label).toBe('Documents')
     expect(calls[2]?.payload.reference.label).toBe('report.md')
   })
+
+  it('uses detect offsets when the draft already contains an expanded chip', () => {
+    const calls: Array<{ event: string, payload: any }> = []
+    const ctx = {
+      sessions: {
+        scope: () => ({
+          bail: (_ctx: unknown, event: string, payload: any) => {
+            calls.push({ event, payload })
+            return true
+          },
+        }),
+      },
+    } as unknown as ClientContext
+    const first = createFnosInputReference('directory', '/vol4/Documents', 'Documents')!
+
+    const inserted = insertFnosReferences(ctx, 'session' as never, [first], {
+      draft: '已有 @previous 内容',
+      draftRev: 9,
+      occurrences: [{ length: 9 }],
+    })
+
+    expect(inserted).toEqual([first])
+    expect(calls.at(-1)?.payload.span).toEqual({ start: 8, end: 8, draftRev: 10 })
+  })
 })
 
 describe('fnOS picker operation occurrence identity', () => {

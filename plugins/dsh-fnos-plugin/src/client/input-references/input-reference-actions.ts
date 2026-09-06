@@ -100,11 +100,22 @@ export function insertFnosReferences(
   if (references.length === 0) return []
 
   let draft = input.draft
-  let offset = draft.length
+  // DSH's input state exposes the clipboard projection (`@label`), while
+  // reference CAS spans use the detect projection (one atomic character per
+  // chip). Starting at clipboard.length makes the first insertion stale as
+  // soon as the draft already contains a chip.
+  const expandedOccurrenceLength = input.occurrences?.reduce(
+    (total, occurrence) => total + Math.max(0, occurrence.length - 1),
+    0,
+  ) ?? 0
+  let offset = Math.max(0, draft.length - expandedOccurrenceLength)
   let draftRev = input.draftRev
   const inserted: FnosInputReference[] = []
 
-  const prefix = fnosInsertionPrefix(draft, offset)
+  // The picker always appends at the end. Spacing is therefore determined by
+  // the clipboard projection's final character, not by a detect offset into
+  // its expanded chip labels.
+  const prefix = fnosInsertionPrefix(draft, draft.length)
   if (prefix !== '') {
     const span: TokenSpan = { start: offset, end: offset, draftRev }
     if (!insertText(ctx, sessionId, prefix, span)) return []
@@ -121,8 +132,10 @@ export function insertFnosReferences(
     const span: TokenSpan = { start: offset, end: offset, draftRev }
     if (!insertReference(ctx, sessionId, reference, span)) break
     const displayText = fnosReferenceDraftText(label)
-    const tail = draft.slice(offset)
-    const gap = tail.length === 0 || tail[0] !== ' ' ? ' ' : ''
+    // Every insertion is at the current end, so DSH owns one trailing
+    // separator for each chip. This also keeps the local revision math valid
+    // when the initial draft contains expanded clipboard labels.
+    const gap = ' '
     draft += displayText + gap
     offset += displayText.length + gap.length
     draftRev += 1
