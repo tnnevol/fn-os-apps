@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -32,10 +33,27 @@ jobs:
             *-rc*|*-beta*|*-alpha*) PRERELEASE=true ;;
           esac
 
-          get_release_id() {
+          get_draft_release_id() {
+            gh api --paginate "repos/${REPOSITORY}/releases?per_page=100" \
+              --jq '.[] | select(.tag_name == env.TAG and .draft == true) | .id' \
+              | head -n 1 \
+              || true
+          }
+
+          get_published_release_id() {
             gh api "repos/${REPOSITORY}/releases/tags/${TAG}" 2>/dev/null \
               | jq -r '.id // empty' \
               || true
+          }
+
+          get_release_id() {
+            local draft_id
+            draft_id="$(get_draft_release_id)"
+            if [ -n "$draft_id" ]; then
+              echo "$draft_id"
+            else
+              get_published_release_id
+            fi
           }
 
           ensure_draft_release() {
@@ -109,10 +127,34 @@ jobs:
         run: pnpm install --filter @tnnevol/fn-os-apps-cli --frozen-lockfile
 
       # changelogithub 是成功 Release body 的唯一来源，避免与 workflow 自定义说明互相覆盖。
-      - name: Generate and publish release notes
+      - name: Generate release notes
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: pnpm run release:notes
+          RUNNER_TEMP: ${{ runner.temp }}
+        run: pnpm run release:notes -- --output "$RUNNER_TEMP/release-notes.md"
+
+      - name: Publish existing release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPOSITORY: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+          RELEASE_ID: ${{ needs.prepare-release.outputs.release_id }}
+          RUNNER_TEMP: ${{ runner.temp }}
+        run: |
+          set -euo pipefail
+
+          PRERELEASE=false
+          case "$TAG" in
+            *-rc*|*-beta*|*-alpha*) PRERELEASE=true ;;
+          esac
+
+          gh api --method PATCH "repos/${REPOSITORY}/releases/${RELEASE_ID}" \
+            -F name="$TAG" \
+            -F body="$(cat "$RUNNER_TEMP/release-notes.md")" \
+            -F draft=false \
+            -F prerelease="$PRERELEASE" \
+            >/dev/null
+          echo "Published release ${TAG} using existing release ${RELEASE_ID}."
 
   report-failure:
     name: Report failed release
