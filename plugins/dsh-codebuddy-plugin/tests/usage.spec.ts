@@ -120,4 +120,32 @@ describe('CodeBuddy usage parsing', () => {
     expect(parseUsage({ data: {} })).toBeUndefined()
     expect(parseUsage({})).toBeUndefined()
   })
+
+  it('keeps usedPercent consumed-based so UI can derive the remaining fill', () => {
+    // The component contract: the ring and per-package rows fill by
+    // `100 - usedPercent`, so the parser must keep `usedPercent` as
+    // consumed-based and never pre-invert it.
+    const raw = {
+      data: {
+        Response: {
+          Data: {
+            Accounts: [
+              {
+                PackageName: '基础包',
+                CycleCapacitySizePrecise: 100,
+                CycleCapacityRemainPrecise: 40,
+                CycleEndTime: '2099-12-31 23:59:59',
+              },
+            ],
+          },
+        },
+      },
+    }
+    const snapshot = parseUsage(raw)
+    // 60 used → usedPercent 60 → the UI fills 100 - 60 = 40, matching the
+    // "剩余 40%" copy it renders beside the arc.
+    expect(snapshot?.primary?.usedPercent).toBe(60)
+    expect(snapshot?.primary?.used).toBe(60)
+    expect(snapshot?.primary?.limit).toBe(100)
+  })
 })

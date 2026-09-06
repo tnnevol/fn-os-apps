@@ -81,7 +81,7 @@ function UsageWindowDetails({ label, value, t }: { label: string; value: UsageWi
         </div>
       )}
       <DshProgress
-        percent={progressPercent(value.usedPercent)}
+        percent={progressPercent(value.usedPercent === undefined ? undefined : 100 - value.usedPercent)}
         showInfo={false}
         stroke="var(--dsw-alias-label-tertiary)"
         orbitStroke="var(--dsw-alias-border-l3)"
@@ -167,6 +167,11 @@ export function CodeBuddyUsageStatus({ t, timer, rpc }: CodeBuddyUsageStatusProp
   // account holds contributes its used and limit (e.g. a base pack plus a
   // bonus pack share one pool in the UI), so the percentage reflects
   // `used total / package-sum`, not the first package alone.
+  //
+  // Both the ring and the per-package rows fill by REMAINING percentage —
+  // "剩多少填多少" — so the arc and every "剩余 XX%" text always agree. The
+  // arc shrinks as the quota drains, which matches how the surrounding copy
+  // is phrased; the underlying usedPercent stays consumed-based as parsed.
   const totals = (usage?.windows ?? []).reduce(
     (acc, window) => ({
       used: acc.used + (window.used ?? 0),
@@ -219,7 +224,7 @@ export function CodeBuddyUsageStatus({ t, timer, rpc }: CodeBuddyUsageStatusProp
     <span className="dsh-codebuddy-usage-progress-track" aria-label={currentSummary}>
       <DshProgress
         type="circle"
-        percent={hasUsage ? progressPercent(usedPct) : 0}
+        percent={hasUsage ? progressPercent(usedPct === undefined ? undefined : 100 - usedPct) : 0}
         width={26}
         strokeWidth={3}
         stroke={color}
