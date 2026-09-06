@@ -19,13 +19,15 @@ export async function runPublish(args: string[]): Promise<void> {
   const targets = await selectPublishTargets(optionValue(args, '--plugin'))
   if (targets === undefined) return
 
-  await Promise.all(
-    targets.map(target => {
-      const packageDirectory = join(repositoryRoot, dirname(target.path))
-      console.log(`\nPublishing npm package: ${target.label}`)
-      return runCommand('pnpm', ['run', 'publish:rc'], packageDirectory)
-    }),
-  )
+  // Publish in one npm-authenticated process at a time. Starting all
+  // `pnpm publish` commands together makes npm launch one Web login flow per
+  // package before the first credential has been persisted, which produces
+  // several authorization prompts for the same registry account.
+  for (const target of targets) {
+    const packageDirectory = join(repositoryRoot, dirname(target.path))
+    console.log(`\nPublishing npm package: ${target.label}`)
+    await runCommand('pnpm', ['run', 'publish:rc'], packageDirectory)
+  }
 }
 
 program
