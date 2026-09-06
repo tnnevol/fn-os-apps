@@ -19,8 +19,11 @@ function referenceLabel(value: string): string {
  * leading replacement character is rendered as the reference icon by DSH;
  * it is not the literal `@` text shown in the composer.
  */
-export function fnosReferenceDraftText(label: string): string {
-  return `\uFFFC${label}`
+export function fnosReferenceDraftText(_label: string): string {
+  // DSH's detect projection treats every structured reference as one atomic
+  // character. The label belongs to the chip's render/clipboard projection;
+  // including it here shifts the next CAS span and drops subsequent picks.
+  return '\uFFFC'
 }
 
 export function draftWithoutFnosOccurrence(

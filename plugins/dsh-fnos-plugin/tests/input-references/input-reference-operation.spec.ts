@@ -21,7 +21,7 @@ describe('fnOS reference insertion spacing', () => {
   })
 
   it('uses DSH reference draft text instead of the clipboard projection for offsets', () => {
-    expect(fnosReferenceDraftText('Documents')).toBe('\uFFFCDocuments')
+    expect(fnosReferenceDraftText('Documents')).toBe('\uFFFC')
   })
 
   it('uses the returned insertions and DSH draft offsets for a multi-selection', () => {
@@ -51,7 +51,7 @@ describe('fnOS reference insertion spacing', () => {
       'slash/input-insert-reference',
     ])
     expect(calls[1]?.payload.span).toEqual({ start: 6, end: 6, draftRev: 5 })
-    expect(calls[2]?.payload.span).toEqual({ start: 17, end: 17, draftRev: 6 })
+    expect(calls[2]?.payload.span).toEqual({ start: 8, end: 8, draftRev: 6 })
     expect(calls[1]?.payload.reference.label).toBe('Documents')
     expect(calls[2]?.payload.reference.label).toBe('report.md')
   })

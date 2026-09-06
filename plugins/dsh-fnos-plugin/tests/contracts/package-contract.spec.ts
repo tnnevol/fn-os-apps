@@ -233,7 +233,7 @@ describe('dsh-fnos package contract', () => {
     expect(actions).toContain('referenceLabel')
     expect(actions).toContain('restoreFnosInputCaret')
     expect(actions).toContain('fnosReferenceDraftText')
-    expect(actions).toContain("return `\\uFFFC${label}`")
+    expect(actions).toContain("return '\\uFFFC'")
     expect(actions).toContain("slash/input-insert-reference")
     expect(actions).toContain("appearance: reference.kind === 'directory' ? 'folder' : 'file'")
     expect(actions).not.toContain('\\u00a0')
