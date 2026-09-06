@@ -8,7 +8,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import type { FocusEvent } from 'react'
-import { DshButton, DshForm, DshInputNumber, DshSwitch } from '@tnnevol/dsh-semi-ui'
+import { DshButton, DshForm, DshInputNumber, DshSlider, DshSwitch } from '@tnnevol/dsh-semi-ui'
 import { CODEBUDDY_AUTH_CHANNEL } from '../client/constants.ts'
 
 import type { CodeBuddyLocaleKey } from '../client/locales.ts'
@@ -31,6 +31,9 @@ type Translate = (key: CodeBuddyLocaleKey) => string
 const POLL_INTERVAL_MS = 1500
 /** How long the client keeps polling before giving up, in ms. */
 const POLL_DEADLINE_MS = 10 * 60 * 1000
+
+/** The default low-allowance alert percentage, shown while no override is set. */
+const DEFAULT_DANGER_PCT = 90
 
 /** UI phase the page cycles through. */
 type Phase = 'loading' | 'idle' | 'error'
@@ -61,7 +64,7 @@ function StatusRow({ label, value }: { label: string; value: string }) {
 function PreferenceLabel({ title, description }: { title: string; description: string }) {
   return (
     <span className="dsh-codebuddy-form-label">
-      <span className="dsh-codebuddy-form-label-title">{title}</span>
+      <strong className="dsh-codebuddy-form-label-title">{title}</strong>
       <span className="dsh-codebuddy-form-label-description">{description}</span>
     </span>
   )
@@ -213,11 +216,9 @@ export function CodeBuddySection({ rpc, t }: CodeBuddySectionProps) {
       {/* Usage preferences: UI-only, configurable whether or not signed in.
           The form keeps a tight label / control grid; Semi drives the layout
           so the rows line up across plugins without per-row styles. */}
-      <DshForm className="dsh-codebuddy-pref-form">
+      <DshForm className="dsh-codebuddy-pref-form" labelPosition="left">
         <DshForm.Slot
           label={<PreferenceLabel title={t('showUsage')} description={t('showUsageDesc')} />}
-          labelPosition="left"
-          className="dsh-codebuddy-pref-field"
         >
           <DshSwitch
             checked={showUsage}
@@ -227,8 +228,6 @@ export function CodeBuddySection({ rpc, t }: CodeBuddySectionProps) {
         </DshForm.Slot>
         <DshForm.Slot
           label={<PreferenceLabel title={t('customLimit')} description={t('customLimitDesc')} />}
-          labelPosition="left"
-          className="dsh-codebuddy-pref-field"
         >
           <DshInputNumber
             className="dsh-codebuddy-pref-control"
@@ -256,35 +255,22 @@ export function CodeBuddySection({ rpc, t }: CodeBuddySectionProps) {
         </DshForm.Slot>
         <DshForm.Slot
           label={<PreferenceLabel title={t('dangerPct')} description={t('dangerPctDesc')} />}
-          labelPosition="left"
-          className="dsh-codebuddy-pref-field"
         >
-          <DshInputNumber
-            className="dsh-codebuddy-pref-control"
-            {...dangerPct === undefined ? {} : { value: dangerPct }}
-            min={1}
-            max={100}
-            onChange={(value: number | string) => {
-              const next = typeof value === 'number' && Number.isFinite(value) && value >= 1 && value <= 100
-                ? Math.round(value)
-                : undefined
-              setDangerPctState(next)
-              setDangerPct(next)
-            }}
-            onBlur={(event: FocusEvent<HTMLInputElement>) => {
-              const raw = event.target.value
-              const parsed = Number(raw)
-              if (!Number.isFinite(parsed) || parsed < 1 || parsed > 100) {
-                const fallback = getDangerPct()
-                setDangerPctState(fallback)
-                setDangerPct(fallback)
-              } else {
-                const clamped = Math.round(parsed)
-                setDangerPctState(clamped)
-                setDangerPct(clamped)
-              }
-            }}
-          />
+          <div className="dsh-codebuddy-pref-slider">
+            <DshSlider
+              value={dangerPct ?? DEFAULT_DANGER_PCT}
+              min={1}
+              max={100}
+              step={1}
+              onChange={(value: number | [number, number]) => {
+                if (typeof value !== 'number') return
+                setDangerPctState(value)
+                setDangerPct(value)
+              }}
+              aria-label={t('dangerPct')}
+            />
+            <span className="dsh-codebuddy-pref-slider-value">{dangerPct ?? DEFAULT_DANGER_PCT}%</span>
+          </div>
         </DshForm.Slot>
       </DshForm>
     </div>

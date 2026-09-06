@@ -37,12 +37,26 @@ function resetLabel(window: UsageWindow | undefined, t: Translate): string | und
   return undefined
 }
 
-/** Build the tooltip text: the used/total figures plus an optional reset hint. */
+/**
+ * The earliest reset timestamp across windows. The combined pool shrinks when
+ * any package resets, so the hint stays conservative by showing the first
+ * reset that will reduce it.
+ */
+function earliestReset(windows: UsageWindow[] | undefined): string | undefined {
+  const times = (windows ?? [])
+    .map(window => window.resetsAt)
+    .filter((value): value is string => value !== undefined && value.length > 0)
+    .sort()
+  return times[0]
+}
+
+/** Build the tooltip text: the remaining percentage plus a reset hint. */
 function usageSummary(label: string, window: UsageWindow, t: Translate): string {
-  const used = window.used !== undefined ? formatAmount(window.used) : '—'
-  const total = window.limit !== undefined ? formatAmount(window.limit) : '—'
+  const remaining = window.usedPercent !== undefined
+    ? percent(100 - window.usedPercent) ?? '—'
+    : '—'
   const reset = resetLabel(window, t)
-  return [label, `${t('usageUsed')}: ${used} / ${total}`, reset]
+  return [label, `${t('usageRemaining')}: ${remaining}`, reset]
     .filter((item): item is string => item !== undefined)
     .join(' · ')
 }
@@ -149,26 +163,38 @@ export function CodeBuddyUsageStatus({ t, timer, rpc }: CodeBuddyUsageStatusProp
   }, [rpc, showUsage, timer])
 
   const primary = usage?.primary
-  // A custom cap overrides the meter's reported limit.
-  const limit = customLimit ?? primary?.limit
-  const usedPct = primary !== undefined && primary.used !== undefined && limit !== undefined && limit > 0
-    ? Math.max(0, Math.min(100, (primary.used / limit) * 100))
+  // The ring and tooltip read the COMBINED allowance: every capped window the
+  // account holds contributes its used and limit (e.g. a base pack plus a
+  // bonus pack share one pool in the UI), so the percentage reflects
+  // `used total / package-sum`, not the first package alone.
+  const totals = (usage?.windows ?? []).reduce(
+    (acc, window) => ({
+      used: acc.used + (window.used ?? 0),
+      limit: acc.limit + (window.limit ?? 0),
+    }),
+    { used: 0, limit: 0 },
+  )
+  // A custom cap overrides the combined reported limit.
+  const limit = customLimit ?? (totals.limit > 0 ? totals.limit : undefined)
+  const used = totals.used
+  const nextReset = earliestReset(usage?.windows)
+  const usedPct = used !== undefined && limit !== undefined && limit > 0
+    ? Math.max(0, Math.min(100, (used / limit) * 100))
     : undefined
-  const derived: UsageWindow | undefined = primary === undefined || primary.used === undefined
+  const derived: UsageWindow | undefined = primary === undefined
     ? undefined
     : {
         name: primary.name,
-        used: primary.used,
+        used,
         ...(limit === undefined ? {} : { limit }),
         ...(usedPct === undefined ? {} : { usedPercent: usedPct }),
-        ...(primary.resetsAt === undefined ? {} : { resetsAt: primary.resetsAt }),
+        // The earliest reset across the windows keeps the "resets at" hint
+        // conservative — the combined pool shrinks when any package resets.
+        ...(nextReset === undefined ? {} : { resetsAt: nextReset }),
       }
-  // The popover's windows carry the custom cap too: the primary entry is
-  // replaced with the derived view so the percentages inside the popover agree
-  // with the composer ring instead of flipping back to the reported limit.
-  const popoverWindows: UsageWindow[] = (usage?.windows ?? []).map(window =>
-    primary !== undefined && window === primary && derived !== undefined ? derived : window,
-  )
+  // The popover keeps per-package detail rows so the combined figure in the
+  // ring stays traceable to each package's own allowance.
+  const popoverWindows: UsageWindow[] = usage?.windows ?? []
 
   useEffect(() => {
     if (derived === undefined && popoverOpen) setPopoverOpen(false)
@@ -199,7 +225,7 @@ export function CodeBuddyUsageStatus({ t, timer, rpc }: CodeBuddyUsageStatusProp
         stroke={color}
         orbitStroke="var(--dsw-alias-border-l3)"
         showInfo
-        format={() => <CodeBuddyLogo />}
+        format={() => <CodeBuddyLogo variant="mono" />}
       />
     </span>
   )

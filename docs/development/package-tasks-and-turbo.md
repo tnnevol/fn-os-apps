@@ -327,7 +327,7 @@ command -> cli -> area
 area -> project: 项目
 area -> plugin: harness 插件
 project -> release -> files -> bumpp
-plugin -> pluginSelect -> release -> pluginFile -> bumpp
+plugin -> pluginSelect -> release -> pluginFile + published-dsh-plugins.json -> git commit
 bumpp -> status
 status -> result: 是
 status -> fail: 否

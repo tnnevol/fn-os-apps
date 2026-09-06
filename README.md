@@ -102,7 +102,7 @@ appcenter-cli stop <appname>
 
 ## 版本发布
 
-通过 GitHub Actions 自动完成 FPK 构建和 Release 发布。项目版本工具位于 `tooling/fn-os-apps-cli` workspace，通过 `fn-apps-cli` CLI 使用 `bumpp` 分别维护项目/FPK 版本和插件版本。
+通过 GitHub Actions 自动完成 FPK 构建和 Release 发布。项目版本工具位于 `tooling/fn-os-apps-cli` workspace，通过 `fn-apps-cli` CLI 使用 `bumpp` 维护项目/FPK 版本；插件版本由 CLI 直接更新并提交。
 
 ### Tag 命名规范
 
@@ -142,7 +142,7 @@ pnpm run version -- plugin codex patch
 pnpm run version -- plugin showcase patch
 ```
 
-插件版本命令支持多选插件；多选时一次性修改所有选中插件，只生成一条合并提交，不创建 Git Tag。
+插件版本命令支持多选插件；多选时一次性修改所有选中插件，只生成一条合并提交，不创建 Git Tag。若插件出现在 `apps/fn-deepseek-harness/app/published-dsh-plugins.json`，其清单版本会与插件 `package.json` 同步更新。
 
 3. **GitHub Actions 自动执行**
 

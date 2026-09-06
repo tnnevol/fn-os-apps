@@ -104,7 +104,9 @@ function modelInfo(provider: string, model: CodeBuddyModel): LlmModelInfo {
   // otherwise similar models" — rather than being spliced into `name`. Keeping
   // `name` as CodeBuddy's own name means a credit change (which CodeBuddy can
   // make at any time) no longer looks like the model was renamed. Note this is
-  // display metadata only: the harness does not route or budget on it.
+  // display metadata only: the harness does not route or budget on it. The
+  // shipped composer ModelSelect renders only `model.name`, so the rate is
+  // not visible there — it stays visible via the `/model` popup's detail row.
   //
   // The wire value is already a formatted multiplier ("x3.33", "x0.05"), so it
   // is shown bare: it is the whole point of the field here, and the selector

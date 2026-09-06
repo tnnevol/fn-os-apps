@@ -73,47 +73,39 @@
   margin-top: 8px;
 }
 
-/* Usage preference form: Semi drives label / control alignment. Keep the
-   label column flexible so CJK text never collapses into one character per
-   line, while controls stay at their natural width on the right. */
-.dsh-codebuddy-pref-form {
+/* Usage preference form: follow the showcase plugin's Form demo layout —
+   the row spreads label and control to its two ends. The label takes the
+   text width, the main column fills the rest, and the control inside hugs
+   the right edge. */
+.dsh-codebuddy-pref-form .semi-form-field[x-label-pos='left'] {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
 }
 
-.dsh-codebuddy-pref-field {
-  display: flex;
-  align-items: flex-start;
-  padding: 12px 0;
-  border-bottom: 1px solid var(--dsw-alias-border-l2);
-}
-
-.dsh-codebuddy-pref-field .semi-form-field-label {
-  flex: 1 1 auto;
+.dsh-codebuddy-pref-form .semi-form-field[x-label-pos='left'] .semi-form-field-label {
+  flex: 0 1 auto;
   min-width: 0;
-  margin: 0;
-  padding: 0 24px 0 0;
-  white-space: normal;
+  padding-right: 0;
 }
 
-.dsh-codebuddy-pref-field .semi-form-field-main {
-  flex: 0 0 auto;
-  width: auto;
+.dsh-codebuddy-pref-form .semi-form-field[x-label-pos='left'] .semi-form-field-main {
   display: flex;
   justify-content: flex-end;
 }
 
 .dsh-codebuddy-form-label {
-  display: flex;
-  flex-direction: column;
+  display: grid;
   gap: 4px;
+  line-height: 1.4;
   min-width: 0;
 }
 
 .dsh-codebuddy-form-label-title {
   color: var(--dsw-alias-label-primary);
   font-size: 14px;
-  font-weight: 400;
+  font-weight: 600;
   line-height: 22px;
 }
 
@@ -126,6 +118,30 @@
 
 .dsh-codebuddy-pref-control {
   width: 120px;
+}
+
+/* Alert percentage slider: mirrors the showcase Form demo — the slider fills
+   the row width and the current value rides on the right. */
+.dsh-codebuddy-pref-slider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 320px;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.dsh-codebuddy-pref-slider > .semi-slider {
+  display: block;
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+}
+
+.dsh-codebuddy-pref-slider-value {
+  min-width: 38px;
+  color: var(--dsw-alias-label-secondary);
+  font-variant-numeric: tabular-nums;
 }
 
 /* Composer usage indicator. */

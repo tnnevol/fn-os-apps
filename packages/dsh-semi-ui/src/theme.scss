@@ -117,6 +117,20 @@ body[data-dsh-semi-theme] .semi-progress {
   --semi-color-success: var(--dsw-alias-label-tertiary);
 }
 
+/* Keep horizontal Slider geometry aligned with DSH controls. The vertical
+   wrapper is excluded so its axis-specific dimensions remain intact. */
+body[data-dsh-semi-theme] .semi-slider-wrapper:not(.semi-slider-vertical-wrapper) > .semi-slider-rail,
+body[data-dsh-semi-theme] .semi-slider-wrapper:not(.semi-slider-vertical-wrapper) > .semi-slider-track {
+  height: 6px;
+  top: 13px;
+}
+
+body[data-dsh-semi-theme] .semi-slider-wrapper:not(.semi-slider-vertical-wrapper) .semi-slider-handle-clicked {
+  width: 18px;
+  height: 18px;
+  margin-top: 7px;
+}
+
 /* Switch toggles read as a control, not a success state: the DSH native
    switch turns the brand color on and stays neutral off, so a checked Semi
    switch must not light up green. The off-state background cannot collapse

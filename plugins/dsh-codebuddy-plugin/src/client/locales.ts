@@ -27,8 +27,8 @@ export const en = {
   dangerPct: 'Low-allowance alert',
   dangerPctDesc: 'The fill turns red once used usage reaches this percentage. Defaults to 90%.',
   usageUsed: 'Usage',
-  usageResets: 'Resets at',
   usageRemaining: 'Remaining',
+  usageResets: 'Resets',
   usageUnavailable: 'Usage is temporarily unavailable.',
   usageLoading: 'Loading usage…',
 }
@@ -62,8 +62,8 @@ export const zh: { [Key in CodeBuddyLocaleKey]: string } = {
   dangerPct: '余量告警百分比',
   dangerPctDesc: '已用百分比达到此值时，进度条变为红色提醒。默认 90%。',
   usageUsed: '已用额度',
-  usageResets: '重置时间',
   usageRemaining: '剩余',
+  usageResets: '重置',
   usageUnavailable: '暂时无法获取用量信息。',
   usageLoading: '正在加载用量…',
 }

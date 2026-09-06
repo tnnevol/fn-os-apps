@@ -168,25 +168,50 @@ function normalizeResetTime(raw: string): string {
 }
 
 /**
+ * Whether a package's cycle has already ended.
+ *
+ * The meter request scopes to today's slice, but a stale cycle (a package
+ * that expired earlier in the day, or a status value the filter misses) can
+ * still appear in the reply. An expired package's remaining figure no longer
+ * belongs to the combined pool, so it is dropped before windows are built.
+ * @param cycleEndTime - the `CycleEndTime` string, `YYYY-MM-DD HH:mm:ss`.
+ * @returns true when the cycle ended before the current moment.
+ */
+function isExpired(cycleEndTime: string | undefined): boolean {
+  if (cycleEndTime === undefined) return false
+  const date = new Date(cycleEndTime.replace(' ', 'T'))
+  if (Number.isNaN(date.getTime())) return false
+  return date.getTime() < Date.now()
+}
+
+/**
  * Parse the personal account's `get-user-resource` reply.
  *
  * The accounts array may sit under several pointer roots depending on the
  * gateway the request traversed; each is tried in order and the first array
  * found wins. Each account contributes one {@link UsageWindow} named after its
- * package code, with `used` derived as `limit - remaining` (so a remaining
- * figure that exceeds the cap is clamped to zero used rather than negative).
+ * package (display name first, id code as fallback), with `used` derived as
+ * `limit - remaining` (so a remaining figure that exceeds the cap is clamped
+ * to zero used rather than negative). Packages whose cycle has already ended
+ * are excluded.
  * @param accounts - the located accounts array.
  * @returns the assembled snapshot.
  */
 function personalUsage(accounts: unknown[]): UsageSnapshot {
-  const windows: UsageWindow[] = accounts.map((resource, index): UsageWindow => {
+  const windows: UsageWindow[] = accounts.flatMap((resource, index): UsageWindow[] => {
+    const rawReset = string(resource, 'CycleEndTime')
+    // An expired cycle's quota is gone; keeping it would inflate the combined
+    // pool with capacity the account can no longer spend.
+    if (isExpired(rawReset)) return []
     const limit = number(resource, 'CycleCapacitySizePrecise') ?? 0
     const left = number(resource, 'CycleCapacityRemainPrecise') ?? 0
     const used = Math.max(limit - left, 0)
-    const name = string(resource, 'PackageCode')
+    // Prefer the human-readable package name ("CodeBuddy个人体验版"); the
+    // code (`TCACA_code_008_cfWoLwvjU4`) is only an id and reads as noise.
+    const name = string(resource, 'PackageName')
+      ?? string(resource, 'PackageCode')
       ?? string(resource, 'ResourceId')
       ?? `resource_${index}`
-    const rawReset = string(resource, 'CycleEndTime')
     // A package's `CycleEndTime` lands on `23:59:59` of its last active day;
     // bump it into the following `00:00:00`, which is the moment the quota
     // actually resets.
@@ -195,16 +220,16 @@ function personalUsage(accounts: unknown[]): UsageSnapshot {
     // reports only its name, so a single-bar affordance can show "no quota"
     // rather than a meaningless zero-of-zero.
     if (limit <= 0) {
-      return { name, ...resetsAt === undefined ? {} : { resetsAt } }
+      return [{ name, ...resetsAt === undefined ? {} : { resetsAt } }]
     }
     const pct = percent(used, limit)
-    return {
+    return [{
       name,
       used,
       limit,
       ...pct === undefined ? {} : { usedPercent: pct },
       ...resetsAt === undefined ? {} : { resetsAt },
-    }
+    }]
   })
   return { windows, ...windows.length > 0 ? { primary: windows[0] } : {} }
 }

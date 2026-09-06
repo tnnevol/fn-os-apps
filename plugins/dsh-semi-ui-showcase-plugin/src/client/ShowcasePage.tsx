@@ -6,6 +6,7 @@ import {
   DshCascader,
   DshCheckbox,
   DshDropdown,
+  DshForm,
   DshIconAlertCircle,
   DshIconArrowLeft,
   DshIconCheckCircle,
@@ -35,21 +36,25 @@ import {
   DshIconRestart,
   DshIconSetting,
   DshIconSun,
+  DshInput,
+  DshInputNumber,
   DshModal,
   DshPopover,
   DshProgress,
   DshSpin,
   DshSemiIcons,
+  DshSlider,
+  DshSwitch,
   DshToast,
   DshTooltip,
   DshTree,
   DshTreeSelect,
 } from '@tnnevol/dsh-semi-ui'
-import type { ShowcaseRouteController } from './route.ts'
+import type { ShowcaseComponentRoute, ShowcaseRouteController } from './route.ts'
 import type { ShowcaseThemeController } from './theme-preview.ts'
 
-type Category = 'buttons' | 'selection' | 'tree' | 'modal' | 'feedback'
-type ComponentItem = 'Button 按钮' | 'Cascader 级联选择' | 'TreeSelect 树选择器' | 'Checkbox 复选框' | 'Tree 树形控件' | 'Icon 图标' | 'Modal 对话框' | 'Popover 浮层' | 'Tooltip 文字提示' | 'Dropdown 下拉框' | 'Progress 进度条' | 'Spin 加载器' | 'Toast 提示'
+type Category = 'buttons' | 'input' | 'selection' | 'tree' | 'modal' | 'feedback'
+type ComponentItem = 'Button 按钮' | 'Input 输入框' | 'InputNumber 数字输入框' | 'Slider 滑块' | 'Switch 开关' | 'Form 表单' | 'Cascader 级联选择' | 'TreeSelect 树选择器' | 'Checkbox 复选框' | 'Tree 树形控件' | 'Icon 图标' | 'Modal 对话框' | 'Popover 浮层' | 'Tooltip 文字提示' | 'Dropdown 下拉框' | 'Progress 进度条' | 'Spin 加载器' | 'Toast 提示'
 type ModalDemo = 'basic' | 'footerFill' | 'mask' | 'buttonProps' | 'customFooter' | 'styled' | 'fullscreen'
 
 const page = 'dsh-semi-showcase-page'
@@ -126,10 +131,56 @@ type ToastCallOptions = { content: ReactNode; duration?: number; stack?: boolean
 const toastApi = DshToast as unknown as Record<'info' | 'success' | 'warning' | 'error', (options: ToastCallOptions) => string>
 const sidebarGroups = [
   { title: '基础类', items: [{ icon: DshIconLabButton, label: 'Button 按钮', value: 'buttons' as Category }, { icon: DshIconLabHeart, label: 'Icon 图标', value: 'tree' as Category }] },
-  { title: '输入类', items: [{ icon: DshIconLabCascader, label: 'Cascader 级联选择', value: 'selection' as Category }, { icon: DshIconLabTreeSelect, label: 'TreeSelect 树选择器', value: 'selection' as Category }, { icon: DshIconLabCheckbox, label: 'Checkbox 复选框', value: 'selection' as Category }] },
+  { title: '输入类', items: [{ icon: DshIconElementStroked, label: 'Input 输入框', value: 'input' as Category }, { icon: DshIconElementStroked, label: 'InputNumber 数字输入框', value: 'input' as Category }, { icon: DshIconLabCascader, label: 'Slider 滑块', value: 'input' as Category }, { icon: DshIconLabCheckbox, label: 'Switch 开关', value: 'input' as Category }, { icon: DshIconElementStroked, label: 'Form 表单', value: 'input' as Category }, { icon: DshIconLabCascader, label: 'Cascader 级联选择', value: 'selection' as Category }, { icon: DshIconLabTreeSelect, label: 'TreeSelect 树选择器', value: 'selection' as Category }, { icon: DshIconLabCheckbox, label: 'Checkbox 复选框', value: 'selection' as Category }] },
   { title: '导航类', items: [{ icon: DshIconLabTree, label: 'Tree 树形控件', value: 'tree' as Category }] },
   { title: '反馈类', items: [{ icon: DshIconLabModal, label: 'Modal 对话框', value: 'modal' as Category }, { icon: DshIconLabProgress, label: 'Progress 进度条', value: 'feedback' as Category }, { icon: DshIconLabSpin, label: 'Spin 加载器', value: 'feedback' as Category }, { icon: DshIconLabToast, label: 'Toast 提示', value: 'feedback' as Category }, { icon: DshIconLabTooltip, label: 'Tooltip 文字提示', value: 'buttons' as Category }, { icon: DshIconLabDropdown, label: 'Dropdown 下拉框', value: 'buttons' as Category }, { icon: DshIconElementStroked, label: 'Popover 浮层', value: 'buttons' as Category }] },
 ] as const
+
+const componentRouteByLabel: Record<ComponentItem, ShowcaseComponentRoute> = {
+  'Button 按钮': 'button',
+  'Input 输入框': 'input',
+  'InputNumber 数字输入框': 'input-number',
+  'Slider 滑块': 'slider',
+  'Switch 开关': 'switch',
+  'Form 表单': 'form',
+  'Cascader 级联选择': 'cascader',
+  'TreeSelect 树选择器': 'tree-select',
+  'Checkbox 复选框': 'checkbox',
+  'Tree 树形控件': 'tree',
+  'Icon 图标': 'icon',
+  'Modal 对话框': 'modal',
+  'Popover 浮层': 'popover',
+  'Tooltip 文字提示': 'tooltip',
+  'Dropdown 下拉框': 'dropdown',
+  'Progress 进度条': 'progress',
+  'Spin 加载器': 'spin',
+  'Toast 提示': 'toast',
+}
+
+const componentByRoute: Record<ShowcaseComponentRoute, ComponentItem> = Object.fromEntries(
+  Object.entries(componentRouteByLabel).map(([label, componentRoute]) => [componentRoute, label]),
+) as Record<ShowcaseComponentRoute, ComponentItem>
+
+const categoryByComponent: Record<ComponentItem, Category> = {
+  'Button 按钮': 'buttons',
+  'Input 输入框': 'input',
+  'InputNumber 数字输入框': 'input',
+  'Slider 滑块': 'input',
+  'Switch 开关': 'input',
+  'Form 表单': 'input',
+  'Cascader 级联选择': 'selection',
+  'TreeSelect 树选择器': 'selection',
+  'Checkbox 复选框': 'selection',
+  'Tree 树形控件': 'tree',
+  'Icon 图标': 'tree',
+  'Modal 对话框': 'modal',
+  'Popover 浮层': 'buttons',
+  'Tooltip 文字提示': 'buttons',
+  'Dropdown 下拉框': 'buttons',
+  'Progress 进度条': 'feedback',
+  'Spin 加载器': 'feedback',
+  'Toast 提示': 'feedback',
+}
 
 function DemoCode({ children }: { children: string }): ReactNode {
   const officialSource = children
@@ -149,13 +200,19 @@ export function ShowcasePage({ route, theme }: { route: ShowcaseRouteController;
   const [modalDemo, setModalDemo] = useState<ModalDemo>('basic')
   const [buttonLoading, setButtonLoading] = useState(false)
   const [checkboxChecked, setCheckboxChecked] = useState(false)
-  const [category, setCategory] = useState<Category>('buttons')
-  const [activeComponent, setActiveComponent] = useState<ComponentItem>('Button 按钮')
   const [iconMode, setIconMode] = useState<IconMode>('all')
   const [toastId, setToastId] = useState<string>()
   const [dropdownSelected, setDropdownSelected] = useState('插件')
   const [dropdownEvent, setDropdownEvent] = useState('等待菜单操作')
   const [dropdownCustomVisible, setDropdownCustomVisible] = useState(false)
+  const [inputValue, setInputValue] = useState('DSH Semi UI')
+  const [inputNumberValue, setInputNumberValue] = useState<number | string>(24)
+  const [sliderValue, setSliderValue] = useState(42)
+  const [switchChecked, setSwitchChecked] = useState(true)
+  const [showUsage, setShowUsage] = useState(true)
+  const [dangerPercentage, setDangerPercentage] = useState(90)
+  const activeComponent = componentByRoute[snapshot.component]
+  const category = categoryByComponent[activeComponent]
   const dropdownMenu = useMemo(() => (
     <DshDropdown.Menu>
       <DshDropdown.Title>工作区</DshDropdown.Title>
@@ -206,8 +263,18 @@ export function ShowcasePage({ route, theme }: { route: ShowcaseRouteController;
       ? '级联选择用于从具有层级关系的选项中选择一个或多个值。'
       : activeComponent === 'TreeSelect 树选择器'
         ? '树选择器将树形结构与选择器结合，支持单选、多选和节点关系控制。'
-        : activeComponent === 'Checkbox 复选框'
+      : activeComponent === 'Checkbox 复选框'
           ? '复选框用于在多个选项中进行选择，支持默认、选中、半选和禁用状态。'
+        : activeComponent === 'Input 输入框'
+          ? '输入框用于接收单行文本，支持清除、前后缀、校验状态、尺寸和禁用状态。'
+        : activeComponent === 'InputNumber 数字输入框'
+          ? '数字输入框用于输入和调整数值，支持步进、范围限制、精度和尺寸。'
+        : activeComponent === 'Slider 滑块'
+          ? '滑块用于在连续或离散区间内选择数值，支持单值、范围、刻度和提示。'
+        : activeComponent === 'Switch 开关'
+          ? '开关用于表示即时生效的二元状态，支持受控切换、文字和禁用状态。'
+        : activeComponent === 'Form 表单'
+          ? '表单用于组织字段、标签和提交操作，统一管理输入控件的布局与交互。'
         : activeComponent === 'Tree 树形控件'
           ? '树形控件用于展示具有层级关系的结构化数据，并支持展开、选中与复选。'
           : activeComponent === 'Icon 图标'
@@ -231,6 +298,16 @@ export function ShowcasePage({ route, theme }: { route: ShowcaseRouteController;
       ? [['基本用法', 'selection-basic'], ['节点选中关系', 'selection-basic'], ['API 参考', 'selection-basic']]
       : activeComponent === 'Checkbox 复选框'
         ? [['基本用法', 'checkbox-basic'], ['选中与半选', 'checkbox-states'], ['禁用状态', 'checkbox-disabled'], ['API 参考', 'checkbox-basic']]
+      : activeComponent === 'Input 输入框'
+        ? [['基本用法', 'input-basic'], ['尺寸与状态', 'input-states'], ['API 参考', 'input-basic']]
+      : activeComponent === 'InputNumber 数字输入框'
+        ? [['基本用法', 'input-number-basic'], ['范围与尺寸', 'input-number-states'], ['API 参考', 'input-number-basic']]
+      : activeComponent === 'Slider 滑块'
+        ? [['基本用法', 'slider-basic'], ['范围与刻度', 'slider-states'], ['API 参考', 'slider-basic']]
+      : activeComponent === 'Switch 开关'
+        ? [['基本用法', 'switch-basic'], ['文字与禁用', 'switch-states'], ['API 参考', 'switch-basic']]
+      : activeComponent === 'Form 表单'
+        ? [['基本用法', 'form-basic'], ['字段状态', 'form-states'], ['API 参考', 'form-basic']]
       : activeComponent === 'Tree 树形控件'
         ? [['基本用法', 'tree-basic'], ['复选与半选', 'tree-basic'], ['选中与禁用', 'tree-basic'], ['API 参考', 'tree-basic']]
           : activeComponent === 'Icon 图标'
@@ -267,7 +344,7 @@ export function ShowcasePage({ route, theme }: { route: ShowcaseRouteController;
           <div className={brand}>DSH Semi UI</div>
         </div>
         <nav className={topnav} aria-label="总览导航">
-          <button type="button" className={topnavItem} onClick={() => { setCategory('buttons'); setActiveComponent('Button 按钮') }}>组件</button>
+          <button type="button" className={topnavItem} onClick={() => { route.select('button') }}>组件</button>
         </nav>
         <div className="dsh-semi-showcase-theme-actions">
           <DshTooltip content={themeToggleLabel} trigger="hover">
@@ -280,7 +357,7 @@ export function ShowcasePage({ route, theme }: { route: ShowcaseRouteController;
           {sidebarGroups.map(group => (
             <div key={group.title} className={sidebarGroup}>
               <div className={sidebarTitle}>{group.title}</div>
-              {group.items.map(({ icon: Icon, label, value }) => <button key={label} type="button" className={`${sidebarItem}${activeComponent === label ? ' is-active' : ''}`} onClick={() => { setCategory(value); setActiveComponent(label) }}><span className="dsh-semi-showcase-sidebar-icon"><Icon aria-hidden /></span>{label}</button>)}
+              {group.items.map(({ icon: Icon, label }) => <button key={label} type="button" className={`${sidebarItem}${activeComponent === label ? ' is-active' : ''}`} onClick={() => { route.select(componentRouteByLabel[label]) }}><span className="dsh-semi-showcase-sidebar-icon"><Icon aria-hidden /></span>{label}</button>)}
             </div>
           ))}
         </aside>
@@ -427,6 +504,123 @@ export function ShowcasePage({ route, theme }: { route: ShowcaseRouteController;
                 <DemoCard source={'DshToast.success({ content: "操作成功" })\nDshToast.warning({ content: "请注意" })\nDshToast.error({ content: "操作失败" })'}><div className={demo}><DshButton type="primary" theme="light" onClick={() => { toastApi.info({ content: '信息提示', duration: 3 }) }}>信息</DshButton><DshButton type="secondary" theme="light" onClick={() => { toastApi.success({ content: '操作成功', duration: 3 }) }}>成功</DshButton><DshButton type="warning" theme="light" onClick={() => { toastApi.warning({ content: '请注意当前状态', duration: 3 }) }}>警告</DshButton><DshButton type="danger" theme="light" onClick={() => { toastApi.error({ content: '操作失败', duration: 3 }) }}>错误</DshButton></div></DemoCard>
                 <h2 id="toast-control" className={sectionTitle}>手动关闭与堆叠</h2>
                 <DemoCard source={'const id = DshToast.info({ content: "不会自动关闭", duration: 0 })\nDshToast.close(id)'}><div className={demo}><DshButton type="secondary" theme="light" onClick={() => { setToastId(toastApi.info({ content: '这条提示需要手动关闭', duration: 0 })) }}>手动打开</DshButton><DshButton type="secondary" theme="light" disabled={toastId === undefined} onClick={() => { if (toastId !== undefined) { DshToast.close(toastId); setToastId(undefined) } }}>关闭 Toast</DshButton><DshButton type="secondary" theme="light" onClick={() => { toastApi.info({ content: '堆叠提示 1', duration: 5, stack: true }); toastApi.success({ content: '堆叠提示 2', duration: 5, stack: true }); toastApi.warning({ content: '堆叠提示 3', duration: 5, stack: true }) }}>显示堆叠</DshButton></div></DemoCard>
+              </>
+            ) : null}
+
+            {category === 'input' && activeComponent === 'Input 输入框' ? (
+              <>
+                <h2 id="input-basic" className={sectionTitle}>基本用法</h2>
+                <p className={sectionText}>输入框支持受控值、清除按钮和占位提示，输入内容会实时同步到示例。</p>
+                <DemoCard source={'<Input value={value} onChange={setValue} showClear placeholder="请输入内容" />'}>
+                  <DshInput className="dsh-semi-showcase-control" value={inputValue} onChange={setInputValue} showClear placeholder="请输入内容" />
+                </DemoCard>
+                <h2 id="input-states" className={sectionTitle}>尺寸与状态</h2>
+                <p className={sectionText}>通过 `size`、`validateStatus` 和 `disabled` 展示常见的输入状态。</p>
+                <DemoCard source={`<Input size="small" />
+<Input validateStatus="error" />
+<Input disabled value="不可编辑" />`}>
+                  <div className={stack}>
+                    <DshInput className="dsh-semi-showcase-control" size="small" placeholder="小尺寸" />
+                    <DshInput className="dsh-semi-showcase-control" validateStatus="error" value="校验失败" readOnly />
+                    <DshInput className="dsh-semi-showcase-control" disabled value="不可编辑" />
+                  </div>
+                </DemoCard>
+              </>
+            ) : null}
+
+            {category === 'input' && activeComponent === 'InputNumber 数字输入框' ? (
+              <>
+                <h2 id="input-number-basic" className={sectionTitle}>基本用法</h2>
+                <p className={sectionText}>数字输入框支持键盘输入和步进按钮，当前值为 {String(inputNumberValue)}。</p>
+                <DemoCard source={'<InputNumber value={value} onChange={setValue} step={1} />'}>
+                  <DshInputNumber className="dsh-semi-showcase-control" value={inputNumberValue} onChange={setInputNumberValue} step={1} />
+                </DemoCard>
+                <h2 id="input-number-states" className={sectionTitle}>范围与尺寸</h2>
+                <p className={sectionText}>使用 `min`、`max` 和 `size` 限制输入范围并适配不同密度。</p>
+                <DemoCard source={`<InputNumber min={0} max={100} size="small" />
+<InputNumber disabled value={50} />`}>
+                  <div className={stack}>
+                    <DshInputNumber className="dsh-semi-showcase-control" min={0} max={100} size="small" defaultValue={50} />
+                    <DshInputNumber className="dsh-semi-showcase-control" disabled value={50} />
+                  </div>
+                </DemoCard>
+              </>
+            ) : null}
+
+            {category === 'input' && activeComponent === 'Slider 滑块' ? (
+              <>
+                <h2 id="slider-basic" className={sectionTitle}>基本用法</h2>
+                <p className={sectionText}>滑动选择一个数值，当前值为 {sliderValue}。</p>
+                <DemoCard source={'<Slider value={value} onChange={setValue} step={1} />'}>
+                  <div className="dsh-semi-showcase-slider">
+                    <DshSlider value={sliderValue} onChange={(value: number | [number, number]) => { if (typeof value === 'number') setSliderValue(value) }} />
+                  </div>
+                </DemoCard>
+                <h2 id="slider-states" className={sectionTitle}>范围与刻度</h2>
+                <p className={sectionText}>`range` 用于选择区间，`marks` 用于标记关键位置。</p>
+                <DemoCard source={'<Slider range defaultValue={[20, 80]} marks={{ 0: "0", 50: "50", 100: "100" }} />'}>
+                  <div className="dsh-semi-showcase-slider">
+                    <DshSlider range defaultValue={[20, 80]} marks={{ 0: '0', 50: '50', 100: '100' }} />
+                  </div>
+                </DemoCard>
+              </>
+            ) : null}
+
+            {category === 'input' && activeComponent === 'Switch 开关' ? (
+              <>
+                <h2 id="switch-basic" className={sectionTitle}>基本用法</h2>
+                <p className={sectionText}>开关是受控组件，点击后会立即更新当前状态。</p>
+                <DemoCard source={'<Switch checked={checked} onChange={setChecked} />'}>
+                  <div className={demo}>
+                    <DshSwitch checked={switchChecked} onChange={setSwitchChecked} aria-label="启用状态" />
+                    <span className={demoLabel}>{switchChecked ? '已开启' : '已关闭'}</span>
+                  </div>
+                </DemoCard>
+                <h2 id="switch-states" className={sectionTitle}>文字与禁用</h2>
+                <p className={sectionText}>通过 `checkedText`、`uncheckedText` 和 `disabled` 表达更明确的状态。</p>
+                <DemoCard source={`<Switch checkedText="开" uncheckedText="关" />
+<Switch disabled checked />`}>
+                  <div className={demo}>
+                    <DshSwitch defaultChecked checkedText="开" uncheckedText="关" />
+                    <DshSwitch disabled defaultChecked />
+                  </div>
+                </DemoCard>
+              </>
+            ) : null}
+
+            {category === 'input' && activeComponent === 'Form 表单' ? (
+              <>
+                <h2 id="form-basic" className={sectionTitle}>基本用法</h2>
+                <p className={sectionText}>Form 通过 Slot 组织标签和控件，适合展示额度、偏好等配置型表单。</p>
+                <DemoCard source={`<Form labelPosition="left">
+  <Form.Slot label="显示额度余量"><Switch checked={showUsage} /></Form.Slot>
+  <Form.Slot label="自定义额度上限"><InputNumber placeholder="使用默认" /></Form.Slot>
+  <Form.Slot label="余量告警百分比"><Slider value={percentage} /></Form.Slot>
+</Form>`}>
+                  <DshForm className="dsh-semi-showcase-form" labelPosition="left">
+                    <DshForm.Slot label={<span className="dsh-semi-showcase-form-preference-label"><strong>显示额度余量</strong><span>在侧边栏底部设置按钮上方显示已用额度进度。</span></span>}>
+                      <DshSwitch checked={showUsage} onChange={setShowUsage} aria-label="显示额度余量" />
+                    </DshForm.Slot>
+                    <DshForm.Slot label={<span className="dsh-semi-showcase-form-preference-label"><strong>自定义额度上限</strong><span>覆盖服务端上报的总量，按此值计算已用百分比。</span></span>}>
+                      <DshInputNumber className="dsh-semi-showcase-control" placeholder="使用默认" />
+                    </DshForm.Slot>
+                    <DshForm.Slot label={<span className="dsh-semi-showcase-form-preference-label"><strong>余量告警百分比</strong><span>已用百分比达到此值时，进度条变为红色提醒。</span></span>}>
+                      <div className="dsh-semi-showcase-form-slider">
+                        <DshSlider value={dangerPercentage} onChange={(value: number | [number, number]) => { if (typeof value === 'number') setDangerPercentage(value) }} />
+                        <span className="dsh-semi-showcase-form-slider-value">{dangerPercentage}%</span>
+                      </div>
+                    </DshForm.Slot>
+                  </DshForm>
+                </DemoCard>
+                <h2 id="form-states" className={sectionTitle}>字段状态</h2>
+                <p className={sectionText}>表单字段可以组合控件自身的校验、禁用和辅助说明状态。</p>
+                <DemoCard source={`<Form.Slot label="邮箱" error={{ helpText: "请输入有效邮箱" }}><Form.Input validateStatus="error" initValue="invalid" /></Form.Slot>
+<Form.Slot label="只读"><Form.Input disabled initValue="系统生成" /></Form.Slot>`}>
+                  <DshForm className="dsh-semi-showcase-form">
+                    <DshForm.Slot label="邮箱" error={{ helpText: '请输入有效邮箱' }}><DshForm.Input field="email" validateStatus="error" initValue="invalid" /></DshForm.Slot>
+                    <DshForm.Slot label="只读"><DshForm.Input field="generated" disabled initValue="系统生成" /></DshForm.Slot>
+                  </DshForm>
+                </DemoCard>
               </>
             ) : null}
 

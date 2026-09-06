@@ -22,7 +22,7 @@ lastVerified: 2026-09-01
 本计划实施四个已经确认进入开发的功能：
 
 - `FNOS-002-01`：统一 Codex 登录与用量状态；未登录时隐藏状态，登录后根据接口是否提供五小时窗口自动显示或隐藏对应额度；取得一次性授权码后自动尝试复制到剪切板，失败时保留手动复制入口。
-- 版本脚本与插件版本发布流程由 `tooling/fn-os-apps-cli` workspace 中的 `fn-apps-cli` CLI 和 `bumpp` 负责，项目/FPK 与插件各自指定更新范围；多选插件时一次性更新所有选中插件并只生成一条合并提交，插件不创建 Git Tag。
+- 版本脚本与插件版本发布流程由 `tooling/fn-os-apps-cli` workspace 中的 `fn-apps-cli` CLI 负责；项目/FPK 使用 `bumpp`，插件直接更新选中插件并检查 `published-dsh-plugins.json` 同步版本；多选插件时一次性更新所有选中插件并只生成一条合并提交，插件不创建 Git Tag。
 - `FNOS-002-02`：修正 NAS 文件和目录引用的插入规则；TreeSelect 使用独立关系模式支持多个文件/目录（含父子路径）同时选择，并在面板打开期间让本次引用删除状态反向同步到勾选节点，历史引用不参与当前选择。
 - `FNOS-002-03`：新增 DSH Semi UI 总览插件，集中展示 `@tnnevol/dsh-semi-ui` 的公共组件、状态和浅色/深色主题效果。
 - `FNOS-002-04`：使用 `connect` 与 `http-proxy-middleware` 重写 fnOS 统一网关代理；由常驻网关承载 FPK 状态并在 Web 左侧菜单提供 DSH Web 重启入口；由 fnOS 插件管理三方插件 API URL 反代规则，并让已打开的 DSH 页面立即取得最新配置。
@@ -46,7 +46,7 @@ lastVerified: 2026-09-01
 | Codex 状态 Host | `plugins/dsh-codex-auth-plugin/src/usage.ts`、认证路由 | 规范化登录状态与 Codex 用量窗口 |
 | Codex 状态 Client | `plugins/dsh-codex-auth-plugin/src/client/` | 只在已登录时显示状态，并根据接口响应显示五小时和每周用量 |
 | 版本与发布 | `plugins/*`、`apps/fn-deepseek-harness/cmd/install_callback`、`.github/config/`、`docs/` | 统一 DSH/插件版本契约、FPK 安装回调、node-pty native 配置、发布清单和文档 |
-| 版本脚本 workspace | `tooling/fn-os-apps-cli/`、根 `package.json`、`pnpm-workspace.yaml` | 使用 `bumpp` 分离项目/FPK 与插件版本更新、提交和 Tag；插件仅提交不打 Tag |
+| 版本脚本 workspace | `tooling/fn-os-apps-cli/`、根 `package.json`、`pnpm-workspace.yaml` | 使用 `bumpp` 管理项目/FPK 版本；插件直接更新版本、同步 `published-dsh-plugins.json` 并提交，不打 Tag |
 | 文档与测试 | `docs/`、各包 `tests/` | 验证配置契约、版本脚本、代理行为、即时同步、构建与 NAS 运行 |
 
 DSH 和 fnOS 官方项目只作为契约参考，不修改、不提交上游补丁。`apps/fn-deepseek-harness/app/gateway-proxy.mjs` 是构建产物，业务源码只在 `packages/fnos-gateway/src/` 中维护。
@@ -453,7 +453,7 @@ SSE 路由由网关自身处理，不转发到 DSH。它经过 fnOS 统一网关
 | 任务 ID | 实现内容 | 状态 |
 | --- | --- | --- |
 | PLAN-FNOS-002-TT-01 | 引入 Turbo，使用 `turbo.json` 声明 build、typecheck、test、check 和网关应用构建依赖；根 `package.json` 只提供统一任务入口 | <Badge type="tip" text="已完成" /> |
-| PLAN-FNOS-002-TT-02 | 合并版本入口为交互式 `version`，由 `@clack/prompts` 选择项目/FPK或插件区域；插件多选时由一次 `bumpp` 更新所有选中清单并生成一条合并提交，插件不创建 Git Tag；`tooling/fn-os-apps-cli` workspace 通过 `fn-apps-cli` CLI 暴露，全部使用 TypeScript 并由 tsdown 编译 | <Badge type="tip" text="已完成" /> |
+| PLAN-FNOS-002-TT-02 | 合并版本入口为交互式 `version`，由 `@clack/prompts` 选择项目/FPK或插件区域；插件多选时直接更新所有选中 package.json，并同步 `published-dsh-plugins.json` 中的同名版本，生成一条合并提交，不创建插件 Git Tag；`tooling/fn-os-apps-cli` workspace 通过 `fn-apps-cli` CLI 暴露，全部使用 TypeScript 并由 tsdown 编译 | <Badge type="tip" text="已完成" /> |
 | PLAN-FNOS-002-TT-03 | 根目录仅暴露交互式 `build`；支持选择文档构建和复选 FPK，DSH FPK 自动先编译网关，插件通过 Turbo 自动先编译 `dsh-semi-ui`，共享包不进入顶层构建选择，移除 `fnos-gateway` 的 `build:fpk` | <Badge type="tip" text="已完成" /> |
 | PLAN-FNOS-002-TT-04 | 引入 `changelogithub`，由根 `release:notes` 任务生成 Tag 对应 Release 日志，移除 workflow 内手写 Release 日志生成 | <Badge type="tip" text="已完成" /> |
 | PLAN-FNOS-002-TT-05 | 由独立 `program.ts` 暴露 Commander 实例，各 `commands/*.ts` 模块注册命令并实现 `action`，`src/index.ts` 统一加载并解析；按 `commands/`、`config/`、`core/`、`ui/`、`sdd/` 拆分版本、构建、提示、进程和文档检查职责 | <Badge type="tip" text="已完成" /> |
@@ -479,7 +479,7 @@ SSE 路由由网关自身处理，不转发到 DSH。它经过 fnOS 统一网关
 | PLAN-FNOS-002-TV-06 | 将 FPK 安装/升级回调固定到 `@deepseek-ai/dsh@0.1.2-rc.1`，node-pty 维持 `1.2.0-beta.15`，native 配置文件与 CI 工作流同步改名 | <Badge type="tip" text="已修改" /> |
 | PLAN-FNOS-002-TV-07 | 已发布插件清单补入 `@tnnevol/dsh-fnos`，并按精确版本固定安装：`@tnnevol/dsh-codex-auth@0.1.2-rc.1`、`@tnnevol/dsh-fnos@0.1.2-rc.1.1`；插件发布脚本改用 `--tag rc` | <Badge type="tip" text="已修改" /> |
 | PLAN-FNOS-002-TV-08 | 确认 fnOS 插件客户端 `remote`/`remote.session` inject 声明完整（修复旧构建产物 `cannot get property "remote.session" without inject` 加载失败），并在 NAS 重装损坏副本 | <Badge type="warning" text="待 NAS 验证" /> |
-| PLAN-FNOS-002-TV-09 | 在 `tooling/fn-os-apps-cli` pnpm workspace 以 TypeScript/tsdown 合并 `version` 入口，使用 `@clack/prompts` 选择项目/FPK或一个或多个插件；多选插件由一次 `bumpp` 更新全部 package.json 并生成一条合并提交，不创建插件 Git Tag，废弃根目录自定义 `bump` 脚本 | <Badge type="tip" text="已完成" /> |
+| PLAN-FNOS-002-TV-09 | 在 `tooling/fn-os-apps-cli` pnpm workspace 以 TypeScript/tsdown 合并 `version` 入口，使用 `@clack/prompts` 选择项目/FPK或一个或多个插件；插件直接更新全部选中 package.json，并同步 `published-dsh-plugins.json` 中的同名插件版本，生成一条合并提交，不创建插件 Git Tag，废弃根目录自定义 `bump` 脚本 | <Badge type="tip" text="已完成" /> |
 
 版本约束的验收以实际可安装、可启动和插件可加载为准；本地 package.json 一致不等于 NAS 验收完成。
 
@@ -831,4 +831,4 @@ pnpm --filter @tnnevol/dsh-codex-auth run build
 | 2026-08-31 | 同步刷新与重启验证状态 | 真实 fnOS 环境已验证侧边菜单刷新、重启均正常，刷新不会影响 iframe 外部页面 |
 | 2026-09-01 | 补充真实 NAS 浏览器验收 | 7 条用例通过；记录 Codex 用量、TreeSelect、快捷键、主题、刷新/重启和静态资源 Network 证据，T04-10 进入部分 NAS 验证 |
 | 2026-09-01 | 更新自动化测试状态 | 根目录 `pnpm run test:unit` 通过，39 个测试文件、157 条自动化测试全部通过；未将未完成真实环境验收的业务用例标记为通过 |
-| 2026-09-06 | 调整插件版本发布规则 | 插件版本只创建提交、不创建 Git Tag；多选插件时统一执行一次 `bumpp`，一条提交覆盖全部选中 package.json；增加版本不一致保护和 CLI 回归测试 |
+| 2026-09-06 | 调整插件版本发布规则 | 插件版本不再调用 `bumpp`，直接更新选中 package.json；若插件存在于 `published-dsh-plugins.json` 则同步清单版本；多选插件统一一条提交覆盖所有相关文件，不创建 Git Tag；增加版本不一致保护和 CLI 回归测试 |
