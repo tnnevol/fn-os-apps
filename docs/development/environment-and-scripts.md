@@ -265,7 +265,7 @@ pnpm run version -- plugin showcase patch
 pnpm run version -- project patch --no-commit --no-tag
 ```
 
-项目版本更新根 `package.json`、`packages/**/package.json`、应用 `manifest` 和 README；harness 插件版本只更新指定插件的 `package.json`。项目版本默认创建提交和 Tag，插件版本默认只创建提交；两者都不会自动 push：
+项目版本更新根 `package.json`、`docs/package.json`、`packages/**/package.json`、应用 `manifest` 和 README；文档站点从 `docs/package.json` 读取自身版本；harness 插件版本只更新指定插件的 `package.json`。项目版本默认创建提交和 Tag，插件版本默认只创建提交；两者都不会自动 push：
 
 - 项目 / FPK：`v<版本号>`
 

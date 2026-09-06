@@ -4,7 +4,7 @@
 .
 ├── apps/                  # fnOS 应用源码与打包配置
 ├── plugins/               # Agent 插件 workspace
-├── docs/                  # VitePress 文档源文件
+├── docs/                  # VitePress 文档源文件与文档 workspace 包
 ├── .github/workflows/     # GitHub Actions 构建与发布流程
 ├── tooling/
 │   └── fn-os-apps-cli/    # fn-apps-cli CLI：版本、构建和 Release 工具

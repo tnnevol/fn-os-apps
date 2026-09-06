@@ -113,4 +113,24 @@ describe('plugin version command', () => {
     expect(mocks.writeFile).toHaveBeenCalled()
     expect(mocks.spawnSync).not.toHaveBeenCalled()
   })
+
+  it('aligns the docs package, Harness manifest, and docs example for project releases', async () => {
+    mocks.readPackageInfo.mockResolvedValue({ name: 'fn-os-apps', version: '1.2.3' })
+    mocks.readFile.mockImplementation(async (path: string) => {
+      if (path.endsWith('docs/package.json')) return JSON.stringify({ name: '@tnnevol/fn-os-apps-docs', version: '1.2.2' })
+      if (path.endsWith('apps/fn-deepseek-harness/manifest')) return 'version               = 1.2.2\n'
+      if (path.endsWith('docs/development/manifest.md')) return 'version               = 1.2.1\n'
+      return JSON.stringify({ name: 'package', version: '1.2.3' })
+    })
+
+    await runVersion(['project', 'patch', '--no-commit', '--no-tag', '--yes'])
+
+    const writtenPaths = mocks.writeFile.mock.calls.map(call => String(call[0]))
+    expect(writtenPaths.filter(path => path.endsWith('docs/package.json'))).toHaveLength(1)
+    expect(writtenPaths.filter(path => path.endsWith('apps/fn-deepseek-harness/manifest'))).toHaveLength(1)
+    expect(writtenPaths.filter(path => path.endsWith('docs/development/manifest.md'))).toHaveLength(1)
+    expect(mocks.versionBump).toHaveBeenCalledWith(expect.objectContaining({
+      files: expect.arrayContaining(['docs/package.json', 'docs/development/manifest.md']),
+    }))
+  })
 })

@@ -1,7 +1,7 @@
 import { defineConfig } from 'vitepress'
 import d2 from 'vitepress-plugin-d2'
 import { FileType, Layout, Theme } from 'vitepress-plugin-d2/dist/config'
-import packageJson from '../../package.json'
+import packageJson from '../package.json'
 
 const repositoryName = process.env.GITHUB_REPOSITORY?.split('/')[1] || 'fn-os-apps'
 const base = process.env.DOCS_BASE || (process.env.GITHUB_ACTIONS === 'true' ? `/${repositoryName}/` : '/')

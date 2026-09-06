@@ -4,7 +4,7 @@
 
 ## 项目与 FPK 版本
 
-项目版本命令更新根 `package.json`、`packages/*/package.json`、与当前项目版本匹配的 `apps/*/manifest` 和 README 版本引用，并创建项目 Tag：
+项目版本命令更新根 `package.json`、文档包 `docs/package.json`、`packages/*/package.json`、应用 `manifest` 和 README 版本引用，并创建项目 Tag。文档站点的版本徽标从文档包自身的 `package.json` 读取：
 
 ```bash
 pnpm run version -- project patch
@@ -12,7 +12,7 @@ pnpm run version -- project minor
 pnpm run version -- project 5.3.0
 ```
 
-默认生成 `chore: release v<版本号>` 提交和 `v<版本号>` Tag。应用 Manifest 中已有独立版本的文件会由 `bumpp` 跳过，不会被强行覆盖。
+默认生成 `chore: release v<版本号>` 提交和 `v<版本号>` Tag。Harness Manifest、文档 Manifest 示例和文档包版本会先与根项目对齐，再由版本流程统一更新。
 
 仅修改文件时使用：
 

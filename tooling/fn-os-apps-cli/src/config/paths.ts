@@ -7,6 +7,7 @@ export const repositoryRoot = resolve(scriptsPackageDirectory, '..', '..')
 
 export const projectVersionFiles = [
   'package.json',
+  'docs/package.json',
   'packages/**/package.json',
   'apps/**/manifest',
   'docs/development/manifest.md',
