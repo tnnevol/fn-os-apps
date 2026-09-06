@@ -4,11 +4,11 @@
   "plugins": [
     {
       "name": "@tnnevol/dsh-codex-auth",
-      "version": "0.1.2-rc.1.1"
+      "version": "0.1.2-rc.1.2"
     },
     {
       "name": "@tnnevol/dsh-fnos",
-      "version": "0.1.2-rc.1.1"
+      "version": "0.1.2-rc.1.2"
     }
   ]
 }

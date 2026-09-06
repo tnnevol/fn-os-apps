@@ -2,7 +2,7 @@
   "name": "@tnnevol/dsh-codebuddy",
   "displayName": "CodeBuddy",
   "description": "Tencent CodeBuddy provider plugin for DeepSeek Harness, with browser OAuth sign-in and quota display.",
-  "version": "0.1.2-rc.1.1",
+  "version": "0.1.2-rc.1.2",
   "author": "tnnevol",
   "repository": {
     "type": "git",
