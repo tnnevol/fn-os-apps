@@ -9,5 +9,6 @@ export const projectVersionFiles = [
   'package.json',
   'packages/**/package.json',
   'apps/**/manifest',
+  'docs/development/manifest.md',
   'README.md',
 ]

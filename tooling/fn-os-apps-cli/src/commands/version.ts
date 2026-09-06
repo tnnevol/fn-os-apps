@@ -14,6 +14,10 @@ import { readPackageInfo } from '../core/package.js'
 import { askPlugin, askReleaseArea, type ReleaseArea } from '../ui/prompts.js'
 
 const publishedDshPluginsPath = 'apps/fn-deepseek-harness/app/published-dsh-plugins.json'
+const projectVersionTextFiles = [
+  'apps/fn-deepseek-harness/manifest',
+  'docs/development/manifest.md',
+]
 
 type JsonObject = Record<string, unknown>
 
@@ -119,6 +123,15 @@ async function updatePackageVersion(relativePath: string, version: string): Prom
   const value = await readJson(relativePath)
   value.version = version
   await writeFile(join(repositoryRoot, relativePath), `${JSON.stringify(value, null, 2)}\n`)
+}
+
+async function alignProjectVersionTextFiles(version: string): Promise<void> {
+  for (const relativePath of projectVersionTextFiles) {
+    const absolutePath = join(repositoryRoot, relativePath)
+    const content = await readFile(absolutePath, 'utf8')
+    const updated = content.replace(/^(\s*version\s*=\s*)\S+$/gm, `$1${version}`)
+    if (updated !== content) await writeFile(absolutePath, updated)
+  }
 }
 
 async function syncPublishedPluginVersion(pluginName: string, version: string): Promise<boolean> {
@@ -272,6 +285,11 @@ async function versionProject(
   const current = await readPackageInfo('package.json')
   const commitPrefix = 'chore: release v'
   const tagPrefix = 'v'
+
+  // bumpp intentionally skips text files whose version differs from the root
+  // version. Keep the Harness Manifest and the documentation example in the
+  // same version set so project/FPK releases update them as well.
+  await alignProjectVersionTextFiles(current.version)
 
   const result = await versionBump({
     cwd: repositoryRoot,

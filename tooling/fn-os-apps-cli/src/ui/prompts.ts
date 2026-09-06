@@ -11,7 +11,7 @@ export async function askReleaseArea(): Promise<ReleaseArea | undefined> {
   const result = await select({
     message: '选择要维护版本的区域',
     options: [
-      { value: 'project', label: '项目 / FPK', hint: '根项目、共享包、应用 Manifest' },
+      { value: 'project', label: '项目 / FPK', hint: '根项目、共享包、应用 Manifest 与版本文档' },
       { value: 'plugin', label: 'Harness 插件', hint: '可多选维护插件版本' },
     ],
   })

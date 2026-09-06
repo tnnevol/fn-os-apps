@@ -12,6 +12,7 @@ export async function runReleaseNotes(args: string[]): Promise<void> {
 program
   .command('release:notes [args...]')
   .description('Generate and publish GitHub release notes')
+  .allowUnknownOption()
   .option('--prerelease', 'mark the release as a prerelease')
   .action(async (args: string[], options: OptionValues) => {
     if (options.prerelease) args.push('--prerelease')
