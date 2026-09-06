@@ -44,5 +44,6 @@ describe('DSH Semi UI facade', () => {
     expect(componentsSource).toContain("export * as DshSemiIcons from '@douyinfe/semi-icons/lib/es/icons/index.js'")
     expect(componentsSource).toContain('export { default as DshIconRefresh }')
     expect(componentsSource).toContain('export { default as DshIconRestart }')
+    expect(componentsSource).toContain('export { default as DshIconDownload }')
   })
 })

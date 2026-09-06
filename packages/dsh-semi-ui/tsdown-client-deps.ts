@@ -45,6 +45,7 @@ export const dshSemiClientDeps = {
     '@douyinfe/semi-icons/lib/es/icons/IconClose.js': join(semiIconsRoot, 'lib/es/icons/IconClose.js'),
     '@douyinfe/semi-icons/lib/es/icons/IconChevronDown.js': join(semiIconsRoot, 'lib/es/icons/IconChevronDown.js'),
     '@douyinfe/semi-icons/lib/es/icons/IconCommand.js': join(semiIconsRoot, 'lib/es/icons/IconCommand.js'),
+    '@douyinfe/semi-icons/lib/es/icons/IconDownload.js': join(semiIconsRoot, 'lib/es/icons/IconDownload.js'),
     '@douyinfe/semi-icons/lib/es/icons/IconElementStroked.js': join(semiIconsRoot, 'lib/es/icons/IconElementStroked.js'),
     '@douyinfe/semi-icons/lib/es/icons/IconFile.js': join(semiIconsRoot, 'lib/es/icons/IconFile.js'),
     '@douyinfe/semi-icons/lib/es/icons/IconFolder.js': join(semiIconsRoot, 'lib/es/icons/IconFolder.js'),

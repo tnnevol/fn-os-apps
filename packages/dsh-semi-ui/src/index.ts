@@ -29,6 +29,7 @@ export {
   DshIconChevronDown,
   DshIconChevronDownStroked,
   DshIconCommand,
+  DshIconDownload,
   DshIconElementStroked,
   DshIconFile,
   DshIconFolder,

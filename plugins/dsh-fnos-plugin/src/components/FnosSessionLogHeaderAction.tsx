@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type { PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
-import { DshButton, DshDropdown, DshIconChangelog as IconChangelog, DshIconFolder, DshModal, DshTree } from '@tnnevol/dsh-semi-ui'
+import { DshButton, DshDropdown, DshIconDownload as IconDownload, DshIconFolder, DshModal, DshTree } from '@tnnevol/dsh-semi-ui'
 import { requestAuthorizedEntries, type AuthorizedEntriesResult } from '../client/services/authorized-directories-client.ts'
 import { exportSessionLogToNas } from '../client/services/session-log-export-client.ts'
 import type { AuthorizedEntry } from '../contracts/authorized-directories-contract.ts'
@@ -173,7 +173,7 @@ export function FnosSessionLogHeaderAction({ sessionId, exportToComputer, useSes
         <DshButton size="default" type="primary" theme="outline" className="dsh-fnos-session-log-button">
           {t('sessionLog')}
           <span className="dsh-fnos-session-log-button-icon">
-            <IconChangelog />
+            <IconDownload />
           </span>
         </DshButton>
       </DshDropdown>

@@ -63,6 +63,11 @@ declare module '@douyinfe/semi-icons/lib/es/icons/IconClose.js' {
   export default IconClose
 }
 
+declare module '@douyinfe/semi-icons/lib/es/icons/IconDownload.js' {
+  const IconDownload: any
+  export default IconDownload
+}
+
 declare module '@douyinfe/semi-icons/lib/es/icons/IconFile.js' {
   const IconFile: any
   export default IconFile

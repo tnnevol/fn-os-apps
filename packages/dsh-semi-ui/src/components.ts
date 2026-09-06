@@ -55,6 +55,7 @@ export { default as DshIconClose } from '@douyinfe/semi-icons/lib/es/icons/IconC
 export { default as DshIconChevronDown } from '@douyinfe/semi-icons/lib/es/icons/IconChevronDown.js'
 export { default as DshIconChevronDownStroked } from '@douyinfe/semi-icons/lib/es/icons/IconChevronDownStroked.js'
 export { default as DshIconCommand } from '@douyinfe/semi-icons/lib/es/icons/IconCommand.js'
+export { default as DshIconDownload } from '@douyinfe/semi-icons/lib/es/icons/IconDownload.js'
 export { default as DshIconElementStroked } from '@douyinfe/semi-icons/lib/es/icons/IconElementStroked.js'
 export { default as DshIconFile } from '@douyinfe/semi-icons/lib/es/icons/IconFile.js'
 export { default as DshIconFolder } from '@douyinfe/semi-icons/lib/es/icons/IconFolder.js'
