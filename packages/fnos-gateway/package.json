@@ -2,7 +2,7 @@
   "name": "@tnnevol/fnos-gateway",
   "displayName": "fnOS Gateway",
   "description": "Unified gateway proxy for fnOS apps. Bundles connect and http-proxy-middleware into a single ESM file for FPK distribution.",
-  "version": "5.2.1",
+  "version": "5.3.0",
   "author": "tnnevol",
   "repository": {
     "type": "git",
