@@ -5,6 +5,11 @@ on:
     tags:
       - "v*"
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Tag to rebuild and publish
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -18,13 +23,15 @@ jobs:
       release_id: ${{ steps.create_release.outputs.release_id }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.release_tag || github.ref }}
 
       - id: create_release
         name: Create or reset draft release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPOSITORY: ${{ github.repository }}
-          TAG: ${{ github.ref_name }}
+          TAG: ${{ inputs.release_tag || github.ref_name }}
         run: |
           set -euo pipefail
 
@@ -91,7 +98,7 @@ jobs:
     needs: prepare-release
     uses: ./.github/workflows/build-common-fn.yml
     with:
-      release_tag: ${{ github.ref_name }}
+      release_tag: ${{ inputs.release_tag || github.ref_name }}
       release_id: ${{ needs.prepare-release.outputs.release_id }}
     secrets: inherit
 
@@ -100,7 +107,7 @@ jobs:
     needs: prepare-release
     uses: ./.github/workflows/build-dsh-fn.yml
     with:
-      release_tag: ${{ github.ref_name }}
+      release_tag: ${{ inputs.release_tag || github.ref_name }}
       release_id: ${{ needs.prepare-release.outputs.release_id }}
     secrets: inherit
 
@@ -112,6 +119,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ inputs.release_tag || github.ref }}
 
       - name: Setup Node.js 24 for release tasks
         uses: actions/setup-node@v4
@@ -130,14 +138,15 @@ jobs:
       - name: Generate release notes
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
           RUNNER_TEMP: ${{ runner.temp }}
-        run: pnpm run release:notes -- --output "$RUNNER_TEMP/release-notes.md"
+        run: pnpm run release:notes -- --to "$RELEASE_TAG" --output "$RUNNER_TEMP/release-notes.md"
 
       - name: Publish existing release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPOSITORY: ${{ github.repository }}
-          TAG: ${{ github.ref_name }}
+          TAG: ${{ inputs.release_tag || github.ref_name }}
           RELEASE_ID: ${{ needs.prepare-release.outputs.release_id }}
           RUNNER_TEMP: ${{ runner.temp }}
         run: |
@@ -167,7 +176,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPOSITORY: ${{ github.repository }}
-          TAG: ${{ github.ref_name }}
+          TAG: ${{ inputs.release_tag || github.ref_name }}
           RELEASE_ID: ${{ needs.prepare-release.outputs.release_id }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           PREPARE_RESULT: ${{ needs.prepare-release.result }}

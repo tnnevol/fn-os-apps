@@ -27,6 +27,8 @@ jobs:
       REPOSITORY: ${{ github.repository }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.release_tag }}
 
       - name: Setup Node.js 24 for DSH native dependency
         uses: actions/setup-node@v4
