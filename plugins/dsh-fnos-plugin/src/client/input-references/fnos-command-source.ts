@@ -20,11 +20,11 @@ import {
 const FN_COMMAND = 'fn'
 const ROOT_PATH = '/'
 
-export type FnosDirectoryTranslate = (key: 'fnDirectorySection' | 'fnDirectoryRoot') => string
+export type FnosDirectoryTranslate = (key: 'fnDirectorySection' | 'fnDirectoryCommandSection' | 'fnDirectoryRoot') => string
 export type AuthorizedEntriesLister = (path?: string) => Promise<AuthorizedEntriesResult>
 
 interface FnosCandidateValue {
-  readonly kind: AuthorizedEntry['kind']
+  readonly kind: AuthorizedEntry['kind'] | 'command'
   readonly path: string
   readonly semanticPath: string
   readonly commandText: string
@@ -33,8 +33,14 @@ interface FnosCandidateValue {
 /** Parse the part after `/` and claim only `/fn` (optionally followed by a path). */
 export function parseFnosCommandQuery(query: string): { path: string } | undefined {
   const value = query.trim()
-  if (value !== FN_COMMAND && !value.startsWith(`${FN_COMMAND} `)) return undefined
-  const pathText = value.slice(FN_COMMAND.length).trim()
+  const spaced = value.startsWith(`${FN_COMMAND} `)
+  const compact = value.startsWith(`${FN_COMMAND}/`)
+  if (value !== FN_COMMAND && !spaced && !compact) return undefined
+  // DSH slash detection ends a token at whitespace. Drilled paths therefore
+  // use `/fn/<path>` so the next query still belongs to this source.
+  const pathText = value === FN_COMMAND
+    ? ''
+    : value.slice(FN_COMMAND.length + (spaced ? 1 : 0)).trim()
   if (pathText.length === 0) return { path: ROOT_PATH }
   const path = normalizeFnosPath(pathText)
   return path === undefined ? undefined : { path }
@@ -51,7 +57,7 @@ function candidateValue(entry: Pick<AuthorizedEntry, 'kind' | 'path' | 'semantic
     kind: entry.kind,
     path,
     semanticPath: entry.semanticPath,
-    commandText: path === ROOT_PATH ? `/${FN_COMMAND}` : `/${FN_COMMAND} ${path}/`,
+    commandText: path === ROOT_PATH ? `/${FN_COMMAND}` : `/${FN_COMMAND}${path}/`,
   }
 }
 
@@ -64,7 +70,12 @@ function decodeCandidate(value: string | undefined): FnosCandidateValue | undefi
   try {
     const parsed: unknown = JSON.parse(value)
     if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return undefined
-    if (!('kind' in parsed) || (parsed.kind !== 'file' && parsed.kind !== 'directory')) return undefined
+    if (!('kind' in parsed) || (parsed.kind !== 'file' && parsed.kind !== 'directory' && parsed.kind !== 'command')) return undefined
+    if (parsed.kind === 'command') {
+      return 'commandText' in parsed && typeof parsed.commandText === 'string'
+        ? { kind: 'command', path: ROOT_PATH, semanticPath: '', commandText: parsed.commandText }
+        : undefined
+    }
     if (!('path' in parsed) || typeof parsed.path !== 'string') return undefined
     if (!('semanticPath' in parsed) || typeof parsed.semanticPath !== 'string') return undefined
     if (!('commandText' in parsed) || typeof parsed.commandText !== 'string') return undefined
@@ -98,6 +109,15 @@ function rootValue(rootLabel: string): string {
   })
 }
 
+function commandCandidate(section: string): InputTriggerCandidate {
+  return {
+    name: FN_COMMAND,
+    description: 'Select an authorized NAS file or directory',
+    section,
+    value: encodeCandidate({ kind: 'command', path: ROOT_PATH, semanticPath: '', commandText: `/${FN_COMMAND}` }),
+  }
+}
+
 function crumbsFor(
   path: string,
   drilled: boolean,
@@ -120,7 +140,7 @@ function crumbsFor(
         kind: 'directory',
         path: prefix,
         semanticPath,
-        commandText: `/${FN_COMMAND} ${prefix}/`,
+        commandText: `/${FN_COMMAND}${prefix}/`,
       }),
       ...(index === segments.length - 1 ? { current: true } : {}),
     })
@@ -131,6 +151,7 @@ function crumbsFor(
 function pickOutcome(pick: InputTriggerPick): ReturnType<NonNullable<InputTriggerSource['onPick']>> {
   const value = decodeCandidate(pick.candidate.value)
   if (value === undefined) return undefined
+  if (value.kind === 'command') return { text: value.commandText, continue: true }
   if (value.kind === 'directory' && pick.action === 'drill') {
     return { text: value.commandText, continue: true }
   }
@@ -154,6 +175,7 @@ export function createFnosDirectorySource(
 ): InputTriggerSource {
   const knownPaths = new Map<string, string>()
   const section = t('fnDirectorySection')
+  const commandSection = t('fnDirectoryCommandSection')
   const rootLabel = t('fnDirectoryRoot')
 
   return {
@@ -162,7 +184,11 @@ export function createFnosDirectorySource(
     order: 1,
     async candidates(_session, req: CandidateRequest) {
       const parsed = parseFnosCommandQuery(req.query)
-      if (parsed === undefined) return []
+      if (parsed === undefined) {
+        return FN_COMMAND.startsWith(req.query.trim().toLowerCase())
+          ? [commandCandidate(commandSection)]
+          : []
+      }
       const result = await listEntries(parsed.path === ROOT_PATH ? undefined : parsed.path)
       if (req.signal.aborted) return []
       if (result.directory !== undefined) knownPaths.set(result.directory.path, result.directory.semanticPath)
