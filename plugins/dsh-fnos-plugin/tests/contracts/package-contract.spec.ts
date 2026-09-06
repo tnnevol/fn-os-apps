@@ -76,7 +76,7 @@ describe('dsh-fnos package contract', () => {
     expect(settingsShortcut).toContain('DshHotKeys.Keys.Control')
     expect(settingsShortcut).toContain('DshHotKeys.Keys.Meta')
     expect(settingsShortcut).toContain('DshHotKeys.Keys.Comma')
-    expect(settingsShortcut).toContain('[data-slot="sidebar.settings"] > button[aria-haspopup="dialog"]')
+    expect(settingsShortcut).toContain('[data-slot="sidebar.settings"] button[aria-haspopup="dialog"]')
     expect(settingsShortcut).toContain('trigger.click()')
     expect(settingsShortcut).toContain('event.preventDefault()')
     expect(source).toContain('installFnosSettingsShortcut')

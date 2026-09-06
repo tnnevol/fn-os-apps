@@ -1,13 +1,10 @@
-/** Account and capability settings for the Codex Auth plugin. */
+/** Account and model settings for the Codex Auth plugin. */
 
 import { useCallback, useEffect, useState } from 'react'
-import type { SettingsScope } from '@deepseek-ai/dsh-client-ui-settings/client'
 import type { ConnectionHandle } from '@deepseek-ai/dsh-client-connection/client'
 import type {} from '@deepseek-ai/dsh-client-ui-settings-plugins/client'
 import { DshButton } from '@tnnevol/dsh-semi-ui'
-import type { CodexAuthSettingsConfig } from '../contracts/settings-contract.ts'
 import type { CodexAuthLocaleKey } from '../client/locales.ts'
-import { CodexCapabilities } from './CodexCapabilities.tsx'
 import { CodexGlobalModel } from './CodexGlobalModel.tsx'
 import { copyTextToClipboard } from '../client/services/copy-to-clipboard.ts'
 import {
@@ -22,8 +19,7 @@ type Translate = (key: CodexAuthLocaleKey) => string
 const CODEX_MODEL_REFRESH_FAILED_CODE = 'codex-model-refresh-failed'
 
 type AccountStatus =
-  & { dshVersion?: string }
-  & (
+  (
     | { status: 'loading' }
     | { status: 'signed-out' }
     | { status: 'signing-in' }
@@ -60,7 +56,6 @@ type ModelRefreshState =
 
 export interface CodexAuthSectionInjected {
   t: Translate
-  configScope: SettingsScope<CodexAuthSettingsConfig>
   connection: ConnectionHandle
   remote: unknown
 }
@@ -98,7 +93,7 @@ function dotClass(status: AccountStatus['status']): string {
 }
 
 /** Render a standalone login/logout page for the Settings section slot. */
-export function CodexAuthSection({ t, configScope, connection, remote }: CodexAuthSectionProps) {
+export function CodexAuthSection({ t, connection, remote }: CodexAuthSectionProps) {
   if (t === undefined) throw new Error('Codex auth section requires its translation function')
   if (connection === undefined) throw new Error('Codex auth section requires the DSH connection')
   const [status, setStatus] = useState<AccountStatus>({ status: 'loading' })
@@ -283,7 +278,6 @@ export function CodexAuthSection({ t, configScope, connection, remote }: CodexAu
           </p>
         </section>
       ) : null}
-      <CodexCapabilities scope={configScope} t={t} dshVersion={status.dshVersion} />
     </div>
   )
 }

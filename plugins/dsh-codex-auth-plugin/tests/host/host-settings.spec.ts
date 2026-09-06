@@ -1,22 +1,19 @@
 import { readFile } from 'node:fs/promises'
 import { describe, expect, it } from 'vitest'
 
-describe('dsh-codex-auth-plugin settings-card namespace', () => {
-  it('keeps the auth card namespace and delegates the model page to pi-ai', async () => {
+describe('dsh-codex-auth-plugin host registration', () => {
+  it('keeps the auth card and delegates the model page to pi-ai', async () => {
     const host = await readFile(new URL('../../src/index.ts', import.meta.url), 'utf8')
     const client = await readFile(new URL('../../src/client/index.tsx', import.meta.url), 'utf8')
     const paths = await readFile(new URL('../../src/contracts/auth-paths.ts', import.meta.url), 'utf8')
     const routes = await readFile(new URL('../../src/host/auth-routes.ts', import.meta.url), 'utf8')
     const patch = await readFile(new URL('../../cordis.patch.yml', import.meta.url), 'utf8')
-    expect(host).toContain('ctx.settings.register(CODEX_AUTH_SETTINGS_NS, CodexAuthSettingsSchema)')
     expect(host).not.toContain('ctx.llm.registerAdapter')
     expect(host).toContain('new CodexCredentialMirror(ctx.credentials, store)')
     expect(host).toContain('registerCodexAuthRoutes(ctx, store, mirror)')
-    expect(client).toContain("ctx.settingsScope.bind")
-    expect(client).toContain('namespace: CODEX_AUTH_SETTINGS_NAMESPACE')
     expect(paths).not.toContain('CODEX_AUTH_CODE_PATH')
     expect(paths).toContain('CODEX_AUTH_LOGIN_PATH')
-    expect(paths).toContain("CODEX_AUTH_SETTINGS_NAMESPACE = 'dsh-codex-auth'")
+    expect(paths).not.toContain('CODEX_AUTH_SETTINGS')
     expect(routes).toContain("Promise.resolve('device_code')")
     expect(routes).toContain("event.type !== 'device_code'")
     expect(routes).not.toContain('manual_code')
@@ -25,33 +22,17 @@ describe('dsh-codex-auth-plugin settings-card namespace', () => {
     expect(patch).toContain('id: gpt-5.4')
   })
 
-  it('exposes a live image-recognition capability without changing the model adapter', async () => {
+  it('does not register the removed image capability module', async () => {
     const host = await readFile(new URL('../../src/index.ts', import.meta.url), 'utf8')
-    const settings = await readFile(new URL('../../src/host/settings.ts', import.meta.url), 'utf8')
-    const tool = await readFile(new URL('../../src/host/view-image.ts', import.meta.url), 'utf8')
-    expect(settings).toContain('enableImageTool')
-    expect(settings).toContain('enableImageUpload')
-    expect(host).toContain("['tools', 'fs', 'attachments', 'llm']")
-    expect(host).toContain('viewImageTool')
-    expect(host).toContain('settings.watch(scheduleImageTool)')
-    expect(tool).toContain('await attachments.validateImage(image)')
-    expect(tool).toContain('await attachments.saveImage(image)')
-  })
-
-  it('reports image-generation support against the installed DSH version', async () => {
+    const client = await readFile(new URL('../../src/client/index.tsx', import.meta.url), 'utf8')
     const routes = await readFile(new URL('../../src/host/auth-routes.ts', import.meta.url), 'utf8')
     const locales = await readFile(new URL('../../src/client/locales.ts', import.meta.url), 'utf8')
-    const capabilities = await readFile(new URL('../../src/components/CodexCapabilities.tsx', import.meta.url), 'utf8')
-    const message = await readFile(new URL('../../src/client/services/image-capability-message.ts', import.meta.url), 'utf8')
-    expect(routes).toContain("import { APP_IDENTITY } from '@deepseek-ai/dsh-llm'")
-    expect(routes).toContain('dshVersion: APP_IDENTITY.version')
-    expect(routes).toContain('withDshVersion(await auth.status())')
-    expect(locales).toContain('DSH {version} model adapter')
-    expect(locales).toContain('DSH {version} 模型适配器')
-    expect(capabilities).toContain('dshVersion?: string | undefined')
-    expect(capabilities).toContain('formatImageGenerationHelp(t, dshVersion)')
-    expect(message).toContain("replace('{version}', dshVersion ?? 'unknown')")
-    expect(locales).not.toContain('0.1.2-rc.1')
-    expect(locales).not.toContain('DSH rc.8')
+    expect(host).not.toContain('viewImageTool')
+    expect(host).not.toContain('scheduleImageTool')
+    expect(client).not.toContain('CodexCapabilities')
+    expect(routes).not.toContain('CODEX_AUTH_SETTINGS_PATH')
+    expect(routes).not.toContain('withDshVersion')
+    expect(locales).not.toContain('enableImageUpload')
+    expect(locales).not.toContain('enableImageRecognition')
   })
 })

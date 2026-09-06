@@ -152,9 +152,6 @@ catalogs:
     '@deepseek-ai/dsh-credentials':
       specifier: 0.1.2-rc.1
       version: 0.1.2-rc.1
-    '@deepseek-ai/dsh-fs':
-      specifier: 0.1.2-rc.1
-      version: 0.1.2-rc.1
     '@deepseek-ai/dsh-home-paths':
       specifier: 0.1.2-rc.1
       version: 0.1.2-rc.1
@@ -186,9 +183,6 @@ catalogs:
       specifier: 0.1.2-rc.1
       version: 0.1.2-rc.1
     '@deepseek-ai/dsh-timeout':
-      specifier: 0.1.2-rc.1
-      version: 0.1.2-rc.1
-    '@deepseek-ai/dsh-tools':
       specifier: 0.1.2-rc.1
       version: 0.1.2-rc.1
 
@@ -400,9 +394,6 @@ importers:
       '@deepseek-ai/dsh-credentials':
         specifier: catalog:dsh
         version: 0.1.2-rc.1(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-invariants@0.1.2-rc.1(@deepseek-ai/cordis@4.0.2))
-      '@deepseek-ai/dsh-fs':
-        specifier: catalog:dsh
-        version: 0.1.2-rc.1(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-brand@0.1.2-rc.1(@deepseek-ai/cordis@4.0.2))(@deepseek-ai/dsh-invariants@0.1.2-rc.1(@deepseek-ai/cordis@4.0.2))(@deepseek-ai/dsh-llm@0.1.2-rc.1(@deepseek-ai/cordis@4.0.2))(@deepseek-ai/dsh-sandbox@0.1.2-rc.1(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-llm@0.1.2-rc.1(@deepseek-ai/cordis@4.0.2))(@deepseek-ai/dsh-session@0.1.2-rc.1(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-scope@0.1.2-rc.1(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-invariants@0.1.2-rc.1(@deepseek-ai/cordis@4.0.2)))))
       '@deepseek-ai/dsh-home-paths':
         specifier: catalog:dsh
         version: 0.1.2-rc.1(@deepseek-ai/cordis@4.0.2)
@@ -430,9 +421,6 @@ importers:
       '@deepseek-ai/dsh-timeout':
         specifier: catalog:dsh
         version: 0.1.2-rc.1(@deepseek-ai/cordis@4.0.2)
-      '@deepseek-ai/dsh-tools':
-        specifier: catalog:dsh
-        version: 0.1.2-rc.1(de5e1ff2d608fbe22667925341ad1dfc)
       '@deepseek-ai/schemastery':
         specifier: 'catalog:'
         version: 3.18.2

@@ -6,7 +6,7 @@ import { DshHotKeys } from '@tnnevol/dsh-semi-ui'
 import { isSettingsShortcut } from './settings-shortcut-matcher.ts'
 import { isEmbeddedFnosFrame } from '../services/sdk-carrier.ts'
 
-const SETTINGS_TRIGGER_SELECTOR = '[data-slot="sidebar.settings"] > button[aria-haspopup="dialog"]'
+const SETTINGS_TRIGGER_SELECTOR = '[data-slot="sidebar.settings"] button[aria-haspopup="dialog"]'
 
 function openDshSettings(): boolean {
   if (typeof document === 'undefined') return false

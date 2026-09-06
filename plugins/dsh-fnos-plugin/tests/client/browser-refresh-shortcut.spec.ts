@@ -25,4 +25,9 @@ describe('fnOS browser refresh shortcut', () => {
     expect(isSettingsShortcut({ key: ',', ctrlKey: false, metaKey: false })).toBe(false)
     expect(isSettingsShortcut({ key: '.', ctrlKey: true, metaKey: false })).toBe(false)
   })
+
+  it('uses the settings shortcut matcher independently from the refresh matcher', () => {
+    expect(isSettingsShortcut({ key: ',', ctrlKey: true, metaKey: false })).toBe(true)
+    expect(isBrowserRefreshShortcut({ key: ',', ctrlKey: true, metaKey: false })).toBe(false)
+  })
 })

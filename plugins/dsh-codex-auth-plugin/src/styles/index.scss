@@ -280,7 +280,6 @@
   letter-spacing: 0.08em;
 }
 
-.dsh-codex-capabilities,
 .dsh-codex-global-model {
   display: flex;
   flex-direction: column;
@@ -308,44 +307,7 @@
 
 .dsh-codex-error { color: var(--dsw-alias-state-error-primary, #d92d20); }
 .dsh-codex-success { color: var(--dsw-alias-state-success-primary, #16825d); }
-.dsh-codex-capabilities-intro,
 .dsh-codex-global-model-intro { margin-top: 3px; }
-
-.dsh-codex-capabilities-fields {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin: 0;
-  padding: 0;
-  border: 0;
-}
-
-.dsh-codex-capability-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 9px;
-  cursor: pointer;
-
-  &--disabled {
-    cursor: not-allowed;
-    opacity: 0.62;
-  }
-}
-
-.dsh-codex-capability-copy {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.dsh-codex-capability-label {
-  color: var(--dsw-alias-label-primary);
-  font-size: 13px;
-  line-height: 18px;
-  font-weight: 500;
-}
-
-.dsh-codex-capabilities-actions,
 .dsh-codex-global-model-actions {
   display: flex;
   align-items: center;
@@ -354,7 +316,6 @@
   gap: 10px;
 }
 
-.dsh-codex-capabilities-buttons,
 .dsh-codex-global-model-buttons {
   display: flex;
   gap: 8px;

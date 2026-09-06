@@ -12,10 +12,10 @@ describe('dsh-codex-auth-plugin client registration', () => {
     expect(client).not.toContain("settings.plugin.item")
     expect(client).not.toContain("installCodexModelEditorPresentation")
     expect(client).toContain("installSemiDshTheme(), 'dsh-codex-auth-plugin: Semi DSH theme'")
-    expect(client).toContain("'connection', 'remote', 'remote.session', 'settingsScope'")
+    expect(client).toContain("'connection', 'remote', 'remote.session', 'timer'")
     expect(client).toContain('const remote = ctx.remote as unknown')
-    expect(client).toContain('decodeCodexAuthSettings')
-    expect(client).toContain('configScope')
+    expect(client).not.toContain('settingsScope')
+    expect(client).not.toContain('CodexCapabilities')
   })
 
   it('no longer patches the official Models page with a Codex editor', async () => {
@@ -66,7 +66,7 @@ describe('dsh-codex-auth-plugin client registration', () => {
     expect(section).toContain('catalogRefreshKey={catalogRefreshKey}')
     expect(section).toContain('CODEX_MODEL_REFRESH_PATH')
     expect(section).toContain('refreshModels')
-    expect(section).toContain('<CodexCapabilities')
+    expect(section).not.toContain('CodexCapabilities')
   })
 
   it('uses Semi Cascader multi-select and keeps it open after leaf clicks', async () => {
@@ -89,12 +89,9 @@ describe('dsh-codex-auth-plugin client registration', () => {
 
   it('uses pill actions and compact lower actions in the Codex settings section', async () => {
     const section = await readFile(new URL('../../src/components/CodexAuthSection.tsx', import.meta.url), 'utf8')
-    const capabilities = await readFile(new URL('../../src/components/CodexCapabilities.tsx', import.meta.url), 'utf8')
     const globalModel = await readFile(new URL('../../src/components/CodexGlobalModel.tsx', import.meta.url), 'utf8')
     const style = await readFile(new URL('../../src/styles/index.scss', import.meta.url), 'utf8')
     expect(section).toContain('theme="solid" type="primary"')
-    expect(capabilities).toContain('type="secondary" size="small"')
-    expect(capabilities).toContain('type="primary" size="small"')
     expect(globalModel).toContain('type="secondary" size="small"')
     expect(globalModel).toContain('type="primary" size="small"')
     expect(style).toContain('.dsh-codex-auth-section .semi-button')
@@ -111,12 +108,12 @@ describe('dsh-codex-auth-plugin client registration', () => {
     expect(style).toContain('var(--dsw-alias-border-l2)')
   })
 
-  it('exposes image upload alongside image recognition', async () => {
-    const capabilities = await readFile(new URL('../../src/components/CodexCapabilities.tsx', import.meta.url), 'utf8')
-    const locales = await readFile(new URL('../../src/client/locales.ts', import.meta.url), 'utf8')
-    expect(capabilities).toContain('enableImageUpload')
-    expect(capabilities).toContain('updateImageUpload')
-    expect(capabilities).toContain("t('enableImageUpload')")
-    expect(locales).toContain('启用图片上传')
+  it('delegates image input to DSH core while keeping Codex modality mapping', async () => {
+    const section = await readFile(new URL('../../src/components/CodexAuthSection.tsx', import.meta.url), 'utf8')
+    const refresh = await readFile(new URL('../../src/host/model-refresh.ts', import.meta.url), 'utf8')
+    expect(section).not.toContain('enableImage')
+    expect(section).not.toContain('view_image')
+    expect(refresh).toContain('input_modalities')
+    expect(refresh).toContain('input: inputModalities(model),')
   })
 })

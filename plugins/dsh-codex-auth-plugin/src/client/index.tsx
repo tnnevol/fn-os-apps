@@ -14,9 +14,6 @@ import { CodexAuthSection } from '../components/CodexAuthSection.tsx'
 import type { CodexAuthSectionProps } from '../components/CodexAuthSection.tsx'
 import { CodexUsageStatus } from '../components/CodexUsageStatus.tsx'
 import type { CodexUsageStatusProps } from '../components/CodexUsageStatus.tsx'
-import { decodeCodexAuthSettings } from '../contracts/settings-contract.ts'
-import { CodexAuthRemoteSettingsScope } from './services/remote-settings-scope.ts'
-import { CODEX_AUTH_SETTINGS_NAMESPACE } from '../contracts/auth-paths.ts'
 import { en, zh } from './locales.ts'
 import type { CodexAuthLocaleKey } from './locales.ts'
 import { installSemiDshTheme } from '@tnnevol/dsh-semi-ui'
@@ -36,7 +33,7 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
 }
 
 export const name = 'dsh-codex-auth-plugin-client'
-export const inject = ['slots', 'locale', 'connection', 'remote', 'remote.session', 'settingsScope', 'timer']
+export const inject = ['slots', 'locale', 'connection', 'remote', 'remote.session', 'timer']
 
 export function apply(ctx: ClientContext): void {
   ctx.effect(() => installSemiDshTheme(), 'dsh-codex-auth-plugin: Semi DSH theme')
@@ -48,25 +45,12 @@ export function apply(ctx: ClientContext): void {
   // only resolves the base service and omits namespaces such as `session`.
   const remote = ctx.remote as unknown
   const timer = ctx.get('timer') as CodexUsageStatusProps['timer']
-  const remoteScope = connection.isLoopback ? undefined : new CodexAuthRemoteSettingsScope()
-  const configScope = remoteScope ?? ctx.settingsScope.bind({
-    namespace: CODEX_AUTH_SETTINGS_NAMESPACE,
-    decode: decodeCodexAuthSettings,
-  })
-  if (remoteScope !== undefined) {
-    ctx.effect(() => {
-      void remoteScope.load()
-      return async () => {
-        await remoteScope.dispose()
-      }
-    }, 'dsh-codex-auth-plugin: remote settings scope')
-  }
   ctx.slots.inject('settings.section', () => ctx.slots.register({
     name: 'settings.section',
     id: 'codex-auth',
     order: 24,
     label: () => t('title'),
-    inject: (): CodexAuthSectionProps => ({ t, configScope, connection, remote }),
+    inject: (): CodexAuthSectionProps => ({ t, connection, remote }),
   }, CodexAuthSection))
   ctx.slots.inject('conversation.input.right', () => ctx.slots.register({
     name: 'conversation.input.right',
