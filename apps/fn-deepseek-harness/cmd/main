@@ -62,6 +62,79 @@ process_group_id() {
     awk '{ sub(/^.*\) /, ""); print $3 }' "/proc/${pid}/stat" 2>/dev/null
 }
 
+process_command_line() {
+    local pid="$1"
+    [ -r "/proc/${pid}/cmdline" ] || return 1
+    tr '\0' ' ' <"/proc/${pid}/cmdline" 2>/dev/null
+}
+
+is_runtime_process() {
+    local pid="$1"
+    local kind="$2"
+    local command_line
+    command_line="$(process_command_line "${pid}")" || return 1
+
+    case "${kind}" in
+    gateway)
+        case "${command_line}" in
+        *"/fn-deepseek-harness/gateway-proxy.mjs"*) return 0 ;;
+        esac
+        ;;
+    dsh)
+        case "${command_line}" in
+        *"${DSH_BIN}"*" web "*"--port ${PORT}"*) return 0 ;;
+        esac
+        ;;
+    esac
+    return 1
+}
+
+stop_runtime_pid() {
+    local pid="$1"
+    if ! check_process "${pid}"; then
+        return 0
+    fi
+
+    local group_id
+    group_id=$(process_group_id "${pid}")
+    if [ "${group_id}" = "${pid}" ]; then
+        kill -TERM -- "-${pid}" 2>/dev/null || true
+    else
+        kill -TERM "${pid}" 2>/dev/null || true
+    fi
+
+    local count=0
+    while check_process "${pid}" && [ "${count}" -lt 10 ]; do
+        sleep 1
+        count=$((count + 1))
+    done
+
+    if check_process "${pid}"; then
+        if [ "${group_id}" = "${pid}" ]; then
+            kill -KILL -- "-${pid}" 2>/dev/null || true
+        else
+            kill -KILL "${pid}" 2>/dev/null || true
+        fi
+    fi
+}
+
+cleanup_orphaned_runtime_processes() {
+    local entry pid
+    for entry in /proc/[0-9]*; do
+        pid="${entry##*/}"
+        [ "${pid}" != "$$" ] || continue
+        if is_runtime_process "${pid}" gateway; then
+            log_info "Stopping orphaned fnOS gateway process ${pid}."
+            stop_runtime_pid "${pid}"
+            continue
+        fi
+        if is_runtime_process "${pid}" dsh; then
+            log_info "Stopping orphaned DSH Web process ${pid}."
+            stop_runtime_pid "${pid}"
+        fi
+    done
+}
+
 restart_in_progress() {
     [ -r "${RESTART_MARKER}" ] || return 1
 
@@ -86,14 +159,25 @@ restart_in_progress() {
 gateway_running() {
     local gateway_pid
     gateway_pid=$(pid_from_file "${GATEWAY_PID_FILE}")
-    check_process "${gateway_pid}"
+    check_process "${gateway_pid}" && is_runtime_process "${gateway_pid}" gateway
+}
+
+dsh_running() {
+    local dsh_pid
+    dsh_pid=$(pid_from_file "${PID_FILE}")
+    check_process "${dsh_pid}" && is_runtime_process "${dsh_pid}" dsh
 }
 
 start_process() {
-    if gateway_running; then
+    if gateway_running && dsh_running; then
         return 0
     fi
 
+    if gateway_running; then
+        log_info "Stopping stale fnOS gateway process before restarting DSH Web."
+        stop_pid "${GATEWAY_PID_FILE}"
+    fi
+    cleanup_orphaned_runtime_processes
     rm -f "${SOCKET_PATH}"
     mkdir -p "${TRIM_PKGVAR}/gateway"
     log_info "Starting DeepSeek Harness on ${HOST}:${PORT}..."
@@ -131,27 +215,7 @@ stop_pid() {
         return 0
     fi
 
-    local group_id
-    group_id=$(process_group_id "${pid}")
-    if [ "${group_id}" = "${pid}" ]; then
-        kill -TERM -- "-${pid}" 2>/dev/null || true
-    else
-        kill -TERM "${pid}" 2>/dev/null || true
-    fi
-
-    local count=0
-    while check_process "${pid}" && [ "${count}" -lt 10 ]; do
-        sleep 1
-        count=$((count + 1))
-    done
-
-    if check_process "${pid}"; then
-        if [ "${group_id}" = "${pid}" ]; then
-            kill -KILL -- "-${pid}" 2>/dev/null || true
-        else
-            kill -KILL "${pid}" 2>/dev/null || true
-        fi
-    fi
+    stop_runtime_pid "${pid}"
     rm -f "${pid_file}"
 }
 
@@ -163,6 +227,7 @@ stop_process() {
     # The gateway normally terminates its DSH child. Keep this fallback for a
     # gateway crash during uninstall or package shutdown.
     stop_pid "${PID_FILE}"
+    cleanup_orphaned_runtime_processes
     rm -f "${SOCKET_PATH}"
     return 0
 }
@@ -178,9 +243,6 @@ status() {
 
 case "$1" in
 start)
-    if gateway_running; then
-        exit 0
-    fi
     start_process
     ;;
 stop)

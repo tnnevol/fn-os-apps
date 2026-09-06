@@ -1,4 +1,4 @@
-import { open, readFile, rename, rm, writeFile } from 'node:fs/promises'
+import { open, readFile, readdir, rename, rm, writeFile } from 'node:fs/promises'
 import { spawn, type ChildProcess } from 'node:child_process'
 
 export const WEB_CONTROL_STATUS_PATH = '/__fnos-gateway/control/web/status'
@@ -27,10 +27,32 @@ function alive(pid: number): boolean { try { process.kill(pid, 0); return true }
 
 function delay(ms: number): Promise<void> { return new Promise(resolve => setTimeout(resolve, ms)) }
 
-export async function isDshWebProcess(pid: number, command: string): Promise<boolean> {
+export async function isDshWebProcess(pid: number, command: string, port?: number): Promise<boolean> {
   if (!alive(pid)) return false
-  try { const cmdline = await readFile(`/proc/${pid}/cmdline`, 'utf8'); return cmdline.includes(command) && cmdline.split('\0').includes('web') }
-  catch { return true }
+  try {
+    const cmdline = await readFile(`/proc/${pid}/cmdline`, 'utf8')
+    const args = cmdline.split('\0')
+    if (!cmdline.includes(command) || !args.includes('web')) return false
+    if (port === undefined) return true
+    const portIndex = args.indexOf('--port')
+    return portIndex >= 0 && args[portIndex + 1] === String(port)
+  }
+  catch {
+    // A port-scoped orphan scan must fail closed when /proc cannot be read.
+    return port === undefined
+  }
+}
+
+async function findDshWebProcesses(command: string, port: number): Promise<number[]> {
+  let entries: string[]
+  try { entries = await readdir('/proc') } catch { return [] }
+  const pids: number[] = []
+  for (const entry of entries) {
+    if (!/^\d+$/u.test(entry)) continue
+    const pid = Number.parseInt(entry, 10)
+    if (pid > 1 && await isDshWebProcess(pid, command, port)) pids.push(pid)
+  }
+  return pids
 }
 
 async function waitForChildExit(child: ChildProcess, timeoutMs: number): Promise<void> {
@@ -142,6 +164,15 @@ export class WebProcessController {
     let child: ChildProcess | undefined
     try {
       await rm(this.options.startingPidFile, { force: true })
+      // The fnOS app can be restarted after its gateway has been killed or
+      // its pid files have been removed. In that case an orphaned DSH Web
+      // process may still own the configured port. Reconcile only processes
+      // matching this executable, `web`, and this controller's port.
+      const port = new URL(this.options.healthUrl).port
+      const configuredPort = port === '' ? (new URL(this.options.healthUrl).protocol === 'https:' ? 443 : 80) : Number.parseInt(port, 10)
+      for (const pid of await findDshWebProcesses(this.options.command, configuredPort)) {
+        await terminatePid(pid, this.options.command, this.options.terminationTimeoutMs)
+      }
       // Keep DSH Web in its own process group so shutdown also terminates
       // children started by the CLI instead of leaving a port-owning process
       // behind after the fnOS app has been stopped.

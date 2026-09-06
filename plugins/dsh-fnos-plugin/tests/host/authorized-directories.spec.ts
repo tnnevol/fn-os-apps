@@ -1,10 +1,13 @@
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+const { callFnOsApi } = vi.hoisted(() => ({ callFnOsApi: vi.fn() }))
+vi.mock('../../src/api/fnos-api.ts', () => ({ callFnOsApi }))
 import {
   accessiblePathsFromEnvironment,
   buildAuthorizedDirectories,
+  checkCurrentUserAcl,
   dataSharePathsFromEnvironment,
   defaultApplicationPathsFromEnvironment,
   gatewayUserId,
@@ -108,6 +111,54 @@ describe('fnOS authorized-directory contract', () => {
     expect(gatewayUserId({ headers: { 'x-trim-userid': '1000' } } as never)).toBe(1000)
     expect(gatewayUserId({ headers: { 'x-trim-userid': 'not-a-uid' } } as never)).toBeUndefined()
     expect(gatewayUserId({ headers: { 'x-trim-userid': '999999999999999999999' } } as never)).toBeUndefined()
+  })
+
+  it('keeps the message picker available from fnOS declared paths when user ACL is temporarily unavailable', async () => {
+    vi.stubEnv('TRIM_DATA_ACCESSIBLE_PATHS', '/vol4/share')
+    vi.stubEnv('TRIM_DATA_SHARE_PATHS', '/vol4/app-share')
+    callFnOsApi.mockRejectedValueOnce(new Error('ACL API unavailable'))
+
+    const result = await checkCurrentUserAcl(
+      { headers: { 'x-trim-userid': '1000' } } as never,
+      ['/vol4/share/report.md', '/vol4/app-share/session.log', '/vol5/private.txt'],
+    )
+
+    expect(result.available).toBe(true)
+    expect([...result.readable]).toEqual(['/vol4/share/report.md', '/vol4/app-share/session.log'])
+  })
+
+  it('uses the resolved workspace roots when the ACL fallback environment is empty', async () => {
+    vi.stubEnv('TRIM_DATA_ACCESSIBLE_PATHS', '')
+    vi.stubEnv('TRIM_DATA_SHARE_PATHS', '')
+    vi.stubEnv('TRIM_APPDEST_VOL', '')
+    vi.stubEnv('TRIM_APPDEST', '')
+    vi.stubEnv('TRIM_PKGHOME', '')
+    callFnOsApi.mockRejectedValueOnce(new Error('ACL API unavailable'))
+
+    const result = await checkCurrentUserAcl(
+      { headers: { 'x-trim-userid': '1000' } } as never,
+      ['/vol4/from-api/report.md', '/vol5/private.txt'],
+      ['/vol4/from-api'],
+    )
+
+    expect(result).toEqual({
+      available: true,
+      readable: new Set(['/vol4/from-api/report.md']),
+    })
+  })
+
+  it('keeps ACL unavailable when no fnOS path fallback is supplied', async () => {
+    vi.stubEnv('TRIM_DATA_ACCESSIBLE_PATHS', '')
+    vi.stubEnv('TRIM_DATA_SHARE_PATHS', '')
+    vi.stubEnv('TRIM_APPDEST_VOL', '')
+    vi.stubEnv('TRIM_APPDEST', '')
+    vi.stubEnv('TRIM_PKGHOME', '')
+    callFnOsApi.mockRejectedValueOnce(new Error('ACL API unavailable'))
+
+    await expect(checkCurrentUserAcl(
+      { headers: { 'x-trim-userid': '1000' } } as never,
+      ['/vol4/private.txt'],
+    )).resolves.toEqual({ available: false, readable: new Set() })
   })
 
   it('requires a real readable path and the current user ACL', async () => {

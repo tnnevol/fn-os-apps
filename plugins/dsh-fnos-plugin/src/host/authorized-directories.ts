@@ -63,6 +63,7 @@ export interface UserAclResult {
 export type UserAclChecker = (
   req: IncomingMessage | undefined,
   paths: readonly string[],
+  fallbackRoots?: readonly string[],
 ) => Promise<UserAclResult>
 
 export interface PathValidationOptions {
@@ -277,7 +278,7 @@ function userAclResult(value: unknown): UserAclResult {
  * that case the real process-level fs check remains the only meaningful check
  * and the fnOS `openFile()` bridge is still the final host-side operation.
  */
-export const checkCurrentUserAcl: UserAclChecker = async (req, paths) => {
+export const checkCurrentUserAcl: UserAclChecker = async (req, paths, fallbackRoots = []) => {
   const uid = gatewayUserId(req)
   const normalizedPaths = normalizeAuthorizedPaths(paths)
   if (uid === undefined || normalizedPaths.length === 0) {
@@ -291,6 +292,22 @@ export const checkCurrentUserAcl: UserAclChecker = async (req, paths) => {
     return userAclResult(data)
   } catch (error: unknown) {
     console.warn('[dsh-fnos] unable to check current fnOS user ACL', error)
+    // The fnOS runtime already supplies the paths visible to the application
+    // through its environment. This is also the source used by the workspace
+    // card when the shared-access API is unavailable. Keep the picker usable
+    // during that same degraded state, but retain the application root and
+    // filesystem checks instead of treating every path as readable.
+    const declaredRoots = mergeAuthorizedPaths(
+      fallbackRoots,
+      accessiblePathsFromEnvironment(),
+      dataSharePathsFromEnvironment(),
+      defaultApplicationPathsFromEnvironment(),
+    )
+    if (declaredRoots.length > 0) {
+      const readable = normalizedPaths.filter(path => isPathWithinAuthorizedDirectory(path, declaredRoots))
+      console.warn('[dsh-fnos] using fnOS declared paths because the current-user ACL query failed')
+      return { available: true, readable: new Set(readable) }
+    }
     return { available: false, readable: new Set() }
   }
 }
@@ -496,7 +513,7 @@ async function validateReadableAuthorizedPath(
     return { ok: false, failure: 'fnos-path-not-authorized' }
   }
 
-  const userAcl = await checkUserAcl(req, [path])
+  const userAcl = await checkUserAcl(req, [path], roots)
   if (!userAcl.available) return { ok: false, failure: 'fnos-user-permission-unavailable' }
   if (!userAcl.readable.has(path)) return { ok: false, failure: 'fnos-user-permission-denied' }
   return { ok: true }
@@ -670,7 +687,7 @@ export async function loadAuthorizedEntries(
 ): Promise<AuthorizedEntriesResponse> {
   const roots = await resolvedAuthorizedRoots()
   if (pathValue === undefined) {
-    const userAcl = await checkCurrentUserAcl(req, roots)
+    const userAcl = await checkCurrentUserAcl(req, roots, roots)
     if (!userAcl.available) {
       throw new AuthorizedEntriesError('fnos-user-permission-check-unavailable', 503)
     }
@@ -716,7 +733,7 @@ export async function loadAuthorizedEntries(
     }
   }
 
-  const userAcl = await checkCurrentUserAcl(req, candidates.map(entry => entry.path))
+  const userAcl = await checkCurrentUserAcl(req, candidates.map(entry => entry.path), roots)
   if (!userAcl.available) {
     throw new AuthorizedEntriesError('fnos-user-permission-check-unavailable', 503)
   }
@@ -744,7 +761,7 @@ export async function loadAuthorizedEntries(
  */
 async function validatePathsForConversion(req: IncomingMessage, paths: readonly string[]): Promise<string[]> {
   const roots = await resolvedAuthorizedRoots()
-  const userAcl = await checkCurrentUserAcl(req, paths)
+  const userAcl = await checkCurrentUserAcl(req, paths, roots)
   if (!userAcl.available) {
     throw new AuthorizedEntriesError('fnos-user-permission-check-unavailable', 503)
   }
