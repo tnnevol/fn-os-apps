@@ -9,15 +9,19 @@ describe('dsh-fnos package contract', () => {
     expect(source).toContain('ctx.remote.session')
   })
 
-  it('registers the fnOS authorized-directory slash source', async () => {
+  it('registers fn through DSH commandUi and keeps directory browsing as input completion', async () => {
     const source = await readFile(new URL('../../src/client/index.ts', import.meta.url), 'utf8')
     const slashSource = await readFile(new URL('../../src/client/input-references/fnos-command-source.ts', import.meta.url), 'utf8')
     expect(source).toContain('createFnosDirectorySource')
     expect(source).toContain('registerSource(directorySource)')
+    expect(source).toContain('createFnosCommandContribution')
+    expect(source).toContain('commandUi.register')
+    expect(source).toContain("'commandUi'")
     expect(slashSource).toContain("trigger: '/'" )
     expect(slashSource).toContain("name: 'fnos-directory'")
     expect(slashSource).toContain("action === 'drill'")
     expect(slashSource).toContain('requestAuthorizedEntries')
+    expect(slashSource).not.toContain('commandCandidate')
   })
 
   it('declares a bundle and an early web client with theme ordering', async () => {
@@ -33,6 +37,7 @@ describe('dsh-fnos package contract', () => {
     expect(manifest.dsh.client.platform).toBe('web')
     expect(manifest.dsh.client.immediately).toBe(true)
     expect(manifest.dsh.client.inject).toContain('@deepseek-ai/dsh-client-ui-theme')
+    expect(manifest.dsh.client.inject).toContain('@deepseek-ai/dsh-client-ui-commands')
     expect(manifest.dsh.client.inject).toContain('@deepseek-ai/dsh-client-ui-settings')
     expect(manifest.dsh.client.inject).toContain('@deepseek-ai/dsh-client-ui-settings-plugins')
     expect(manifest.dsh.client.inject).toContain('@deepseek-ai/dsh-client-ui-workspace')

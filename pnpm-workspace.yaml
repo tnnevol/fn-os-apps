@@ -45,6 +45,7 @@ catalogs:
     '@deepseek-ai/dsh-client-connection': 0.1.2-rc.1
     '@deepseek-ai/dsh-client-locale': 0.1.2-rc.1
     '@deepseek-ai/dsh-client-ui-conversation': 0.1.2-rc.1
+    '@deepseek-ai/dsh-client-ui-commands': 0.1.2-rc.1
     '@deepseek-ai/dsh-client-ui-input-trigger': 0.1.2-rc.1
     '@deepseek-ai/dsh-client-ui-layout': 0.1.2-rc.1
     '@deepseek-ai/dsh-client-ui-model-selection': 0.1.2-rc.1
@@ -96,6 +97,7 @@ minimumReleaseAgeExclude:
   - '@deepseek-ai/dsh-client-connection@0.1.2-rc.1'
   - '@deepseek-ai/dsh-client-locale@0.1.2-rc.1'
   - '@deepseek-ai/dsh-client-ui-conversation@0.1.2-rc.1'
+  - '@deepseek-ai/dsh-client-ui-commands@0.1.2-rc.1'
   - '@deepseek-ai/dsh-client-ui-input-trigger@0.1.2-rc.1'
   - '@deepseek-ai/dsh-client-ui-layout@0.1.2-rc.1'
   - '@deepseek-ai/dsh-client-ui-model-selection@0.1.2-rc.1'

@@ -5,7 +5,9 @@ import type { Context as ClientContext } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-api-remotes/client'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
-import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
+import type { ReferenceInsert, SessionInput } from '@deepseek-ai/dsh-client-ui-conversation/client'
+import type { CommandUiContract } from '@deepseek-ai/dsh-client-ui-commands/client'
+import type {} from '@deepseek-ai/dsh-client-ui-commands/client'
 import type { InputTriggerServiceContract, InputTriggerSource } from '@deepseek-ai/dsh-client-ui-input-trigger/client'
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import type {} from '@deepseek-ai/dsh-client-ui-settings-plugins/client'
@@ -18,8 +20,8 @@ import { AuthorizedDirectoriesCard } from '../components/AuthorizedDirectoriesCa
 import { FnosInputPickerButton } from '../components/FnosInputPickerButton.tsx'
 import { FnosSessionLogHeaderAction } from '../components/FnosSessionLogHeaderAction.tsx'
 import { insertFnosReferences } from './input-references/input-reference-actions.ts'
-import { createFnosDirectorySource } from './input-references/fnos-command-source.ts'
-import { FNOS_REFERENCE_SOURCE, fnosReferencePromptText, type FnosInputReference, type InputSnapshotForReference } from './input-references/input-references.ts'
+import { createFnosCommandContribution, createFnosDirectorySource } from './input-references/fnos-command-source.ts'
+import { FNOS_REFERENCE_SOURCE, fnosReferenceDisplayText, fnosReferencePromptText, type FnosInputReference, type InputSnapshotForReference } from './input-references/input-references.ts'
 import type { FnosLocaleKey } from './locales.ts'
 import { en, zh } from './locales.ts'
 import { installFnosRemotePathOpener } from './services/path-opener.ts'
@@ -45,7 +47,7 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
 }
 
 export const name = 'dsh-fnos-plugin-client'
-export const inject = ['theme', 'slots', 'locale', 'sessions', 'inputTriggers', 'remote', 'remote.session', 'settingsScope', 'sessionLogDownload']
+export const inject = ['theme', 'slots', 'locale', 'sessions', 'inputTriggers', 'commandUi', 'remote', 'remote.session', 'settingsScope', 'sessionLogDownload']
 
 type SessionLogDownloadState = {
   bySession: Record<string, { open: boolean, status: 'downloading' | 'success' | 'error', error: string | null } | undefined>
@@ -124,6 +126,14 @@ export function apply(ctx: ClientContext): void {
     }
   }, 'dsh-fnos: fnOS input reference source')
 
+  ctx.inject(['commandUi'], (scope: ClientContext) => {
+    const commandUi = scope.get('commandUi') as CommandUiContract
+    scope.effect(() => commandUi.register(createFnosCommandContribution(
+      t,
+      (sessionId, reference) => insertFnosCommandReference(ctx, sessionId, reference),
+    )), 'dsh-fnos: /fn command contribution')
+  })
+
   if (isEmbeddedFnosFrame()) {
     ctx.slots.inject('conversation.session.header.utilities', () => {
       const sessionLogDownload = ctx.get('sessionLogDownload') as SessionLogDownloadController | undefined
@@ -175,4 +185,29 @@ export function apply(ctx: ClientContext): void {
       insertReferences: (input: InputSnapshotForReference, references: readonly FnosInputReference[]) => insertFnosReferences(ctx, sessionId as SessionId, references, input),
     }),
   }, FnosInputPickerButton))
+}
+
+/** Insert a command-popup selection over the currently open `/` or `/fn` token. */
+function insertFnosCommandReference(ctx: ClientContext, sessionId: SessionId, reference: FnosInputReference): boolean {
+  const actx = ctx.sessions.scope(sessionId)
+  if (actx === undefined) return false
+  const conversation = actx.get('conversation') as { input: { for: (scope: ClientContext) => SessionInput } } | undefined
+  const input = conversation?.input.for(actx)
+  if (input === undefined) return false
+  const state = input.state.getSnapshot()
+  const token = state.draft.endsWith('/fn')
+    ? '/fn'
+    : state.draft.endsWith('/f')
+      ? '/f'
+      : state.draft.endsWith('/') ? '/' : undefined
+  if (token === undefined) return false
+  const start = state.draft.length - token.length
+  const value: ReferenceInsert = {
+    source: FNOS_REFERENCE_SOURCE,
+    ref: reference.ref,
+    label: reference.semanticPath.split('/').filter(Boolean).at(-1) ?? reference.semanticPath,
+    appearance: reference.kind === 'directory' ? 'folder' : 'file',
+    clipboardText: fnosReferenceDisplayText(reference),
+  }
+  return input.insertReference(value, { start, end: state.draft.length, draftRev: state.draftRev })
 }
