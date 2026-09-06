@@ -18,6 +18,7 @@ import { AuthorizedDirectoriesCard } from '../components/AuthorizedDirectoriesCa
 import { FnosInputPickerButton } from '../components/FnosInputPickerButton.tsx'
 import { FnosSessionLogHeaderAction } from '../components/FnosSessionLogHeaderAction.tsx'
 import { insertFnosReferences } from './input-references/input-reference-actions.ts'
+import { createFnosDirectorySource } from './input-references/fnos-command-source.ts'
 import { FNOS_REFERENCE_SOURCE, fnosReferencePromptText, type FnosInputReference, type InputSnapshotForReference } from './input-references/input-references.ts'
 import type { FnosLocaleKey } from './locales.ts'
 import { en, zh } from './locales.ts'
@@ -112,10 +113,15 @@ export function apply(ctx: ClientContext): void {
       serialize: async ref => fnosReferencePromptText(ref),
     },
   }
+  const directorySource = createFnosDirectorySource(t)
   const inputTriggers = ctx.get('inputTriggers') as InputTriggerServiceContract
   ctx.effect(() => {
     const unregister = inputTriggers.registerSource(source)
-    return unregister
+    const unregisterDirectorySource = inputTriggers.registerSource(directorySource)
+    return () => {
+      unregisterDirectorySource()
+      unregister()
+    }
   }, 'dsh-fnos: fnOS input reference source')
 
   if (isEmbeddedFnosFrame()) {

@@ -9,6 +9,17 @@ describe('dsh-fnos package contract', () => {
     expect(source).toContain('ctx.remote.session')
   })
 
+  it('registers the fnOS authorized-directory slash source', async () => {
+    const source = await readFile(new URL('../../src/client/index.ts', import.meta.url), 'utf8')
+    const slashSource = await readFile(new URL('../../src/client/input-references/fnos-command-source.ts', import.meta.url), 'utf8')
+    expect(source).toContain('createFnosDirectorySource')
+    expect(source).toContain('registerSource(directorySource)')
+    expect(slashSource).toContain("trigger: '/'" )
+    expect(slashSource).toContain("name: 'fnos-directory'")
+    expect(slashSource).toContain("action === 'drill'")
+    expect(slashSource).toContain('requestAuthorizedEntries')
+  })
+
   it('declares a bundle and an early web client with theme ordering', async () => {
     const manifest = JSON.parse(await readFile(new URL('../../package.json', import.meta.url), 'utf8')) as {
       name: string
