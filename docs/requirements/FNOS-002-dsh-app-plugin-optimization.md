@@ -31,7 +31,7 @@ DSH 在 fnOS 中运行后，还有几处使用体验需要调整。Codex 登录�
 - 使用 `connect` 与 `http-proxy-middleware` 重写 FPK 网关，通过 tsdown 生成可直接随 FPK 分发的单文件入口；浏览器 Bridge 使用独立 JS 源文件维护，网关常驻时在 Web 左侧菜单提供“重启 Web”按钮。
 - 由 fnOS 插件管理三方插件 API URL 反代配置，网关监听配置并将匹配的绝对 URL 请求改写到统一网关下的 DSH 服务。
 - 统一 DSH 运行时、插件、插件依赖、native 产物、FPK 安装流程和发布文档的目标版本为 `0.1.2-rc.1`，并保留用户数据与配置。
-- 将版本发布逻辑放入独立 `tooling/fn-os-apps-cli` pnpm workspace，通过 `fn-apps-cli` CLI 使用 `bumpp` 分别维护项目/FPK版本与插件版本；插件版本不得被项目或 FPK 版本命令隐式修改。
+- 将版本发布逻辑放入独立 `tooling/fn-os-apps-cli` pnpm workspace，通过 `fn-apps-cli` CLI 使用 `bumpp` 分别维护项目/FPK版本与插件版本；插件版本不得被项目或 FPK 版本命令隐式修改。多选插件时必须在一次 `bumpp` 事务中统一修改，并仅生成一条合并提交，不创建插件 Git Tag。
 - 通过 `fn-apps-cli publish` 交互选择一个或多个 DSH 插件，并在所有选择完成后统一使用 `rc` dist-tag 发布 npm 包。
 - 修复 fnOS 聊天输入框授权路径选择器的多选行为，连续选择多个文件或目录时全部生成引用。
 - 引入 Turbo 统一包任务编排；根 `package.json` 提供统一任务入口，`tooling/fn-os-apps-cli` 通过 `fn-apps-cli` CLI 暴露任务，全部使用 TypeScript 与 tsdown。
@@ -70,7 +70,7 @@ DSH 在 fnOS 中运行后，还有几处使用体验需要调整。Codex 登录�
 - FPK 安装/升级回调、node-pty native 配置、已发布插件清单和相关文档必须与该版本一致。
 - 已发布插件清单包含 `@tnnevol/dsh-codex-auth` 与 `@tnnevol/dsh-fnos`，按精确版本固定安装：codex-auth 为 `0.1.2-rc.1`，fnos 为 `0.1.2-rc.1.1`；后续发布新版本时需同步更新该清单。
 - fnOS 插件客户端声明 `remote` 与 `remote.session` inject；任何访问 `ctx.remote.*` 命名空间的构建产物都必须携带对应 inject 声明，否则该插件视为损坏并需要重装。
-- 版本管理通过独立 `tooling/fn-os-apps-cli` workspace 中的 `bumpp` 执行；项目/FPK 版本命令只更新根项目、共享包和应用 Manifest，插件版本命令按指定插件独立更新、提交和打 Tag。
+- 版本管理通过独立 `tooling/fn-os-apps-cli` workspace 中的 `bumpp` 执行；项目/FPK 版本命令只更新根项目、共享包和应用 Manifest 并创建项目 Tag，插件版本命令按指定插件独立更新并提交，不创建 Git Tag。
 - 版本检查和升级不得清理 `DSH_HOME`、profile、凭据、工作区或现有插件配置。
 - 构建任务由 Turbo 编排；插件构建先完成其 workspace 依赖（包括 `@tnnevol/dsh-semi-ui`），DSH FPK 构建先完成 fnOS Gateway，其他 FPK 不触发网关构建。
 - 共享 UI 包继续由 workspace 管理，不作为 DSH 运行时插件重复安装。
@@ -127,7 +127,7 @@ DSH 在 fnOS 中运行后，还有几处使用体验需要调整。Codex 登录�
 - 用量接口返回 18,000 秒窗口时显示五小时剩余额度和重置时间；未返回、字段不完整或请求失败时不显示该窗口。
 - 五小时窗口显隐不依赖用户设置，刷新用量后能根据最新接口响应自动变化。
 - NAS TreeSelect 可连续选择多个文件或目录，父子路径作为独立引用全部插入；面板打开期间删除本次引用会立即取消对应 Tree 勾选，历史引用不会进入当前选择状态。
-- 项目/FPK 与插件版本命令通过 `bumpp` 独立运行，分别只修改约定文件，不发生跨类别版本联动。
+- 项目/FPK 与插件版本命令通过 `bumpp` 独立运行，分别只修改约定文件，不发生跨类别版本联动；多选插件时一次性更新所有选中插件，仅生成一条提交，不创建插件 Git Tag。
 - 根任务入口、workflow 调用和包任务名称保持一致；Release 日志由 `changelogithub` 根据 Conventional Commits 自动生成。
 - `pnpm run publish` 可交互选择一个或多个 DSH 插件，完成全部询问后统一使用 `rc` dist-tag 发布 npm 包。
 - Semi UI 总览插件可正常安装和卸载；点击入口可进入独立总览路由，浏览器前进、后退和刷新有效，组件在浅色、深色主题下显示正常。
@@ -183,3 +183,4 @@ DSH 在 fnOS 中运行后，还有几处使用体验需要调整。Codex 登录�
 | 2026-09-01 | 增加真实 NAS 浏览器验收结果 | 7 条 FNOS-002 用例通过；补充用量、TreeSelect、快捷键、主题、刷新/重启和静态图片 Network 证据，其余场景保持待验证 |
 | 2026-09-01 | 更新自动化测试状态 | 根目录 `pnpm run test:unit` 通过，39 个测试文件、157 条自动化测试全部通过；未改变尚未完成真实 NAS 验收的业务用例状态 |
 | 2026-09-05 | 增加 Codex 动态模型目录需求 | FNOS-002-05：从 ChatGPT Codex 账号接口读取当前可用模型与思考级别，刷新写入 DSH OpenAI Codex 路由配置，使模型目录与账号真实可用列表一致 |
+| 2026-09-06 | 调整插件版本发布规则 | `fn-apps-cli version` 插件版本只创建提交、不创建 Git Tag；多选插件时统一调用一次 `bumpp`，生成一条合并提交；版本不一致时提前拒绝合并发布 |

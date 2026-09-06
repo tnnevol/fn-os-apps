@@ -142,7 +142,7 @@ pnpm run version -- plugin codex patch
 pnpm run version -- plugin showcase patch
 ```
 
-插件版本命令只修改指定插件，使用 `plugin/<插件名>-v<版本号>` Tag。
+插件版本命令支持多选插件；多选时一次性修改所有选中插件，只生成一条合并提交，不创建 Git Tag。
 
 3. **GitHub Actions 自动执行**
 

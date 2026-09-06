@@ -261,14 +261,13 @@ pnpm run version -- plugin fnos patch
 pnpm run version -- plugin codex patch
 pnpm run version -- plugin showcase patch
 
-# 只修改文件，不提交或创建 Tag
+# 只修改文件，不提交
 pnpm run version -- project patch --no-commit --no-tag
 ```
 
-项目版本更新根 `package.json`、`packages/**/package.json`、应用 `manifest` 和 README；harness 插件版本只更新指定插件的 `package.json`。默认创建提交和 Tag，但不会自动 push：
+项目版本更新根 `package.json`、`packages/**/package.json`、应用 `manifest` 和 README；harness 插件版本只更新指定插件的 `package.json`。项目版本默认创建提交和 Tag，插件版本默认只创建提交；两者都不会自动 push：
 
 - 项目 / FPK：`v<版本号>`
-- harness 插件：`plugin/<插件名>-v<版本号>`
 
 推送项目 Tag 后，GitHub Actions 会分别执行通用 FPK、DeepSeek Harness FPK 和 Release 发布流程。具体 Workflow 见 [CI 构建](../build/ci)。
 

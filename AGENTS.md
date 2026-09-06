@@ -124,7 +124,7 @@ pnpm run version -- project patch
 pnpm run version -- plugin fnos patch
 ```
 
-项目/FPK版本使用 `v<版本号>` Tag；插件版本使用 `plugin/<插件名>-v<版本号>` Tag。可追加 `--no-commit --no-tag` 只修改文件，默认不会自动 push。构建任务同样从根脚本进入：
+项目/FPK版本使用 `v<版本号>` Tag；插件版本只创建提交，不生成 Git Tag。可追加 `--no-commit` 只修改文件，默认不会自动 push。构建任务同样从根脚本进入：
 
 ```bash
 pnpm run build

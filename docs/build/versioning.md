@@ -22,7 +22,7 @@ pnpm run version -- project patch --no-commit --no-tag
 
 ## 插件版本
 
-插件版本可选择单个插件，或在交互提示中复选多个插件；脚本逐一把所选插件的 `package.json` 更新到同一目标版本，并为每个插件创建专属提交和 Tag：
+插件版本可选择单个插件，或在交互提示中复选多个插件；脚本把所选插件的 `package.json` 更新到同一目标版本。多选时只执行一次 `bumpp` 并创建一条合并提交，不创建插件 Git Tag：
 
 ```bash
 # 直接指定单个插件
@@ -34,14 +34,14 @@ pnpm run version -- plugin showcase patch
 pnpm run version -- plugin patch
 ```
 
-插件列表由 CLI 动态扫描 `plugins/` 目录发现，新增插件无需改动 CLI。每个插件的别名为包名去掉 `dsh-` 前缀后的部分（如 `@tnnevol/dsh-fnos` → `fnos`、`@tnnevol/dsh-codebuddy` → `codebuddy`），也可直接使用完整包名。历史简称 `codex`、`showcase` 仍保留兼容。插件 Tag 格式为 `plugin/<插件名>-v<版本号>`。
+插件列表由 CLI 动态扫描 `plugins/` 目录发现，新增插件无需改动 CLI。每个插件的别名为包名去掉 `dsh-` 前缀后的部分（如 `@tnnevol/dsh-fnos` → `fnos`、`@tnnevol/dsh-codebuddy` → `codebuddy`），也可直接使用完整包名。历史简称 `codex`、`showcase` 仍保留兼容。
 
-插件版本命令不会修改根项目、共享包、FPK Manifest 或其他插件。使用 `--no-commit`、`--no-tag` 可只执行文件更新；脚本默认不会自动 push，推送由发布者确认后执行。
+插件版本命令不会修改根项目、共享包、FPK Manifest 或其他插件；默认只创建版本提交，不创建 Git Tag。使用 `--no-commit` 可只执行文件更新；`--no-tag` 对插件版本命令保持兼容但无额外作用。脚本默认不会自动 push，推送由发布者确认后执行。
 
 ## 发布检查
 
 1. 确认工作区没有需要保留的未提交改动。
 2. 根据发布目标选择 `version -- project` 或 `version -- plugin`（插件可复选）。
-3. 检查版本文件、提交和 Tag。
-4. 推送提交和 Tag，触发对应的 CI/发布流程。
+3. 检查版本文件和提交。
+4. 推送提交，触发对应的 CI/发布流程。
 5. 插件发布前运行对应插件的 `check`，再使用 `pnpm run publish` 发布当前 `rc` dist-tag。
