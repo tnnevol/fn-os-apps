@@ -12,7 +12,7 @@ export async function askReleaseArea(): Promise<ReleaseArea | undefined> {
     message: '选择要维护版本的区域',
     options: [
       { value: 'project', label: '项目 / FPK', hint: '根项目、共享包、应用 Manifest' },
-      { value: 'plugin', label: 'DSH 插件', hint: '可多选维护插件版本' },
+      { value: 'plugin', label: 'Harness 插件', hint: '可多选维护插件版本' },
     ],
   })
   if (isCancel(result)) {
@@ -44,7 +44,7 @@ export async function askCheckSelection(): Promise<CheckSelection[] | undefined>
       { value: 'sdd', label: 'SDD 文档', hint: '校验需求、计划、编号和内部链接' },
       { value: 'docs', label: '项目文档', hint: '构建 VitePress 文档站点' },
       { value: 'packages', label: '共享包', hint: '通过 Turbo 执行共享包检查' },
-      { value: 'plugins', label: 'DSH 插件', hint: '通过 Turbo 执行插件检查' },
+      { value: 'plugins', label: 'Harness 插件', hint: '通过 Turbo 执行插件检查' },
     ],
   })
   if (isCancel(result)) {
@@ -59,7 +59,7 @@ export async function askBuildSelection(): Promise<BuildSelection[] | undefined>
     message: '选择构建任务（可多选）',
     required: true,
     options: [
-      { value: 'plugins', label: 'DSH 插件', hint: '通过 Turbo 构建插件及其共享包依赖' },
+      { value: 'plugins', label: 'Harness 插件', hint: '通过 Turbo 构建插件及其共享包依赖' },
       { value: 'fpk', label: 'fnOS FPK', hint: '可继续多选应用，DSH 应用自动先构建网关' },
       { value: 'docs', label: '项目文档', hint: '构建 VitePress 文档站点' },
     ],
@@ -76,7 +76,7 @@ export async function askStartSelection(): Promise<StartSelection[] | undefined>
     message: '选择启动任务（可多选）',
     required: true,
     options: [
-      { value: 'plugins', label: 'DSH 插件', hint: '通过 Turbo watch 编译插件及其共享包依赖' },
+      { value: 'plugins', label: 'Harness 插件', hint: '通过 Turbo watch 编译插件及其共享包依赖' },
       { value: 'docs', label: '项目文档', hint: '启动 VitePress 文档开发服务' },
     ],
   })
@@ -134,7 +134,7 @@ export async function askFpkApps(apps: FpkApp[]): Promise<FpkApp[] | undefined> 
 
 export async function askBundleDshPlugins(): Promise<boolean | undefined> {
   const result = await confirm({
-    message: '是否将 DSH 清单插件内置到 FPK 包中？',
+    message: '是否将 Harness 清单插件内置到 FPK 包中？',
     initialValue: true,
   })
   if (isCancel(result)) {
