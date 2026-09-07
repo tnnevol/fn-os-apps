@@ -1,0 +1,11 @@
+[
+  {
+    "stepTitle": "Dashboard 配置",
+    "items": [
+      { "type": "text", "field": "dashboard_username", "label": "Basic Auth 用户名", "initValue": "admin", "rules": [{ "required": true, "message": "请输入用户名" }] },
+      { "type": "password", "field": "dashboard_password", "label": "Basic Auth 密码", "initValue": "", "rules": [{ "required": true, "message": "请输入密码" }] },
+      { "type": "text", "field": "dashboard_host", "label": "监听地址", "initValue": "127.0.0.1", "rules": [{ "required": true, "message": "请输入监听地址" }] },
+      { "type": "text", "field": "dashboard_port", "label": "监听端口", "initValue": "9119", "rules": [{ "required": true, "message": "请输入端口号" }, { "pattern": "^[1-9][0-9]{0,4}$", "message": "请输入 1-65535 之间的端口号" }] }
+    ]
+  }
+]

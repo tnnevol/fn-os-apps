@@ -1,0 +1,14 @@
+[
+  {
+    "stepTitle": "Quark Auto Save 配置",
+    "items": [
+      { "type": "text", "field": "PAN_PORT", "label": "Pansou 端口", "initValue": "8007", "rules": [{ "required": true, "message": "请输入端口号" }, { "pattern": "^[0-9]+$", "message": "端口号必须是数字" }] },
+      { "type": "switch", "field": "CACHE_ENABLED", "label": "启用缓存", "initValue": "true" },
+      { "type": "text", "field": "CACHE_MAX_SIZE", "label": "缓存最大条数", "initValue": "100" },
+      { "type": "text", "field": "CACHE_TTL", "label": "缓存过期时间(秒)", "initValue": "60" },
+      { "type": "switch", "field": "ASYNC_PLUGIN_ENABLED", "label": "启用异步", "initValue": "true" },
+      { "type": "text", "field": "APP_PORT", "label": "访问端口", "initValue": "8015", "rules": [{ "required": true, "message": "请输入端口号" }, { "pattern": "^[0-9]+$", "message": "端口号必须是数字" }] },
+      { "type": "text", "field": "PLUGIN_FLAGS", "label": "插件禁用标志", "initValue": "-smartstrm,-alist_strm,-alist_strm_gen,-aria2,-plex,-fnv,-alist_sync" }
+    ]
+  }
+]
