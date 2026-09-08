@@ -137,7 +137,7 @@ pnpm run build -- --plugin fnos
 ### CI/CD
 
 - **配置文件**：[.github/workflows/build-release.yml](.github/workflows/build-release.yml)
-- **Tag 格式**：项目为 `v<版本号>`，插件为 `plugin/<插件名>-v<版本号>`
+- **Tag 格式**：项目为 `v<版本号>`；插件版本只生成提交，不创建 Git Tag
 - **任务编排**：`turbo.json` 与根 `package.json`
 - **版本与 Release 工具**：`tooling/fn-os-apps-cli` workspace，CLI 命令为 `fn-apps-cli`
 

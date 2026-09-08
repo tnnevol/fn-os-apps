@@ -6,12 +6,12 @@
 
 | 包名 | 版本 | 适用场景 | 文档 | 源码 |
 | --- | --- | --- | --- | --- |
-| `@tnnevol/dsh-codex-auth` | `0.1.2-rc.1` | 使用 ChatGPT 账号登录 Codex，并把模型、用量和图片输入能力接入 DSH | [Codex Auth](/plugins/dsh-codex-auth) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/plugins/dsh-codex-auth-plugin) |
-| `@tnnevol/dsh-codebuddy` | `0.1.2-rc.1` | 使用腾讯 CodeBuddy 账号登录，接入模型目录并在对话区展示额度余量 | [CodeBuddy](/plugins/dsh-codebuddy) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/plugins/dsh-codebuddy-plugin) |
-| `@tnnevol/dsh-fnos` | `0.1.2-rc.1.1` | 在 fnOS 中补充主题、授权目录、NAS 文件访问和会话日志导出 | [fnOS](/plugins/dsh-fnos) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/plugins/dsh-fnos-plugin) |
-| `@tnnevol/dsh-semi-ui-showcase` | `0.1.2-rc.1` | 在独立路由中检查共享 Semi UI 组件和 DSH 主题效果 | [Semi UI 总览](/plugins/dsh-semi-ui-showcase) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/plugins/dsh-semi-ui-showcase-plugin) |
+| `@tnnevol/dsh-codex-auth` | `0.1.2-rc.1.3` | 使用 ChatGPT 账号登录 Codex，并把模型、用量和图片输入能力接入 DSH | [Codex Auth](/plugins/dsh-codex-auth) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/plugins/dsh-codex-auth-plugin) |
+| `@tnnevol/dsh-codebuddy` | `0.1.2-rc.1.3` | 使用腾讯 CodeBuddy 多账号登录，接入模型目录、额度和 Token 统计 | [CodeBuddy](/plugins/dsh-codebuddy) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/plugins/dsh-codebuddy-plugin) |
+| `@tnnevol/dsh-fnos` | `0.1.2-rc.1.3` | 在 fnOS 中补充主题、授权目录、NAS 文件访问和会话日志导出 | [fnOS](/plugins/dsh-fnos) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/plugins/dsh-fnos-plugin) |
+| `@tnnevol/dsh-semi-ui-showcase` | `0.1.2-rc.1.3` | 在独立路由中检查共享 Semi UI 组件和 DSH 主题效果 | [Semi UI 总览](/plugins/dsh-semi-ui-showcase) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/plugins/dsh-semi-ui-showcase-plugin) |
 
-已发布的运行时插件和 DSH 运行时均以 `0.1.2-rc.1` 为基线，其中 fnOS 插件当前为 `0.1.2-rc.1.1`。npm 的 `latest` 标签可能仍指向旧版本，手动安装时请使用 `rc` 标签。
+DSH 运行时和插件兼容性基线为 `0.1.2-rc.1`；当前运行时插件发布版本为 `0.1.2-rc.1.3`。npm 的 `latest` 标签可能仍指向旧版本，手动安装时请使用 `rc` 标签。
 
 ## 共享 UI
 

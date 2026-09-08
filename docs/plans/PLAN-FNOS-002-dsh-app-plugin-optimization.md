@@ -1,11 +1,11 @@
 ---
 id: PLAN-FNOS-002
 title: PLAN-FNOS-002 DSH 应用与插件优化
-description: DSH 版本统一、Codex 状态、NAS 引用与 Tree 同步、Semi UI 总览插件、fnOS 统一网关、DSH Web 恢复和三方插件 API URL 反代配置的实施计划。
+description: DSH Codex 与 CodeBuddy 插件、NAS 引用与 Tree 同步、Semi UI 总览、fnOS 统一网关、DSH Web 恢复和版本工具的实施计划。
 status: validating
 owner: tnnevol
-targetVersion: 5.1.x
-lastVerified: 2026-09-01
+targetVersion: 5.3.1
+lastVerified: 2026-09-08
 ---
 
 # PLAN-FNOS-002 DSH 应用与插件优化
@@ -15,18 +15,20 @@ lastVerified: 2026-09-01
 | 计划编号 | PLAN-FNOS-002 |
 | 计划日期 | 2026-08-28 |
 | 对应需求 | [FNOS-002 DSH 应用与插件优化](/requirements/FNOS-002-dsh-app-plugin-optimization) |
-| 计划状态 | <Badge type="warning" text="部分 NAS 验证（7 条业务用例、157 条自动化测试通过）" /> |
+| 计划状态 | <Badge type="warning" text="代码已实现，部分 NAS 验证" /> |
 
 ## 计划目标
 
-本计划实施四个已经确认进入开发的功能：
+本计划记录当前已经落地的功能实现，以及仍需在目标 NAS 完成的验收项：
 
 - `FNOS-002-01`：统一 Codex 登录与用量状态；未登录时隐藏状态，登录后根据接口是否提供五小时窗口自动显示或隐藏对应额度；取得一次性授权码后自动尝试复制到剪切板，失败时保留手动复制入口。
 - 版本脚本与插件版本发布流程由 `tooling/fn-os-apps-cli` workspace 中的 `fn-apps-cli` CLI 负责；项目/FPK 使用 `bumpp`，插件直接更新选中插件并检查 `published-dsh-plugins.json` 同步版本；多选插件时一次性更新所有选中插件并只生成一条合并提交，插件不创建 Git Tag。
 - `FNOS-002-02`：修正 NAS 文件和目录引用的插入规则；TreeSelect 使用独立关系模式支持多个文件/目录（含父子路径）同时选择，并在面板打开期间让本次引用删除状态反向同步到勾选节点，历史引用不参与当前选择。
 - `FNOS-002-03`：新增 DSH Semi UI 总览插件，集中展示 `@tnnevol/dsh-semi-ui` 的公共组件、状态和浅色/深色主题效果。
+- `FNOS-002-05`：从 ChatGPT Codex 账号刷新动态模型目录和思考级别，并写入 DSH OpenAI Codex 路由配置。
+- `FNOS-002-06`：实现 CodeBuddy 多账号、账号切换/自动切换、签到、额度/有效期和独立管理面板；Token 统计图表使用模块化 ECharts，保留 7/30/90 天筛选和本地会话日志聚合。
 - `FNOS-002-04`：使用 `connect` 与 `http-proxy-middleware` 重写 fnOS 统一网关代理；由常驻网关承载 FPK 状态并在 Web 左侧菜单提供 DSH Web 重启入口；由 fnOS 插件管理三方插件 API URL 反代规则，并让已打开的 DSH 页面立即取得最新配置。
-- 跨功能版本约束：将 DSH 运行时、插件、`@deepseek-ai/dsh-*` 依赖、native 产物、FPK 安装流程和发布文档统一到 `0.1.2-rc.1`，不清理用户数据或配置。
+- 跨功能版本约束：DSH 运行时和插件兼容性基线为 `0.1.2-rc.1`，当前项目版本为 `5.3.1`，插件自身发布版本为 `0.1.2-rc.1.3`；未完成的 FPK/NAS 验收转入 FNOS-003。
 
 网关改版不修改 fnOS 的登录校验，不把路径列表作为访问控制，也不修改 DSH 官方源码。代理目标固定为应用内部的 DSH 回环服务 `127.0.0.1:3080`。
 
@@ -421,12 +423,12 @@ SSE 路由由网关自身处理，不转发到 DSH。它经过 fnOS 统一网关
 | PLAN-FNOS-002-T04-07 | FNOS-002-04 | 增加网关内置 SSE 路由，将完整路径快照即时推送给已打开页面 | <Badge type="tip" text="已完成" /> |
 | PLAN-FNOS-002-T04-08 | FNOS-002-04 | bridge 统一处理 `fetch`、XHR、`EventSource`、WebSocket 和动态脚本的绝对 URL 路径 | <Badge type="tip" text="已完成" /> |
 | PLAN-FNOS-002-T04-09 | FNOS-002-04 | 调整 FPK 构建与 `cmd/main` 环境变量，验证生成产物、Unix Socket 和固定回环上游 | <Badge type="tip" text="已完成" /> |
-| PLAN-FNOS-002-T04-10 | FNOS-002-04 | 在真实 fnOS NAS 验证代理、路径保存、即时生效、升级和回滚 | <Badge type="warning" text="部分 NAS 验证" /> |
+| PLAN-FNOS-002-T04-10 | FNOS-002-04 | 在真实 fnOS NAS 验证代理、路径保存、即时生效、升级和回滚 | <Badge type="warning" text="已转 FNOS-003" /> |
 | PLAN-FNOS-002-T04-11 | FNOS-002-04 | 调整 `cmd/main status`：以网关 PID 代表 FPK 运行状态，修复死亡但非空 PID 文件无法清理的问题 | <Badge type="tip" text="已完成" /> |
 | PLAN-FNOS-002-T04-12 | FNOS-002-04 | 拆分网关和 DSH Web 的启动逻辑；网关已运行时只恢复 Web，不删除 Socket 或重复启动网关 | <Badge type="tip" text="已完成" /> |
 | PLAN-FNOS-002-T04-13 | FNOS-002-04 | 在 Web 左侧菜单和网关恢复页提供“重启 Web”按钮，并增加管理员恢复路由 | <Badge type="tip" text="已完成" /> |
 | PLAN-FNOS-002-T04-14 | FNOS-002-04 | 使用启动锁、`app.pid.starting`、超时健康检查和原子 rename 管理 Web PID | <Badge type="tip" text="已完成" /> |
-| PLAN-FNOS-002-T04-15 | FNOS-002-04 | 验证 Web 被终止、重复点击、启动失败、PID 复用、网关退出和 FPK stop/config_callback 场景 | <Badge type="warning" text="部分验证" /> |
+| PLAN-FNOS-002-T04-15 | FNOS-002-04 | 验证 Web 被终止、重复点击、启动失败、PID 复用、网关退出和 FPK stop/config_callback 场景 | <Badge type="warning" text="已转 FNOS-003" /> |
 | PLAN-FNOS-002-T04-16 | FNOS-002-04 | 将 `BRIDGE_SCRIPT_BODY` 拆到 `src/client/bridge.js`；两个 tsdown 构建复用虚拟模块插件，在构建期读取并内联 Bridge | <Badge type="tip" text="已完成" /> |
 
 ### P1：Codex 动态模型目录
@@ -437,7 +439,7 @@ SSE 路由由网关自身处理，不转发到 DSH。它经过 fnOS 统一网关
 | PLAN-FNOS-002-T05-02 | FNOS-002-05 | 将上游模型归一化为 llm-pi-ai OpenAI Codex profile entry（slug/名称/输入模态/上下文/思考级别 wire 值），处理 DSH 思考级别能力范围（含接口返回 `ultra` 的归并策略） | <Badge type="tip" text="已完成" /> |
 | PLAN-FNOS-002-T05-03 | FNOS-002-05 | 新增 Web 路由触发刷新并把归一化列表写入 `llm-pi-ai.providers.openai-codex` 配置（触发适配器 snapshot 重建），失败时保留上一次有效列表 | <Badge type="tip" text="已完成" /> |
 | PLAN-FNOS-002-T05-04 | FNOS-002-05 | Client Codex Auth 卡片增加“刷新模型目录”入口：已登录时触发、展示结果与错误，未登录时引导先登录 | <Badge type="tip" text="已完成" /> |
-| PLAN-FNOS-002-T05-05 | FNOS-002-05 | 补充单元测试：响应归一化、思考级别归并、写入载荷、失败回退、路由鉴权与客户端交互 | <Badge type="warning" text="部分验证（待真实环境）" /> |
+| PLAN-FNOS-002-T05-05 | FNOS-002-05 | 补充单元测试：响应归一化、思考级别归并、写入载荷、失败回退、路由鉴权与客户端交互 | <Badge type="warning" text="本地完成，NAS 验收转 FNOS-003" /> |
 
 ### P1：Codex Auth 设置页与模型选择 UI 调整
 
@@ -446,7 +448,16 @@ SSE 路由由网关自身处理，不转发到 DSH。它经过 fnOS 统一网关
 | PLAN-FNOS-002-T06-01 | FNOS-002-01/05 | 将 Codex Auth 从设置插件列表卡片迁移为 `settings.section` 独立设置页（侧栏入口，同 CodeBuddy），登录与能力控制整页展示 | <Badge type="tip" text="已完成" /> |
 | PLAN-FNOS-002-T06-02 | FNOS-002-01 | 移除设置页内「通用使用限额」区块；用量状态只保留在对话输入区右侧的紧凑展示 | <Badge type="tip" text="已完成" /> |
 | PLAN-FNOS-002-T06-03 | FNOS-002-05 | 移除对「设置 → 模型」OpenAI Codex 编辑器的 DOM 定制（`model-editor-presentation` 及关联样式），Codex 模型经 DSH 官方消息框模型选择器选择 | <Badge type="tip" text="已完成" /> |
-| PLAN-FNOS-002-T06-04 | FNOS-002-01/05 | 同步更新 client 注册断言与设置页相关单元测试，更新插件与需求文档 | <Badge type="warning" text="部分验证（待真实环境）" /> |
+| PLAN-FNOS-002-T06-04 | FNOS-002-01/05 | 同步更新 client 注册断言与设置页相关单元测试，更新插件与需求文档 | <Badge type="warning" text="本地完成，NAS 验收转 FNOS-003" /> |
+
+### P1：CodeBuddy 多账号与管理面板
+
+| 任务 ID | 对应功能 | 实现内容 | 状态 |
+| --- | --- | --- | --- |
+| PLAN-FNOS-002-T07-01 | FNOS-002-06 | 将 CodeBuddy 单账号凭据迁移为可持久化的多账号结构，支持添加、重登录、重命名、删除和当前账号切换 | <Badge type="tip" text="本地已完成" /> |
+| PLAN-FNOS-002-T07-02 | FNOS-002-06 | 增加额度不足时的账号故障转移、自动切换阈值、掉线探测和连续失败保护 | <Badge type="tip" text="本地已完成" /> |
+| PLAN-FNOS-002-T07-03 | FNOS-002-06 | 增加 `shell.overlay` 管理面板，提供账号、额度/有效期、签到和 Token 统计菜单；Token 图表使用 ECharts | <Badge type="tip" text="本地已完成" /> |
+| PLAN-FNOS-002-T07-04 | FNOS-002-06 | 补充存储迁移、用量统计和面板交互测试，更新插件文档 | <Badge type="warning" text="本地已完成，待 NAS 验证" /> |
 
 ### Turbo 任务与发布工具
 
@@ -463,25 +474,14 @@ SSE 路由由网关自身处理，不转发到 DSH。它经过 fnOS 统一网关
 | PLAN-FNOS-002-TT-09 | 重构开发指南全部子菜单，补充应用开发配置说明、统一任务操作手册，以及 `package.json` 入口、CLI、Turbo、workspace package 和 GitHub Workflow 的流程图与依赖关系图 | <Badge type="tip" text="已完成" /> |
 | PLAN-FNOS-002-TT-10 | 增加 `fn-apps-cli publish` npm 发布入口，交互选择一个或多个 DSH 插件，在所有询问完成后统一调用插件 `publish:rc` 脚本 | <Badge type="tip" text="已完成" /> |
 
-### 版本统一（跨功能发布约束）
+### 版本与发布工具（本地实现）
 
-状态：<Badge type="warning" text="待 FPK/NAS 验证" />
+状态：<Badge type="tip" text="已完成，FPK/NAS 验收转入 FNOS-003" />
 
-版本统一内容原记录在 FNOS-003，现迁移到 FNOS-002 作为所有 DSH 功能的共同发布约束，不新增 `FNOS-002-05` 或其他功能编号。
-
-| 任务 ID | 实现内容 | 状态 |
-| --- | --- | --- |
-| PLAN-FNOS-002-TV-01 | 将 DSH 插件自身版本、`@deepseek-ai/dsh-*` peer/dev 依赖和 compatibility 声明统一为 `0.1.2-alpha.4` | <Badge type="tip" text="已修改" /> |
-| PLAN-FNOS-002-TV-02 | 将 FPK 安装/升级回调固定到 `@deepseek-ai/dsh@0.1.2-alpha.4`，发布清单只安装已发布的 alpha 插件 | <Badge type="tip" text="已修改" /> |
-| PLAN-FNOS-002-TV-03 | 同步 node-pty native 构建参数、FPK 构建产物、workspace 包版本和版本相关文档 | <Badge type="tip" text="已修改" /> |
-| PLAN-FNOS-002-TV-04 | 在真实 NAS 验证安装、升级、插件加载和版本回滚，确认 `DSH_HOME`、profile、凭据、工作区和插件配置保留 | <Badge type="warning" text="待 NAS 验证" /> |
-| PLAN-FNOS-002-TV-05 | 将 DSH 插件版本、`@deepseek-ai/dsh-*` catalog 依赖和 compatibility 声明从 `0.1.2-alpha.4` 统一到 `0.1.2-rc.1`，并把 `@earendil-works/pi-ai` 对齐到 DSH rc.1 锁定的 `0.84.2` | <Badge type="tip" text="已修改" /> |
-| PLAN-FNOS-002-TV-06 | 将 FPK 安装/升级回调固定到 `@deepseek-ai/dsh@0.1.2-rc.1`，node-pty 维持 `1.2.0-beta.15`，native 配置文件与 CI 工作流同步改名 | <Badge type="tip" text="已修改" /> |
-| PLAN-FNOS-002-TV-07 | 已发布插件清单补入 `@tnnevol/dsh-fnos`，并按精确版本固定安装：`@tnnevol/dsh-codex-auth@0.1.2-rc.1`、`@tnnevol/dsh-fnos@0.1.2-rc.1.1`；插件发布脚本改用 `--tag rc` | <Badge type="tip" text="已修改" /> |
-| PLAN-FNOS-002-TV-08 | 确认 fnOS 插件客户端 `remote`/`remote.session` inject 声明完整（修复旧构建产物 `cannot get property "remote.session" without inject` 加载失败），并在 NAS 重装损坏副本 | <Badge type="warning" text="待 NAS 验证" /> |
-| PLAN-FNOS-002-TV-09 | 在 `tooling/fn-os-apps-cli` pnpm workspace 以 TypeScript/tsdown 合并 `version` 入口，使用 `@clack/prompts` 选择项目/FPK或一个或多个插件；插件直接更新全部选中 package.json，并同步 `published-dsh-plugins.json` 中的同名插件版本，生成一条合并提交，不创建插件 Git Tag，废弃根目录自定义 `bump` 脚本 | <Badge type="tip" text="已完成" /> |
-
-版本约束的验收以实际可安装、可启动和插件可加载为准；本地 package.json 一致不等于 NAS 验收完成。
+- DSH 运行时、`@deepseek-ai/dsh-*` 依赖和插件兼容性基线为 `0.1.2-rc.1`。
+- 当前项目版本为 `5.3.1`；源码插件和 `published-dsh-plugins.json` 中的发布版本为 `0.1.2-rc.1.3`。
+- 项目/FPK 版本使用一次 `bumpp` 并生成项目 `v<version>` Tag；插件版本直接更新并只生成提交，不生成 Git Tag。
+- FPK 内置插件包同步、安装/升级、版本回滚和插件加载的目标环境验收转入 [PLAN-FNOS-003](/plans/PLAN-FNOS-003-fpk-runtime-settings)。
 
 ## 详细交互
 
@@ -766,21 +766,24 @@ pnpm --filter @tnnevol/dsh-codex-auth run build
 
 测试至少覆盖未登录、登录、退出、鉴权失败，以及五小时窗口位于 primary、位于 secondary、只有每周窗口、缺少时长和接口失败；登录返回授权码时覆盖自动复制成功、剪切板拒绝和手动复制回退。
 
-### FPK 与真实 NAS 验证
+### CodeBuddy 插件检查
 
-- 构建 FPK，确认生成的网关、fnOS 插件和 UI 配置正确打包。
-- 安装后确认 Socket 位于 `${TRIM_APPDEST}/app.sock`，公开入口保持 `/app/fn-deepseek-harness`。
-- 验证 fnOS 登录 Header、HTTP、SSE、WebSocket、静态资源、DSH 官方 API 和已安装插件 API。
-- 在正常 DSH Web 左侧菜单点击“重启 Web”，确认网关重启上游并自动刷新；单独终止 DSH Web 后，确认 `cmd/main status` 仍返回运行、网关和 Socket 未重建，并能打开包含“重启 Web”按钮的恢复页面。
-- 分别使用管理员和普通用户访问恢复入口；只有管理员可执行启动，连续点击不会产生多个 Web PID。
-- 验证启动成功后正式 PID 原子更新并自动恢复 DSH 页面；模拟启动失败后，网关保持运行且临时 PID 和锁被清理。
-- 终止网关后确认 `cmd/main status` 返回未运行，fnOS 应用中心仍可重新启动整个应用。
-- 在设置中新增第三方路径并保存，不刷新页面直接请求对应接口，确认请求进入 DSH 3080。
-- 删除路径并保存，确认已打开页面立即停止对该路径补前缀。
-- 验证损坏 JSON 不清空当前有效路径，也不导致网关退出。
-- 验证应用升级保留 `${TRIM_PKGVAR}` 配置；回滚时不删除 DSH 设置、会话、工作区、授权目录或白名单 JSON。
-- 运行 `pnpm run check -- --sdd --docs`。
-- 校验 DSH、插件依赖、FPK 安装回调、native 配置、发布清单和文档均指向 `0.1.2-rc.1`；在 NAS 安装/升级后检查用户数据和插件配置未被清理。
+```bash
+pnpm --filter @tnnevol/dsh-codebuddy run typecheck
+pnpm --filter @tnnevol/dsh-codebuddy run test:unit
+pnpm --filter @tnnevol/dsh-codebuddy run build
+```
+
+测试覆盖多账号存储迁移、账号操作、额度与自动切换，以及 Token 统计数据聚合；本地当前 3 个测试文件、25 条测试通过。
+
+### FPK 与真实 NAS 验证（移交 FNOS-003）
+
+本计划保留已经取得的 DSH Web 刷新、重启、静态资源和 iframe 恢复证据。以下未完成项统一转入 [PLAN-FNOS-003](/plans/PLAN-FNOS-003-fpk-runtime-settings)：
+
+- FPK 构建、内置插件包与 `published-dsh-plugins.json` 版本一致性；
+- 安装、升级、回滚、插件加载和用户配置保留；
+- API URL 反代即时生效、HTTP/SSE/WebSocket、权限、并发和异常恢复；
+- Codex 动态模型与 CodeBuddy 管理面板的真实 NAS 验收。
 
 ## 参考资料
 
@@ -805,12 +808,14 @@ pnpm --filter @tnnevol/dsh-codex-auth run build
 
 | 阶段 | 状态 | 完成条件 |
 | --- | --- | --- |
-| 自动化测试质量门禁 | <Badge type="tip" text="已通过" /> | 根目录 `pnpm run test:unit` 的 39 个测试文件、157 条测试全部通过；不替代真实 NAS、FPK 和故障注入验收 |
+| 自动化测试质量门禁 | <Badge type="warning" text="本地相关包已通过" /> | CodeBuddy 当前 3 个测试文件、25 条测试通过，类型检查和 tsdown 构建通过；全仓历史测试快照为 2026-09-01 的 39/157，不替代真实 NAS、FPK 和故障注入验收 |
 | P1 Codex 登录与用量状态 | <Badge type="tip" text="已实现" /> | 插件测试通过，并在登录、退出、异常及有无五小时窗口场景验证显示结果 |
 | P1 NAS 引用与 Tree 状态 | <Badge type="tip" text="已实现" /> | 插入和删除引用不改动原有文本空格；删除本次引用同步 Tree，历史引用隔离；覆盖多选与生命周期测试 |
 | P1 Semi UI 总览插件 | <Badge type="tip" text="已实现" /> | 设置入口可跳转独立路由，刷新与历史导航有效；插件可安装卸载，公共组件在浅色、深色和系统主题下显示正常 |
-| P1 FPK 网关、进程恢复与插件路径 | <Badge type="warning" text="部分 NAS 验证（7 条业务用例、157 条自动化测试通过）" /> | 自动化测试 157/157 通过；真实 NAS 已验证刷新、Web 重启、完整静态图片路径和 DSH iframe 恢复，剩余代理、实时连接、权限和升级回滚场景继续验证 |
-| 版本统一（跨功能约束） | <Badge type="warning" text="待 FPK/NAS 验证" /> | 本地版本、依赖、安装回调、native 配置、发布清单和文档已统一为 `0.1.2-rc.1`，待目标 NAS 完成安装、升级和回滚验证 |
+| P1 FPK 网关、进程恢复与插件路径 | <Badge type="warning" text="代码已实现，部分 NAS 验证" /> | 已有刷新、Web 重启、静态资源和 DSH iframe 恢复证据，完整代理、实时连接、权限和升级回滚验收转入 FNOS-003 |
+| P1 Codex 动态模型目录 | <Badge type="warning" text="代码已实现，待 NAS 验证" /> | 动态模型刷新、归一化、路由写入、失败回退和客户端入口已实现并有测试，目标环境验收转入 FNOS-003 |
+| P1 CodeBuddy 多账号与管理面板 | <Badge type="warning" text="代码已实现，待 NAS 验证" /> | 多账号、自动切换、签到、额度/有效期、Token ECharts 面板已实现，本地相关检查通过，目标环境验收转入 FNOS-003 |
+| 版本与发布工具 | <Badge type="tip" text="本地已完成" /> | 项目/FPK 使用一次 `bumpp` 和项目 Tag；插件多选一次提交、不生成 Tag；FPK 内置包及安装升级验收转入 FNOS-003 |
 
 ## 变更记录
 
@@ -832,3 +837,5 @@ pnpm --filter @tnnevol/dsh-codex-auth run build
 | 2026-09-01 | 补充真实 NAS 浏览器验收 | 7 条用例通过；记录 Codex 用量、TreeSelect、快捷键、主题、刷新/重启和静态资源 Network 证据，T04-10 进入部分 NAS 验证 |
 | 2026-09-01 | 更新自动化测试状态 | 根目录 `pnpm run test:unit` 通过，39 个测试文件、157 条自动化测试全部通过；未将未完成真实环境验收的业务用例标记为通过 |
 | 2026-09-06 | 调整插件版本发布规则 | 插件版本不再调用 `bumpp`，直接更新选中 package.json；若插件存在于 `published-dsh-plugins.json` 则同步清单版本；多选插件统一一条提交覆盖所有相关文件，不创建 Git Tag；增加版本不一致保护和 CLI 回归测试 |
+| 2026-09-08 | 优化 CodeBuddy Token 统计图表 | 引入 ECharts 模块化柱状图，替换手写 div 柱状图；增加 Tooltip、Legend、输入/输出堆叠和 ResizeObserver 清理约束 |
+| 2026-09-08 | 按当前实现重整计划 | 动态模型目录和 CodeBuddy 管理面板纳入已实现范围；旧版本描述改为当前发布基线；未完成的 FPK/NAS 集成验收转入 PLAN-FNOS-003 |

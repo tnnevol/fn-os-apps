@@ -1,12 +1,12 @@
 ---
 id: PLAN-FNOS-003
 title: PLAN-FNOS-003 FPK 应用运行设置统一
-description: 审计并为需要运行参数的 fnOS FPK 应用补齐 wizard/config，统一安装配置、运行设置和生命周期脚本的实施计划。
+description: 审计并为需要运行参数的 fnOS FPK 应用补齐 wizard/config，同时完成 FNOS-002 遗留的 DSH FPK、网关和插件管理面板目标环境验收。
 status: planning
 owner: tnnevol
 planDate: 2026-08-31
-targetVersion: 5.1.x
-lastVerified: 2026-08-31
+targetVersion: 5.3.1
+lastVerified: 2026-09-08
 ---
 
 # PLAN-FNOS-003 FPK 应用运行设置统一
@@ -16,13 +16,13 @@ lastVerified: 2026-08-31
 | 计划编号 | PLAN-FNOS-003 |
 | 计划日期 | 2026-08-31 |
 | 对应需求 | [FNOS-003 FPK 应用运行设置统一](/requirements/FNOS-003-fpk-runtime-settings) |
-| 计划状态 | <Badge type="info" text="规划中" /> |
+| 计划状态 | <Badge type="info" text="规划中，含 FNOS-002 遗留验收" /> |
 
 ## 计划目标
 
 为确实存在可修改运行参数的 FPK 应用建立 `wizard/config`，复用安装向导中的运行字段契约，并在保存后通过 `cmd/config_callback` 安全应用变更。计划先完成全量审计，再按应用差异实现，不默认给所有应用增加配置页。
 
-本计划不修改 fnOS 平台协议，不把 `cmd/main` 改造成配置处理器，也不把一次性安装参数暴露为运行设置。
+本计划不修改 fnOS 平台协议，不把 `cmd/main` 改造成配置处理器，也不把一次性安装参数暴露为运行设置。FNOS-002 遗留验收只修复验证中发现的集成问题，不重新实现已经落地的插件和网关功能。
 
 ## 实现范围和边界
 
@@ -86,6 +86,18 @@ wizard/install 中的运行字段
 | PLAN-FNOS-003-V01 | 执行应用级检查并构建 FPK | FPK 包含正确的 `wizard/config` 和脚本 |
 | PLAN-FNOS-003-V02 | 在 NAS 安装、修改、保存、重启和升级目标应用 | 配置生效且用户数据保留 |
 | PLAN-FNOS-003-V03 | 更新应用开发文档和导航，记录未纳入应用的原因 | 文档、菜单和实际能力一致 |
+
+### P1：FNOS-002 遗留 DSH 集成验收
+
+状态：<Badge type="info" text="规划中" />
+
+| 任务 ID | 实现内容 | 验收 |
+| --- | --- | --- |
+| PLAN-FNOS-003-D01 | 使用当前项目版本 `5.3.1` 构建 DSH FPK，确认 DSH `0.1.2-rc.1`、插件兼容基线和插件发布版本 `0.1.2-rc.1.3` 对齐；重新生成 `app/bundled-dsh-plugins` | FPK 内置插件包与 `published-dsh-plugins.json` 精确一致 |
+| PLAN-FNOS-003-D02 | 在真实 NAS 验证 DSH FPK 安装、升级、回滚、插件加载和用户数据/凭据/profile/工作区保留 | 安装生命周期不重复安装、不丢失配置，版本检查结果正确 |
+| PLAN-FNOS-003-D03 | 验证网关 API URL 反代即时生效、HTTP/SSE/WebSocket、权限、并发、异常注入和 DSH Web 恢复 | 全部场景通过，失败时不破坏网关和 DSH Web 状态 |
+| PLAN-FNOS-003-D04 | 在真实 NAS 验证 Codex 动态模型目录刷新、失败回退、模型选择器同步，以及 CodeBuddy 多账号、自动切换、签到、额度和 Token 统计面板 | 页面可操作，数据和图表显示正确，刷新/重启后状态保留 |
+| PLAN-FNOS-003-D05 | 更新 FNOS-002 的验收记录、需求状态和计划状态 | 需求、计划、验收记录与实际 NAS 版本和结果一致 |
 
 ## 详细交互
 
@@ -153,6 +165,7 @@ pnpm run check -- --sdd --docs
 | P0 应用配置审计 | <Badge type="info" text="规划中" /> | 所有应用完成运行字段与一次性字段分类 |
 | P1 运行设置与脚本接入 | <Badge type="info" text="规划中" /> | 目标应用设置可展示、保存并由回调生效 |
 | P1 FPK 与 NAS 验证 | <Badge type="info" text="规划中" /> | FPK 安装、升级和真实 NAS 验收通过 |
+| FNOS-002 遗留 DSH 集成验收 | <Badge type="info" text="规划中" /> | FPK、网关、Codex 和 CodeBuddy 遗留场景完成真实 NAS 验收并回写 FNOS-002 |
 
 ## 变更记录
 
@@ -160,3 +173,4 @@ pnpm run check -- --sdd --docs
 | --- | --- |
 | 2026-08-31 | 新建 PLAN-FNOS-003 | 原版本统一计划迁移到 PLAN-FNOS-002，本计划改为 FPK 应用运行设置统一 |
 | 2026-08-31 | 明确实施顺序 | 先审计应用，再建立运行字段契约，最后进行 FPK 和真实 NAS 验证 |
+| 2026-09-08 | 承接 FNOS-002 遗留验收 | 增加 DSH FPK 版本/内置插件包、网关完整场景、Codex 动态模型和 CodeBuddy 管理面板的目标环境验收任务 |
