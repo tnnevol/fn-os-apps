@@ -14,7 +14,9 @@
     "test": "turbo run test:unit",
     "check": "pnpm exec fn-apps-cli check",
     "publish": "pnpm exec fn-apps-cli publish",
-    "release:notes": "pnpm exec fn-apps-cli release:notes"
+    "release:notes": "pnpm exec fn-apps-cli release:notes",
+    "prepare": "lefthook install",
+    "lint:json": "tsx scripts/validate-json.ts"
   },
   "engines": {
     "node": ">=24.0.0",
@@ -22,8 +24,14 @@
   },
   "packageManager": "pnpm@11.16.0",
   "devDependencies": {
+    "@commitlint/cli": "^21.2.2",
+    "@commitlint/config-conventional": "^21.2.2",
     "@miletorix/vitepress-image-viewer": "catalog:",
     "@tnnevol/fn-os-apps-cli": "workspace:*",
+    "@types/node": "catalog:",
+    "lefthook": "^2.1.12",
+    "lint-staged": "^17.5.0",
+    "tsx": "^4.23.13",
     "turbo": "catalog:",
     "vitepress": "catalog:",
     "vitepress-plugin-d2": "catalog:",

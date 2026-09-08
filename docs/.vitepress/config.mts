@@ -92,7 +92,8 @@ const developmentSidebar = [
       { text: 'Manifest 配置', link: '/development/manifest' },
       { text: '生命周期脚本', link: '/development/lifecycle' },
       { text: '权限与入口', link: '/development/permissions' },
-      { text: '用户向导', link: '/development/wizard' }
+      { text: '用户向导', link: '/development/wizard' },
+      { text: '贡献指南', link: '/contributing' }
     ]
   },
   {
@@ -232,12 +233,7 @@ export default defineConfig({
       '/requirements/': requirementsSidebar,
       '/plans/': plansSidebar,
       '/test-cases/': testCasesSidebar,
-      '/contributing': [
-        {
-          text: '参与贡献',
-          items: [{ text: '贡献指南', link: '/contributing' }]
-        }
-      ]
+      '/contributing': developmentSidebar
     },
     outline: {
       level: [2, 3],

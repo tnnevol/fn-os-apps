@@ -9,6 +9,58 @@
 5. 使用 Conventional Commits 创建提交。
 6. 推送分支并提交 Pull Request，填写仓库 PR 检查清单。
 
+## Commit 规范
+
+本仓库使用 [Conventional Commits](https://www.conventionalcommits.org/zh-hans/) 规范，提交信息由提交钩子自动校验：
+
+```text
+<type>(<scope>): <description>
+```
+
+### type
+
+| 类型 | 用途 |
+| --- | --- |
+| `feat` | 新增功能或能力 |
+| `fix` | 修复问题 |
+| `docs` | 仅文档变更 |
+| `refactor` | 重构，不改变外部行为 |
+| `test` | 测试变更 |
+| `build` | 构建、依赖或打包变更 |
+| `ci` | CI/CD 配置变更 |
+| `chore` | 其他维护性变更 |
+| `perf` | 性能优化 |
+| `revert` | 回滚提交 |
+
+`scope` 建议使用受影响的应用名、插件名或模块名，例如 `fn-memos`、`fn-deepseek-harness`、`hooks`。描述使用祈使句，简明说明结果，不要以句号结尾。
+
+```text
+feat(fn-memos): add configurable storage settings
+fix(fn-deepseek-harness): restrict unsupported listen address
+docs(contributing): document commit conventions
+chore(hooks): update lint-staged rules
+```
+
+复杂变更可以在标题后增加正文，说明背景、实现和影响；涉及不兼容变更时，在正文或页脚注明：
+
+```text
+BREAKING CHANGE: change the application configuration field name
+```
+
+### 提交前检查
+
+项目通过 Lefthook 自动执行以下检查：
+
+- `commit-msg`：使用 Commitlint 校验提交格式。
+- `pre-commit`：使用 lint-staged 校验暂存的 JSON 和 Shell 文件。
+- `pre-push`：执行 `pnpm run check -- --all`。
+
+依赖安装后会自动安装 Git hooks。需要手动重新安装时执行：
+
+```bash
+pnpm exec lefthook install
+```
+
 ## 应用修改检查
 
 - Manifest 字段与应用目录保持一致。
