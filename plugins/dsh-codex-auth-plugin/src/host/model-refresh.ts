@@ -103,10 +103,26 @@ function number(value: unknown): number | undefined {
 
 /** Resolve the output-cap estimate for one account row. */
 function outputCap(model: UpstreamCodexModel): number {
-  const context = number(model.context_window)
+  const context = contextWindowOf(model)
   if (context === undefined) return 128_000
   // pi-ai's installed codex models cap output at 128k tokens.
   return Math.min(128_000, Math.max(32_768, context))
+}
+
+/**
+ * Resolve the usable context window for one account row.
+ *
+ * The backend's `context_window` is the *default* window and understates what
+ * the responses endpoint actually accepts — gpt-5.6 requests at 414k tokens
+ * succeed while that field reports 272k. `max_context_window` is the ceiling
+ * the account can reach (e.g. 872k), so prefer it: pi-ai's silent-overflow
+ * check (`usage.input + cacheRead > contextWindow` on a `stop`) misfires on
+ * every post-272k compaction summarization call otherwise, which permanently
+ * blocks dsh-compaction-basic's context-overflow recovery with
+ * "pi-ai detected context overflow".
+ */
+function contextWindowOf(model: UpstreamCodexModel): number | undefined {
+  return number(model.max_context_window) ?? number(model.context_window)
 }
 
 /** Map account modalities onto pi-ai's `input` vocabulary (text/image only). */
@@ -156,7 +172,7 @@ export function normalizeCodexModel(model: UpstreamCodexModel): CodexProfileMode
   const id = string(model.slug)
   if (id === undefined || !isSelectable(model)) return undefined
   const name = string(model.display_name) ?? id
-  const context = number(model.context_window)
+  const context = contextWindowOf(model)
   if (context === undefined) return undefined
   return {
     id,

@@ -32,11 +32,24 @@ describe('Codex model catalog refresh normalization', () => {
     expect(entry).toEqual({
       id: 'gpt-6-astra',
       name: 'GPT-6-Astra',
-      contextWindow: 272000,
+      contextWindow: 872000,
       maxTokens: 128000,
       input: ['text', 'image'],
       reasoningEfforts: { low: 'low', medium: 'medium', high: 'high', xhigh: 'xhigh', max: 'max' },
     })
+  })
+
+  it('prefers max_context_window over the default context_window', () => {
+    // pi-ai's silent-overflow check compares usage against this window; the
+    // default context_window understates what the backend accepts, so a
+    // written profile entry must carry the ceiling instead.
+    expect(normalizeCodexModel(astraRow)?.contextWindow).toBe(
+      astraRow.max_context_window,
+    )
+    const { max_context_window: _omitted, ...withoutMaxWindow } = astraRow
+    expect(
+      normalizeCodexModel(withoutMaxWindow)?.contextWindow,
+    ).toBe(272000)
   })
 
   it('drops reasoning levels outside llm-pi-ai vocabulary instead of writing them', () => {
