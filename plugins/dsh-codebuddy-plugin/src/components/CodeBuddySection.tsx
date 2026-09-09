@@ -13,7 +13,6 @@ import {
   DshDescriptions,
   DshIconButton,
   DshForm,
-  DshSelect,
   DshIconAlertCircle,
   DshIconCopy,
   DshIconEdit,
@@ -28,12 +27,13 @@ import {
 } from '@tnnevol/dsh-semi-ui'
 import { CODEBUDDY_AUTH_CHANNEL } from '../client/constants.ts'
 import type { PanelRouteController } from '../client/panel-route.ts'
-import { CODEBUDDY_DEFAULT_ENVIRONMENT, CODEBUDDY_ENVIRONMENTS, CODEBUDDY_ENVIRONMENT_LABELS } from '../constants.ts'
 
 import type { CodeBuddyLocaleKey } from '../client/locales.ts'
-import type { AccountView, AccountsResult, AuthStatus, ConnectionRpc, LoginPoll, LoginStart, RpcErr } from '../client/rpc.ts'
+import type { AccountView, AccountsResult, AuthStatus, ConnectionRpc, RpcErr } from '../client/rpc.ts'
 import { describeRpcError } from '../client/rpc.ts'
+import { AddAccountModal, startLoginPolling } from './AddAccountModal.tsx'
 import { CodeBuddyLogo } from './CodeBuddyLogo.tsx'
+import { PreferenceLabel } from './PreferenceLabel.tsx'
 import {
   getAutoSwitchPref,
   getAutoSwitchThresholdPref,
@@ -45,11 +45,6 @@ import {
 } from '../client/usage-prefs.ts'
 
 type Translate = (key: CodeBuddyLocaleKey) => string
-
-/** How often the client polls a started login, in ms. */
-const POLL_INTERVAL_MS = 1500
-/** How long the client keeps polling before giving up, in ms. */
-const POLL_DEADLINE_MS = 10 * 60 * 1000
 
 /** UI phase the page cycles through. */
 type Phase = 'loading' | 'idle' | 'error'
@@ -84,18 +79,6 @@ function StatusRow({ label, value }: { label: string; value: string }) {
   )
 }
 
-function PreferenceLabel({ title, description }: { title: string; description?: string }) {
-  return (
-    <span className="dsh-codebuddy-form-label">
-      <strong className="dsh-codebuddy-form-label-title">{title}</strong>
-      {description !== undefined && description.length > 0
-        ? <span className="dsh-codebuddy-form-label-description">{description}</span>
-        : null}
-    </span>
-  )
-}
-
-
 export interface CodeBuddySectionProps {
   rpc: ConnectionRpc
   t: Translate
@@ -113,12 +96,8 @@ export function CodeBuddySection({ rpc, t, panelRoute, close }: CodeBuddySection
   // Multi-account roster from the host `accounts` endpoint.
   const [accounts, setAccounts] = useState<AccountView[]>([])
   const [switchingId, setSwitchingId] = useState<string | undefined>(undefined)
-  // 添加账号弹框状态（备注名 + 环境 + 自定义 endpoint + 企业账号开关）。
+  // 添加账号弹框（共享组件：备注名 + 环境 + 自定义 endpoint + 企业账号开关）。
   const [addOpen, setAddOpen] = useState(false)
-  const [addNote, setAddNote] = useState('')
-  const [addEnvironment, setAddEnvironment] = useState<string>(CODEBUDDY_DEFAULT_ENVIRONMENT)
-  const [addEndpoint, setAddEndpoint] = useState('')
-  const [addEnterprise, setAddEnterprise] = useState(false)
   // 删除确认目标账号 id。
   const [removeTarget, setRemoveTarget] = useState<string | undefined>(undefined)
   // 登录中握手返回的真实 authUrl——复制按钮与「打开登录页」共用同一链接。
@@ -191,42 +170,24 @@ export function CodeBuddySection({ rpc, t, panelRoute, close }: CodeBuddySection
   // Poll an in-flight login until it completes or the deadline passes.
   useEffect(() => {
     if (loginState === undefined) return
-    const startedAt = Date.now()
-    let stopped = false
-    const tick = async (): Promise<void> => {
-      if (stopped) return
-      const result = await rpc.call<LoginPoll>(CODEBUDDY_AUTH_CHANNEL, 'pollLogin', { state: loginState })
-      if (stopped) return
-      if (result.ok && result.value.done) {
-        setLoginState(undefined)
-        await refresh()
-        return
-      }
-      if (Date.now() - startedAt >= POLL_DEADLINE_MS) {
+    return startLoginPolling(
+      rpc,
+      loginState,
+      () => { setLoginState(undefined); void refresh() },
+      () => {
         setLoginState(undefined)
         setError(t('timeout'))
         setPhase('error')
-        return
-      }
-      window.setTimeout(tick, POLL_INTERVAL_MS)
-    }
-    void tick()
-    return () => { stopped = true }
+      },
+    )
   }, [loginState, rpc, refresh, t])
 
-  const startLogin = useCallback(async (options: { label?: string, environment?: string, endpoint?: string, activate?: boolean } = {}) => {
-    setError(undefined)
-    const result = await rpc.call<LoginStart>(CODEBUDDY_AUTH_CHANNEL, 'startLogin', options)
-    if (!result.ok) {
-      setError(describeError(result))
-      setPhase('error')
-      return
-    }
-    window.open(result.value.authUrl, '_blank', 'noopener')
-    // 复制按钮与打开的授权页共用同一链接（同一 state）。
-    setLoginLink(result.value.authUrl)
-    setLoginState(result.value.state)
-  }, [rpc])
+  // 接收共享添加账号弹框发起的登录：打开浏览器，展示等待卡片并轮询完成。
+  const onAddLoginStart = useCallback((start: { authUrl: string, state: string }) => {
+    window.open(start.authUrl, '_blank', 'noopener')
+    setLoginLink(start.authUrl)
+    setLoginState(start.state)
+  }, [])
 
   // 复制登录链接：写入当前握手返回的真实 authUrl（与「打开登录页」打开的
   // 链接完全一致，同一 state），供其他设备打开完成同一份授权。
@@ -235,17 +196,23 @@ export function CodeBuddySection({ rpc, t, panelRoute, close }: CodeBuddySection
       .then(() => { DshToast.success({ content: t('copyLoginLinkDone') }) })
       .catch(() => { DshToast.warning({ content: t('copyLoginLinkDoneFail') }) })
   }
-  // 添加账号弹框的提交动作：抽出为命名回调，避免 JSX 属性里多层嵌套括号。
-  const cbSubmitAccount = (): void => {
-    setAddOpen(false)
-    void startLogin({
-      ...(addNote.trim().length > 0 ? { label: addNote } : {}),
-      environment: addEnvironment,
-      ...(addEnvironment === 'cloudhosted' || addEnvironment === 'selfhosted'
-        ? { endpoint: addEndpoint }
-        : {}),
+
+  // 掉线账号重新登录：保留其环境信息，直接发起握手（不激活为新当前账号）。
+  const startRelogin = useCallback(async (account: AccountView) => {
+    const result = await rpc.call<{ authUrl: string, state: string }>(CODEBUDDY_AUTH_CHANNEL, 'startLogin', {
+      ...(account.label !== undefined ? { label: account.label } : {}),
+      ...(account.environment !== undefined ? { environment: account.environment } : {}),
+      activate: false,
     })
-  }
+    if (!result.ok) {
+      setError(describeRpcError(result))
+      setPhase('error')
+      return
+    }
+    window.open(result.value.authUrl, '_blank', 'noopener')
+    setLoginLink(result.value.authUrl)
+    setLoginState(result.value.state)
+  }, [rpc])
 
   const toggleAutoSwitch = useCallback((enabled: boolean) => {
     setAutoSwitchState(enabled)
@@ -335,7 +302,7 @@ export function CodeBuddySection({ rpc, t, panelRoute, close }: CodeBuddySection
               theme="solid"
               type="primary"
               disabled={loginState !== undefined}
-              onClick={() => { setAddOpen(true); setAddNote(''); setAddEnvironment(CODEBUDDY_DEFAULT_ENVIRONMENT); setAddEndpoint(''); setAddEnterprise(false) }}
+              onClick={() => { setAddOpen(true) }}
             >
               {loginState !== undefined ? t('signingIn') : t('createUser')}
             </DshButton>
@@ -400,11 +367,7 @@ export function CodeBuddySection({ rpc, t, panelRoute, close }: CodeBuddySection
                                 onClick={(event) => { event.stopPropagation(); setEditTarget(account.id); setEditNote(account.label ?? account.nickname) }}
                               />
                               {account.expired ? (
-                                <DshButton size="small" theme="solid" type="primary" onClick={(event) => { event.stopPropagation(); void startLogin({
-                                  ...(account.label !== undefined ? { label: account.label } : {}),
-                                  ...(account.environment !== undefined ? { environment: account.environment } : {}),
-                                  activate: false,
-                                }) }}>
+                                <DshButton size="small" theme="solid" type="primary" onClick={(event) => { event.stopPropagation(); void startRelogin(account) }}>
                                   {t('accountRelogin')}
                                 </DshButton>
                               ) : null}
@@ -421,11 +384,7 @@ export function CodeBuddySection({ rpc, t, panelRoute, close }: CodeBuddySection
                                   size="small"
                                   theme="solid"
                                   type="primary"
-                                  onClick={() => { void startLogin({
-                          ...(account.label !== undefined ? { label: account.label } : {}),
-                          ...(account.environment !== undefined ? { environment: account.environment } : {}),
-                          activate: false,
-                        }) }}
+                                  onClick={() => { void startRelogin(account) }}
                                 >
                                   {t('accountRelogin')}
                                 </DshButton>
@@ -481,66 +440,15 @@ export function CodeBuddySection({ rpc, t, panelRoute, close }: CodeBuddySection
           : <p className="dsh-codebuddy-muted">{t('accountsEmpty')}</p>}
       </div>
 
-      {/* 添加账号弹框：备注名（≤30 字）+ 环境 + 企业开关。提交后生成真实
-          握手链接，进入下方「登录中状态卡」，复制按钮在该卡片上（链接真实有效）。 */}
-      <DshModal
-        title={t('createUserTitle')}
+      {/* 添加账号弹框（与后台管理面板共享同一组件）：提交后打开浏览器 OAuth，
+          页面进入下方「登录中状态卡」，复制按钮在该卡片上（链接真实有效）。 */}
+      <AddAccountModal
+        rpc={rpc}
+        t={t}
         visible={addOpen}
-        closeOnEsc
-        okText={t('createUserGo')}
-        cancelText={t('cancel')}
+        onLoginStart={onAddLoginStart}
         onCancel={() => { setAddOpen(false) }}
-      >
-        <div className="dsh-codebuddy-add-form">
-          <DshForm className="dsh-codebuddy-pref-form" labelPosition="top">
-            <DshForm.Slot
-              label={<PreferenceLabel title={t('noteLabel')} />}
-            >
-              <DshInput
-                className="dsh-codebuddy-pref-control-wide"
-                value={addNote}
-                onChange={setAddNote}
-                placeholder={t('accountExpand')}
-                showClear
-                maxLength={30}
-              />
-            </DshForm.Slot>
-            <DshForm.Slot
-              label={<PreferenceLabel title={t('environmentLabel')} description={t('environmentDesc')} />}
-            >
-              <DshSelect
-                className="dsh-codebuddy-env-select"
-                value={addEnvironment}
-                onChange={(value: string) => { setAddEnvironment(String(value)) }}
-                aria-label={t('environmentLabel')}
-                optionList={CODEBUDDY_ENVIRONMENTS.map(env => ({ value: env, label: CODEBUDDY_ENVIRONMENT_LABELS[env] }))}
-              />
-            </DshForm.Slot>
-            {addEnvironment === 'cloudhosted' || addEnvironment === 'selfhosted' ? (
-              <DshForm.Slot
-                label={<PreferenceLabel title={t('endpointLabel')} description={t('endpointDesc')} />}
-              >
-                <DshInput
-                  className="dsh-codebuddy-pref-control-wide"
-                  value={addEndpoint}
-                  onChange={setAddEndpoint}
-                  placeholder="https://your-company.copilot.qq.com"
-                />
-              </DshForm.Slot>
-            ) : null}
-            <DshForm.Slot
-              label={<PreferenceLabel title={t('enterpriseSwitch')} description={t('enterpriseSwitchDesc')} />}
-            >
-              <DshSwitch
-                checked={addEnterprise}
-                onChange={(checked: boolean) => { setAddEnterprise(checked) }}
-                aria-label={t('enterpriseSwitch')}
-              />
-            </DshForm.Slot>
-          </DshForm>
-          <p className="dsh-codebuddy-muted">{t('createUserHint')}</p>
-        </div>
-      </DshModal>
+      />
 
       {/* 删除确认 Modal。 */}
       <DshModal

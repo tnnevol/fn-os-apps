@@ -43,6 +43,7 @@ import type { ConnectionRpc, AccountsResult } from './rpc.ts'
 import { describeRpcError } from './rpc.ts'
 import { PanelRouteController } from './panel-route.ts'
 import type { PanelRoute } from './panel-route.ts'
+import { AddAccountModal, startLoginPolling } from '../components/AddAccountModal.tsx'
 
 useECharts([BarChart, LineChart, AriaComponent, GridComponent, LegendComponent, TooltipComponent, CanvasRenderer])
 
@@ -283,19 +284,25 @@ function AccountCard({ row, labels, busy, onCheckin, onSwitch, onDelete, onRenam
  * ========================================================================== */
 
 function AccountsPage({
-  rpc, t, notify, onRename, onDelete, onAddAccount,
+  rpc, t, notify, rosterTick, loginWaiting, loginLink, onCopyLoginLink, onRename, onDelete, onAddAccount, onCheckinChange,
 }: {
   rpc: ConnectionRpc
   t: Translate
   notify: (ok: boolean, text: string) => void
+  /** 数据版本：登录/删除/改名完成后由父级自增以重拉列表。 */
+  rosterTick: number
+  /** 是否有正在等待授权的登录（禁用添加入口并显示等待条）。 */
+  loginWaiting: boolean
+  /** 正在等待授权的登录链接（等待条「复制」用）。 */
+  loginLink?: string
+  onCopyLoginLink: () => void
   onRename: (row: PanelAccountRow) => void
   onDelete: (row: PanelAccountRow) => void
   onAddAccount: () => void
+  onCheckinChange: () => void
 }): ReactNode {
-  const { data, loading, reload } = usePanelData<{ accounts: PanelAccountRow[], currentId?: string }>(rpc, 'panelStatus', {}, [])
+  const { data, loading, reload } = usePanelData<{ accounts: PanelAccountRow[], currentId?: string }>(rpc, 'panelStatus', {}, [rosterTick])
   const [busyId, setBusyId] = useState<string | undefined>(undefined)
-  const rows = data?.accounts ?? []
-  const autoOn = autoSwitchPref()
 
   const checkinOne = async (id: string): Promise<void> => {
     setBusyId(id)
@@ -304,6 +311,7 @@ function AccountsPage({
     if (result.ok) {
       const row = result.value.accounts.find(item => item.id === id)
       notify(row?.result !== 'error', row?.result === 'already' ? t('checkinAlready') : row?.result === 'success' ? t('checkinDone') : row?.error ?? t('checkinFail'))
+      onCheckinChange()
       reload()
     }
   }
@@ -319,43 +327,73 @@ function AccountsPage({
   }
 
   if (loading) return <DshSpin size="large" />
-  if (rows.length === 0) return <DshEmpty title={t('accountsEmpty')} />
+  const rows = data?.accounts ?? []
   return (
     <div className="dsh-codebuddy-panel-page">
       <DshCard className="dsh-codebuddy-panel-action-card">
-        <div>
+        <div className="dsh-codebuddy-panel-action-copy">
           <strong>{t('accountActionTitle')}</strong>
           <p className="dsh-codebuddy-muted">{t('accountActionDesc')}</p>
         </div>
-        <DshButton size="small" theme="solid" type="primary" onClick={onAddAccount}>{t('createUserGo')}</DshButton>
+        <div className="dsh-codebuddy-panel-action-cta">
+          <DshButton
+            size="small"
+            theme="solid"
+            type="primary"
+            disabled={loginWaiting}
+            onClick={onAddAccount}
+          >
+            {loginWaiting ? t('signingIn') : t('createUser')}
+          </DshButton>
+        </div>
       </DshCard>
-      <div className="dsh-codebuddy-panel-section-head">
-        <div className="dsh-codebuddy-panel-section-title"><strong>{t('accountsTitle')}</strong><span>{rows.length}</span></div>
-        <DshButton size="small" theme="light" icon={<DshIconRefresh />} onClick={reload}>{t('refresh')}</DshButton>
-      </div>
-      <div className="dsh-codebuddy-panel-cards">
-        {rows.map(row => (
-        <AccountCard
-          key={row.id}
-          row={row}
-          busy={busyId === row.id}
-          labels={{
-            active: t('accountActive'),
-            offline: t('accountOffline'),
-            checkedIn: t('checkinDone'),
-            unchecked: t('checkinTodo'),
-            remaining: t('remaining'),
-            switchLabel: t('accountSwitch'),
-            deleteLabel: t('accountRemove'),
-            noBalanceHint: t('noBalanceHint'),
-          }}
-          onCheckin={(id) => { void checkinOne(id) }}
-          onSwitch={(id) => { void switchOne(id) }}
-          onDelete={(row_) => { onDelete(row_) }}
-          onRename={(row_) => { onRename(row_) }}
-        />
-        ))}
-      </div>
+      {loginWaiting ? (
+        <div className="dsh-codebuddy-login-waiting">
+          <span className="dsh-codebuddy-muted">{t('loginWaitingCopy')}</span>
+          <DshButton
+            size="small"
+            theme="light"
+            type="tertiary"
+            disabled={loginLink === undefined}
+            onClick={onCopyLoginLink}
+          >
+            {t('copyLoginLink')}
+          </DshButton>
+        </div>
+      ) : null}
+      {rows.length === 0 ? (
+        <DshEmpty title={t('accountsEmpty')} />
+      ) : (
+        <>
+          <div className="dsh-codebuddy-panel-section-head">
+            <div className="dsh-codebuddy-panel-section-title"><strong>{t('accountsTitle')}</strong><span>{rows.length}</span></div>
+            <DshButton size="small" theme="light" icon={<DshIconRefresh />} onClick={reload}>{t('refresh')}</DshButton>
+          </div>
+          <div className="dsh-codebuddy-panel-cards">
+            {rows.map(row => (
+            <AccountCard
+              key={row.id}
+              row={row}
+              busy={busyId === row.id}
+              labels={{
+                active: t('accountActive'),
+                offline: t('accountOffline'),
+                checkedIn: t('checkinDone'),
+                unchecked: t('checkinTodo'),
+                remaining: t('remaining'),
+                switchLabel: t('accountSwitch'),
+                deleteLabel: t('accountRemove'),
+                noBalanceHint: t('noBalanceHint'),
+              }}
+              onCheckin={(id) => { void checkinOne(id) }}
+              onSwitch={(id) => { void switchOne(id) }}
+              onDelete={(row_) => { onDelete(row_) }}
+              onRename={(row_) => { onRename(row_) }}
+            />
+            ))}
+          </div>
+        </>
+      )}
     </div>
   )
 }
@@ -717,24 +755,25 @@ export function CodeBuddyPanelPage({ rpc, route, t }: PanelPageProps): ReactNode
   const [deleteTarget, setDeleteTarget] = useState<PanelAccountRow | undefined>(undefined)
   const [renaming, setRenaming] = useState<PanelAccountRow | undefined>(undefined)
   const [renameNote, setRenameNote] = useState('')
-
-  const addAccount = async (): Promise<void> => {
-    const result = await rpc.call<{ authUrl: string }>(CODEBUDDY_AUTH_CHANNEL, 'startLogin', {})
-    if (!result.ok) {
-      notify(false, describeRpcError(result))
-      return
-    }
-    window.open(result.value.authUrl, '_blank', 'noopener')
-    notify(true, t('loginWaitingCopy'))
-  }
+  // 添加账号弹框（与设置页共享同一组件）+ 登录等待状态。
+  const [addOpen, setAddOpen] = useState(false)
+  const [loginState, setLoginState] = useState<string | undefined>(undefined)
+  const [loginLink, setLoginLink] = useState<string | undefined>(undefined)
+  // 账号列表数据版本：登录完成 / 删除 / 改名后自增以触发面板重拉。
+  const [rosterTick, setRosterTick] = useState(0)
+  const bumpRoster = (): void => { setRosterTick(v => v + 1) }
 
   const doRename = async (): Promise<void> => {
     const target = renaming
     if (target === undefined) return
     setRenaming(undefined)
     const result = await rpc.call<AccountsResult>(CODEBUDDY_AUTH_CHANNEL, 'renameLabel', { id: target.id, label: renameNote })
-    if (result.ok) notify(true, t('renameDone'))
-    else notify(false, describeRpcError(result))
+    if (result.ok) {
+      notify(true, t('renameDone'))
+      bumpRoster()
+    } else {
+      notify(false, describeRpcError(result))
+    }
   }
   const openRename = (row: PanelAccountRow): void => {
     setRenaming(row)
@@ -746,9 +785,39 @@ export function CodeBuddyPanelPage({ rpc, route, t }: PanelPageProps): ReactNode
     setDeleteTarget(undefined)
     if (target === undefined) return
     const result = await rpc.call<AccountsResult>(CODEBUDDY_AUTH_CHANNEL, 'removeAccount', { id: target.id })
-    if (result.ok) notify(true, t('accountRemoved'))
-    else notify(false, describeRpcError(result))
+    if (result.ok) {
+      notify(true, t('accountRemoved'))
+      bumpRoster()
+    } else {
+      notify(false, describeRpcError(result))
+    }
   }
+
+  // 添加账号：浏览器打开授权页，进入等待并轮询完成，完成/超时后刷新列表。
+  const onAddLoginStart = useCallback((start: { authUrl: string, state: string }) => {
+    window.open(start.authUrl, '_blank', 'noopener')
+    setLoginLink(start.authUrl)
+    setLoginState(start.state)
+  }, [])
+  const cbCopyLoginLink = (): void => {
+    if (loginLink === undefined) return
+    void navigator.clipboard?.writeText(loginLink)
+      .then(() => { notify(true, t('copyLoginLinkDone')) })
+      .catch(() => { notify(false, t('copyLoginLinkDoneFail')) })
+  }
+  useEffect(() => {
+    if (loginState === undefined) return
+    return startLoginPolling(
+      rpc,
+      loginState,
+      () => { setLoginState(undefined); bumpRoster() },
+      () => {
+        setLoginState(undefined)
+        notify(false, t('timeout'))
+      },
+    )
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loginState, rpc])
 
   if (!snapshot.active) return null
 
@@ -809,15 +878,29 @@ export function CodeBuddyPanelPage({ rpc, route, t }: PanelPageProps): ReactNode
               rpc={rpc}
               t={t}
               notify={notify}
+              rosterTick={rosterTick}
+              loginWaiting={loginState !== undefined}
+              {...loginLink === undefined ? {} : { loginLink }}
+              onCopyLoginLink={cbCopyLoginLink}
               onRename={openRename}
               onDelete={openDelete}
-              onAddAccount={() => { void addAccount() }}
+              onAddAccount={() => { setAddOpen(true) }}
+              onCheckinChange={bumpRoster}
             />
           ) : null}
           {snapshot.page === 'credits' ? <CreditsPage rpc={rpc} t={t} /> : null}
           {snapshot.page === 'tokens' ? <TokenStatsPage rpc={rpc} t={t} /> : null}
         </DshLayout.Content>
       </DshLayout>
+
+      {/* 添加账号（共享设置页弹框组件） */}
+      <AddAccountModal
+        rpc={rpc}
+        t={t}
+        visible={addOpen}
+        onLoginStart={onAddLoginStart}
+        onCancel={() => { setAddOpen(false) }}
+      />
 
       {/* 删除账号确认 */}
       <DshModal
