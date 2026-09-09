@@ -94,8 +94,15 @@ export const CODEBUDDY_CHAT_BASE = `${CODEBUDDY_ENDPOINT}/v2`
 /** IDE version reported when reading the config/model catalog. */
 export const CODEBUDDY_IDE_VERSION = '4.9.8'
 
-/** CLI version reported on chat requests. */
-export const CODEBUDDY_CLI_VERSION = '2.96.0'
+/**
+ * CLI version reported on chat requests.
+ *
+ * Mirrors the currently installed `@tencent-ai/codebuddy-code` (2.145.0): the
+ * service uses this family of headers to attribute the request to the official
+ * CLI client (`X-IDE-Type: CLI` / `X-IDE-Version` / `User-Agent`), so the value
+ * must track the product release the plugin presents itself as.
+ */
+export const CODEBUDDY_CLI_VERSION = '2.145.0'
 
 /**
  * Client version stamped on the browser-login page URL as `version`.

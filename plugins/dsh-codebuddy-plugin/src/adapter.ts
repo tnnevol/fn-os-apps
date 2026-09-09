@@ -44,6 +44,7 @@ import { serializeRequest } from './serialize.ts'
 import { translate } from './translate.ts'
 import { hasDisclosedCapacity } from './types.ts'
 import type { CodeBuddyModel, WireError } from './types.ts'
+import { randomUUID } from 'node:crypto'
 
 /** Connection facts the registering plugin resolves and the adapter trusts. */
 export interface CodeBuddyConnectionOptions {
@@ -81,6 +82,32 @@ function providerRetryAfterMs(value: string | null): number | undefined {
 function requestId(headers: Headers): ReturnType<typeof ProviderRequestId> | undefined {
   const value = headers.get('x-request-id') ?? headers.get('x-requestid')
   return value === null || value.length === 0 ? undefined : ProviderRequestId(value)
+}
+
+/**
+ * The conversation-scoped identity the official CodeBuddy CLI stamps on every
+ * chat request. Reverse-engineered from `@tencent-ai/codebuddy-code` (2.145.0):
+ * its model client sets one request id across the conversation/request/message
+ * headers, marks the intent as `craft`, and identifies itself as the CLI client
+ * through the `X-IDE-*` family. The service attributes traffic to the official
+ * client from these headers, so a request without them looks like an anonymous
+ * client and is refused/limited.
+ *
+ * One id per call attempt mirrors the CLI (one `messageId` per HTTP POST).
+ */
+function clientIdentityHeaders(): Record<string, string> {
+  const requestId = randomUUID()
+  return {
+    'X-Conversation-ID': requestId,
+    'X-Conversation-Request-ID': requestId,
+    'X-Conversation-Message-ID': requestId,
+    'X-Request-ID': requestId,
+    // 官方 CLI 每条消息固定带 craft intent（无 mode 元数据时的默认值）。
+    'X-Agent-Intent': 'craft',
+    'X-IDE-Type': 'CLI',
+    'X-IDE-Name': 'CLI',
+    'X-IDE-Version': CODEBUDDY_CLI_VERSION,
+  }
 }
 
 /**
@@ -366,6 +393,7 @@ export class CodeBuddyAdapter extends LlmAdapter {
         method: 'POST',
         headers: {
           ...headers,
+          ...clientIdentityHeaders(),
           'content-type': 'application/json',
           'accept': 'text/event-stream',
           'user-agent': `CLI/${CODEBUDDY_CLI_VERSION} CodeBuddy/${CODEBUDDY_CLI_VERSION}`,
