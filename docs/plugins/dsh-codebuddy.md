@@ -59,3 +59,6 @@ CodeBuddy 的模型目录来自其非 OpenAI 兼容的 `/v3/config` 端点，包
 ## 图片输入
 
 CodeBuddy 支持图片输入的模型（`supportsImages`）在插件中以原生 `image_url` 数据 URI 发送图片内容，无需 DSH 的 OCR/读图工具兜底；模型不支持图片时，DSH 才会把图片降级为文本交给读图工具。图片字节通过 DSH 的 durable attachment 服务（`ctx.attachments`）读取，不进会话记录。
+
+- **会话内联图片**（粘贴/拖拽上传）：DSH 以 `ImageBlock` 交给模型 → 插件原生上传，无需 `read_image`。
+- **`read_image` 工具结果图片**：后续轮次中插件会把工具结果里嵌入的图片一并原生上传给 CodeBuddy，模型可直接看到图片内容而无需重复读图。
