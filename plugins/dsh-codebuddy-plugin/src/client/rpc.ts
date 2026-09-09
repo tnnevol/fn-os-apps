@@ -23,6 +23,34 @@ export interface AuthStatus {
   departmentFullName?: string
 }
 
+/** One stored account the host `accounts` endpoint reports. */
+export interface AccountView {
+  /** Stable local id; pass it to `switchAccount` / `removeAccount`. */
+  id: string
+  nickname: string
+  /** Local display label; falls back to nickname when absent. */
+  label?: string
+  /** Network environment this credential was issued against, when known. */
+  environment?: string
+  uid: string
+  uin?: string
+  enterpriseId?: string
+  enterpriseName?: string
+  enterpriseUserName?: string
+  departmentFullName?: string
+  /** Whether this is the active account every request authenticates with. */
+  active: boolean
+  /** Whether the refresh token has expired — the account is offline and needs re-login. */
+  expired: boolean
+}
+
+/** The accounts result shape the host `accounts` endpoint returns. */
+export interface AccountsResult {
+  loggedIn: boolean
+  current?: AccountView
+  accounts: AccountView[]
+}
+
 /** The startLogin result shape. */
 export interface LoginStart {
   authUrl: string

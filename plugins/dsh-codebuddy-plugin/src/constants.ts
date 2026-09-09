@@ -14,8 +14,75 @@ export const CODEBUDDY_PROVIDER = 'codebuddy'
 /** Display name shown in model selectors and settings surfaces. */
 export const CODEBUDDY_DISPLAY_NAME = 'CodeBuddy'
 
-/** CodeBuddy service root; both the auth handshake and `/v3/config` live here. */
+/**
+ * Network environments the official client distinguishes, mirroring
+ * `CODEBUDDY_INTERNET_ENVIRONMENT` and the `product.<env>.json` files the
+ * official CLI ships. The endpoint decides where the OAuth handshake, the
+ * model catalog, metering, and the OpenAI-compatible chat route live; the
+ * authority part doubles as the default `X-Domain` header value.
+ */
+export const CODEBUDDY_ENVIRONMENTS = ['external', 'internal', 'ioa', 'cloudhosted', 'selfhosted'] as const
+
+/** One network environment id. */
+export type CodeBuddyEnvironment = (typeof CODEBUDDY_ENVIRONMENTS)[number]
+
+/** Default service root for the external environment (`product.json`). */
+export const CODEBUDDY_ENDPOINT_EXTERNAL = 'https://www.codebuddy.ai'
+
+/** Default service root for the internal and ioa environments
+ *  (`product.internal.json` / `product.ioa.json` — both point here). */
+export const CODEBUDDY_ENDPOINT_INTERNAL = 'https://copilot.tencent.com'
+
+/**
+ * Default endpoints keyed by environment. `cloudhosted`/`selfhosted` are
+ * deliberately absent: the official CLI ships no default for them and
+ * requires the enterprise's own service address, so an account on those
+ * environments must carry an explicit endpoint.
+ */
+export const CODEBUDDY_ENVIRONMENT_ENDPOINTS: Readonly<
+  Record<Exclude<CodeBuddyEnvironment, 'cloudhosted' | 'selfhosted'>, string>
+> = {
+  external: CODEBUDDY_ENDPOINT_EXTERNAL,
+  internal: CODEBUDDY_ENDPOINT_INTERNAL,
+  ioa: CODEBUDDY_ENDPOINT_INTERNAL,
+}
+
+/**
+ * 环境字典：id → 展示名。选择器、面板与日志统一从这里取文案，id 与
+ * CODEBUDDY_INTERNET_ENVIRONMENT 的取值一一对应。
+ */
+export const CODEBUDDY_ENVIRONMENT_LABELS: Readonly<Record<CodeBuddyEnvironment, string>> = {
+  external: '海外版',
+  internal: '中国版',
+  ioa: 'iOA 企业版',
+  cloudhosted: '专享版',
+  selfhosted: '私有化部署',
+}
+
+/**
+ * IOA-only header defaults the official client applies
+ * (`IOAUtils.applyIOADefaultHeaders`): the auth domain defaults to the SSO
+ * host rather than the endpoint authority, and a personal (enterprise-less)
+ * session carries the product's default enterprise id.
+ */
+export const CODEBUDDY_IOA_DOMAIN = 'tencent.sso.copilot.tencent.com'
+export const CODEBUDDY_IOA_DEFAULT_ENTERPRISE_ID = 'etahzsqej0n4'
+
+/**
+ * Legacy hard-coded endpoint. Accounts stored before environments existed
+ * were all signed in against the China service, so a migrated legacy entry
+ * and any document without explicit environment facts resolve here.
+ */
 export const CODEBUDDY_ENDPOINT = 'https://copilot.tencent.com'
+
+/** The default environment; the official CLI treats absent as external. */
+export const CODEBUDDY_DEFAULT_ENVIRONMENT: CodeBuddyEnvironment = 'internal'
+
+/**
+ * The auth path prefix the official client inserts between `/v2` and the
+ * auth routes (`authentication.attributes.prefixPath`).
+ */
+export const CODEBUDDY_PLUGIN_PREFIX = '/plugin'
 
 /**
  * OpenAI-compatible chat base. Only the chat wire route is compatible; the

@@ -61,6 +61,10 @@ export interface CodeBuddyConnectionOptions {
 export interface CodeBuddyAdapterOptions {
   session: CodeBuddySession
   options: () => CodeBuddyConnectionOptions
+  /** Whether quota failures may auto-switch the active account. */
+  autoSwitch?: () => boolean
+  /** 自动接管切号成功后回调（触发 harness 模型目录/用量即时刷新）。 */
+  onAccountSwitched?: () => void
 }
 
 /** Parse a `retry-after` header into milliseconds, when it carries a usable delay. */
@@ -266,14 +270,73 @@ export class CodeBuddyAdapter extends LlmAdapter {
     }
   }
 
+  /**
+   * The public entry the harness drives. Failover lives here: the first
+   * attempt runs against the active account, and a quota-exhausted or
+   * rate-limited response switches to the next usable account and retries
+   * once. Retrying is only safe BEFORE the stream yields its first chunk —
+   * a failure mid-stream rethrows to the caller (the consumed prefix must not
+   * be replayed), and the NEXT conversation turn starts on the new account.
+   */
   async * stream(options: GenerateOptions): AsyncIterable<StreamChunk> {
+    try {
+      yield* this.attemptStream(options)
+    } catch (error) {
+      if (!(error instanceof LlmError)) throw error
+      // Only account-exhaustion classes warrant a switch; transport faults and
+      // context-window overruns would fail on every account alike.
+      const autoSwitch = this.config.autoSwitch?.() ?? true
+      const swappable = autoSwitch
+        && (error.code === QUOTA_EXCEEDED_CODE || error.code === 'RATE_LIMIT')
+      if (!swappable) throw error
+      const switched = await this.failoverToNextAccount(error)
+      if (!switched) throw error
+      // Surface the takeover as visible assistant text before the retried
+      // stream starts: the StreamChunk union has no status member, and the
+      // user should see why the request momentarily paused and whose quota
+      // now pays for the rest of the conversation.
+      yield {
+        type: 'text-delta',
+        index: 0,
+        text: `\n[CodeBuddy] 账号「${switched.from}」额度不足，已自动切换至「${switched.to}」继续。\n`,
+      }
+      yield* this.attemptStream(options)
+    }
+  }
+
+  /**
+   * Switch the active account to the next usable one after a quota failure.
+   * @param error - the failure that triggered the switch.
+   * @returns the from/to display names, or `undefined` when no other account
+   *   can take over (single account, or every other credential expired).
+   */
+  private async failoverToNextAccount(error: LlmError): Promise<{ from: string, to: string } | undefined> {
+    const current = await this.config.session.activeAccountSummary()
+    const candidates = await this.config.session.failoverCandidates()
+    if (candidates === undefined || current === undefined) return undefined
+    const next = candidates.find(entry => entry.id !== current.id)
+    if (next === undefined) return undefined
+    const applied = await this.config.session.switchTo(next.id)
+    if (!applied) return undefined
+    try { this.config.onAccountSwitched?.() } catch { /* 广播失败不影响请求继续 */ }
+    return { from: current.nickname, to: next.account.nickname }
+  }
+
+  /**
+   * One request attempt against the ACTIVE account: resolve identity and
+   * endpoint, fetch, and translate the SSE body. No retry, no failover — the
+   * wrapper above owns those.
+   */
+  private async * attemptStream(options: GenerateOptions): AsyncIterable<StreamChunk> {
     // One resolution per call, before the first yield: the endpoint facts and
     // the identity freeze together, so a token refreshed mid-stream cannot be
     // paired with a different generation's endpoint.
     const connection = this.config.options()
     let headers: Record<string, string>
+    let chatBase = connection.baseURL
     try {
       headers = await this.config.session.authHeaders()
+      chatBase = this.config.session.chatBase() ?? connection.baseURL
     } catch (error) {
       if (error instanceof NotLoggedInError) {
         throw new LlmError(error.message, 'MISSING_CREDENTIAL', { cause: error })
@@ -299,7 +362,7 @@ export class CodeBuddyAdapter extends LlmAdapter {
 
     let response: Response
     try {
-      response = await fetch(`${connection.baseURL}/chat/completions`, {
+      response = await fetch(`${chatBase}/chat/completions`, {
         method: 'POST',
         headers: {
           ...headers,
@@ -318,7 +381,7 @@ export class CodeBuddyAdapter extends LlmAdapter {
       // failed`; the endpoint and the chained cause are what make it
       // diagnosable.
       throw new LlmError(
-        `CodeBuddy request to ${connection.baseURL} failed`,
+        `CodeBuddy request to ${chatBase} failed`,
         'TRANSPORT',
         { cause: error },
       )

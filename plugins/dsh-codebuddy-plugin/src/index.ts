@@ -16,6 +16,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import { CodeBuddyAdapter } from './adapter.ts'
 import type { CodeBuddyConnectionOptions } from './adapter.ts'
 import { CodeBuddyAuthService } from './auth-service.ts'
+import type { SessionAnalyticsServices } from './auth-service.ts'
 import {
   CODEBUDDY_CHAT_BASE,
   CODEBUDDY_PROVIDER,
@@ -40,6 +41,16 @@ export { buildStorage, clearStorage, getStoragePath, loadStorage, saveStorage } 
 export type { CodeBuddyStorage } from './storage.ts'
 export { fetchUsage, fetchPersonalUsage, fetchEnterpriseUsage, parseUsage } from './usage.ts'
 export type { UsageSnapshot, UsageWindow } from './usage.ts'
+export { collectCodeBuddyTokenStats } from './token-stats.ts'
+export type {
+  CodeBuddyTokenStatsRequest,
+  CodeBuddyTokenStats,
+  CodeBuddyTokenBucket,
+  CodeBuddyTokenDay,
+  CodeBuddyTokenActivity,
+  CodeBuddyTokenBreakdown,
+  CodeBuddyTokenSession,
+} from './token-stats.ts'
 export * from './constants.ts'
 export { hasDisclosedCapacity } from './types.ts'
 export type * from './types.ts'
@@ -47,8 +58,8 @@ export type * from './types.ts'
 /** Cordis plugin name. */
 export const name = 'dsh-codebuddy'
 
-/** This plugin needs the LLM seam to register its route on. */
-export const inject = ['llm']
+/** The route needs LLM; analytics needs the logical DSH session query seam. */
+export const inject = ['llm', 'sessionQuery']
 
 // The module is deliberately exported as named members only, with no default
 // export. Cordis's loader collapses a module via `exports.default ?? exports`,
@@ -116,11 +127,35 @@ export function apply(ctx: Context, config: Config = {}): void {
   // keeps the adapter reading it per operation.
   const resolved = resolveConnectionOptions(config)
   const session = new CodeBuddySession(ctx.logger)
-  const adapter = new CodeBuddyAdapter({ session, options: () => resolved })
 
-  ctx.llm.registerAdapter([CODEBUDDY_PROVIDER], adapter)
+  // 当前账号切换（手动 / 删除 / 新登录 / 自动接管）后，通过 adapter replace 广播
+  // harness 的 `llm/adapters-updated`：模型选择器重新拉目录、用量指示器即时重拉，
+  // 数据随账号即时同步，无需刷新页面。replace 保持同一 adapter 实例、原子交换
+  // 同组路由，不产生请求窗口。
+  let adapterHandle: { replace(providers: readonly string[]): void } | undefined
+  const notifyModels = (): void => {
+    try {
+      adapterHandle?.replace([CODEBUDDY_PROVIDER])
+    } catch (error) {
+      ctx.logger.warn('dsh-codebuddy: model-catalog refresh after account switch failed')
+      ctx.logger.warn(error)
+    }
+  }
+  const runtimeServices = ctx as unknown as { get: (key: string) => unknown }
+  const analytics: SessionAnalyticsServices = {
+    sessionQuery: runtimeServices.get('sessionQuery') as SessionAnalyticsServices['sessionQuery'],
+  }
+  const auth = new CodeBuddyAuthService(ctx, session, notifyModels, analytics)
+  const adapter = new CodeBuddyAdapter({
+    session,
+    options: () => resolved,
+    autoSwitch: () => auth.autoSwitch,
+    onAccountSwitched: notifyModels,
+  })
 
-  new CodeBuddyAuthService(ctx, session)
+  adapterHandle = ctx.llm.registerAdapter([CODEBUDDY_PROVIDER], adapter) as unknown as {
+    replace(providers: readonly string[]): void
+  }
 
   // A signed-out mount is legitimate: the route registers, and the first
   // request explains how to sign in. Saying so once at load keeps that from

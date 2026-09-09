@@ -16,6 +16,7 @@
  * @module dsh-codebuddy/usage
  */
 
+import { join } from 'node:path'
 import { CODEBUDDY_ENDPOINT, CODEBUDDY_IDE_VERSION } from './constants.ts'
 import type { CodeBuddyIdentity } from './codebuddy.ts'
 
@@ -317,13 +318,15 @@ function todayRange(): { begin: string, end: string } {
  * non-2xx status, an unparseable body, or a non-zero service `code` all mean
  * "no usage shown" — never a broken sidebar foot.
  * @param identity - the signed-in identity, refreshed by the session.
- * @param path - the meter path under {@link CODEBUDDY_ENDPOINT}.
+ * @param endpoint - the service root of the account's environment.
+ * @param path - the meter path under the endpoint.
  * @param body - the JSON request body.
  * @param signal - optional cancellation.
  * @returns the parsed snapshot, or `undefined` when the plane was unreachable
  *   or answered an unusable body.
  */
 async function postMeter(
+  endpoint: string,
   identity: CodeBuddyIdentity,
   path: string,
   body: string,
@@ -331,7 +334,7 @@ async function postMeter(
 ): Promise<UsageSnapshot | undefined> {
   let response: Response
   try {
-    response = await fetch(`${CODEBUDDY_ENDPOINT}${path}`, {
+    response = await fetch(`${endpoint}${path}`, {
       method: 'POST',
       headers: meterHeaders(identity),
       body,
@@ -367,6 +370,7 @@ async function postMeter(
  * @returns the parsed snapshot, or `undefined` when the plane was unreachable.
  */
 export async function fetchPersonalUsage(
+  endpoint: string,
   identity: CodeBuddyIdentity,
   signal?: AbortSignal,
 ): Promise<UsageSnapshot | undefined> {
@@ -379,7 +383,7 @@ export async function fetchPersonalUsage(
     SlicePeriodStartTime: begin,
     SlicePeriodEndTime: end,
   })
-  return postMeter(identity, '/v2/billing/meter/get-user-resource', body, signal)
+  return postMeter(endpoint, identity, '/v2/billing/meter/get-user-resource', body, signal)
 }
 
 /**
@@ -392,10 +396,11 @@ export async function fetchPersonalUsage(
  * @returns the parsed snapshot, or `undefined` when the plane was unreachable.
  */
 export async function fetchEnterpriseUsage(
+  endpoint: string,
   identity: CodeBuddyIdentity,
   signal?: AbortSignal,
 ): Promise<UsageSnapshot | undefined> {
-  return postMeter(identity, '/v2/billing/meter/get-enterprise-user-usage', '{}', signal)
+  return postMeter(endpoint, identity, '/v2/billing/meter/get-enterprise-user-usage', '{}', signal)
 }
 
 /**
@@ -411,10 +416,85 @@ export async function fetchEnterpriseUsage(
  *   or answered an unusable body.
  */
 export async function fetchUsage(
+  endpoint: string,
   identity: CodeBuddyIdentity,
   signal?: AbortSignal,
 ): Promise<UsageSnapshot | undefined> {
   return identity.enterpriseId !== undefined
-    ? fetchEnterpriseUsage(identity, signal)
-    : fetchPersonalUsage(identity, signal)
+    ? fetchEnterpriseUsage(endpoint, identity, signal)
+    : fetchPersonalUsage(endpoint, identity, signal)
+}
+
+/* ==========================================================================
+ * 签到与积分到期：与 workbuddy-switch 同一 meter 平面（/v2/billing/meter/*）。
+ * 状态查询优先 checkin-activity-status，失败回退 checkin-status；提交走
+ * daily-checkin，服务端回「已签到」按成功处理。
+ * ========================================================================== */
+
+const CHECKIN_API_PREFIX = '/v2/billing/meter'
+
+/** GET/POST 一个 meter 接口并把 {code,msg,data} 信封展平。 */
+async function meterJson(
+  endpoint: string,
+  path: string,
+  identity: CodeBuddyIdentity,
+  body: string,
+  signal?: AbortSignal,
+): Promise<{ code: number, message: string, data: unknown, ok: boolean }> {
+  try {
+    const response = await fetch(`${endpoint}${path}`, {
+      method: body === '' ? 'GET' : 'POST',
+      headers: meterHeaders(identity),
+      ...(body === '' ? {} : { body }),
+      ...(signal === undefined ? {} : { signal }),
+    })
+    if (!response.ok) return { code: response.status, message: `HTTP ${response.status}`, data: undefined, ok: false }
+    const raw = await response.json() as Record<string, unknown>
+    const code = typeof raw.code === 'number' ? raw.code : -1
+    const message = typeof raw.msg === 'string' ? raw.msg : typeof raw.message === 'string' ? raw.message : `${code}`
+    return { code, message, data: raw.data, ok: code === 0 || code === 200 }
+  } catch (error) {
+    return { code: -1, message: error instanceof Error ? error.message : String(error), data: undefined, ok: false }
+  }
+}
+
+/** 今日是否已签到；新接口 checkin-activity-status 失败回退 checkin-status。 */
+export async function getCheckinStatus(
+  endpoint: string,
+  identity: CodeBuddyIdentity,
+  signal?: AbortSignal,
+): Promise<{ ok: boolean, todayCheckedIn: boolean, error?: string }> {
+  let resp = await meterJson(endpoint, `${CHECKIN_API_PREFIX}/checkin-activity-status`, identity, '', signal)
+  if (!resp.ok) {
+    resp = await meterJson(endpoint, `${CHECKIN_API_PREFIX}/checkin-status`, identity, '', signal)
+  }
+  if (resp.ok) {
+    const data = (resp.data ?? {}) as Record<string, unknown>
+    const flag = data.today_checked_in ?? data.todayCheckedIn
+    return { ok: true, todayCheckedIn: flag === true }
+  }
+  return { ok: false, todayCheckedIn: false, error: resp.message }
+}
+
+/** 提交签到（daily-checkin）；「已签到」/"repeat" 文案按成功处理。 */
+export async function performCheckin(
+  endpoint: string,
+  identity: CodeBuddyIdentity,
+  signal?: AbortSignal,
+): Promise<{ ok: boolean, already?: boolean, error?: string }> {
+  const resp = await meterJson(endpoint, `${CHECKIN_API_PREFIX}/daily-checkin`, identity, '{}', signal)
+  if (resp.ok) return { ok: true }
+  const message = resp.message
+  if (message.includes('已签到') || message.toLowerCase().includes('repeat')) return { ok: true, already: true, error: message }
+  return { ok: false, error: message }
+}
+
+/**
+ * Legacy JSONL roots retained for callers that used the old helper. The Token
+ * dashboard now reads DSH sessions through `sessionQuery` instead of opening
+ * these backend paths directly.
+ * @returns the historical candidate roots.
+ */
+export function tokenStatsRoots(home: string): string[] {
+  return [join(home, 'sessions'), join(home, '..', '.codebuddy', 'projects')]
 }

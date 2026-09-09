@@ -10,7 +10,7 @@
  */
 
 import {
-  CODEBUDDY_CUSTOM_LIMIT_KEY,
+  CODEBUDDY_AUTO_SWITCH_KEY,
   CODEBUDDY_DANGER_PCT_KEY,
   CODEBUDDY_DEFAULT_DANGER_PCT,
   CODEBUDDY_SHOW_USAGE_KEY,
@@ -47,32 +47,6 @@ export function setUsagePref(value: boolean): void {
   emitUsagePref()
 }
 
-/** Read the custom quota cap; `undefined` when unset or not a positive number. */
-export function getCustomLimit(): number | undefined {
-  try {
-    const raw = window.localStorage.getItem(CODEBUDDY_CUSTOM_LIMIT_KEY)
-    if (raw === null) return undefined
-    const parsed = Number(raw)
-    return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined
-  } catch {
-    return undefined
-  }
-}
-
-/** Persist the custom quota cap and notify subscribers. */
-export function setCustomLimit(value: number | undefined): void {
-  try {
-    if (value === undefined) {
-      window.localStorage.removeItem(CODEBUDDY_CUSTOM_LIMIT_KEY)
-    } else {
-      window.localStorage.setItem(CODEBUDDY_CUSTOM_LIMIT_KEY, String(value))
-    }
-  } catch {
-    // See setUsagePref.
-  }
-  emitUsagePref()
-}
-
 /** Read the danger-percentage threshold; defaults to 90 when unset/invalid. */
 export function getDangerPct(): number {
   try {
@@ -99,13 +73,54 @@ export function setDangerPct(value: number | undefined): void {
   emitUsagePref()
 }
 
+/** The auto-switch remaining-percentage threshold; defaults to 10. */
+export function getAutoSwitchThresholdPref(): number {
+  try {
+    const raw = window.localStorage.getItem(`${CODEBUDDY_AUTO_SWITCH_KEY}:threshold`)
+    if (raw === null) return 10
+    const parsed = Number(raw)
+    return Number.isFinite(parsed) && parsed >= 0 && parsed <= 100 ? Math.round(parsed) : 10
+  } catch {
+    return 10
+  }
+}
+
+/** Persist the auto-switch threshold and notify subscribers. */
+export function setAutoSwitchThresholdPref(value: number): void {
+  try {
+    window.localStorage.setItem(`${CODEBUDDY_AUTO_SWITCH_KEY}:threshold`, String(Math.round(value)))
+  } catch {
+    // See setUsagePref.
+  }
+  emitUsagePref()
+}
+
+/** Read the auto-switch preference; defaults to on. */
+export function getAutoSwitchPref(): boolean {
+  try {
+    return window.localStorage.getItem(CODEBUDDY_AUTO_SWITCH_KEY) !== '0'
+  } catch {
+    return true
+  }
+}
+
+/** Persist the auto-switch preference and notify subscribers. */
+export function setAutoSwitchPref(value: boolean): void {
+  try {
+    window.localStorage.setItem(CODEBUDDY_AUTO_SWITCH_KEY, value ? '1' : '0')
+  } catch {
+    // See setUsagePref.
+  }
+  emitUsagePref()
+}
+
 // Cross-tab sync: a `storage` event fires in every *other* tab when any key
 // changes, so each tab's indicator and controls re-read without a Host call.
 if (typeof window !== 'undefined' && window.localStorage !== undefined) {
   window.addEventListener('storage', (event) => {
     if (event.key === CODEBUDDY_SHOW_USAGE_KEY
-      || event.key === CODEBUDDY_CUSTOM_LIMIT_KEY
       || event.key === CODEBUDDY_DANGER_PCT_KEY
+      || event.key === CODEBUDDY_AUTO_SWITCH_KEY
       || event.key === null) {
       emitUsagePref()
     }

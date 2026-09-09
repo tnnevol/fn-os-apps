@@ -19,6 +19,12 @@ const CLIENT_EXTERNALS = [
   '@deepseek-ai/dsh-client-ui-slots',
 ] as const
 
+// @tnnevol/dsh-semi-ui 是 workspace 链接包：若 rolldown 按其 exports 解析出绝对
+// 路径后 externalize，client 会残留 require("@tnnevol/dsh-semi-ui")（DSH 模块表
+// 无此包）。显式 alias 到真实入口，强制与 @douyinfe 子路径一样内联。
+import { fileURLToPath } from 'node:url'
+const semiUiEntry = fileURLToPath(new URL('../../packages/dsh-semi-ui/lib/index.js', import.meta.url))
+
 async function inlineClientStyles(config: { cwd: string }): Promise<void> {
   const clientPath = join(config.cwd, 'lib', 'client.js')
   const stylePath = join(config.cwd, 'lib', 'style.css')
@@ -68,9 +74,20 @@ export default [
     clean: false,
     deps: {
       ...dshSemiClientDeps.deps,
+      // echarts 是本插件独有的依赖（Token 统计图表），DSH 浏览器模块表没有
+      // 它，必须内联进 bundle；否则运行时 require 直接报 module table miss。
+      alwaysBundle: [
+        // 本插件独有依赖（Token 图表），DSH 模块表没有 → 内联
+        /^echarts(?:\/|$)/u, /^zrender(?:\/|$)/u,
+        // semi-ui 内部运行时依赖（Popover/TimePicker 等），浏览器端同样没有
+        /^date-fns(?:\/|$)/u,
+      ],
       neverBundle: [...CLIENT_EXTERNALS],
     },
-    alias: dshSemiClientDeps.alias,
+    alias: {
+      ...dshSemiClientDeps.alias,
+      '@tnnevol/dsh-semi-ui': semiUiEntry,
+    },
     css: { inject: true, minify: true },
     onSuccess: inlineClientStyles,
     define: {

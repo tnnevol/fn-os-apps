@@ -7,19 +7,40 @@
  */
 
 import { useCallback, useEffect, useState } from 'react'
-import type { FocusEvent } from 'react'
-import { DshButton, DshForm, DshInputNumber, DshSlider, DshSwitch } from '@tnnevol/dsh-semi-ui'
+import {
+  DshButton,
+  DshCollapse,
+  DshDescriptions,
+  DshIconButton,
+  DshForm,
+  DshSelect,
+  DshIconAlertCircle,
+  DshIconCopy,
+  DshIconEdit,
+  DshIconList,
+  DshInput,
+  DshModal,
+  DshSlider,
+  DshSwitch,
+  DshTag,
+  DshToast,
+  DshTypography,
+} from '@tnnevol/dsh-semi-ui'
 import { CODEBUDDY_AUTH_CHANNEL } from '../client/constants.ts'
+import type { PanelRouteController } from '../client/panel-route.ts'
+import { CODEBUDDY_DEFAULT_ENVIRONMENT, CODEBUDDY_ENVIRONMENTS, CODEBUDDY_ENVIRONMENT_LABELS } from '../constants.ts'
 
 import type { CodeBuddyLocaleKey } from '../client/locales.ts'
-import type { AuthStatus, ConnectionRpc, LoginPoll, LoginStart, RpcErr } from '../client/rpc.ts'
+import type { AccountView, AccountsResult, AuthStatus, ConnectionRpc, LoginPoll, LoginStart, RpcErr } from '../client/rpc.ts'
 import { describeRpcError } from '../client/rpc.ts'
 import { CodeBuddyLogo } from './CodeBuddyLogo.tsx'
 import {
-  getCustomLimit,
+  getAutoSwitchPref,
+  getAutoSwitchThresholdPref,
   getDangerPct,
   getUsagePref,
-  setCustomLimit,
+  setAutoSwitchPref,
+  setAutoSwitchThresholdPref,
   setDangerPct,
   setUsagePref,
   subscribeUsagePref,
@@ -52,6 +73,13 @@ function describeError(result: RpcErr): string {
   return describeRpcError(result)
 }
 
+/** 剩余额度格式化（与面板卡片同一口径：万/亿）。 */
+function formatBalance(n: number): string {
+  if (n >= 1e8) return `${(n / 1e8).toFixed(1)}亿`
+  if (n >= 1e4) return `${(n / 1e4).toFixed(1)}万`
+  return String(Math.round(n))
+}
+
 function StatusRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="dsh-codebuddy-row">
@@ -61,11 +89,13 @@ function StatusRow({ label, value }: { label: string; value: string }) {
   )
 }
 
-function PreferenceLabel({ title, description }: { title: string; description: string }) {
+function PreferenceLabel({ title, description }: { title: string; description?: string }) {
   return (
     <span className="dsh-codebuddy-form-label">
       <strong className="dsh-codebuddy-form-label-title">{title}</strong>
-      <span className="dsh-codebuddy-form-label-description">{description}</span>
+      {description !== undefined && description.length > 0
+        ? <span className="dsh-codebuddy-form-label-description">{description}</span>
+        : null}
     </span>
   )
 }
@@ -74,38 +104,96 @@ function PreferenceLabel({ title, description }: { title: string; description: s
 export interface CodeBuddySectionProps {
   rpc: ConnectionRpc
   t: Translate
+  /** 管理面板路由；由 client 注入，点击头部按钮打开全页面。 */
+  panelRoute?: PanelRouteController
+  /** Settings shell close callback; open the overlay without leaving the dialog behind. */
+  close?: () => void
 }
 
-export function CodeBuddySection({ rpc, t }: CodeBuddySectionProps) {
+export function CodeBuddySection({ rpc, t, panelRoute, close }: CodeBuddySectionProps) {
   const [phase, setPhase] = useState<Phase>('loading')
   const [status, setStatus] = useState<AuthStatus | undefined>(undefined)
   const [error, setError] = useState<string | undefined>(undefined)
   const [loginState, setLoginState] = useState<string | undefined>(undefined)
+  // Multi-account roster from the host `accounts` endpoint.
+  const [accounts, setAccounts] = useState<AccountView[]>([])
+  const [switchingId, setSwitchingId] = useState<string | undefined>(undefined)
+  // 添加账号弹框状态（备注名 + 环境 + 自定义 endpoint + 企业账号开关）。
+  const [addOpen, setAddOpen] = useState(false)
+  const [addNote, setAddNote] = useState('')
+  const [addEnvironment, setAddEnvironment] = useState<string>(CODEBUDDY_DEFAULT_ENVIRONMENT)
+  const [addEndpoint, setAddEndpoint] = useState('')
+  const [addEnterprise, setAddEnterprise] = useState(false)
+  // 删除确认目标账号 id。
+  const [removeTarget, setRemoveTarget] = useState<string | undefined>(undefined)
+  // 登录中握手返回的真实 authUrl——复制按钮与「打开登录页」共用同一链接。
+  const [loginLink, setLoginLink] = useState<string | undefined>(undefined)
   const [showUsage, setShowUsage] = useState<boolean>(getUsagePref())
-  const [customLimit, setCustomLimitState] = useState<number | undefined>(getCustomLimit())
+  const [autoSwitch, setAutoSwitchState] = useState<boolean>(getAutoSwitchPref())
+  const [autoSwitchPct, setAutoSwitchPctState] = useState<number>(getAutoSwitchThresholdPref())
+  const [editTarget, setEditTarget] = useState<string | undefined>(undefined)
+  const [editNote, setEditNote] = useState('')
   const [dangerPct, setDangerPctState] = useState<number | undefined>(getDangerPct())
+  // 各账号剩余额度快照（设置页用户信息面板展示；来源 panelStatus）。
+  const [balanceByAccount, setBalanceByAccount] = useState<Record<string, { remaining: number, capacity: number, usable: boolean }>>({})
 
   useEffect(() => subscribeUsagePref(() => {
     setShowUsage(getUsagePref())
-    setCustomLimitState(getCustomLimit())
     setDangerPctState(getDangerPct())
+    const nextAuto = getAutoSwitchPref()
+    setAutoSwitchState(nextAuto)
+    void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoSwitch', { enabled: nextAuto })
   }), [])
 
   const refresh = useCallback(async () => {
-    const result = await rpc.call<AuthStatus>(CODEBUDDY_AUTH_CHANNEL, 'status', {})
-    if (result.ok) {
-      setStatus(result.value)
+    const [statusResult, accountsResult] = await Promise.all([
+      rpc.call<AuthStatus>(CODEBUDDY_AUTH_CHANNEL, 'status', {}),
+      rpc.call<AccountsResult>(CODEBUDDY_AUTH_CHANNEL, 'accounts', {}),
+    ])
+    if (statusResult.ok) {
+      setStatus(statusResult.value)
       setPhase('idle')
     } else {
-      setError(describeError(result))
+      setError(describeError(statusResult))
       setPhase('error')
+    }
+    if (accountsResult.ok) {
+      setAccounts(accountsResult.value.accounts)
+    }
+    // 用户信息面板「剩余额度」：并行拉取聚合状态，按账号 id 缓存。
+    const balanceResult = await rpc.call<{ accounts: Array<{ id: string, totalRemaining: number, totalCapacity: number, usable: boolean }> }>(CODEBUDDY_AUTH_CHANNEL, 'panelStatus', {})
+    if (balanceResult.ok) {
+      const next: Record<string, { remaining: number, capacity: number, usable: boolean }> = {}
+      for (const row of balanceResult.value.accounts) {
+        next[row.id] = { remaining: row.totalRemaining, capacity: row.totalCapacity, usable: row.usable }
+      }
+      setBalanceByAccount(next)
     }
   }, [rpc])
 
-  // Load status once on mount.
+  // 编辑备注名弹框打开时：捕获阶段拦截 ESC（Semi 的 Modal ESC 监听挂载在
+  // document 上，捕获先于目标阶段触发，stopPropagation 阻止底层弹框/面板的
+  // ESC 处理器收到事件——编辑弹框自己不带 closeOnEsc，由本监听器关闭）。
+  useEffect(() => {
+    if (editTarget === undefined) return
+    const onKey = (event: KeyboardEvent): void => {
+      if (event.key === 'Escape' || event.keyCode === 27) {
+        event.stopImmediatePropagation()
+        setEditTarget(undefined)
+      }
+    }
+    document.addEventListener('keydown', onKey, true)
+    return () => { document.removeEventListener('keydown', onKey, true) }
+  }, [editTarget])
+
+  // Load status once on mount; sync the persisted auto-switch flag to the host.
   useEffect(() => {
     void refresh()
-  }, [refresh])
+    void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoSwitch', {
+      enabled: getAutoSwitchPref(),
+      thresholdPct: getAutoSwitchThresholdPref(),
+    })
+  }, [refresh, rpc])
 
   // Poll an in-flight login until it completes or the deadline passes.
   useEffect(() => {
@@ -133,33 +221,92 @@ export function CodeBuddySection({ rpc, t }: CodeBuddySectionProps) {
     return () => { stopped = true }
   }, [loginState, rpc, refresh, t])
 
-  const startLogin = useCallback(async () => {
+  const startLogin = useCallback(async (options: { label?: string, environment?: string, endpoint?: string, activate?: boolean } = {}) => {
     setError(undefined)
-    const result = await rpc.call<LoginStart>(CODEBUDDY_AUTH_CHANNEL, 'startLogin', {})
+    const result = await rpc.call<LoginStart>(CODEBUDDY_AUTH_CHANNEL, 'startLogin', options)
     if (!result.ok) {
       setError(describeError(result))
       setPhase('error')
       return
     }
     window.open(result.value.authUrl, '_blank', 'noopener')
+    // 复制按钮与打开的授权页共用同一链接（同一 state）。
+    setLoginLink(result.value.authUrl)
     setLoginState(result.value.state)
   }, [rpc])
 
-  const logout = useCallback(async () => {
-    const result = await rpc.call<void>(CODEBUDDY_AUTH_CHANNEL, 'logout', {})
+  // 复制登录链接：写入当前握手返回的真实 authUrl（与「打开登录页」打开的
+  // 链接完全一致，同一 state），供其他设备打开完成同一份授权。
+  const cbCopyLoginLink = (link: string): void => {
+    void navigator.clipboard?.writeText(link)
+      .then(() => { DshToast.success({ content: t('copyLoginLinkDone') }) })
+      .catch(() => { DshToast.warning({ content: t('copyLoginLinkDoneFail') }) })
+  }
+  // 添加账号弹框的提交动作：抽出为命名回调，避免 JSX 属性里多层嵌套括号。
+  const cbSubmitAccount = (): void => {
+    setAddOpen(false)
+    void startLogin({
+      ...(addNote.trim().length > 0 ? { label: addNote } : {}),
+      environment: addEnvironment,
+      ...(addEnvironment === 'cloudhosted' || addEnvironment === 'selfhosted'
+        ? { endpoint: addEndpoint }
+        : {}),
+    })
+  }
+
+  const toggleAutoSwitch = useCallback((enabled: boolean) => {
+    setAutoSwitchState(enabled)
+    setAutoSwitchPref(enabled)
+    void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoSwitch', { enabled, thresholdPct: autoSwitchPct })
+  }, [rpc, autoSwitchPct])
+
+  const changeAutoSwitchThreshold = useCallback((pct: number) => {
+    setAutoSwitchPctState(pct)
+    setAutoSwitchThresholdPref(pct)
+    if (autoSwitch) {
+      void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoSwitch', { enabled: true, thresholdPct: pct })
+    }
+  }, [rpc, autoSwitch])
+
+  const renameLabel = useCallback(async (id: string, label: string) => {
+    setError(undefined)
+    const result = await rpc.call<AccountsResult>(CODEBUDDY_AUTH_CHANNEL, 'renameLabel', { id, label })
     if (result.ok) {
-      setStatus({ loggedIn: false })
+      setAccounts(result.value.accounts)
     } else {
       setError(describeError(result))
-      setPhase('error')
     }
   }, [rpc])
+
+  const switchAccount = useCallback(async (id: string) => {
+    setError(undefined)
+    setSwitchingId(id)
+    const result = await rpc.call<AccountsResult>(CODEBUDDY_AUTH_CHANNEL, 'switchAccount', { id })
+    if (result.ok) {
+      setAccounts(result.value.accounts)
+    } else {
+      setError(describeError(result))
+    }
+    setSwitchingId(undefined)
+  }, [rpc])
+
+  const removeAccount = useCallback(async (id: string) => {
+    setError(undefined)
+    const result = await rpc.call<AccountsResult>(CODEBUDDY_AUTH_CHANNEL, 'removeAccount', { id })
+    if (result.ok) {
+      setAccounts(result.value.accounts)
+      await refresh()
+    } else {
+      setError(describeError(result))
+    }
+  }, [rpc, refresh])
 
   if (phase === 'loading') {
     return <div className="dsh-codebuddy-section"><p className="dsh-codebuddy-muted">{t('loading')}</p></div>
   }
 
   const signedIn = status?.loggedIn === true
+  const hasAccounts = accounts.length > 0
 
   return (
     <div className="dsh-codebuddy-section">
@@ -169,54 +316,318 @@ export function CodeBuddySection({ rpc, t }: CodeBuddySectionProps) {
       </div>
       {!signedIn ? <p className="dsh-codebuddy-desc">{t('intro')}</p> : null}
       {error !== undefined ? <p className="dsh-codebuddy-error">{error}</p> : null}
-      {signedIn
-        ? (
-            <div className="dsh-codebuddy-status">
-              <StatusRow label={t('nickname')} value={status?.nickname ?? '—'} />
-              {status?.uid !== undefined ? <StatusRow label={t('uid')} value={status.uid} /> : null}
-              {status?.uin !== undefined ? <StatusRow label={t('uin')} value={status.uin} /> : null}
-              {status?.enterpriseName !== undefined
-                ? <StatusRow label={t('enterprise')} value={status.enterpriseName} />
-                : null}
-              {status?.enterpriseId !== undefined
-                ? <StatusRow label={t('enterpriseId')} value={status.enterpriseId} />
-                : null}
-              {status?.enterpriseUserName !== undefined
-                ? <StatusRow label={t('enterpriseUser')} value={status.enterpriseUserName} />
-                : null}
-              {status?.departmentFullName !== undefined
-                ? <StatusRow label={t('department')} value={decodeDepartment(status.departmentFullName)} />
-                : null}
-              <div className="dsh-codebuddy-actions">
-                <DshButton htmlType="button" theme="outline" type="secondary" onClick={() => { void logout() }}>
-                  {t('signOut')}
-                </DshButton>
-              </div>
-            </div>
-          )
-        : (
-            <div className="dsh-codebuddy-status">
-              <p className="dsh-codebuddy-muted">
-                {loginState !== undefined ? t('waiting') : t('notSignedIn')}
-              </p>
-              <div className="dsh-codebuddy-actions">
-                <DshButton
-                  htmlType="button"
-                  theme="solid"
-                  type="primary"
-                  disabled={loginState !== undefined}
-                  onClick={() => { void startLogin() }}
-                >
-                  {loginState !== undefined ? t('signingIn') : t('signIn')}
-                </DshButton>
-              </div>
-            </div>
-          )}
+
+      {/* Multi-account roster: one collapsible panel per signed-in account.
+          The header shows who it is, whether it is active, and whether it has
+          gone offline (expired refresh token); the expanded body carries the
+          account facts, the switch action, and removal. */}
+      <div className="dsh-codebuddy-accounts">
+        <div className="dsh-codebuddy-accounts-head">
+          <span className="dsh-codebuddy-accounts-title">{t('accountsTitle')}</span>
+          <span className="dsh-codebuddy-accounts-head-actions">
+            {panelRoute !== undefined ? (
+              <DshButton
+                htmlType="button"
+                size="small"
+                theme="light"
+                type="secondary"
+                onClick={() => { close?.(); panelRoute.open('accounts') }}
+              >
+                {t('managePanel')}
+              </DshButton>
+            ) : null}
+            <DshButton
+              htmlType="button"
+              size="small"
+              theme="solid"
+              type="primary"
+              disabled={loginState !== undefined}
+              onClick={() => { setAddOpen(true); setAddNote(''); setAddEnvironment(CODEBUDDY_DEFAULT_ENVIRONMENT); setAddEndpoint(''); setAddEnterprise(false) }}
+            >
+              {loginState !== undefined ? t('signingIn') : t('createUser')}
+            </DshButton>
+          </span>
+        </div>
+        <p className="dsh-codebuddy-accounts-desc">{loginState !== undefined ? t('waiting') : t('accountsDesc')}</p>
+        {loginState !== undefined && loginLink !== undefined ? (
+          <div className="dsh-codebuddy-login-waiting">
+            <span className="dsh-codebuddy-muted">{t('loginWaitingCopy')}</span>
+            <DshButton
+              htmlType="button"
+              size="small"
+              theme="light"
+              type="tertiary"
+              icon={<DshIconCopy />}
+              onClick={() => { cbCopyLoginLink(loginLink) }}
+            >
+              {t('copyLoginLink')}
+            </DshButton>
+          </div>
+        ) : null}
+        {hasAccounts
+          ? (
+              <>
+                {(() => {
+                  const offlineActive = accounts.find(account => account.active && account.expired)
+                  const takeoverBy = offlineActive !== undefined
+                    ? accounts.find(account => !account.expired && account.id !== offlineActive.id)
+                    : undefined
+                  return offlineActive !== undefined && takeoverBy !== undefined
+                    ? (
+                        <div className="dsh-codebuddy-account-takeover">
+                          <DshIconAlertCircle aria-hidden />
+                          <span>{t('accountTakeover')}</span>
+                        </div>
+                      )
+                    : null
+                })()}
+                <DshCollapse className="dsh-codebuddy-accounts-collapse" expandIconPosition="left">
+                  {accounts.map(account => {
+                    const displayName = account.label !== undefined ? account.label : account.nickname
+                    const balance = balanceByAccount[account.id]
+                    return (
+                      <DshCollapse.Panel
+                        key={account.id}
+                        itemKey={account.id}
+                        header={(
+                          <span className="dsh-codebuddy-account-header">
+                            <span className="dsh-codebuddy-account-name" title={displayName}>{displayName}</span>
+                            {account.expired
+                              ? <DshTag size="small" type="light" color="orange">{t('accountOffline')}</DshTag>
+                              : account.active ? <DshTag size="small" type="solid" color="green">{t('accountActive')}</DshTag> : null}
+                            <span className="dsh-codebuddy-account-header-actions">
+                              {/* 编辑备注名始终在 collapse header（Semi 的 extra 在自定义 header
+                                  下不渲染，故内联到 header 的 flex 流中） */}
+                              <DshIconButton
+                                size="small"
+                                type="secondary"
+                                theme="borderless"
+                                icon={<DshIconEdit />}
+                                aria-label={t('renameLabel')}
+                                onClick={(event) => { event.stopPropagation(); setEditTarget(account.id); setEditNote(account.label ?? account.nickname) }}
+                              />
+                              {account.expired ? (
+                                <DshButton size="small" theme="solid" type="primary" onClick={(event) => { event.stopPropagation(); void startLogin({
+                                  ...(account.label !== undefined ? { label: account.label } : {}),
+                                  ...(account.environment !== undefined ? { environment: account.environment } : {}),
+                                  activate: false,
+                                }) }}>
+                                  {t('accountRelogin')}
+                                </DshButton>
+                              ) : null}
+                            </span>
+                          </span>
+                        )}
+                      >
+                        {account.expired
+                          ? (
+                              <div className="dsh-codebuddy-account-expired">
+                                <span className="dsh-codebuddy-account-expired-text">{t('accountExpiredDesc')}</span>
+                                <DshButton
+                                  htmlType="button"
+                                  size="small"
+                                  theme="solid"
+                                  type="primary"
+                                  onClick={() => { void startLogin({
+                          ...(account.label !== undefined ? { label: account.label } : {}),
+                          ...(account.environment !== undefined ? { environment: account.environment } : {}),
+                          activate: false,
+                        }) }}
+                                >
+                                  {t('accountRelogin')}
+                                </DshButton>
+                              </div>
+                            )
+                          : (
+                              <div className="dsh-codebuddy-account-body">
+                                <DshDescriptions
+                                  className="dsh-codebuddy-account-descriptions"
+                                  align="left"
+                                  size="small"
+                                  data={([
+                                    { key: t('uid'), value: account.uid },
+                                    account.uin !== undefined ? { key: t('uin'), value: account.uin } : undefined,
+                                    account.enterpriseName !== undefined ? { key: t('enterprise'), value: account.enterpriseName } : undefined,
+                                    account.enterpriseId !== undefined ? { key: t('enterpriseId'), value: account.enterpriseId } : undefined,
+                                    account.enterpriseUserName !== undefined ? { key: t('enterpriseUser'), value: account.enterpriseUserName } : undefined,
+                                    account.departmentFullName !== undefined ? { key: t('department'), value: decodeDepartment(account.departmentFullName) } : undefined,
+                                    // 剩余额度固定在最后一行
+                                    { key: t('remaining'), value: balance !== undefined ? (balance.capacity > 0 ? formatBalance(balance.remaining) : t('usageUnavailable')) : t('usageUnavailable') },
+                                  ] satisfies Array<{ key: string, value: string } | undefined>).filter((item): item is { key: string, value: string } => item !== undefined)}
+                                />
+                                <div className="dsh-codebuddy-account-remove">
+                                  <DshButton
+                                    htmlType="button"
+                                    size="small"
+                                    type="secondary"
+                                    theme="borderless"
+                                    disabled={(autoSwitch || (balance !== undefined && !balance.usable)) && account.id !== accounts.find(item => item.active)?.id}
+                                    title={balance !== undefined && !balance.usable ? t('noBalanceHint') : ''}
+                                    onClick={() => { void switchAccount(account.id) }}
+                                  >
+                                    {t('selectAccount')}
+                                  </DshButton>
+                                  <DshButton
+                                    htmlType="button"
+                                    size="small"
+                                    type="danger"
+                                    theme="borderless"
+                                    onClick={() => { setRemoveTarget(account.id) }}
+                                  >
+                                    {t('accountRemove')}
+                                  </DshButton>
+                                </div>
+                              </div>
+                            )}
+                      </DshCollapse.Panel>
+                    )
+                  })}
+                </DshCollapse>
+              </>
+            )
+          : <p className="dsh-codebuddy-muted">{t('accountsEmpty')}</p>}
+      </div>
+
+      {/* 添加账号弹框：备注名（≤30 字）+ 环境 + 企业开关。提交后生成真实
+          握手链接，进入下方「登录中状态卡」，复制按钮在该卡片上（链接真实有效）。 */}
+      <DshModal
+        title={t('createUserTitle')}
+        visible={addOpen}
+        closeOnEsc
+        okText={t('createUserGo')}
+        cancelText={t('cancel')}
+        onCancel={() => { setAddOpen(false) }}
+      >
+        <div className="dsh-codebuddy-add-form">
+          <DshForm className="dsh-codebuddy-pref-form" labelPosition="top">
+            <DshForm.Slot
+              label={<PreferenceLabel title={t('noteLabel')} />}
+            >
+              <DshInput
+                className="dsh-codebuddy-pref-control-wide"
+                value={addNote}
+                onChange={setAddNote}
+                placeholder={t('accountExpand')}
+                showClear
+                maxLength={30}
+              />
+            </DshForm.Slot>
+            <DshForm.Slot
+              label={<PreferenceLabel title={t('environmentLabel')} description={t('environmentDesc')} />}
+            >
+              <DshSelect
+                className="dsh-codebuddy-env-select"
+                value={addEnvironment}
+                onChange={(value: string) => { setAddEnvironment(String(value)) }}
+                aria-label={t('environmentLabel')}
+                optionList={CODEBUDDY_ENVIRONMENTS.map(env => ({ value: env, label: CODEBUDDY_ENVIRONMENT_LABELS[env] }))}
+              />
+            </DshForm.Slot>
+            {addEnvironment === 'cloudhosted' || addEnvironment === 'selfhosted' ? (
+              <DshForm.Slot
+                label={<PreferenceLabel title={t('endpointLabel')} description={t('endpointDesc')} />}
+              >
+                <DshInput
+                  className="dsh-codebuddy-pref-control-wide"
+                  value={addEndpoint}
+                  onChange={setAddEndpoint}
+                  placeholder="https://your-company.copilot.qq.com"
+                />
+              </DshForm.Slot>
+            ) : null}
+            <DshForm.Slot
+              label={<PreferenceLabel title={t('enterpriseSwitch')} description={t('enterpriseSwitchDesc')} />}
+            >
+              <DshSwitch
+                checked={addEnterprise}
+                onChange={(checked: boolean) => { setAddEnterprise(checked) }}
+                aria-label={t('enterpriseSwitch')}
+              />
+            </DshForm.Slot>
+          </DshForm>
+          <p className="dsh-codebuddy-muted">{t('createUserHint')}</p>
+        </div>
+      </DshModal>
+
+      {/* 删除确认 Modal。 */}
+      <DshModal
+        title={t('accountRemove')}
+        type="warning"
+        visible={removeTarget !== undefined}
+        closeOnEsc
+        okText={t('accountRemove')}
+        cancelText="取消"
+        okButtonProps={{ type: 'danger', theme: 'solid' }}
+        onCancel={() => { setRemoveTarget(undefined) }}
+        onOk={() => {
+          const id = removeTarget
+          setRemoveTarget(undefined)
+          if (id !== undefined) void removeAccount(id)
+        }}
+      >
+        <p>{t('accountRemoveConfirm')}</p>
+      </DshModal>
+
+      {/* 修改备注名弹框：捕获阶段拦截 ESC，避免连关闭底层设置面板；输入框回车即确认。 */}
+      <DshModal
+        title={t('renameLabel')}
+        visible={editTarget !== undefined}
+        okText={t('confirm')}
+        cancelText={t('cancel')}
+        onCancel={() => { setEditTarget(undefined) }}
+        onOk={() => {
+          const id = editTarget
+          const label = editNote
+          setEditTarget(undefined)
+          if (id !== undefined) void renameLabel(id, label)
+        }}
+      >
+        <DshInput
+          className="dsh-codebuddy-pref-control-wide"
+          value={editNote}
+          onChange={setEditNote}
+          placeholder={t('labelPlaceholder')}
+          showClear
+          maxLength={30}
+          onEnterPress={() => {
+            const id = editTarget
+            const label = editNote
+            setEditTarget(undefined)
+            if (id !== undefined) void renameLabel(id, label)
+          }}
+        />
+      </DshModal>
 
       {/* Usage preferences: UI-only, configurable whether or not signed in.
           The form keeps a tight label / control grid; Semi drives the layout
           so the rows line up across plugins without per-row styles. */}
       <DshForm className="dsh-codebuddy-pref-form" labelPosition="left">
+        <DshForm.Slot
+          label={<PreferenceLabel title={t('autoSwitch')} />}
+        >
+          <DshSwitch
+            checked={autoSwitch}
+            onChange={(checked: boolean) => { toggleAutoSwitch(checked) }}
+            aria-label={t('autoSwitch')}
+          />
+        </DshForm.Slot>
+        <DshForm.Slot
+          label={<PreferenceLabel title={t('autoSwitchPct')} />}
+        >
+          <div className="dsh-codebuddy-pref-slider">
+            <DshSlider
+              value={autoSwitchPct}
+              min={0}
+              max={100}
+              step={1}
+              onChange={(value: number | [number, number]) => {
+                if (typeof value === 'number') changeAutoSwitchThreshold(value)
+              }}
+              aria-label={t('autoSwitchPct')}
+            />
+            <span className="dsh-codebuddy-pref-slider-value">{autoSwitchPct}%</span>
+          </div>
+        </DshForm.Slot>
         <DshForm.Slot
           label={<PreferenceLabel title={t('showUsage')} description={t('showUsageDesc')} />}
         >
@@ -224,33 +635,6 @@ export function CodeBuddySection({ rpc, t }: CodeBuddySectionProps) {
             checked={showUsage}
             onChange={(checked: boolean) => { setShowUsage(checked); setUsagePref(checked) }}
             aria-label={t('showUsage')}
-          />
-        </DshForm.Slot>
-        <DshForm.Slot
-          label={<PreferenceLabel title={t('customLimit')} description={t('customLimitDesc')} />}
-        >
-          <DshInputNumber
-            className="dsh-codebuddy-pref-control"
-            placeholder={t('customLimitPlaceholder')}
-            {...customLimit === undefined ? {} : { value: customLimit }}
-            min={1}
-            onChange={(value: number | string) => {
-              const next = typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : undefined
-              setCustomLimitState(next)
-              setCustomLimit(next)
-            }}
-            onBlur={(event: FocusEvent<HTMLInputElement>) => {
-              const raw = event.target.value
-              const parsed = Number(raw)
-              if (raw.length === 0 || !Number.isFinite(parsed) || parsed <= 0) {
-                setCustomLimitState(undefined)
-                setCustomLimit(undefined)
-              } else {
-                const clamped = Math.round(parsed)
-                setCustomLimitState(clamped)
-                setCustomLimit(clamped)
-              }
-            }}
           />
         </DshForm.Slot>
         <DshForm.Slot

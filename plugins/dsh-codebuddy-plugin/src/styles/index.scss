@@ -57,7 +57,7 @@
 .dsh-codebuddy-row-label {
   color: var(--dsw-alias-label-secondary);
   font-size: 14px;
-  min-width: 160px;
+  min-width: 192px;
 }
 
 .dsh-codebuddy-row-value {
@@ -71,6 +71,158 @@
   display: flex;
   gap: 8px;
   margin-top: 8px;
+}
+
+/* Multi-account roster: the section title row carries the add-account button,
+   and each account is one collapsible panel. */
+.dsh-codebuddy-accounts {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.dsh-codebuddy-accounts-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.dsh-codebuddy-accounts-head-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dsh-codebuddy-accounts-title {
+  font-weight: 600;
+  color: var(--dsw-alias-label-primary);
+}
+
+.dsh-codebuddy-accounts-desc {
+  margin: 0;
+  color: var(--dsw-alias-label-secondary);
+  font-size: 13px;
+}
+
+.dsh-codebuddy-accounts-collapse {
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: var(--dsw-alias-radius-m, 6px);
+}
+
+.dsh-codebuddy-account-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  width: 100%;
+}
+
+.dsh-codebuddy-account-header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.dsh-codebuddy-account-name {
+  font-weight: 600;
+  color: var(--dsw-alias-label-primary);
+}
+
+.dsh-codebuddy-account-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.dsh-codebuddy-account-body .dsh-codebuddy-row:last-child {
+  border-bottom: none;
+}
+
+.dsh-codebuddy-account-descriptions {
+  width: 100%;
+}
+
+.dsh-codebuddy-account-descriptions .semi-descriptions-key {
+  color: var(--dsw-alias-label-secondary);
+  font-size: 13px;
+}
+
+.dsh-codebuddy-account-descriptions .semi-descriptions-value {
+  color: var(--dsw-alias-label-primary);
+  font-size: 13px;
+  word-break: break-all;
+}
+
+.dsh-codebuddy-account-remove {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 4px;
+}
+
+/* 掉线账号的展开内容：黄底警示条 + 恢复动作。 */
+.dsh-codebuddy-account-expired {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--dsw-alias-state-warn-primary, var(--semi-color-warning));
+  border-radius: var(--dsw-alias-radius-m, 6px);
+  background: color-mix(in srgb, var(--dsw-alias-state-warn-primary, var(--semi-color-warning)) 8%, transparent);
+}
+
+.dsh-codebuddy-account-expired-text {
+  color: var(--dsw-alias-label-secondary);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* 当前账号掉线时的接管警示条：位于面板列表上方。 */
+.dsh-codebuddy-account-takeover {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--dsw-alias-state-warn-primary, var(--semi-color-warning));
+  border-radius: var(--dsw-alias-radius-m, 6px);
+  background: color-mix(in srgb, var(--dsw-alias-state-warn-primary, var(--semi-color-warning)) 8%, transparent);
+  color: var(--dsw-alias-label-primary);
+  font-size: 13px;
+
+  .semi-icon {
+    color: var(--dsw-alias-state-warn-primary, var(--semi-color-warning));
+    flex-shrink: 0;
+  }
+}
+
+/* 添加账号弹框表单：备注名输入在弹框内占满整行。 */
+.dsh-codebuddy-add-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* 添加账号弹框页脚：复制登录链接靠左，取消/打开登录靠右。 */
+.dsh-codebuddy-add-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.dsh-codebuddy-add-footer-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dsh-codebuddy-pref-control-wide {
+  width: 100%;
 }
 
 /* Usage preference form: follow the showcase plugin's Form demo layout —
@@ -107,6 +259,7 @@
   font-size: 14px;
   font-weight: 600;
   line-height: 22px;
+  white-space: nowrap;
 }
 
 .dsh-codebuddy-form-label-description {
@@ -118,6 +271,14 @@
 
 .dsh-codebuddy-pref-control {
   width: 120px;
+  max-width: 100%;
+}
+
+/* Preference rows stay on one line: label and control keep to a single row.
+   The label may shrink and its text clips with an ellipsis if it ever gets
+   too long, but the row itself never wraps. */
+.dsh-codebuddy-pref-form .semi-form-field[x-label-pos='left'] {
+  flex-wrap: nowrap;
 }
 
 /* Alert percentage slider: mirrors the showcase Form demo — the slider fills
@@ -173,7 +334,8 @@
    so both providers read as one DSH pattern in the composer dock. */
 .dsh-codebuddy-usage-popover {
   box-sizing: border-box;
-  min-width: 264px;
+  width: 340px;
+  max-width: 90vw;
   padding: 12px;
   border: 0;
   border-radius: 12px;
@@ -192,6 +354,29 @@
   color: var(--dsw-alias-label-tertiary);
   font-size: 12px;
   line-height: 18px;
+}
+
+/* ScrollList 外壳去壳：只借用其 body 的滚动能力，外壳透明。 */
+.dsh-codebuddy-usage-popover-scroll.semi-scrolllist {
+  width: 100%;
+  height: auto;
+  background: transparent !important;
+  box-shadow: none !important;
+  border-radius: 0;
+  overflow: visible;
+  user-select: auto;
+}
+
+/* body：单列纵向、gap 12px、max-height 388px 超出后 Y 轴滚动。 */
+.dsh-codebuddy-usage-popover-scroll .semi-scrolllist-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: auto;
+  max-height: 388px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 0 4px 0 0;
 }
 
 .dsh-codebuddy-usage-popover-window {
@@ -230,3 +415,196 @@
   font-size: 11px;
   line-height: 16px;
 }
+
+/* 环境选择下拉：与弹框内输入控件同宽。 */
+.dsh-codebuddy-env-select {
+  width: 100%;
+  max-width: 100%;
+  padding: 4px 8px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: var(--semi-border-radius-small, 4px);
+  background: var(--dsw-alias-bg-layer-1, transparent);
+  color: var(--dsw-alias-label-primary);
+  font-size: 14px;
+}
+
+/* ==========================================================================
+   CodeBuddy 管理面板（shell.overlay 全页面，hash 路由隔离）
+   ========================================================================== */
+
+/* ==========================================================================
+   管理面板（重做：wb 风格卡片 + 左上返回）
+   ========================================================================== */
+.dsh-codebuddy-panel {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  background: var(--dsw-alias-bg-base);
+}
+.dsh-codebuddy-panel .semi-layout { flex: 1; display: flex; }
+.dsh-codebuddy-panel .semi-layout-sider {
+  background: var(--dsw-alias-bg-layer-1);
+  border-right: 1px solid var(--dsw-alias-border-l2);
+}
+.dsh-codebuddy-panel-nav { height: 100%; background: transparent; }
+.dsh-codebuddy-panel-content { flex: 1; padding: 24px clamp(16px, 2vw, 32px) 40px; overflow: auto; }
+.dsh-codebuddy-panel-content > * { width: min(100%, 1480px); margin: 0 auto; }
+
+/* 工具栏：左上返回 + 页面标题 */
+.dsh-codebuddy-panel-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.dsh-codebuddy-panel-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--dsw-alias-label-primary);
+}
+.dsh-codebuddy-panel-auto-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.dsh-codebuddy-panel-range {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+/* 账号 / 积分卡片 */
+.dsh-codebuddy-panel-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 640px;
+}
+.dsh-codebuddy-panel-card { width: 100%; }
+.dsh-codebuddy-panel-card-active {
+  box-shadow: inset 0 0 0 1px var(--dsw-alias-state-success-primary);
+}
+
+.dsh-codebuddy-account-card-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.dsh-codebuddy-account-card-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(135deg, var(--dsw-alias-brand-primary), #7a5cff);
+  flex-shrink: 0;
+}
+.dsh-codebuddy-account-card-main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+.dsh-codebuddy-account-card-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.dsh-codebuddy-account-card-chips { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; min-height: 20px; }
+.dsh-codebuddy-account-card-more { flex-shrink: 0; }
+.dsh-codebuddy-account-card-actions { flex-shrink: 0; }
+
+.dsh-codebuddy-checkin-chip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 1px 8px;
+  font-size: 12px;
+  background: var(--dsw-alias-bg-layer-2);
+  color: var(--dsw-alias-label-tertiary);
+}
+.dsh-codebuddy-checkin-chip-done {
+  background: var(--dsw-alias-state-success-tertiary, rgba(38,162,105,.14));
+  color: var(--dsw-alias-state-success-primary, #26a269);
+}
+
+.dsh-codebuddy-account-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+  min-width: 0;
+}
+.dsh-codebuddy-account-card-credits {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.dsh-codebuddy-account-card-credits-value {
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--dsw-alias-label-primary);
+}
+.dsh-codebuddy-account-card-resources {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 2px;
+}
+.dsh-codebuddy-credit-resource-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12px;
+}
+.dsh-codebuddy-credit-resource-name {
+  color: var(--dsw-alias-label-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dsh-codebuddy-credit-resource-meta {
+  color: var(--dsw-alias-label-tertiary);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.dsh-codebuddy-account-expired-pad { margin-top: 10px; font-size: 13px; }
+.dsh-codebuddy-account-card-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--dsw-alias-border-l2);
+}
+
+/* Token 统计 */
+.dsh-codebuddy-panel-tokens {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.dsh-codebuddy-panel-chart { width: 100%; height: 260px; }
+.dsh-codebuddy-panel-credit-row { display: flex; flex-direction: column; gap: 6px; padding: 6px 0; }
+.dsh-codebuddy-usage-popover-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
+}
+.dsh-codebuddy-usage-popover-reset { color: var(--dsw-alias-label-tertiary); font-size: 12px; }

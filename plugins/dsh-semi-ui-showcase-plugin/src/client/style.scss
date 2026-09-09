@@ -304,6 +304,11 @@
     max-width: 100%;
   }
 
+  // 弹框内的表单控件：跟随剩余空间收缩，避免固定宽度撑破 448px 弹框。
+  .semi-modal .dsh-semi-showcase-control {
+    width: 100%;
+  }
+
   .dsh-semi-showcase-slider {
     width: min(420px, 100%);
     padding: 0 12px 22px;
@@ -324,13 +329,17 @@
 
   .dsh-semi-showcase-form .semi-form-field[x-label-pos='left'] .semi-form-field-main {
     width: auto;
-    flex: 0 0 auto;
+    flex: 1 1 auto;
+    min-width: 0;
   }
 
   .dsh-semi-showcase-form-preference-label {
     display: grid;
     gap: 4px;
     line-height: 1.4;
+    // Grid 的 auto 列会按 max-content 撑开；不收缩时长描述会把弹框表单
+    // 顶出容器（与插件 dsh-codebuddy-form-label 的 min-width: 0 同因）。
+    min-width: 0;
   }
 
   .dsh-semi-showcase-form-preference-label > span {
@@ -365,6 +374,220 @@
     width: 260px;
     height: 170px;
     border: 1px solid var(--dsw-alias-border-l2);
+  }
+
+  // Collapse 折叠面板示例：多用户管理形态。
+  .dsh-semi-showcase-collapse {
+    width: 100%;
+    max-width: 560px;
+    border: 1px solid var(--dsw-alias-border-l2);
+    border-radius: var(--dsw-alias-radius-m, 6px);
+  }
+
+  .dsh-semi-showcase-collapse-body {
+    color: var(--dsw-alias-label-secondary);
+    font-size: 13px;
+  }
+
+  .dsh-semi-showcase-collapse-users {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  // CodeBuddy 多用户管理 demo：与插件设置区同名 class 的镜像样式，
+  // 使 showcase 中的 1:1 预览与真实插件渲染一致（真实样式维护在
+  // dsh-codebuddy-plugin/src/styles/index.scss，两处需同步修改）。
+  .dsh-semi-showcase-collapse-plugin-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    max-width: 620px;
+    padding: 16px;
+    border: 1px solid var(--dsw-alias-border-l2);
+    border-radius: var(--dsw-alias-radius-m, 6px);
+  }
+
+  .dsh-semi-showcase-collapse-plugin-section .dsh-codebuddy-title-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .dsh-semi-showcase-collapse-plugin-section .dsh-codebuddy-title {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--dsw-alias-label-primary);
+  }
+
+  .dsh-semi-showcase-collapse-plugin-section .dsh-codebuddy-desc {
+    margin: 0;
+    color: var(--dsw-alias-label-secondary);
+    font-size: 13px;
+  }
+
+  .dsh-codebuddy-accounts {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 4px;
+  }
+
+  .dsh-codebuddy-accounts-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .dsh-codebuddy-accounts-title {
+    font-weight: 600;
+    color: var(--dsw-alias-label-primary);
+  }
+
+  .dsh-codebuddy-accounts-desc {
+    margin: 0;
+    color: var(--dsw-alias-label-secondary);
+    font-size: 13px;
+  }
+
+  .dsh-codebuddy-accounts-collapse {
+    border: 1px solid var(--dsw-alias-border-l2);
+    border-radius: var(--dsw-alias-radius-m, 6px);
+  }
+
+  .dsh-codebuddy-account-header {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .dsh-codebuddy-account-name {
+    font-weight: 600;
+    color: var(--dsw-alias-label-primary);
+  }
+
+  .dsh-codebuddy-account-body {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .dsh-codebuddy-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--dsw-alias-border-l2);
+  }
+
+  .dsh-codebuddy-account-body .dsh-codebuddy-row:last-of-type {
+    border-bottom: none;
+  }
+
+  .dsh-codebuddy-row-label {
+    color: var(--dsw-alias-label-secondary);
+    font-size: 14px;
+    min-width: 120px;
+  }
+
+  .dsh-codebuddy-row-value {
+    color: var(--dsw-alias-label-primary);
+    font-size: 14px;
+    flex: 1;
+    word-break: break-all;
+  }
+
+  .dsh-codebuddy-account-remove {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 4px;
+  }
+
+  // 额度气泡 demo：与插件 CodeBuddyUsageStatus 同名 class 的镜像样式
+  // （真实样式维护在 dsh-codebuddy-plugin/src/styles/index.scss，两处需同步修改）。
+  .dsh-codebuddy-usage-demo-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  // 掉线账号的展开内容：黄底警示条 + 恢复动作。
+  .dsh-codebuddy-account-expired {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 12px;
+    border: 1px solid var(--dsw-alias-state-warn-primary, var(--semi-color-warning));
+    border-radius: var(--dsw-alias-radius-m, 6px);
+    background: color-mix(in srgb, var(--dsw-alias-state-warn-primary, var(--semi-color-warning)) 8%, transparent);
+  }
+
+  .dsh-codebuddy-account-expired-text {
+    color: var(--dsw-alias-label-secondary);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  // 掉线的是当前账号时的接管警示条：与官方告警条同层级，位于面板列表上方。
+  .dsh-codebuddy-account-takeover {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border: 1px solid var(--dsw-alias-state-warn-primary, var(--semi-color-warning));
+    border-radius: var(--dsw-alias-radius-m, 6px);
+    background: color-mix(in srgb, var(--dsw-alias-state-warn-primary, var(--semi-color-warning)) 8%, transparent);
+    color: var(--dsw-alias-label-primary);
+    font-size: 13px;
+
+    .semi-icon {
+      color: var(--dsw-alias-state-warn-primary, var(--semi-color-warning));
+      flex-shrink: 0;
+    }
+  }
+
+  .dsh-semi-showcase-collapse-create-body {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  // 弹框表单行的通用防溢出：字段行允许换行收缩，描述文字可断行。
+  .semi-modal .semi-form-field[x-label-pos='left'] {
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
+
+  .semi-modal .dsh-semi-showcase-form-preference-label > span {
+    word-break: break-word;
+  }
+
+  // CodeBuddy 多账户 demo 的状态占位块。
+  .dsh-semi-showcase-collapse-state-block {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 20px 16px;
+    border: 1px dashed var(--dsw-alias-border-l2);
+    border-radius: var(--dsw-alias-radius-m, 6px);
+  }
+
+  // 「登录已过期」警示变体：黄色描边强调需要用户处理。
+  .dsh-semi-showcase-collapse-state-warn {
+    border-color: var(--dsw-alias-state-warn-primary, var(--semi-color-warning));
+    justify-content: space-between;
+  }
+
+  .dsh-codebuddy-error {
+    color: var(--dsw-alias-state-error-primary, var(--semi-color-danger));
+    font-size: 13px;
   }
 
   .dsh-semi-showcase-progress-stack {
@@ -463,4 +686,90 @@
       padding: 28px 16px 48px;
     }
   }
+}
+
+// ============================================================================
+// 额度气泡（CodeBuddy 多账户 demo）—— Popover 内容经 Portal 挂载到 body，
+// 不在 [data-dsh-semi-ui-showcase] 容器内，因此这些样式必须写在顶层全局作用域，
+// 否则选择器永远匹配不到（阴影去不掉、宽度不固定）。
+// 与插件 CodeBuddyUsageStatus 同名 class，真实样式维护在
+// dsh-codebuddy-plugin/src/styles/index.scss，两处需同步修改。
+// ============================================================================
+
+.dsh-codebuddy-usage-popover {
+  box-sizing: border-box;
+  width: 340px;
+  max-width: 90vw;
+  padding: 12px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--dsw-alias-label-secondary);
+}
+
+// ScrollList 外壳去壳：它默认是滚轮选择器外壳（带背景、阴影、圆角、
+// overflow hidden、height 100%、user-select none），这里只借用其 body 的
+// 滚动能力，外壳全部透明，气泡样式完全交还 dsh-codebuddy-usage-popover。
+// box-shadow / background 用 !important 压掉 Semi 的 .semi-scrolllist 默认
+// 皮肤（`box-shadow: 0 0 1px rgba(...), 0 4px 14px rgba(...)` + 灰底）。
+.dsh-codebuddy-usage-popover-scroll.semi-scrolllist {
+  width: 100%;
+  height: auto;
+  background: transparent !important;
+  box-shadow: none !important;
+  border-radius: 0;
+  overflow: visible;
+  user-select: auto;
+}
+
+// body：单列纵向、gap 12px（与真实插件 .dsh-codebuddy-usage-popover-content
+// 一致）、max-height 388px 超出后 Y 轴滚动，少时自然收缩。
+.dsh-codebuddy-usage-popover-scroll .semi-scrolllist-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: auto;
+  max-height: 388px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 0 4px 0 0;
+}
+
+// 每个套餐窗口与真实插件 UsageWindowDetails 一致：无边框、无背景、无额外 padding。
+.dsh-codebuddy-usage-popover-window {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dsh-codebuddy-usage-popover-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--dsw-alias-label-primary);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.dsh-codebuddy-usage-popover-amounts {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--dsw-alias-label-secondary);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.dsh-codebuddy-usage-popover-progress {
+  height: 8px;
+  width: 100%;
+}
+
+.dsh-codebuddy-usage-popover-reset {
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 11px;
+  line-height: 16px;
 }

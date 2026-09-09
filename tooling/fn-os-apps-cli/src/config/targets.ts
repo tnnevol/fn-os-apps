@@ -13,7 +13,7 @@ export type PluginTarget = {
   filter: string
   /** 相对仓库根目录的 package.json 路径。 */
   path: string
-  /** 包名最后一段，用于 plugin/<slug>-v 标签。 */
+  /** 包名最后一段，用于插件选择和发布提交消息。 */
   slug: string
 }
 

@@ -11,6 +11,7 @@ export const SEMI_UI_COMPONENT_HASHES = {
   'tree-select': '#/plugins/semi-ui/tree-select',
   checkbox: '#/plugins/semi-ui/checkbox',
   tree: '#/plugins/semi-ui/tree',
+  collapse: '#/plugins/semi-ui/collapse',
   icon: '#/plugins/semi-ui/icon',
   modal: '#/plugins/semi-ui/modal',
   popover: '#/plugins/semi-ui/popover',
@@ -19,6 +20,13 @@ export const SEMI_UI_COMPONENT_HASHES = {
   progress: '#/plugins/semi-ui/progress',
   spin: '#/plugins/semi-ui/spin',
   toast: '#/plugins/semi-ui/toast',
+  layout: '#/plugins/semi-ui/layout',
+  nav: '#/plugins/semi-ui/nav',
+  table: '#/plugins/semi-ui/table',
+  card: '#/plugins/semi-ui/card',
+  descriptions: '#/plugins/semi-ui/descriptions',
+  empty: '#/plugins/semi-ui/empty',
+  'codebuddy-accounts': '#/plugins/semi-ui/codebuddy-accounts',
 } as const
 
 export type ShowcaseComponentRoute = keyof typeof SEMI_UI_COMPONENT_HASHES

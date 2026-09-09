@@ -15,8 +15,8 @@ import { getConfig, getEnterpriseModels, refreshAccessToken } from './codebuddy.
 import type { CodeBuddyIdentity } from './codebuddy.ts'
 import { fetchUsage } from './usage.ts'
 import type { UsageSnapshot } from './usage.ts'
-import { loadStorage, saveStorage } from './storage.ts'
-import type { CodeBuddyStorage } from './storage.ts'
+import { loadStorage, saveStorage, activeEntry, resolveEntryEndpoint } from './storage.ts'
+import type { CodeBuddyAccountEntry, CodeBuddyStorage } from './storage.ts'
 import type { CodeBuddyModel } from './types.ts'
 
 /** Refresh this long before the recorded expiry rather than exactly at it. */
@@ -40,11 +40,12 @@ export interface SessionLogger {
 }
 
 /**
- * Owns the stored credential for one plugin instance.
+ * Owns the stored credentials for one plugin instance.
  *
- * The credential is re-read from disk when absent from memory, which is what
- * lets a login completed in the Web UI reach a *running* harness without a
- * restart.
+ * The store is multi-account; every request authenticates with the active
+ * entry. The document is re-read from disk when absent from memory, which is
+ * what lets a login or a switch completed in the Web UI reach a *running*
+ * harness without a restart.
  */
 export class CodeBuddySession {
   private storage: CodeBuddyStorage | undefined
@@ -54,28 +55,34 @@ export class CodeBuddySession {
 
   constructor(private readonly logger?: SessionLogger) {}
 
-  /** Forget the in-memory credential and catalog, forcing a re-read from disk. */
+  /** Forget the in-memory credentials and catalog, forcing a re-read from disk. */
   invalidate(): void {
     this.storage = undefined
     this.catalog = undefined
   }
 
-  private identityOf(storage: CodeBuddyStorage): CodeBuddyIdentity {
+  /** Public identity resolution for panel probes (per-entry, no refresh). */
+  identityFor(entry: CodeBuddyAccountEntry): CodeBuddyIdentity {
+    return this.identityOf(entry)
+  }
+
+  private identityOf(entry: CodeBuddyAccountEntry): CodeBuddyIdentity {
     return {
-      accessToken: storage.auth.accessToken,
-      domain: storage.auth.domain,
-      uid: storage.account.uid,
-      ...storage.account.enterpriseId === undefined
+      accessToken: entry.auth.accessToken,
+      domain: entry.auth.domain,
+      uid: entry.account.uid,
+      ...entry.account.enterpriseId === undefined
         ? {}
-        : { enterpriseId: storage.account.enterpriseId },
-      ...storage.account.departmentFullName === undefined
+        : { enterpriseId: entry.account.enterpriseId },
+      ...entry.account.departmentFullName === undefined
         ? {}
-        : { departmentFullName: storage.account.departmentFullName },
+        : { departmentFullName: entry.account.departmentFullName },
     }
   }
 
   /**
-   * The stored credential, read from disk on first use and after invalidation.
+   * The stored credential document, read from disk on first use and after
+   * invalidation.
    * @throws NotLoggedInError when nothing is stored.
    */
   private async require(): Promise<CodeBuddyStorage> {
@@ -89,52 +96,55 @@ export class CodeBuddySession {
     return this.storage
   }
 
-  /** Whether a credential exists at all, without requiring one. */
+  /** Whether any account credential exists, without requiring one. */
   async isLoggedIn(): Promise<boolean> {
     this.storage ??= await loadStorage()
     return this.storage !== undefined
   }
 
-  /** The signed-in nickname, when a credential exists. */
+  /** The active account's nickname, when a credential exists. */
   async nickname(): Promise<string | undefined> {
     this.storage ??= await loadStorage()
-    return this.storage?.account.nickname
+    return this.storage !== undefined ? activeEntry(this.storage).account.nickname : undefined
   }
 
   /**
-   * A usable identity, refreshing the access token when it is at or near
-   * expiry. Concurrent callers share one refresh.
+   * A usable identity for the active account, refreshing the access token
+   * when it is at or near expiry. Concurrent callers share one refresh.
    * @returns the identity to authenticate a request with.
    * @throws NotLoggedInError when nothing is stored, or when the refresh token
    *   has itself expired and only a new browser login can recover.
    */
   async identity(): Promise<CodeBuddyIdentity> {
     const storage = await this.require()
+    const entry = activeEntry(storage)
     const now = Date.now()
-    if (now < storage.auth.expiresAt - REFRESH_SKEW_MS) {
-      return this.identityOf(storage)
+    if (now < entry.auth.expiresAt - REFRESH_SKEW_MS) {
+      return this.identityOf(entry)
     }
-    if (now >= storage.auth.refreshExpiresAt) {
+    if (now >= entry.auth.refreshExpiresAt) {
       throw new NotLoggedInError(
         'The CodeBuddy session has expired. Sign in again through Settings →'
         + ' CodeBuddy in the Web UI.',
       )
     }
-    this.refreshing ??= this.refresh(storage).finally(() => {
+    this.refreshing ??= this.refresh(storage, entry).finally(() => {
       this.refreshing = undefined
     })
     return this.refreshing
   }
 
-  private async refresh(storage: CodeBuddyStorage): Promise<CodeBuddyIdentity> {
-    const refreshed = await refreshAccessToken(this.identityOf(storage), storage.auth.refreshToken)
+  private async refresh(storage: CodeBuddyStorage, entry: CodeBuddyAccountEntry): Promise<CodeBuddyIdentity> {
+    const endpoint = resolveEntryEndpoint(entry)
+    const refreshed = await refreshAccessToken(endpoint, this.identityOf(entry), entry.auth.refreshToken)
     if (refreshed === undefined) {
       throw new NotLoggedInError(
         'Refreshing the CodeBuddy session failed. Sign in again through Settings →'
         + ' CodeBuddy in the Web UI.',
       )
     }
-    const next: CodeBuddyStorage = {
+    const refreshedEntry: CodeBuddyAccountEntry = {
+      ...entry,
       auth: {
         accessToken: refreshed.accessToken,
         expiresAt: Date.now() + refreshed.expiresIn * 1000,
@@ -142,7 +152,10 @@ export class CodeBuddySession {
         refreshExpiresAt: Date.now() + refreshed.refreshExpiresIn * 1000,
         domain: refreshed.domain,
       },
-      account: storage.account,
+    }
+    const next: CodeBuddyStorage = {
+      activeId: storage.activeId,
+      accounts: storage.accounts.map(candidate => candidate.id === entry.id ? refreshedEntry : candidate),
     }
     this.storage = next
     // A catalog read under the old token is still valid, but the write below
@@ -158,7 +171,7 @@ export class CodeBuddySession {
       this.logger?.warn('dsh-codebuddy: refreshed the session but could not persist it')
       this.logger?.warn(error)
     }
-    return this.identityOf(next)
+    return this.identityOf(refreshedEntry)
   }
 
   /**
@@ -174,6 +187,127 @@ export class CodeBuddySession {
     }
     if (identity.enterpriseId !== undefined) headers['X-Enterprise-Id'] = identity.enterpriseId
     return headers
+  }
+
+  /**
+   * The OpenAI-compatible chat base for the ACTIVE account
+   * (`<entry endpoint>/v2`), or `undefined` when nothing is stored — the
+   * caller then falls back to its configured default.
+   * @returns the chat base URL, or `undefined` when signed out.
+   */
+  chatBase(): string | undefined {
+    return this.storage !== undefined ? `${resolveEntryEndpoint(activeEntry(this.storage))}/v2` : undefined
+  }
+
+  /**
+   * Accounts that can take over traffic right now: a stored credential whose
+   * refresh token has not expired. Order follows the stored roster, so the
+   * caller's first candidate is the most recently added fallback.
+   * @returns the candidate entries, or `undefined` when signed out.
+   */
+  async failoverCandidates(): Promise<readonly CodeBuddyAccountEntry[] | undefined> {
+    const storage = await loadStorage()
+    if (storage === undefined) return undefined
+    const now = Date.now()
+    return storage.accounts.filter(entry => entry.auth.refreshExpiresAt > now)
+  }
+
+  /**
+   * The remaining-allowance percentage for one account, probed against its
+   * own endpoint: 100 − usedPercent across the combined metering windows, or
+   * `undefined` when the meter plane was unreachable or answered nothing
+   * usable. A probe failure is NOT a quota verdict — the account stays a
+   * candidate.
+   * @param entry - the account to probe.
+   * @param signal - optional cancellation.
+   */
+  private async remainingPercentOf(entry: CodeBuddyAccountEntry, signal?: AbortSignal): Promise<number | undefined> {
+    const snapshot = await fetchUsage(resolveEntryEndpoint(entry), this.identityOf(entry), signal)
+    if (snapshot === undefined) return undefined
+    const { used, limit } = snapshot.windows.reduce(
+      (acc, window) => ({
+        used: acc.used + (window.used ?? 0),
+        limit: acc.limit + (window.limit ?? 0),
+      }),
+      { used: 0, limit: 0 },
+    )
+    if (limit <= 0) return undefined
+    return Math.max(0, Math.min(100, 100 - (used / limit) * 100))
+  }
+
+  /**
+   * Proactive failover: called by the auto-switch cycle (settings toggle +
+   * usage polling). Probes every non-active, non-expired account and switches
+   * to the one with the most remaining allowance when the ACTIVE account's
+   * remaining percentage has dropped below `thresholdPct`. Accounts that
+   * fail their probe are skipped, not penalized; when no candidate beats the
+   * threshold the active account stays — the reactive adapter failover on a
+   * real quota rejection remains the last line of defense.
+   * @param thresholdPct - switch once the active account's remaining
+   *   allowance falls under this percentage (0–100).
+   * @param signal - optional cancellation for the probes.
+   * @returns the takeover names, or `undefined` when no switch was made
+   *   (not yet below threshold, no candidate, or every probe failed).
+   */
+  async failoverIfBelowThreshold(
+    thresholdPct: number,
+    signal?: AbortSignal,
+  ): Promise<{ from: string, to: string, remaining: number } | undefined> {
+    const storage = await loadStorage()
+    if (storage === undefined || storage.accounts.length < 2) return undefined
+    const active = activeEntry(storage)
+    if (active.auth.refreshExpiresAt <= Date.now()) return undefined
+
+    const activeRemaining = await this.remainingPercentOf(active, signal)
+    // Unknown remaining (meter outage) is not a reason to switch — the
+    // reactive path still covers a hard quota rejection.
+    if (activeRemaining === undefined || activeRemaining >= thresholdPct) return undefined
+
+    // Probe the other live accounts; pick the one with the most remaining.
+    let best: { entry: CodeBuddyAccountEntry, remaining: number } | undefined
+    for (const entry of storage.accounts) {
+      if (entry.id === active.id) continue
+      if (entry.auth.refreshExpiresAt <= Date.now()) continue
+      const remaining = await this.remainingPercentOf(entry, signal)
+      if (remaining === undefined) continue
+      if (best === undefined || remaining > best.remaining) {
+        best = { entry, remaining }
+      }
+    }
+    if (best === undefined) return undefined
+
+    const applied = await this.switchTo(best.entry.id)
+    if (!applied) return undefined
+    return {
+      from: active.account.nickname,
+      to: best.entry.account.nickname,
+      remaining: best.remaining,
+    }
+  }
+
+  /**
+   * Make one stored account active and persist the switch.
+   * @param id - the local account id.
+   * @returns whether the switch was applied.
+   */
+  async switchTo(id: string): Promise<boolean> {
+    const storage = await loadStorage()
+    if (storage === undefined) return false
+    if (!storage.accounts.some(entry => entry.id === id)) return false
+    if (storage.activeId === id) return true
+    await saveStorage({ ...storage, activeId: id })
+    // Drop the in-memory caches so the next request re-reads disk and picks up
+    // the new credential, endpoint, and catalog.
+    this.invalidate()
+    return true
+  }
+
+  /** The active account's display facts, for takeover notices. */
+  async activeAccountSummary(): Promise<{ id: string, nickname: string } | undefined> {
+    const storage = await loadStorage()
+    if (storage === undefined) return undefined
+    const entry = activeEntry(storage)
+    return { id: entry.id, nickname: entry.account.nickname }
   }
 
   /**
@@ -194,10 +328,12 @@ export class CodeBuddySession {
   }
 
   private async readModels(signal?: AbortSignal): Promise<readonly CodeBuddyModel[]> {
+    const storage = await this.require()
+    const endpoint = resolveEntryEndpoint(activeEntry(storage))
     const identity = await this.identity()
     const [config, enterpriseModels] = await Promise.all([
-      getConfig(identity, signal),
-      getEnterpriseModels(identity, signal),
+      getConfig(endpoint, identity, signal),
+      getEnterpriseModels(endpoint, identity, signal),
     ])
     const personal = config.models.filter(model => typeof model.id === 'string' && model.id.length > 0)
     // Enterprise custom models live on a separate console endpoint (the
@@ -268,7 +404,10 @@ export class CodeBuddySession {
    */
   async usage(signal?: AbortSignal): Promise<UsageSnapshot | undefined> {
     let identity: CodeBuddyIdentity
+    let endpoint: string
     try {
+      const storage = await this.require()
+      endpoint = resolveEntryEndpoint(activeEntry(storage))
       identity = await this.identity()
     } catch (error) {
       if (error instanceof NotLoggedInError) return undefined
@@ -276,6 +415,6 @@ export class CodeBuddySession {
       this.logger?.warn(error)
       return undefined
     }
-    return fetchUsage(identity, signal)
+    return fetchUsage(endpoint, identity, signal)
   }
 }

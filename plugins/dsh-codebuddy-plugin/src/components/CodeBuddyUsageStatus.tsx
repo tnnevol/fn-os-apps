@@ -1,12 +1,13 @@
 /** Compact CodeBuddy quota readout for the conversation composer dock. */
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useSyncExternalStore } from 'react'
 import type { KeyboardEvent } from 'react'
-import { DshPopover, DshProgress, DshTooltip } from '@tnnevol/dsh-semi-ui'
+import { DshPopover, DshProgress, DshScrollList, DshTooltip } from '@tnnevol/dsh-semi-ui'
 import { CODEBUDDY_AUTH_CHANNEL, CODEBUDDY_USAGE_REFRESH_MS } from '../client/constants.ts'
+import { accountEpoch, subscribeAccountEpoch } from '../client/account-epoch.ts'
 import type { CodeBuddyLocaleKey } from '../client/locales.ts'
 import type { ConnectionRpc, UsageResult, UsageWindow } from '../client/rpc.ts'
-import { getCustomLimit, getDangerPct, getUsagePref, subscribeUsagePref } from '../client/usage-prefs.ts'
+import { getDangerPct, getUsagePref, subscribeUsagePref } from '../client/usage-prefs.ts'
 import { CodeBuddyLogo } from './CodeBuddyLogo.tsx'
 
 type Translate = (key: CodeBuddyLocaleKey) => string
@@ -93,9 +94,11 @@ function UsageWindowDetails({ label, value, t }: { label: string; value: UsageWi
 }
 
 function UsagePopover({ windows, fallback, t }: { windows: UsageWindow[]; fallback: string; t: Translate }) {
+  if (windows.length === 0) {
+    return <div className="dsh-codebuddy-usage-popover-content"><span className="dsh-codebuddy-usage-popover-empty">{fallback}</span></div>
+  }
   return (
-    <div className="dsh-codebuddy-usage-popover-content">
-      {windows.length === 0 ? <span className="dsh-codebuddy-usage-popover-empty">{fallback}</span> : null}
+    <DshScrollList className="dsh-codebuddy-usage-popover-scroll">
       {windows.map((window, index) => (
         <UsageWindowDetails
           key={`${window.name}-${index}`}
@@ -104,7 +107,7 @@ function UsagePopover({ windows, fallback, t }: { windows: UsageWindow[]; fallba
           t={t}
         />
       ))}
-    </div>
+    </DshScrollList>
   )
 }
 
@@ -116,16 +119,17 @@ export interface CodeBuddyUsageStatusProps {
 }
 
 export function CodeBuddyUsageStatus({ t, timer, rpc }: CodeBuddyUsageStatusProps) {
+  // host 切换账号后通过 llm/adapters-updated 推进代际；立即重拉额度，
+  // 不等待一分钟轮询也不需要刷新页面。
+  const accountVersion = useSyncExternalStore(subscribeAccountEpoch, accountEpoch, accountEpoch)
   const [usage, setUsage] = useState<UsageResult | undefined>()
   const [usageState, setUsageState] = useState<'loading' | 'ready' | 'unavailable'>('loading')
   const [showUsage, setShowUsage] = useState<boolean>(getUsagePref())
-  const [customLimit, setCustomLimitState] = useState<number | undefined>(getCustomLimit())
   const [dangerPct, setDangerPctState] = useState<number>(getDangerPct())
   const [popoverOpen, setPopoverOpen] = useState(false)
 
   useEffect(() => subscribeUsagePref(() => {
     setShowUsage(getUsagePref())
-    setCustomLimitState(getCustomLimit())
     setDangerPctState(getDangerPct())
   }), [])
 
@@ -160,7 +164,7 @@ export function CodeBuddyUsageStatus({ t, timer, rpc }: CodeBuddyUsageStatusProp
       requestSequence += 1
       disposeInterval()
     }
-  }, [rpc, showUsage, timer])
+  }, [rpc, showUsage, timer, accountVersion])
 
   const primary = usage?.primary
   // The ring and tooltip read the COMBINED allowance: every capped window the
@@ -179,8 +183,7 @@ export function CodeBuddyUsageStatus({ t, timer, rpc }: CodeBuddyUsageStatusProp
     }),
     { used: 0, limit: 0 },
   )
-  // A custom cap overrides the combined reported limit.
-  const limit = customLimit ?? (totals.limit > 0 ? totals.limit : undefined)
+  const limit = totals.limit > 0 ? totals.limit : undefined
   const used = totals.used
   const nextReset = earliestReset(usage?.windows)
   const usedPct = used !== undefined && limit !== undefined && limit > 0

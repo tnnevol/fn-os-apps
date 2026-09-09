@@ -4,8 +4,14 @@ import {
   DshButton,
   DshButtonGroup,
   DshCascader,
+  DshAvatar,
+  DshBadge,
+  DshCard,
   DshCheckbox,
+  DshCollapse,
+  DshDescriptions,
   DshDropdown,
+  DshEmpty,
   DshForm,
   DshIconAlertCircle,
   DshIconArrowLeft,
@@ -37,24 +43,31 @@ import {
   DshIconSetting,
   DshIconSun,
   DshInput,
+  DshLayout,
+  DshList,
   DshInputNumber,
   DshModal,
   DshPopover,
   DshProgress,
+  DshScrollList,
   DshSpin,
+  DshSelect,
   DshSemiIcons,
   DshSlider,
   DshSwitch,
+  DshTable,
+  DshTag,
   DshToast,
   DshTooltip,
   DshTree,
   DshTreeSelect,
+  DshTypography,
 } from '@tnnevol/dsh-semi-ui'
 import type { ShowcaseComponentRoute, ShowcaseRouteController } from './route.ts'
 import type { ShowcaseThemeController } from './theme-preview.ts'
 
-type Category = 'buttons' | 'input' | 'selection' | 'tree' | 'modal' | 'feedback'
-type ComponentItem = 'Button 按钮' | 'Input 输入框' | 'InputNumber 数字输入框' | 'Slider 滑块' | 'Switch 开关' | 'Form 表单' | 'Cascader 级联选择' | 'TreeSelect 树选择器' | 'Checkbox 复选框' | 'Tree 树形控件' | 'Icon 图标' | 'Modal 对话框' | 'Popover 浮层' | 'Tooltip 文字提示' | 'Dropdown 下拉框' | 'Progress 进度条' | 'Spin 加载器' | 'Toast 提示'
+type Category = 'buttons' | 'input' | 'selection' | 'tree' | 'modal' | 'feedback' | 'data'
+type ComponentItem = 'Layout 布局' | 'Nav 导航' | 'Table 表格' | 'Card 卡片' | 'Descriptions 描述' | 'Empty 空状态' | 'Button 按钮' | 'Input 输入框' | 'InputNumber 数字输入框' | 'Slider 滑块' | 'Switch 开关' | 'Form 表单' | 'Cascader 级联选择' | 'TreeSelect 树选择器' | 'Checkbox 复选框' | 'Tree 树形控件' | 'Collapse 折叠面板' | 'Icon 图标' | 'Modal 对话框' | 'Popover 浮层' | 'Tooltip 文字提示' | 'Dropdown 下拉框' | 'Progress 进度条' | 'Spin 加载器' | 'Toast 提示' | 'CodeBuddy 多账户'
 type ModalDemo = 'basic' | 'footerFill' | 'mask' | 'buttonProps' | 'customFooter' | 'styled' | 'fullscreen'
 
 const page = 'dsh-semi-showcase-page'
@@ -133,7 +146,10 @@ const sidebarGroups = [
   { title: '基础类', items: [{ icon: DshIconLabButton, label: 'Button 按钮', value: 'buttons' as Category }, { icon: DshIconLabHeart, label: 'Icon 图标', value: 'tree' as Category }] },
   { title: '输入类', items: [{ icon: DshIconElementStroked, label: 'Input 输入框', value: 'input' as Category }, { icon: DshIconElementStroked, label: 'InputNumber 数字输入框', value: 'input' as Category }, { icon: DshIconLabCascader, label: 'Slider 滑块', value: 'input' as Category }, { icon: DshIconLabCheckbox, label: 'Switch 开关', value: 'input' as Category }, { icon: DshIconElementStroked, label: 'Form 表单', value: 'input' as Category }, { icon: DshIconLabCascader, label: 'Cascader 级联选择', value: 'selection' as Category }, { icon: DshIconLabTreeSelect, label: 'TreeSelect 树选择器', value: 'selection' as Category }, { icon: DshIconLabCheckbox, label: 'Checkbox 复选框', value: 'selection' as Category }] },
   { title: '导航类', items: [{ icon: DshIconLabTree, label: 'Tree 树形控件', value: 'tree' as Category }] },
+  { title: '数据展示类', items: [{ icon: DshIconLabTree, label: 'Collapse 折叠面板', value: 'data' as Category }, { icon: DshIconLabTreeSelect, label: 'Card 卡片', value: 'data' as Category }, { icon: DshIconLabTooltip, label: 'Descriptions 描述', value: 'data' as Category }, { icon: DshIconLabHeart, label: 'Empty 空状态', value: 'data' as Category }] },
+  { title: '布局与导航', items: [{ icon: DshIconLabButton, label: 'Layout 布局', value: 'data' as Category }, { icon: DshIconLabTree, label: 'Nav 导航', value: 'data' as Category }, { icon: DshIconLabToast, label: 'Table 表格', value: 'data' as Category }] },
   { title: '反馈类', items: [{ icon: DshIconLabModal, label: 'Modal 对话框', value: 'modal' as Category }, { icon: DshIconLabProgress, label: 'Progress 进度条', value: 'feedback' as Category }, { icon: DshIconLabSpin, label: 'Spin 加载器', value: 'feedback' as Category }, { icon: DshIconLabToast, label: 'Toast 提示', value: 'feedback' as Category }, { icon: DshIconLabTooltip, label: 'Tooltip 文字提示', value: 'buttons' as Category }, { icon: DshIconLabDropdown, label: 'Dropdown 下拉框', value: 'buttons' as Category }, { icon: DshIconElementStroked, label: 'Popover 浮层', value: 'buttons' as Category }] },
+  { title: '案例演示', items: [{ icon: DshIconLabTree, label: 'CodeBuddy 多账户', value: 'data' as Category }] },
 ] as const
 
 const componentRouteByLabel: Record<ComponentItem, ShowcaseComponentRoute> = {
@@ -147,6 +163,7 @@ const componentRouteByLabel: Record<ComponentItem, ShowcaseComponentRoute> = {
   'TreeSelect 树选择器': 'tree-select',
   'Checkbox 复选框': 'checkbox',
   'Tree 树形控件': 'tree',
+  'Collapse 折叠面板': 'collapse',
   'Icon 图标': 'icon',
   'Modal 对话框': 'modal',
   'Popover 浮层': 'popover',
@@ -155,6 +172,13 @@ const componentRouteByLabel: Record<ComponentItem, ShowcaseComponentRoute> = {
   'Progress 进度条': 'progress',
   'Spin 加载器': 'spin',
   'Toast 提示': 'toast',
+  'CodeBuddy 多账户': 'codebuddy-accounts',
+  'Layout 布局': 'layout',
+  'Nav 导航': 'nav',
+  'Table 表格': 'table',
+  'Card 卡片': 'card',
+  'Descriptions 描述': 'descriptions',
+  'Empty 空状态': 'empty',
 }
 
 const componentByRoute: Record<ShowcaseComponentRoute, ComponentItem> = Object.fromEntries(
@@ -172,6 +196,7 @@ const categoryByComponent: Record<ComponentItem, Category> = {
   'TreeSelect 树选择器': 'selection',
   'Checkbox 复选框': 'selection',
   'Tree 树形控件': 'tree',
+  'Collapse 折叠面板': 'data',
   'Icon 图标': 'tree',
   'Modal 对话框': 'modal',
   'Popover 浮层': 'buttons',
@@ -180,6 +205,13 @@ const categoryByComponent: Record<ComponentItem, Category> = {
   'Progress 进度条': 'feedback',
   'Spin 加载器': 'feedback',
   'Toast 提示': 'feedback',
+  'CodeBuddy 多账户': 'data',
+  'Layout 布局': 'data',
+  'Nav 导航': 'data',
+  'Table 表格': 'data',
+  'Card 卡片': 'data',
+  'Descriptions 描述': 'data',
+  'Empty 空状态': 'data',
 }
 
 function DemoCode({ children }: { children: string }): ReactNode {
@@ -187,6 +219,22 @@ function DemoCode({ children }: { children: string }): ReactNode {
     .replaceAll('@tnnevol/dsh-semi-ui', '@douyinfe/semi-ui')
     .replace(/\bDsh(?=[A-Z])/g, '')
   return <pre className={code}><code>{officialSource}</code></pre>
+}
+
+/** Copy of the CodeBuddy logomark (same artwork as the plugin's CodeBuddyLogo). */
+const CODEBUDDY_GLYPH = 'M30.5918 3.12856C30.984 2.77679 31.0078 2.7632 31.2955 2.74593C31.7615 2.71193 32.1882 2.93586 32.9147 3.59728C34.6119 5.13959 36.9755 8.30995 38.4449 11.0177L39.0125 12.0691L39.8143 12.4677C40.5885 12.8589 41.8587 13.6611 42.389 14.0913C42.6286 14.2894 42.6626 14.2934 42.912 14.1964C44.0375 13.7583 45.6494 14.3393 47.0714 15.7033C48.3516 16.9303 49.5781 19.0269 50.0478 20.7767C50.1164 21.0582 50.2074 21.6636 50.2405 22.1144C50.3477 23.6973 49.84 24.9617 48.8624 25.5341C48.6628 25.6493 48.6492 25.6807 48.6548 26.1783C48.6998 28.5492 48.0606 30.9165 46.7768 33.2244C45.3276 35.8156 42.7467 38.496 39.2544 41.0214C37.3789 42.3862 32.9421 44.9717 30.9361 45.8792C26.1304 48.0428 22.278 48.8718 18.9316 48.4618C16.9356 48.22 14.6761 47.4417 13.3392 46.5373C12.9873 46.294 12.9318 46.2791 12.6629 46.3561C11.2318 46.7671 9.35752 45.9219 7.76528 44.1544C7.13027 43.448 6.10508 41.7136 5.77273 40.7853C5.00409 38.6128 5.15721 36.6516 6.18105 35.4808C6.44522 35.1797 6.4538 35.1667 6.39603 34.6598C6.30065 33.8298 6.25703 32.6017 6.30061 31.809L6.33535 31.0683L5.22371 29.1019C3.50212 26.0386 2.40857 23.4663 1.98661 21.501C1.76389 20.4233 1.77734 19.9446 2.05091 19.5908C2.21741 19.3773 2.76347 19.1568 3.42155 19.0352C5.07869 18.7442 8.69327 19.0065 12.7142 19.7165L13.1316 19.789L14.0497 18.977C15.5733 17.6274 16.5858 16.8705 18.4518 15.707C20.3967 14.4901 22.5922 13.4895 25.064 12.6968L25.8564 12.4423L26.2926 11.2974C27.8535 7.17701 29.452 4.13917 30.5918 3.12856ZM17.5169 24.2439C15.7528 25.2625 14.8705 25.7716 14.2223 26.3423C11.5975 28.6536 10.6172 32.3151 11.7346 35.6292C12.0106 36.4475 12.5193 37.3301 13.5378 39.0941C14.5563 40.8582 15.0662 41.7401 15.637 42.3882C17.9483 45.0128 21.6091 45.9938 24.923 44.8764C25.7414 44.6004 26.6233 44.0909 28.3875 43.0724L38.5362 37.213C40.3004 36.1945 41.1826 35.6854 41.8308 35.1147C44.4555 32.8034 45.4363 29.1426 44.319 25.8286C44.043 25.0103 43.5343 24.1277 42.5158 22.3637C41.4974 20.5997 40.9873 19.7177 40.4166 19.0696C38.1053 16.4448 34.4441 15.4631 31.1301 16.5806C30.3118 16.8565 29.4297 17.3661 27.6656 18.3846L17.5169 24.2439Z'
+
+function CodeBuddyDemoLogo({ size = 18 }: { size?: number }): ReactNode {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden="true" focusable="false">
+      <g transform="scale(0.6)">
+        <rect x="0" y="0" width="40" height="40" rx="8.63158" fill="#6C4DFF" />
+        <path d={CODEBUDDY_GLYPH} fill="#fff" />
+        <rect x="18.4944" y="31.334" width="4.00904" height="8.32646" rx="2.00452" transform="rotate(-30 18.4944 31.334)" fill="#fff" />
+        <rect x="29.311" y="25.0898" width="4.00904" height="8.32646" rx="2.00452" transform="rotate(-30 29.311 25.0898)" fill="#fff" />
+      </g>
+    </svg>
+  )
 }
 
 function DemoCard({ children, source }: { children: ReactNode; source: string }): ReactNode {
@@ -211,6 +259,57 @@ export function ShowcasePage({ route, theme }: { route: ShowcaseRouteController;
   const [switchChecked, setSwitchChecked] = useState(true)
   const [showUsage, setShowUsage] = useState(true)
   const [dangerPercentage, setDangerPercentage] = useState(90)
+  // Multi-user management demo state: a mock account roster driving the
+  // Collapse panel, mirroring the CodeBuddySection account shape.
+  type DemoAccount = { id: string, name: string, uid: string, tag: string, uid2?: string, enterprise?: string }
+  const [userAccounts, setUserAccounts] = useState<DemoAccount[]>([
+    { id: 'u-01', name: '主账号', uid: '9584b7fb-14ef-4ada-af99-b5eb10ecaf2e', tag: '当前', uid2: '10086' },
+    { id: 'u-02', name: '体验账号', uid: '3f2a9c81-7c55-4e21-9a30-8d1b2c4d5e6f', tag: '备用', enterprise: '示例科技（深圳）有限公司' },
+    { id: 'u-03', name: '涨涨涨', uid: 'c81e728d-9d54-4b21-b9a6-0b1d3a5f7e89', tag: '备用', uid2: '10010' },
+  ])
+  // Which state variant the 多状态展示 grid renders: loading / empty /
+  // signed-out / error are static fixtures; normal edits the shared roster.
+  const [cbDemoState, setCbDemoState] = useState<'roster' | 'loading' | 'empty' | 'signed-out' | 'error'>('roster')
+  // 添加账号表单 state.
+  const [cbFormOpen, setCbFormOpen] = useState(false)
+  const [cbFormNickname, setCbFormNickname] = useState('')
+  const [cbFormEnterprise, setCbFormEnterprise] = useState(false)
+  // 危险操作确认 demo state: the pending-removal account id.
+  const [cbRemoveTarget, setCbRemoveTarget] = useState<string | undefined>(undefined)
+  // 账号掉线 demo state: ids of accounts whose refresh credential expired.
+  const [cbExpiredIds, setCbExpiredIds] = useState<string[]>([])
+  // Re-login flow state: which expired account is being re-authenticated.
+  const [cbReloginTarget, setCbReloginTarget] = useState<string | undefined>(undefined)
+  // 添加账号弹框的提交动作：抽出为命名回调，避免 JSX 属性里多层嵌套括号。
+  // 复制登录链接由 Typography.Text 的 copyable 内置能力承担（图标跟随标题、
+  // 自动反馈复制成功），不再需要自建剪贴板回调。
+  const cbSubmitAccount = (): void => {
+    setCbFormOpen(false)
+    setCbDemoState('roster')
+    setUserAccounts(items => [...items, {
+      id: `u-${String(items.length + 1).padStart(2, '0')}`,
+      name: cbFormNickname.trim().length > 0 ? cbFormNickname.trim() : `新账号 ${items.length + 1}`,
+      uid: `新增-${items.length + 1}`,
+      tag: '当前',
+      ...(cbFormEnterprise ? { enterprise: '示例科技（深圳）有限公司' } : {}),
+    }].map((item, index, all) => index === all.length - 1 ? item : { ...item, tag: '备用' }))
+    DshToast.success({ content: '演示：登录成功后该账号会成为当前账号' })
+  }
+  // 偏好设置 demo state.
+  const [cbPrefShowUsage, setCbPrefShowUsage] = useState(true)
+  const [cbPrefDangerPct, setCbPrefDangerPct] = useState(90)
+  const [cbPrefAutoSwitch, setCbPrefAutoSwitch] = useState(false)
+  // 额度气泡 demo: 8 mock packages so the 388px ScrollList actually scrolls.
+  const usageDemoWindows = useMemo(() => [
+    { name: 'CodeBuddy个人体验版', used: 60, limit: 100, usedPercent: 60, resetsAt: '2026-10-01 00:00:00' },
+    { name: '企业共享套餐', used: 320, limit: 800, usedPercent: 40, resetsAt: '2026-09-30 00:00:00' },
+    { name: '充值包 A', used: 12, limit: 50, usedPercent: 24, resetsAt: '2026-12-31 00:00:00' },
+    { name: '充值包 B', used: 45, limit: 50, usedPercent: 90, resetsAt: '2026-12-31 00:00:00' },
+    { name: '赠送体验包', used: 8, limit: 30, usedPercent: 27, resetsAt: '2026-11-15 00:00:00' },
+    { name: '团队协作包', used: 210, limit: 300, usedPercent: 70, resetsAt: '2026-10-20 00:00:00' },
+    { name: '新客礼包', used: 0, limit: 20, usedPercent: 0, resetsAt: '2027-01-01 00:00:00' },
+    { name: '升级补差包', used: 5, limit: 40, usedPercent: 13, resetsAt: '2026-10-10 00:00:00' },
+  ], [])
   const activeComponent = componentByRoute[snapshot.component]
   const category = categoryByComponent[activeComponent]
   const dropdownMenu = useMemo(() => (
@@ -259,7 +358,9 @@ export function ShowcasePage({ route, theme }: { route: ShowcaseRouteController;
   const categoryTitle = activeComponent
   const categoryDescription = activeComponent === 'Button 按钮'
     ? '按钮用于开始一个即时操作，支持多种类型、主题、尺寸和交互状态。'
-    : activeComponent === 'Cascader 级联选择'
+    : activeComponent === 'CodeBuddy 多账户'
+      ? 'CodeBuddy 插件多用户管理的完整 UI 评定页：账号列表的多种运行状态，以及添加账号表单、危险操作确认与偏好设置表单。'
+      : activeComponent === 'Cascader 级联选择'
       ? '级联选择用于从具有层级关系的选项中选择一个或多个值。'
       : activeComponent === 'TreeSelect 树选择器'
         ? '树选择器将树形结构与选择器结合，支持单选、多选和节点关系控制。'
@@ -275,9 +376,11 @@ export function ShowcasePage({ route, theme }: { route: ShowcaseRouteController;
           ? '开关用于表示即时生效的二元状态，支持受控切换、文字和禁用状态。'
         : activeComponent === 'Form 表单'
           ? '表单用于组织字段、标签和提交操作，统一管理输入控件的布局与交互。'
-        : activeComponent === 'Tree 树形控件'
+          : activeComponent === 'Tree 树形控件'
           ? '树形控件用于展示具有层级关系的结构化数据，并支持展开、选中与复选。'
-          : activeComponent === 'Icon 图标'
+          : activeComponent === 'Collapse 折叠面板'
+            ? '折叠面板用于将同类内容收纳进可展开的区域，适合账号列表、分组配置等纵向空间受限的场景。'
+            : activeComponent === 'Icon 图标'
             ? '图标用于表达操作、状态和内容类型，统一从共享 Semi UI 包导出。'
             : activeComponent === 'Modal 对话框'
               ? '对话框用于承载需要用户确认或完成的任务，支持确认、取消和关闭交互。'
@@ -294,7 +397,9 @@ export function ShowcasePage({ route, theme }: { route: ShowcaseRouteController;
                         : '下拉菜单用于承载一组可点击的操作项，默认通过点击触发。'
   const outlineItems: Array<[string, string]> = activeComponent === 'Button 按钮'
     ? [['如何引入', 'how-to'], ['按钮类型', 'button-types'], ['按钮主题', 'button-theme'], ['状态', 'button-states'], ['组合与浮层', 'button-overlays']]
-    : activeComponent === 'Cascader 级联选择' || activeComponent === 'TreeSelect 树选择器'
+    : activeComponent === 'CodeBuddy 多账户'
+      ? [['完整形态', 'cb-full'], ['多状态展示', 'cb-states'], ['添加账号表单', 'cb-form'], ['危险操作确认', 'cb-danger'], ['账号掉线与重新登录', 'cb-expired'], ['额度气泡', 'cb-usage'], ['偏好设置', 'cb-prefs']]
+      : activeComponent === 'Cascader 级联选择' || activeComponent === 'TreeSelect 树选择器'
       ? [['基本用法', 'selection-basic'], ['节点选中关系', 'selection-basic'], ['API 参考', 'selection-basic']]
       : activeComponent === 'Checkbox 复选框'
         ? [['基本用法', 'checkbox-basic'], ['选中与半选', 'checkbox-states'], ['禁用状态', 'checkbox-disabled'], ['API 参考', 'checkbox-basic']]
@@ -310,6 +415,8 @@ export function ShowcasePage({ route, theme }: { route: ShowcaseRouteController;
         ? [['基本用法', 'form-basic'], ['字段状态', 'form-states'], ['API 参考', 'form-basic']]
       : activeComponent === 'Tree 树形控件'
         ? [['基本用法', 'tree-basic'], ['复选与半选', 'tree-basic'], ['选中与禁用', 'tree-basic'], ['API 参考', 'tree-basic']]
+        : activeComponent === 'Collapse 折叠面板'
+          ? [['基本用法', 'collapse-basic'], ['多用户管理示例', 'collapse-users'], ['创建用户', 'collapse-create']]
           : activeComponent === 'Icon 图标'
             ? [['图标列表', 'tree-icons'], ['基础使用', 'tree-icons-basic'], ['尺寸与状态', 'tree-icons-states'], ['颜色与双色图标', 'tree-icons-colors'], ['API 参考', 'tree-icons']]
           : activeComponent === 'Modal 对话框'
@@ -366,6 +473,438 @@ export function ShowcasePage({ route, theme }: { route: ShowcaseRouteController;
             <div className={breadcrumb}>组件 · {categoryTitle}</div>
             <h1 className={heading}>{categoryTitle}</h1>
             <p className={description}>{categoryDescription}</p>
+
+            {activeComponent === 'CodeBuddy 多账户' ? (
+              <>
+                {/* 完整形态：与 CodeBuddySection 账号管理区同名 class 的 1:1 预览。 */}
+                <h2 id="cb-full" className={sectionTitle}>完整形态</h2>
+                <p className={sectionText}>与 CodeBuddy 插件「账号管理」设置区同名 class、同一套结构的 1:1 预览：每个账号一个折叠面板，头部为昵称 + 绿色「当前」Tag；激活账号头部无操作按钮，其余账号放「设为当前」；展开后是账号信息行与「删除账号」。</p>
+                <DemoCard source={'// 与 CodeBuddySection 的账号管理区结构一致（同名 class）\n<div className="dsh-codebuddy-accounts">\n  <div className="dsh-codebuddy-accounts-head">\n    <span className="dsh-codebuddy-accounts-title">账号管理</span>\n    <Button size="small" theme="solid" type="primary" onClick={openAddForm}>添加账号</Button>\n  </div>\n  <p className="dsh-codebuddy-accounts-desc">已登录的 CodeBuddy 账号……</p>\n  <Collapse className="dsh-codebuddy-accounts-collapse" expandIconPosition="left">\n    {accounts.map(account => (\n      <Collapse.Panel\n        key={account.id}\n        itemKey={account.id}\n        header={\n          <span className="dsh-codebuddy-account-header">\n            <span className="dsh-codebuddy-account-name">{account.nickname}</span>\n            {account.active && <Tag size="small" type="solid" color="green">当前</Tag>}\n          </span>\n        }\n        extra={account.active ? undefined : (\n          <Button size="small" theme="light" type="secondary">设为当前</Button>\n        )}\n      >\n        <div className="dsh-codebuddy-account-body">…账号信息行…</div>\n      </Collapse.Panel>\n    ))}\n  </Collapse>\n</div>'}>
+                  <div className="dsh-codebuddy-section dsh-semi-showcase-collapse-plugin-section">
+                    <div className="dsh-codebuddy-title-row">
+                      <CodeBuddyDemoLogo />
+                      <h2 className="dsh-codebuddy-title">CodeBuddy</h2>
+                    </div>
+                    <p className="dsh-codebuddy-desc">使用腾讯 CodeBuddy 账号登录。</p>
+                    <div className="dsh-codebuddy-accounts">
+                      <div className="dsh-codebuddy-accounts-head">
+                        <span className="dsh-codebuddy-accounts-title">账号管理</span>
+                        <DshButton
+                          htmlType="button"
+                          size="small"
+                          theme="solid"
+                          type="primary"
+                          onClick={() => { setCbFormOpen(true); setCbFormNickname(''); setCbFormEnterprise(false) }}
+                        >
+                          添加账号
+                        </DshButton>
+                      </div>
+                      <p className="dsh-codebuddy-accounts-desc">已登录的 CodeBuddy 账号。展开面板可管理对应账号；请求均使用当前账号。</p>
+                      <DshCollapse className="dsh-codebuddy-accounts-collapse" expandIconPosition="left" defaultActiveKey="u-01">
+                        {userAccounts.map(user => (
+                          <DshCollapse.Panel
+                            key={user.id}
+                            itemKey={user.id}
+                            header={(
+                              <span className="dsh-codebuddy-account-header">
+                                <span className="dsh-codebuddy-account-name">{user.name}</span>
+                                {user.tag === '当前' ? <DshTag size="small" type="solid" color="green">当前</DshTag> : null}
+                              </span>
+                            )}
+                            extra={user.tag === '当前' ? undefined : (
+                              <DshButton
+                                htmlType="button"
+                                size="small"
+                                theme="light"
+                                type="secondary"
+                                onClick={() => { setUserAccounts(items => items.map(item => ({ ...item, tag: item.id === user.id ? '当前' : '备用' }))) }}
+                              >
+                                设为当前
+                              </DshButton>
+                            )}
+                          >
+                            <div className="dsh-codebuddy-account-body">
+                              <div className="dsh-codebuddy-row"><span className="dsh-codebuddy-row-label">UID</span><span className="dsh-codebuddy-row-value">{user.uid}</span></div>
+                              {user.enterprise !== undefined
+                                ? <div className="dsh-codebuddy-row"><span className="dsh-codebuddy-row-label">企业</span><span className="dsh-codebuddy-row-value">{user.enterprise}</span></div>
+                                : null}
+                              <div className="dsh-codebuddy-row"><span className="dsh-codebuddy-row-label">UIN</span><span className="dsh-codebuddy-row-value">{user.uid2 ?? '—'}</span></div>
+                              <div className="dsh-codebuddy-account-remove">
+                                <DshButton
+                                  htmlType="button"
+                                  size="small"
+                                  type="danger"
+                                  theme="borderless"
+                                  onClick={() => { setCbRemoveTarget(user.id) }}
+                                >
+                                  删除账号
+                                </DshButton>
+                              </div>
+                            </div>
+                          </DshCollapse.Panel>
+                        ))}
+                      </DshCollapse>
+                    </div>
+                  </div>
+                </DemoCard>
+
+                {/* 多状态展示：加载 / 空 / 未登录过期 / 错误 / 已登录花名册。 */}
+                <h2 id="cb-states" className={sectionTitle}>多状态展示</h2>
+                <p className={sectionText}>账号区在真实插件中的五种运行状态：加载中（首发拉取）、空（从未登录）、未登录（凭据过期，需重新登录）、错误（RPC 或凭据文件不可读）、正常花名册。切换下方按钮对比各状态的排版。</p>
+                <DemoCard source={'type AccountsState = "loading" | "empty" | "signed-out" | "error" | "roster"\n\n// loading     → <Spin size="middle" /> 包裹占位\n// empty       → 「暂无已登录账号。」+ 主 CTA「添加账号」\n// signed-out  → 黄色提示「登录已过期」+ 「重新登录」主按钮\n// error       → 红色错误行 + 重试按钮\n// roster      → 正常折叠面板列表'}>
+                  <div className={demo}>
+                    {([['roster', '正常'], ['loading', '加载中'], ['empty', '空'], ['signed-out', '未登录'], ['error', '错误']] as const).map(([state, label]) => (
+                      <DshButton key={state} type={cbDemoState === state ? 'primary' : 'secondary'} theme={cbDemoState === state ? 'solid' : 'light'} size="small" onClick={() => { setCbDemoState(state) }}>{label}</DshButton>
+                    ))}
+                  </div>
+                  <div className="dsh-codebuddy-section dsh-semi-showcase-collapse-plugin-section">
+                    <div className="dsh-codebuddy-accounts">
+                      <div className="dsh-codebuddy-accounts-head">
+                        <span className="dsh-codebuddy-accounts-title">账号管理</span>
+                        {cbDemoState !== 'loading' ? <DshButton htmlType="button" size="small" theme="solid" type="primary" onClick={() => { setCbDemoState('roster') }}>添加账号</DshButton> : null}
+                      </div>
+                      {cbDemoState === 'loading' ? (
+                        <div className="dsh-semi-showcase-collapse-state-block"><DshSpin size="middle" /><span className="dsh-codebuddy-accounts-desc">正在加载账号…</span></div>
+                      ) : cbDemoState === 'empty' ? (
+                        <div className="dsh-semi-showcase-collapse-state-block">
+                          <span className="dsh-codebuddy-accounts-desc">暂无已登录账号。点击「添加账号」完成浏览器登录。</span>
+                        </div>
+                      ) : cbDemoState === 'signed-out' ? (
+                        <div className="dsh-semi-showcase-collapse-state-block dsh-semi-showcase-collapse-state-warn">
+                          <span className="dsh-codebuddy-accounts-desc">登录已过期。之前的账号凭据已失效，需要重新登录才能继续使用。</span>
+                          <DshButton htmlType="button" size="small" theme="solid" type="primary" onClick={() => { setCbDemoState('roster') }}>重新登录</DshButton>
+                        </div>
+                      ) : cbDemoState === 'error' ? (
+                        <div className="dsh-semi-showcase-collapse-state-block">
+                          <span className="dsh-codebuddy-error">not-found: 账号列表加载失败。</span>
+                          <DshButton htmlType="button" size="small" theme="light" type="secondary" icon={<DshIconRefresh />} onClick={() => { setCbDemoState('roster') }}>重试</DshButton>
+                        </div>
+                      ) : (
+                        <DshCollapse className="dsh-codebuddy-accounts-collapse" expandIconPosition="left">
+                          {userAccounts.slice(0, 2).map(user => (
+                            <DshCollapse.Panel
+                              key={user.id}
+                              itemKey={user.id}
+                              header={(
+                                <span className="dsh-codebuddy-account-header">
+                                  <span className="dsh-codebuddy-account-name">{user.name}</span>
+                                  {user.tag === '当前' ? <DshTag size="small" type="solid" color="green">当前</DshTag> : null}
+                                </span>
+                              )}
+                            >
+                              <div className="dsh-codebuddy-account-body">
+                                <div className="dsh-codebuddy-row"><span className="dsh-codebuddy-row-label">UID</span><span className="dsh-codebuddy-row-value">{user.uid}</span></div>
+                              </div>
+                            </DshCollapse.Panel>
+                          ))}
+                        </DshCollapse>
+                      )}
+                    </div>
+                  </div>
+                </DemoCard>
+
+                {/* 添加账号表单。 */}
+                <h2 id="cb-form" className={sectionTitle}>添加账号表单</h2>
+                <p className={sectionText}>点上方「添加账号」或下方按钮弹出表单：昵称可选备注、企业账号开关，提交后追加一个演示账号。弹框标题右侧是 Semi Typography 自带的复制图标（Typography.Text 的 `copyable` 能力）：点击复制登录链接，成功后图标变对勾并显示"复制成功"，无需自建复制按钮。</p>
+                <DemoCard source={'// 复制功能使用 Semi Typography 自带的 copyable：图标跟随标题，\n// 点击即复制并自动反馈（图标变对勾 + "复制成功"），无需手写剪贴板逻辑。\n<DshModal\n  title={\n    <DshTypography.Text copyable={{ content: loginLink }}>\n      添加 CodeBuddy 账号\n    </DshTypography.Text>\n  }\n  visible={visible} onOk={submit} onCancel={close}\n>\n  <DshForm labelPosition="top">\n    <DshForm.Slot label="备注名"><DshInput maxLength={120} placeholder="可选" /></DshForm.Slot>\n    <DshForm.Slot label="企业账号"><DshSwitch /></DshForm.Slot>\n  </DshForm>\n</DshModal>'}>
+                  <DshButton type="primary" theme="solid" onClick={() => { setCbFormOpen(true); setCbFormNickname(''); setCbFormEnterprise(false) }}>打开添加账号表单</DshButton>
+                  <DshModal
+                    title={(
+                      <DshTypography.Text copyable={{ content: 'https://auth.example.com/oauth/authorize?state=demo' }}>
+                        添加 CodeBuddy 账号
+                      </DshTypography.Text>
+                    )}
+                    visible={cbFormOpen}
+                    closeOnEsc
+                    onCancel={() => { setCbFormOpen(false) }}
+                    onOk={() => { cbSubmitAccount() }}
+                  >
+                    <div className="dsh-semi-showcase-collapse-create-body">
+                      <DshForm className="dsh-semi-showcase-form" labelPosition="top">
+                        <DshForm.Slot label={<span className="dsh-semi-showcase-form-preference-label"><strong>备注名</strong></span>}>
+                          <DshInput className="dsh-semi-showcase-control" value={cbFormNickname} onChange={setCbFormNickname} placeholder="可选" showClear maxLength={120} />
+                        </DshForm.Slot>
+                        <DshForm.Slot label={<span className="dsh-semi-showcase-form-preference-label"><strong>企业账号</strong><span>企业账号登录后额外展示企业名称与部门信息。</span></span>}>
+                          <DshSwitch checked={cbFormEnterprise} onChange={(checked: boolean) => { setCbFormEnterprise(checked) }} aria-label="企业账号" />
+                        </DshForm.Slot>
+                      </DshForm>
+                      <p className="dsh-semi-showcase-secondary-text">点击标题右侧的复制图标可复制登录链接；演示中「打开登录页」直接创建账号，实际插件会在此步打开浏览器 OAuth 登录。</p>
+                    </div>
+                  </DshModal>
+                </DemoCard>
+
+                {/* 危险操作确认。 */}
+                <h2 id="cb-danger" className={sectionTitle}>危险操作确认</h2>
+                <p className={sectionText}>删除账号前弹出确认 Modal：正文标明该账号将丢失的凭据与当前身份，删除当前账号时会提示后续将切换到的账号。在「完整形态」卡中点「删除账号」也会触发同一个确认。</p>
+                <DemoCard source={'<DshModal\n  title="删除账号"\n  type="warning"\n  visible={visible}\n  okText="确认删除"\n  okButtonProps={{ type: "danger" }}\n  onOk={confirmRemove}\n  onCancel={close}\n>\n  确定删除该账号？其存储的登录凭据将被清除。\n</DshModal>'}>
+                  <DshButton type="danger" theme="light" onClick={() => { setCbRemoveTarget(userAccounts[0]?.id) }}>演示删除确认</DshButton>
+                </DemoCard>
+
+                {/* 账号掉线与重新登录。 */}
+                <h2 id="cb-expired" className={sectionTitle}>账号掉线与重新登录</h2>
+                <p className={sectionText}>多账号下其中某个账号凭据过期的场景：掉线账号的头部标记黄色「已掉线」Tag 并把「设为当前」换成「重新登录」主按钮；展开后显示掉线原因与恢复动作。若掉线的是当前账号，账单区顶部出现警示条，请求自动改由剩余账号中最靠前的可用账号接管（头部「当前」Tag 随之移动）。下方按钮把任一账号置为掉线/恢复，模拟一次完整生命周期。</p>
+                <DemoCard source={'// 掉线账号的折叠面板：头部 Tag 与 extra 按账号状态切换\n{accounts.map(account => (\n  <Collapse.Panel\n    key={account.id}\n    itemKey={account.id}\n    header={\n      <span className="dsh-codebuddy-account-header">\n        <span className="dsh-codebuddy-account-name">{account.nickname}</span>\n        {account.expired\n          ? <Tag size="small" type="light" color="orange">已掉线</Tag>\n          : account.active && <Tag size="small" type="solid" color="green">当前</Tag>}\n      </span>\n    }\n    extra={account.expired\n      ? <Button size="small" theme="solid" type="primary">重新登录</Button>\n      : account.active ? undefined : <Button size="small" theme="light">设为当前</Button>}\n    >\n      {account.expired\n        ? <div className="dsh-codebuddy-account-expired">\n            <span>该账号的登录凭据已过期，无法发起请求或查询额度。</span>\n            <Button size="small" type="primary" theme="solid">重新登录</Button>\n          </div>\n        : <div className="dsh-codebuddy-account-body">…账号信息行…</div>}\n    </Collapse.Panel>\n  ))}\n}\n\n// 掉线的是当前账号时，面板顶部出现接管警示条\n{ takeoverBy && (\n  <div className="dsh-codebuddy-account-takeover">\n    当前账号已掉线，请求改由「{takeoverBy.nickname}」接管。为掉线账号重新登录后可切回。\n  </div>\n)'}>
+                  <div className={demo}>
+                    <DshButton
+                      htmlType="button"
+                      size="small"
+                      theme="light"
+                      type={cbExpiredIds.length > 0 ? 'secondary' : 'warning'}
+                      onClick={() => { setCbExpiredIds(ids => ids.length > 0 ? [] : [userAccounts.find(item => item.tag === '当前')?.id ?? 'u-01']) }}
+                    >
+                      {cbExpiredIds.length > 0 ? '全部恢复在线' : '让当前账号掉线'}
+                    </DshButton>
+                    <DshButton
+                      htmlType="button"
+                      size="small"
+                      theme="light"
+                      type="warning"
+                      onClick={() => { setCbExpiredIds(ids => ids.length > 0 ? ids : ['u-03']) }}
+                    >
+                      让备用账号掉线
+                    </DshButton>
+                  </div>
+                  <div className="dsh-codebuddy-section dsh-semi-showcase-collapse-plugin-section">
+                    <div className="dsh-codebuddy-accounts">
+                      <div className="dsh-codebuddy-accounts-head">
+                        <span className="dsh-codebuddy-accounts-title">账号管理</span>
+                        <DshButton
+                          htmlType="button"
+                          size="small"
+                          theme="solid"
+                          type="primary"
+                          onClick={() => { setCbFormOpen(true); setCbFormNickname(''); setCbFormEnterprise(false) }}
+                        >
+                          添加账号
+                        </DshButton>
+                      </div>
+                      <p className="dsh-codebuddy-accounts-desc">已登录的 CodeBuddy 账号。展开面板可管理对应账号；请求均使用当前账号。</p>
+                      {(() => {
+                        const expiredActive = userAccounts.find(item => item.id === cbExpiredIds[0] && item.tag === '当前')
+                        const takeoverBy = expiredActive !== undefined
+                          ? userAccounts.find(item => !cbExpiredIds.includes(item.id) && item.id !== expiredActive.id)
+                          : undefined
+                        return (
+                          <>
+                            {expiredActive !== undefined && takeoverBy !== undefined ? (
+                              <div className="dsh-codebuddy-account-takeover">
+                                <DshIconAlertCircle aria-hidden />
+                                <span>当前账号「{expiredActive.name}」已掉线，请求改由「{takeoverBy.name}」接管。为掉线账号重新登录后可切回。</span>
+                              </div>
+                            ) : null}
+                            <DshCollapse className="dsh-codebuddy-accounts-collapse" expandIconPosition="left" defaultActiveKey={cbExpiredIds[0] ?? undefined}>
+                              {userAccounts.map(user => {
+                                const expired = cbExpiredIds.includes(user.id)
+                                return (
+                                  <DshCollapse.Panel
+                                    key={user.id}
+                                    itemKey={user.id}
+                                    header={(
+                                      <span className="dsh-codebuddy-account-header">
+                                        <span className="dsh-codebuddy-account-name">{user.name}</span>
+                                        {expired
+                                          ? <DshTag size="small" type="light" color="orange">已掉线</DshTag>
+                                          : user.tag === '当前' ? <DshTag size="small" type="solid" color="green">当前</DshTag> : null}
+                                      </span>
+                                    )}
+                                    extra={expired ? (
+                                      <DshButton
+                                        htmlType="button"
+                                        size="small"
+                                        theme="solid"
+                                        type="primary"
+                                        onClick={() => { setCbReloginTarget(user.id) }}
+                                      >
+                                        重新登录
+                                      </DshButton>
+                                    ) : user.tag === '当前' ? undefined : (
+                                      <DshButton
+                                        htmlType="button"
+                                        size="small"
+                                        theme="light"
+                                        type="secondary"
+                                        onClick={() => { setUserAccounts(items => items.map(item => ({ ...item, tag: item.id === user.id ? '当前' : '备用' }))) }}
+                                      >
+                                        设为当前
+                                      </DshButton>
+                                    )}
+                                  >
+                                    {expired ? (
+                                      <div className="dsh-codebuddy-account-expired">
+                                        <span className="dsh-codebuddy-account-expired-text">该账号的登录凭据已过期，无法发起请求或查询额度。重新登录后凭据与额度信息会自动恢复，历史偏好保留。</span>
+                                        <DshButton
+                                          htmlType="button"
+                                          size="small"
+                                          theme="solid"
+                                          type="primary"
+                                          onClick={() => { setCbReloginTarget(user.id) }}
+                                        >
+                                          重新登录
+                                        </DshButton>
+                                      </div>
+                                    ) : (
+                                      <div className="dsh-codebuddy-account-body">
+                                        <div className="dsh-codebuddy-row"><span className="dsh-codebuddy-row-label">UID</span><span className="dsh-codebuddy-row-value">{user.uid}</span></div>
+                                        {user.enterprise !== undefined
+                                          ? <div className="dsh-codebuddy-row"><span className="dsh-codebuddy-row-label">企业</span><span className="dsh-codebuddy-row-value">{user.enterprise}</span></div>
+                                          : null}
+                                        <div className="dsh-codebuddy-row"><span className="dsh-codebuddy-row-label">UIN</span><span className="dsh-codebuddy-row-value">{user.uid2 ?? '—'}</span></div>
+                                        <div className="dsh-codebuddy-account-remove">
+                                          <DshButton
+                                            htmlType="button"
+                                            size="small"
+                                            type="danger"
+                                            theme="borderless"
+                                            onClick={() => { setCbRemoveTarget(user.id) }}
+                                          >
+                                            删除账号
+                                          </DshButton>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </DshCollapse.Panel>
+                                )
+                              })}
+                            </DshCollapse>
+                          </>
+                        )
+                      })()}
+                    </div>
+                  </div>
+                </DemoCard>
+
+                {/* 额度气泡：Ring + Popover，多套餐列表用 Semi ScrollList 承载（max-height 388，超出滚动）。 */}
+                <h2 id="cb-usage" className={sectionTitle}>额度气泡</h2>
+                <p className={sectionText}>对话输入区右侧的额度指示器：圆环显示合并余量，点击弹出多套餐明细浮层。浮层内容区使用 Semi 的 ScrollList 组件承载，`max-height` 388px——套餐少时按内容自然撑开不出现空白，超过 388px 才进入 Y 轴滚动，滚动条样式由 DSH 主题统一。下方演示造了 8 个套餐以验证滚动。</p>
+                <DemoCard source={'// 气泡内容区：ScrollList 内容区 max-height=388，超出自动滚动\n<DshPopover\n  trigger="click"\n  position="topRight"\n  content={\n    <DshScrollList className="dsh-codebuddy-usage-popover-scroll">\n      {windows.map(w => (\n        <div className="dsh-codebuddy-usage-popover-window" key={w.name}>\n          <div className="dsh-codebuddy-usage-popover-heading">\n            <span>{w.name}</span>\n            <span>剩余 {w.remaining}%</span>\n          </div>\n          <DshProgress percent={w.remaining} showInfo={false} />\n          <span className="dsh-codebuddy-usage-popover-reset">{w.resetsAt}</span>\n        </div>\n      ))}\n    </DshScrollList>\n  }\n>\n  <DshProgress type="circle" percent={remain} width={26} />\n</DshPopover>'}>
+                  <div className="dsh-codebuddy-section dsh-semi-showcase-collapse-plugin-section">
+                    <div className="dsh-codebuddy-usage-demo-row">
+                      <DshPopover
+                        trigger="click"
+                        position="bottomLeft"
+                        showArrow={false}
+                        contentClassName="dsh-codebuddy-usage-popover"
+                        content={(
+                          <DshScrollList className="dsh-codebuddy-usage-popover-scroll">
+                            {usageDemoWindows.map((window, index) => (
+                              <div className="dsh-codebuddy-usage-popover-window" key={`${window.name}-${index}`}>
+                                <div className="dsh-codebuddy-usage-popover-heading">
+                                  <span>{window.name}</span>
+                                  <span>{`剩余 ${Math.round(100 - window.usedPercent)}%`}</span>
+                                </div>
+                                <div className="dsh-codebuddy-usage-popover-amounts">
+                                  <span>{'已用额度'}</span>
+                                  <span>{`${window.used} / ${window.limit}`}</span>
+                                </div>
+                                <DshProgress
+                                  percent={100 - window.usedPercent}
+                                  showInfo={false}
+                                  stroke="var(--dsw-alias-label-tertiary)"
+                                  orbitStroke="var(--dsw-alias-border-l3)"
+                                  className="dsh-codebuddy-usage-popover-progress"
+                                />
+                                <span className="dsh-codebuddy-usage-popover-reset">{`重置 ${window.resetsAt}`}</span>
+                              </div>
+                            ))}
+                          </DshScrollList>
+                        )}
+                      >
+                        <span
+                          className="dsh-codebuddy-usage-popover-trigger"
+                          role="button"
+                          tabIndex={0}
+                        >
+                          <DshProgress
+                            type="circle"
+                            percent={37}
+                            width={26}
+                            strokeWidth={3}
+                            stroke="var(--dsw-alias-label-tertiary)"
+                            orbitStroke="var(--dsw-alias-border-l3)"
+                            showInfo
+                            format={() => <CodeBuddyDemoLogo size={12} />}
+                          />
+                        </span>
+                      </DshPopover>
+                      <span className="dsh-codebuddy-accounts-desc">点击圆环打开气泡；8 个套餐超出 388px 高度，内容区自动滚动。</span>
+                    </div>
+                  </div>
+                </DemoCard>
+
+                {/* 偏好设置。 */}
+                <h2 id="cb-prefs" className={sectionTitle}>偏好设置</h2>
+                <p className={sectionText}>账号区下方的偏好表单，与用量展示联动的三项 UI 偏好：显示额度余量、余量告警百分比，以及多账户新增的「额度不足自动切换」演示开关。</p>
+                <DemoCard source={'<DshForm labelPosition="left">\n  <DshForm.Slot label="显示额度余量"><DshSwitch /></DshForm.Slot>\n  <DshForm.Slot label="余量告警百分比"><DshSlider min={1} max={100} /></DshForm.Slot>\n  <DshForm.Slot label="额度不足自动切换"><DshSwitch /></DshForm.Slot>\n</DshForm>'}>
+                  <div className="dsh-codebuddy-section dsh-semi-showcase-collapse-plugin-section">
+                    <DshForm className="dsh-codebuddy-pref-form" labelPosition="left">
+                      <DshForm.Slot label={<span className="dsh-semi-showcase-form-preference-label"><strong>显示额度余量</strong><span>在对话框输入区显示已用额度进度。</span></span>}>
+                        <DshSwitch checked={cbPrefShowUsage} onChange={(checked: boolean) => { setCbPrefShowUsage(checked) }} aria-label="显示额度余量" />
+                      </DshForm.Slot>
+                      <DshForm.Slot label={<span className="dsh-semi-showcase-form-preference-label"><strong>余量告警百分比</strong><span>已用百分比达到此值时，进度条变为红色提醒。</span></span>}>
+                        <div className="dsh-semi-showcase-form-slider">
+                          <DshSlider value={cbPrefDangerPct} min={1} max={100} step={1} onChange={(value: number | [number, number]) => { if (typeof value === 'number') setCbPrefDangerPct(value) }} aria-label="余量告警百分比" />
+                          <span className="dsh-semi-showcase-form-slider-value">{cbPrefDangerPct}%</span>
+                        </div>
+                      </DshForm.Slot>
+                      <DshForm.Slot label={<span className="dsh-semi-showcase-form-preference-label"><strong>额度不足自动切换</strong><span>当前账号额度告警时自动切换到额度最充裕的备用账号。</span></span>}>
+                        <DshSwitch checked={cbPrefAutoSwitch} onChange={(checked: boolean) => { setCbPrefAutoSwitch(checked) }} aria-label="额度不足自动切换" />
+                      </DshForm.Slot>
+                    </DshForm>
+                  </div>
+                </DemoCard>
+
+                {/* 删除确认 Modal：完整形态与危险操作演示共用。 */}
+                <DshModal
+                  title="删除账号"
+                  type="warning"
+                  visible={cbRemoveTarget !== undefined}
+                  closeOnEsc
+                  okText="确认删除"
+                  cancelText="取消"
+                  okButtonProps={{ type: 'danger', theme: 'solid' }}
+                  onCancel={() => { setCbRemoveTarget(undefined) }}
+                  onOk={() => {
+                    const target = cbRemoveTarget
+                    setCbRemoveTarget(undefined)
+                    if (target === undefined) return
+                    setUserAccounts(items => {
+                      const remaining = items.filter(item => item.id !== target)
+                      if (remaining.length === 0) { setCbDemoState('empty'); return items }
+                      return remaining.map((item, index) => index === 0 ? { ...item, tag: '当前' } : item)
+                    })
+                  }}
+                >
+                  <p>确定删除该账号？其存储的登录凭据将被清除。</p>
+                  <p className="dsh-semi-showcase-secondary-text">若删除的是当前账号，将自动切换到列表中剩余的第一个账号；删除最后一个账号即退出登录。</p>
+                </DshModal>
+
+                {/* 重新登录 Modal：模拟为掉线账号重新走一遍 OAuth，成功后账号恢复在线。 */}
+                <DshModal
+                  title="重新登录"
+                  visible={cbReloginTarget !== undefined}
+                  closeOnEsc
+                  okText="完成登录"
+                  cancelText="取消"
+                  onCancel={() => { setCbReloginTarget(undefined) }}
+                  onOk={() => {
+                    const target = cbReloginTarget
+                    setCbReloginTarget(undefined)
+                    if (target === undefined) return
+                    setCbExpiredIds(ids => ids.filter(id => id !== target))
+                    setUserAccounts(items => items.map(item => item.id === target ? { ...item, tag: '当前' } : item))
+                    DshToast.success({ content: '登录成功：凭据已更新，账号恢复在线' })
+                  }}
+                >
+                  <div className="dsh-semi-showcase-collapse-create-body">
+                    <p>
+                      即将为「{userAccounts.find(item => item.id === cbReloginTarget)?.name ?? '该账号'}」重新打开浏览器登录。
+                      完成授权后该账号的凭据会被替换更新，昵称、UID 与偏好设置保持不变。
+                    </p>
+                    <p className="dsh-semi-showcase-secondary-text">演示中点「完成登录」直接恢复在线；实际插件会在此步打开腾讯 CodeBuddy OAuth 页并轮询登录结果。</p>
+                  </div>
+                </DshModal>
+              </>
+            ) : null}
 
             {category === 'buttons' && activeComponent === 'Button 按钮' ? (
               <>
@@ -675,6 +1214,42 @@ export function ShowcasePage({ route, theme }: { route: ShowcaseRouteController;
                 <h2 id="tree-basic" className={sectionTitle}>基本用法</h2>
                 <p className={sectionText}>展示基本用法、多选、搜索、整行高亮、选中、半选和禁用状态。</p>
                 <DemoCard source={'<DshTree treeData={treeData} defaultExpandAll />\n<DshTree treeData={treeData} multiple filterTreeNode />'}><div className={stack}><div className={demoBlock}><span className={demoLabel}>基本用法与整行高亮</span><DshTree treeData={treeData} defaultExpandAll className="dsh-semi-showcase-tree" /></div><div className={demoBlock}><span className={demoLabel}>复选与半选状态</span><DshTree treeData={treeData} multiple defaultValue={['plugins']} defaultExpandAll showLine blockNode className="dsh-semi-showcase-tree" aria-label="Tree 复选示例" /></div><div className={demoBlock}><span className={demoLabel}>搜索与标签高亮</span><DshTree treeData={treeData} multiple filterTreeNode defaultExpandAll blockNode className="dsh-semi-showcase-tree" aria-label="Tree 搜索示例" /></div><div className={demoBlock}><span className={demoLabel}>选中与禁用状态</span><DshTree treeData={disabledTreeData} defaultValue="plugins" defaultExpandAll blockNode className="dsh-semi-showcase-tree" aria-label="Tree 选中示例" /></div></div></DemoCard>
+              </>
+            ) : null}
+
+            {category === 'data' && activeComponent === 'Collapse 折叠面板' ? (
+              <>
+                <h2 id="collapse-basic" className={sectionTitle}>基本用法</h2>
+                <p className={sectionText}>通过 `itemKey` 标识面板，`header` 定义标题，`extra` 承载标题行右侧操作；受控 `activeKey` 配合 `onChange` 管理展开状态。</p>
+                <DemoCard source={'<DshCollapse activeKey={activeKey} onChange={setActiveKey}>\n  <DshCollapse.Panel itemKey="a" header="面板 A">内容 A</DshCollapse.Panel>\n  <DshCollapse.Panel itemKey="b" header="面板 B" extra={<Tag>备用</Tag>}>内容 B</DshCollapse.Panel>\n</DshCollapse>'}>
+                  <DshCollapse className="dsh-semi-showcase-collapse" expandIconPosition="left">
+                    <DshCollapse.Panel itemKey="basic-a" header="套餐说明">
+                      <span className="dsh-semi-showcase-collapse-body">企业套餐按自然月重置，用量在折叠头部实时汇总。</span>
+                    </DshCollapse.Panel>
+                    <DshCollapse.Panel itemKey="basic-b" header="折叠但含操作" extra={<DshTag size="small" type="light">备用</DshTag>}>
+                      <span className="dsh-semi-showcase-collapse-body">extra 区域的点击不会触发展开收起，适合放按钮或开关。</span>
+                    </DshCollapse.Panel>
+                  </DshCollapse>
+                </DemoCard>
+
+                <h2 id="collapse-users" className={sectionTitle}>多用户管理示例</h2>
+                <p className={sectionText}>完整评定入口已移至侧边栏「案例演示 → CodeBuddy 多账户」，包含多状态展示与表单设置。</p>
+                <DemoCard source={'详见「CodeBuddy 多账户」演示页'}>
+                  <DshButton type="primary" theme="solid" onClick={() => { route.select('codebuddy-accounts') }}>前往 CodeBuddy 多账户演示</DshButton>
+                </DemoCard>
+
+                <h2 id="collapse-create" className={sectionTitle}>手风琴模式</h2>
+                <p className={sectionText}>`accordion` 限制同时只展开一个面板，适合账号详情这类不需要并列阅读的场景。</p>
+                <DemoCard source={'<DshCollapse accordion defaultActiveKey="only">\n  <DshCollapse.Panel itemKey="only" header="仅展开一个">...</DshCollapse.Panel>\n</DshCollapse>'}>
+                  <DshCollapse className="dsh-semi-showcase-collapse" accordion defaultActiveKey="acc-a" expandIconPosition="left">
+                    <DshCollapse.Panel itemKey="acc-a" header="第一个账号">
+                      <span className="dsh-semi-showcase-collapse-body">手风琴模式下展开另一个面板时，当前面板自动收起。</span>
+                    </DshCollapse.Panel>
+                    <DshCollapse.Panel itemKey="acc-b" header="第二个账号">
+                      <span className="dsh-semi-showcase-collapse-body">适合账号详情这类不需要并列阅读的场景。</span>
+                    </DshCollapse.Panel>
+                  </DshCollapse>
+                </DemoCard>
               </>
             ) : null}
 

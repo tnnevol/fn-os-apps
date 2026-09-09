@@ -13,9 +13,9 @@
 
 import {
   AUTH_PENDING_CODE,
-  CODEBUDDY_ENDPOINT,
   CODEBUDDY_IDE_VERSION,
   CODEBUDDY_LOGIN_VERSION,
+  CODEBUDDY_PLUGIN_PREFIX,
   LOGIN_POLL_INTERVAL_MS,
   LOGIN_TIMEOUT_MS,
 } from './constants.ts'
@@ -76,13 +76,14 @@ function withLoginVersion(authUrl: string): string {
 
 /**
  * Start a browser-login handshake.
+ * @param endpoint - the service root of the environment being signed in to.
  * @param signal - optional cancellation.
  * @returns the handshake state and the URL the user must open (with the
  *   client `version` parameter stamped, per the CodeBuddy client protocol).
  * @throws Error when the service refuses or answers an unusable body.
  */
-export async function requestAuthState(signal?: AbortSignal): Promise<AuthState> {
-  const response = await fetch(`${CODEBUDDY_ENDPOINT}/v2/plugin/auth/state?platform=CLI`, {
+export async function requestAuthState(endpoint: string, signal?: AbortSignal): Promise<AuthState> {
+  const response = await fetch(`${endpoint}/v2${CODEBUDDY_PLUGIN_PREFIX}/auth/state?platform=CLI`, {
     method: 'POST',
     headers: {
       'Accept': 'application/json',
@@ -113,13 +114,13 @@ export async function requestAuthState(signal?: AbortSignal): Promise<AuthState>
  * @param signal - optional cancellation.
  * @returns the issued tokens, or `undefined` when the login failed or timed out.
  */
-export async function pollAuthToken(state: string, signal?: AbortSignal): Promise<AuthToken | undefined> {
+export async function pollAuthToken(endpoint: string, state: string, signal?: AbortSignal): Promise<AuthToken | undefined> {
   const deadline = Date.now() + LOGIN_TIMEOUT_MS
   while (Date.now() < deadline) {
     await delay(LOGIN_POLL_INTERVAL_MS, signal)
     let response: Response
     try {
-      response = await fetch(`${CODEBUDDY_ENDPOINT}/v2/plugin/auth/token?state=${encodeURIComponent(state)}`, {
+      response = await fetch(`${endpoint}/v2${CODEBUDDY_PLUGIN_PREFIX}/auth/token?state=${encodeURIComponent(state)}`, {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
@@ -149,12 +150,13 @@ export async function pollAuthToken(state: string, signal?: AbortSignal): Promis
  * @throws Error when the service refuses or answers an unusable body.
  */
 export async function getLoginAccount(
+  endpoint: string,
   state: string,
   accessToken: string,
   domain: string,
 ): Promise<Account> {
   const response = await fetch(
-    `${CODEBUDDY_ENDPOINT}/v2/plugin/login/account?state=${encodeURIComponent(state)}`,
+    `${endpoint}/v2${CODEBUDDY_PLUGIN_PREFIX}/login/account?state=${encodeURIComponent(state)}`,
     {
       method: 'GET',
       headers: {
@@ -208,6 +210,7 @@ function normalizeAccount(account: Account): Account {
  * @returns the new tokens, or `undefined` when the refresh was refused.
  */
 export async function refreshAccessToken(
+  endpoint: string,
   identity: CodeBuddyIdentity,
   refreshToken: string,
 ): Promise<AuthToken | undefined> {
@@ -221,7 +224,7 @@ export async function refreshAccessToken(
   if (identity.enterpriseId !== undefined) headers['X-Enterprise-Id'] = identity.enterpriseId
   let response: Response
   try {
-    response = await fetch(`${CODEBUDDY_ENDPOINT}/v2/plugin/auth/token/refresh`, {
+    response = await fetch(`${endpoint}/v2${CODEBUDDY_PLUGIN_PREFIX}/auth/token/refresh`, {
       method: 'POST',
       headers,
     })
@@ -247,6 +250,7 @@ export async function refreshAccessToken(
  * @throws Error when the service refuses or answers an unusable body.
  */
 export async function getConfig(
+  endpoint: string,
   identity: CodeBuddyIdentity,
   signal?: AbortSignal,
 ): Promise<CodeBuddyConfig> {
@@ -261,7 +265,7 @@ export async function getConfig(
   if (identity.departmentFullName !== undefined) {
     headers['X-Department-Info'] = identity.departmentFullName
   }
-  const response = await fetch(`${CODEBUDDY_ENDPOINT}/v3/config`, {
+  const response = await fetch(`${endpoint}/v3/config`, {
     method: 'GET',
     headers,
     ...signal === undefined ? {} : { signal },
@@ -292,6 +296,7 @@ export async function getConfig(
  * @returns the enterprise custom models, or an empty list.
  */
 export async function getEnterpriseModels(
+  endpoint: string,
   identity: CodeBuddyIdentity,
   signal?: AbortSignal,
 ): Promise<readonly CodeBuddyEnterpriseModel[]> {
@@ -313,7 +318,7 @@ export async function getEnterpriseModels(
   let response: Response
   try {
     response = await fetch(
-      `${CODEBUDDY_ENDPOINT}/console/enterprises/${encodeURIComponent(enterpriseId)}/config/models`,
+      `${endpoint}/console/enterprises/${encodeURIComponent(enterpriseId)}/config/models`,
       {
         method: 'GET',
         headers,
