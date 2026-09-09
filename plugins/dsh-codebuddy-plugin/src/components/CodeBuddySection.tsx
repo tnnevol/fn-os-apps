@@ -35,9 +35,11 @@ import { AddAccountModal, startLoginPolling } from './AddAccountModal.tsx'
 import { CodeBuddyLogo } from './CodeBuddyLogo.tsx'
 import { PreferenceLabel } from './PreferenceLabel.tsx'
 import {
+  getAutoCheckinPref,
   getAutoSwitchPref,
   getAutoSwitchThresholdPref,
   getUsagePref,
+  setAutoCheckinPref,
   setAutoSwitchPref,
   setAutoSwitchThresholdPref,
   setUsagePref,
@@ -105,6 +107,7 @@ export function CodeBuddySection({ rpc, t, panelRoute, close }: CodeBuddySection
   const [showUsage, setShowUsage] = useState<boolean>(getUsagePref())
   const [autoSwitch, setAutoSwitchState] = useState<boolean>(getAutoSwitchPref())
   const [autoSwitchPct, setAutoSwitchPctState] = useState<number>(getAutoSwitchThresholdPref())
+  const [autoCheckin, setAutoCheckinState] = useState<boolean>(getAutoCheckinPref())
   const [editTarget, setEditTarget] = useState<string | undefined>(undefined)
   const [editNote, setEditNote] = useState('')
   // 各账号剩余额度快照（设置页用户信息面板展示；来源 panelStatus）。
@@ -115,6 +118,9 @@ export function CodeBuddySection({ rpc, t, panelRoute, close }: CodeBuddySection
     const nextAuto = getAutoSwitchPref()
     setAutoSwitchState(nextAuto)
     void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoSwitch', { enabled: nextAuto })
+    const nextCheckin = getAutoCheckinPref()
+    setAutoCheckinState(nextCheckin)
+    void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoCheckin', { enabled: nextCheckin })
   }), [])
 
   const refresh = useCallback(async () => {
@@ -219,6 +225,12 @@ export function CodeBuddySection({ rpc, t, panelRoute, close }: CodeBuddySection
     setAutoSwitchPref(enabled)
     void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoSwitch', { enabled, thresholdPct: autoSwitchPct })
   }, [rpc, autoSwitchPct])
+
+  const toggleAutoCheckin = useCallback((enabled: boolean) => {
+    setAutoCheckinState(enabled)
+    setAutoCheckinPref(enabled)
+    void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoCheckin', { enabled })
+  }, [rpc])
 
   const changeAutoSwitchThreshold = useCallback((pct: number) => {
     setAutoSwitchPctState(pct)
@@ -528,6 +540,15 @@ export function CodeBuddySection({ rpc, t, panelRoute, close }: CodeBuddySection
             />
             <span className="dsh-codebuddy-pref-slider-value">{autoSwitchPct}%</span>
           </div>
+        </DshForm.Slot>
+        <DshForm.Slot
+          label={<PreferenceLabel title={t('autoCheckin')} description={t('autoCheckinDesc')} />}
+        >
+          <DshSwitch
+            checked={autoCheckin}
+            onChange={(checked: boolean) => { toggleAutoCheckin(checked) }}
+            aria-label={t('autoCheckin')}
+          />
         </DshForm.Slot>
         <DshForm.Slot
           label={<PreferenceLabel title={t('showUsage')} description={t('showUsageDesc')} />}

@@ -29,6 +29,8 @@ import {
   resolveEntryEndpoint,
   loadAutoSwitchConfig,
   saveAutoSwitchConfig,
+  loadAutoCheckinConfig,
+  saveAutoCheckinConfig,
 } from './storage.ts'
 import type { CodeBuddySession } from './session.ts'
 import type { CodeBuddyAccountEntry, CodeBuddyStorage } from './storage.ts'
@@ -232,6 +234,92 @@ export class CodeBuddyAuthService {
     }).catch(() => {
       // Loading prefs is advisory; the in-code defaults already stand.
     })
+    void loadAutoCheckinConfig().then((config) => {
+      this.autoCheckin = config.enabled
+      if (config.enabled) this.startAutoCheckinCycle()
+    }).catch(() => {
+      // Loading prefs is advisory; the in-code defaults already stand.
+    })
+  }
+
+  /** Automatic daily sign-in flag (all accounts). Defaults on. */
+  autoCheckin = true
+
+  /**
+   * Consecutive auto-checkin cycle rounds in which EVERY account failed.
+   * After the limit the cycle stands down until the next successful round.
+   */
+  private autoCheckinAllFailures = 0
+  private static readonly AUTO_CHECKIN_FAILURE_LIMIT = 3
+  private autoCheckinTimer: ReturnType<typeof setInterval> | undefined
+
+  /** 自动签到：逐账号查状态，未签到的提交；已签到的跳过。对照 workbuddy-switch
+   *  `run_checkin_cycle`。返回逐账号结果供日志/UI 使用。 */
+  async runAutoCheckinCycle(): Promise<{ status: string, accounts: Array<{ id: string, name: string, result: string, error?: string }> }> {
+    if (!this.autoCheckin) return { status: 'disabled', accounts: [] }
+    if (this.autoCheckinAllFailures >= CodeBuddyAuthService.AUTO_CHECKIN_FAILURE_LIMIT) return { status: 'standby', accounts: [] }
+    const storage = await loadStorage()
+    if (storage === undefined) return { status: 'no_accounts', accounts: [] }
+    const rows: Array<{ id: string, name: string, result: string, error?: string }> = []
+    let failed = 0
+    for (const entry of storage.accounts) {
+      const push = (result: string, error?: string): void => {
+        const row: { id: string, name: string, result: string, error?: string } = {
+          id: entry.id,
+          name: entry.account.label ?? entry.account.nickname,
+          result,
+          ...error === undefined || error.length === 0 ? {} : { error },
+        }
+        rows.push(row)
+      }
+      const identity = this.session?.identityFor(entry)
+      if (identity === undefined) continue
+      if (entry.auth.refreshExpiresAt <= Date.now()) {
+        push('expired')
+        failed += 1
+        continue
+      }
+      try {
+        const status = await getCheckinStatus(resolveEntryEndpoint(entry), identity)
+        if (status.ok && status.todayCheckedIn) {
+          push('already')
+          continue
+        }
+        if (!status.ok) {
+          push('error', status.error)
+          failed += 1
+          continue
+        }
+        const done = await performCheckin(resolveEntryEndpoint(entry), identity)
+        if (done.ok) push(done.already === true ? 'already' : 'success')
+        else {
+          push('error', done.error)
+          failed += 1
+        }
+      } catch {
+        push('error', 'probe failed')
+        failed += 1
+      }
+    }
+    this.autoCheckinAllFailures = failed === storage.accounts.length && storage.accounts.length > 0
+      ? this.autoCheckinAllFailures + 1
+      : 0
+    return { status: 'ok', accounts: rows }
+  }
+
+  /** Start the periodic automatic sign-in (startup once, then every 30 min,
+   *  matching workbuddy-switch's CHECKIN_RECOVERY_INTERVAL). */
+  startAutoCheckinCycle(): void {
+    if (this.autoCheckinTimer !== undefined) return
+    void this.runAutoCheckinCycle()
+    this.autoCheckinTimer = setInterval(() => { void this.runAutoCheckinCycle() }, 30 * 60_000)
+  }
+
+  stopAutoCheckinCycle(): void {
+    if (this.autoCheckinTimer !== undefined) {
+      clearInterval(this.autoCheckinTimer)
+      this.autoCheckinTimer = undefined
+    }
   }
 
   /** 主动账号切换后广播：通知 harness 模型目录与客户端用量刷新（adapter replace → llm/adapters-updated）。 */
@@ -387,6 +475,17 @@ export class CodeBuddyAuthService {
         else this.stopAutoSwitchCycle()
         void saveAutoSwitchConfig({ enabled, thresholdPct })
         return ok({ enabled, thresholdPct })
+      }
+      case 'autoCheckin': {
+        const raw = typeof payload === 'object' && payload !== null
+          ? payload as { enabled?: unknown }
+          : undefined
+        const enabled = raw?.enabled === true
+        this.autoCheckin = enabled
+        if (enabled) this.startAutoCheckinCycle()
+        else this.stopAutoCheckinCycle()
+        void saveAutoCheckinConfig({ enabled })
+        return ok({ enabled })
       }
       case 'renameLabel': {
         const raw = typeof payload === 'object' && payload !== null

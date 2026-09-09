@@ -368,6 +368,42 @@ export async function saveAutoSwitchConfig(config: AutoSwitchConfig): Promise<vo
   }
 }
 
+/** Persisted auto-checkin preference: whether the plugin signs in all
+ *  accounts every day without manual action. Defaults on, mirroring the
+ *  official workbuddy-switch tray behaviour. */
+export interface AutoCheckinConfig {
+  enabled: boolean
+}
+
+function getAutoCheckinConfigPath(): string {
+  return `${getStoragePath()}.auto-checkin.json`
+}
+
+/** Read the auto-checkin preference; defaults on. */
+export async function loadAutoCheckinConfig(): Promise<AutoCheckinConfig> {
+  try {
+    const raw = await fs.readFile(getAutoCheckinConfigPath(), 'utf-8')
+    const parsed = JSON.parse(raw) as Partial<AutoCheckinConfig>
+    return { enabled: parsed.enabled === true }
+  } catch {
+    return { enabled: true }
+  }
+}
+
+/** Write the auto-checkin preference atomically. */
+export async function saveAutoCheckinConfig(config: AutoCheckinConfig): Promise<void> {
+  const path = getAutoCheckinConfigPath()
+  await fs.mkdir(dirname(path), { recursive: true })
+  const temp = `${path}.${randomBytes(6).toString('hex')}.tmp`
+  try {
+    await fs.writeFile(temp, JSON.stringify(config, null, 2), { encoding: 'utf-8', mode: 0o600 })
+    await fs.rename(temp, path)
+  } catch (error) {
+    await fs.unlink(temp).catch(() => {})
+    throw error
+  }
+}
+
 /** Remove the stored credential document, if any. */
 export async function clearStorage(): Promise<void> {
   await fs.unlink(getStoragePath()).catch(() => {

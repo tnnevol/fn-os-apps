@@ -438,14 +438,15 @@ async function meterJson(
   endpoint: string,
   path: string,
   identity: CodeBuddyIdentity,
+  method: 'GET' | 'POST',
   body: string,
   signal?: AbortSignal,
 ): Promise<{ code: number, message: string, data: unknown, ok: boolean }> {
   try {
     const response = await fetch(`${endpoint}${path}`, {
-      method: body === '' ? 'GET' : 'POST',
+      method,
       headers: meterHeaders(identity),
-      ...(body === '' ? {} : { body }),
+      ...(body.length === 0 ? {} : { body }),
       ...(signal === undefined ? {} : { signal }),
     })
     if (!response.ok) return { code: response.status, message: `HTTP ${response.status}`, data: undefined, ok: false }
@@ -458,15 +459,16 @@ async function meterJson(
   }
 }
 
-/** 今日是否已签到；新接口 checkin-activity-status 失败回退 checkin-status。 */
+/** 今日是否已签到；新接口 checkin-activity-status 失败回退 checkin-status。
+ *  两个状态接口都是 POST-only（GET 会返回 HTTP 404），故一律以空对象 POST。 */
 export async function getCheckinStatus(
   endpoint: string,
   identity: CodeBuddyIdentity,
   signal?: AbortSignal,
 ): Promise<{ ok: boolean, todayCheckedIn: boolean, error?: string }> {
-  let resp = await meterJson(endpoint, `${CHECKIN_API_PREFIX}/checkin-activity-status`, identity, '', signal)
+  let resp = await meterJson(endpoint, `${CHECKIN_API_PREFIX}/checkin-activity-status`, identity, 'POST', '{}', signal)
   if (!resp.ok) {
-    resp = await meterJson(endpoint, `${CHECKIN_API_PREFIX}/checkin-status`, identity, '', signal)
+    resp = await meterJson(endpoint, `${CHECKIN_API_PREFIX}/checkin-status`, identity, 'POST', '{}', signal)
   }
   if (resp.ok) {
     const data = (resp.data ?? {}) as Record<string, unknown>
@@ -482,7 +484,7 @@ export async function performCheckin(
   identity: CodeBuddyIdentity,
   signal?: AbortSignal,
 ): Promise<{ ok: boolean, already?: boolean, error?: string }> {
-  const resp = await meterJson(endpoint, `${CHECKIN_API_PREFIX}/daily-checkin`, identity, '{}', signal)
+  const resp = await meterJson(endpoint, `${CHECKIN_API_PREFIX}/daily-checkin`, identity, 'POST', '{}', signal)
   if (resp.ok) return { ok: true }
   const message = resp.message
   if (message.includes('已签到') || message.toLowerCase().includes('repeat')) return { ok: true, already: true, error: message }
