@@ -7,7 +7,7 @@ import { CODEBUDDY_AUTH_CHANNEL, CODEBUDDY_USAGE_REFRESH_MS } from '../client/co
 import { accountEpoch, subscribeAccountEpoch } from '../client/account-epoch.ts'
 import type { CodeBuddyLocaleKey } from '../client/locales.ts'
 import type { ConnectionRpc, UsageResult, UsageWindow } from '../client/rpc.ts'
-import { getDangerPct, getUsagePref, subscribeUsagePref } from '../client/usage-prefs.ts'
+import { getUsagePref, subscribeUsagePref } from '../client/usage-prefs.ts'
 import { CodeBuddyLogo } from './CodeBuddyLogo.tsx'
 
 type Translate = (key: CodeBuddyLocaleKey) => string
@@ -125,12 +125,10 @@ export function CodeBuddyUsageStatus({ t, timer, rpc }: CodeBuddyUsageStatusProp
   const [usage, setUsage] = useState<UsageResult | undefined>()
   const [usageState, setUsageState] = useState<'loading' | 'ready' | 'unavailable'>('loading')
   const [showUsage, setShowUsage] = useState<boolean>(getUsagePref())
-  const [dangerPct, setDangerPctState] = useState<number>(getDangerPct())
   const [popoverOpen, setPopoverOpen] = useState(false)
 
   useEffect(() => subscribeUsagePref(() => {
     setShowUsage(getUsagePref())
-    setDangerPctState(getDangerPct())
   }), [])
 
   useEffect(() => {
@@ -212,9 +210,7 @@ export function CodeBuddyUsageStatus({ t, timer, rpc }: CodeBuddyUsageStatusProp
 
   const hasUsage = derived !== undefined
   const currentSummary = hasUsage ? usageSummary(derived.name, derived, t) : usageState === 'loading' ? t('usageLoading') : t('usageUnavailable')
-  const color = hasUsage && usedPct !== undefined && usedPct >= dangerPct
-    ? 'var(--dsw-alias-state-error-primary)'
-    : 'var(--dsw-alias-label-tertiary)'
+  const color = 'var(--dsw-alias-label-tertiary)'
 
   const togglePopover = (): void => setPopoverOpen((open) => !open)
   const handlePopoverTriggerKeyDown = (event: KeyboardEvent<HTMLSpanElement>): void => {

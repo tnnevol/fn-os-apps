@@ -37,11 +37,9 @@ import { CodeBuddyLogo } from './CodeBuddyLogo.tsx'
 import {
   getAutoSwitchPref,
   getAutoSwitchThresholdPref,
-  getDangerPct,
   getUsagePref,
   setAutoSwitchPref,
   setAutoSwitchThresholdPref,
-  setDangerPct,
   setUsagePref,
   subscribeUsagePref,
 } from '../client/usage-prefs.ts'
@@ -52,9 +50,6 @@ type Translate = (key: CodeBuddyLocaleKey) => string
 const POLL_INTERVAL_MS = 1500
 /** How long the client keeps polling before giving up, in ms. */
 const POLL_DEADLINE_MS = 10 * 60 * 1000
-
-/** The default low-allowance alert percentage, shown while no override is set. */
-const DEFAULT_DANGER_PCT = 90
 
 /** UI phase the page cycles through. */
 type Phase = 'loading' | 'idle' | 'error'
@@ -133,13 +128,11 @@ export function CodeBuddySection({ rpc, t, panelRoute, close }: CodeBuddySection
   const [autoSwitchPct, setAutoSwitchPctState] = useState<number>(getAutoSwitchThresholdPref())
   const [editTarget, setEditTarget] = useState<string | undefined>(undefined)
   const [editNote, setEditNote] = useState('')
-  const [dangerPct, setDangerPctState] = useState<number | undefined>(getDangerPct())
   // 各账号剩余额度快照（设置页用户信息面板展示；来源 panelStatus）。
   const [balanceByAccount, setBalanceByAccount] = useState<Record<string, { remaining: number, capacity: number, usable: boolean }>>({})
 
   useEffect(() => subscribeUsagePref(() => {
     setShowUsage(getUsagePref())
-    setDangerPctState(getDangerPct())
     const nextAuto = getAutoSwitchPref()
     setAutoSwitchState(nextAuto)
     void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoSwitch', { enabled: nextAuto })
@@ -636,25 +629,6 @@ export function CodeBuddySection({ rpc, t, panelRoute, close }: CodeBuddySection
             onChange={(checked: boolean) => { setShowUsage(checked); setUsagePref(checked) }}
             aria-label={t('showUsage')}
           />
-        </DshForm.Slot>
-        <DshForm.Slot
-          label={<PreferenceLabel title={t('dangerPct')} description={t('dangerPctDesc')} />}
-        >
-          <div className="dsh-codebuddy-pref-slider">
-            <DshSlider
-              value={dangerPct ?? DEFAULT_DANGER_PCT}
-              min={1}
-              max={100}
-              step={1}
-              onChange={(value: number | [number, number]) => {
-                if (typeof value !== 'number') return
-                setDangerPctState(value)
-                setDangerPct(value)
-              }}
-              aria-label={t('dangerPct')}
-            />
-            <span className="dsh-codebuddy-pref-slider-value">{dangerPct ?? DEFAULT_DANGER_PCT}%</span>
-          </div>
         </DshForm.Slot>
       </DshForm>
     </div>

@@ -11,8 +11,6 @@
 
 import {
   CODEBUDDY_AUTO_SWITCH_KEY,
-  CODEBUDDY_DANGER_PCT_KEY,
-  CODEBUDDY_DEFAULT_DANGER_PCT,
   CODEBUDDY_SHOW_USAGE_KEY,
 } from './constants.ts'
 
@@ -43,32 +41,6 @@ export function setUsagePref(value: boolean): void {
     window.localStorage.setItem(CODEBUDDY_SHOW_USAGE_KEY, value ? '1' : '0')
   } catch {
     // A private-mode storage refusal still updates the in-memory listeners.
-  }
-  emitUsagePref()
-}
-
-/** Read the danger-percentage threshold; defaults to 90 when unset/invalid. */
-export function getDangerPct(): number {
-  try {
-    const raw = window.localStorage.getItem(CODEBUDDY_DANGER_PCT_KEY)
-    if (raw === null) return CODEBUDDY_DEFAULT_DANGER_PCT
-    const parsed = Number(raw)
-    return Number.isFinite(parsed) && parsed > 0 && parsed <= 100 ? parsed : CODEBUDDY_DEFAULT_DANGER_PCT
-  } catch {
-    return CODEBUDDY_DEFAULT_DANGER_PCT
-  }
-}
-
-/** Persist the danger-percentage threshold and notify subscribers. */
-export function setDangerPct(value: number | undefined): void {
-  try {
-    if (value === undefined) {
-      window.localStorage.removeItem(CODEBUDDY_DANGER_PCT_KEY)
-    } else {
-      window.localStorage.setItem(CODEBUDDY_DANGER_PCT_KEY, String(value))
-    }
-  } catch {
-    // See setUsagePref.
   }
   emitUsagePref()
 }
@@ -119,7 +91,6 @@ export function setAutoSwitchPref(value: boolean): void {
 if (typeof window !== 'undefined' && window.localStorage !== undefined) {
   window.addEventListener('storage', (event) => {
     if (event.key === CODEBUDDY_SHOW_USAGE_KEY
-      || event.key === CODEBUDDY_DANGER_PCT_KEY
       || event.key === CODEBUDDY_AUTO_SWITCH_KEY
       || event.key === null) {
       emitUsagePref()
