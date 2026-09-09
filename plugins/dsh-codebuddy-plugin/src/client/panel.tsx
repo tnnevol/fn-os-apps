@@ -44,7 +44,7 @@ import { describeRpcError } from './rpc.ts'
 import { PanelRouteController } from './panel-route.ts'
 import type { PanelRoute } from './panel-route.ts'
 import { AddAccountModal, startLoginPolling } from '../components/AddAccountModal.tsx'
-import { getAutoCheckinPref, getAutoSwitchPref, setAutoCheckinPref, setAutoSwitchPref } from './usage-prefs.ts'
+import { getAutoCheckinPref, setAutoCheckinPref } from './usage-prefs.ts'
 
 useECharts([BarChart, LineChart, AriaComponent, GridComponent, LegendComponent, TooltipComponent, CanvasRenderer])
 
@@ -368,7 +368,10 @@ function AccountsPage({
         <>
           <div className="dsh-codebuddy-panel-section-head">
             <div className="dsh-codebuddy-panel-section-title"><strong>{t('accountsTitle')}</strong><span>{rows.length}</span></div>
-            <DshButton size="small" theme="light" icon={<DshIconRefresh />} onClick={reload}>{t('refresh')}</DshButton>
+            <div className="dsh-codebuddy-accounts-head-actions">
+              <AutoCheckinToggle rpc={rpc} t={t} />
+              <DshButton size="small" theme="light" icon={<DshIconRefresh />} onClick={reload}>{t('refresh')}</DshButton>
+            </div>
           </div>
           <div className="dsh-codebuddy-panel-cards">
             {rows.map(row => (
@@ -862,9 +865,6 @@ export function CodeBuddyPanelPage({ rpc, route, t }: PanelPageProps): ReactNode
               <p className="dsh-codebuddy-muted">{pageDescription}</p>
             </div>
             <div style={{ flex: 1 }} />
-            {snapshot.page === 'accounts' ? (
-              <CodeBuddyPreferenceToggles rpc={rpc} t={t} />
-            ) : null}
           </div>
 
           {snapshot.page === 'accounts' ? (
@@ -931,47 +931,29 @@ export function CodeBuddyPanelPage({ rpc, route, t }: PanelPageProps): ReactNode
   )
 }
 
-/** 自动切换偏好（与设置页同一键）。 */
-const autoSwitchPref = (): boolean => getAutoSwitchPref()
-
 /** 自动签到偏好（与设置页同一键）。 */
 const autoCheckinPref = (): boolean => getAutoCheckinPref()
 
-/** 账号页右上偏好开关：自动切换 + 自动签到。状态写入 localStorage（与设置页
- *  共享）并同步到 host；host 在开关打开时维护每日/周期签到循环。 */
-function CodeBuddyPreferenceToggles({ rpc, t }: { rpc: ConnectionRpc, t: Translate }): ReactNode {
-  const [autoSwitchOn, setAutoSwitchOn] = useState<boolean>(autoSwitchPref())
+/** 自动签到开关（位于账号页标题行、刷新按钮左侧）。状态写入 localStorage
+ *  （与设置页共享）并同步到 host；host 在开关打开时维护每日/周期签到循环。 */
+function AutoCheckinToggle({ rpc, t }: { rpc: ConnectionRpc, t: Translate }): ReactNode {
   const [autoCheckinOn, setAutoCheckinOn] = useState<boolean>(autoCheckinPref())
-  // 打开面板即把本地偏好同步到 host（host 冷启动默认开）。
   useEffect(() => {
-    void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoSwitch', { enabled: autoSwitchOn })
     void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoCheckin', { enabled: autoCheckinOn })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rpc])
-  const setSwitch = (checked: boolean): void => {
-    setAutoSwitchOn(checked)
-    setAutoSwitchPref(checked)
-    void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoSwitch', { enabled: checked })
-  }
-  const setCheckin = (checked: boolean): void => {
+  const toggle = (checked: boolean): void => {
     setAutoCheckinOn(checked)
     setAutoCheckinPref(checked)
     void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoCheckin', { enabled: checked })
   }
   return (
-    <span className="dsh-codebuddy-panel-auto-switch">
-      <span className="dsh-codebuddy-muted">{t('autoSwitch')}</span>
-      <DshSwitch
-        size="small"
-        checked={autoSwitchOn}
-        onChange={(checked: boolean) => { setSwitch(checked) }}
-        aria-label={t('autoSwitch')}
-      />
+    <span className="dsh-codebuddy-auto-checkin-toggle">
       <span className="dsh-codebuddy-muted">{t('autoCheckin')}</span>
       <DshSwitch
         size="small"
         checked={autoCheckinOn}
-        onChange={(checked: boolean) => { setCheckin(checked) }}
+        onChange={(checked: boolean) => { toggle(checked) }}
         aria-label={t('autoCheckin')}
       />
     </span>
