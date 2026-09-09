@@ -55,3 +55,7 @@ dsh --profile web --dump-config
 CodeBuddy 的模型目录来自其非 OpenAI 兼容的 `/v3/config` 端点，包含每个模型的上下文容量、输出上限、工具调用、推理和图片输入能力。企业账号额外合并控制台自定义模型。切换账号后会广播模型目录更新，模型选择器和消息框额度即时同步，不需要刷新页面。
 
 模型目录只读展示在 DSH 的模型选择器中，无需在插件面板单独维护。
+
+## 图片输入
+
+CodeBuddy 支持图片输入的模型（`supportsImages`）在插件中以原生 `image_url` 数据 URI 发送图片内容，无需 DSH 的 OCR/读图工具兜底；模型不支持图片时，DSH 才会把图片降级为文本交给读图工具。图片字节通过 DSH 的 durable attachment 服务（`ctx.attachments`）读取，不进会话记录。

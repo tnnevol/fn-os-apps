@@ -79,7 +79,8 @@
     "@deepseek-ai/dsh-client-ui-renderer": "catalog:dsh",
     "@deepseek-ai/dsh-client-ui-settings": "catalog:dsh",
     "@deepseek-ai/dsh-client-ui-slots": "catalog:dsh",
-    "react": "catalog:"
+    "react": "catalog:",
+    "@deepseek-ai/dsh-attachment": "catalog:dsh"
   },
   "devDependencies": {
     "@tnnevol/dsh-semi-ui": "workspace:*",
@@ -97,6 +98,7 @@
     "react": "catalog:",
     "tsdown": "catalog:",
     "typescript": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "@deepseek-ai/dsh-attachment": "catalog:dsh"
   }
 }

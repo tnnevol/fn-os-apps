@@ -25,6 +25,8 @@ import {
   DEFAULT_STREAM_IDLE_TIMEOUT_MS,
 } from './constants.ts'
 import { CodeBuddySession } from './session.ts'
+import { resolveImageAttachmentAccess } from '@deepseek-ai/dsh-llm'
+import type { AttachmentStore } from '@deepseek-ai/dsh-attachment'
 
 export { CodeBuddyAdapter, httpErrorCode } from './adapter.ts'
 export type { CodeBuddyAdapterOptions, CodeBuddyConnectionOptions } from './adapter.ts'
@@ -146,11 +148,19 @@ export function apply(ctx: Context, config: Config = {}): void {
     sessionQuery: runtimeServices.get('sessionQuery') as SessionAnalyticsServices['sessionQuery'],
   }
   const auth = new CodeBuddyAuthService(ctx, session, notifyModels, analytics)
+  const attachmentStore = (): AttachmentStore | undefined => runtimeServices.get('attachments') as AttachmentStore | undefined
   const adapter = new CodeBuddyAdapter({
     session,
     options: () => resolved,
     autoSwitch: () => auth.autoSwitch,
     onAccountSwitched: notifyModels,
+    resolveAttachments: attachmentStore,
+    resolveImageAccess: (attachments, ref) => resolveImageAttachmentAccess(
+      attachments,
+      hostPath => (runtimeServices.get('fs') as { processPathFromHostPath: (p: string) => string | undefined } | undefined)
+        ?.processPathFromHostPath(hostPath),
+      ref,
+    ),
   })
 
   adapterHandle = ctx.llm.registerAdapter([CODEBUDDY_PROVIDER], adapter) as unknown as {

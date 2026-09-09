@@ -14,7 +14,7 @@ import type { ContentBlock, GenerateOptions, Message } from '@deepseek-ai/dsh-ll
 import type { WireMessage, WireRequest, WireTool } from './types.ts'
 
 /** Join the text blocks of one message. */
-function flattenText(blocks: readonly ContentBlock[]): string {
+export function flattenText(blocks: readonly ContentBlock[]): string {
   return blocks
     .filter(block => block.type === 'text')
     .map(block => block.text)
@@ -36,7 +36,8 @@ function flattenText(blocks: readonly ContentBlock[]): string {
  * @param id - the harness tool-call id.
  * @returns the same id when it fits, otherwise a deterministic ≤64-char alias.
  */
-function boundToolCallId(id: string): string {
+/** Keep wire tool-call ids inside CodeBuddy's 64-char cap deterministically. */
+export function boundToolCallId(id: string): string {
   if (id.length <= 64) return id
   // FNV-1a 64-bit over the original, hex-encoded. `call_` + 16 hex chars is a
   // stable, collision-resistant short form that stays far below the cap.
@@ -140,12 +141,11 @@ export function serializeRequest(
   options: GenerateOptions,
   supportsImages: boolean,
 ): WireRequest {
-  const messages: WireMessage[] = []
-  if (options.system !== undefined) {
-    messages.push({ role: 'system', content: options.system })
-  }
-  messages.push(...serializeMessages(options.messages, supportsImages))
+  return buildWireRequest(serializeMessages(options.messages, supportsImages), options)
+}
 
+/** Wrap one serialized message list into the full chat-completions request. */
+export function buildWireRequest(messages: WireMessage[], options: GenerateOptions): WireRequest {
   const tools: WireTool[] | undefined = options.tools?.map(tool => ({
     type: 'function' as const,
     function: {
@@ -155,9 +155,15 @@ export function serializeRequest(
     },
   }))
 
+  const wireMessages: WireMessage[] = []
+  if (options.system !== undefined) {
+    wireMessages.push({ role: 'system', content: options.system })
+  }
+  wireMessages.push(...messages)
+
   return {
     model: options.model,
-    messages,
+    messages: wireMessages,
     stream: true,
     stream_options: { include_usage: true },
     ...tools !== undefined && tools.length > 0 ? { tools } : {},

@@ -199,10 +199,18 @@ export interface WireChunk {
   usage?: WireUsage | null
 }
 
+/** One OpenAI-compatible content part used inside image-bearing messages. */
+export type WirePart =
+  | { type: 'text', text: string }
+  | { type: 'image_url', image_url: { url: string } }
+
+/** User/system/tool message content: the compact string, or ordered parts. */
+export type WireContent = string | WirePart[]
+
 /** One wire message sent to the chat endpoint. */
 export interface WireMessage {
   role: 'system' | 'user' | 'assistant' | 'tool'
-  content: string
+  content: WireContent
   reasoning_content?: string
   tool_call_id?: string
   tool_calls?: {

@@ -41,9 +41,12 @@ import { NotLoggedInError } from './session.ts'
 import type { CodeBuddySession } from './session.ts'
 import { parseSse } from './sse.ts'
 import { serializeRequest } from './serialize.ts'
+import { hasRequestImages, serializeRequestWithImages } from './serialize-image.ts'
 import { translate } from './translate.ts'
 import { hasDisclosedCapacity } from './types.ts'
 import type { CodeBuddyModel, WireError } from './types.ts'
+import type { ImageAttachmentAccess } from '@deepseek-ai/dsh-llm'
+import type { AttachmentStore, ImageAttachmentRef } from '@deepseek-ai/dsh-attachment'
 
 /** Connection facts the registering plugin resolves and the adapter trusts. */
 export interface CodeBuddyConnectionOptions {
@@ -65,6 +68,10 @@ export interface CodeBuddyAdapterOptions {
   autoSwitch?: () => boolean
   /** 自动接管切号成功后回调（触发 harness 模型目录/用量即时刷新）。 */
   onAccountSwitched?: () => void
+  /** Durable attachment service (`ctx.attachments`); required only for image input. */
+  resolveAttachments?: () => AttachmentStore | undefined
+  /** Resolve current tool access for one durable image handle, when available. */
+  resolveImageAccess?: (attachments: AttachmentStore, ref: ImageAttachmentRef) => ImageAttachmentAccess | undefined
 }
 
 /** Parse a `retry-after` header into milliseconds, when it carries a usable delay. */
@@ -373,9 +380,30 @@ export class CodeBuddyAdapter extends LlmAdapter {
     }
 
     const body = serializeRequest(options, supportsImages)
+    // Images: when the request carries a durable image and the model declares
+    // image input, the plain text serializer would silently drop it. Resolve
+    // request versions through the attachment service and rebuild the wire
+    // messages with OpenAI-compatible inline `image_url` parts.
+    const wantsImage = hasRequestImages(options.messages)
+    if (wantsImage && !supportsImages) {
+      throw new LlmError(
+        `CodeBuddy model "${options.model}" does not accept image content.`,
+        'UNSUPPORTED_CONTENT',
+      )
+    }
+    const attachments = wantsImage ? this.config.resolveAttachments?.() : undefined
+    if (wantsImage && attachments === undefined) {
+      throw new LlmError(
+        'CodeBuddy image input requires the durable attachment service',
+        'UNSUPPORTED_CONTENT',
+      )
+    }
+    const wireRequest = wantsImage && attachments !== undefined
+      ? await serializeRequestWithImages(options, attachments, (ref) => this.config.resolveImageAccess?.(attachments, ref))
+      : body
     // Serialized before the try so the transport label below covers only the
     // transport boundary.
-    const payload = JSON.stringify(body)
+    const payload = JSON.stringify(wireRequest)
 
     let response: Response
     try {
