@@ -18,13 +18,18 @@ import {
   DshButton,
   DshCard,
   DshDescriptions,
+  DshDropdown,
   DshEmpty,
   DshIconButton,
   DshIconArrowLeft,
+  DshIconClose,
   DshIconCommand,
+  DshIconEdit,
   DshIconElementStroked,
   DshIconList,
+  DshIconMore,
   DshIconRefresh,
+  DshIconSetting,
   DshIconUser,
   DshInput,
   DshLayout,
@@ -58,6 +63,8 @@ interface PanelAccountRow {
   environment?: string
   active: boolean
   expired: boolean
+  /** 企业账号：不支持签到（隐藏签到入口、跳过签到与自动签到）。 */
+  enterprise: boolean
   creditOk: boolean
   totalRemaining: number
   totalCapacity: number
@@ -170,11 +177,15 @@ interface AccountCardProps {
     offline: string
     checkedIn: string
     unchecked: string
+    checkin: string
     remaining: string
     switchLabel: string
     deleteLabel: string
+    renameLabel: string
     noBalanceHint: string
   }
+  /** 自动签到开启时不显示手动签到动作。 */
+  autoCheckin: boolean
   busy: boolean
   onCheckin: (id: string) => void
   onSwitch: (id: string) => void
@@ -182,15 +193,51 @@ interface AccountCardProps {
   onRename: (row: PanelAccountRow) => void
 }
 
-function AccountCard({ row, labels, busy, onCheckin, onSwitch, onDelete, onRename }: AccountCardProps): ReactNode {
+function AccountCard({ row, labels, autoCheckin, busy, onCheckin, onSwitch, onDelete, onRename }: AccountCardProps): ReactNode {
   const env = row.environment
   const name = row.nickname
-  const { active, offline, checkedIn, unchecked, remaining, switchLabel, deleteLabel, noBalanceHint } = labels
+  const { active, offline, checkedIn, unchecked, checkin, remaining, switchLabel, deleteLabel, renameLabel, noBalanceHint } = labels
   const totalPct = row.totalCapacity > 0 ? Math.max(0, Math.min(100, (row.totalRemaining / row.totalCapacity) * 100)) : null
   const remainingSum = row.totalRemaining
+  // 企业账号不支持签到；自动签到开启或已签到时不显示手动签到入口。
+  const checkinVisible = !row.enterprise && !autoCheckin
+  const checkinDisabled = row.expired || !row.checkinOk || row.todayCheckedIn === true || busy
+
+  const menu: ReactNode[] = [
+    <DshDropdown.Item key="rename" icon={<DshIconEdit />} onClick={() => { onRename(row) }}>{renameLabel}</DshDropdown.Item>,
+  ]
+  if (checkinVisible) {
+    menu.push(
+      <DshDropdown.Item
+        key="checkin"
+        icon={<DshIconRefresh />}
+        disabled={checkinDisabled}
+        onClick={() => { if (!checkinDisabled) onCheckin(row.id) }}
+      >
+        {checkin}
+      </DshDropdown.Item>,
+    )
+  }
+  if (!row.active) {
+    menu.push(
+      <DshDropdown.Item
+        key="switch"
+        icon={<DshIconSetting />}
+        disabled={!row.usable || row.expired}
+        onClick={() => { onSwitch(row.id) }}
+      >
+        {switchLabel}
+      </DshDropdown.Item>,
+    )
+  }
+  menu.push(<DshDropdown.Divider key="divider" />)
+  menu.push(
+    <DshDropdown.Item key="delete" icon={<DshIconClose />} type="danger" onClick={() => { onDelete(row) }}>{deleteLabel}</DshDropdown.Item>,
+  )
+
   return (
     <DshCard className={'dsh-codebuddy-panel-card' + (row.active ? ' dsh-codebuddy-panel-card-active' : '')}>
-      {/* 头部：头像 + 名称/环境 + 状态 chips + 更多（改备注名/删除） */}
+      {/* 头部：头像 + 名称/环境 + 状态 chips + 「…」操作菜单 */}
       <div className="dsh-codebuddy-account-card-head">
         <span className="dsh-codebuddy-account-card-avatar" aria-hidden>{name.charAt(0).toUpperCase()}</span>
         <div className="dsh-codebuddy-account-card-main">
@@ -202,20 +249,27 @@ function AccountCard({ row, labels, busy, onCheckin, onSwitch, onDelete, onRenam
               ? <DshTag size="small" type="light">{CODEBUDDY_ENVIRONMENT_LABELS[env as keyof typeof CODEBUDDY_ENVIRONMENT_LABELS] ?? env}</DshTag>
               : null}
           </div>
-          <div className="dsh-codebuddy-account-card-chips">
-            {row.checkinOk
-              ? (
-                  <span className={'dsh-codebuddy-checkin-chip' + (row.todayCheckedIn === true ? ' dsh-codebuddy-checkin-chip-done' : '')}>
-                    {row.todayCheckedIn === true ? checkedIn : unchecked}
-                  </span>
-                )
-              : row.checkinError !== null
-                ? <span className="dsh-codebuddy-muted">{row.checkinError}</span>
-                : null}
-          </div>
+          {!row.enterprise && row.checkinOk ? (
+            <div className="dsh-codebuddy-account-card-chips">
+              <span className={'dsh-codebuddy-checkin-chip' + (row.todayCheckedIn === true ? ' dsh-codebuddy-checkin-chip-done' : '')}>
+                {row.todayCheckedIn === true ? checkedIn : unchecked}
+              </span>
+            </div>
+          ) : null}
         </div>
         <span className="dsh-codebuddy-account-card-more">
-          <DshButton size="small" type="tertiary" theme="light" onClick={() => { onRename(row) }}>{labels.active === '' ? '' : '改备注'}</DshButton>
+          <DshDropdown
+            trigger="click"
+            position="bottomRight"
+            clickToHide
+            content={(
+              <DshDropdown.Menu>
+                {menu}
+              </DshDropdown.Menu>
+            )}
+          >
+            <DshIconButton size="small" type="tertiary" theme="borderless" icon={<DshIconMore />} aria-label="更多操作" />
+          </DshDropdown>
         </span>
       </div>
 
@@ -255,27 +309,6 @@ function AccountCard({ row, labels, busy, onCheckin, onSwitch, onDelete, onRenam
       ) : (
         <div className="dsh-codebuddy-account-expired-pad">{offline}，请重新登录</div>
       )}
-
-      {/* 操作：签到（未登录也保留手动）、设为当前（无余额禁用）、删除 */}
-      <div className="dsh-codebuddy-account-card-footer">
-        <DshButton size="small" theme="light" type="secondary" loading={busy} disabled={row.expired || !row.checkinOk} onClick={() => { onCheckin(row.id) }}>
-          {row.todayCheckedIn === true ? checkedIn : unchecked}
-        </DshButton>
-        {row.active ? null : (
-          <DshButton
-            size="small"
-            theme="light"
-            type="secondary"
-            disabled={!row.usable || row.expired}
-            title={row.usable ? '' : noBalanceHint}
-            onClick={() => { onSwitch(row.id) }}
-          >
-            {switchLabel}
-          </DshButton>
-        )}
-        <div style={{ flex: 1 }} />
-        <DshButton size="small" type="danger" theme="borderless" onClick={() => { onDelete(row) }}>{deleteLabel}</DshButton>
-      </div>
     </DshCard>
   )
 }
@@ -304,6 +337,12 @@ function AccountsPage({
 }): ReactNode {
   const { data, loading, reload } = usePanelData<{ accounts: PanelAccountRow[], currentId?: string }>(rpc, 'panelStatus', {}, [rosterTick])
   const [busyId, setBusyId] = useState<string | undefined>(undefined)
+  // 自动签到开关状态：开启时隐藏手动签到动作。
+  const [autoCheckinOn, setAutoCheckinOn] = useState<boolean>(autoCheckinPref())
+  useEffect(() => {
+    void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoCheckin', { enabled: autoCheckinOn })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rpc])
 
   const checkinOne = async (id: string): Promise<void> => {
     setBusyId(id)
@@ -369,7 +408,15 @@ function AccountsPage({
           <div className="dsh-codebuddy-panel-section-head">
             <div className="dsh-codebuddy-panel-section-title"><strong>{t('accountsTitle')}</strong><span>{rows.length}</span></div>
             <div className="dsh-codebuddy-accounts-head-actions">
-              <AutoCheckinToggle rpc={rpc} t={t} />
+              <AutoCheckinToggle
+                checked={autoCheckinOn}
+                t={t}
+                onChange={(checked: boolean) => {
+                  setAutoCheckinOn(checked)
+                  setAutoCheckinPref(checked)
+                  void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoCheckin', { enabled: checked })
+                }}
+              />
               <DshButton size="small" theme="light" icon={<DshIconRefresh />} onClick={reload}>{t('refresh')}</DshButton>
             </div>
           </div>
@@ -379,14 +426,17 @@ function AccountsPage({
               key={row.id}
               row={row}
               busy={busyId === row.id}
+              autoCheckin={autoCheckinOn}
               labels={{
                 active: t('accountActive'),
                 offline: t('accountOffline'),
                 checkedIn: t('checkinDone'),
                 unchecked: t('checkinTodo'),
+                checkin: t('checkinDo'),
                 remaining: t('remaining'),
                 switchLabel: t('accountSwitch'),
                 deleteLabel: t('accountRemove'),
+                renameLabel: t('renameLabel'),
                 noBalanceHint: t('noBalanceHint'),
               }}
               onCheckin={(id) => { void checkinOne(id) }}
@@ -934,26 +984,20 @@ export function CodeBuddyPanelPage({ rpc, route, t }: PanelPageProps): ReactNode
 /** 自动签到偏好（与设置页同一键）。 */
 const autoCheckinPref = (): boolean => getAutoCheckinPref()
 
-/** 自动签到开关（位于账号页标题行、刷新按钮左侧）。状态写入 localStorage
- *  （与设置页共享）并同步到 host；host 在开关打开时维护每日/周期签到循环。 */
-function AutoCheckinToggle({ rpc, t }: { rpc: ConnectionRpc, t: Translate }): ReactNode {
-  const [autoCheckinOn, setAutoCheckinOn] = useState<boolean>(autoCheckinPref())
-  useEffect(() => {
-    void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoCheckin', { enabled: autoCheckinOn })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rpc])
-  const toggle = (checked: boolean): void => {
-    setAutoCheckinOn(checked)
-    setAutoCheckinPref(checked)
-    void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoCheckin', { enabled: checked })
-  }
+/** 自动签到开关（位于账号页标题行、刷新按钮左侧）。受控组件：状态由
+ *  AccountsPage 持有并在切换时同步到 host（localStorage 与设置页共享）。 */
+function AutoCheckinToggle({ checked, t, onChange }: {
+  checked: boolean
+  t: Translate
+  onChange: (checked: boolean) => void
+}): ReactNode {
   return (
     <span className="dsh-codebuddy-auto-checkin-toggle">
       <span className="dsh-codebuddy-muted">{t('autoCheckin')}</span>
       <DshSwitch
         size="small"
-        checked={autoCheckinOn}
-        onChange={(checked: boolean) => { toggle(checked) }}
+        checked={checked}
+        onChange={onChange}
         aria-label={t('autoCheckin')}
       />
     </span>

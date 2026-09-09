@@ -56,6 +56,7 @@ export {
   DshIconList,
   DshIconMoon,
   DshIconModalStroked,
+  DshIconMore,
   DshIconPlus,
   DshIconPlusStroked,
   DshIconRefresh,

@@ -274,6 +274,11 @@ export class CodeBuddyAuthService {
       }
       const identity = this.session?.identityFor(entry)
       if (identity === undefined) continue
+      // 企业账号不支持签到，自动签到跳过。
+      if (identity.enterpriseId !== undefined) {
+        push('skipped')
+        continue
+      }
       if (entry.auth.refreshExpiresAt <= Date.now()) {
         push('expired')
         failed += 1
@@ -816,7 +821,7 @@ export class CodeBuddyAuthService {
    * 签到/积分面板共用：按账号探测。遍历每个存储账号，用其自身的
    * environment/endpoint 解析身份并调用 meter 平面；单账号失败不影响其他。
    */
-  private async forEachAccount<T>(fn: (item: { id: string, name: string, environment: string | undefined, endpoint: string, identity: CodeBuddyIdentity, expired: boolean }) => Promise<T>, signal?: AbortSignal): Promise<T[]> {
+  private async forEachAccount<T>(fn: (item: { id: string, name: string, environment: string | undefined, endpoint: string, identity: CodeBuddyIdentity, expired: boolean, enterprise: boolean }) => Promise<T>, signal?: AbortSignal): Promise<T[]> {
     const storage = await loadStorage()
     if (storage === undefined) return []
     const results: T[] = []
@@ -831,6 +836,7 @@ export class CodeBuddyAuthService {
           endpoint: resolveEntryEndpoint(entry),
           identity,
           expired: entry.auth.refreshExpiresAt <= Date.now(),
+          enterprise: identity.enterpriseId !== undefined,
         }))
       } catch {
         // 单账号身份解析失败跳过，不阻断其他账号。
@@ -850,10 +856,13 @@ export class CodeBuddyAuthService {
     if (storage === undefined) return { accounts: [], currentId: undefined }
     const activeId = storage.activeId
     const rows = await this.forEachAccount(async item => {
-      const [snapshot, checkin] = await Promise.all([
-        fetchUsage(item.endpoint, item.identity, signal).catch(() => undefined),
-        getCheckinStatus(item.endpoint, item.identity, signal).catch(() => ({ ok: false, todayCheckedIn: false, error: 'probe failed' })),
-      ])
+      // 企业账号不支持签到：不探测签到状态，卡片上也不显示签到入口。
+      const [snapshot, checkin] = item.enterprise
+        ? await Promise.all([fetchUsage(item.endpoint, item.identity, signal).catch(() => undefined), Promise.resolve({ ok: false, todayCheckedIn: false })])
+        : await Promise.all([
+          fetchUsage(item.endpoint, item.identity, signal).catch(() => undefined),
+          getCheckinStatus(item.endpoint, item.identity, signal).catch(() => ({ ok: false, todayCheckedIn: false, error: 'probe failed' })),
+        ])
       // 资源：合并为“剩余额度”“总量”“最近到期”语义（align wb 卡片）
       const resources = (snapshot?.windows ?? []).map(w => ({
         name: w.name,
@@ -873,6 +882,7 @@ export class CodeBuddyAuthService {
         environment: item.environment,
         active: item.id === activeId,
         expired: item.expired,
+        enterprise: item.enterprise,
         // 额度面状态
         creditOk: snapshot !== undefined,
         totalRemaining,
@@ -881,7 +891,7 @@ export class CodeBuddyAuthService {
         // 签到状态
         checkinOk: checkin.ok,
         todayCheckedIn: checkin.ok ? checkin.todayCheckedIn : null,
-        checkinError: checkin.ok ? null : checkin.error ?? 'probe failed',
+        checkinError: checkin.ok ? null : ('error' in checkin ? checkin.error ?? 'probe failed' : undefined),
         // 前端据此禁用“设为当前/选择账号”：无余额或查询失败都不可接管
         usable,
       }
@@ -889,18 +899,22 @@ export class CodeBuddyAuthService {
     return { accounts: rows, currentId: activeId }
   }
 
-  /** 面板：查询全部账号的今日签到状态。 */
+  /** 面板：查询全部账号的今日签到状态（企业账号跳过）。 */
   async checkinStatus(_id: string | undefined, signal?: AbortSignal): Promise<unknown> {
     const rows = await this.forEachAccount(async item => {
+      if (item.enterprise) return { id: item.id, name: item.name, environment: item.environment, ok: false, enterprise: true }
       const status = await getCheckinStatus(item.endpoint, item.identity, signal)
       return { id: item.id, name: item.name, environment: item.environment, ok: status.ok, todayCheckedIn: status.todayCheckedIn, error: status.error }
     }, signal)
     return { accounts: rows }
   }
 
-  /** 面板：对所有账号签到（一键/单账号共用，id 缺省=全部）。 */
+  /** 面板：对所有账号签到（一键/单账号共用，id 缺省=全部；企业账号不支持签到）。 */
   async checkin(id: string | undefined, signal?: AbortSignal): Promise<unknown> {
     const rows = await this.forEachAccount(async item => {
+      if (item.enterprise) {
+        return { id: item.id, name: item.name, environment: item.environment, result: 'skipped', error: 'enterprise account does not support check-in' }
+      }
       if (id !== undefined && item.id !== id) {
         return { id: item.id, name: item.name, environment: item.environment, skipped: true }
       }
