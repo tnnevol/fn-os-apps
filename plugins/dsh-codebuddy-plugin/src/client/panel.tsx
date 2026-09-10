@@ -1028,11 +1028,23 @@ function CreditsPage({ rpc, t, rosterTick }: { rpc: ConnectionRpc, t: Translate,
 }
 
 /**
- * 时间范围选择器。
+ * 时间范围选择器：分段控件（segmented control）。
  *
  * 用 Semi 的 `ButtonGroup` 而不是一排独立按钮：这组按钮是**互斥单选**，同一时刻
- * 只有一个生效；`ButtonGroup` 会把相邻按钮的圆角合并成一条连续控件，视觉上直接
- * 表达「这是一组、只能选一个」，而散排按钮看起来像三个独立动作。
+ * 只有一个生效；`ButtonGroup` 会合并相邻圆角，视觉上直接表达「一组、只能选一个」，
+ * 而散排按钮看起来像三个独立动作。
+ *
+ * 两个必须遵守的约定，都来自 ButtonGroup 的实现细节（读源码确认）：
+ *
+ * 1. **不要在组上传 `theme` / `type`**。它合并子 props 的顺序是
+ *    `{disabled,size,type}` → `itm.props` → `rest`，而 `theme` 不在其解构出的
+ *    键里，于是落进 `rest` 并**排在子按钮自身 props 之后**——组上的 theme 会
+ *    逐个覆盖子按钮的 theme，激活态因此永远显不出来。`size` 不在此列（它被解构
+ *    出去了），可以安全地传。
+ * 2. **必须用 CSS 隐藏分隔线**。`getInnerWithLine` 只对 `theme === 'outline'`
+ *    跳过，其余主题（含 `borderless`）都会在每两个相邻按钮之间插入一个
+ *    `<span class="semi-button-group-line-*">`，其 `::before` 是 1px×20px 竖线。
+ *    不想要分割线就只能显式 `display: none`。
  *
  * 选项由调用方按面板职责给出（见 token-range.ts）：总览给「总计」、趋势给「本月」。
  */
@@ -1044,19 +1056,18 @@ function RangeToggle({ options, range, onChange, label, format }: {
   format: (key: TokenRangeKey) => string
 }): ReactNode {
   return (
-    <DshButtonGroup
-      size="small"
-      theme="light"
-      className="dsh-codebuddy-panel-range"
-      aria-label={label}
-    >
+    <DshButtonGroup size="small" className="dsh-codebuddy-panel-range" aria-label={label}>
       {options.map(key => (
         <DshButton
           key={key}
           size="small"
-          // 选中项用实心主色，未选中用浅底：对比要一眼可辨，而不是靠细微色差。
-          type={range === key ? 'primary' : 'tertiary'}
-          theme={range === key ? 'solid' : 'light'}
+          // 一律 borderless：这组控件的外观（轨道 + 激活块）由 CSS 统一接管，
+          // 不叠加 Semi 的按钮底色与边框，拼起来才没有缝。
+          theme="borderless"
+          // 激活态用独立的类 + aria-pressed 双通道表达：前者给样式，后者给
+          // 读屏（分段控件的选中态语义）。不靠 theme 切换，避免与 ButtonGroup
+          // 的 props 合并规则打架。
+          className={range === key ? 'is-active' : undefined}
           aria-pressed={range === key}
           onClick={() => { onChange(key) }}
         >
