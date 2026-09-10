@@ -9,7 +9,7 @@ import {
   CODEBUDDY_CLIENT_VERSIONS,
   CODEBUDDY_DEFAULT_CLIENT,
   normalizeClientId,
-} from '../src/constants.ts'
+} from '../src/contracts/constants.ts'
 
 /**
  * WorkBuddy 客户端登录。
@@ -68,7 +68,7 @@ describe('客户端标识字典', () => {
 
 describe('账号条目记录客户端', () => {
   it('buildAccountEntry 写入 client 与固定版本', async () => {
-    const { buildAccountEntry } = await import('../src/storage.ts')
+    const { buildAccountEntry } = await import('../src/host/storage.ts')
     const token = { accessToken: 'a', refreshToken: 'r', expiresIn: 3600, refreshExpiresIn: 7200, domain: 'www.workbuddy.cn' }
     const account = { uid: 'u1', nickname: 'n1' }
     const wb = buildAccountEntry(token, account, { client: 'workbuddy' })
@@ -82,7 +82,7 @@ describe('账号条目记录客户端', () => {
   })
 
   it('resolveEntryEndpoint 让 workbuddy 账号走 workbuddy.cn', async () => {
-    const { buildAccountEntry, resolveEntryEndpoint } = await import('../src/storage.ts')
+    const { buildAccountEntry, resolveEntryEndpoint } = await import('../src/host/storage.ts')
     const token = { accessToken: 'a', refreshToken: 'r', expiresIn: 3600, refreshExpiresIn: 7200, domain: 'www.workbuddy.cn' }
     const account = { uid: 'u1', nickname: 'n1' }
     const wb = buildAccountEntry(token, account, { client: 'workbuddy', environment: 'internal' })
@@ -94,7 +94,7 @@ describe('账号条目记录客户端', () => {
   })
 
   it('显式 endpoint 优先于客户端默认', async () => {
-    const { buildAccountEntry, resolveEntryEndpoint } = await import('../src/storage.ts')
+    const { buildAccountEntry, resolveEntryEndpoint } = await import('../src/host/storage.ts')
     const token = { accessToken: 'a', refreshToken: 'r', expiresIn: 3600, refreshExpiresIn: 7200, domain: 'd' }
     const entry = buildAccountEntry(token, { uid: 'u', nickname: 'n' }, {
       client: 'workbuddy',
@@ -142,7 +142,7 @@ describe('token 解析对字段命名的容忍', () => {
    * 字段都同时容忍两种写法。
    */
   it('camelCase（CLI 的既有形态）仍能解析', async () => {
-    const { normalizeAuthToken } = await import('../src/codebuddy.ts')
+    const { normalizeAuthToken } = await import('../src/host/codebuddy.ts')
     const token = normalizeAuthToken({
       accessToken: 'a', refreshToken: 'r', expiresIn: 3600, refreshExpiresIn: 7200, domain: 'd.example',
     })
@@ -153,7 +153,7 @@ describe('token 解析对字段命名的容忍', () => {
   })
 
   it('snake_case 也能解析（workbuddy 可能的形态）', async () => {
-    const { normalizeAuthToken } = await import('../src/codebuddy.ts')
+    const { normalizeAuthToken } = await import('../src/host/codebuddy.ts')
     const token = normalizeAuthToken({
       access_token: 'a2', refresh_token: 'r2', expires_in: 1800, refresh_expires_in: 3600, domain: 'wb.example',
     })
@@ -164,7 +164,7 @@ describe('token 解析对字段命名的容忍', () => {
   })
 
   it('缺 accessToken 时返回 undefined（不带着残缺对象继续走）', async () => {
-    const { normalizeAuthToken } = await import('../src/codebuddy.ts')
+    const { normalizeAuthToken } = await import('../src/host/codebuddy.ts')
     // 否则下一步会发出 `Bearer undefined`，得到 401 而不知原因。
     expect(normalizeAuthToken({ refreshToken: 'r' })).toBeUndefined()
     expect(normalizeAuthToken({ accessToken: '' })).toBeUndefined()
@@ -172,12 +172,12 @@ describe('token 解析对字段命名的容忍', () => {
   })
 
   it('domain 缺失时归一化为空串（避免 "undefined" 进入 X-Domain）', async () => {
-    const { normalizeAuthToken } = await import('../src/codebuddy.ts')
+    const { normalizeAuthToken } = await import('../src/host/codebuddy.ts')
     expect(normalizeAuthToken({ accessToken: 'a' })?.domain).toBe('')
   })
 
   it('时长缺失不产生 NaN（NaN 比较恒为 false，会让过期判断失效）', async () => {
-    const { buildAccountEntry } = await import('../src/storage.ts')
+    const { buildAccountEntry } = await import('../src/host/storage.ts')
     const entry = buildAccountEntry({ accessToken: 'a', domain: 'd' }, { uid: 'u', nickname: 'n' }, {})
     expect(Number.isFinite(entry.auth.expiresAt)).toBe(true)
     expect(Number.isFinite(entry.auth.refreshExpiresAt)).toBe(true)
@@ -189,7 +189,7 @@ describe('token 解析对字段命名的容忍', () => {
 describe('登录失败会反馈给用户', () => {
   it('runLogin 失败原因写入本次握手条目（不是实例字段，避免并发串台）', () => {
     const src = readFileSync(
-      '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/auth-service.ts',
+      '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/host/auth-service.ts',
       'utf8',
     )
     expect(src).toMatch(/pendingEntry\.failure = error instanceof Error/)
@@ -197,7 +197,7 @@ describe('登录失败会反馈给用户', () => {
 
   it('pollLogin 把失败与「仍在等待」区分开', () => {
     const src = readFileSync(
-      '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/auth-service.ts',
+      '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/host/auth-service.ts',
       'utf8',
     )
     // 返回体带 error 即表示不必再轮询。

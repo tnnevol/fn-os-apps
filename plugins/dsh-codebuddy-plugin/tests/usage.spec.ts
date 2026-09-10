@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseUsage } from '../src/usage.ts'
+import { parseUsage } from '../src/host/usage.ts'
 
 describe('CodeBuddy usage parsing', () => {
   it('parses a personal get-user-resource reply', () => {

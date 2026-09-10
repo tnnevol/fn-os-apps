@@ -3,7 +3,9 @@
 import { useEffect, useState, useSyncExternalStore } from 'react'
 import type { KeyboardEvent } from 'react'
 import { DshPopover, DshProgress, DshScrollList, DshTooltip } from '@tnnevol/dsh-semi-ui'
-import { CODEBUDDY_AUTH_CHANNEL, CODEBUDDY_USAGE_REFRESH_MS } from '../client/constants.ts'
+import { CODEBUDDY_USAGE_REFRESH_MS } from '../client/constants.ts'
+import { CODEBUDDY_AUTH_CHANNEL } from '../contracts/constants.ts'
+
 import { accountEpoch, subscribeAccountEpoch } from '../client/account-epoch.ts'
 import type { CodeBuddyLocaleKey } from '../client/locales.ts'
 import type { ConnectionRpc, UsageResult, UsageWindow } from '../client/rpc.ts'

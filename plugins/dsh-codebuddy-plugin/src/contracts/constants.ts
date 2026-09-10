@@ -8,8 +8,24 @@
  * @module dsh-codebuddy/constants
  */
 
-/** The provider route this plugin registers on `ctx.llm`. */
+/**
+ * 该插件在 `ctx.llm` 上注册的 provider 路由。
+ *
+ * —— 以下到 RPC 频道这一段都是 **host 与 client 共用的契约**，
+ * 不要把它们挪进 `host/`：client 侧同样引用它们，而两端各写一份常量
+ * 曾经导致过真实的失联风险（`CODEBUDDY_AUTH_CHANNEL` 一度在 host 与
+ * client 各定义一份，靠注释「mirror of the host constant」维持同步——
+ * 改一处就会静默对不上）。
+ */
 export const CODEBUDDY_PROVIDER = 'codebuddy'
+
+/**
+ * 客户端调用认证服务所用的 RPC 频道。
+ *
+ * 定义在 contracts 而非 `host/auth-service.ts`：它是**两端协商的字符串**，
+ * 不是宿主的实现细节。原先两处各写一份 `/codebuddy`，只靠注释提示同步。
+ */
+export const CODEBUDDY_AUTH_CHANNEL = '/codebuddy'
 
 /** Display name shown in model selectors and settings surfaces. */
 export const CODEBUDDY_DISPLAY_NAME = 'CodeBuddy'

@@ -20,8 +20,8 @@ import {
   CODEBUDDY_PLUGIN_PREFIX,
   LOGIN_POLL_INTERVAL_MS,
   LOGIN_TIMEOUT_MS,
-} from './constants.ts'
-import type { CodeBuddyClientId } from './constants.ts'
+} from '../contracts/constants.ts'
+import type { CodeBuddyClientId } from '../contracts/constants.ts'
 import type {
   Account,
   AccountResponse,

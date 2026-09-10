@@ -2,16 +2,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mkdtempSync, rmSync, chmodSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { CodeBuddyAuthService } from '../src/auth-service.ts'
-import { CodeBuddySession } from '../src/session.ts'
-import { CODEBUDDY_ENDPOINT } from '../src/constants.ts'
+import { CodeBuddyAuthService } from '../src/host/auth-service.ts'
+import { CodeBuddySession } from '../src/host/session.ts'
+import { CODEBUDDY_ENDPOINT } from '../src/contracts/constants.ts'
 
 // 构造器会异步读取偏好并据此启动后台周期（三项默认全开）。这些周期在测试里
 // 只制造噪声：它们发出的请求会与断言用的 fetch 桩交叠，把「账号并发度」测成
 // 假的（实测能把串行实现测出峰值 2）。这里把偏好固定为「关」，周期只在本测试
 // 显式调用时才运行——偏好读取本身不是这组测试的对象。
-vi.mock('../src/storage.ts', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../src/storage.ts')>()
+vi.mock('../src/host/storage.ts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../src/host/storage.ts')>()
   return {
     ...actual,
     loadAutoSwitchConfig: async () => ({ enabled: false, thresholdPct: 10 }),

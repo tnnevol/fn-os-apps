@@ -15,7 +15,7 @@
  * @module dsh-codebuddy/token-stats-store
  */
 
-import { CODEBUDDY_AUTH_CHANNEL } from './constants.ts'
+import { CODEBUDDY_AUTH_CHANNEL } from '../contracts/constants.ts'
 import type { ConnectionRpc } from './rpc.ts'
 import { resolveRange, type TokenRangeKey } from './token-range.ts'
 

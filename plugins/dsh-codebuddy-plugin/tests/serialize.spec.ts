@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { serializeRequest } from '../src/serialize.ts'
+import { serializeRequest } from '../src/host/serialize.ts'
 import type { GenerateOptions, Message } from '@deepseek-ai/dsh-llm'
 
 const textMessage: Message = {

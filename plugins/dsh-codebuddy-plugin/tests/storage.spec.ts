@@ -9,9 +9,9 @@ import {
   loadStorage,
   resolveEntryEndpoint,
   saveStorage,
-} from '../src/storage.ts'
-import { CODEBUDDY_ENDPOINT, CODEBUDDY_ENDPOINT_EXTERNAL } from '../src/constants.ts'
-import type { CodeBuddyAccountEntry, CodeBuddyStorage } from '../src/storage.ts'
+} from '../src/host/storage.ts'
+import { CODEBUDDY_ENDPOINT, CODEBUDDY_ENDPOINT_EXTERNAL } from '../src/contracts/constants.ts'
+import type { CodeBuddyAccountEntry, CodeBuddyStorage } from '../src/host/storage.ts'
 
 let workdir: string | undefined
 

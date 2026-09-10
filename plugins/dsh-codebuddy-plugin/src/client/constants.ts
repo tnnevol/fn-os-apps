@@ -1,8 +1,5 @@
 /** Shared constants for the CodeBuddy client bundle. */
 
-/** The RPC channel the host auth service listens on (mirror of the host constant). */
-export const CODEBUDDY_AUTH_CHANNEL = '/codebuddy'
-
 /** How often the composer usage indicator refreshes, in ms. */
 export const CODEBUDDY_USAGE_REFRESH_MS = 60_000
 

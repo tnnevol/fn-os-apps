@@ -17,7 +17,7 @@
  */
 
 import { join } from 'node:path'
-import { CODEBUDDY_ENDPOINT, CODEBUDDY_IDE_VERSION } from './constants.ts'
+import { CODEBUDDY_ENDPOINT, CODEBUDDY_IDE_VERSION } from '../contracts/constants.ts'
 import type { CodeBuddyIdentity } from './codebuddy.ts'
 
 /** One metering window: a named allowance and how much of it is spent. */

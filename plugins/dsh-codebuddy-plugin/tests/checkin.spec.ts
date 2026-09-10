@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { getCheckinStatus, performCheckin } from '../src/usage.ts'
-import type { CodeBuddyIdentity } from '../src/codebuddy.ts'
+import { getCheckinStatus, performCheckin } from '../src/host/usage.ts'
+import type { CodeBuddyIdentity } from '../src/host/codebuddy.ts'
 
 const IDENTITY: CodeBuddyIdentity = {
   accessToken: 'token',

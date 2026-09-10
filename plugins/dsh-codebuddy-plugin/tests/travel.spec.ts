@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { claimTravel, departTravel, fetchTravelLocations, fetchTravelStatus } from '../src/travel.ts'
-import type { CodeBuddyIdentity } from '../src/codebuddy.ts'
+import { claimTravel, departTravel, fetchTravelLocations, fetchTravelStatus } from '../src/host/travel.ts'
+import type { CodeBuddyIdentity } from '../src/host/codebuddy.ts'
 
 const IDENTITY: CodeBuddyIdentity = {
   accessToken: 'token',

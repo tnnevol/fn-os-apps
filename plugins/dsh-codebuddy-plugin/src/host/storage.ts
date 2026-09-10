@@ -27,7 +27,7 @@ import {
   normalizeClientId,
   type CodeBuddyClientId,
   type CodeBuddyEnvironment,
-} from './constants.ts'
+} from '../contracts/constants.ts'
 import type { Account, AuthToken } from './types.ts'
 
 /** One stored account: credential facts plus the account facts they were issued for. */

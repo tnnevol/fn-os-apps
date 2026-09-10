@@ -13,37 +13,37 @@
  */
 
 import type { Context } from '@deepseek-ai/cordis'
-import { CodeBuddyAdapter } from './adapter.ts'
-import type { CodeBuddyConnectionOptions } from './adapter.ts'
-import { CodeBuddyAuthService } from './auth-service.ts'
-import type { SessionAnalyticsServices } from './auth-service.ts'
+import { CodeBuddyAdapter } from './host/adapter.ts'
+import type { CodeBuddyConnectionOptions } from './host/adapter.ts'
+import { CodeBuddyAuthService } from './host/auth-service.ts'
+import type { SessionAnalyticsServices } from './host/auth-service.ts'
 import {
   CODEBUDDY_CHAT_BASE,
   CODEBUDDY_PROVIDER,
   DEFAULT_CONTEXT_WINDOW,
   DEFAULT_MAX_TOKENS,
   DEFAULT_STREAM_IDLE_TIMEOUT_MS,
-} from './constants.ts'
-import { CodeBuddySession } from './session.ts'
+} from './contracts/constants.ts'
+import { CodeBuddySession } from './host/session.ts'
 import { resolveImageAttachmentAccess } from '@deepseek-ai/dsh-llm'
 import type { AttachmentStore } from '@deepseek-ai/dsh-attachment'
 
-export { CodeBuddyAdapter, httpErrorCode } from './adapter.ts'
-export type { CodeBuddyAdapterOptions, CodeBuddyConnectionOptions } from './adapter.ts'
-export { CodeBuddyAuthService, CODEBUDDY_AUTH_CHANNEL } from './auth-service.ts'
+export { CodeBuddyAdapter, httpErrorCode } from './host/adapter.ts'
+export type { CodeBuddyAdapterOptions, CodeBuddyConnectionOptions } from './host/adapter.ts'
+export { CodeBuddyAuthService } from './host/auth-service.ts'
 export type {
   CodeBuddyAuthStatus,
   CodeBuddyLoginStart,
   CodeBuddyLoginPoll,
   CodeBuddyUsageResult,
   CodeBuddyUsageWindow,
-} from './auth-service.ts'
-export { CodeBuddySession, NotLoggedInError } from './session.ts'
-export { buildStorage, clearStorage, getStoragePath, loadStorage, saveStorage } from './storage.ts'
-export type { CodeBuddyStorage } from './storage.ts'
-export { fetchUsage, fetchPersonalUsage, fetchEnterpriseUsage, parseUsage } from './usage.ts'
-export type { UsageSnapshot, UsageWindow } from './usage.ts'
-export { collectCodeBuddyTokenStats } from './token-stats.ts'
+} from './host/auth-service.ts'
+export { CodeBuddySession, NotLoggedInError } from './host/session.ts'
+export { buildStorage, clearStorage, getStoragePath, loadStorage, saveStorage } from './host/storage.ts'
+export type { CodeBuddyStorage } from './host/storage.ts'
+export { fetchUsage, fetchPersonalUsage, fetchEnterpriseUsage, parseUsage } from './host/usage.ts'
+export type { UsageSnapshot, UsageWindow } from './host/usage.ts'
+export { collectCodeBuddyTokenStats } from './host/token-stats.ts'
 export type {
   CodeBuddyTokenStatsRequest,
   CodeBuddyTokenStats,
@@ -52,10 +52,10 @@ export type {
   CodeBuddyTokenActivity,
   CodeBuddyTokenBreakdown,
   CodeBuddyTokenSession,
-} from './token-stats.ts'
-export * from './constants.ts'
-export { hasDisclosedCapacity } from './types.ts'
-export type * from './types.ts'
+} from './host/token-stats.ts'
+export * from './contracts/constants.ts'
+export { hasDisclosedCapacity } from './host/types.ts'
+export type * from './host/types.ts'
 
 /** Cordis plugin name. */
 export const name = 'dsh-codebuddy'

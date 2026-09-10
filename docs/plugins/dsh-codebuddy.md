@@ -2,6 +2,27 @@
 
 `@tnnevol/dsh-codebuddy` 为 DSH 接入腾讯 CodeBuddy 模型目录，通过浏览器 OAuth 登录，无需 API Key。当前插件版本为 `0.1.2-rc.1.3`，适配 DSH `0.1.2-rc.1`。
 
+## 源码结构
+
+目录按**构建产物**分层，与同仓库的 `dsh-codex-auth-plugin`、`dsh-fnos-plugin` 一致：
+
+```
+src/
+  index.ts        host 入口（tsdown entry，产出 lib/index.js）
+  host/           仅宿主侧：adapter / auth-service / codebuddy / session / storage /
+                  usage / travel / token-stats / serialize / sse / translate / …
+  contracts/      host 与 client 共享的协议常量
+  client/         浏览器入口（lib/client.js）与面板
+  components/     两个挂载点共用的 UI
+  styles/
+```
+
+这个划分不是按命名猜的，而是按**入口可达性**定的：从 `src/index.ts` 出发可达 14 个模块，从 `src/client/index.tsx` 出发可达 20 个，两者交集只有 `contracts/constants.ts`——共享面就这么大，其余一律属于 host。
+
+`contracts/` 的存在是为了消除一类真实风险：协议常量曾在两端各写一份。`CODEBUDDY_AUTH_CHANNEL` 一度在 `host/auth-service.ts` 与 `client/constants.ts` 各定义一次，靠注释「mirror of the host constant」维持同步——改一处就会静默对不上（客户端发到 A 频道，宿主在 B 频道听）。现在它只在 `contracts/constants.ts` 定义，两端都从这里引入。
+
+`tests/structure.spec.ts` 守住三条：分层目录不被重新打散（`src/` 根只留入口）、client 侧不引用 host（否则浏览器产物会拖进宿主模块）、协议常量全仓库只有一个定义。
+
 ## 安装
 
 `fn-deepseek-harness` 会在安装和升级时自动安装 npm `rc` 标签对应的版本。其他 DSH 环境可以执行：

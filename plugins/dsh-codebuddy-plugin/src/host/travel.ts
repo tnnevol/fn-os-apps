@@ -19,7 +19,7 @@
  */
 
 import type { CodeBuddyIdentity } from './codebuddy.ts'
-import { CODEBUDDY_IDE_VERSION } from './constants.ts'
+import { CODEBUDDY_IDE_VERSION } from '../contracts/constants.ts'
 
 /** 成长中心接口前缀。 */
 const TRAVEL_API_PREFIX = '/activity/growth/buddy/travel'

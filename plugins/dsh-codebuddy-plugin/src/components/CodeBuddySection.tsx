@@ -27,7 +27,8 @@ import {
   DshTooltip,
   DshTypography,
 } from '@tnnevol/dsh-semi-ui'
-import { CODEBUDDY_AUTH_CHANNEL } from '../client/constants.ts'
+import { CODEBUDDY_AUTH_CHANNEL } from '../contracts/constants.ts'
+
 import type { PanelRouteController } from '../client/panel-route.ts'
 
 import type { CodeBuddyLocaleKey } from '../client/locales.ts'

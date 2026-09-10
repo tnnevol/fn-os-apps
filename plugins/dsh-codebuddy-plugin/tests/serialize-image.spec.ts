@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { serializeRequestWithImages, hasRequestImages } from '../src/serialize-image.ts'
+import { serializeRequestWithImages, hasRequestImages } from '../src/host/serialize-image.ts'
 import type { GenerateOptions, Message } from '@deepseek-ai/dsh-llm'
 import type { AttachmentStore, ImageAttachmentRef, RequestImageAttachment } from '@deepseek-ai/dsh-attachment'
 

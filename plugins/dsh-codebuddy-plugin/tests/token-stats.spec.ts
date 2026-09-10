@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { collectCodeBuddyTokenStats, type SessionQueryService } from '../src/token-stats.ts'
+import { collectCodeBuddyTokenStats, type SessionQueryService } from '../src/host/token-stats.ts'
 import { resolveRange } from '../src/client/token-range.ts'
 
 function event(time: number, provider: string, model: string, input: number, output: number, read = 0, write = 0) {

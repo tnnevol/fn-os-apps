@@ -49,8 +49,7 @@ import {
   DshTooltip,
   DshTypography,
 } from '@tnnevol/dsh-semi-ui'
-import { CODEBUDDY_AUTH_CHANNEL } from './constants.ts'
-import { CODEBUDDY_ENVIRONMENT_LABELS } from '../constants.ts'
+import { CODEBUDDY_AUTH_CHANNEL, CODEBUDDY_ENVIRONMENT_LABELS } from '../contracts/constants.ts'
 import type { CodeBuddyLocaleKey } from './locales.ts'
 import type { ConnectionRpc, AccountsResult } from './rpc.ts'
 import { describeRpcError } from './rpc.ts'
@@ -66,7 +65,7 @@ import {
   CODEBUDDY_CLIENT_VERSIONS,
   normalizeClientId,
   type CodeBuddyClientId,
-} from '../constants.ts'
+} from '../contracts/constants.ts'
 import { formatResetDate, formatUpdatedAt } from './format-time.ts'
 import { identityRows, type AccountIdentityDetail } from './identity.ts'
 import { DEFAULT_TOKEN_RANGE, optionsFor, rangeLabel as rangeLabelOf, type TokenRangeKey } from './token-range.ts'

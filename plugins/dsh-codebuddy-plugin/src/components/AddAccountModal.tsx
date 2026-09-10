@@ -21,7 +21,8 @@ import {
   DshSwitch,
   DshToast,
 } from '@tnnevol/dsh-semi-ui'
-import { CODEBUDDY_AUTH_CHANNEL } from '../client/constants.ts'
+import { CODEBUDDY_AUTH_CHANNEL } from '../contracts/constants.ts'
+
 import {
   CODEBUDDY_CLIENT_IDS,
   CODEBUDDY_CLIENT_LABELS,
@@ -29,7 +30,7 @@ import {
   CODEBUDDY_DEFAULT_CLIENT,
   normalizeClientId,
   type CodeBuddyClientId,
-} from '../constants.ts'
+} from '../contracts/constants.ts'
 import type { CodeBuddyLocaleKey } from '../client/locales.ts'
 import type { ConnectionRpc, LoginPoll, LoginStart, RpcResult } from '../client/rpc.ts'
 import { describeRpcError } from '../client/rpc.ts'
@@ -37,7 +38,7 @@ import {
   CODEBUDDY_DEFAULT_ENVIRONMENT,
   CODEBUDDY_ENVIRONMENTS,
   CODEBUDDY_ENVIRONMENT_LABELS,
-} from '../constants.ts'
+} from '../contracts/constants.ts'
 import { PreferenceLabel } from './PreferenceLabel.tsx'
 
 type Translate = (key: CodeBuddyLocaleKey) => string

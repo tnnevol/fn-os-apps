@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { BackoffGate, mapWithConcurrency, RunGuard } from '../src/concurrency.ts'
+import { BackoffGate, mapWithConcurrency, RunGuard } from '../src/host/concurrency.ts'
 
 describe('RunGuard', () => {
   it('首次占用成功，占用期间再次占用被拒绝', () => {

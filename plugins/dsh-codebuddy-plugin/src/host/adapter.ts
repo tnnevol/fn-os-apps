@@ -36,7 +36,7 @@ import {
   CODEBUDDY_DISPLAY_NAME,
   DEFAULT_CONTEXT_WINDOW,
   DEFAULT_MAX_TOKENS,
-} from './constants.ts'
+} from '../contracts/constants.ts'
 import { NotLoggedInError } from './session.ts'
 import type { CodeBuddySession } from './session.ts'
 import { parseSse } from './sse.ts'

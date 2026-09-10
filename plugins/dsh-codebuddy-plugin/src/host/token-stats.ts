@@ -4,9 +4,11 @@
  * The query service is deliberately used instead of walking the JSONL backend:
  * this keeps the dashboard compatible with live sessions, restored sessions,
  * projection caches and future persistence implementations.
+ *
+ * @module dsh-codebuddy/token-stats
  */
 
-import { CODEBUDDY_PROVIDER } from './constants.ts'
+import { CODEBUDDY_PROVIDER } from '../contracts/constants.ts'
 
 const DAY_MS = 86_400_000
 const DEFAULT_RANGE_DAYS = 30

@@ -133,7 +133,7 @@ describe('面板弹框展示完整账户信息', () => {
 
 describe('主机侧 payload 带上身份明细', () => {
   const SERVICE = readFileSync(
-    '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/auth-service.ts',
+    '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/host/auth-service.ts',
     'utf8',
   )
 

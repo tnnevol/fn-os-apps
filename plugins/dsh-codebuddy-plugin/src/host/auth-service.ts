@@ -20,7 +20,8 @@ import {
   normalizeClientId,
   type CodeBuddyClientId,
   type CodeBuddyEnvironment,
-} from './constants.ts'
+  CODEBUDDY_AUTH_CHANNEL,
+} from '../contracts/constants.ts'
 
 import { getCheckinStatus, performCheckin, fetchUsage } from './usage.ts'
 import { BackoffGate, mapWithConcurrency, RunGuard } from './concurrency.ts'
@@ -59,9 +60,6 @@ export interface SessionAnalyticsServices {
 function isNoBuddyError(message: string): boolean {
   return message.toLowerCase().includes('no active buddy')
 }
-
-/** The RPC channel the client calls the auth service on. */
-export const CODEBUDDY_AUTH_CHANNEL = '/codebuddy'
 
 /**
  * 面板/签到批量探测的并发账号数。每个账号会并发打出 2–3 个请求，取值太小

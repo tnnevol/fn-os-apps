@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { requestAuthState } from '../src/codebuddy.ts'
+import { requestAuthState } from '../src/host/codebuddy.ts'
 import {
   CODEBUDDY_CLI_VERSION,
   CODEBUDDY_CLIENT_ENDPOINTS,
   CODEBUDDY_CLIENT_VERSIONS,
-} from '../src/constants.ts'
+} from '../src/contracts/constants.ts'
 
 /**
  * 两个客户端共用一套登录握手，但生成的 URL 与版本各不相同。

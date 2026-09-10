@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { CODEBUDDY_CLI_VERSION, CODEBUDDY_IDE_VERSION } from '../src/constants.ts'
+import { CODEBUDDY_CLI_VERSION, CODEBUDDY_IDE_VERSION } from '../src/contracts/constants.ts'
 
 /**
  * `CODEBUDDY_CLI_VERSION` 必须与 `@tencent-ai/codebuddy-code` 的正式发布版一致。
