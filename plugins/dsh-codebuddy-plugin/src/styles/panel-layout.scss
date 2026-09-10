@@ -160,8 +160,18 @@
   overflow: hidden;
   border-radius: 999px;
   background: var(--dsw-alias-bg-layer-2);
+  /* 每段的可见下限。实测缓存读占 98.68%、输出 0.15%、缓存写 0%，
+     纯按比例分配会把小项压成 0–1px 而「消失」；给一个下限后小项始终可辨，
+     也才能悬停到 Tooltip。4px 是 9px 条高下仍能看出颜色的最小值。 */
+  --dcb-segment-min: 4px;
 }
-.dsh-codebuddy-panel-segment-bar span { min-width: 0; transition: width 180ms ease; }
+/* 分段：flex-grow 由内联样式按数值给出，这里只负责「先占最小宽度」。
+   flex-basis:0 是必需的——否则内容宽度会参与分配，比例就不再等于数值比例。 */
+.dsh-codebuddy-panel-segment-bar .dsh-codebuddy-panel-segment-slice {
+  flex: 0 1 0;
+  min-width: var(--dcb-segment-min);
+  transition: flex-grow 180ms ease;
+}
 .dsh-codebuddy-panel-segment-legend {
   display: flex;
   flex-wrap: wrap;
@@ -195,7 +205,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .dsh-codebuddy-panel-segment-bar span { transition: none; }
+  .dsh-codebuddy-panel-segment-bar .dsh-codebuddy-panel-segment-slice { transition: none; }
 }
 
 /* Token analytics: theme-native observability layout with one restrained accent. */

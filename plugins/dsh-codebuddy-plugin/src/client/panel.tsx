@@ -250,6 +250,20 @@ function PanelBody({ loading, children }: { loading: boolean, children: ReactNod
   )
 }
 
+/**
+ * 指标占比分段条。
+ *
+ * 不能用「宽度 = 占比百分比」直接渲染：实测真实数据里缓存读占 98.68%、输出仅
+ * 0.15%、缓存写为 0%，纯百分比会把小项压成 0–1px，视觉上直接消失（连 Tooltip
+ * 都悬停不到）。
+ *
+ * 改用 flex-grow 语义：每段先占一个可见的最小宽度（CSS 的 --dcb-segment-min），
+ * 剩余空间才按数值比例分配。大项仍占绝大部分、小项也始终看得到，且总和恰好
+ * 铺满不溢出（flex 的 shrink 会处理极端情况，故 bar 上保留 overflow:hidden）。
+ *
+ * `flex-basis: 0`（见 CSS）是必需的：若留下 auto basis，内容宽度会参与分配，
+ * 最小宽度被满足后各段比例就不再等于数值比例。
+ */
 function SegmentBar({ segments }: { segments: Array<{ label: string, value: number, color: string }> }): ReactNode {
   const total = segments.reduce((sum, segment) => sum + Math.max(0, segment.value), 0)
   return (
@@ -257,7 +271,14 @@ function SegmentBar({ segments }: { segments: Array<{ label: string, value: numb
       <div className="dsh-codebuddy-panel-segment-bar" role="img" aria-label={segments.map(segment => `${segment.label} ${compact(segment.value)}`).join('，')}>
         {segments.map(segment => (
           <DshTooltip key={segment.label} content={`${segment.label}: ${compact(segment.value)}`}>
-            <span style={{ width: total > 0 ? `${(Math.max(0, segment.value) / total) * 100}%` : '0%', background: segment.color }} />
+            <span
+              className="dsh-codebuddy-panel-segment-slice"
+              style={{
+                // 只决定剩余空间的分配比例；可见下限由 CSS 保证。
+                flexGrow: total > 0 ? Math.max(0, segment.value) : 0,
+                background: segment.color,
+              }}
+            />
           </DshTooltip>
         ))}
       </div>
