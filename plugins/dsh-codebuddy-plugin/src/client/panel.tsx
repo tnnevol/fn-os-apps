@@ -1538,7 +1538,26 @@ function TokenUsageChart({ days, inputLabel, outputLabel, cacheReadLabel, cacheW
       aria: { enabled: true },
       animation: false,
       grid: { top: 32, right: 12, bottom: 28, left: 12, containLabel: true },
-      legend: { top: 0, itemWidth: 10, itemHeight: 10, textStyle: { color: textColor } },
+      // 图例：每个系列的 item 至少 20px 高，保证四个指标（输入/输出/缓存读/缓存写）
+      // 都有足够的点击与辨认区域。
+      //
+      // itemWidth 必须与 itemHeight **相等**：ECharts 的图例色块是 roundRect，
+      // 按 (itemWidth, itemHeight) 直接铺开，不保持宽高比——实测 path 数据：
+      //   itemWidth 10 + itemHeight 20 → "M2.5 0L7.5 0 … L10 17.5 … L2.5 20 …"
+      //   即 10 宽 20 高的竖条（色块被拉长）；
+      //   20 × 20 → "M5 0L15 0 … L20 15 … L5 20 …" 即正方形。
+      // 另测 symbolKeepAspect: true 对 roundRect 图标**无效**（path 完全不变），
+      // 所以不能靠它补救，只能让宽高相等。
+      legend: { top: 0, itemWidth: 20, itemHeight: 20, itemGap: 16, textStyle: { color: textColor } },
+      // 窄屏下四个图例项会折成两行，压住绘图区。实测图例高度：
+      //   单行 25px（itemWidth 10 时是 17px）／双行 61px，
+      // 而 grid.top 固定 32px —— 双行时重叠 29px。
+      // 用 media 按宽度抬高绘图区：单行保持紧凑，折行时自动让位。
+      // 阈值取 420px：实测英文长标签（Cache write）在 itemWidth 20 下约 340px 处开始折行，
+      // 留出余量以覆盖中文/其他语言与字体差异。
+      media: [
+        { query: { maxWidth: 420 }, option: { grid: { top: 68 } } },
+      ],
       tooltip: {
         trigger: 'axis',
         axisPointer: { type: 'shadow' },
