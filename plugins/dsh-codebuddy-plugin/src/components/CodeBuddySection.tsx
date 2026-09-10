@@ -7,6 +7,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react'
+import { useStore } from '@nanostores/react'
 import {
   DshButton,
   DshCollapse,
@@ -36,17 +37,12 @@ import { AddAccountModal, startLoginPolling } from './AddAccountModal.tsx'
 import { CodeBuddyLogo } from './CodeBuddyLogo.tsx'
 import { PreferenceLabel } from './PreferenceLabel.tsx'
 import {
-  getAutoCheckinPref,
-  getAutoSwitchPref,
-  getAutoSwitchThresholdPref,
-  getAutoTravelPref,
-  getUsagePref,
-  setAutoCheckinPref,
-  setAutoSwitchPref,
-  setAutoSwitchThresholdPref,
-  setAutoTravelPref,
-  setUsagePref,
-  subscribeUsagePref,
+  $autoCheckin,
+  $autoSwitch,
+  $autoSwitchThreshold,
+  $autoTravel,
+  $showUsage,
+  setThreshold,
 } from '../client/usage-prefs.ts'
 
 type Translate = (key: CodeBuddyLocaleKey) => string
@@ -107,28 +103,18 @@ export function CodeBuddySection({ rpc, t, panelRoute, close }: CodeBuddySection
   const [removeTarget, setRemoveTarget] = useState<string | undefined>(undefined)
   // 登录中握手返回的真实 authUrl——复制按钮与「打开登录页」共用同一链接。
   const [loginLink, setLoginLink] = useState<string | undefined>(undefined)
-  const [showUsage, setShowUsage] = useState<boolean>(getUsagePref())
-  const [autoSwitch, setAutoSwitchState] = useState<boolean>(getAutoSwitchPref())
-  const [autoSwitchPct, setAutoSwitchPctState] = useState<number>(getAutoSwitchThresholdPref())
-  const [autoCheckin, setAutoCheckinState] = useState<boolean>(getAutoCheckinPref())
-  const [autoTravel, setAutoTravelState] = useState<boolean>(getAutoTravelPref())
+  // 五个偏好多直接来自持久化 store。useStore 内部是 useSyncExternalStore，
+  // 因此设置页与后台面板里任一处的写入（含跨标签）都会自动反映过来，
+  // 原先「手写订阅 effect + setState 镜像」的整套逻辑可以去掉。
+  const showUsage = useStore($showUsage)
+  const autoSwitch = useStore($autoSwitch)
+  const autoSwitchPct = useStore($autoSwitchThreshold)
+  const autoCheckin = useStore($autoCheckin)
+  const autoTravel = useStore($autoTravel)
   const [editTarget, setEditTarget] = useState<string | undefined>(undefined)
   const [editNote, setEditNote] = useState('')
   // 各账号剩余额度快照（设置页用户信息面板展示；来源 panelStatus）。
   const [balanceByAccount, setBalanceByAccount] = useState<Record<string, { remaining: number, capacity: number, usable: boolean }>>({})
-
-  useEffect(() => subscribeUsagePref(() => {
-    setShowUsage(getUsagePref())
-    const nextAuto = getAutoSwitchPref()
-    setAutoSwitchState(nextAuto)
-    void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoSwitch', { enabled: nextAuto })
-    const nextCheckin = getAutoCheckinPref()
-    setAutoCheckinState(nextCheckin)
-    void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoCheckin', { enabled: nextCheckin })
-    const nextTravel = getAutoTravelPref()
-    setAutoTravelState(nextTravel)
-    void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoTravel', { enabled: nextTravel })
-  }), [])
 
   const refresh = useCallback(async () => {
     const [statusResult, accountsResult] = await Promise.all([
@@ -175,8 +161,8 @@ export function CodeBuddySection({ rpc, t, panelRoute, close }: CodeBuddySection
   useEffect(() => {
     void refresh()
     void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoSwitch', {
-      enabled: getAutoSwitchPref(),
-      thresholdPct: getAutoSwitchThresholdPref(),
+      enabled: $autoSwitch.get(),
+      thresholdPct: $autoSwitchThreshold.get(),
     })
   }, [refresh, rpc])
 
@@ -234,26 +220,23 @@ export function CodeBuddySection({ rpc, t, panelRoute, close }: CodeBuddySection
   }, [rpc])
 
   const toggleAutoSwitch = useCallback((enabled: boolean) => {
-    setAutoSwitchState(enabled)
-    setAutoSwitchPref(enabled)
+    $autoSwitch.set(enabled)
     void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoSwitch', { enabled, thresholdPct: autoSwitchPct })
   }, [rpc, autoSwitchPct])
 
   const toggleAutoCheckin = useCallback((enabled: boolean) => {
-    setAutoCheckinState(enabled)
-    setAutoCheckinPref(enabled)
+    $autoCheckin.set(enabled)
     void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoCheckin', { enabled })
   }, [rpc])
 
   const toggleAutoTravel = useCallback((enabled: boolean) => {
-    setAutoTravelState(enabled)
-    setAutoTravelPref(enabled)
+    $autoTravel.set(enabled)
     void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoTravel', { enabled })
   }, [rpc])
 
   const changeAutoSwitchThreshold = useCallback((pct: number) => {
-    setAutoSwitchPctState(pct)
-    setAutoSwitchThresholdPref(pct)
+    // 走归一化写入：Slider 可能给出小数，直接 set 会让内存与存储不一致。
+    setThreshold(pct)
     if (autoSwitch) {
       void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoSwitch', { enabled: true, thresholdPct: pct })
     }
@@ -593,7 +576,7 @@ export function CodeBuddySection({ rpc, t, panelRoute, close }: CodeBuddySection
         >
           <DshSwitch
             checked={showUsage}
-            onChange={(checked: boolean) => { setShowUsage(checked); setUsagePref(checked) }}
+            onChange={(checked: boolean) => { $showUsage.set(checked) }}
             aria-label={t('showUsage')}
           />
         </DshForm.Slot>

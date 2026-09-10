@@ -83,6 +83,10 @@ export default [
         /^dayjs(?:\/|$)/u,
         // semi-ui 内部运行时依赖（Popover/TimePicker 等），浏览器端同样没有
         /^date-fns(?:\/|$)/u,
+        // 状态管理与持久化：DSH 模块表里没有 nanostores，必须内联，
+        // 否则 client 会残留 require('nanostores') 而浏览器端无法解析。
+        /^nanostores(?:\/|$)/u,
+        /^@nanostores\/(?:persistent|react)(?:\/|$)/u,
       ],
       neverBundle: [...CLIENT_EXTERNALS],
     },

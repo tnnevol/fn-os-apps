@@ -315,6 +315,12 @@ importers:
 
   plugins/dsh-codebuddy-plugin:
     dependencies:
+      '@nanostores/persistent':
+        specifier: ^1.3.5
+        version: 1.3.5(nanostores@1.5.3)
+      '@nanostores/react':
+        specifier: ^2.0.1
+        version: 2.0.1(nanostores@1.5.3)(react@18.3.1)
       dayjs:
         specifier: 'catalog:'
         version: 1.11.23
@@ -324,6 +330,9 @@ importers:
       eventsource-parser:
         specifier: ^3.1.0
         version: 3.1.1
+      nanostores:
+        specifier: ^1.5.3
+        version: 1.5.3
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: 'catalog:'
@@ -1980,6 +1989,19 @@ packages:
     resolution: {integrity: sha512-ukBJT3SGDDy0FRToKlv2v2DGNuqwmVIvUsoQ3FI+5HwU/ivBR9r1yrPJsiIl6L1iOP+kpz1dCKwci+jruWUuEQ==}
     peerDependencies:
       vue: ^3.0.0
+
+  '@nanostores/persistent@1.3.5':
+    resolution: {integrity: sha512-CNdhro3jEzNdPpPImIltnPpDKp5vxYmomHlZI7EMNoAxddImx97djxXDdPd2HIC4UczzUUMk7AMWCfMpFJHUsw==}
+    engines: {node: ^20.0.0 || >=22.0.0}
+    peerDependencies:
+      nanostores: ^0.9.0 || ^0.10.0 || ^0.11.0 || ^1.0.0
+
+  '@nanostores/react@2.0.1':
+    resolution: {integrity: sha512-txbZTd+7/hnO7FhtF8Pmr+cu0ThdCuCnOyEEh0DsEM2Hp9PfOa5EY4uj3wpZpypSzp5BuqDgf2AxVAKoUIWOFQ==}
+    engines: {node: ^22.0.0 || ^24.0.0 || >=26.0.0}
+    peerDependencies:
+      nanostores: ^1.2.0
+      react: '>=18.0.0'
 
   '@napi-rs/lzma-linux-x64-gnu@1.5.1':
     resolution: {integrity: sha512-oTXEIha4SsuXdTA4Iyskj0kpdx2yVXdhd75c2v3xGrHFfVMsbhTPZU/nMPL4sWKo4pBHm3aucLaqGlF696dTyQ==}
@@ -4030,6 +4052,10 @@ packages:
     resolution: {integrity: sha512-DTg4MJbGMWkfi6VZFdNt2/caMbQy4Ou+Op/hJQvGEWcnVfoA1QA+xzRKAzw9jD6+GVOOeYr/mIcuDSdug6F6+w==}
     engines: {node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1}
     hasBin: true
+
+  nanostores@1.5.3:
+    resolution: {integrity: sha512-rQLB6eV4f2AW/n3L0JmwCROpaisYy9EDEADvEFSd1C/qG8hB6O5TPlh9A791JRbJr4CnMQBzptDcvD9OR1+6WA==}
+    engines: {node: ^20.0.0 || >=22.0.0}
 
   negotiator@0.6.4:
     resolution: {integrity: sha512-myRT3DiWPHqho5PrJaIRyaMv2kgYf0mUVgBNOYMuCH5Ki1yEiQaf/ZJuQ62nvpc44wL5WDbTX7yGJi1Neevw8w==}
@@ -6387,6 +6413,15 @@ snapshots:
     dependencies:
       vue: 3.5.41(typescript@5.9.3)
 
+  '@nanostores/persistent@1.3.5(nanostores@1.5.3)':
+    dependencies:
+      nanostores: 1.5.3
+
+  '@nanostores/react@2.0.1(nanostores@1.5.3)(react@18.3.1)':
+    dependencies:
+      nanostores: 1.5.3
+      react: 18.3.1
+
   '@napi-rs/lzma-linux-x64-gnu@1.5.1':
     optional: true
 
@@ -8580,6 +8615,8 @@ snapshots:
   ms@2.1.3: {}
 
   nanoid@3.3.18: {}
+
+  nanostores@1.5.3: {}
 
   negotiator@0.6.4: {}
 

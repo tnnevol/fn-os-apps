@@ -8,6 +8,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import { useStore } from '@nanostores/react'
 import { BarChart, LineChart } from 'echarts/charts'
 import { AriaComponent, GridComponent, LegendComponent, TooltipComponent } from 'echarts/components'
 import { init as initChart, use as useECharts } from 'echarts/core'
@@ -71,12 +72,9 @@ import { DEFAULT_TOKEN_RANGE, optionsFor, rangeLabel as rangeLabelOf, type Token
 import { CodeBuddyLogo } from '../components/CodeBuddyLogo.tsx'
 import { AddAccountModal, startLoginPolling } from '../components/AddAccountModal.tsx'
 import {
-  getAutoCheckinPref,
-  getAutoSwitchPref,
-  getAutoTravelPref,
-  setAutoCheckinPref,
-  setAutoSwitchPref,
-  setAutoTravelPref,
+  $autoCheckin,
+  $autoSwitch,
+  $autoTravel,
   subscribeUsagePref,
 } from './usage-prefs.ts'
 
@@ -838,16 +836,17 @@ function AccountsPage({
   // 资源包弹框目标账号。
   const [resourceTarget, setResourceTarget] = useState<PanelAccountRow | undefined>(undefined)
   // 自动签到开关状态：开启时隐藏手动签到动作。
-  const [autoCheckinOn, setAutoCheckinOn] = useState<boolean>(autoCheckinPref())
-  // 自动切换账号（与设置页共用同一 localStorage 键，两处开关互为镜像）。
-  const [autoSwitchOn, setAutoSwitchOn] = useState<boolean>(getAutoSwitchPref())
-  // 自动旅行开关状态（成长中心）。
-  const [autoTravelOn, setAutoTravelOn] = useState<boolean>(autoTravelPref())
+  // 三个开关直接来自持久化 store：useStore 内部即 useSyncExternalStore，因此
+  // 设置页或后台面板任一处的写入（含跨标签）都会自动反映到这里。
+  // 自动签到开启时隐藏手动签到动作；自动切换开启时隐藏「设为当前账号」。
+  const autoCheckinOn = useStore($autoCheckin)
+  const autoSwitchOn = useStore($autoSwitch)
+  const autoTravelOn = useStore($autoTravel)
   // 资源台账版本：记录完本次探测结果后自增，让卡片用上最新的分类。
   const [ledgerTick, setLedgerTick] = useState(0)
   const rows = data?.accounts ?? []
 
-  // 每次探测都把实时资源包并入本地台账（写 localStorage 属于副作用，放 effect）。
+  // 每次探测都把实时资源包并入本地台账（写持久化 store 属于副作用，放 effect）。
   useEffect(() => {
     if (rows.length === 0) return
     for (const row of rows) {
@@ -877,19 +876,12 @@ function AccountsPage({
     void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoTravel', { enabled: autoTravelOn })
     // 只传 enabled，阈值留给设置页——主机侧缺省沿用已加载的阈值。
     void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoSwitch', { enabled: autoSwitchOn })
-    // 订阅偏好变化：面板关闭时只 `return null`、组件保持挂载，因此设置页改了开关
-    // 后这里的 state 不会自动跟上。自动切换尤其明显——它还决定卡片菜单里
-    // 「设为当前账号」是否出现，不同步会出现「该有的入口没有」的错觉。
+    // 偏好变化后把新值同步给 host。展示值本身由 store 驱动（见上面的 useStore），
+    // 这里只负责 host 侧：面板关闭时组件仍挂载，设置页改动的开关必须让 host 也知道。
     return subscribeUsagePref(() => {
-      const nextCheckin = getAutoCheckinPref()
-      const nextTravel = getAutoTravelPref()
-      const nextSwitch = getAutoSwitchPref()
-      setAutoCheckinOn(nextCheckin)
-      setAutoTravelOn(nextTravel)
-      setAutoSwitchOn(nextSwitch)
-      void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoCheckin', { enabled: nextCheckin })
-      void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoTravel', { enabled: nextTravel })
-      void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoSwitch', { enabled: nextSwitch })
+      void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoCheckin', { enabled: $autoCheckin.get() })
+      void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoTravel', { enabled: $autoTravel.get() })
+      void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoSwitch', { enabled: $autoSwitch.get() })
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rpc])
@@ -963,8 +955,7 @@ function AccountsPage({
             checked={autoSwitchOn}
             t={t}
             onChange={(checked: boolean) => {
-              setAutoSwitchOn(checked)
-              setAutoSwitchPref(checked)
+              $autoSwitch.set(checked)
               // 只传 enabled：阈值由设置页维护，主机侧缺省沿用当前值，避免这里
               // 把用户在设置页调好的阈值覆盖回默认。
               void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoSwitch', { enabled: checked })
@@ -974,8 +965,7 @@ function AccountsPage({
             checked={autoCheckinOn}
             t={t}
             onChange={(checked: boolean) => {
-              setAutoCheckinOn(checked)
-              setAutoCheckinPref(checked)
+              $autoCheckin.set(checked)
               void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoCheckin', { enabled: checked })
             }}
           />
@@ -983,8 +973,7 @@ function AccountsPage({
             checked={autoTravelOn}
             t={t}
             onChange={(checked: boolean) => {
-              setAutoTravelOn(checked)
-              setAutoTravelPref(checked)
+              $autoTravel.set(checked)
               void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoTravel', { enabled: checked })
             }}
           />
@@ -1893,13 +1882,8 @@ export function CodeBuddyPanelPage({ rpc, route, t }: PanelPageProps): ReactNode
 }
 
 /** 自动签到偏好（与设置页同一键）。 */
-const autoCheckinPref = (): boolean => getAutoCheckinPref()
-
-/** 自动旅行偏好（与设置页同一键）。 */
-const autoTravelPref = (): boolean => getAutoTravelPref()
-
 /** 自动切换账号开关（账号页标题行）。与自动签到/自动旅行同构：受控组件，
- *  状态由 AccountsPage 持有，切换时写 localStorage 并同步到 host。
+ *  状态来自共享的持久化 store，切换时写 store 并同步到 host。
  *
  *  开启后本页隐藏「设为当前账号」入口——那时账号由客户端按剩余额度自动切换，
  *  手动指定会被下一次自动切换覆盖，留着这个按钮只会让用户以为设置没生效。 */
@@ -1924,7 +1908,7 @@ function AutoSwitchToggle({ checked, t, onChange }: {
 }
 
 /** 自动签到开关（账号页标题行）。受控组件：状态由 AccountsPage 持有并在
- *  切换时同步到 host（localStorage 与设置页共享）。 */
+ *  切换时同步到 host（走共享的持久化 store，与设置页一致）。 */
 function AutoCheckinToggle({ checked, t, onChange }: {
   checked: boolean
   t: Translate

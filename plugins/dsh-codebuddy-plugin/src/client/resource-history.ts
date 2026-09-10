@@ -14,8 +14,22 @@
  * quota math, and a stale entry can never inflate a live balance because the
  * live reply always wins for packages it still returns.
  *
+ * 台账用 `@nanostores/persistent` 的 JSON atom 承载，不再手写
+ * `localStorage.getItem/setItem` + `JSON.parse`：解析失败、私密模式拒绝写入等
+ * 情况都由库统一处理。但**载荷校验仍留在这里** —— 库只保证「是合法 JSON」，
+ * 不保证形如 `Record<accountId, ResourceSnapshot[]>`；历史版本或人工改动过的
+ * 数据仍可能含着类型不符的行，必须逐行过滤后再用。
+ *
  * @module dsh-codebuddy/resource-history
  */
+
+import { persistentJSON } from '@nanostores/persistent'
+
+/** Keep the ledger small: per account, the most recently seen packages. */
+const MAX_PER_ACCOUNT = 60
+
+/** 存储键：与迁移前一致，已有台账不会被读丢。 */
+const STORAGE_KEY = 'dsh-codebuddy:resource-history'
 
 /** One resource package as observed by a probe. */
 export interface ResourceSnapshot {
@@ -30,49 +44,54 @@ export interface ResourceSnapshot {
   lastSeenAt: number
 }
 
-const STORAGE_KEY = 'dsh-codebuddy:resource-history'
-/** Keep the ledger small: per account, the most recently seen packages. */
-const MAX_PER_ACCOUNT = 60
-
 type HistoryDocument = Record<string, ResourceSnapshot[]>
 
-function readDocument(): HistoryDocument {
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY)
-    if (raw === null) return {}
-    const parsed: unknown = JSON.parse(raw)
-    if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) return {}
-    const out: HistoryDocument = {}
-    for (const [accountId, value] of Object.entries(parsed as Record<string, unknown>)) {
-      if (!Array.isArray(value)) continue
-      const rows: ResourceSnapshot[] = []
-      for (const entry of value) {
-        if (entry === null || typeof entry !== 'object') continue
-        const row = entry as Partial<ResourceSnapshot>
-        if (typeof row.key !== 'string' || typeof row.name !== 'string') continue
-        rows.push({
-          key: row.key,
-          name: row.name,
-          total: typeof row.total === 'number' ? row.total : null,
-          remaining: typeof row.remaining === 'number' ? row.remaining : null,
-          resetsAt: typeof row.resetsAt === 'string' ? row.resetsAt : null,
-          lastSeenAt: typeof row.lastSeenAt === 'number' ? row.lastSeenAt : 0,
-        })
-      }
-      out[accountId] = rows
+/**
+ * 台账 atom。存储键与迁移前一致，值是可序列化的 `Record<accountId, 快照[]>`。
+ *
+ * 用 `.get()` 读、`.set()` 写：persistentJSON 负责 JSON 解析/序列化与私密模式
+ * 容错。解析失败时它回落到 `{}`，因此调用方拿到的永远是对象（但仍可能是
+ * 「对象里含着类型不符的行」，见 {@link sanitizeDocument}）。
+ */
+const $history = persistentJSON<HistoryDocument>(STORAGE_KEY, {})
+
+/**
+ * 逐行校验并归一化台账。
+ *
+ * 库只保证 JSON 合法，不保证形状正确：历史版本写入过别的结构、或数据被手工改动
+ * 过时，直接使用会让渲染层拿到缺失字段的行。这里把每一个可疑值收敛成安全值，
+ * 与迁移前的手写校验完全一致。
+ */
+function sanitizeDocument(raw: unknown): HistoryDocument {
+  if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) return {}
+  const out: HistoryDocument = {}
+  for (const [accountId, value] of Object.entries(raw as Record<string, unknown>)) {
+    if (!Array.isArray(value)) continue
+    const rows: ResourceSnapshot[] = []
+    for (const entry of value) {
+      if (entry === null || typeof entry !== 'object') continue
+      const row = entry as Partial<ResourceSnapshot>
+      if (typeof row.key !== 'string' || typeof row.name !== 'string') continue
+      rows.push({
+        key: row.key,
+        name: row.name,
+        total: typeof row.total === 'number' ? row.total : null,
+        remaining: typeof row.remaining === 'number' ? row.remaining : null,
+        resetsAt: typeof row.resetsAt === 'string' ? row.resetsAt : null,
+        lastSeenAt: typeof row.lastSeenAt === 'number' ? row.lastSeenAt : 0,
+      })
     }
-    return out
-  } catch {
-    return {}
+    out[accountId] = rows
   }
+  return out
+}
+
+function readDocument(): HistoryDocument {
+  return sanitizeDocument($history.get())
 }
 
 function writeDocument(doc: HistoryDocument): void {
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(doc))
-  } catch {
-    // A private-mode refusal only costs the ledger, never the live view.
-  }
+  $history.set(doc)
 }
 
 /** One resource row as the panel receives it from the host. */

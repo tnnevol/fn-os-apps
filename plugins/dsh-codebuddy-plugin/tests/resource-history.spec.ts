@@ -51,3 +51,55 @@ describe('resource package lifecycle classification', () => {
     expect(rows.slice(0, 2).map(row => row.name)).toEqual(['live', 'old'])
   })
 })
+
+describe('台账持久化（迁移到 nanostores 后）', () => {
+  it('写入后能读回，且存储键与迁移前一致', async () => {
+    const { useTestStorageEngine, getTestStorage } = await import('@nanostores/persistent')
+    useTestStorageEngine()
+    const { recordResources, readResources } = await import('../src/client/resource-history.ts')
+    const rows = recordResources('acct-1', [{ name: '体验版', total: 100, remaining: 40, resetsAt: '2099-01-01 00:00:00' }])
+    expect(rows).toHaveLength(1)
+    // 键名不变：老用户已写入的台账不会被读丢。
+    expect(getTestStorage()['dsh-codebuddy:resource-history']).toBeDefined()
+    expect(readResources('acct-1')).toHaveLength(1)
+  })
+
+  it('存储里的脏数据被逐行过滤，而不是让渲染层拿到残缺行', async () => {
+    const { useTestStorageEngine, setTestStorageKey } = await import('@nanostores/persistent')
+    useTestStorageEngine()
+    // 形状不对：缺 key/name 的行、非数组的账号、非对象的条目都要被丢掉。
+    setTestStorageKey('dsh-codebuddy:resource-history', JSON.stringify({
+      'acct-2': [
+        { key: 'ok@x', name: '正常', total: 1, remaining: 1, resetsAt: null, lastSeenAt: 1 },
+        { name: '缺 key' },
+        null,
+        'not-an-object',
+      ],
+      'acct-3': 'not-an-array',
+    }))
+    const { readResources } = await import('../src/client/resource-history.ts')
+    const rows = readResources('acct-2')
+    expect(rows).toHaveLength(1)
+    expect(rows[0]!.name).toBe('正常')
+    expect(readResources('acct-3')).toEqual([])
+  })
+
+  it('存储值不是合法 JSON 时回落到空台账，不抛错', async () => {
+    const { useTestStorageEngine, setTestStorageKey } = await import('@nanostores/persistent')
+    useTestStorageEngine()
+    setTestStorageKey('dsh-codebuddy:resource-history', '{ 不是 JSON')
+    const { readResources } = await import('../src/client/resource-history.ts')
+    expect(readResources('acct-4')).toEqual([])
+  })
+
+  it('forgetResources 只删该账号的台账', async () => {
+    const { useTestStorageEngine } = await import('@nanostores/persistent')
+    useTestStorageEngine()
+    const { recordResources, readResources, forgetResources } = await import('../src/client/resource-history.ts')
+    recordResources('a', [{ name: 'x', total: 1, remaining: 1, resetsAt: null }])
+    recordResources('b', [{ name: 'y', total: 1, remaining: 1, resetsAt: null }])
+    forgetResources('a')
+    expect(readResources('a')).toEqual([])
+    expect(readResources('b')).toHaveLength(1)
+  })
+})

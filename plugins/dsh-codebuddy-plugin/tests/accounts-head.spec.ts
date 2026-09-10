@@ -110,10 +110,10 @@ describe('自动切换账号开关', () => {
     expect(accountsBody).toContain('<AutoSwitchToggle')
   })
 
-  it('开关状态与设置页共用同一个偏好键', () => {
-    // 两处开关互为镜像：读写都走 usage-prefs，底层是同一 localStorage 键。
-    expect(PANEL).toMatch(/useState<boolean>\(getAutoSwitchPref\(\)\)/)
-    expect(PANEL).toContain('setAutoSwitchPref(checked)')
+  it('开关状态与设置页共用同一个 store（底层同一存储键）', () => {
+    // 两处开关互为镜像：都读写 usage-prefs 里的同一个持久化 atom。
+    expect(PANEL).toContain('useStore($autoSwitch)')
+    expect(PANEL).toContain('$autoSwitch.set(checked)')
   })
 
   it('挂载与切换时同步到 host', () => {
@@ -157,13 +157,14 @@ describe('面板与设置页的开关保持同步', () => {
     expect(accountsBody).toContain('subscribeUsagePref')
   })
 
-  it('订阅回调里重读三个开关并同步到 host', () => {
+  it('订阅回调里把三个开关同步到 host', () => {
     const at = accountsBody.indexOf('subscribeUsagePref(')
     const body = accountsBody.slice(at, at + 700)
-    for (const key of ['getAutoCheckinPref', 'getAutoTravelPref', 'getAutoSwitchPref']) {
-      expect(body).toContain(key)
+    for (const store of ['$autoCheckin', '$autoTravel', '$autoSwitch']) {
+      expect(body).toContain(`${store}.get()`)
     }
-    expect(body).toMatch(/setAutoSwitchOn\(nextSwitch\)/)
+    // 展示值由 store 驱动，回调只负责同步 host（不再镜像到 state）。
+    expect(body).not.toContain('setAutoSwitchOn')
   })
 
   it('订阅可取消（effect 返回 disposer）', () => {

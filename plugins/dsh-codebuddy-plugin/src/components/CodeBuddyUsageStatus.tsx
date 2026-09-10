@@ -7,7 +7,8 @@ import { CODEBUDDY_AUTH_CHANNEL, CODEBUDDY_USAGE_REFRESH_MS } from '../client/co
 import { accountEpoch, subscribeAccountEpoch } from '../client/account-epoch.ts'
 import type { CodeBuddyLocaleKey } from '../client/locales.ts'
 import type { ConnectionRpc, UsageResult, UsageWindow } from '../client/rpc.ts'
-import { getUsagePref, subscribeUsagePref } from '../client/usage-prefs.ts'
+import { useStore } from '@nanostores/react'
+import { $showUsage } from '../client/usage-prefs.ts'
 import { CodeBuddyLogo } from './CodeBuddyLogo.tsx'
 
 type Translate = (key: CodeBuddyLocaleKey) => string
@@ -124,12 +125,10 @@ export function CodeBuddyUsageStatus({ t, timer, rpc }: CodeBuddyUsageStatusProp
   const accountVersion = useSyncExternalStore(subscribeAccountEpoch, accountEpoch, accountEpoch)
   const [usage, setUsage] = useState<UsageResult | undefined>()
   const [usageState, setUsageState] = useState<'loading' | 'ready' | 'unavailable'>('loading')
-  const [showUsage, setShowUsage] = useState<boolean>(getUsagePref())
+  // 显示开关直接来自持久化 store：useStore 内部就是 useSyncExternalStore，
+  // 因此跨标签变化、其它组件写入都会自动反映到这里，不再需要手写订阅 effect。
+  const showUsage = useStore($showUsage)
   const [popoverOpen, setPopoverOpen] = useState(false)
-
-  useEffect(() => subscribeUsagePref(() => {
-    setShowUsage(getUsagePref())
-  }), [])
 
   useEffect(() => {
     if (!showUsage) return

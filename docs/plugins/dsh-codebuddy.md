@@ -89,6 +89,19 @@ CodeBuddy 支持图片输入的模型（`supportsImages`）在插件中以原生
 - **会话内联图片**（粘贴/拖拽上传）：DSH 以 `ImageBlock` 交给模型 → 插件原生上传，无需 `read_image`。
 - **`read_image` 工具结果图片**：后续轮次中插件会把工具结果里嵌入的图片一并原生上传给 CodeBuddy，模型可直接看到图片内容而无需重复读图。
 
+## 状态管理与持久化
+
+浏览器侧的偏好与本地台账用 **nanostores**（+ `@nanostores/persistent`、`@nanostores/react`）承载，插件源码里**不再有直接的 `localStorage` 读写**。选它的三点理由：体积小且零依赖；`@nanostores/persistent` **内置跨标签同步**（同时监听 `storage` 与 `pageshow`，后者覆盖「浏览器从 bfcache 恢复页面」——手写实现只监听 `storage` 会漏掉）；私密模式下库自动退回内存存储，不必像原先那样每处都包 `try/catch`。另有 `useTestStorageEngine()` 可注入假 storage，让持久化逻辑能在 Node 环境里直接测。
+
+`@nanostores/react` 的 `useStore` 就是 `useSyncExternalStore` 的薄封装，与本仓库既有写法同构，因此设置页、后台面板、输入框指示器都把「手写订阅 effect + setState 镜像」换成了 `useStore($store)`。
+
+两个迁移时踩到的坑，都已写成用例守住：
+
+- **不能改用 `persistentBoolean`**。它按 `'yes'`/`''` 编解码且缺省 `false`，而本插件的布尔偏好是 `'1'`/`'0'` 且**缺省 true**，直接替换会把用户已有设置静默反转。改用 `persistentAtom` + 自定义 codec，存储格式与迁移前完全一致，老数据无需迁移。
+- **写入前必须自己归一化**。`persistentAtom.set` 只把**编码后**的值写进 storage，atom 自身保留原始值，于是 `set(7.6)` 会让内存读到 `7.6` 而 storage 里是 `"8"`，刷新后才一致。阈值因此走 `setThreshold()` 先取整再写。批量订阅同理用 `listen` 而非 `subscribe`——后者注册时会立即回调一次，对「变化后同步 host」的场景等于 5 个 store 触发 5 次多余 RPC。
+
+`nanostores` 不在 DSH 的模块表里，已在 `tsdown.config.ts` 的 `alwaysBundle` 中登记，确保内联进 client 产物（否则会残留 `require('nanostores')` 而浏览器端无法解析）。
+
 ## 图标约定
 
 左侧菜单与界面装饰使用**彩色图标**，来自 `@douyinfe/semi-icons-lab`——该包的 SVG 内硬编码多色 `fill`，不随前景色变化。
