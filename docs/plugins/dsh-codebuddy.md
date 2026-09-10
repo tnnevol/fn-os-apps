@@ -129,7 +129,9 @@ Semi 的 `.semi-layout` 默认 `flex-direction: column`，只有含 Sider 时才
 - **`min-height: 0`**：flex 子项默认 `min-height: auto`，不设它就不会收缩到容器高度以下，`overflow` 随之失效（内容把容器撑高、滚动条落到整页上，标题依旧被带走）。
 - **内层 Layout 必须 `overflow: hidden`**：若把滚动放在它身上，header 会与内容同处一个滚动上下文而被一起卷走。
 
-横向对齐：Header 与 Content 使用**完全相同**的宽度约束与横向内边距（`min(100%, 1480px)` + 居中 + 同 padding），标题才与下方卡片左边界齐平；只给其中一个加 padding 会让两者错开一个 padding 的距离。
+横向对齐：Header **通栏**，其内容靠 `padding-inline: max(clamp(16px, 2vw, 32px), calc((100% - 1480px) / 2))` 对齐到与页面内容相同的 1480px 列。不用「两者共用 `width: min(100%, 1480px)`」的写法，原因有二：① header 若不 通栏，底部那条分隔线在宽屏下会比面板窄一截、两端悬空（主区 1720px 时两侧各空 120px）；② 宽度上限与自带横向 padding 组合时，padding 落在宽度**之内**，而 `.dsh-codebuddy-panel-view` 的 padding 在宽度**之外**，于是主区 >1544px 时标题比卡片多缩进 32px。通栏 + 同一公式计算后，两者左边界在宽/中/窄屏都一致。
+
+固定 header 的分隔用「主题感知描边 + 一层浅阴影」：`border-bottom: 1px solid var(--dsw-alias-border-l2)` + `box-shadow: var(--dsw-shadow-lv1)`，并配 `position: relative; z-index: 1` 让分隔压在上滑的内容之上（`overflow` 不产生层叠上下文，故非定位的滚动容器不会盖过它）。只用阴影不够——`--dsw-shadow-lv*` 是**固定的 5% 纯黑**（`#0000000d`）、不随主题变化，在深色底 `#151517` 上对比度仅 1.009:1 等于看不见；而 `--dsw-alias-border-*` 是主题感知的（浅色 `#000000xx` / 深色 `#ffffffxx`），分隔必须由它承担。另外 DSH 的 `--dsw-elevation-*` 全部只是 `0 0 0 .5px` 的描边环，并非模糊阴影。
 
 ## 面板 keep-alive
 

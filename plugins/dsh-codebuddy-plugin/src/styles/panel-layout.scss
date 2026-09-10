@@ -207,9 +207,15 @@
 
 @media (max-width: 720px) {
   .dsh-codebuddy-panel .semi-layout-sider { width: 168px; min-width: 168px; }
-  /* 横向留白始终只由 views 承担（toolbar 只贡献纵向间距），
-     窄屏下同样保持标题与内容的左边界一致。 */
-  .dsh-codebuddy-panel-toolbar { padding-top: 16px; padding-bottom: 12px; }
+  /* 窄屏：header 的横向 padding-inline 与 views 的横向 padding 必须同步收窄，
+     否则标题与内容左边界会错开。header 的 padding-inline 是
+     max(clamp(...), calc(...))，窄屏下 clamp 生效，故只需覆盖这个下界；
+     上面那条 padding-inline 里的 clamp(16px, 2vw, 32px) 在此已被覆盖为 14px。 */
+  .dsh-codebuddy-panel-toolbar {
+    padding-top: 16px;
+    padding-bottom: 12px;
+    padding-inline: max(14px, calc((100% - 1480px) / 2));
+  }
   .dsh-codebuddy-panel-views { padding-left: 14px; padding-right: 14px; padding-bottom: 32px; }
   .dsh-codebuddy-panel-action-card > .semi-card-body { align-items: flex-start; flex-direction: column; padding: 16px; }
   .dsh-codebuddy-panel-action-cta { width: 100%; }

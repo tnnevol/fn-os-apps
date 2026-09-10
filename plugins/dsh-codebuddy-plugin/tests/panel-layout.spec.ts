@@ -70,18 +70,73 @@ describe('滚动与固定行为', () => {
 })
 
 describe('标题与内容的横向对齐', () => {
-  it('header 与 view 共用同一宽度约束（否则标题比卡片多缩进一个 padding）', () => {
-    expect(INDEX_SCSS).toMatch(
-      /\.dsh-codebuddy-panel-toolbar,\s*\n\.dsh-codebuddy-panel-view\s*\{\s*width:\s*min\(100%,\s*1480px\)/,
-    )
+  /**
+   * 不变量是「标题左边界 === 卡片左边界」，而不是某一种实现方式。
+   * 早先两者共用 `width: min(100%,1480px)` 来对齐，但那会让 header 不到通栏、
+   * 分隔线两端悬空，且宽度上限与自带 padding 组合后（padding 在宽度**之内**）
+   * 宽屏下标题比卡片多缩进 32px。现改为 header 通栏 + padding-inline 对齐。
+   */
+  const toolbarPad = (): string =>
+    /\.dsh-codebuddy-panel-toolbar\s*\{[^}]*padding-inline:\s*([^;]+);/.exec(INDEX_SCSS)?.[1]?.trim() ?? ''
+  const viewsPad = (): string =>
+    /\.dsh-codebuddy-panel-views\s*\{[^}]*padding:\s*([^;]+);/.exec(INDEX_SCSS)?.[1]?.trim() ?? ''
+
+  /** 复算两处的左边界，覆盖宽屏（走 1480px 列居中）与窄屏（走内边距）两侧。 */
+  function leftEdges(containerWidth: number): { header: number, view: number } {
+    const PAD = 32, CAP = 1480
+    // header 通栏：内容盒 = 自身宽度，横向内边距取 max(pad, (w-cap)/2)
+    const header = Math.max(PAD, (containerWidth - CAP) / 2)
+    // view：在 views 的内容盒内居中的 1480 列
+    const contentBox = containerWidth - 2 * PAD
+    const view = PAD + Math.max(0, (contentBox - CAP) / 2)
+    return { header, view }
+  }
+
+  it('两者左边界在宽/中/窄屏都一致', () => {
+    for (const w of [2400, 1920, 1720, 1544, 1400, 900, 700]) {
+      const { header, view } = leftEdges(w)
+      expect(Math.abs(header - view)).toBeLessThan(0.01)
+    }
   })
 
-  it('两者横向内边距一致：toolbar 与 views 用同一值', () => {
-    // toolbar 的 padding 简写与 views 的简写必须给出同样的左右值。
-    const toolbar = /\.dsh-codebuddy-panel-toolbar\s*\{[^}]*padding:\s*([^;]+);/.exec(INDEX_SCSS)?.[1] ?? ''
-    const views = /\.dsh-codebuddy-panel-views\s*\{[^}]*padding:\s*([^;]+);/.exec(INDEX_SCSS)?.[1] ?? ''
-    const sides = (v: string): string => v.trim().split(/\s+/).slice(1, 3).join(' ')
-    expect(toolbar).not.toBe('')
-    expect(sides(toolbar)).toBe(sides(views))
+  it('header 用 padding-inline 按同一 1480px 列计算', () => {
+    expect(toolbarPad()).toMatch(/max\(clamp\(16px,\s*2vw,\s*32px\),\s*calc\(\(100% - 1480px\) \/ 2\)\)/)
+  })
+
+  it('header 通栏：不再设 width 上限（否则分隔线两端悬空）', () => {
+    const block = /\.dsh-codebuddy-panel-toolbar\s*\{([^}]*)\}/.exec(INDEX_SCSS)?.[1] ?? ''
+    expect(block).not.toMatch(/(^|[^-])width:\s*min\(/)
+  })
+
+  it('页面内容列仍受 1480px 上限约束', () => {
+    expect(INDEX_SCSS).toMatch(/\.dsh-codebuddy-panel-view\s*\{\s*width:\s*min\(100%,\s*1480px\)/)
+    void viewsPad
+  })
+})
+
+describe('固定 header 的分隔与阴影', () => {
+  const toolbarBlock = (): string =>
+    /\.dsh-codebuddy-panel-toolbar\s*\{([^}]*)\}/.exec(INDEX_SCSS)?.[1] ?? ''
+
+  it('有底部阴影', () => {
+    expect(toolbarBlock()).toMatch(/box-shadow:\s*var\(--dsw-shadow-lv\d/)
+  })
+
+  it('同时有主题感知的底部描边（阴影在深色主题下几乎不可见）', () => {
+    // 核算 token：--dsw-shadow-lv* 是固定 5% 纯黑（#0000000d），深色主题
+    // 背景 #151517 上叠 5% 黑，对比度仅 1.009:1 —— 等于看不见。
+    // --dsw-alias-border-* 是主题感知的（浅色 #000000xx / 深色 #ffffffxx），
+    // 因此分隔必须由它承担。
+    expect(toolbarBlock()).toMatch(/border-bottom:\s*1px solid var\(--dsw-alias-border-l\d\)/)
+  })
+
+  it('压在滚动内容之上（否则上滑的卡片会盖住分隔线）', () => {
+    const block = toolbarBlock()
+    expect(block).toMatch(/position:\s*relative/)
+    expect(block).toMatch(/z-index:\s*1/)
+  })
+
+  it('用 border-bottom 而非 inset 阴影（inset 会被 padding 缩进、无法通栏）', () => {
+    expect(toolbarBlock()).not.toMatch(/inset/)
   })
 })

@@ -493,10 +493,38 @@
   overflow: hidden;
 }
 
-/* 固定 header（渲染为 <header>）：不收缩、不参与滚动。 */
+/* 固定 header（渲染为 <header>）：不收缩、不参与滚动。
+ *
+ * 分隔方案是「主题感知描边 + 一层浅阴影」，只用阴影不够——核算 token 后两点：
+ *
+ * 1. DSH 的 `--dsw-elevation-*` 全部只是 `0 0 0 .5px` 的描边环（hairline），并非
+ *    模糊阴影；而 `--dsw-shadow-lv*` 是**固定的 5% 纯黑**（`#0000000d`）、不随主题
+ *    变化。在深色底（#151517）上叠 5% 黑，对比度只有 1.009:1 —— 等于看不见。
+ * 2. `--dsw-alias-border-*` 是**主题感知**的：浅色主题取 `#000000xx`、深色主题取
+ *    `#ffffffxx`（同一 token 两个值）。因此分隔由它承担，阴影只作浅色下的辅助。
+ *
+ * **header 必须通栏**（不再设 width 上限），理由有二：
+ *
+ * - 分隔线应当横跨整个面板。若沿用 `width: min(100%, 1480px)`，宽屏下这条线会比
+ *   面板窄一截、两端悬空（主区 1720px 时两侧各空 120px）。
+ * - 顺带修掉一个对齐缺陷：宽度上限 + 自带横向 padding 会让 padding 落在宽度**之内**，
+ *   而 `.dsh-codebuddy-panel-view` 的 padding 在宽度**之外**，于是主区 >1544px 时
+ *   header 里的标题比下方卡片多缩进 32px。改为通栏 + `padding-inline` 按同一公式
+ *   计算后，两者左边界在宽/中/窄屏都一致（见下方 padding-inline 注释）。
+ *
+ * 用 `border-bottom` 而非 inset box-shadow：后者的边缘贴着内容盒、会被 padding
+ * 缩进，而分隔线要通栏。 */
 .dsh-codebuddy-panel-toolbar {
   flex: 0 0 auto;
-  padding: 24px clamp(16px, 2vw, 32px) 16px;
+  /* 纵向间距保持原值；横向改用 padding-inline 按 1480px 列计算（见下方注释）。 */
+  padding-top: 24px;
+  padding-bottom: 16px;
+  padding-inline: max(clamp(16px, 2vw, 32px), calc((100% - 1480px) / 2));
+  /* 待滚动内容滚到 header 之下时，分隔线仍在最上层——否则上滑的卡片会盖住它。 */
+  border-bottom: 1px solid var(--dsw-alias-border-l2);
+  box-shadow: var(--dsw-shadow-lv1);
+  position: relative;
+  z-index: 1;
 }
 
 /* 主体（渲染为 <main>）：唯一滚动容器。 */
@@ -512,8 +540,8 @@
   scrollbar-gutter: stable;
 }
 
-/* Header 与 Content 共用同一宽度约束并居中，标题与卡片左边界因此对齐。 */
-.dsh-codebuddy-panel-toolbar,
+/* 页面内容列宽上限。header 不在此列——它已通栏，内容靠 padding-inline 对齐
+   （见 .dsh-codebuddy-panel-toolbar 的说明），这样分隔线才能横跨整个面板。 */
 .dsh-codebuddy-panel-view {
   width: min(100%, 1480px);
   margin: 0 auto;
