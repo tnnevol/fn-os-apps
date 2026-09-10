@@ -265,15 +265,16 @@
   gap: 16px;
 }
 
-.dsh-codebuddy-token-toolbar { align-items: flex-start; }
-.dsh-codebuddy-token-toolbar > div:first-child { min-width: 0; }
-.dsh-codebuddy-token-toolbar strong {
-  display: block;
-  color: var(--dsw-alias-label-primary);
-  font-size: 18px;
-  letter-spacing: -.01em;
+/* Token 页顶部现在只放「数据更新于 …」——原先这里重复了页面 shell 已有的
+   「Token 统计」标题与副标题。工具栏退化为单行，不再需要标题排版。 */
+.dsh-codebuddy-token-toolbar { align-items: center; }
+.dsh-codebuddy-token-updated {
+  margin: 0;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 12px;
+  /* 时间戳每次刷新都会变，用等宽数字避免宽度抖动带动版面。 */
+  font-variant-numeric: tabular-nums;
 }
-.dsh-codebuddy-token-toolbar p { margin-top: 5px; font-size: 12px; }
 .dsh-codebuddy-token-toolbar-actions { flex: 0 0 auto; }
 .dsh-codebuddy-token-toolbar-actions .dsh-codebuddy-panel-range { margin: 0; }
 

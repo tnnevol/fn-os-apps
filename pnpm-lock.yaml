@@ -61,6 +61,9 @@ catalogs:
     connect:
       specifier: ^3.7.0
       version: 3.7.0
+    dayjs:
+      specifier: ^1.11.13
+      version: 1.11.23
     http-proxy-middleware:
       specifier: ^3.0.5
       version: 3.0.7
@@ -312,6 +315,9 @@ importers:
 
   plugins/dsh-codebuddy-plugin:
     dependencies:
+      dayjs:
+        specifier: 'catalog:'
+        version: 1.11.23
       echarts:
         specifier: 6.1.0
         version: 6.1.0
@@ -3187,6 +3193,9 @@ packages:
   date-fns@2.30.0:
     resolution: {integrity: sha512-fnULvOpxnC5/Vg3NCiWelDsLiUc9bRwAPs/+LfTLNvetFCtCTN+yQz15C/fs4AwX1R9K5GLtLfn8QW+dWisaAw==}
     engines: {node: '>=0.11'}
+
+  dayjs@1.11.23:
+    resolution: {integrity: sha512-QDTCU0M0MxR3hQfnlDJfwekQiaanm1ubOD231u73WBckQ/fsamwRLiE2GBz6D3a/xF1NgfiDLJjXBa1hYOYTtQ==}
 
   debug@2.6.9:
     resolution: {integrity: sha512-bC7ElrdJaJnPbAP+1EotYvqZsb3ecl5wi6Bfi6BJTUcNowp6cvspg0jXznRTKDjm/E7AdgFBVeAPVMNcKGsHMA==}
@@ -7442,6 +7451,8 @@ snapshots:
   date-fns@2.30.0:
     dependencies:
       '@babel/runtime': 7.29.7
+
+  dayjs@1.11.23: {}
 
   debug@2.6.9:
     dependencies:

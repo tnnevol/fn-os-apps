@@ -56,6 +56,7 @@ import { classifyResources, forgetResources, readResources, recordResources } fr
 import type { ClassifiedResource, LiveResource, ResourceLifecycle } from './resource-history.ts'
 import { TokenStatsStore } from './token-stats-store.ts'
 import { activityCellSize } from './activity-grid.ts'
+import { formatUpdatedAt } from './format-time.ts'
 import { CodeBuddyLogo } from '../components/CodeBuddyLogo.tsx'
 import { AddAccountModal, startLoginPolling } from '../components/AddAccountModal.tsx'
 import { getAutoCheckinPref, getAutoTravelPref, setAutoCheckinPref, setAutoTravelPref } from './usage-prefs.ts'
@@ -252,10 +253,8 @@ function TokensSkeleton(): ReactNode {
   return (
     <DshSkeleton active className="dsh-codebuddy-panel-page dsh-codebuddy-panel-tokens" aria-busy="true">
       <div className="dsh-codebuddy-token-toolbar">
-        <div>
-          <SkeletonBlock height={18} width={160} />
-          <SkeletonBlock height={12} width={240} radius={6} />
-        </div>
+        {/* 与真实页面对应：这里是一行「数据更新于 …」，不再是标题块。 */}
+        <SkeletonBlock height={12} width={220} radius={6} />
       </div>
       <DshCard className="dsh-codebuddy-token-overview-card">
         <div className="dsh-codebuddy-skeleton-overview-body">
@@ -1250,12 +1249,6 @@ function TokenStatsPage({ rpc, t }: { rpc: ConnectionRpc, t: Translate }): React
   if (!hasAnyActivity) {
     return (
       <div className="dsh-codebuddy-panel-page dsh-codebuddy-panel-tokens">
-        <div className="dsh-codebuddy-token-toolbar">
-          <div>
-            <strong>{t('tokenOverview')}</strong>
-            <p className="dsh-codebuddy-muted">{t('tokenProviderSubtitle')}</p>
-          </div>
-        </div>
         <DshCard className="dsh-codebuddy-token-empty-card">
           <DshEmpty
             image={<DshIconCommand size="extra-large" />}
@@ -1287,10 +1280,9 @@ function TokenStatsPage({ rpc, t }: { rpc: ConnectionRpc, t: Translate }): React
   return (
     <div className="dsh-codebuddy-panel-page dsh-codebuddy-panel-tokens">
       <div className="dsh-codebuddy-token-toolbar">
-        <div>
-          <strong>{t('tokenOverview')}</strong>
-          <p className="dsh-codebuddy-muted">{t('tokenProviderSubtitle')}</p>
-        </div>
+        {/* 这里原先重复了页面 shell 已有的「Token 统计」标题与副标题；
+            换成数据更新时间更有信息量：读者能判断看到的是不是最新一轮。 */}
+        <p className="dsh-codebuddy-token-updated">{`${t('tokenUpdatedAt')}${formatUpdatedAt(data.generatedAt)}`}</p>
       </div>
       <TokenPanel
         title={t('tokenTotal')}
@@ -1600,9 +1592,12 @@ export function CodeBuddyPanelPage({ rpc, route, t }: PanelPageProps): ReactNode
   const pageTitle = snapshot.page === 'accounts'
     ? t('accountsTitle')
     : snapshot.page === 'credits' ? t('creditTitle') : t('tokenTitle')
+  // 副标题只在真有补充信息时才渲染。Token 页原先标题与描述同为 tokenTitle，
+  // 于是 h1 下方又重复印了一遍「Token 统计」；既然没有额外信息可讲，就不渲染，
+  // 由页面工具栏的「数据更新于 …」承担这一行的信息。
   const pageDescription = snapshot.page === 'accounts'
     ? t('accountsDesc')
-    : snapshot.page === 'credits' ? t('creditResourceCount') : t('tokenTitle')
+    : snapshot.page === 'credits' ? t('creditResourceCount') : undefined
 
   const items = [
     { itemKey: 'accounts', text: t('accountsTitle'), icon: <DshIconUser /> },
@@ -1634,7 +1629,7 @@ export function CodeBuddyPanelPage({ rpc, route, t }: PanelPageProps): ReactNode
             />
             <div className="dsh-codebuddy-panel-heading">
               <h1 className="dsh-codebuddy-panel-title">{pageTitle}</h1>
-              <p className="dsh-codebuddy-muted">{pageDescription}</p>
+              {pageDescription === undefined ? null : <p className="dsh-codebuddy-muted">{pageDescription}</p>}
             </div>
             <div style={{ flex: 1 }} />
           </div>

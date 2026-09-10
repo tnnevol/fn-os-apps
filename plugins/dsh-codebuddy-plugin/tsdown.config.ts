@@ -79,6 +79,8 @@ export default [
       alwaysBundle: [
         // 本插件独有依赖（Token 图表），DSH 模块表没有 → 内联
         /^echarts(?:\/|$)/u, /^zrender(?:\/|$)/u,
+        // 时间格式化同理：dayjs 只有本插件用，宿主模块表里没有它。
+        /^dayjs(?:\/|$)/u,
         // semi-ui 内部运行时依赖（Popover/TimePicker 等），浏览器端同样没有
         /^date-fns(?:\/|$)/u,
       ],
