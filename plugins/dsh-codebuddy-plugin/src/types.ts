@@ -29,15 +29,25 @@ export interface AuthStateResponse extends ResponseBase {
   data?: AuthState
 }
 
-/** Tokens issued once the browser login completes. */
+/**
+ * Tokens issued once the browser login completes.
+ *
+ * 只有 `accessToken` 是必然存在的：服务端在不同客户端/网关下可能省略其余字段，
+ * 或改用 snake_case 命名（`refresh_token` / `expires_in` / …）。字段因此标为可选，
+ * 由 `normalizeAuthToken` 统一归一化后再使用——把类型写得比现实更严格，只会让
+ * 解析层被迫做无意义的断言。
+ */
 export interface AuthToken {
   accessToken: string
   /** Access-token lifetime in seconds. */
-  expiresIn: number
-  refreshToken: string
+  expiresIn?: number
+  refreshToken?: string
   /** Refresh-token lifetime in seconds. */
-  refreshExpiresIn: number
-  /** Tenant domain that must be echoed on every later request. */
+  refreshExpiresIn?: number
+  /**
+   * Tenant domain that must be echoed on every later request.
+   * 缺失时归一化为空串，避免把字符串 "undefined" 发进 `X-Domain`。
+   */
   domain: string
 }
 

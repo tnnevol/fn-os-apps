@@ -103,6 +103,11 @@ export interface CodeBuddyLoginPoll {
   done: boolean
   /** Signed-in display name, when the login just completed. */
   nickname?: string
+  /**
+   * 失败原因（登录已确定失败时给出）。有值即表示不必再轮询：继续等待不会有结果，
+   * 应把原因显示给用户。没有该字段时表示「仍在等待用户完成授权」。
+   */
+  error?: string
 }
 
 /**
@@ -175,6 +180,12 @@ interface PendingLogin {
   state: string
   /** Resolves to the persisted storage once `pollAuthToken` succeeds. */
   promise: Promise<CodeBuddyAccountEntry | undefined>
+  /**
+   * 失败原因。登录失败时由 {@link CodeBuddyAuthService.runLogin} 写入，
+   * `pollLogin` 据此把「已失败」与「仍在等待」区分开——否则前端只能一直轮询到
+   * 超时，用户看不到任何失败原因（这正是此前 workbuddy 登录无反应的成因）。
+   */
+  failure?: string
 }
 
 /** A successful RPC result. */
@@ -1166,9 +1177,12 @@ export class CodeBuddyAuthService {
       return { done: false }
     }
     const entry = await pending.promise
+    if (entry !== undefined) return { done: true, nickname: entry.account.nickname }
+    // 失败必须说出来：此前只回 { done: false }，与「用户还没点完登录」无法区分，
+    // 前端会一直轮询到 10 分钟超时，用户既看不到原因也不知道该重试。
     return {
-      done: entry !== undefined,
-      ...entry !== undefined ? { nickname: entry.account.nickname } : {},
+      done: false,
+      ...pending.failure === undefined ? {} : { error: pending.failure },
     }
   }
 
@@ -1264,9 +1278,15 @@ export class CodeBuddyAuthService {
       await saveStorage(next)
       this.notifyModels()
       return fresh
-    } catch {
+    } catch (error) {
       // A transport or service failure ends the handshake; the client may
-      // retry from `startLogin`.
+      // retry from `startLogin`. 但**必须把原因带回**：静默返回 undefined 会让
+      // 前端一直轮询到超时，用户看不到失败原因（workbuddy 登录无反应即由此而来）。
+      // 原因写在本次握手的 pending 条目上，而不是实例字段——并发登录时后者会串台。
+      const pendingEntry = this.pending.get(state)
+      if (pendingEntry !== undefined) {
+        pendingEntry.failure = error instanceof Error ? error.message : String(error)
+      }
       return undefined
     }
   }

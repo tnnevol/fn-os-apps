@@ -147,9 +147,12 @@ export class CodeBuddySession {
       ...entry,
       auth: {
         accessToken: refreshed.accessToken,
-        expiresAt: Date.now() + refreshed.expiresIn * 1000,
-        refreshToken: refreshed.refreshToken,
-        refreshExpiresAt: Date.now() + refreshed.refreshExpiresIn * 1000,
+        // 时长缺失按 0 处理，避免 NaN 让「已过期」判断失效（NaN 比较恒为 false）。
+        expiresAt: Date.now() + (refreshed.expiresIn ?? 0) * 1000,
+        // 刷新响应若未带回 refreshToken，保留原有的——直接写 undefined 会把
+        // 可用凭据抹掉。
+        refreshToken: refreshed.refreshToken ?? entry.auth.refreshToken,
+        refreshExpiresAt: Date.now() + (refreshed.refreshExpiresIn ?? 0) * 1000,
         domain: refreshed.domain,
       },
     }

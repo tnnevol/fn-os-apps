@@ -130,13 +130,20 @@ export function buildAccountEntry(
   const endpoint = options.endpoint?.trim().replace(/\/+$/, '')
   // 客户端身份与版本都是账号的稳定属性：版本取自固定映射，不随机生成。
   const client = normalizeClientId(options.client)
+  // 时长字段可能缺失：缺省时按 0 处理（即「立即过期」），由后续的刷新流程接管；
+  // 直接用 undefined 做乘法则会得到 NaN，NaN 比较恒为 false，会静默变成
+  // 「永不过期」这种最危险的结果。
+  const expiresIn = token.expiresIn ?? 0
+  const refreshExpiresIn = token.refreshExpiresIn ?? 0
   return {
     id: randomUUID(),
     auth: {
       accessToken: token.accessToken,
-      expiresAt: Date.now() + token.expiresIn * 1000,
-      refreshToken: token.refreshToken,
-      refreshExpiresAt: Date.now() + token.refreshExpiresIn * 1000,
+      expiresAt: Date.now() + expiresIn * 1000,
+      // refreshToken 缺失时存空串：调用方用真值判断，空串等价于「没有可刷新凭据」，
+      // 比存 undefined 更能被既有逻辑安全处理。
+      refreshToken: token.refreshToken ?? '',
+      refreshExpiresAt: Date.now() + refreshExpiresIn * 1000,
       domain: token.domain,
     },
     account: {

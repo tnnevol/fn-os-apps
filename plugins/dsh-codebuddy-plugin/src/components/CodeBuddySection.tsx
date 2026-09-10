@@ -192,6 +192,12 @@ export function CodeBuddySection({ rpc, t, panelRoute, close }: CodeBuddySection
         setError(t('timeout'))
         setPhase('error')
       },
+      // 宿主判定失败时立即把原因显示出来，不必等到超时。
+      (reason: string) => {
+        setLoginState(undefined)
+        setError(`${t('loginFailed')} ${reason}`)
+        setPhase('error')
+      },
     )
   }, [loginState, rpc, refresh, t])
 

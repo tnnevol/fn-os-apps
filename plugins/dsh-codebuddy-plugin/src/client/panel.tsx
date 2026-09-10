@@ -1696,6 +1696,11 @@ export function CodeBuddyPanelPage({ rpc, route, t }: PanelPageProps): ReactNode
         setLoginState(undefined)
         notify(false, t('timeout'))
       },
+      // 宿主判定失败时立即提示原因，而不是让用户等到 10 分钟超时。
+      (reason: string) => {
+        setLoginState(undefined)
+        notify(false, `${t('loginFailed')} ${reason}`)
+      },
     )
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loginState, rpc])

@@ -155,9 +155,48 @@ export async function pollAuthToken(endpoint: string, state: string, signal?: Ab
     const body = await response.json() as AuthTokenResponse
     if (body.code === AUTH_PENDING_CODE) continue
     if (body.code !== 0) return undefined
-    return body.data
+    return normalizeAuthToken(body.data)
   }
   return undefined
+}
+
+/**
+ * 归一化 token 载荷。
+ *
+ * 服务端在不同客户端/网关下可能用 camelCase 或 snake_case 返回同一组字段。参考实现
+ * （workbuddy-switch 的 oauth 解析）对每个字段都**同时容忍**两种写法，这里照做：
+ * 只认一种写法的话，另一种会解析成 `undefined`，进而发出 `Authorization: Bearer
+ * undefined` 并收到 401——而且由于失败发生在登录流程内、错误又被静默吞掉，表现
+ * 就是「登录完了但账号不出现」，很难定位。
+ *
+ * `domain` 缺失时回退到 `''`：`getLoginAccount` 会把它放进 `X-Domain`，值为
+ * undefined 会变成字符串 "undefined" 发给服务端。
+ */
+export function normalizeAuthToken(raw: unknown): AuthToken | undefined {
+  if (raw === null || typeof raw !== 'object') return undefined
+  const source = raw as Record<string, unknown>
+  const str = (key: string, snake: string): string | undefined => {
+    const value = source[key] ?? source[snake]
+    return typeof value === 'string' && value.length > 0 ? value : undefined
+  }
+  const num = (key: string, snake: string): number | undefined => {
+    const value = source[key] ?? source[snake]
+    return typeof value === 'number' && Number.isFinite(value) ? value : undefined
+  }
+  const accessToken = str('accessToken', 'access_token')
+  // 没有 accessToken 就没有可用的凭据：返回 undefined 让调用方按失败处理，
+  // 而不是带着一个残缺对象继续走（那会在下一步发出 `Bearer undefined`）。
+  if (accessToken === undefined) return undefined
+  const refreshToken = str('refreshToken', 'refresh_token')
+  const expiresIn = num('expiresIn', 'expires_in')
+  const refreshExpiresIn = num('refreshExpiresIn', 'refresh_expires_in')
+  return {
+    accessToken,
+    ...refreshToken === undefined ? {} : { refreshToken },
+    ...expiresIn === undefined ? {} : { expiresIn },
+    ...refreshExpiresIn === undefined ? {} : { refreshExpiresIn },
+    domain: str('domain', 'domain') ?? '',
+  }
 }
 
 /**

@@ -61,6 +61,11 @@ export interface LoginStart {
 export interface LoginPoll {
   done: boolean
   nickname?: string
+  /**
+   * 登录已确定失败时的原因。有值即应停止轮询并把原因显示给用户——
+   * 此前失败与「仍在等待授权」都表现为 done:false，前端只能一直轮询到超时。
+   */
+  error?: string
 }
 
 /** One metering window the host `usage` endpoint reports. */

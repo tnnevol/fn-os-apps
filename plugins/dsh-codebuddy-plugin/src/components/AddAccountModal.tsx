@@ -220,6 +220,7 @@ export function startLoginPolling(
   state: string,
   onDone: () => void,
   onTimeout: () => void,
+  onFailed?: (reason: string) => void,
 ): () => void {
   const startedAt = Date.now()
   let stopped = false
@@ -229,6 +230,12 @@ export function startLoginPolling(
     if (stopped) return
     if (result.ok && result.value.done) {
       onDone()
+      return
+    }
+    // 宿主已判定失败：立即停止轮询并上报原因，不必等到超时——继续等待不会有结果。
+    if (result.ok && result.value.error !== undefined && result.value.error.length > 0) {
+      if (onFailed === undefined) onTimeout()
+      else onFailed(result.value.error)
       return
     }
     if (Date.now() - startedAt >= POLL_DEADLINE_MS) {
