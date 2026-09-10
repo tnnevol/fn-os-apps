@@ -28,11 +28,20 @@ interface SessionRecord {
   persisted: boolean
 }
 
+/**
+ * 一次模型调用的用量投影。
+ *
+ * **不含缓存写**：实测本环境下 7309 条 CodeBuddy 用量事件中 `cacheWriteTokens`
+ * 出现 0 次（服务端不上报该字段），计入它只会让口径与展示多出一个恒为 0 的项。
+ * 缓存读保留——它占总量 98.7%，是真实发生的用量。
+ *
+ * 注意 `translate.ts` 的 `mapUsage` 仍会向宿主上报两个缓存字段，DSH 自身的轨迹
+ * 视图依赖它们；这里收窄的只是**统计口径**。
+ */
 interface TokenUsageProjection {
   uncachedInputTokens: number
   outputTokens: number
   cacheReadTokens: number
-  cacheWriteTokens: number
 }
 
 interface SessionEvent {
@@ -70,12 +79,17 @@ export interface CodeBuddyTokenStatsRequest {
   sessionIds?: string[]
 }
 
+/**
+ * 一个统计窗口内的用量合计。
+ *
+ * 含输入、输出与缓存读；不含缓存写（理由见 {@link TokenUsageProjection}）。
+ */
 export interface CodeBuddyTokenBucket {
   total: number
   input: number
   output: number
+  /** 缓存读：命中缓存的输入，占总量的绝大多数。 */
   read: number
-  write: number
   records: number
 }
 
@@ -156,13 +170,13 @@ function addBucket(target: CodeBuddyTokenBucket, usage: TokenUsageProjection): v
   target.input += usage.uncachedInputTokens
   target.output += usage.outputTokens
   target.read += usage.cacheReadTokens
-  target.write += usage.cacheWriteTokens
-  target.total += usage.uncachedInputTokens + usage.outputTokens + usage.cacheReadTokens + usage.cacheWriteTokens
+  // 合计 = 未命中缓存的输入 + 输出 + 缓存读（不含缓存写）。
+  target.total += usage.uncachedInputTokens + usage.outputTokens + usage.cacheReadTokens
   target.records += 1
 }
 
 function emptyBucket(): CodeBuddyTokenBucket {
-  return { total: 0, input: 0, output: 0, read: 0, write: 0, records: 0 }
+  return { total: 0, input: 0, output: 0, read: 0, records: 0 }
 }
 
 function usageFromEvent(event: SessionEvent): TokenUsageProjection | undefined {
@@ -176,9 +190,10 @@ function usageFromEvent(event: SessionEvent): TokenUsageProjection | undefined {
   const input = nonNegative(usage.inputTokens)
   const output = nonNegative(usage.outputTokens)
   const read = nonNegative(usage.cacheReadTokens)
-  const write = nonNegative(usage.cacheWriteTokens)
-  if (input === 0 && output === 0 && read === 0 && write === 0) return undefined
-  return { uncachedInputTokens: input, outputTokens: output, cacheReadTokens: read, cacheWriteTokens: write }
+  // 缓存写不参与统计，因此判定条件也不再看它：一条只有缓存写的事件会被丢弃
+  // （计入的话「记录数」会增加而总量不增，让「平均每次调用」偏小）。
+  if (input === 0 && output === 0 && read === 0) return undefined
+  return { uncachedInputTokens: input, outputTokens: output, cacheReadTokens: read }
 }
 
 function messageText(value: unknown): string | undefined {
@@ -342,7 +357,7 @@ export async function collectCodeBuddyTokenStats(
         const activity = activityRows.get(eventDay)
         if (activity !== undefined) {
           activity.calls += 1
-          activity.tokens += usage.uncachedInputTokens + usage.outputTokens + usage.cacheReadTokens + usage.cacheWriteTokens
+          activity.tokens += usage.uncachedInputTokens + usage.outputTokens + usage.cacheReadTokens
           const active = activitySessions.get(eventDay) ?? new Set<string>()
           active.add(sessionId)
           activitySessions.set(eventDay, active)
@@ -356,15 +371,16 @@ export async function collectCodeBuddyTokenStats(
         const source = record(modelMessage?.source)
         const modelName = text(source?.model) ?? '未知模型'
         const model = models.get(modelName) ?? { total: 0, calls: 0 }
-        model.total += usage.uncachedInputTokens + usage.outputTokens + usage.cacheReadTokens + usage.cacheWriteTokens
+        model.total += usage.uncachedInputTokens + usage.outputTokens + usage.cacheReadTokens
         model.calls += 1
         models.set(modelName, model)
         const workspace = workspaces.get(workspaceName) ?? { total: 0, calls: 0, ...workspacePath === undefined ? {} : { path: workspacePath } }
-        workspace.total += usage.uncachedInputTokens + usage.outputTokens + usage.cacheReadTokens + usage.cacheWriteTokens
+        workspace.total += usage.uncachedInputTokens + usage.outputTokens + usage.cacheReadTokens
         workspace.calls += 1
         workspaces.set(workspaceName, workspace)
-        session.total += usage.uncachedInputTokens + usage.outputTokens + usage.cacheReadTokens + usage.cacheWriteTokens
-        session.input += usage.uncachedInputTokens + usage.cacheReadTokens + usage.cacheWriteTokens
+        session.total += usage.uncachedInputTokens + usage.outputTokens + usage.cacheReadTokens
+        // 会话行的「输入」沿既有口径含缓存读（与总量里的输入不同义，但这是原行为）。
+        session.input += usage.uncachedInputTokens + usage.cacheReadTokens
         session.output += usage.outputTokens
         session.calls += 1
         session.lastActiveAt = Math.max(session.lastActiveAt, event.time)
@@ -380,11 +396,14 @@ export async function collectCodeBuddyTokenStats(
   for (const row of dayRows.values()) {
     row.activeSessions = activitySessions.get(row.day)?.size ?? 0
   }
+  // 缓存命中率：缓存读 /（未命中输入 + 缓存读）。只与输入侧有关，
+  // 因此不受「缓存写已移出统计」影响。
+  const promptTokens = totals.input + totals.read
+  if (promptTokens > 0) totals.cacheHitRate = totals.read / promptTokens
+
   for (const row of activityRows.values()) {
     row.activeSessions = activitySessions.get(row.day)?.size ?? 0
   }
-  const promptTokens = totals.input + totals.read
-  if (promptTokens > 0) totals.cacheHitRate = totals.read / promptTokens
   for (const session of sessionRows.values()) {
     session.percent = totals.total > 0 ? Math.round((session.total / totals.total) * 1000) / 10 : 0
   }

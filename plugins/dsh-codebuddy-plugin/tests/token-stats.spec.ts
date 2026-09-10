@@ -49,13 +49,16 @@ describe('CodeBuddy token analytics', () => {
 
     const result = await collectCodeBuddyTokenStats(query, { days: 2 })
     expect(result.provider).toBe('codebuddy')
-    expect(result.totals.total).toBe(225)
+    // 缓存**写**（fixture 里的 5）不计入任何合计；缓存读（50）仍计入：
+    // 总量 = 输入 140 + 输出 30 + 缓存读 50 = 220（旧口径含缓存写得 225）。
+    expect(result.totals.total).toBe(220)
     expect(result.totals.input).toBe(140)
     expect(result.totals.output).toBe(30)
+    // 缓存读保留为独立指标，供总览分段条与命中率使用。
     expect(result.totals.read).toBe(50)
-    expect(result.totals.write).toBe(5)
     expect(result.totals.records).toBe(2)
     expect(result.totals.sessions).toBe(2)
+    // 命中率只与输入侧有关，因此不受「缓存写已移出统计」影响。
     expect(result.totals.cacheHitRate).toBeCloseTo(50 / 190)
     expect(result.models[0]?.name).toBe('deepseek-v4-flash')
     expect(result.workspaces[0]?.name).toBe('alpha')
@@ -288,5 +291,76 @@ describe('各范围窗口确实生效（合成跨年数据）', () => {
     // 3 天前的那条必在；20 天前那条取决于今天几号。
     expect(s.totals.input).toBeGreaterThanOrEqual(7)
     expect(s.totals.input).toBeLessThanOrEqual(7 + 30)
+  })
+})
+
+describe('缓存写已移出统计口径', () => {
+  /** 只发一条「纯缓存写」的事件：没有任何输入/输出/缓存读。 */
+  function cacheWriteOnlyEvent(time: number) {
+    return {
+      type: 'assistant/message',
+      time,
+      data: {
+        message: { source: { kind: 'model', provider: 'codebuddy', model: 'kimi-k3-1' } },
+        usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 999 },
+      },
+    }
+  }
+
+  it('只有缓存写的事件被丢弃，不计入记录数', async () => {
+    // 若把它当成有效事件收下，「记录数」会增加而总量不增，让「平均每次调用」偏小。
+    const now = Date.now()
+    const header = { id: 's-w', cwd: '/work/w' }
+    const query: SessionQueryService = {
+      async listSessions() { return [{ header, live: false, persisted: true }] },
+      async observeSession() {
+        return {
+          header,
+          events: [cacheWriteOnlyEvent(now)],
+          [Symbol.dispose]: () => {},
+        }
+      },
+    }
+    const result = await collectCodeBuddyTokenStats(query, { days: 1 })
+    expect(result.totals.total).toBe(0)
+    expect(result.totals.records).toBe(0)
+  })
+
+  it('同一事件的缓存读仍被计入（只去掉写）', async () => {
+    const now = Date.now()
+    const header = { id: 's-r', cwd: '/work/r' }
+    const query: SessionQueryService = {
+      async listSessions() { return [{ header, live: false, persisted: true }] },
+      async observeSession() {
+        return {
+          header,
+          events: [{
+            type: 'assistant/message',
+            time: now,
+            data: {
+              message: { source: { kind: 'model', provider: 'codebuddy', model: 'kimi-k3-1' } },
+              usage: { inputTokens: 10, outputTokens: 2, cacheReadTokens: 88, cacheWriteTokens: 7 },
+            },
+          }],
+          [Symbol.dispose]: () => {},
+        }
+      },
+    }
+    const result = await collectCodeBuddyTokenStats(query, { days: 1 })
+    // 10 + 2 + 88 = 100；缓存写 7 不计入。
+    expect(result.totals.total).toBe(100)
+    expect(result.totals.read).toBe(88)
+    // 命中率 = 88 / (10 + 88)，与缓存写无关。
+    expect(result.totals.cacheHitRate).toBeCloseTo(88 / 98)
+  })
+
+  it('统计结果里没有 write 字段（避免调用方误用）', async () => {
+    const query: SessionQueryService = {
+      async listSessions() { return [] },
+      async observeSession() { throw new Error('unused') },
+    }
+    const result = await collectCodeBuddyTokenStats(query, { days: 1 })
+    expect(result.totals).not.toHaveProperty('write')
+    for (const day of result.days) expect(day).not.toHaveProperty('write')
   })
 })

@@ -137,8 +137,8 @@ interface TokenStats {
   provider: string
   rangeDays: number
   generatedAt: number
-  totals: { total: number, input: number, output: number, read: number, write: number, records: number, sessions: number, cacheHitRate?: number }
-  days: Array<{ day: string, total: number, input: number, output: number, read: number, write: number, records: number, activeSessions: number }>
+  totals: { total: number, input: number, output: number, read: number, records: number, sessions: number, cacheHitRate?: number }
+  days: Array<{ day: string, total: number, input: number, output: number, read: number, records: number, activeSessions: number }>
   activity: Array<{ day: string, calls: number, tokens: number, activeSessions: number }>
   workspaces: Array<{ name: string, path?: string, total: number, calls: number, percent: number }>
   models: Array<{ name: string, total: number, calls: number, percent: number }>
@@ -1367,6 +1367,7 @@ function TokenStatsPage({ rpc, t }: { rpc: ConnectionRpc, t: Translate }): React
 
   // 指标到系列色的映射：与 CSS 中的 --dcb-series-* 保持一致（单一事实来源），
   // 这样总览、趋势图、分布图对同一指标永远用同一颜色。
+  // 缓存写不再统计，因此没有对应系列。
   const cacheRateOf = (value: TokenStats): string => value.totals.cacheHitRate === undefined
     ? '—'
     : `${Math.round(value.totals.cacheHitRate * 100)}%`
@@ -1374,7 +1375,6 @@ function TokenStatsPage({ rpc, t }: { rpc: ConnectionRpc, t: Translate }): React
     input: 'var(--dcb-series-input)',
     output: 'var(--dcb-series-output)',
     cacheRead: 'var(--dcb-series-cache-read)',
-    cacheWrite: 'var(--dcb-series-cache-write)',
   } as const
   const rangeLabel = t('tokenRangeLabel')
   // Translate 不接受插值参数，故标签由 token-range.ts 用前后缀/整词拼出。
@@ -1417,7 +1417,6 @@ function TokenStatsPage({ rpc, t }: { rpc: ConnectionRpc, t: Translate }): React
                   { label: t('tokenInput'), value: overview.data.totals.input, color: SERIES.input },
                   { label: t('tokenOutput'), value: overview.data.totals.output, color: SERIES.output },
                   { label: t('tokenCacheRead'), value: overview.data.totals.read, color: SERIES.cacheRead },
-                  { label: t('tokenCacheWrite'), value: overview.data.totals.write, color: SERIES.cacheWrite },
                 ]} />
                 <div className="dsh-codebuddy-token-overview-stats">
                   <StatMetric icon={<DshIconArrowLeft />} label={t('tokenInput')} value={compact(overview.data.totals.input)} />
@@ -1444,7 +1443,7 @@ function TokenStatsPage({ rpc, t }: { rpc: ConnectionRpc, t: Translate }): React
         <DshCard className="dsh-codebuddy-panel-chart-card">
           {trend.data === undefined
             ? <div className="dsh-codebuddy-panel-chart" />
-            : <TokenUsageChart days={trend.data.days} inputLabel={t('tokenInput')} outputLabel={t('tokenOutput')} cacheReadLabel={t('tokenCacheRead')} cacheWriteLabel={t('tokenCacheWrite')} recordsLabel={t('tokenRecords')} />}
+            : <TokenUsageChart days={trend.data.days} inputLabel={t('tokenInput')} outputLabel={t('tokenOutput')} cacheReadLabel={t('tokenCacheRead')} recordsLabel={t('tokenRecords')} />}
         </DshCard>
       </TokenPanel>
       <section className="dsh-codebuddy-token-section">
@@ -1532,7 +1531,6 @@ interface TokenUsageChartProps {
   inputLabel: string
   outputLabel: string
   cacheReadLabel: string
-  cacheWriteLabel: string
   recordsLabel: string
 }
 
@@ -1540,7 +1538,7 @@ function cssVariable(element: HTMLElement, name: string, fallback: string): stri
   return getComputedStyle(element).getPropertyValue(name).trim() || fallback
 }
 
-function TokenUsageChart({ days, inputLabel, outputLabel, cacheReadLabel, cacheWriteLabel, recordsLabel }: TokenUsageChartProps): ReactNode {
+function TokenUsageChart({ days, inputLabel, outputLabel, cacheReadLabel, recordsLabel }: TokenUsageChartProps): ReactNode {
   const chartElement = useRef<HTMLDivElement>(null)
   useEffect(() => {
     const element = chartElement.current
@@ -1553,7 +1551,6 @@ function TokenUsageChart({ days, inputLabel, outputLabel, cacheReadLabel, cacheW
     const inputColor = cssVariable(element, '--dcb-series-input', '#2aa3a3')
     const outputColor = cssVariable(element, '--dcb-series-output', '#7b61d8')
     const cacheReadColor = cssVariable(element, '--dcb-series-cache-read', '#e2823c')
-    const cacheWriteColor = cssVariable(element, '--dcb-series-cache-write', '#d6538f')
     const chart: ECharts = initChart(element, undefined, { renderer: 'canvas' })
     chart.setOption({
       aria: { enabled: true },
@@ -1609,12 +1606,12 @@ function TokenUsageChart({ days, inputLabel, outputLabel, cacheReadLabel, cacheW
       ],
       series: [
         // barMinHeight：每段柱体的最小像素高度。堆叠模式下 ECharts 对**每个分段**
-        // 生效（源码按 stackStartValue 单独计算），因此缓存写这类占比极小的分段
-        // 也始终可见——否则它的高度会被四舍五入成 0，整段从图例中「消失」。
+        // 生效（源码按 stackStartValue 单独计算），因此占比极小的分段也始终可见
+        // ——否则它的高度会被四舍五入成 0，整段从图例中「消失」。
+        // 缓存写不再统计，故无该系列；顶部圆角改由最后一段（缓存读）承担。
         { name: inputLabel, type: 'bar', stack: 'tokens', barMaxWidth: 32, barMinHeight: 30, itemStyle: { color: inputColor }, data: days.map(day => day.input) },
         { name: outputLabel, type: 'bar', stack: 'tokens', barMaxWidth: 32, barMinHeight: 30, itemStyle: { color: outputColor }, data: days.map(day => day.output) },
-        { name: cacheReadLabel, type: 'bar', stack: 'tokens', barMaxWidth: 32, barMinHeight: 30, itemStyle: { color: cacheReadColor }, data: days.map(day => day.read) },
-        { name: cacheWriteLabel, type: 'bar', stack: 'tokens', barMaxWidth: 32, barMinHeight: 30, itemStyle: { color: cacheWriteColor, borderRadius: [3, 3, 0, 0] }, data: days.map(day => day.write) },
+        { name: cacheReadLabel, type: 'bar', stack: 'tokens', barMaxWidth: 32, barMinHeight: 30, itemStyle: { color: cacheReadColor, borderRadius: [3, 3, 0, 0] }, data: days.map(day => day.read) },
         { name: recordsLabel, type: 'line', yAxisIndex: 1, smooth: true, symbol: 'none', lineStyle: { type: 'dashed', width: 2 }, data: days.map(day => day.records) },
       ],
     })
@@ -1645,7 +1642,7 @@ function TokenUsageChart({ days, inputLabel, outputLabel, cacheReadLabel, cacheW
       if (resizeObserver === undefined) window.removeEventListener('resize', resize)
       chart.dispose()
     }
-  }, [days, inputLabel, outputLabel, cacheReadLabel, cacheWriteLabel, recordsLabel])
+  }, [days, inputLabel, outputLabel, cacheReadLabel, recordsLabel])
   return <div ref={chartElement} className="dsh-codebuddy-panel-chart" role="img" aria-label={`${inputLabel} and ${outputLabel}`} />
 }
 
