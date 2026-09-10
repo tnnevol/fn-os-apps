@@ -57,6 +57,7 @@ import { classifyResources, forgetResources, readResources, recordResources } fr
 import type { ClassifiedResource, LiveResource, ResourceLifecycle } from './resource-history.ts'
 import { TokenStatsStore } from './token-stats-store.ts'
 import { activityCellSize } from './activity-grid.ts'
+import { sortSegmentsByValueDesc } from './segment-bar.ts'
 import { formatUpdatedAt } from './format-time.ts'
 import { DEFAULT_TOKEN_RANGE, optionsFor, rangeLabel as rangeLabelOf, type TokenRangeKey } from './token-range.ts'
 import { CodeBuddyLogo } from '../components/CodeBuddyLogo.tsx'
@@ -359,11 +360,15 @@ function PanelBody({ loading, children }: { loading: boolean, children: ReactNod
  * 最小宽度被满足后各段比例就不再等于数值比例。
  */
 function SegmentBar({ segments }: { segments: Array<{ label: string, value: number, color: string }> }): ReactNode {
-  const total = segments.reduce((sum, segment) => sum + Math.max(0, segment.value), 0)
+  // 占比最大的排在最左边：真实数据里缓存读常占 95% 以上，若它排在中间视觉重心
+  // 会偏；降序后主项紧贴阅读起点，一眼可辨（相等时保持原序，避免刷新时抖动）。
+  // 排序同时作用于条形与图例，两处顺序才会一致。
+  const ordered = sortSegmentsByValueDesc(segments)
+  const total = ordered.reduce((sum, segment) => sum + Math.max(0, segment.value), 0)
   return (
     <div className="dsh-codebuddy-panel-segment-wrap">
-      <div className="dsh-codebuddy-panel-segment-bar" role="img" aria-label={segments.map(segment => `${segment.label} ${compact(segment.value)}`).join('，')}>
-        {segments.map(segment => (
+      <div className="dsh-codebuddy-panel-segment-bar" role="img" aria-label={ordered.map(segment => `${segment.label} ${compact(segment.value)}`).join('，')}>
+        {ordered.map(segment => (
           <DshTooltip key={segment.label} content={`${segment.label}: ${compact(segment.value)}`}>
             <span
               className="dsh-codebuddy-panel-segment-slice"
@@ -377,7 +382,7 @@ function SegmentBar({ segments }: { segments: Array<{ label: string, value: numb
         ))}
       </div>
       <div className="dsh-codebuddy-panel-segment-legend">
-        {segments.map(segment => <span key={segment.label}><i style={{ background: segment.color }} />{segment.label}</span>)}
+        {ordered.map(segment => <span key={segment.label}><i style={{ background: segment.color }} />{segment.label}</span>)}
       </div>
     </div>
   )
@@ -1530,10 +1535,13 @@ function TokenUsageChart({ days, inputLabel, outputLabel, cacheReadLabel, cacheW
         },
       ],
       series: [
-        { name: inputLabel, type: 'bar', stack: 'tokens', barMaxWidth: 32, itemStyle: { color: inputColor }, data: days.map(day => day.input) },
-        { name: outputLabel, type: 'bar', stack: 'tokens', barMaxWidth: 32, itemStyle: { color: outputColor }, data: days.map(day => day.output) },
-        { name: cacheReadLabel, type: 'bar', stack: 'tokens', barMaxWidth: 32, itemStyle: { color: cacheReadColor }, data: days.map(day => day.read) },
-        { name: cacheWriteLabel, type: 'bar', stack: 'tokens', barMaxWidth: 32, itemStyle: { color: cacheWriteColor, borderRadius: [3, 3, 0, 0] }, data: days.map(day => day.write) },
+        // barMinHeight：每段柱体的最小像素高度。堆叠模式下 ECharts 对**每个分段**
+        // 生效（源码按 stackStartValue 单独计算），因此缓存写这类占比极小的分段
+        // 也始终可见——否则它的高度会被四舍五入成 0，整段从图例中「消失」。
+        { name: inputLabel, type: 'bar', stack: 'tokens', barMaxWidth: 32, barMinHeight: 30, itemStyle: { color: inputColor }, data: days.map(day => day.input) },
+        { name: outputLabel, type: 'bar', stack: 'tokens', barMaxWidth: 32, barMinHeight: 30, itemStyle: { color: outputColor }, data: days.map(day => day.output) },
+        { name: cacheReadLabel, type: 'bar', stack: 'tokens', barMaxWidth: 32, barMinHeight: 30, itemStyle: { color: cacheReadColor }, data: days.map(day => day.read) },
+        { name: cacheWriteLabel, type: 'bar', stack: 'tokens', barMaxWidth: 32, barMinHeight: 30, itemStyle: { color: cacheWriteColor, borderRadius: [3, 3, 0, 0] }, data: days.map(day => day.write) },
         { name: recordsLabel, type: 'line', yAxisIndex: 1, smooth: true, symbol: 'none', lineStyle: { type: 'dashed', width: 2 }, data: days.map(day => day.records) },
       ],
     })

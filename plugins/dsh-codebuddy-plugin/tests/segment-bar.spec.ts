@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { SEGMENT_MIN_WIDTH, isVisibleWidth, segmentWidths } from '../src/client/segment-bar.ts'
+import { readFileSync } from 'node:fs'
+import { SEGMENT_MIN_WIDTH, isVisibleWidth, segmentWidths, sortSegmentsByValueDesc } from '../src/client/segment-bar.ts'
 
 /**
  * 分段条要保证「任何一个非零项都不会被大项挤没」。
@@ -74,5 +75,92 @@ describe('分段条布局', () => {
       const widths = segmentWidths(REAL, bar)
       for (const width of widths) expect(width).toBeGreaterThanOrEqual(SEGMENT_MIN_WIDTH - 1e-9)
     }
+  })
+})
+
+describe('分段排序：占比最大的排第一', () => {
+  /**
+   * 真实数据里缓存读常占 95% 以上。若它排在中间，视觉重心会偏；降序后主项紧贴
+   * 阅读起点，一眼可辨。排序同时作用于条形与图例，两处顺序必须一致。
+   */
+  const REAL = [
+    { label: '输入', value: 18_864_650 },
+    { label: '输出', value: 2_338_946 },
+    { label: '缓存读', value: 1_579_863_784 },
+    { label: '缓存写', value: 0 },
+  ]
+
+  it('按数值降序，最大项排第一', () => {
+    const sorted = sortSegmentsByValueDesc(REAL)
+    expect(sorted.map(s => s.label)).toEqual(['缓存读', '输入', '输出', '缓存写'])
+  })
+
+  it('不修改原数组（调用方可能还在用原顺序）', () => {
+    const input = [...REAL]
+    sortSegmentsByValueDesc(input)
+    expect(input.map(s => s.label)).toEqual(['输入', '输出', '缓存读', '缓存写'])
+  })
+
+  it('相等值保持原相对顺序（稳定，刷新时位置不抖动）', () => {
+    const tied = [
+      { label: 'a', value: 5 },
+      { label: 'b', value: 10 },
+      { label: 'c', value: 5 },
+      { label: 'd', value: 10 },
+    ]
+    expect(sortSegmentsByValueDesc(tied).map(s => s.label)).toEqual(['b', 'd', 'a', 'c'])
+  })
+
+  it('负值当 0 处理，不会因排序把异常数据顶到前面', () => {
+    const weird = [
+      { label: 'neg', value: -5 },
+      { label: 'zero', value: 0 },
+      { label: 'pos', value: 3 },
+    ]
+    expect(sortSegmentsByValueDesc(weird).map(s => s.label)).toEqual(['pos', 'neg', 'zero'])
+  })
+
+  it('空数组与单元素不出错', () => {
+    expect(sortSegmentsByValueDesc([])).toEqual([])
+    expect(sortSegmentsByValueDesc([{ label: 'x', value: 1 }])).toHaveLength(1)
+  })
+})
+
+describe('最小宽度已加倍', () => {
+  it('下限为 8px（原为 4px）', () => {
+    expect(SEGMENT_MIN_WIDTH).toBe(8)
+  })
+
+  it('极窄条也保证每段至少 8px 可辨', () => {
+    const widths = segmentWidths([1_000_000, 1, 1, 1], 400)
+    for (const width of widths) expect(width).toBeGreaterThanOrEqual(8)
+  })
+})
+
+describe('最小宽度的单一事实来源', () => {
+  /**
+   * SEGMENT_MIN_WIDTH（TS）与 --dcb-segment-min（CSS）必须一致，否则会静默错位：
+   * TS 那份只用于测试验算，真正生效的是 CSS；两者不一致时测试会「通过」而界面
+   * 是另一个数——这正是最容易被忽略的一类漂移。
+   */
+  it('TS 常量与 CSS 变量取值一致', () => {
+    const scss = readFileSync(
+      '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/styles/panel-layout.scss',
+      'utf8',
+    )
+    const match = /--dcb-segment-min:\s*(\d+)px/.exec(scss)
+    expect(match).not.toBeNull()
+    expect(Number(match?.[1])).toBe(SEGMENT_MIN_WIDTH)
+  })
+
+  it('条形与图例用同一个顺序（两处都基于 ordered）', () => {
+    const panel = readFileSync(
+      '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/client/panel.tsx',
+      'utf8',
+    )
+    const bar = panel.slice(panel.indexOf('function SegmentBar'), panel.indexOf('function BreakdownList'))
+    // 条形与图例都必须遍历 ordered，而不是其中一个用原始 segments。
+    expect(bar).toMatch(/dsh-codebuddy-panel-segment-bar[\s\S]*?\{ordered\.map/)
+    expect(bar).toMatch(/dsh-codebuddy-panel-segment-legend[\s\S]*?\{ordered\.map/)
   })
 })
