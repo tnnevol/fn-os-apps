@@ -4,6 +4,33 @@
   flex-direction: column;
   gap: 22px;
   min-width: 0;
+  /* 刷新遮罩的定位上下文：遮罩只覆盖内容区，不参与 flex 布局。 */
+  position: relative;
+}
+
+/* 局部刷新遮罩：刷新时保留已渲染内容，只叠半透明层 + 转圈，避免整页闪动
+   与滚动位置丢失。pointer-events 保留为 none，使遮罩本身不抢交互——
+   refresh 按钮因此仍可点击（连点不会重复请求，usePanelData 就地更新）。 */
+.dsh-codebuddy-refresh-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--dsw-alias-bg-base) 55%, transparent);
+  pointer-events: none;
+  animation: dsh-codebuddy-refresh-fade-in 160ms ease-out;
+}
+
+@keyframes dsh-codebuddy-refresh-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dsh-codebuddy-refresh-overlay { animation: none; }
 }
 
 .dsh-codebuddy-panel-heading { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
@@ -173,10 +200,26 @@
 
 /* Token analytics: theme-native observability layout with one restrained accent. */
 .dsh-codebuddy-panel-tokens {
-  --dcb-signal: var(--dsw-alias-brand-primary, #27a994);
-  --dcb-violet: #7469de;
-  --dcb-amber: var(--dsw-alias-state-warn-primary, #d79b3d);
-  --dcb-mint: var(--dsw-alias-state-success-primary, #45b996);
+  /* ------------------------------------------------------------------------
+   * Token 指标配色：**单一事实来源**。
+   *
+   * 输入/输出/缓存读/缓存写这四个指标在总览分段条、趋势图、模型分布等所有
+   * 面板里必须同色，否则同一份数据在各面板间颜色跳变，读者无法建立稳定的
+   * 视觉对应。因此这里按指标（而非按面板）定义四个系列色，所有面板统一引用。
+   *
+   * 约束：不使用黑/灰阶作为数据色——灰色是「无数据/次要文本」的语义，用作
+   * 系列色会让该系列看起来被禁用；低饱和的灰蓝也不适合承载数据。
+   * 四个色相彼此拉开（青绿 / 蓝紫 / 橙 / 品红），在深浅两套主题下都可区分。
+   * ---------------------------------------------------------------------- */
+  --dcb-series-input: #2aa3a3;
+  --dcb-series-output: #7b61d8;
+  --dcb-series-cache-read: #e2823c;
+  --dcb-series-cache-write: #d6538f;
+
+  --dcb-signal: var(--dcb-series-input);
+  --dcb-violet: var(--dcb-series-output);
+  --dcb-amber: var(--dcb-series-cache-read);
+  --dcb-mint: var(--dcb-series-cache-write);
   padding-bottom: 18px;
 }
 
@@ -276,6 +319,29 @@
   color: var(--dsw-alias-label-tertiary);
   font-size: 11px;
 }
+
+/* 面板头：标题居左、该面板自己的周期选择器与刷新居右。
+   周期选择器落在面板内（而非页面顶部），让各面板能停在不同的时间窗口上。 */
+.dsh-codebuddy-token-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+  padding: 0 2px;
+}
+.dsh-codebuddy-token-panel-head .dsh-codebuddy-panel-section-title { flex: 1; min-width: 0; }
+.dsh-codebuddy-token-panel-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+.dsh-codebuddy-token-panel-actions .dsh-codebuddy-panel-range { margin: 0; }
+
+/* 面板内容体：刷新遮罩的定位上下文，保证遮罩只盖内容、不动卡片外壳。 */
+.dsh-codebuddy-panel-body { position: relative; min-width: 0; }
 .dsh-codebuddy-token-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
 .dsh-codebuddy-panel-tokens .dsh-codebuddy-panel-chart-card { padding: 14px 18px 18px; }
 .dsh-codebuddy-panel-tokens .dsh-codebuddy-panel-chart { height: 310px; }
@@ -368,6 +434,9 @@
   .dsh-codebuddy-token-overview-stats .dsh-codebuddy-panel-stat:nth-child(n + 3) { border-top: 1px solid var(--dsw-alias-border-l2); }
   .dsh-codebuddy-token-columns { grid-template-columns: 1fr; gap: 22px; }
   .dsh-codebuddy-token-breakdown-row { grid-template-columns: minmax(110px, 1.1fr) minmax(52px, 1fr) auto; gap: 8px; }
+  /* 窄屏下面板头改为纵向：三按钮的周期选择器放不下会挤压标题。 */
+  .dsh-codebuddy-token-panel-head { align-items: stretch; flex-direction: column; }
+  .dsh-codebuddy-token-panel-actions { margin-left: 0; justify-content: space-between; }
 }
 
 /* ==========================================================================

@@ -45,6 +45,17 @@ export interface SessionAnalyticsServices {
   sessionQuery?: Parameters<typeof collectCodeBuddyTokenStats>[0]
 }
 
+/**
+ * 派发失败是否为「该账号没有猫猫」。
+ *
+ * 只认服务端文案（对照 workbuddy-switch 的 `classify_depart_error`）。
+ * 切记不可改用 `status.buddy_id`：那是**当前在旅行的猫猫 id**，未派发时为 0，
+ * 用它判断会让从未派发过的账号永远得不到派发。
+ */
+function isNoBuddyError(message: string): boolean {
+  return message.toLowerCase().includes('no active buddy')
+}
+
 /** The RPC channel the client calls the auth service on. */
 export const CODEBUDDY_AUTH_CHANNEL = '/codebuddy'
 
@@ -489,11 +500,13 @@ export class CodeBuddyAuthService {
           push({ result: 'daily-limit', state: 'idle' })
           continue
         }
-        if (status.buddyId <= 0) {
-          // 没有 Buddy：官网同样无法派发。这是可重试原因（账号后来可能获得 Buddy）。
-          push({ result: 'no-buddy' })
-          continue
-        }
+        // 不再用 `buddy_id <= 0` 判定「没有猫猫」：实测该字段表示**当前正在
+        // 旅行的猫猫 id**，而不是账号是否拥有猫猫。未派发的账号一律返回 0，
+        // 派发成功后才变成真实 id（实测 0 → 7317310）。按它拦截会让「从未派发
+        // 过的账号」永远得不到派发——越是没派过就越被拦住，正是卡片显示
+        // 「暂无猫猫」的原因。
+        // 真正的「没有猫猫」以派发失败的 `no active buddy` 文案为准，对照
+        // workbuddy-switch 的 classify_depart_error。
         const departed = await this.departAtAnyLocation(endpoint, identity)
         if (departed.ok) {
           push({
@@ -504,6 +517,10 @@ export class CodeBuddyAuthService {
           })
         } else if (departed.already === true) {
           push({ result: 'traveling', state: 'traveling' })
+        } else if (departed.noBuddy === true) {
+          // 服务端明确说没有猫猫：可重试原因（账号后来可能获得猫猫），
+          // 不记为失败，免得把一个只是没猫猫的账号算成全失败。
+          push({ result: 'no-buddy' })
         } else {
           push({ result: 'error', ...departed.error === undefined ? {} : { error: departed.error } })
           failed += 1
@@ -545,11 +562,15 @@ export class CodeBuddyAuthService {
     }
   }
 
-  /** 依次尝试地点列表派发，返回首个成功的结果（含到达时间）。 */
+  /** 依次尝试地点列表派发，返回首个成功的结果（含到达时间）。
+   *
+   * 失败原因按文案分类（对照 workbuddy-switch 的 `classify_depart_error`）：
+   * `no active buddy` 是**唯一**可信的「没有猫猫」依据——`status.buddy_id`
+   * 表示当前在旅行的猫猫，未派发时为 0，不能用来判断是否拥有猫猫。 */
   private async departAtAnyLocation(
     endpoint: string,
     identity: CodeBuddyIdentity,
-  ): Promise<{ ok: boolean, already?: boolean, arriveAt?: number, locationName?: string, error?: string }> {
+  ): Promise<{ ok: boolean, already?: boolean, noBuddy?: boolean, arriveAt?: number, locationName?: string, error?: string }> {
     const locations = await fetchTravelLocations(endpoint, identity)
     if (locations.length === 0) return { ok: false, error: 'no locations available' }
     let lastError = 'depart failed'
@@ -566,6 +587,7 @@ export class CodeBuddyAuthService {
       }
       if (result.already === true) return { ok: false, already: true }
       lastError = result.error ?? lastError
+      if (isNoBuddyError(lastError)) return { ok: false, noBuddy: true, error: lastError }
       // 企业账号等确定性拒绝不再换地点重试。
       if (result.unsupported === true) return { ok: false, error: lastError }
     }

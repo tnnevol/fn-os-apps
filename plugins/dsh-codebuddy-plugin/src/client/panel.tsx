@@ -53,6 +53,7 @@ import { PanelRouteController } from './panel-route.ts'
 import type { PanelRoute } from './panel-route.ts'
 import { classifyResources, forgetResources, readResources, recordResources } from './resource-history.ts'
 import type { ClassifiedResource, LiveResource, ResourceLifecycle } from './resource-history.ts'
+import { TokenStatsStore } from './token-stats-store.ts'
 import { CodeBuddyLogo } from '../components/CodeBuddyLogo.tsx'
 import { AddAccountModal, startLoginPolling } from '../components/AddAccountModal.tsx'
 import { getAutoCheckinPref, getAutoTravelPref, setAutoCheckinPref, setAutoTravelPref } from './usage-prefs.ts'
@@ -157,11 +158,60 @@ function usePanelData<T>(
   return { data, loading, reload }
 }
 
+/**
+ * 订阅 Token 统计缓存。每个面板用**自己的** range 调用本 hook：
+ * 范围相同的面板共享同一份数据与同一个在途请求，范围不同才各自取一次。
+ *
+ * 之所以要按范围共享而不是各自裸调 RPC：服务端每次都要重放全部会话
+ * （实测 200 会话约 50ms），面板多起来会线性放大。缓存放在 store 里而不是
+ * 每个面板的 state 里，就是为了让「换回旧范围」零成本命中。
+ */
+function useTokenStats(store: TokenStatsStore, days: number): { data: TokenStats | undefined, loading: boolean, reload: () => void } {
+  useSyncExternalStore(store.subscribe, store.getSnapshot, store.getSnapshot)
+  useEffect(() => { store.ensure(days) }, [store, days])
+  const data = store.get(days) as TokenStats | undefined
+  const loading = data === undefined || store.isLoading(days)
+  const reload = useCallback(() => { store.reload(days) }, [store, days])
+  return { data, loading, reload }
+}
+
 function StatMetric({ icon, label, value }: { icon: ReactNode, label: string, value: string }): ReactNode {
   return (
     <div className="dsh-codebuddy-panel-stat">
       <div className="dsh-codebuddy-panel-stat-label">{icon}<span>{label}</span></div>
       <strong className="dsh-codebuddy-panel-stat-value">{value}</strong>
+    </div>
+  )
+}
+
+/**
+ * 局部刷新遮罩：刷新期间保留已渲染内容，只在上面叠一层半透明遮罩 + 转圈。
+ *
+ * 之所以不用 `if (loading) return <DshSpin/>` 整页替换：那会让整个子树卸载重建，
+ * 页面闪一下、滚动位置丢失，也与「局部更新」的预期相反。遮罩用绝对定位覆盖
+ * 页面容器，不参与布局，因此不会引起跳动。
+ */
+function PanelRefreshOverlay({ visible }: { visible: boolean }): ReactNode {
+  if (!visible) return null
+  return (
+    <div className="dsh-codebuddy-refresh-overlay" role="status" aria-live="polite">
+      <DshSpin size="middle" />
+    </div>
+  )
+}
+
+/**
+ * Token 页各面板的内容级 loading 包装：刷新时保留面板内已渲染的数据，
+ * 只在该面板上叠一层遮罩，而不是把整页换成转圈。
+ *
+ * 单独做成组件是因为面板的「外壳」（`DshCard` 及其版式类）必须留在外面——
+ * 遮罩只包内容，卡片自身的圆角、内边距与网格参与方式才不会被破坏。
+ */
+function PanelBody({ loading, children }: { loading: boolean, children: ReactNode }): ReactNode {
+  return (
+    <div className="dsh-codebuddy-panel-body">
+      {children}
+      <PanelRefreshOverlay visible={loading} />
     </div>
   )
 }
@@ -236,9 +286,9 @@ function AccountCard({ row, labels, autoCheckin, resources, busy, onCheckin, onS
   const travelChip = (() => {
     const travel = row.travel
     if (row.enterprise || travel === null) return null
-    if (travel.buddyId <= 0) {
-      return <span className="dsh-codebuddy-travel-chip is-muted">{labels.travel.noBuddy}</span>
-    }
+    // `buddyId` 是**当前在旅行的猫猫 id**，未派发时服务端返回 0——不能用它
+    // 判断「是否拥有猫猫」，否则未派发过的账号会一律显示「暂无猫猫」。
+    // 服务端给不出「拥有但未派出」这种状态，因此 0 就按「未旅行」呈现。
     if (travel.state === 'traveling') {
       const left = Math.max(0, travel.arriveAt - travel.serverNow)
       const hours = Math.floor(left / 3600)
@@ -640,9 +690,12 @@ function AccountsPage({
     }
   }
 
-  if (loading) return <DshSpin size="large" />
+  // 首次加载才整页占位；刷新时保留已渲染的内容，只叠一层遮罩。
+  // 整页替换会让所有卡片卸载重建、页面闪一下，滚动位置也会丢。
+  if (loading && data === undefined) return <DshSpin size="large" />
   return (
     <div className="dsh-codebuddy-panel-page">
+      <PanelRefreshOverlay visible={loading} />
       <DshCard className="dsh-codebuddy-panel-action-card">
         <div className="dsh-codebuddy-panel-action-copy">
           <strong>{t('accountActionTitle')}</strong>
@@ -753,7 +806,7 @@ function AccountsPage({
 
 function CreditsPage({ rpc, t }: { rpc: ConnectionRpc, t: Translate }): ReactNode {
   const { data, loading, reload } = usePanelData<{ accounts: PanelAccountRow[], currentId?: string }>(rpc, 'panelStatus', {}, [])
-  if (loading) return <DshSpin size="large" />
+  if (loading && data === undefined) return <DshSpin size="large" />
   const rows = data?.accounts ?? []
   if (rows.length === 0) return <DshEmpty title={t('accountsEmpty')} />
   const totalRemaining = rows.reduce((sum, row) => sum + row.totalRemaining, 0)
@@ -762,6 +815,7 @@ function CreditsPage({ rpc, t }: { rpc: ConnectionRpc, t: Translate }): ReactNod
   const offlineCount = rows.filter(row => row.expired).length
   return (
     <div className="dsh-codebuddy-panel-page">
+      <PanelRefreshOverlay visible={loading} />
       <div className="dsh-codebuddy-panel-section-head">
         <div>
           <strong>{t('creditTitle')}</strong>
@@ -805,12 +859,17 @@ function CreditsPage({ rpc, t }: { rpc: ConnectionRpc, t: Translate }): ReactNod
   )
 }
 
-function RangeToggle({ range, onChange }: { range: number, onChange: (value: number) => void }): ReactNode {
+function RangeToggle({ range, onChange, label, format }: {
+  range: number
+  onChange: (value: number) => void
+  label: string
+  format: (days: number) => string
+}): ReactNode {
   return (
-    <div className="dsh-codebuddy-panel-range" role="group" aria-label="统计时间范围">
+    <div className="dsh-codebuddy-panel-range" role="group" aria-label={label}>
       {[7, 30, 90].map(days => (
         <DshButton key={days} size="small" type={range === days ? 'primary' : 'secondary'} theme={range === days ? 'solid' : 'light'} onClick={() => { onChange(days) }}>
-          {days === 7 ? '近 7 天' : days === 30 ? '近 30 天' : '近 90 天'}
+          {format(days)}
         </DshButton>
       ))}
     </div>
@@ -914,42 +973,88 @@ function ActivityGrid({ activity }: { activity: TokenStats['activity'] }): React
   )
 }
 
-function TokenStatsPage({ rpc, t }: { rpc: ConnectionRpc, t: Translate }): ReactNode {
-  const [range, setRange] = useState<number>(30)
-  const { data, loading, reload } = usePanelData<TokenStats>(rpc, 'tokenStats', { days: range }, [range])
+/**
+ * 一个统计面板的外壳：标题 + 该面板**自己的**时间周期选择器 + 局部刷新。
+ *
+ * 时间周期必须落在每个面板内部（而不是页面顶部一个全局选择器）：总览、趋势、
+ * 工作区分布、模型分布、会话排行各自回答不同问题，读者经常需要让它们停在
+ * 不同窗口上对比——全局选择器会强迫所有面板同时跳变，反而看不出差异。
+ *
+ * 刷新只作用于本面板；遮罩只盖住面板内容，卡片外壳不参与重建。
+ */
+function TokenPanel({ title, hint, days, onDaysChange, rangeLabel, rangeFormat, refreshLabel, loading, onRefresh, children }: {
+  title: string
+  hint: string
+  days: number
+  onDaysChange: (days: number) => void
+  rangeLabel: string
+  rangeFormat: (days: number) => string
+  refreshLabel: string
+  loading: boolean
+  onRefresh: () => void
+  children: ReactNode
+}): ReactNode {
+  return (
+    <section className="dsh-codebuddy-token-section">
+      <div className="dsh-codebuddy-token-panel-head">
+        <div className="dsh-codebuddy-panel-section-title"><strong>{title}</strong><span>{hint}</span></div>
+        <div className="dsh-codebuddy-token-panel-actions">
+          <RangeToggle range={days} onChange={onDaysChange} label={rangeLabel} format={rangeFormat} />
+          <DshIconButton
+            size="small"
+            theme="borderless"
+            type="tertiary"
+            icon={<DshIconRefresh />}
+            aria-label={refreshLabel}
+            onClick={onRefresh}
+          />
+        </div>
+      </div>
+      <PanelBody loading={loading}>{children}</PanelBody>
+    </section>
+  )
+}
 
-  if (loading) {
+function TokenStatsPage({ rpc, t }: { rpc: ConnectionRpc, t: Translate }): ReactNode {
+  // 每个面板独立的周期；默认都从 30 天开始。
+  const [overviewDays, setOverviewDays] = useState(30)
+  const [trendDays, setTrendDays] = useState(30)
+  const [distributionDays, setDistributionDays] = useState(30)
+  const [modelsDays, setModelsDays] = useState(30)
+  const [sessionsDays, setSessionsDays] = useState(30)
+  const store = useMemo(() => new TokenStatsStore(rpc), [rpc])
+  const overview = useTokenStats(store, overviewDays)
+  const trend = useTokenStats(store, trendDays)
+  const distribution = useTokenStats(store, distributionDays)
+  const models = useTokenStats(store, modelsDays)
+  const sessions = useTokenStats(store, sessionsDays)
+
+  const data = overview.data
+  // 首次进入（还没有任何数据）才整页占位；之后刷新都走各面板的局部遮罩。
+  if (data === undefined && overview.loading) {
     return <div className="dsh-codebuddy-panel-page dsh-codebuddy-token-loading"><DshSpin size="large" /></div>
   }
   if (data === undefined) {
     return <div className="dsh-codebuddy-panel-page"><DshEmpty title={t('usageUnavailable')} /></div>
   }
 
-  const toolbar = (
-    <div className="dsh-codebuddy-token-toolbar">
-      <div>
-        <strong>{t('tokenOverview')}</strong>
-        <p className="dsh-codebuddy-muted">{t('tokenProviderSubtitle')}</p>
-      </div>
-      <div className="dsh-codebuddy-token-toolbar-actions">
-        <RangeToggle range={range} onChange={setRange} />
-        <DshButton size="small" theme="light" icon={<DshIconRefresh />} onClick={reload}>{t('refresh')}</DshButton>
-      </div>
-    </div>
-  )
-
   const hasAnyActivity = data.activity.some(item => item.calls > 0)
   if (!hasAnyActivity) {
     return (
       <div className="dsh-codebuddy-panel-page dsh-codebuddy-panel-tokens">
-        {toolbar}
+        <div className="dsh-codebuddy-token-toolbar">
+          <div>
+            <strong>{t('tokenOverview')}</strong>
+            <p className="dsh-codebuddy-muted">{t('tokenProviderSubtitle')}</p>
+          </div>
+        </div>
         <DshCard className="dsh-codebuddy-token-empty-card">
           <DshEmpty
             image={<DshIconCommand size="extra-large" />}
             title={t('tokenNoDataTitle')}
             description={<span>{t('tokenNoDataDesc')}<small>{t('tokenNoDataHint')}</small></span>}
           >
-            <DshButton type="primary" theme="light" icon={<DshIconRefresh />} onClick={reload}>{t('refresh')}</DshButton>
+            <DshButton type="primary" theme="light" icon={<DshIconRefresh />} onClick={overview.reload}>{t('refresh')}</DshButton>
           </DshEmpty>
         </DshCard>
       </div>
@@ -957,37 +1062,76 @@ function TokenStatsPage({ rpc, t }: { rpc: ConnectionRpc, t: Translate }): React
   }
 
   const cacheRate = data.totals.cacheHitRate === undefined ? '—' : `${Math.round(data.totals.cacheHitRate * 100)}%`
-  const colors = ['var(--dcb-signal)', 'var(--dcb-violet)', 'var(--dcb-amber)', 'var(--dcb-mint)']
+  // 指标到系列色的映射：与 CSS 中的 --dcb-series-* 保持一致（单一事实来源），
+  // 这样总览、趋势图、分布图对同一指标永远用同一颜色。
+  const SERIES = {
+    input: 'var(--dcb-series-input)',
+    output: 'var(--dcb-series-output)',
+    cacheRead: 'var(--dcb-series-cache-read)',
+    cacheWrite: 'var(--dcb-series-cache-write)',
+  } as const
+  // Translate 不接受插值参数，因此用前后缀拼接天数。
+  const rangeLabel = t('tokenRangeLabel')
+  const rangeFormat = (days: number): string => `${t('tokenRangePrefix')}${days}${t('tokenRangeSuffix')}`
+  const refreshPanel = t('tokenRefreshPanel')
   return (
     <div className="dsh-codebuddy-panel-page dsh-codebuddy-panel-tokens">
-      {toolbar}
-      <DshCard className="dsh-codebuddy-token-overview-card">
-        <div className="dsh-codebuddy-token-overview-head">
-          <div>
-            <span>{t('tokenTotal')}</span>
-            <strong>{compact(data.totals.total)}</strong>
+      <div className="dsh-codebuddy-token-toolbar">
+        <div>
+          <strong>{t('tokenOverview')}</strong>
+          <p className="dsh-codebuddy-muted">{t('tokenProviderSubtitle')}</p>
+        </div>
+      </div>
+      <TokenPanel
+        title={t('tokenTotal')}
+        hint={`${data.totals.sessions} ${t('tokenActiveSessions')}`}
+        days={overviewDays}
+        onDaysChange={setOverviewDays}
+        rangeLabel={rangeLabel}
+        rangeFormat={rangeFormat}
+        refreshLabel={refreshPanel}
+        loading={overview.loading}
+        onRefresh={overview.reload}
+      >
+        <DshCard className="dsh-codebuddy-token-overview-card">
+          <div className="dsh-codebuddy-token-overview-head">
+            <div>
+              <span>{t('tokenTotal')}</span>
+              <strong>{compact(data.totals.total)}</strong>
+            </div>
+            <DshTag color="green" type="light">{rangeFormat(data.rangeDays)}</DshTag>
           </div>
-          <DshTag color="green" type="light">{data.totals.sessions} {t('tokenActiveSessions')}</DshTag>
-        </div>
-        <SegmentBar segments={[
-          { label: t('tokenInput'), value: data.totals.input, color: colors[0]! },
-          { label: t('tokenOutput'), value: data.totals.output, color: colors[1]! },
-          { label: t('tokenCacheRead'), value: data.totals.read, color: colors[2]! },
-          { label: t('tokenCacheWrite'), value: data.totals.write, color: colors[3]! },
-        ]} />
-        <div className="dsh-codebuddy-token-overview-stats">
-          <StatMetric icon={<DshIconArrowLeft />} label={t('tokenInput')} value={compact(data.totals.input)} />
-          <StatMetric icon={<DshIconCommand />} label={t('tokenOutput')} value={compact(data.totals.output)} />
-          <StatMetric icon={<DshIconElementStroked />} label={t('tokenCacheRate')} value={cacheRate} />
-          <StatMetric icon={<DshIconElementStroked />} label={t('tokenRecords')} value={compact(data.totals.records)} />
-        </div>
-      </DshCard>
-      <section className="dsh-codebuddy-token-section">
-        <div className="dsh-codebuddy-panel-section-title"><strong>{t('tokenTrend')}</strong><span>{compact(data.totals.total)} Token</span></div>
-        <DshCard className="dsh-codebuddy-panel-chart-card">
-          <TokenUsageChart days={data.days} inputLabel={t('tokenInput')} outputLabel={t('tokenOutput')} cacheReadLabel={t('tokenCacheRead')} cacheWriteLabel={t('tokenCacheWrite')} recordsLabel={t('tokenRecords')} />
+          <SegmentBar segments={[
+            { label: t('tokenInput'), value: data.totals.input, color: SERIES.input },
+            { label: t('tokenOutput'), value: data.totals.output, color: SERIES.output },
+            { label: t('tokenCacheRead'), value: data.totals.read, color: SERIES.cacheRead },
+            { label: t('tokenCacheWrite'), value: data.totals.write, color: SERIES.cacheWrite },
+          ]} />
+          <div className="dsh-codebuddy-token-overview-stats">
+            <StatMetric icon={<DshIconArrowLeft />} label={t('tokenInput')} value={compact(data.totals.input)} />
+            <StatMetric icon={<DshIconCommand />} label={t('tokenOutput')} value={compact(data.totals.output)} />
+            <StatMetric icon={<DshIconElementStroked />} label={t('tokenCacheRate')} value={cacheRate} />
+            <StatMetric icon={<DshIconElementStroked />} label={t('tokenRecords')} value={compact(data.totals.records)} />
+          </div>
         </DshCard>
-      </section>
+      </TokenPanel>
+      <TokenPanel
+        title={t('tokenTrend')}
+        hint={trend.data === undefined ? '' : `${compact(trend.data.totals.total)} Token`}
+        days={trendDays}
+        onDaysChange={setTrendDays}
+        rangeLabel={rangeLabel}
+        rangeFormat={rangeFormat}
+        refreshLabel={refreshPanel}
+        loading={trend.loading}
+        onRefresh={trend.reload}
+      >
+        <DshCard className="dsh-codebuddy-panel-chart-card">
+          {trend.data === undefined
+            ? <div className="dsh-codebuddy-panel-chart" />
+            : <TokenUsageChart days={trend.data.days} inputLabel={t('tokenInput')} outputLabel={t('tokenOutput')} cacheReadLabel={t('tokenCacheRead')} cacheWriteLabel={t('tokenCacheWrite')} recordsLabel={t('tokenRecords')} />}
+        </DshCard>
+      </TokenPanel>
       <section className="dsh-codebuddy-token-section">
         <div className="dsh-codebuddy-panel-section-title"><strong>{t('tokenActivity')}</strong><span>{t('tokenDaily')}</span></div>
         <DshCard className="dsh-codebuddy-token-activity-card">
@@ -997,19 +1141,58 @@ function TokenStatsPage({ rpc, t }: { rpc: ConnectionRpc, t: Translate }): React
         </DshCard>
       </section>
       <div className="dsh-codebuddy-token-columns">
-        <section className="dsh-codebuddy-token-section">
-          <div className="dsh-codebuddy-panel-section-title"><strong>{t('tokenDistribution')}</strong><span>{t('tokenByWorkspace')}</span></div>
-          <DshCard className="dsh-codebuddy-token-list-card"><WorkspaceList items={data.workspaces} empty={t('tokenNoWorkspace')} /></DshCard>
-        </section>
-        <section className="dsh-codebuddy-token-section">
-          <div className="dsh-codebuddy-panel-section-title"><strong>{t('tokenModels')}</strong><span>{t('tokenByModel')}</span></div>
-          <DshCard className="dsh-codebuddy-token-list-card"><BreakdownList items={data.models} empty={t('tokenNoModel')} /></DshCard>
-        </section>
+        <TokenPanel
+          title={t('tokenDistribution')}
+          hint={t('tokenByWorkspace')}
+          days={distributionDays}
+          onDaysChange={setDistributionDays}
+          rangeLabel={rangeLabel}
+          rangeFormat={rangeFormat}
+          refreshLabel={refreshPanel}
+          loading={distribution.loading}
+          onRefresh={distribution.reload}
+        >
+          <DshCard className="dsh-codebuddy-token-list-card">
+            {distribution.data === undefined
+              ? <div className="dsh-codebuddy-token-empty" />
+              : <WorkspaceList items={distribution.data.workspaces} empty={t('tokenNoWorkspace')} />}
+          </DshCard>
+        </TokenPanel>
+        <TokenPanel
+          title={t('tokenModels')}
+          hint={t('tokenByModel')}
+          days={modelsDays}
+          onDaysChange={setModelsDays}
+          rangeLabel={rangeLabel}
+          rangeFormat={rangeFormat}
+          refreshLabel={refreshPanel}
+          loading={models.loading}
+          onRefresh={models.reload}
+        >
+          <DshCard className="dsh-codebuddy-token-list-card">
+            {models.data === undefined
+              ? <div className="dsh-codebuddy-token-empty" />
+              : <BreakdownList items={models.data.models} empty={t('tokenNoModel')} />}
+          </DshCard>
+        </TokenPanel>
       </div>
-      <section className="dsh-codebuddy-token-section">
-        <div className="dsh-codebuddy-panel-section-title"><strong>{t('tokenTopSessions')}</strong><span>{t('tokenTopTen')}</span></div>
-        <DshCard className="dsh-codebuddy-token-list-card"><SessionRanking items={data.sessions} empty={t('tokenNoSession')} /></DshCard>
-      </section>
+      <TokenPanel
+        title={t('tokenTopSessions')}
+        hint={t('tokenTopTen')}
+        days={sessionsDays}
+        onDaysChange={setSessionsDays}
+        rangeLabel={rangeLabel}
+        rangeFormat={rangeFormat}
+        refreshLabel={refreshPanel}
+        loading={sessions.loading}
+        onRefresh={sessions.reload}
+      >
+        <DshCard className="dsh-codebuddy-token-list-card">
+          {sessions.data === undefined
+            ? <div className="dsh-codebuddy-token-empty" />
+            : <SessionRanking items={sessions.data.sessions} empty={t('tokenNoSession')} />}
+        </DshCard>
+      </TokenPanel>
     </div>
   )
 }
@@ -1038,10 +1221,13 @@ function TokenUsageChart({ days, inputLabel, outputLabel, cacheReadLabel, cacheW
     if (element === null) return
     const textColor = cssVariable(element, '--dsw-alias-label-tertiary', '#8b93a7')
     const gridColor = cssVariable(element, '--dsw-alias-border-l3', 'rgba(139, 147, 167, 0.24)')
-    const inputColor = cssVariable(element, '--dsw-alias-brand-primary', '#4f7cff')
-    const outputColor = cssVariable(element, '--dsw-alias-state-success-primary', '#26a269')
-    const cacheReadColor = cssVariable(element, '--dsw-alias-label-tertiary', '#8b93a7')
-    const cacheWriteColor = cssVariable(element, '--dsw-alias-state-warn-primary', '#e8a317')
+    // 四个系列色统一取 --dcb-series-*（定义在 .dsh-codebuddy-panel-tokens），
+    // 与总览分段条/模型分布同色；不要在这里各写一个语义变量——那正是此前
+    // 同一指标在不同面板颜色不一致的原因（缓存读曾用 label-tertiary，即灰色）。
+    const inputColor = cssVariable(element, '--dcb-series-input', '#2aa3a3')
+    const outputColor = cssVariable(element, '--dcb-series-output', '#7b61d8')
+    const cacheReadColor = cssVariable(element, '--dcb-series-cache-read', '#e2823c')
+    const cacheWriteColor = cssVariable(element, '--dcb-series-cache-write', '#d6538f')
     const chart: ECharts = initChart(element, undefined, { renderer: 'canvas' })
     chart.setOption({
       aria: { enabled: true },
