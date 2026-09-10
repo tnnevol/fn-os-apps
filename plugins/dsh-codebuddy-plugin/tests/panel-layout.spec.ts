@@ -31,6 +31,11 @@ const SEMI_LAYOUT_CSS = (() => {
   return join(pnpm, dir, 'node_modules/@douyinfe/semi-foundation/lib/es/layout/layout.css')
 })()
 
+const PANEL_SCSS = readFileSync(
+  '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/styles/panel-layout.scss',
+  'utf8',
+)
+
 const INDEX_SCSS = readFileSync(
   '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/styles/index.scss',
   'utf8',
@@ -163,21 +168,28 @@ describe('固定 header 的分隔与阴影', () => {
   })
 })
 
-describe('Token 页「数据更新于 …」的间距', () => {
-  const block = (): string =>
-    /\.dsh-codebuddy-token-updated\s*\{([^}]*)\}/.exec(
-      readFileSync(
-        '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/styles/panel-layout.scss',
-        'utf8',
-      ),
-    )?.[1] ?? ''
+describe('内容区顶部留白', () => {
+  const contentBlock = (): string =>
+    /\.dsh-codebuddy-panel-views\s*\{([^}]*)\}/.exec(INDEX_SCSS)?.[1] ?? ''
+  const updatedBlock = (): string =>
+    /\.dsh-codebuddy-token-updated\s*\{([^}]*)\}/.exec(PANEL_SCSS)?.[1] ?? ''
 
-  it('顶部有 15px 内边距', () => {
-    expect(block()).toMatch(/padding-top:\s*15px/)
+  it('由滚动内容容器（Layout.Content）承担 15px 顶部内边距', () => {
+    // 放在容器上而不是页面内的某个元素上：三个页面（账号/积分/Token）统一生效，
+    // 不必每页各补一条间距。
+    expect(contentBlock()).toMatch(/padding:\s*15px\s/)
   })
 
-  it('用 padding 而非 margin（父容器 align-items:center 会让 margin 参与居中计算）', () => {
-    expect(block()).not.toMatch(/(^|[^-])margin-top:/)
-    expect(block()).toMatch(/(^|[^-])margin:\s*0/)
+  it('「数据更新于 …」自身不再单独加顶部内边距', () => {
+    expect(updatedBlock()).not.toMatch(/padding-top/)
+    expect(updatedBlock()).not.toMatch(/padding:/)
+  })
+
+  it('窄屏只覆盖左右与底部，顶部 15px 仍然生效', () => {
+    const narrow = PANEL_SCSS.slice(PANEL_SCSS.indexOf('@media (max-width: 720px)'))
+    const rule = /\.dsh-codebuddy-panel-views\s*\{([^}]*)\}/.exec(narrow)?.[1] ?? ''
+    // 若窄屏用 padding 简写覆盖，会顺带把 padding-top 复位——必须是分项覆盖。
+    expect(rule).not.toMatch(/(^|[^-])padding:\s/)
+    expect(rule).toMatch(/padding-left/)
   })
 })

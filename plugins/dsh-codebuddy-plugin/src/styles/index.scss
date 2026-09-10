@@ -536,7 +536,11 @@
      容器高度以下，overflow 也就不生效——内容把容器撑高后滚动条会落到整页上，
      header 依旧被带走。 */
   min-height: 0;
-  padding: 0 clamp(16px, 2vw, 32px) 40px;
+  /* 顶部留白给固定 header 之下的内容：header 自带 16px 下内边距，再加这 15px，
+     滚动内容与分隔线之间不会贴在一起。放在滚动容器上而不是页面内的某个元素上，
+     三个页面（账号/积分/Token）因此统一，也避免每页各自补一条间距。
+     横向与底部沿用 clamp 内边距。 */
+  padding: 15px clamp(16px, 2vw, 32px) 40px;
   overflow-y: auto;
   /* 始终为滚动条预留空间：在「不足一屏」与「需要滚动」之间切换时内容宽度不跳动。 */
   scrollbar-gutter: stable;

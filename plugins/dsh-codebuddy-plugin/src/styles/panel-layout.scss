@@ -293,12 +293,6 @@
 .dsh-codebuddy-token-toolbar { align-items: center; }
 .dsh-codebuddy-token-updated {
   margin: 0;
-  /* 与上方页面 header 之间留出 15px 呼吸感。
-     用 padding-top 而非 margin-top：本元素是 flex 子项，而父容器
-     .dsh-codebuddy-token-toolbar 带 align-items: center —— 子项被居中时，
-     margin 会参与「外边距盒」的居中计算，实际偏移与预期不符；padding 直接
-     加在盒子内部，位移精确且不随父容器对齐方式变化。 */
-  padding-top: 15px;
   color: var(--dsw-alias-label-tertiary);
   font-size: 12px;
   /* 时间戳每次刷新都会变，用等宽数字避免宽度抖动带动版面。 */
