@@ -94,6 +94,8 @@ interface PanelAccountRow {
   clientVersion?: string
   /** 账户身份明细，供「账户信息」弹框展示完整资料。 */
   account?: AccountIdentityDetail
+  /** 该账号实际请求的服务端点（企业账号常为专享/自建地址）。 */
+  endpoint?: string
   active: boolean
   expired: boolean
   /** 企业账号：不支持签到（隐藏签到入口、跳过签到与自动签到）。 */
@@ -797,18 +799,55 @@ function AccountResourcesModal({ row, items, t, onClose }: {
     expired: items.filter(item => item.lifecycle === 'expired'),
   }), [items])
 
+  /**
+   * 身份页的全部字段，合并成**一张**单列表。
+   *
+   * 顺序按读者的追问链排：先「这是谁」（标识），再「属于哪里 / 连到哪」（归属与
+   * 服务），最后「当前状态」。分多张表会读成几个割裂的片段，而它们是同一个账号
+   * 的一组事实。
+   */
   const identityData = row === undefined
     ? []
-    : identityRows(row.account ?? { uid: '—', nickname: row.nickname }, {
-        uid: t('uid'),
-        nickname: t('nickname'),
-        label: t('renameLabel'),
-        uin: t('uin'),
-        enterprise: t('enterprise'),
-        enterpriseId: t('enterpriseId'),
-        enterpriseUser: t('enterpriseUser'),
-        department: t('department'),
-      })
+    : [
+        // ── 标识 ──
+        ...identityRows(row.account ?? { uid: '—', nickname: row.nickname }, {
+          uid: t('uid'),
+          nickname: t('nickname'),
+          label: t('renameLabel'),
+          uin: t('uin'),
+          enterprise: t('enterprise'),
+          enterpriseId: t('enterpriseId'),
+          enterpriseUser: t('enterpriseUser'),
+          department: t('department'),
+        }),
+        // ── 归属与服务 ──
+        // 账号类型：企业与个人在签到、成长中心、额度平面上行为不同，
+        // 这句话解释了下面为什么有些行不出现。
+        { key: t('accountType'), value: row.enterprise ? t('accountTypeEnterprise') : t('accountTypePersonal') },
+        {
+          key: t('clientLabel'),
+          value: `${CODEBUDDY_CLIENT_LABELS[normalizeClientId(row.client)]} · v${row.clientVersion ?? CODEBUDDY_CLIENT_VERSIONS[normalizeClientId(row.client)]}`,
+        },
+        ...row.environment === undefined
+          ? []
+          : [{
+              key: t('environmentLabel'),
+              value: CODEBUDDY_ENVIRONMENT_LABELS[row.environment as keyof typeof CODEBUDDY_ENVIRONMENT_LABELS] ?? row.environment,
+            }],
+        // 服务端点：企业账号的自建/专享地址体现在这里。
+        ...row.endpoint === undefined ? [] : [{ key: t('serviceEndpoint'), value: row.endpoint }],
+        // 额度上限与顶部「剩余额度」配对——只看剩余量无法判断还剩几成。
+        // 仅在额度查询成功时列出：失败时该值为 0，展示会误导。
+        ...row.creditOk && row.totalCapacity > 0
+          ? [{ key: t('quotaCapacity'), value: formatCredit(row.totalCapacity) }]
+          : [],
+        // ── 当前状态 ──
+        // 企业账号不支持签到（checkinOk 为 false），因此该行按能力条件渲染，
+        // 而不是显示一行「不支持」这种否定信息。
+        ...row.checkinOk
+          ? [{ key: t('checkinStatus'), value: row.todayCheckedIn === true ? t('checkinDone') : t('checkinTodo') }]
+          : [],
+      ]
 
   return (
     <DshModal
@@ -844,33 +883,17 @@ function AccountResourcesModal({ row, items, t, onClose }: {
               tab={<span className="dsh-codebuddy-resource-tab">{t('accountIdentity')}<i>{identityData.length}</i></span>}
             >
               <div className="dsh-codebuddy-account-identity">
-                {/* 身份表用 **horizontal** 布局：默认的 vertical 是 key/value 上下排，
-                    10 项就要约 400px；横向多列一行放 2 对，压到约 5 行。 */}
+                {/* 单列：key 在左、value 在右，一行一项。多列会让列宽被最长的一项
+                    （企业全名）撑开、短项留出大片空白，反而不如单列整齐。
+                    layout 仍显式写 horizontal —— 默认的 vertical 是 key/value
+                    上下排，一行会变成两行、高度翻倍。 */}
                 <DshDescriptions
                   className="dsh-codebuddy-account-descriptions"
                   align="left"
                   size="small"
                   layout="horizontal"
-                  column={2}
+                  column={1}
                   data={identityData}
-                />
-                {/* 登录来源：客户端与网络环境决定账号连的是哪个服务平面，
-                    排查「这个账号为何查不到额度」时是第一个要看的信息。 */}
-                <DshDescriptions
-                  className="dsh-codebuddy-account-descriptions"
-                  align="left"
-                  size="small"
-                  layout="horizontal"
-                  column={2}
-                  data={[
-                    { key: t('clientLabel'), value: `${CODEBUDDY_CLIENT_LABELS[normalizeClientId(row.client)]} · v${row.clientVersion ?? CODEBUDDY_CLIENT_VERSIONS[normalizeClientId(row.client)]}` },
-                    ...row.environment === undefined
-                      ? []
-                      : [{
-                          key: t('environmentLabel'),
-                          value: CODEBUDDY_ENVIRONMENT_LABELS[row.environment as keyof typeof CODEBUDDY_ENVIRONMENT_LABELS] ?? row.environment,
-                        }],
-                  ]}
                 />
               </div>
             </DshTabs.TabPane>

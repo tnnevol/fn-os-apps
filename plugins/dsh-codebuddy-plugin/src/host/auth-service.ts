@@ -1412,6 +1412,9 @@ export class CodeBuddyAuthService {
         environment: item.environment,
         client: item.client,
         clientVersion: item.clientVersion,
+        // 服务端点：企业账号常走自建/专享地址，排查「为何这个账号查不到额度」
+        // 时需要确认请求实际发往哪里。
+        endpoint: item.endpoint,
         // 账户身份明细（弹框展示完整信息用）
         account: item.account,
         active: item.id === activeId,

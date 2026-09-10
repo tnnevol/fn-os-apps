@@ -124,10 +124,31 @@ describe('面板弹框展示完整账户信息', () => {
     expect(m).toMatch(/setTopKey\('identity'\); setStatusKey\('usable'\)/)
   })
 
-  it('身份表用横向布局压高度（默认 vertical 每项占两行）', () => {
-    // 10 项在 vertical 下约 400px；horizontal + column 压到约 5 行。
-    expect(modal().match(/layout="horizontal"/g)?.length).toBe(2)
-    expect(modal()).toMatch(/column=\{2\}/)
+  it('身份表单列，且显式用 horizontal（默认 vertical 每项占两行）', () => {
+    // 单列：key 左、value 右、一行一项。多列会让列宽被最长项（企业全名）撑开、
+    // 短项留出大片空白。
+    expect(modal()).toMatch(/column=\{1\}/)
+    expect(modal()).not.toMatch(/column=\{2\}/)
+    // layout 仍要显式写：Semi 的 defaultProps 是 vertical（key/value 上下排），
+    // 漏写会让每项占两行、高度翻倍。
+    expect(modal()).toMatch(/layout="horizontal"/)
+  })
+
+  it('身份信息合并为**一张**表，不拆成多段', () => {
+    // 分多张表会读成几个割裂的片段，而它们是同一个账号的一组事实。
+    expect(modal().match(/<DshDescriptions/g)?.length).toBe(1)
+  })
+
+  it('字段按「标识 → 归属与服务 → 状态」排序', () => {
+    const m = modal()
+    const identityRowsAt = m.indexOf('...identityRows(')
+    const typeAt = m.indexOf("t('accountType')")
+    const endpointAt = m.indexOf("t('serviceEndpoint')")
+    const checkinAt = m.indexOf("t('checkinStatus')")
+    expect(identityRowsAt).toBeGreaterThan(-1)
+    expect(typeAt).toBeGreaterThan(identityRowsAt)
+    expect(endpointAt).toBeGreaterThan(typeAt)
+    expect(checkinAt).toBeGreaterThan(endpointAt)
   })
 })
 
@@ -146,5 +167,46 @@ describe('主机侧 payload 带上身份明细', () => {
   it('缺失字段用条件展开，不写空串', () => {
     // 空串会被 identityRows 当成有值而渲染出一行空白。
     expect(SERVICE).toMatch(/\.\.\.entry\.account\.enterpriseId === undefined \? \{\} : \{ enterpriseId/)
+  })
+})
+
+describe('企业账号的账户信息字段', () => {
+  // PANEL 是上一个 describe 内的常量，作用域不跨块；这里各自读一次。
+  const PANEL = readFileSync(
+    '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/client/panel.tsx',
+    'utf8',
+  )
+  const modal = (): string =>
+    PANEL.slice(PANEL.indexOf('function AccountResourcesModal'), PANEL.indexOf('function AccountsPage'))
+
+  it('展示账号类型（企业 / 个人）', () => {
+    // 企业与个人在签到、成长中心、额度平面上行为不同；这一行解释了
+    // 为什么下面有些字段不出现。
+    expect(modal()).toMatch(/row\.enterprise \? t\('accountTypeEnterprise'\) : t\('accountTypePersonal'\)/)
+  })
+
+  it('展示服务端点（企业账号常为专享/自建地址）', () => {
+    expect(modal()).toContain("t('serviceEndpoint')")
+    // 缺失时不渲染该行（个人账号走默认端点，列出无增量信息）。
+    expect(modal()).toMatch(/row\.endpoint === undefined \? \[\] : \[\{ key: t\('serviceEndpoint'\)/)
+  })
+
+  it('展示额度上限，且仅在额度查询成功时列出', () => {
+    expect(modal()).toContain("t('quotaCapacity')")
+    // 查询失败时 totalCapacity 为 0，展示「上限 0」会误导。
+    expect(modal()).toMatch(/row\.creditOk && row\.totalCapacity > 0/)
+  })
+
+  it('签到状态按能力条件渲染，不给企业账号显示否定信息', () => {
+    // 企业账号不支持签到（checkinOk 为 false），此时整行不出现。
+    expect(modal()).toMatch(/row\.checkinOk\s*\?\s*\[\{ key: t\('checkinStatus'\)/)
+  })
+
+  it('主机侧 payload 带上 endpoint', () => {
+    const SERVICE = readFileSync(
+      '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/host/auth-service.ts',
+      'utf8',
+    )
+    expect(SERVICE).toContain('endpoint: item.endpoint')
   })
 })

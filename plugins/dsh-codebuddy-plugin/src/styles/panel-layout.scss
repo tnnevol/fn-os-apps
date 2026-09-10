@@ -615,13 +615,19 @@
   border-top: 1px solid var(--dsw-alias-border-l3);
 }
 
-/* 标签列定宽：描述表在 horizontal 布局下按 column 分列，标签宽度不一致会让
-   各列的值起始位置参差。定宽 84px 后同行两个字段的值左边缘对齐。
-   值列仍保留 word-break: break-all（见 .dsh-codebuddy-account-descriptions），
-   因此较长的 UID / 企业 ID 会折行而不是撑破列宽。 */
+/* 标签列定宽：描述表是单列 horizontal（key 左、value 右），标签不定宽会让
+   各行的值起始位置参差。96px 容纳最长的标签（「服务端点」4 字、英文
+   'Service endpoint'），值统一从同一水平位置开始。
+   值列保留 word-break: break-all（见 .dsh-codebuddy-account-descriptions），
+   因此较长的 UID / 端点地址会折行而不是撑破弹框。 */
 .dsh-codebuddy-account-identity .semi-descriptions-key {
-  width: 84px;
-  padding-right: 10px;
+  width: 96px;
+  padding-right: 12px;
+}
+
+/* 单列时值左对齐、允许换行；值之间留出可读的行距。 */
+.dsh-codebuddy-account-identity .semi-descriptions-value {
+  color: var(--dsw-alias-label-primary);
 }
 
 .dsh-codebuddy-resource-summary {
