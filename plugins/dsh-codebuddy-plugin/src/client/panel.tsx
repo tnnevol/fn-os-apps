@@ -22,6 +22,9 @@ import {
   DshDropdown,
   DshEmpty,
   DshIconButton,
+  DshIconLabAvatar,
+  DshIconLabChart,
+  DshIconLabToken,
   DshIconArrowLeft,
   DshIconClose,
   DshIconCommand,
@@ -1679,10 +1682,13 @@ export function CodeBuddyPanelPage({ rpc, route, t }: PanelPageProps): ReactNode
     ? t('accountsDesc')
     : snapshot.page === 'credits' ? t('creditResourceCount') : undefined
 
+  // 左侧菜单用彩色图标（semi-icons-lab）：该包是硬编码多色 fill 的彩色图标集，
+  // 语义上分别对应账号（头像）、Token（图表）、积分（代币）。
+  // 不能用 semi-icons —— 它（含 IconAI*）全部走 currentColor，是单色图标。
   const items = [
-    { itemKey: 'accounts', text: t('accountsTitle'), icon: <DshIconUser /> },
-    { itemKey: 'tokens', text: t('tokenTitle'), icon: <DshIconCommand /> },
-    { itemKey: 'credits', text: t('creditTitle'), icon: <DshIconElementStroked /> },
+    { itemKey: 'accounts', text: t('accountsTitle'), icon: <DshIconLabAvatar /> },
+    { itemKey: 'tokens', text: t('tokenTitle'), icon: <DshIconLabChart /> },
+    { itemKey: 'credits', text: t('creditTitle'), icon: <DshIconLabToken /> },
   ]
 
   return (

@@ -74,6 +74,18 @@ CodeBuddy 支持图片输入的模型（`supportsImages`）在插件中以原生
 - **会话内联图片**（粘贴/拖拽上传）：DSH 以 `ImageBlock` 交给模型 → 插件原生上传，无需 `read_image`。
 - **`read_image` 工具结果图片**：后续轮次中插件会把工具结果里嵌入的图片一并原生上传给 CodeBuddy，模型可直接看到图片内容而无需重复读图。
 
+## 图标约定
+
+左侧菜单与界面装饰使用**彩色图标**，来自 `@douyinfe/semi-icons-lab`——该包的 SVG 内硬编码多色 `fill`，不随前景色变化。
+
+判断依据是实测而非包名：`@douyinfe/semi-icons` 里**全部**图标（**包括 `IconAI*` 系列**）都走 `currentColor`，是单色图标；名字带 AI 并不代表彩色。选图标时用「SVG 内是否有多个硬编码 `#RRGGBB`」来区分，不能靠名字推断。
+
+由此带来两个好处与一个注意点：
+
+- 硬编码 `fill` 不会被 `.semi-navigation-item-icon-info` 的 `color` 覆盖，因此导航选中/悬停时彩色图标颜色保持不变，不会出现「选中变单色」。
+- 新增 Lab 图标须同时登记到 `packages/dsh-semi-ui` 的 `components.ts` 与 `index.ts`（后者是显式列表，漏加则导出为空）；`alwaysBundle` 无需改动——实测 `semi-icons-lab` 会随 facade 内联，产物中无裸 `require`。
+- 彩色图标自带配色，不要再用 CSS 给它上色，否则多色设计会被覆盖成单色。
+
 ## 界面约定
 
 - **悬停提示统一用 Tooltip 组件**，不使用 DOM `title` 属性：原生 `title` 的样式与延迟不受主题控制，且在禁用按钮上不可靠。需要说明禁用原因的按钮用 `DshTooltip` 包裹；不处于该状态时直接渲染按钮，不挂空 Tooltip。
