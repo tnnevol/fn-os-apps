@@ -16,6 +16,7 @@ import { CanvasRenderer } from 'echarts/renderers'
 import type { CSSProperties, KeyboardEvent as ReactKeyboardEvent, MouseEvent as ReactMouseEvent, ReactNode } from 'react'
 import {
   DshButton,
+  DshButtonGroup,
   DshCard,
   DshDescriptions,
   DshDropdown,
@@ -57,6 +58,7 @@ import type { ClassifiedResource, LiveResource, ResourceLifecycle } from './reso
 import { TokenStatsStore } from './token-stats-store.ts'
 import { activityCellSize } from './activity-grid.ts'
 import { formatUpdatedAt } from './format-time.ts'
+import { DEFAULT_TOKEN_RANGE, optionsFor, rangeLabel as rangeLabelOf, type TokenRangeKey } from './token-range.ts'
 import { CodeBuddyLogo } from '../components/CodeBuddyLogo.tsx'
 import { AddAccountModal, startLoginPolling } from '../components/AddAccountModal.tsx'
 import { getAutoCheckinPref, getAutoTravelPref, setAutoCheckinPref, setAutoTravelPref } from './usage-prefs.ts'
@@ -171,7 +173,7 @@ function usePanelData<T>(
  *
  * 混用这两者会导致「刷新时整页回到初次加载占位」，即所谓的全局刷新。
  */
-function useTokenStats(store: TokenStatsStore, days: number): {
+function useTokenStats(store: TokenStatsStore, range: TokenRangeKey): {
   data: TokenStats | undefined
   loading: boolean
   initialLoading: boolean
@@ -180,17 +182,17 @@ function useTokenStats(store: TokenStatsStore, days: number): {
 } {
   useSyncExternalStore(store.subscribe, store.getSnapshot, store.getSnapshot)
   // 每个面板一份稳定令牌：数据按范围共享，但加载指示只属于发起刷新的面板，
-  // 否则五个默认都在 30 天的面板会一起转圈（看起来还是全局刷新）。
+  // 否则停在同范围上的其他面板会一起转圈（看起来还是全局刷新）。
   const owner = useRef<symbol>(Symbol('token-panel'))
-  useEffect(() => { store.ensure(days) }, [store, days])
-  const data = store.get(days) as TokenStats | undefined
-  const inFlight = store.isLoading(days, owner.current)
-  const reload = useCallback(() => { store.reload(days, owner.current) }, [store, days])
+  useEffect(() => { store.ensure(range) }, [store, range])
+  const data = store.get(range) as TokenStats | undefined
+  const inFlight = store.isLoading(range, owner.current)
+  const reload = useCallback(() => { store.reload(range, owner.current) }, [store, range])
   return {
     data,
     loading: inFlight,
     initialLoading: data === undefined && inFlight,
-    error: store.errorOf(days),
+    error: store.errorOf(range),
     reload,
   }
 }
@@ -1014,20 +1016,43 @@ function CreditsPage({ rpc, t }: { rpc: ConnectionRpc, t: Translate }): ReactNod
   )
 }
 
-function RangeToggle({ range, onChange, label, format }: {
-  range: number
-  onChange: (value: number) => void
+/**
+ * 时间范围选择器。
+ *
+ * 用 Semi 的 `ButtonGroup` 而不是一排独立按钮：这组按钮是**互斥单选**，同一时刻
+ * 只有一个生效；`ButtonGroup` 会把相邻按钮的圆角合并成一条连续控件，视觉上直接
+ * 表达「这是一组、只能选一个」，而散排按钮看起来像三个独立动作。
+ *
+ * 选项由调用方按面板职责给出（见 token-range.ts）：总览给「总计」、趋势给「本月」。
+ */
+function RangeToggle({ options, range, onChange, label, format }: {
+  options: readonly TokenRangeKey[]
+  range: TokenRangeKey
+  onChange: (value: TokenRangeKey) => void
   label: string
-  format: (days: number) => string
+  format: (key: TokenRangeKey) => string
 }): ReactNode {
   return (
-    <div className="dsh-codebuddy-panel-range" role="group" aria-label={label}>
-      {[7, 30, 90].map(days => (
-        <DshButton key={days} size="small" type={range === days ? 'primary' : 'secondary'} theme={range === days ? 'solid' : 'light'} onClick={() => { onChange(days) }}>
-          {format(days)}
+    <DshButtonGroup
+      size="small"
+      theme="light"
+      className="dsh-codebuddy-panel-range"
+      aria-label={label}
+    >
+      {options.map(key => (
+        <DshButton
+          key={key}
+          size="small"
+          // 选中项用实心主色，未选中用浅底：对比要一眼可辨，而不是靠细微色差。
+          type={range === key ? 'primary' : 'tertiary'}
+          theme={range === key ? 'solid' : 'light'}
+          aria-pressed={range === key}
+          onClick={() => { onChange(key) }}
+        >
+          {format(key)}
         </DshButton>
       ))}
-    </div>
+    </DshButtonGroup>
   )
 }
 
@@ -1186,13 +1211,14 @@ function ActivityGrid({ activity, callSuffix }: { activity: TokenStats['activity
  *
  * 刷新只作用于本面板；遮罩只盖住面板内容，卡片外壳不参与重建。
  */
-function TokenPanel({ title, hint, days, onDaysChange, rangeLabel, rangeFormat, refreshLabel, loading, onRefresh, children }: {
+function TokenPanel({ title, hint, options, range, onRangeChange, rangeLabel, rangeFormat, refreshLabel, loading, onRefresh, children }: {
   title: string
   hint: string
-  days: number
-  onDaysChange: (days: number) => void
+  options: readonly TokenRangeKey[]
+  range: TokenRangeKey
+  onRangeChange: (value: TokenRangeKey) => void
   rangeLabel: string
-  rangeFormat: (days: number) => string
+  rangeFormat: (key: TokenRangeKey) => string
   refreshLabel: string
   loading: boolean
   onRefresh: () => void
@@ -1203,7 +1229,7 @@ function TokenPanel({ title, hint, days, onDaysChange, rangeLabel, rangeFormat, 
       <div className="dsh-codebuddy-token-panel-head">
         <div className="dsh-codebuddy-panel-section-title"><strong>{title}</strong><span>{hint}</span></div>
         <div className="dsh-codebuddy-token-panel-actions">
-          <RangeToggle range={days} onChange={onDaysChange} label={rangeLabel} format={rangeFormat} />
+          <RangeToggle options={options} range={range} onChange={onRangeChange} label={rangeLabel} format={rangeFormat} />
           <DshIconButton
             size="small"
             theme="borderless"
@@ -1220,18 +1246,19 @@ function TokenPanel({ title, hint, days, onDaysChange, rangeLabel, rangeFormat, 
 }
 
 function TokenStatsPage({ rpc, t }: { rpc: ConnectionRpc, t: Translate }): ReactNode {
-  // 每个面板独立的周期；默认都从 30 天开始。
-  const [overviewDays, setOverviewDays] = useState(30)
-  const [trendDays, setTrendDays] = useState(30)
-  const [distributionDays, setDistributionDays] = useState(30)
-  const [modelsDays, setModelsDays] = useState(30)
-  const [sessionsDays, setSessionsDays] = useState(30)
+  // 每个面板独立的周期，默认一律「近 7 天」——最近的用量才是常看的信息，
+  // 30 天起步会让首屏数字偏大且迟缓。
+  const [overviewRange, setOverviewRange] = useState<TokenRangeKey>(DEFAULT_TOKEN_RANGE)
+  const [trendRange, setTrendRange] = useState<TokenRangeKey>(DEFAULT_TOKEN_RANGE)
+  const [distributionRange, setDistributionRange] = useState<TokenRangeKey>(DEFAULT_TOKEN_RANGE)
+  const [modelsRange, setModelsRange] = useState<TokenRangeKey>(DEFAULT_TOKEN_RANGE)
+  const [sessionsRange, setSessionsRange] = useState<TokenRangeKey>(DEFAULT_TOKEN_RANGE)
   const store = useMemo(() => new TokenStatsStore(rpc), [rpc])
-  const overview = useTokenStats(store, overviewDays)
-  const trend = useTokenStats(store, trendDays)
-  const distribution = useTokenStats(store, distributionDays)
-  const models = useTokenStats(store, modelsDays)
-  const sessions = useTokenStats(store, sessionsDays)
+  const overview = useTokenStats(store, overviewRange)
+  const trend = useTokenStats(store, trendRange)
+  const distribution = useTokenStats(store, distributionRange)
+  const models = useTokenStats(store, modelsRange)
+  const sessions = useTokenStats(store, sessionsRange)
 
   // 刷新失败必须说出来。因为 reload 刻意保留旧数据（否则会整页闪烁），
   // 失败时界面看起来「什么都没发生」——静默失败比报错更糟。
@@ -1287,9 +1314,9 @@ function TokenStatsPage({ rpc, t }: { rpc: ConnectionRpc, t: Translate }): React
     cacheRead: 'var(--dcb-series-cache-read)',
     cacheWrite: 'var(--dcb-series-cache-write)',
   } as const
-  // Translate 不接受插值参数，因此用前后缀拼接天数。
   const rangeLabel = t('tokenRangeLabel')
-  const rangeFormat = (days: number): string => `${t('tokenRangePrefix')}${days}${t('tokenRangeSuffix')}`
+  // Translate 不接受插值参数，故标签由 token-range.ts 用前后缀/整词拼出。
+  const rangeFormat = (key: TokenRangeKey): string => rangeLabelOf(key, t)
   const refreshPanel = t('tokenRefreshPanel')
   return (
     <div className="dsh-codebuddy-panel-page dsh-codebuddy-panel-tokens">
@@ -1301,8 +1328,9 @@ function TokenStatsPage({ rpc, t }: { rpc: ConnectionRpc, t: Translate }): React
       <TokenPanel
         title={t('tokenTotal')}
         hint={`${data.totals.sessions} ${t('tokenActiveSessions')}`}
-        days={overviewDays}
-        onDaysChange={setOverviewDays}
+        options={optionsFor('overview')}
+        range={overviewRange}
+        onRangeChange={setOverviewRange}
         rangeLabel={rangeLabel}
         rangeFormat={rangeFormat}
         refreshLabel={refreshPanel}
@@ -1321,7 +1349,7 @@ function TokenStatsPage({ rpc, t }: { rpc: ConnectionRpc, t: Translate }): React
                     <span>{t('tokenTotal')}</span>
                     <strong>{compact(overview.data.totals.total)}</strong>
                   </div>
-                  <DshTag color="green" type="light">{rangeFormat(overview.data.rangeDays)}</DshTag>
+                  <DshTag color="green" type="light">{rangeFormat(overviewRange)}</DshTag>
                 </div>
                 <SegmentBar segments={[
                   { label: t('tokenInput'), value: overview.data.totals.input, color: SERIES.input },
@@ -1342,8 +1370,9 @@ function TokenStatsPage({ rpc, t }: { rpc: ConnectionRpc, t: Translate }): React
       <TokenPanel
         title={t('tokenTrend')}
         hint={trend.data === undefined ? '' : `${compact(trend.data.totals.total)} Token`}
-        days={trendDays}
-        onDaysChange={setTrendDays}
+        options={optionsFor('trend')}
+        range={trendRange}
+        onRangeChange={setTrendRange}
         rangeLabel={rangeLabel}
         rangeFormat={rangeFormat}
         refreshLabel={refreshPanel}
@@ -1368,8 +1397,9 @@ function TokenStatsPage({ rpc, t }: { rpc: ConnectionRpc, t: Translate }): React
         <TokenPanel
           title={t('tokenDistribution')}
           hint={t('tokenByWorkspace')}
-          days={distributionDays}
-          onDaysChange={setDistributionDays}
+          options={optionsFor('other')}
+          range={distributionRange}
+          onRangeChange={setDistributionRange}
           rangeLabel={rangeLabel}
           rangeFormat={rangeFormat}
           refreshLabel={refreshPanel}
@@ -1385,8 +1415,9 @@ function TokenStatsPage({ rpc, t }: { rpc: ConnectionRpc, t: Translate }): React
         <TokenPanel
           title={t('tokenModels')}
           hint={t('tokenByModel')}
-          days={modelsDays}
-          onDaysChange={setModelsDays}
+          options={optionsFor('other')}
+          range={modelsRange}
+          onRangeChange={setModelsRange}
           rangeLabel={rangeLabel}
           rangeFormat={rangeFormat}
           refreshLabel={refreshPanel}
@@ -1403,8 +1434,9 @@ function TokenStatsPage({ rpc, t }: { rpc: ConnectionRpc, t: Translate }): React
       <TokenPanel
         title={t('tokenTopSessions')}
         hint={t('tokenTopTen')}
-        days={sessionsDays}
-        onDaysChange={setSessionsDays}
+        options={optionsFor('other')}
+        range={sessionsRange}
+        onRangeChange={setSessionsRange}
         rangeLabel={rangeLabel}
         rangeFormat={rangeFormat}
         refreshLabel={refreshPanel}

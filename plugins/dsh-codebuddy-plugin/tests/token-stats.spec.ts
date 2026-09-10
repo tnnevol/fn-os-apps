@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { collectCodeBuddyTokenStats, type SessionQueryService } from '../src/token-stats.ts'
+import { resolveRange } from '../src/client/token-range.ts'
 
 function event(time: number, provider: string, model: string, input: number, output: number, read = 0, write = 0) {
   return {
@@ -160,5 +161,132 @@ describe('会话标题取自真实用户输入', () => {
     const title = result.sessions[0]?.title ?? ''
     expect(title.startsWith('多 空格 换行')).toBe(true)
     expect(title.length).toBeLessThanOrEqual(80)
+  })
+})
+
+describe('allTime 统计全部历史', () => {
+  /**
+   * 「总计」不能用一个很大的 days 近似：days 有上限（MAX_RANGE_DAYS=365），
+   * 超过一年的历史会被静默截断，而「总计」的语义是「全部」——显示一个被截断的
+   * 数字却不给任何迹象，比报错更糟。因此 allTime 走 -Infinity 下界。
+   */
+  function queryWithOldEvent(): { query: SessionQueryService, now: number } {
+    const now = Date.now()
+    const header = { id: 's-old', cwd: '/w/demo' }
+    return {
+      now,
+      query: {
+        async listSessions() { return [{ header, live: false, persisted: true }] },
+        async observeSession(id: string) {
+          return {
+            header: { id, cwd: '/w/demo' },
+            events: [
+              // 3 年前的事件：远超 MAX_RANGE_DAYS(365)，任何 days 都覆盖不到。
+              event(now - 3 * 365 * 86_400_000, 'codebuddy', 'm', 100, 10),
+              event(now - 86_400_000, 'codebuddy', 'm', 5, 1),
+            ],
+          } as never
+        },
+      },
+    }
+  }
+
+  it('默认（有 days）会漏掉超出范围的历史', async () => {
+    const { query } = queryWithOldEvent()
+    const bounded = await collectCodeBuddyTokenStats(query, { days: 30 })
+    // 只有近一天那条被计入。
+    expect(bounded.totals.input).toBe(5)
+  })
+
+  it('allTime 不受 365 天上限影响，计入全部历史', async () => {
+    const { query } = queryWithOldEvent()
+    const all = await collectCodeBuddyTokenStats(query, { allTime: true })
+    // 3 年前那条也计入：100 + 5。
+    expect(all.totals.input).toBe(105)
+    expect(all.totals.total).toBeGreaterThan(105)
+  })
+
+  it('allTime 的结果严格大于受限范围（证明不是同一个窗口）', async () => {
+    const { query } = queryWithOldEvent()
+    const bounded = await collectCodeBuddyTokenStats(query, { days: 365 })
+    const all = await collectCodeBuddyTokenStats(query, { allTime: true })
+    expect(all.totals.input).toBeGreaterThan(bounded.totals.input)
+  })
+
+  it('allTime 仍然保留逐日分布，且日期键合法', async () => {
+    const { query } = queryWithOldEvent()
+    const all = await collectCodeBuddyTokenStats(query, { allTime: true })
+    expect(all.days.length).toBeGreaterThan(0)
+    // 每条逐日行的日期都必须是真实日期。
+    // 这条曾漏网：把 -Infinity 直接当逐日行起点做 `起点 + i*DAY_MS` 会算出
+    // 'NaN-NaN-NaN'——结构与长度看起来都对，只有日期是坏的。
+    for (const row of all.days) expect(row.day).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+    expect(all.activity).toHaveLength(365)
+    for (const row of all.activity) {
+      expect(row.day).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+      expect(Number.isFinite(row.tokens)).toBe(true)
+    }
+  })
+})
+
+describe('各范围窗口确实生效（合成跨年数据）', () => {
+  /**
+   * 本地真实数据只跨越十几天，所以各范围算出的数字完全相同——这掩盖不了实现
+   * 问题。这里造一份跨越两年的数据，逐个范围核对，确保窗口真的在过滤。
+   */
+  function spreadQuery(): SessionQueryService {
+    const now = Date.now()
+    const header = { id: 's-spread', cwd: '/w/demo' }
+    return {
+      async listSessions() { return [{ header, live: false, persisted: true }] },
+      async observeSession(id: string) {
+        return {
+          header: { id, cwd: '/w/demo' },
+          events: [
+            event(now - 3 * 86_400_000, 'codebuddy', 'm', 7, 0),      // 3 天前
+            event(now - 20 * 86_400_000, 'codebuddy', 'm', 30, 0),    // 20 天前
+            event(now - 60 * 86_400_000, 'codebuddy', 'm', 90, 0),    // 60 天前
+            event(now - 400 * 86_400_000, 'codebuddy', 'm', 400, 0),  // 一年多前
+          ],
+        } as never
+      },
+    }
+  }
+
+  it('近 7 天只算 7 天内的用量', async () => {
+    const s = await collectCodeBuddyTokenStats(spreadQuery(), resolveRange('7d'))
+    expect(s.totals.input).toBe(7)
+  })
+
+  it('近 30 天纳入 20 天前那条', async () => {
+    const s = await collectCodeBuddyTokenStats(spreadQuery(), resolveRange('30d'))
+    expect(s.totals.input).toBe(7 + 30)
+  })
+
+  it('近 90 天纳入 60 天前那条', async () => {
+    const s = await collectCodeBuddyTokenStats(spreadQuery(), resolveRange('90d'))
+    expect(s.totals.input).toBe(7 + 30 + 90)
+  })
+
+  it('总计纳入一年多前那条（说明 allTime 真的不受上限影响）', async () => {
+    const s = await collectCodeBuddyTokenStats(spreadQuery(), resolveRange('all'))
+    expect(s.totals.input).toBe(7 + 30 + 90 + 400)
+  })
+
+  it('范围为单调不减：7d ≤ 30d ≤ 90d ≤ 总计', async () => {
+    const query = spreadQuery()
+    const totals: number[] = []
+    for (const key of ['7d', '30d', '90d', 'all'] as const) {
+      totals.push((await collectCodeBuddyTokenStats(query, resolveRange(key))).totals.input)
+    }
+    const sorted = [...totals].sort((a, b) => a - b)
+    expect(totals).toEqual(sorted)
+  })
+
+  it('本月的窗口不超过近 30 天（日历月最多 31 天）', async () => {
+    const s = await collectCodeBuddyTokenStats(spreadQuery(), resolveRange('month'))
+    // 3 天前的那条必在；20 天前那条取决于今天几号。
+    expect(s.totals.input).toBeGreaterThanOrEqual(7)
+    expect(s.totals.input).toBeLessThanOrEqual(7 + 30)
   })
 })

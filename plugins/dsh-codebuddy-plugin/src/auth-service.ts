@@ -857,14 +857,17 @@ export class CodeBuddyAuthService {
       case 'creditExpiry': return ok(await this.creditExpiryAll(signal))
       case 'tokenStats': {
         const raw = typeof payload === 'object' && payload !== null
-          ? payload as { days?: unknown, sessionIds?: unknown }
+          ? payload as { days?: unknown, allTime?: unknown, sessionIds?: unknown }
           : undefined
         const days = typeof raw?.days === 'number' ? raw.days : undefined
+        // allTime 由客户端范围键 'all' 解析而来：统计全部历史、不做时间下界过滤。
+        const allTime = raw?.allTime === true ? true : undefined
         const sessionIds = Array.isArray(raw?.sessionIds)
           ? raw.sessionIds.filter((id): id is string => typeof id === 'string' && id.length > 0)
           : undefined
         return ok(await this.tokenStats({
           ...(days === undefined ? {} : { days }),
+          ...(allTime === undefined ? {} : { allTime }),
           ...(sessionIds === undefined ? {} : { sessionIds }),
         }, signal))
       }

@@ -59,6 +59,14 @@ export interface SessionQueryService {
 
 export interface CodeBuddyTokenStatsRequest {
   days?: number
+  /**
+   * 不做时间下界过滤：统计全部历史。
+   *
+   * 「总计」不能用一个大 `days` 近似——`days` 有上限（MAX_RANGE_DAYS），超过一年
+   * 的历史会被悄悄截断，而「总计」的语义恰恰是「全部」，被截断后显示的数字是错的
+   * 却没有迹象。因此单列一个开关，走 `Number.NEGATIVE_INFINITY` 作为下界。
+   */
+  allTime?: boolean
   sessionIds?: string[]
 }
 
@@ -242,18 +250,30 @@ export async function collectCodeBuddyTokenStats(
   request: CodeBuddyTokenStatsRequest = {},
   signal?: AbortSignal,
 ): Promise<CodeBuddyTokenStats> {
+  const allTime = request.allTime === true
   const days = Math.max(1, Math.min(MAX_RANGE_DAYS, Math.round(request.days ?? DEFAULT_RANGE_DAYS)))
   const now = Date.now()
-  const rangeStart = startOfLocalDay(now - (days - 1) * DAY_MS)
-  const activityStart = startOfLocalDay(now - (ACTIVITY_RANGE_DAYS - 1) * DAY_MS)
+  // allTime 时下界取 -Infinity：任何事件时间都 >= 它，等价于不过滤。
+  // 两个独立下界：rangeStart 决定计入 totals/模型/工作区，activityStart 决定
+  // 计入每日活跃度热力图。allTime 必须同时放开两者——只放开前者的话，旧事件仍会
+  // 在后者的比较处被丢弃（实测漏计 3 年前的那条）。
+  //
+  // 注意「比较用的下界」与「逐日行的起点」是两件事，不能共用一个值：
+  // 用 -Infinity 当起点做 `起点 + i*DAY_MS` 会算出 NaN，日期键变成
+  // 'NaN-NaN-NaN'。因此 allTime 下比较用 -Infinity，而逐日行仍以各自的固定
+  // 窗口（总数 days 天 / 热力图 365 天）构造，结构与普通范围完全一致。
+  const boundedRangeStart = startOfLocalDay(now - (days - 1) * DAY_MS)
+  const boundedActivityStart = startOfLocalDay(now - (ACTIVITY_RANGE_DAYS - 1) * DAY_MS)
+  const rangeStart = allTime ? Number.NEGATIVE_INFINITY : boundedRangeStart
+  const activityStart = allTime ? Number.NEGATIVE_INFINITY : boundedActivityStart
   const dayRows = new Map<string, CodeBuddyTokenDay>()
   for (let index = 0; index < days; index += 1) {
-    const day = localDay(rangeStart + index * DAY_MS)
+    const day = localDay(boundedRangeStart + index * DAY_MS)
     dayRows.set(day, { day, ...emptyBucket(), activeSessions: 0 })
   }
   const activityRows = new Map<string, CodeBuddyTokenActivity>()
   for (let index = 0; index < ACTIVITY_RANGE_DAYS; index += 1) {
-    const day = localDay(activityStart + index * DAY_MS)
+    const day = localDay(boundedActivityStart + index * DAY_MS)
     activityRows.set(day, { day, calls: 0, tokens: 0, activeSessions: 0 })
   }
 

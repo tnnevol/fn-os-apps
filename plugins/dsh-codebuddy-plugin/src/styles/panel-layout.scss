@@ -183,7 +183,10 @@
 .dsh-codebuddy-panel-segment-legend span { display: inline-flex; align-items: center; gap: 5px; }
 .dsh-codebuddy-panel-segment-legend i { width: 7px; height: 7px; border-radius: 50%; }
 
-.dsh-codebuddy-panel-range { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 7px; margin: 0; }
+/* 时间范围选择器：now 用 Semi 的 ButtonGroup（互斥单选，相邻圆角合并成一条
+   连续控件）。因此这里**不能**再设 gap——有间隙的话相邻圆角就不再相连，
+   分组语义消失；圆角与内边距都由 Semi 的 .semi-button-group 规则处理。 */
+.dsh-codebuddy-panel-range { margin: 0; }
 .dsh-codebuddy-panel-chart-card { padding: 12px 18px 18px; }
 .dsh-codebuddy-panel-chart { width: 100%; height: 300px; }
 .dsh-codebuddy-panel-models { display: flex; flex-direction: column; gap: 14px; padding: 20px 24px; }
@@ -484,6 +487,8 @@
   .dsh-codebuddy-token-toolbar,
   .dsh-codebuddy-token-toolbar-actions { align-items: stretch; flex-direction: column; }
   .dsh-codebuddy-token-toolbar-actions .dsh-codebuddy-panel-range { justify-content: flex-start; }
+  /* 四个选项在窄屏可能换行，让按钮组占满宽度以免被压扁。 */
+  .dsh-codebuddy-token-panel-actions .dsh-codebuddy-panel-range { width: 100%; }
   .dsh-codebuddy-token-overview-head { align-items: flex-start; flex-direction: column; }
   .dsh-codebuddy-token-overview-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .dsh-codebuddy-token-overview-stats .dsh-codebuddy-panel-stat:nth-child(odd) { border-left: 0; }
