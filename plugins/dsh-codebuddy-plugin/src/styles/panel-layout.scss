@@ -183,35 +183,20 @@
 .dsh-codebuddy-panel-segment-legend span { display: inline-flex; align-items: center; gap: 5px; }
 .dsh-codebuddy-panel-segment-legend i { width: 7px; height: 7px; border-radius: 50%; }
 
-/* 时间范围选择器。
+/* 时间范围选择器（RangeToggle）不写任何样式。
  *
- * 外观沿用 Semi 原生样式（激活项 solid、其余 borderless），只做两件组件自身
- * 覆盖不到的事：
+ * 外观全部来自 Semi 原生规则，对比度由 DSH 主题保证——`packages/dsh-semi-ui`
+ * 的 theme.scss 已为 `.semi-button-primary.semi-button-solid` 分浅色/深色两套
+ * 指定了「底色 + 文字色」：
+ *   浅色主题：bluish-1000(#0f1115) 底 + bluish-00(#fff) 字
+ *   深色主题：bluish-00 底 + bluish-1000 字
+ * 因此这里既不需要覆盖文字色，也不需要隐藏 ButtonGroup 自动插入的分隔线
+ * （`getInnerWithLine()` 插入的 `<span class="semi-button-group-line-*">` 是组件
+ * 正常产物，原生样式下渲染正常；强制 display:none 只是多余的样式覆盖）。
  *
- * 1. **隐藏 ButtonGroup 自动插入的分隔线**。`getInnerWithLine()` 只对
- *    `theme === 'outline'` 跳过，其余主题（含 borderless）都会在每两个相邻按钮
- *    之间插入 `<span class="semi-button-group-line-*">`，其 `::before` 是一条
- *    1px×20px 竖线。这组按钮是互斥单选、视觉上应连成一体，竖线会把它们割开。
- *    写法与 dsh-fnos-plugin 的 `dsh-fnos-web-actions` 一致。
- *
- * 2. **激活态的文字色改用 DSH 的「主色底前景色」**。Semi 实心按钮写死
- *    `color: rgba(var(--semi-white), 1)`（内置的 255,255,255 纯白），这在 DSH
- *    主题下不可靠——实测 token 链：
- *      --dsw-alias-button-primary-fill → --dsw-alias-brand-primary
- *      浅色主题 → bluish-1000 (#0f1115 近黑)：白字 18.9:1 ✓
- *      深色主题 → bluish-50   (浅色)      ：白字 1.08:1 ✗ 几乎不可见
- *    `--dsw-alias-label-primary-foreground` 正是随主题翻转的对应前景色
- *    （浅色主题白 / 深色主题近黑），用它才在两个主题下都达标（17–19:1）。
+ * 保留这一条空占位规则会误导后人以为此处有意为之，故整块删除，仅留本注释说明
+ * 「为什么这里没有样式」。
  */
-body[data-dsh-semi-theme] .dsh-codebuddy-panel-range > .semi-button-group-line,
-body[data-dsh-semi-theme] .dsh-codebuddy-panel-range > .semi-button-group-line::before {
-  display: none;
-}
-
-/* 仅覆盖激活项的文字色；其余外观（底色、圆角、hover、focus）全部保持 Semi 原生。 */
-body[data-dsh-semi-theme] .dsh-codebuddy-panel-range > .semi-button-primary.semi-button-solid {
-  color: var(--dsw-alias-label-primary-foreground, #fff);
-}
 
 .dsh-codebuddy-panel-chart-card { padding: 12px 18px 18px; }
 .dsh-codebuddy-panel-chart { width: 100%; height: 300px; }

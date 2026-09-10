@@ -1051,18 +1051,22 @@ function CreditsPage({ rpc, t, rosterTick }: { rpc: ConnectionRpc, t: Translate,
 /**
  * 时间范围选择器：互斥单选的按钮组。
  *
- * 全部使用 Semi 的原生样式，不做任何 CSS 覆盖（与 showcase 中 ButtonGroup 的
- * 用法一致）：
+ * 完全使用 Semi 原生样式，插件侧不写任何 CSS 覆盖：
  *
- * - 激活项用 `theme="solid"`：Semi 的实心按钮是「主色底 + 白字」
- *   （文字色取自内置的 `--semi-white: 255,255,255`），对比度由组件自身保证，
- *   不需要我们再指定文字色。
- * - 未激活项用 `theme="borderless"`：只有文字，安静退后，让激活项成为唯一焦点。
+ * - 激活项 `theme="solid" type="primary"`，未激活项 `theme="borderless"`。
+ * - 激活态的「底色 + 文字色」由 DSH 主题指定（见 packages/dsh-semi-ui 的
+ *   theme.scss）：浅色主题是近黑底 + 白字，深色主题是白底 + 近黑字——两套都是
+ *   硬编码的高对比配对。注意**不能**依赖 Semi 自身的实心按钮配色：它写死
+ *   `color: rgba(var(--semi-white), 1)`，而 DSH 深色主题下主色填充是浅色，
+ *   白字对比度仅 1.08:1。所幸主题层已正确处理，插件无需再介入。
  *
  * **组上不传 `theme` / `type`**：ButtonGroup 合并子 props 的顺序是
  * `{disabled,size,type}` → `itm.props` → `rest`，而 `theme` 不在它解构出的键里，
  * 于是落进 `rest` 并排在子按钮自身 props 之后——组上的值会逐个覆盖子按钮的值，
  * 激活态就永远显不出来。（`size` 被解构出去，可以安全地传。）
+ *
+ * 组件选取：用 ButtonGroup（本仓库 `DshButtonGroup`），不是 SplitButtonGroup。
+ * 前者把相邻按钮的圆角相接成一条连续控件，符合「互斥单选一组」的语义。
  *
  * 选项由调用方按面板职责给出（见 token-range.ts）：总览给「总计」、趋势给「本月」。
  */

@@ -54,12 +54,11 @@ dsh --profile web --dump-config
 - **积分统计**：提供剩余积分、资源包数量、可用账号等指标总览，并按账号列出资源包进度与到期时间（长期有效/重置时间），当前账号高亮。
 - **Token 统计**：只统计 DSH 会话中 `codebuddy` 供应商的调用，提供总览、输入/输出/缓存指标、缓存命中率、按日 Token 与调用趋势、Token 活动、按工作区/模型分布和会话排名；支持最近 7/30/90 天。统计通过 `sessionQuery.observeSession()` 读取会话事件，并使用 DSH token-meter 投影保持会话用量语义一致，不上传数据。页面顶部只显示一行「当前数据更新于 yyyy-MM-dd HH:mm:ss」（`generatedAt` 经 dayjs 固定 pattern 格式化）——原先这里重复了页面标题与副标题；不用 `toLocaleString()` 是因为其分隔符与顺序随运行环境 locale 变化，而该时间戳每次刷新都变，格式不稳定不利扫视。dayjs 是插件独有依赖，已在 `tsdown.config.ts` 的 `alwaysBundle` 中登记：DSH 浏览器模块表没有它，漏登记会残留裸 `require('dayjs')` 并在运行时直接报模块缺失。
 
-  - **时间范围**：默认「近 7 天」；选项按面板职责分配——总览给「总计」（回答「一共用了多少」，需要全量）、趋势给「本月」（回答「随时间怎么变」，需要有意义的当前窗口），两者不互换：把总计放到趋势上逐日图会退化成一根巨柱。选择器用 `ButtonGroup` 呈现，**外观沿用 Semi 原生样式**：激活项 `theme="solid" type="primary"`、其余 `theme="borderless" type="tertiary"`，不自定义底色、圆角与 hover。组上不传 `theme` / `type`——它合并子 props 的顺序是 `{disabled,size,type}` → `itm.props` → `rest`，而 `theme` 不在其解构出的键里，会落进 `rest` 并排在子 props 之后，组上的值因此覆盖每个子按钮的值、激活态永远显不出来（`size` 被解构出去，可安全传递）。选中态另用 `aria-pressed` 表达，因为纯视觉的 theme 切换对读屏不可见。
+  - **时间范围**：默认「近 7 天」；选项按面板职责分配——总览给「总计」（回答「一共用了多少」，需要全量）、趋势给「本月」（回答「随时间怎么变」，需要有意义的当前窗口），两者不互换：把总计放到趋势上逐日图会退化成一根巨柱。选择器用 **`ButtonGroup`**（facade 的 `DshButtonGroup`）呈现，而不是 SplitButtonGroup：前者把相邻按钮的圆角相接成一条连续控件，符合「互斥单选一组」的语义。**外观完全沿用 Semi 原生样式，插件侧不写任何 CSS 覆盖**——激活项 `theme="solid" type="primary"`、其余 `theme="borderless"`，底色/圆角/hover/focus 全部交回 Semi 与主题层。
 
-只保留两处覆盖，都是组件自身做不到的：
+组上不传 `theme` / `type`：ButtonGroup 合并子 props 的顺序是 `{disabled,size,type}` → `itm.props` → `rest`，而 `theme` 不在其解构出的键里，会落进 `rest` 并排在子 props 之后，组上的值因此覆盖每个子按钮的值、激活态永远显不出来（`size` 被解构出去，可安全传递）。选中态另用 `aria-pressed` 表达，因为纯视觉的 theme 切换对读屏不可见。
 
-1. **隐藏分隔线**。`getInnerWithLine()` 只对 `theme === 'outline'` 跳过，其余主题（含 borderless）都会在每两个相邻按钮间插入 `<span class="semi-button-group-line-*">`，其 `::before` 是 1px×20px 竖线；互斥单选的按钮组应连成一体，竖线会把它割开。写法与 dsh-fnos-plugin 的 `dsh-fnos-web-actions` 一致。
-2. **激活项的文字色改用 `--dsw-alias-label-primary-foreground`**。Semi 把实心按钮文字写死为 `rgba(var(--semi-white), 1)`（内置纯白），而 DSH 的 `--dsw-alias-button-primary-fill` → `--dsw-alias-brand-primary` 在**深色主题**下是浅色（bluish-50），白字对比度实测仅 **1.08:1**（几乎不可见）；换用随主题翻转的 foreground 后，浅色 18.9:1、深色 17.0:1，两个主题都达标。
+**对比度由主题层保证，插件不介入**：Semi 自身的实心按钮写死 `color: rgba(var(--semi-white), 1)`，而 DSH 深色主题下 `--dsw-alias-button-primary-fill` 解析为浅色（→ brand-primary → bluish-50），白字对比度仅 1.08:1。所幸 `packages/dsh-semi-ui` 的 theme.scss 已为 `.semi-button-primary.semi-button-solid` 分浅色/深色指定硬编码的高对比配对（浅色：bluish-1000 底 + bluish-00 字；深色反之），因此这里既不需要覆盖文字色，也不需要隐藏 ButtonGroup 自动插入的分隔线 `<span class="semi-button-group-line-*">`——那是组件正常产物，原型样式下渲染正常。
 
 另外，**组容器上不能设 `gap`**：分段控件靠相邻圆角相接表达「一组」，有间隙就断了。曾有一条遗留布局规则带 `gap: 8px`（早于 ButtonGroup 改造），是「按钮之间有空隙」的实际来源，已删除并在测试中锁住。「本月」解析为 `days = 今天几号`，正好落在本月 1 号（服务端起点是 `startOfLocalDay(now - (days-1)*DAY_MS)`），无需服务端支持「月」这种单位；「总计」走 `allTime` 而非大 `days`——`days` 有 365 上限，超过一年的历史会被静默截断，而总计的语义是全部。缓存以**范围键**为键而非 `days`：`month` 在 30 号时与 `30d` 天数相同但请求不同，用 `days` 会互相污染。
   - **周期选择器落在每个面板内部**（总览 / 趋势 / 工作区分布 / 模型分布 / 会话排行各一个）：这些面板回答不同问题，读者常需要让它们停在不同的时间窗口上对比，全局选择器会强迫所有面板同时跳变。Token 活动热力图固定为最近一年（服务端 `ACTIVITY_RANGE_DAYS` 与 `days` 无关），因此不提供周期选择器。
