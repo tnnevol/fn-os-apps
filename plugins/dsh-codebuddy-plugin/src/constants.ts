@@ -97,12 +97,18 @@ export const CODEBUDDY_IDE_VERSION = '4.9.8'
 /**
  * CLI version reported on chat requests.
  *
- * Mirrors the currently installed `@tencent-ai/codebuddy-code` (2.145.0): the
- * service uses this family of headers to attribute the request to the official
- * CLI client (`X-IDE-Type: CLI` / `X-IDE-Version` / `User-Agent`), so the value
- * must track the product release the plugin presents itself as.
+ * 对齐 `@tencent-ai/codebuddy-code` 的正式发布版本。官方 CLI 发的是**自己的
+ * package.json version**（源码里 `getCurrentPackageJson()` 取值），服务端用这组头
+ * （`X-IDE-Type: CLI` / `X-IDE-Version` / `User-Agent`）把请求归因到具体客户端版本，
+ * 因此这里必须跟着产品发布走，不能随机化也不能长期滞后。
+ *
+ * 更新方式：查 npm 的 `dist-tags.latest`（`npm view @tencent-ai/codebuddy-code
+ * dist-tags`），只取正式版，不要用 dev/next 预发布号。
+ *
+ * 注意与 {@link CODEBUDDY_IDE_VERSION} 的区别：那是 **CodeBuddyIDE**（VS Code 扩展）
+ * 的版本，属另一条产品线，不随本包变化。
  */
-export const CODEBUDDY_CLI_VERSION = '2.145.0'
+export const CODEBUDDY_CLI_VERSION = '2.148.0'
 
 /**
  * 登录/请求时声明的客户端身份。

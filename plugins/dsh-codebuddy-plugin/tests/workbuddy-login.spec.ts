@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import {
+  CODEBUDDY_CLI_VERSION,
   CODEBUDDY_CLIENT_ENDPOINTS,
   CODEBUDDY_CLIENT_IDS,
   CODEBUDDY_CLIENT_LABELS,
@@ -35,9 +36,14 @@ describe('客户端标识字典', () => {
   })
 
   it('版本是固定值，不是随机/会话生成', () => {
-    expect(CODEBUDDY_CLIENT_VERSIONS.cli).toBe('2.145.0')
+    // 不写死具体版本号：CLI 版本需跟随上游发布更新（见 CODEBUDDY_CLI_VERSION
+    // 的注释），写死会让每次升版都误判为回归。这里锁的是「稳定性 + 形态」，
+    // 具体数值另有「与上游一致」的检查。
+    const first = CODEBUDDY_CLIENT_VERSIONS.cli
+    expect(first).toBe(CODEBUDDY_CLI_VERSION)
+    // 多次读取完全一致（若写成随机值或函数，这里会暴露）。
+    expect(CODEBUDDY_CLIENT_VERSIONS.cli).toBe(first)
     expect(CODEBUDDY_CLIENT_VERSIONS.workbuddy).toBe('5.5.4')
-    // 多次读取必须完全一致（若写成函数或随机值，这里会暴露）。
     expect(CODEBUDDY_CLIENT_VERSIONS.workbuddy).toBe('5.5.4')
   })
 
@@ -72,7 +78,7 @@ describe('账号条目记录客户端', () => {
     // 不传 client 时按 cli 记录（而不是留空）
     const cli = buildAccountEntry(token, account, {})
     expect(cli.client).toBe('cli')
-    expect(cli.clientVersion).toBe('2.145.0')
+    expect(cli.clientVersion).toBe(CODEBUDDY_CLI_VERSION)
   })
 
   it('resolveEntryEndpoint 让 workbuddy 账号走 workbuddy.cn', async () => {
