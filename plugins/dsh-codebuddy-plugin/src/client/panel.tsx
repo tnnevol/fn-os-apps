@@ -49,8 +49,8 @@ import type { ConnectionRpc, AccountsResult } from './rpc.ts'
 import { describeRpcError } from './rpc.ts'
 import { PanelRouteController } from './panel-route.ts'
 import type { PanelRoute } from './panel-route.ts'
-import { classifyResources, forgetResources, recordResources } from './resource-history.ts'
-import type { ClassifiedResource, ResourceLifecycle, ResourceSnapshot } from './resource-history.ts'
+import { classifyResources, forgetResources, readResources, recordResources } from './resource-history.ts'
+import type { ClassifiedResource, LiveResource, ResourceLifecycle } from './resource-history.ts'
 import { CodeBuddyLogo } from '../components/CodeBuddyLogo.tsx'
 import { AddAccountModal, startLoginPolling } from '../components/AddAccountModal.tsx'
 import { getAutoCheckinPref, setAutoCheckinPref } from './usage-prefs.ts'
@@ -191,6 +191,8 @@ interface AccountCardProps {
   }
   /** 自动签到开启时不显示手动签到动作。 */
   autoCheckin: boolean
+  /** 该账号已分类的资源包（概览取前两个）。 */
+  resources: ClassifiedResource[]
   busy: boolean
   onCheckin: (id: string) => void
   onSwitch: (id: string) => void
@@ -200,12 +202,14 @@ interface AccountCardProps {
   onOpenResources: (row: PanelAccountRow) => void
 }
 
-function AccountCard({ row, labels, autoCheckin, busy, onCheckin, onSwitch, onDelete, onRename, onOpenResources }: AccountCardProps): ReactNode {
+function AccountCard({ row, labels, autoCheckin, resources, busy, onCheckin, onSwitch, onDelete, onRename, onOpenResources }: AccountCardProps): ReactNode {
   const env = row.environment
   const name = row.nickname
   const { active, offline, checkedIn, unchecked, checkin, remaining, switchLabel, deleteLabel, renameLabel, noBalanceHint } = labels
   const totalPct = row.totalCapacity > 0 ? Math.max(0, Math.min(100, (row.totalRemaining / row.totalCapacity) * 100)) : null
   const remainingSum = row.totalRemaining
+  // 卡片是概览：最多两个套餐，按 可使用 → 已用完 → 已过期 取前二。
+  const cardResources = resources.slice(0, CARD_RESOURCE_LIMIT)
   // 企业账号不支持签到；自动签到开启或已签到时不显示手动签到入口。
   const checkinVisible = !row.enterprise && !autoCheckin
   const checkinDisabled = row.expired || !row.checkinOk || row.todayCheckedIn === true || busy
@@ -308,7 +312,7 @@ function AccountCard({ row, labels, autoCheckin, busy, onCheckin, onSwitch, onDe
                   <div className="dsh-codebuddy-account-card-credits">
                     <strong className="dsh-codebuddy-account-card-credits-value">{formatCredit(remainingSum)}</strong>
                     <span className="dsh-codebuddy-muted">{remaining}</span>
-                    <span className="dsh-codebuddy-muted">{row.resources.length} 个资源包</span>
+                    <span className="dsh-codebuddy-muted">{resources.length} 个资源包</span>
                   </div>
                   {totalPct !== null && (
                     <DshProgress
@@ -319,15 +323,20 @@ function AccountCard({ row, labels, autoCheckin, busy, onCheckin, onSwitch, onDe
                       orbitStroke="var(--dsw-alias-border-l3)"
                     />
                   )}
-                  {row.resources.slice(0, 2).map((r) => (
-                    <div key={r.name} className="dsh-codebuddy-credit-resource-row">
-                      <span className="dsh-codebuddy-credit-resource-name" title={r.name}>{r.name}</span>
-                      <span className="dsh-codebuddy-credit-resource-meta">
-                        {r.remaining !== null ? formatCredit(r.remaining) : '—'} / {r.total !== null ? formatCredit(r.total) : '∞'}
-                        {r.resetsAt !== null ? ` · ${r.resetsAt}` : ''}
-                      </span>
-                    </div>
-                  ))}
+                  {/* 概览只列前两个套餐，按 可使用 → 已用完 → 已过期 排序；
+                      文字颜色跟随生命周期，一眼看出哪个还能用。容器始终渲染，
+                      保证只有一个（或没有）套餐的账号与两个套餐的卡片等高。 */}
+                  <div className="dsh-codebuddy-account-card-resources">
+                    {cardResources.map((r) => (
+                      <div key={r.key} className={`dsh-codebuddy-credit-resource-row is-${r.lifecycle}`}>
+                        <span className="dsh-codebuddy-credit-resource-name" title={r.name}>{r.name}</span>
+                        <span className="dsh-codebuddy-credit-resource-meta">
+                          {r.remaining !== null ? formatCredit(r.remaining) : '—'} / {r.total !== null ? formatCredit(r.total) : '∞'}
+                          {r.resetsAt !== null ? ` · ${r.resetsAt}` : ''}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </>
               )}
         </div>
@@ -348,6 +357,19 @@ const RESOURCE_LIFECYCLE_META: Record<ResourceLifecycle, { labelKey: CodeBuddyLo
   usable: { labelKey: 'resourcesUsable', emptyKey: 'resourcesEmptyUsable', color: 'var(--dsw-alias-state-success-primary)' },
   depleted: { labelKey: 'resourcesDepleted', emptyKey: 'resourcesEmptyDepleted', color: 'var(--dsw-alias-state-warn-primary)' },
   expired: { labelKey: 'resourcesExpired', emptyKey: 'resourcesEmptyExpired', color: 'var(--dsw-alias-label-tertiary)' },
+}
+
+/** 卡片行优先展示的套餐数：卡片是概览，全量台账在弹框里。 */
+const CARD_RESOURCE_LIMIT = 2
+
+/** 把一个账号的实时资源包转成台账输入（卡片与弹框共用同一映射）。 */
+function liveResourcesOf(row: PanelAccountRow): LiveResource[] {
+  return row.resources.map(r => ({
+    name: r.name,
+    total: r.total,
+    remaining: r.remaining,
+    resetsAt: r.resetsAt,
+  }))
 }
 
 /** 一行资源包：左侧状态条 + 名称与用量 + 右侧剩余/总量。 */
@@ -410,29 +432,21 @@ function ResourceGroup({ items, lifecycle, t }: { items: ClassifiedResource[], l
 }
 
 /** 账号资源包弹框：头部账号摘要 + 三组生命周期 Tabs。 */
-function AccountResourcesModal({ row, t, onClose }: { row: PanelAccountRow | undefined, t: Translate, onClose: () => void }): ReactNode {
+function AccountResourcesModal({ row, items, t, onClose }: {
+  row: PanelAccountRow | undefined
+  /** 该账号已分类的资源包（由 AccountsPage 统一计算，与卡片同源）。 */
+  items: ClassifiedResource[]
+  t: Translate
+  onClose: () => void
+}): ReactNode {
   const [activeKey, setActiveKey] = useState<ResourceLifecycle>('usable')
-  // 本次探测到的实时资源包（弹框每次打开都以最新一版为准）。
-  const live = useMemo(() => (row?.resources ?? []).map(r => ({
-    name: r.name,
-    total: r.total,
-    remaining: r.remaining,
-    resetsAt: r.resetsAt,
-  })), [row])
-  // 台账记录放在 effect 里：写 localStorage 属于副作用，不应发生在渲染期。
-  const [ledger, setLedger] = useState<ResourceSnapshot[]>([])
-  useEffect(() => {
-    if (row === undefined) return
-    setLedger(recordResources(row.id, live))
-  }, [row, live])
-  const groups = useMemo(() => {
-    const classified = classifyResources(ledger, live)
-    return {
-      usable: classified.filter(item => item.lifecycle === 'usable'),
-      depleted: classified.filter(item => item.lifecycle === 'depleted'),
-      expired: classified.filter(item => item.lifecycle === 'expired'),
-    }
-  }, [ledger, live])
+  // 换账号时回到「可使用」：Tab 是这次查看的临时状态，不跟着上一个账号走。
+  useEffect(() => { setActiveKey('usable') }, [row?.id])
+  const groups = useMemo(() => ({
+    usable: items.filter(item => item.lifecycle === 'usable'),
+    depleted: items.filter(item => item.lifecycle === 'depleted'),
+    expired: items.filter(item => item.lifecycle === 'expired'),
+  }), [items])
 
   return (
     <DshModal
@@ -505,6 +519,34 @@ function AccountsPage({
   const [resourceTarget, setResourceTarget] = useState<PanelAccountRow | undefined>(undefined)
   // 自动签到开关状态：开启时隐藏手动签到动作。
   const [autoCheckinOn, setAutoCheckinOn] = useState<boolean>(autoCheckinPref())
+  // 资源台账版本：记录完本次探测结果后自增，让卡片用上最新的分类。
+  const [ledgerTick, setLedgerTick] = useState(0)
+  const rows = data?.accounts ?? []
+
+  // 每次探测都把实时资源包并入本地台账（写 localStorage 属于副作用，放 effect）。
+  useEffect(() => {
+    if (rows.length === 0) return
+    for (const row of rows) {
+      // 查询失败的账号不写台账：空的实时列表会把已有记录挤成「已过期」。
+      if (!row.creditOk) continue
+      recordResources(row.id, liveResourcesOf(row))
+    }
+    setLedgerTick(v => v + 1)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data])
+
+  // 每个账号的分类资源包（可使用 → 已用完 → 已过期），卡片与弹框共用。
+  const resourcesByAccount = useMemo(() => {
+    const map = new Map<string, ClassifiedResource[]>()
+    for (const row of rows) {
+      // 额度查询失败时实时列表为空，此时不能把台账里的包判成「已过期」——
+      // 那只是这次没查到，不是资源没了。
+      map.set(row.id, row.creditOk ? classifyResources(readResources(row.id), liveResourcesOf(row)) : [])
+    }
+    return map
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rows, ledgerTick])
+
   useEffect(() => {
     void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoCheckin', { enabled: autoCheckinOn })
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -533,7 +575,6 @@ function AccountsPage({
   }
 
   if (loading) return <DshSpin size="large" />
-  const rows = data?.accounts ?? []
   return (
     <div className="dsh-codebuddy-panel-page">
       <DshCard className="dsh-codebuddy-panel-action-card">
@@ -593,6 +634,7 @@ function AccountsPage({
               row={row}
               busy={busyId === row.id}
               autoCheckin={autoCheckinOn}
+              resources={resourcesByAccount.get(row.id) ?? []}
               labels={{
                 active: t('accountActive'),
                 offline: t('accountOffline'),
@@ -618,6 +660,7 @@ function AccountsPage({
       )}
       <AccountResourcesModal
         row={resourceTarget}
+        items={resourceTarget === undefined ? [] : resourcesByAccount.get(resourceTarget.id) ?? []}
         t={t}
         onClose={() => { setResourceTarget(undefined) }}
       />

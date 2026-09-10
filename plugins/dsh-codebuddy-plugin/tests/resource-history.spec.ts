@@ -43,4 +43,11 @@ describe('resource package lifecycle classification', () => {
     ])
     expect(rows.map(row => row.lifecycle)).toEqual(['usable', 'depleted', 'expired'])
   })
+
+  it('keeps a usable package ahead of an expired one so the card shows the usable one first', () => {
+    // 卡片只取前两条，顺序错了就会把还能用的套餐挤出概览。
+    const ledger = [ledgerRow('old@2020', 'old', 5, '2020-01-01 00:00:00')]
+    const rows = classifyResources(ledger, [{ name: 'live', total: 100, remaining: 1, resetsAt: '2099-01-01 00:00:00' }])
+    expect(rows.slice(0, 2).map(row => row.name)).toEqual(['live', 'old'])
+  })
 })
