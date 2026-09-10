@@ -38,10 +38,20 @@ describe('添加账号入口', () => {
     expect(PANEL).not.toContain('accountActionTitle')
   })
 
-  it('按钮位于「账号管理」区块头内', () => {
+  it('按钮位于区块头**左端**（贴标题右侧），不在右端动作区里', () => {
     const head = accountsBody.slice(accountsBody.indexOf('dsh-codebuddy-panel-section-head'))
-    expect(head).toContain('onClick={onAddAccount}')
-    expect(head).toContain('dsh-codebuddy-accounts-head-actions')
+    const leadAt = head.indexOf('dsh-codebuddy-accounts-head-lead')
+    const addAt = head.indexOf('onClick={onAddAccount}')
+    const actionsAt = head.indexOf('dsh-codebuddy-accounts-head-actions')
+    expect(leadAt).toBeGreaterThan(-1)
+    expect(addAt).toBeGreaterThan(leadAt)
+    // 在右端动作区开始之前 —— 否则按钮又混进了次级控件堆里。
+    expect(actionsAt).toBeGreaterThan(addAt)
+  })
+
+  it('左右两段由 space-between 分列两端', () => {
+    const block = /\.dsh-codebuddy-panel-section-head\s*\{([^}]*)\}/.exec(LAYOUT_SCSS)?.[1] ?? ''
+    expect(block).toMatch(/justify-content:\s*space-between/)
   })
 
   it('区块头常驻：外层没有条件渲染（否则空列表时入口消失）', () => {
@@ -65,9 +75,14 @@ describe('添加账号入口', () => {
   })
 })
 
-describe('动作区可容纳四个控件', () => {
+describe('动作区可容纳多个控件', () => {
   it('允许换行（窄屏一行放不下会横向溢出）', () => {
     const block = /\.dsh-codebuddy-accounts-head-actions\s*\{([^}]*)\}/.exec(INDEX_SCSS)?.[1] ?? ''
+    expect(block).toMatch(/flex-wrap:\s*wrap/)
+  })
+
+  it('左端（标题 + 主操作）也允许换行', () => {
+    const block = /\.dsh-codebuddy-accounts-head-lead\s*\{([^}]*)\}/.exec(INDEX_SCSS)?.[1] ?? ''
     expect(block).toMatch(/flex-wrap:\s*wrap/)
   })
 
@@ -87,5 +102,73 @@ describe('骨架与真实结构对齐', () => {
     // 应与真实页面一致：先积分总览卡，再区块头。
     expect(body).toContain('dsh-codebuddy-panel-stat-card')
     expect(body).toContain('dsh-codebuddy-panel-section-head')
+  })
+})
+
+describe('自动切换账号开关', () => {
+  it('账号页标题行有该开关', () => {
+    expect(accountsBody).toContain('<AutoSwitchToggle')
+  })
+
+  it('开关状态与设置页共用同一个偏好键', () => {
+    // 两处开关互为镜像：读写都走 usage-prefs，底层是同一 localStorage 键。
+    expect(PANEL).toMatch(/useState<boolean>\(getAutoSwitchPref\(\)\)/)
+    expect(PANEL).toContain('setAutoSwitchPref(checked)')
+  })
+
+  it('挂载与切换时同步到 host', () => {
+    expect(accountsBody).toMatch(/rpc\.call\(CODEBUDDY_AUTH_CHANNEL, 'autoSwitch', \{ enabled: checked \}\)/)
+    expect(accountsBody).toMatch(/rpc\.call\(CODEBUDDY_AUTH_CHANNEL, 'autoSwitch', \{ enabled: autoSwitchOn \}\)/)
+  })
+
+  it('只传 enabled，不覆盖设置页维护的阈值', () => {
+    // 主机侧 thresholdPct 缺省沿用已加载值；若这里传一个数字，会把用户在设置页
+    // 调好的阈值改掉。
+    const calls = [...accountsBody.matchAll(/autoSwitch[^)]*\)/g)].map(m => m[0])
+    for (const call of calls) {
+      expect(call).not.toContain('thresholdPct')
+    }
+  })
+})
+
+describe('自动切换开启时隐藏「设为当前账号」', () => {
+  it('条件包含 autoSwitch 判断', () => {
+    expect(PANEL).toMatch(/if \(!row\.active && !autoSwitch\)/)
+  })
+
+  it('该标记由账号页传入，取自开关状态', () => {
+    // 必须与开关同源：若传常量或漏传，开关就管不到卡片菜单。
+    expect(accountsBody).toMatch(/autoSwitch=\{autoSwitchOn\}/)
+  })
+
+  it('开启时菜单项确实不追加（判断作用于 push 之前）', () => {
+    const at = PANEL.indexOf('if (!row.active && !autoSwitch)')
+    expect(at).toBeGreaterThan(-1)
+    const body = PANEL.slice(at, at + 420)
+    expect(body).toContain("key=\"switch\"")
+  })
+})
+
+describe('面板与设置页的开关保持同步', () => {
+  it('订阅偏好变化（面板关闭时组件仍挂载，否则会显示旧状态）', () => {
+    // 面板关闭只是 `return null`，组件不卸载 → useState 不会重读 localStorage。
+    // 若设置页改了自动切换，账号页会一直显示旧值，且卡片菜单的「设为当前账号」
+    // 按旧值隐藏/显示。
+    expect(accountsBody).toContain('subscribeUsagePref')
+  })
+
+  it('订阅回调里重读三个开关并同步到 host', () => {
+    const at = accountsBody.indexOf('subscribeUsagePref(')
+    const body = accountsBody.slice(at, at + 700)
+    for (const key of ['getAutoCheckinPref', 'getAutoTravelPref', 'getAutoSwitchPref']) {
+      expect(body).toContain(key)
+    }
+    expect(body).toMatch(/setAutoSwitchOn\(nextSwitch\)/)
+  })
+
+  it('订阅可取消（effect 返回 disposer）', () => {
+    const at = accountsBody.indexOf('subscribeUsagePref(')
+    // `return subscribeUsagePref(` 才会在卸载时注销监听；漏掉 return 会泄漏监听。
+    expect(accountsBody.slice(Math.max(0, at - 60), at)).toMatch(/return\s+$/)
   })
 })

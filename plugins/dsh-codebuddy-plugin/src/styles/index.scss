@@ -89,11 +89,21 @@
   gap: 12px;
 }
 
+/* 区块头左端：标题 + 主操作（添加账号）。两者紧贴，与右端动作区分别贴齐
+   区块头的左右两端（.dsh-codebuddy-panel-section-head 已是 space-between）。 */
+.dsh-codebuddy-accounts-head-lead {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  min-width: 0;
+}
+
 .dsh-codebuddy-accounts-head-actions {
   display: inline-flex;
   align-items: center;
-  /* 允许换行：动作区现含「添加账号 + 两个开关 + 刷新」四个控件，窄屏一行放不下，
-     不给 wrap 会横向溢出并把页面撑出滚动。 */
+  /* 允许换行：动作区现含「自动切换 + 自动签到 + 自动旅行 + 刷新」四个控件，
+     窄屏一行放不下，不给 wrap 会横向溢出并把页面撑出滚动。 */
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 8px;

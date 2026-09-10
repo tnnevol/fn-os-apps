@@ -70,7 +70,15 @@ import { formatUpdatedAt } from './format-time.ts'
 import { DEFAULT_TOKEN_RANGE, optionsFor, rangeLabel as rangeLabelOf, type TokenRangeKey } from './token-range.ts'
 import { CodeBuddyLogo } from '../components/CodeBuddyLogo.tsx'
 import { AddAccountModal, startLoginPolling } from '../components/AddAccountModal.tsx'
-import { getAutoCheckinPref, getAutoTravelPref, setAutoCheckinPref, setAutoTravelPref } from './usage-prefs.ts'
+import {
+  getAutoCheckinPref,
+  getAutoSwitchPref,
+  getAutoTravelPref,
+  setAutoCheckinPref,
+  setAutoSwitchPref,
+  setAutoTravelPref,
+  subscribeUsagePref,
+} from './usage-prefs.ts'
 
 useECharts([BarChart, LineChart, AriaComponent, GridComponent, LegendComponent, TooltipComponent, CanvasRenderer])
 
@@ -437,13 +445,15 @@ interface AccountCardProps {
   busy: boolean
   onCheckin: (id: string) => void
   onSwitch: (id: string) => void
+  /** 自动切换开启时不渲染「设为当前账号」入口（见 AutoSwitchToggle 注释）。 */
+  autoSwitch: boolean
   onDelete: (row: PanelAccountRow) => void
   onRename: (row: PanelAccountRow) => void
   /** 点击卡片主体查看该账号全部资源包。 */
   onOpenResources: (row: PanelAccountRow) => void
 }
 
-function AccountCard({ row, labels, autoCheckin, resources, busy, onCheckin, onSwitch, onDelete, onRename, onOpenResources }: AccountCardProps): ReactNode {
+function AccountCard({ row, labels, autoCheckin, autoSwitch, resources, busy, onCheckin, onSwitch, onDelete, onRename, onOpenResources }: AccountCardProps): ReactNode {
   const env = row.environment
   // 历史条目没有 client 字段（那时只有 CLI），缺省按 cli 展示。
   const clientId = normalizeClientId(row.client)
@@ -501,7 +511,9 @@ function AccountCard({ row, labels, autoCheckin, resources, busy, onCheckin, onS
       </DshDropdown.Item>,
     )
   }
-  if (!row.active) {
+  // 自动切换开启时隐藏手动入口：那时账号由客户端按阈值自动切换，手动指定会被
+  // 下一次自动切换覆盖，留着只会让用户以为设置没生效。
+  if (!row.active && !autoSwitch) {
     menu.push(
       <DshDropdown.Item
         key="switch"
@@ -825,6 +837,8 @@ function AccountsPage({
   const [resourceTarget, setResourceTarget] = useState<PanelAccountRow | undefined>(undefined)
   // 自动签到开关状态：开启时隐藏手动签到动作。
   const [autoCheckinOn, setAutoCheckinOn] = useState<boolean>(autoCheckinPref())
+  // 自动切换账号（与设置页共用同一 localStorage 键，两处开关互为镜像）。
+  const [autoSwitchOn, setAutoSwitchOn] = useState<boolean>(getAutoSwitchPref())
   // 自动旅行开关状态（成长中心）。
   const [autoTravelOn, setAutoTravelOn] = useState<boolean>(autoTravelPref())
   // 资源台账版本：记录完本次探测结果后自增，让卡片用上最新的分类。
@@ -856,8 +870,25 @@ function AccountsPage({
   }, [rows, ledgerTick])
 
   useEffect(() => {
+    // 首次挂载把三个开关的持久化状态同步给主机。
     void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoCheckin', { enabled: autoCheckinOn })
     void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoTravel', { enabled: autoTravelOn })
+    // 只传 enabled，阈值留给设置页——主机侧缺省沿用已加载的阈值。
+    void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoSwitch', { enabled: autoSwitchOn })
+    // 订阅偏好变化：面板关闭时只 `return null`、组件保持挂载，因此设置页改了开关
+    // 后这里的 state 不会自动跟上。自动切换尤其明显——它还决定卡片菜单里
+    // 「设为当前账号」是否出现，不同步会出现「该有的入口没有」的错觉。
+    return subscribeUsagePref(() => {
+      const nextCheckin = getAutoCheckinPref()
+      const nextTravel = getAutoTravelPref()
+      const nextSwitch = getAutoSwitchPref()
+      setAutoCheckinOn(nextCheckin)
+      setAutoTravelOn(nextTravel)
+      setAutoSwitchOn(nextSwitch)
+      void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoCheckin', { enabled: nextCheckin })
+      void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoTravel', { enabled: nextTravel })
+      void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoSwitch', { enabled: nextSwitch })
+    })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rpc])
 
@@ -909,9 +940,11 @@ function AccountsPage({
       {/* 区块头常驻（不随「有账号」条件渲染）：添加账号按钮放在标题右侧，
           空列表时必须仍可用——那正是最需要添加入口的情形。 */}
       <div className="dsh-codebuddy-panel-section-head">
-        <div className="dsh-codebuddy-panel-section-title"><strong>{t('accountsTitle')}</strong><span>{rows.length}</span></div>
-        <div className="dsh-codebuddy-accounts-head-actions">
-          {/* 主操作按钮排在动作区首位，沿用原先的 solid/primary 强调。 */}
+        {/* 左端：标题 + 主操作。添加账号紧贴标题右侧，与右端动作区两端对齐。
+            主操作放左端而非右端：右侧是开关与刷新这类次级控件，主操作混在其中
+            会被削弱；贴标题则与「这一屏在管什么」直接相邻。 */}
+        <div className="dsh-codebuddy-accounts-head-lead">
+          <div className="dsh-codebuddy-panel-section-title"><strong>{t('accountsTitle')}</strong><span>{rows.length}</span></div>
           <DshButton
             size="small"
             theme="solid"
@@ -921,6 +954,20 @@ function AccountsPage({
           >
             {loginWaiting ? t('signingIn') : t('createUser')}
           </DshButton>
+        </div>
+        {/* 右端：次级控件。 */}
+        <div className="dsh-codebuddy-accounts-head-actions">
+          <AutoSwitchToggle
+            checked={autoSwitchOn}
+            t={t}
+            onChange={(checked: boolean) => {
+              setAutoSwitchOn(checked)
+              setAutoSwitchPref(checked)
+              // 只传 enabled：阈值由设置页维护，主机侧缺省沿用当前值，避免这里
+              // 把用户在设置页调好的阈值覆盖回默认。
+              void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoSwitch', { enabled: checked })
+            }}
+          />
           <AutoCheckinToggle
             checked={autoCheckinOn}
             t={t}
@@ -975,6 +1022,7 @@ function AccountsPage({
                 },
               }}
               onCheckin={(id) => { void checkinOne(id) }}
+              autoSwitch={autoSwitchOn}
               onSwitch={(id) => { void switchOne(id) }}
               onDelete={(row_) => { onDelete(row_) }}
               onRename={(row_) => { onRename(row_) }}
@@ -1847,6 +1895,31 @@ const autoCheckinPref = (): boolean => getAutoCheckinPref()
 
 /** 自动旅行偏好（与设置页同一键）。 */
 const autoTravelPref = (): boolean => getAutoTravelPref()
+
+/** 自动切换账号开关（账号页标题行）。与自动签到/自动旅行同构：受控组件，
+ *  状态由 AccountsPage 持有，切换时写 localStorage 并同步到 host。
+ *
+ *  开启后本页隐藏「设为当前账号」入口——那时账号由客户端按剩余额度自动切换，
+ *  手动指定会被下一次自动切换覆盖，留着这个按钮只会让用户以为设置没生效。 */
+function AutoSwitchToggle({ checked, t, onChange }: {
+  checked: boolean
+  t: Translate
+  onChange: (checked: boolean) => void
+}): ReactNode {
+  return (
+    <DshTooltip content={t('autoSwitchDesc')}>
+      <span className="dsh-codebuddy-auto-checkin-toggle">
+        <span className="dsh-codebuddy-muted">{t('autoSwitch')}</span>
+        <DshSwitch
+          size="small"
+          checked={checked}
+          onChange={onChange}
+          aria-label={t('autoSwitch')}
+        />
+      </span>
+    </DshTooltip>
+  )
+}
 
 /** 自动签到开关（账号页标题行）。受控组件：状态由 AccountsPage 持有并在
  *  切换时同步到 host（localStorage 与设置页共享）。 */

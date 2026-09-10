@@ -211,8 +211,9 @@
   .dsh-codebuddy-panel-stat:nth-child(odd) { border-left: 0; }
   .dsh-codebuddy-panel-stat:nth-child(n + 3) { border-top: 1px solid var(--dsw-alias-border-l2); }
   .dsh-codebuddy-panel-section-head { align-items: flex-start; flex-direction: column; }
-  /* 竖排后动作区靠左：否则换行时较短的那一行会右对齐，与上方标题错开。 */
+  /* 竖排后左右两段都靠左：否则较短的那行会贴着右端，与上方标题错开。 */
   .dsh-codebuddy-accounts-head-actions { justify-content: flex-start; }
+  .dsh-codebuddy-accounts-head-lead { width: 100%; }
   .dsh-codebuddy-panel-section-head .dsh-codebuddy-panel-range { width: 100%; }
 }
 
