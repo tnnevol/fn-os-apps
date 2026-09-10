@@ -11,11 +11,15 @@
 import { useState } from 'react'
 import {
   DshButton,
+  DshCopyable,
   DshForm,
+  DshIconCopy,
+  DshIconExternalOpen,
   DshInput,
   DshModal,
   DshSelect,
   DshSwitch,
+  DshToast,
 } from '@tnnevol/dsh-semi-ui'
 import { CODEBUDDY_AUTH_CHANNEL } from '../client/constants.ts'
 import {
@@ -86,6 +90,15 @@ export function AddAccountModal({
   const [endpoint, setEndpoint] = useState(initial?.endpoint ?? '')
   const [enterprise, setEnterprise] = useState(initial?.enterprise ?? false)
   const [submitting, setSubmitting] = useState(false)
+  /**
+   * 握手成功后停留在弹框里展示链接。`null` = 尚未发起（第一阶段）。
+   *
+   * 为什么不在成功后立即关闭（原行为）：复制按钮要放在 footer，而 auth 地址由
+   * host 的 startLogin 握手**签发于提交之后** —— 提交前没有任何内容可复制，
+   * footer 里放一个永远禁用的按钮没有意义。留在原地让「点登录 → 取链接」
+   * 在一个地方完成，跨设备登录也不必再去页面上找等待卡。
+   */
+  const [started, setStarted] = useState<{ authUrl: string, state: string } | null>(null)
 
   // Reset the fields every time the modal opens so a previous edit does not
   // leak into the next add-account flow.
@@ -99,6 +112,7 @@ export function AddAccountModal({
       setEnvironment(initial?.environment ?? CODEBUDDY_DEFAULT_ENVIRONMENT)
       setEndpoint(initial?.endpoint ?? '')
       setEnterprise(initial?.enterprise ?? false)
+      setStarted(null)
     }
   }
 
@@ -125,12 +139,70 @@ export function AddAccountModal({
       close()
       return
     }
-    // Browser tab opens for the new handshake; the owner surface decides how
-    // to present the in-flight state (waiting card / polling) and refreshes
-    // its roster once login completes.
+    // 拿到链接后**留在弹框里**：footer 的复制按钮据此启用，同时把握手交给
+    // 调用方（打开浏览器、开始轮询、登录完成后刷新名单）。
+    setStarted({ authUrl: result.value.authUrl, state: result.value.state })
     onLoginStart?.({ authUrl: result.value.authUrl, state: result.value.state })
-    close()
   }
+
+  const start = started
+
+  /**
+   * footer 的按钮组。两阶段：
+   *
+   *   提交前：                     [取消] [打开登录]
+   *   提交后：  [复制登录地址]      [取消] [打开登录]
+   *
+   * 布局沿用 .dsh-codebuddy-add-footer 的既有约定（复制靠左、主操作靠右）——
+   * 那两条样式原本就在样式表里，注释写明了这个意图，只是当时没实现复制按钮。
+   *
+   * 为什么提交后才出现复制：auth 地址由 host 的 startLogin 握手**签发于提交之后**，
+   * 提交前没有任何内容可复制，放一个永远禁用的按钮没有意义。因此握手成功后弹框
+   * **不关闭**，就地展示链接——「点登录 → 取链接」在同一处完成，跨设备登录也不必
+   * 再去页面上的等待卡里找。
+   */
+  const footer = (
+    <div className="dsh-codebuddy-add-footer">
+      {start === null ? null : (
+        /* 复制交给 Semi 的 Copyable：它内置 copy-text-to-clipboard（含 execCommand
+           回退）与「已复制」成功态计时，无需手写 navigator.clipboard 与失败分支。
+           render prop 让我们用自己的按钮承载它，且不产生额外包裹元素。 */
+        <DshCopyable
+          content={start.authUrl}
+          onCopy={(_event: React.MouseEvent, _content: string, ok: boolean) => {
+            if (ok) DshToast.success({ content: t('copyLoginLinkDone') })
+            else DshToast.warning({ content: t('copyLoginLinkDoneFail') })
+          }}
+          render={(copied: boolean, doCopy: (event: React.MouseEvent) => void) => (
+            <DshButton
+              type="tertiary"
+              icon={copied ? undefined : <DshIconCopy />}
+              onClick={doCopy}
+            >
+              {copied ? t('copyLoginLinkCopied') : t('copyLoginLink')}
+            </DshButton>
+          )}
+        />
+      )}
+      <div className="dsh-codebuddy-add-footer-main">
+        <DshButton type="tertiary" onClick={close}>{t('cancel')}</DshButton>
+        {start === null ? (
+          <DshButton type="primary" theme="solid" loading={submitting} onClick={() => { void submit() }}>
+            {submitLabel ?? t('createUserGo')}
+          </DshButton>
+        ) : (
+          <DshButton
+            type="primary"
+            theme="solid"
+            icon={<DshIconExternalOpen />}
+            onClick={() => { window.open(start.authUrl, '_blank', 'noopener') }}
+          >
+            {t('createUserGo')}
+          </DshButton>
+        )}
+      </div>
+    </div>
+  )
 
   return (
     <DshModal
@@ -138,11 +210,11 @@ export function AddAccountModal({
       visible={visible}
       closeOnEsc
       maskClosable={false}
-      okText={submitLabel ?? t('createUserGo')}
-      cancelText={t('cancel')}
-      confirmLoading={submitting}
       onCancel={close}
-      onOk={() => { void submit() }}
+      /* 自定义 footer：Semi 的 `footer` prop 会**完全取代**默认按钮
+         （ModalContent 里是 `props.footer ? … : null`），因此取消/确定都由 footer
+         自己渲染。这样才能把「复制 auth 地址」与确定按钮并排放在一起。 */
+      footer={footer}
     >
       <div className="dsh-codebuddy-add-form">
         <DshForm className="dsh-codebuddy-pref-form" labelPosition="top">

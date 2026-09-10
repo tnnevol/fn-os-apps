@@ -62,6 +62,14 @@ export { default as DshTabs } from '@douyinfe/semi-ui/lib/es/tabs/index'
 export { default as DshList } from '@douyinfe/semi-ui/lib/es/list/index'
 
 export { default as DshTypography } from '@douyinfe/semi-ui/lib/es/typography/index'
+/**
+ * Semi 的复制能力（Typography 的 copyable 背后的独立组件）。
+ *
+ * 它自带 `copy-text-to-clipboard`（含 execCommand 回退）与「已复制」成功态计时，
+ * 并提供 `render(copied, doCopy, configs)` 让调用方用**自己的**按钮承载它——
+ * 因此无需在插件里手写 navigator.clipboard 与失败回退。
+ */
+export { default as DshCopyable } from '@douyinfe/semi-ui/lib/es/typography/copyable'
 export { default as DshIconChangelog } from '@douyinfe/semi-icons/lib/es/icons/IconHistory.js'
 export { default as DshIconAlertCircle } from '@douyinfe/semi-icons/lib/es/icons/IconAlertCircle.js'
 export { default as DshIconArrowLeft } from '@douyinfe/semi-icons/lib/es/icons/IconArrowLeft.js'
@@ -72,6 +80,7 @@ export { default as DshIconChevronDown } from '@douyinfe/semi-icons/lib/es/icons
 export { default as DshIconChevronDownStroked } from '@douyinfe/semi-icons/lib/es/icons/IconChevronDownStroked.js'
 export { default as DshIconCommand } from '@douyinfe/semi-icons/lib/es/icons/IconCommand.js'
 export { default as DshIconCopy } from '@douyinfe/semi-icons/lib/es/icons/IconCopy.js'
+export { default as DshIconExternalOpen } from '@douyinfe/semi-icons/lib/es/icons/IconExternalOpen.js'
 export { default as DshIconDownload } from '@douyinfe/semi-icons/lib/es/icons/IconDownload.js'
 export { default as DshIconEdit } from '@douyinfe/semi-icons/lib/es/icons/IconEdit.js'
 export { default as DshIconElementStroked } from '@douyinfe/semi-icons/lib/es/icons/IconElementStroked.js'

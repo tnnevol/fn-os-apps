@@ -172,3 +172,23 @@ describe('面板与设置页的开关保持同步', () => {
     expect(accountsBody.slice(Math.max(0, at - 60), at)).toMatch(/return\s+$/)
   })
 })
+
+describe('添加账号弹框内选择框的左间距', () => {
+  const INDEX = readFileSync(
+    '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/styles/index.scss',
+    'utf8',
+  )
+
+  it('把 Semi 给 selection 的 12px 左外边距归零', () => {
+    // Semi 的 .semi-select-selection 自带 margin-left: 12px，而插件给选择框加了
+    // padding: 4px 8px，两者叠加文字左侧留白达 20px。归零后只由 padding 决定。
+    expect(INDEX).toMatch(/\.dsh-codebuddy-add-form \.semi-select-selection \{\s*margin-left: 0;/)
+  })
+
+  it('覆盖限定在弹框表单内，不波及其它选择器', () => {
+    // 用「插件类 + 后代 Semi 类」写法（与仓库既有 .dsh-codebuddy-account-descriptions
+    // .semi-descriptions-key 一致），避免全局改写 Semi 组件外观。
+    const m = /([^{}\n]*\.semi-select-selection[^{}\n]*)\{/.exec(INDEX)
+    expect(m?.[1]?.trim()).toBe('.dsh-codebuddy-add-form .semi-select-selection')
+  })
+})
