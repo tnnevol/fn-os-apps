@@ -312,3 +312,120 @@ describe('端点常量', () => {
     expect(CODEBUDDY_ENDPOINT).toBeTruthy()
   })
 })
+
+describe('全失败退避后能自动恢复', () => {
+  // 这条守的是一个真实事故：原先「连续失败到阈值 → 永久 standby」，而那个
+  // return 发生在重算计数之前，周期再无恢复机会，只能重启宿主。
+  it('签到周期：连续全失败后退避，冷却期满重试并恢复', async () => {
+    writeAccounts(1)
+    const service = await makeService()
+    service.autoCheckin = true
+
+    let healthy = false
+    vi.stubGlobal('fetch', vi.fn(async () => {
+      if (!healthy) throw new Error('network down')
+      return new Response(JSON.stringify({ code: 0, msg: 'OK', data: { todayCheckedIn: true } }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      })
+    }))
+
+    // 连续失败到阈值：周期仍在跑（status=ok，只是账号全失败），随后进入退避。
+    for (let round = 1; round <= 3; round += 1) {
+      expect((await service.runAutoCheckinCycle()).status).toBe('ok')
+    }
+    expect((await service.runAutoCheckinCycle()).status).toBe('backoff')
+
+    // 冷却期内仍然跳过。
+    expect((await service.runAutoCheckinCycle()).status).toBe('backoff')
+
+    // 时间推进到冷却之后（假定时器下不让真实时间流逝）。
+    vi.setSystemTime(Date.now() + 31 * 60_000)
+    healthy = true
+    // 关键断言：不走 standby 死路，而是真的重试并成功。
+    const recovered = await service.runAutoCheckinCycle()
+    expect(recovered.status).toBe('ok')
+    expect(recovered.accounts.some(row => row.result === 'already')).toBe(true)
+  })
+
+  it('旅行派发周期：退避后恢复，且不再返回 standby 死状态', async () => {
+    writeAccounts(1)
+    const service = await makeService()
+    service.autoTravel = true
+
+    let healthy = false
+    vi.stubGlobal('fetch', vi.fn(async () => {
+      if (!healthy) throw new Error('network down')
+      return new Response(JSON.stringify({ code: 0, msg: 'OK', data: { state: 'idle', daily_limit_reached: true, buddy_id: 1 } }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      })
+    }))
+
+    for (let round = 1; round <= 3; round += 1) {
+      expect((await service.runTravelCycle()).status).toBe('ok')
+    }
+    expect((await service.runTravelCycle()).status).toBe('backoff')
+
+    vi.setSystemTime(Date.now() + 31 * 60_000)
+    healthy = true
+    const recovered = await service.runTravelCycle()
+    expect(recovered.status).toBe('ok')
+    expect(recovered.accounts.some(row => row.result === 'daily-limit')).toBe(true)
+  })
+})
+
+describe('两个旅行周期并发领取同一账号', () => {
+  // 需要真实等待以让两个周期都推进到 claim 之前。
+  beforeEach(() => { vi.useRealTimers() })
+
+  /**
+   * 派发与领取各有独立守卫，而 30 与 15 分钟的最小公倍数是 30 分钟——定时器
+   * 每半小时对齐一次，那一刻两个周期都可能读到同一个 arrived 账号。若不去重，
+   * 双方都会发起 claim，输的一方收到拒绝后被记为失败，会把健康的一轮算成
+   * 「全失败」并推进退避。
+   */
+  it('同一 arrived 账号只真正 claim 一次，另一方记为领取中而非错误', async () => {
+    writeAccounts(1)
+    const service = await makeService()
+    service.autoTravel = true
+
+    let claimCalls = 0
+    let releaseClaim: (() => void) | undefined
+    const claimGate = new Promise<void>((resolve) => { releaseClaim = resolve })
+
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+      const path = String(url)
+      if (path.endsWith('/claim')) {
+        claimCalls += 1
+        await claimGate
+        return new Response(JSON.stringify({ code: 0, msg: 'OK', data: { reward_credit: 7 } }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        })
+      }
+      // 两个周期都会先查状态，都看到 arrived。
+      return new Response(JSON.stringify({ code: 0, msg: 'OK', data: { state: 'arrived', record_id: 42 } }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      })
+    }))
+
+    // 两个周期同时开跑，且都在自己的守卫内（标志独立，谁也挡不住谁）。
+    const dispatch = service.runTravelCycle()
+    const claim = service.runTravelClaimCycle()
+    // 让两个周期都走到 claim 之前。
+    await new Promise(resolve => setTimeout(resolve, 5))
+    releaseClaim?.()
+    const [dispatchResult, claimResult] = await Promise.all([dispatch, claim])
+
+    // 关键：服务端只被 claim 触发一次。
+    expect(claimCalls).toBe(1)
+    const rows = [...dispatchResult.accounts, ...claimResult.accounts]
+    const results = rows.map(row => row.result)
+    expect(results.filter(r => r === 'claimed')).toHaveLength(1)
+    // 另一方既没领取成功，也不能被算成失败。
+    expect(results.filter(r => r === 'claiming')).toHaveLength(1)
+    expect(results).not.toContain('error')
+  })
+})

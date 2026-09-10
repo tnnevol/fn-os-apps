@@ -63,6 +63,54 @@ export interface RunHandle {
 }
 
 /**
+ * 连续全失败时的退避闸门：失败到阈值后**暂时**跳过后续轮次，冷却期满自动放行重试。
+ *
+ * 与「到阈值就永久 standby」的区别是关键：那种写法一旦计数器到了上限，后续
+ * 调用会在重算计数器**之前**就返回，计数永远不再下降——周期从此再也不会执行，
+ * 只能重启宿主。远端故障（网络、服务不可达）恰恰是会自行恢复的，后台任务必须
+ * 在恢复后能自己接着跑。
+ *
+ * 退避期间仍会放行重试，所以恢复是自动的；同时把重试频率压到 `cooldownMs`
+ * 一次，避免对着不可达的服务空转。
+ */
+export class BackoffGate {
+  private failures = 0
+  private nextAttemptAt = 0
+
+  constructor(
+    private readonly limit: number,
+    private readonly cooldownMs: number,
+    private readonly now: () => number = Date.now,
+  ) {}
+
+  /** 是否处于退避期（应跳过本轮）。 */
+  shouldSkip(): boolean {
+    return this.failures >= this.limit && this.now() < this.nextAttemptAt
+  }
+
+  /** 当前连续失败轮数，供日志与 UI 说明。 */
+  get consecutiveFailures(): number {
+    return this.failures
+  }
+
+  /** 一轮成功：清零，下一轮立即可进入。 */
+  succeed(): void {
+    this.failures = 0
+    this.nextAttemptAt = 0
+  }
+
+  /** 一轮全失败：累计，并按指数退避安排下一次真正执行的时间。 */
+  fail(): void {
+    this.failures += 1
+    if (this.failures < this.limit) return
+    // 阈值之后每次失败把冷却拉长一倍，上限 8 倍：长时间故障下不再固定频率
+    // 空转，同时始终保留自愈能力。
+    const factor = Math.min(2 ** (this.failures - this.limit), 8)
+    this.nextAttemptAt = this.now() + this.cooldownMs * factor
+  }
+}
+
+/**
  * 以受限并发遍历 `items`，并保证每一项的 `fn` 都已被 await 完成后再返回。
  *
  * 结果请由 `fn` 自行写入调用方持有的数组（按索引回填即可保住原顺序）；

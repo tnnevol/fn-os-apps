@@ -19,7 +19,7 @@ import {
 } from './constants.ts'
 
 import { getCheckinStatus, performCheckin, fetchUsage } from './usage.ts'
-import { mapWithConcurrency, RunGuard } from './concurrency.ts'
+import { BackoffGate, mapWithConcurrency, RunGuard } from './concurrency.ts'
 import { claimTravel, departTravel, fetchTravelLocations, fetchTravelStatus } from './travel.ts'
 import { getLoginAccount, pollAuthToken, requestAuthState } from './codebuddy.ts'
 import {
@@ -282,8 +282,15 @@ export class CodeBuddyAuthService {
    * Consecutive auto-checkin cycle rounds in which EVERY account failed.
    * After the limit the cycle stands down until the next successful round.
    */
-  private autoCheckinAllFailures = 0
   private static readonly AUTO_CHECKIN_FAILURE_LIMIT = 3
+  /**
+   * 连续全失败时退避：到阈值后放慢重试，冷却期满**自动恢复**。
+   * 此前是到阈值就永久 standby，那样计数再无下降机会，周期只能靠重启恢复。
+   */
+  private readonly autoCheckinBackoff = new BackoffGate(
+    CodeBuddyAuthService.AUTO_CHECKIN_FAILURE_LIMIT,
+    30 * 60_000,
+  )
   private autoCheckinTimer: ReturnType<typeof setInterval> | undefined
   private readonly autoCheckinGuard = new RunGuard('auto-checkin')
 
@@ -291,7 +298,7 @@ export class CodeBuddyAuthService {
    *  `run_checkin_cycle`。返回逐账号结果供日志/UI 使用。 */
   async runAutoCheckinCycle(): Promise<{ status: string, accounts: Array<{ id: string, name: string, result: string, error?: string }> }> {
     if (!this.autoCheckin) return { status: 'disabled', accounts: [] }
-    if (this.autoCheckinAllFailures >= CodeBuddyAuthService.AUTO_CHECKIN_FAILURE_LIMIT) return { status: 'standby', accounts: [] }
+    if (this.autoCheckinBackoff.shouldSkip()) return { status: 'backoff', accounts: [] }
     // 串行访问 N 个账号可能超过 30 分钟以外的任何重入来源（手动 RPC + 定时器）：
     // 未结束时跳过，避免同一账号被重复提交签到。
     const guard = this.autoCheckinGuard.tryAcquire()
@@ -352,9 +359,9 @@ export class CodeBuddyAuthService {
         failed += 1
       }
     }
-    this.autoCheckinAllFailures = failed === storage.accounts.length && storage.accounts.length > 0
-      ? this.autoCheckinAllFailures + 1
-      : 0
+    // 全部账号都失败才算失败轮；任一账号成功即恢复正常节奏。
+    if (failed === storage.accounts.length && storage.accounts.length > 0) this.autoCheckinBackoff.fail()
+    else this.autoCheckinBackoff.succeed()
     return { status: 'ok', accounts: rows }
   }
 
@@ -381,12 +388,21 @@ export class CodeBuddyAuthService {
    * Consecutive travel rounds in which EVERY eligible account failed. After the
    * limit the cycle stands down rather than hammering an unreachable plane.
    */
-  private travelAllFailures = 0
   private static readonly TRAVEL_FAILURE_LIMIT = 3
+  /**
+   * 连续全失败时退避：到阈值后放慢重试，冷却期满**自动恢复**。
+   * 此前是到阈值就永久 standby，那样计数再无下降机会，周期只能靠重启恢复。
+   */
+  private readonly travelBackoff = new BackoffGate(
+    CodeBuddyAuthService.TRAVEL_FAILURE_LIMIT,
+    30 * 60_000,
+  )
   private travelTimer: ReturnType<typeof setInterval> | undefined
   private travelClaimTimer: ReturnType<typeof setInterval> | undefined
   private readonly travelDispatchGuard = new RunGuard('travel-dispatch')
   private readonly travelClaimGuard = new RunGuard('travel-claim')
+  /** 正在领取中的账号 id：两个旅行周期的守卫互相独立，需按账号去重。 */
+  private readonly claiming = new Set<string>()
 
   /** 派发周期：逐账号同步状态并按状态机推进。
    *
@@ -399,7 +415,7 @@ export class CodeBuddyAuthService {
    * 后者属可重试原因，不能记为当日完成。 */
   async runTravelCycle(): Promise<{ status: string, accounts: Array<{ id: string, name: string, result: string, state?: string, arriveAt?: number, locationName?: string, rewardCredit?: number, error?: string }> }> {
     if (!this.autoTravel) return { status: 'disabled', accounts: [] }
-    if (this.travelAllFailures >= CodeBuddyAuthService.TRAVEL_FAILURE_LIMIT) return { status: 'standby', accounts: [] }
+    if (this.travelBackoff.shouldSkip()) return { status: 'backoff', accounts: [] }
     const guard = this.travelDispatchGuard.tryAcquire()
     if (guard === undefined) return { status: 'skipped', accounts: [] }
     try {
@@ -452,13 +468,16 @@ export class CodeBuddyAuthService {
           continue
         }
         if (status.state === 'arrived') {
-          const claimed = await claimTravel(endpoint, identity, status.recordId)
+          const claimed = await this.claimArrived(entry.id, endpoint, identity, status.recordId)
           if (claimed.ok) {
             push({
               result: 'claimed',
               state: 'idle',
               ...claimed.rewardCredit === undefined ? {} : { rewardCredit: claimed.rewardCredit },
             })
+          } else if (claimed.busy === true) {
+            // 领取周期正在处理同一账号：不算失败，也不重复 claim。
+            push({ result: 'claiming', state: 'arrived' })
           } else {
             push({ result: 'error', ...claimed.error === undefined ? {} : { error: claimed.error } })
             failed += 1
@@ -494,10 +513,36 @@ export class CodeBuddyAuthService {
         failed += 1
       }
     }
-    this.travelAllFailures = eligible > 0 && failed === eligible
-      ? this.travelAllFailures + 1
-      : 0
+    // 仅当每个「够格的」账号都失败才算失败轮——企业账号跳过与无 Buddy 都不算。
+    if (eligible > 0 && failed === eligible) this.travelBackoff.fail()
+    else this.travelBackoff.succeed()
     return { status: 'ok', accounts: rows }
+  }
+
+  /**
+   * 领取一个已到达的账号，并保证同一账号不会被两个周期同时领取。
+   *
+   * 派发与领取两个周期各有独立守卫，而 30 与 15 分钟的最小公倍数是 30 分钟，
+   * 所以它们的定时器每 30 分钟就会对齐一次：那一刻两个周期都可能读到同一个
+   * `arrived` 账号并各自发起 claim。输的一方会收到服务端拒绝，若照旧记为
+   * `error`，就会把本来健康的一轮算成全失败，无端把派发周期推向退避。
+   *
+   * 因此按账号去重：已有领取在途时直接返回 `busy`，让调用方记为「领取中」
+   * 而不是失败。
+   */
+  private async claimArrived(
+    accountId: string,
+    endpoint: string,
+    identity: CodeBuddyIdentity,
+    recordId: number,
+  ): Promise<{ ok: boolean, busy?: boolean, rewardCredit?: number, error?: string }> {
+    if (this.claiming.has(accountId)) return { ok: false, busy: true }
+    this.claiming.add(accountId)
+    try {
+      return await claimTravel(endpoint, identity, recordId)
+    } finally {
+      this.claiming.delete(accountId)
+    }
   }
 
   /** 依次尝试地点列表派发，返回首个成功的结果（含到达时间）。 */
@@ -580,7 +625,7 @@ export class CodeBuddyAuthService {
         try {
           const status = await fetchTravelStatus(resolveEntryEndpoint(entry), identity)
           if (!status.ok) {
-            // 领取轮次把查询失败记为等待而非错误：下一轮会再试，不触发 standby 计数。
+            // 领取轮次把查询失败记为等待而非错误：下一轮会再试，不影响派发周期的退避计数。
             push({ result: status.unsupported === true ? 'skipped' : 'wait' })
             continue
           }
@@ -594,13 +639,16 @@ export class CodeBuddyAuthService {
             })
             continue
           }
-          const claimed = await claimTravel(resolveEntryEndpoint(entry), identity, status.recordId)
+          const claimed = await this.claimArrived(entry.id, resolveEntryEndpoint(entry), identity, status.recordId)
           if (claimed.ok) {
             push({
               result: 'claimed',
               state: 'idle',
               ...claimed.rewardCredit === undefined ? {} : { rewardCredit: claimed.rewardCredit },
             })
+          } else if (claimed.busy === true) {
+            // 派发周期正在领取同一账号：留到下一轮，不算错误。
+            push({ result: 'claiming', state: 'arrived' })
           } else {
             push({ result: 'error', ...claimed.error === undefined ? {} : { error: claimed.error } })
           }
@@ -660,8 +708,15 @@ export class CodeBuddyAuthService {
    * until the next successful probe — "all accounts errored" ends auto-switch
    * instead of hammering a dead meter plane forever.
    */
-  private allProbeFailures = 0
   private static readonly ALL_PROBE_FAILURE_LIMIT = 3
+  /**
+   * 连续全失败时退避：到阈值后放慢重试，冷却期满**自动恢复**。
+   * 此前是到阈值就永久 return，那样计数再无下降机会，自动切换只能靠重启恢复。
+   */
+  private readonly autoSwitchBackoff = new BackoffGate(
+    CodeBuddyAuthService.ALL_PROBE_FAILURE_LIMIT,
+    5 * 60_000,
+  )
   private autoSwitchTimer: ReturnType<typeof setInterval> | undefined
   private readonly autoSwitchGuard = new RunGuard('auto-switch')
 
@@ -678,7 +733,7 @@ export class CodeBuddyAuthService {
    */
   async runAutoSwitchCycle(): Promise<void> {
     if (!this.autoSwitch) return
-    if (this.allProbeFailures >= CodeBuddyAuthService.ALL_PROBE_FAILURE_LIMIT) return
+    if (this.autoSwitchBackoff.shouldSkip()) return
     // 探针走远端 meter，慢网络下可能超过 30s 间隔：上一轮未结束时跳过本轮，
     // 避免叠加出重复的账号切换。
     const guard = this.autoSwitchGuard.tryAcquire()
@@ -690,21 +745,20 @@ export class CodeBuddyAuthService {
       try {
         const result = await this.session?.failoverIfBelowThreshold(this.autoSwitchThresholdPct)
         probed = true
+        // 任一探针成功即恢复正常节奏（含「无需切换」这种健康结果）。
+        this.autoSwitchBackoff.succeed()
         if (result !== undefined) {
-          this.allProbeFailures = 0
           // 主动阈值切换同样要刷新模型目录与消息框额度。
           this.notifyModels()
           this.logger?.info?.(`dsh-codebuddy: proactive switch "${result.from}" → "${result.to}" (${result.remaining}% remaining)`)
-        } else {
-          this.allProbeFailures = 0
         }
         void before
       } catch (error) {
         // A thrown cycle means even the active-account probe errored: count it
         // as a failed round when no probe succeeded.
         if (!probed) {
-          this.allProbeFailures += 1
-          this.logger?.warn?.(`dsh-codebuddy: auto-switch probe failed (${this.allProbeFailures}/${CodeBuddyAuthService.ALL_PROBE_FAILURE_LIMIT})`)
+          this.autoSwitchBackoff.fail()
+          this.logger?.warn?.(`dsh-codebuddy: auto-switch probe failed (${this.autoSwitchBackoff.consecutiveFailures}/${CodeBuddyAuthService.ALL_PROBE_FAILURE_LIMIT})`)
           this.logger?.warn?.(error)
         }
       }

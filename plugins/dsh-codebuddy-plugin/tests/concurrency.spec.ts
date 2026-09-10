@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { mapWithConcurrency, RunGuard } from '../src/concurrency.ts'
+import { BackoffGate, mapWithConcurrency, RunGuard } from '../src/concurrency.ts'
 
 describe('RunGuard', () => {
   it('首次占用成功，占用期间再次占用被拒绝', () => {
@@ -139,5 +139,85 @@ describe('mapWithConcurrency', () => {
     // 计时断言天然受机器负载影响，裕度取到「并发应不到串行一半」这种量级，
     // 否则 CI 抖动会造成假失败。
     expect(concurrent).toBeLessThan(serial * 0.7)
+  })
+})
+
+describe('BackoffGate', () => {
+  /**
+   * 这组测试守的是一个真实事故：此前的实现是「连续失败到阈值就永久 standby」，
+   * 而那个 return 发生在**重算计数器之前**，因此计数再无下降机会——周期从此
+   * 再也不会执行，只能重启宿主。远端故障会自动恢复，后台任务必须能自愈。
+   */
+  function makeGate(limit = 3, cooldownMs = 1000): { gate: BackoffGate, advance: (ms: number) => void } {
+    let now = 0
+    return {
+      gate: new BackoffGate(limit, cooldownMs, () => now),
+      advance: (ms: number) => { now += ms },
+    }
+  }
+
+  it('阈值之前不跳过', () => {
+    const { gate } = makeGate()
+    expect(gate.shouldSkip()).toBe(false)
+    gate.fail()
+    gate.fail()
+    expect(gate.shouldSkip()).toBe(false)
+    expect(gate.consecutiveFailures).toBe(2)
+  })
+
+  it('达到阈值后进入退避期', () => {
+    const { gate } = makeGate()
+    gate.fail()
+    gate.fail()
+    gate.fail()
+    expect(gate.consecutiveFailures).toBe(3)
+    expect(gate.shouldSkip()).toBe(true)
+  })
+
+  it('冷却期满自动放行——这是自愈的关键', () => {
+    const { gate, advance } = makeGate(3, 1000)
+    gate.fail(); gate.fail(); gate.fail()
+    expect(gate.shouldSkip()).toBe(true)
+
+    advance(999)
+    expect(gate.shouldSkip()).toBe(true)
+    advance(1)
+    // 冷却到期：不再跳过，周期自己接着跑。
+    expect(gate.shouldSkip()).toBe(false)
+  })
+
+  it('退避期间继续失败则冷却拉长，但有上限', () => {
+    const { gate, advance } = makeGate(2, 1000)
+    gate.fail(); gate.fail()
+    // failures=2 → factor 2^0 = 1 → 1000ms
+    advance(1000)
+    expect(gate.shouldSkip()).toBe(false)
+
+    gate.fail() // failures=3 → 2^1 = 2 → 2000ms
+    advance(1000)
+    expect(gate.shouldSkip()).toBe(true)
+    advance(1000)
+    expect(gate.shouldSkip()).toBe(false)
+
+    // 持续失败，冷却倍数封顶在 8。
+    for (let i = 0; i < 10; i += 1) gate.fail()
+    advance(8000)
+    expect(gate.shouldSkip()).toBe(false)
+    gate.fail()
+    advance(8000)
+    expect(gate.shouldSkip()).toBe(false)
+  })
+
+  it('一轮成功立即恢复正常节奏', () => {
+    const { gate, advance } = makeGate(3, 1000)
+    gate.fail(); gate.fail(); gate.fail()
+    expect(gate.shouldSkip()).toBe(true)
+
+    gate.succeed()
+    expect(gate.shouldSkip()).toBe(false)
+    expect(gate.consecutiveFailures).toBe(0)
+    // 成功也把下一次尝试时间清掉，不会残留旧的冷却。
+    advance(0)
+    expect(gate.shouldSkip()).toBe(false)
   })
 })
