@@ -183,76 +183,34 @@
 .dsh-codebuddy-panel-segment-legend span { display: inline-flex; align-items: center; gap: 5px; }
 .dsh-codebuddy-panel-segment-legend i { width: 7px; height: 7px; border-radius: 50%; }
 
-/* ==========================================================================
-   时间范围选择器（分段控件 / segmented control）
-   ==========================================================================
-   这是 Token 仪表盘的「时间窗口档位开关」——一个精确、低干扰的仪器控件，
-   不是营销按钮。因此采用**内凹轨道 + 浮起激活块**：轨道安静退后，激活块用
-   系统主色明确表达当前档位。
-
-   三条实现约束（均来自读源码，不是猜测）：
-
-   1. **分隔线必须显式隐藏**。ButtonGroup 的 `getInnerWithLine` 只对
-      `theme === 'outline'` 跳过，其余主题（**包括 borderless**）都会在每两个
-      相邻按钮之间插入 `<span class="semi-button-group-line-*">`，其 `::before`
-      是一条 1px×20px 竖线——那就是「多余的 gap 与分割线」。这与 dsh-fnos-plugin
-      的 `dsh-fnos-web-actions` 是同一处理方式，这里保持一致的写法。
-   2. **不在组上传 `theme` / `type`**（见 RangeToggle 注释）：组上的值会覆盖子
-      按钮自身的值，激活态会因此失效。
-   3. **选择器带上 `body[data-dsh-semi-theme]`**：半 UI 的按钮规则与这里特异性
-      接近，且构建产物中 facade 的样式位置在本插件之后；加上该前缀既提高特异性、
-      也与仓库既有主题写法统一。
-   ========================================================================== */
-body[data-dsh-semi-theme] .dsh-codebuddy-panel-range {
-  margin: 0;
-  /* 轨道：内凹浅底，把一组按钮框成一个整体控件。 */
-  padding: 2px;
-  border-radius: 8px;
-  background: var(--dsw-alias-bg-layer-2);
-}
-
-/* 隐藏 ButtonGroup 自动插入的分隔线及其 ::before 竖线。 */
+/* 时间范围选择器。
+ *
+ * 外观沿用 Semi 原生样式（激活项 solid、其余 borderless），只做两件组件自身
+ * 覆盖不到的事：
+ *
+ * 1. **隐藏 ButtonGroup 自动插入的分隔线**。`getInnerWithLine()` 只对
+ *    `theme === 'outline'` 跳过，其余主题（含 borderless）都会在每两个相邻按钮
+ *    之间插入 `<span class="semi-button-group-line-*">`，其 `::before` 是一条
+ *    1px×20px 竖线。这组按钮是互斥单选、视觉上应连成一体，竖线会把它们割开。
+ *    写法与 dsh-fnos-plugin 的 `dsh-fnos-web-actions` 一致。
+ *
+ * 2. **激活态的文字色改用 DSH 的「主色底前景色」**。Semi 实心按钮写死
+ *    `color: rgba(var(--semi-white), 1)`（内置的 255,255,255 纯白），这在 DSH
+ *    主题下不可靠——实测 token 链：
+ *      --dsw-alias-button-primary-fill → --dsw-alias-brand-primary
+ *      浅色主题 → bluish-1000 (#0f1115 近黑)：白字 18.9:1 ✓
+ *      深色主题 → bluish-50   (浅色)      ：白字 1.08:1 ✗ 几乎不可见
+ *    `--dsw-alias-label-primary-foreground` 正是随主题翻转的对应前景色
+ *    （浅色主题白 / 深色主题近黑），用它才在两个主题下都达标（17–19:1）。
+ */
 body[data-dsh-semi-theme] .dsh-codebuddy-panel-range > .semi-button-group-line,
 body[data-dsh-semi-theme] .dsh-codebuddy-panel-range > .semi-button-group-line::before {
   display: none;
 }
 
-/* 按钮：无底色、无边框，相邻之间不留缝——分段控件必须是一条连续控件。
-   padding 仍由 Semi 的 .semi-button-content 提供（12px），不覆盖它的间距约定。 */
-body[data-dsh-semi-theme] .dsh-codebuddy-panel-range > .semi-button {
-  border-radius: 6px;
-  background: transparent;
-  color: var(--dsw-alias-label-secondary);
-  font-weight: 500;
-  transition: background-color 140ms ease, color 140ms ease;
-}
-body[data-dsh-semi-theme] .dsh-codebuddy-panel-range > .semi-button:first-child,
-body[data-dsh-semi-theme] .dsh-codebuddy-panel-range > .semi-button:last-child { border-radius: 6px; }
-
-/* 未选中悬停：只给一层很淡的底，不抢激活块的视线。 */
-body[data-dsh-semi-theme] .dsh-codebuddy-panel-range > .semi-button:not(.is-active):not(.semi-button-disabled):hover {
-  background: var(--dsw-alias-interactive-bg-hover);
-  color: var(--dsw-alias-label-primary);
-}
-
-/* 激活态：实心主色 + 反色文字，唯一且明确地指出当前档位。 */
-body[data-dsh-semi-theme] .dsh-codebuddy-panel-range > .semi-button.is-active,
-body[data-dsh-semi-theme] .dsh-codebuddy-panel-range > .semi-button.is-active:not(.semi-button-disabled):hover {
-  background: var(--dsw-alias-button-primary-fill);
-  /* 主色实心块上的反色文字；该 token 由宿主主题提供，兜底白色以免
-     「主色底 + 主色字」完全读不出。 */
+/* 仅覆盖激活项的文字色；其余外观（底色、圆角、hover、focus）全部保持 Semi 原生。 */
+body[data-dsh-semi-theme] .dsh-codebuddy-panel-range > .semi-button-primary.semi-button-solid {
   color: var(--dsw-alias-label-primary-foreground, #fff);
-  font-weight: 600;
-}
-
-/* 键盘可达：borderless 按钮默认没有可见焦点环，补一个与主题一致的。 */
-body[data-dsh-semi-theme] .dsh-codebuddy-panel-range > .semi-button:focus-visible {
-  outline: 2px solid var(--dsw-alias-brand-primary);
-  outline-offset: 1px;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  body[data-dsh-semi-theme] .dsh-codebuddy-panel-range > .semi-button { transition: none; }
 }
 
 .dsh-codebuddy-panel-chart-card { padding: 12px 18px 18px; }
