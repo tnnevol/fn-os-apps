@@ -105,6 +105,27 @@ CodeBuddy 支持图片输入的模型（`supportsImages`）在插件中以原生
 
   样式类只保留颜色、字号、字重与在 flex/grid 中的收缩能力（`min-width: 0`）。
 
+## 面板布局
+
+布局全部由 **Semi Layout 组件**表达，没有自建 flex 容器。两层 Layout 的嵌套正好对应目标结构：
+
+```
+<Layout>                                  含 Sider → Semi 自动加 has-sider → row（左右）
+  <Layout.Sider>       菜单
+  <Layout className="…-main">             不含 Sider → 默认 column（上下）
+    <Layout.Header className="…-toolbar"> 固定，不参与滚动
+    <Layout.Content className="…-views">  唯一滚动容器
+```
+
+Semi 的 `.semi-layout` 默认 `flex-direction: column`，只有含 Sider 时才加 `.semi-layout-has-sider { flex-direction: row }`，因此「左侧菜单 + 右侧上下」无需手写任何方向。Layout 系列还会渲染语义化标签：Header→`<header>`、Content→`<main>`、Sider→`<aside>`。
+
+滚动行为：滚动容器是 **Content**，Header 在它之外，所以标题固定、只有主体滚动；菜单在 Sider 里也是独立容器，不随主体滚动。两个容易踩的点：
+
+- **`min-height: 0`**：flex 子项默认 `min-height: auto`，不设它就不会收缩到容器高度以下，`overflow` 随之失效（内容把容器撑高、滚动条落到整页上，标题依旧被带走）。
+- **内层 Layout 必须 `overflow: hidden`**：若把滚动放在它身上，header 会与内容同处一个滚动上下文而被一起卷走。
+
+横向对齐：Header 与 Content 使用**完全相同**的宽度约束与横向内边距（`min(100%, 1480px)` + 居中 + 同 padding），标题才与下方卡片左边界齐平；只给其中一个加 padding 会让两者错开一个 padding 的距离。
+
 ## 面板 keep-alive
 
 三个管理页**首次进入后一直保持挂载**，只把非当前页隐藏（`hidden` 属性），切回时不重新拉取。此前用条件渲染 `page === 'x' ? <XPage/> : null`，切走即卸载，页面内的 `useState`（Token 各面板已选范围）与 `useMemo` 里的 `TokenStatsStore`、已拉到的数据、echarts 实例全部销毁，切回只能重新请求并重建图表。

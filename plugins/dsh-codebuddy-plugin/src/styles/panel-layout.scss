@@ -207,7 +207,10 @@
 
 @media (max-width: 720px) {
   .dsh-codebuddy-panel .semi-layout-sider { width: 168px; min-width: 168px; }
-  .dsh-codebuddy-panel-content { padding: 20px 14px 32px; }
+  /* 横向留白始终只由 views 承担（toolbar 只贡献纵向间距），
+     窄屏下同样保持标题与内容的左边界一致。 */
+  .dsh-codebuddy-panel-toolbar { padding-top: 16px; padding-bottom: 12px; }
+  .dsh-codebuddy-panel-views { padding-left: 14px; padding-right: 14px; padding-bottom: 32px; }
   .dsh-codebuddy-panel-action-card > .semi-card-body { align-items: flex-start; flex-direction: column; padding: 16px; }
   .dsh-codebuddy-panel-action-cta { width: 100%; }
   .dsh-codebuddy-panel-action-cta .semi-button { width: 100%; }

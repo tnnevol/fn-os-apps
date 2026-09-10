@@ -463,25 +463,75 @@
 /* 侧栏品牌：彩色 CodeBuddy logo 作为后台的视觉锚点，与导航文字同排。 */
 .dsh-codebuddy-panel-nav .semi-navigation-header-logo { display: inline-flex; align-items: center; }
 .dsh-codebuddy-panel-nav .semi-navigation-header-logo svg { display: block; }
-.dsh-codebuddy-panel-content { flex: 1; padding: 24px clamp(16px, 2vw, 32px) 40px; overflow: auto; }
-/* 工具栏与视图容器都受同一宽度约束并居中，否则标题会与页面内容左右不对齐。 */
-.dsh-codebuddy-panel-content > * { width: min(100%, 1480px); margin: 0 auto; }
+/* ---------------------------------------------------------------------------
+   右侧内容区：用 Semi Layout 做上下布局
+   ---------------------------------------------------------------------------
+   整体是「左菜单 + 右内容」，由 Semi Layout 自己完成，没有自建 flex 容器：
+
+       <Layout>                    ← 含 Sider，Semi 自动加 .semi-layout-has-sider
+         <Layout.Sider>  ↕ 菜单        → 切成 row（左右）
+         <Layout className="…-main">
+           <Layout.Header>  ↗ 固定       ← 内层不含 Sider，默认 column（上下）
+           <Layout.Content> ↓ 滚动
+         </Layout>
+       </Layout>
+
+   组件产出语义化标签：Header→<header>、Content→<main>、Sider→<aside>。
+
+   滚动行为：滚动容器是 **Content**，Header 在它之外，因此标题固定不动、
+   只有主体滚动；菜单在 Sider 里、同样是独立容器，不随主体滚动。
+   若把 overflow 放在外层 .…-main 上，header 会与内容同处一个滚动上下文而被带走。
+
+   横向对齐：Header 与 Content 使用**完全相同**的宽度约束与横向内边距
+   （min(100%,1480px) + 居中 + 同 padding），标题才与下方卡片左边界齐平。
+   只给其中一个加 padding 会让两者错开一个 padding 的距离。
+   --------------------------------------------------------------------------- */
+.dsh-codebuddy-panel-main {
+  /* 内层 Layout 默认 column；这里只需确保它填满右半侧且自身不滚动。 */
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* 固定 header（渲染为 <header>）：不收缩、不参与滚动。 */
+.dsh-codebuddy-panel-toolbar {
+  flex: 0 0 auto;
+  padding: 24px clamp(16px, 2vw, 32px) 16px;
+}
+
+/* 主体（渲染为 <main>）：唯一滚动容器。 */
+.dsh-codebuddy-panel-views {
+  flex: 1;
+  /* min-height: 0 是必需的：flex 子项默认 min-height: auto，不设它就不会收缩到
+     容器高度以下，overflow 也就不生效——内容把容器撑高后滚动条会落到整页上，
+     header 依旧被带走。 */
+  min-height: 0;
+  padding: 0 clamp(16px, 2vw, 32px) 40px;
+  overflow-y: auto;
+  /* 始终为滚动条预留空间：在「不足一屏」与「需要滚动」之间切换时内容宽度不跳动。 */
+  scrollbar-gutter: stable;
+}
+
+/* Header 与 Content 共用同一宽度约束并居中，标题与卡片左边界因此对齐。 */
+.dsh-codebuddy-panel-toolbar,
+.dsh-codebuddy-panel-view {
+  width: min(100%, 1480px);
+  margin: 0 auto;
+}
 
 /* keep-alive 的视图容器：三个页面都保持挂载，只隐藏非当前页。
-   容器本身不产生额外盒模型（无内边距/边框/背景），对版面完全透明——
-   页面内容看起来仍像直接挂在内容区下。 */
-.dsh-codebuddy-panel-views { min-width: 0; }
+   容器本身不产生额外盒模型（无内边距/边框/背景），对版面完全透明。 */
 .dsh-codebuddy-panel-view { min-width: 0; }
 /* `hidden` 的浏览器默认 display:none 会被任何 display 声明覆盖，这里显式兜底，
    确保隐藏页确实不参与布局（也避免其内部 flex 容器影响可见页的高度）。 */
 .dsh-codebuddy-panel-view[hidden] { display: none; }
 
-/* 工具栏：左上返回 + 页面标题 */
+/* 工具栏：左上返回 + 页面标题。
+   宽度约束与 .dsh-codebuddy-panel-view 共用（见上方布局段落），此处只管排布。 */
 .dsh-codebuddy-panel-toolbar {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 16px;
 }
 .dsh-codebuddy-panel-title {
   margin: 0;

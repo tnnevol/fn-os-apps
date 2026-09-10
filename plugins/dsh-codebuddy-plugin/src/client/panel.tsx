@@ -1734,9 +1734,12 @@ export function CodeBuddyPanelPage({ rpc, route, t }: PanelPageProps): ReactNode
             header={{ logo: <CodeBuddyLogo size={28} />, text: 'CodeBuddy' }}
           />
         </DshLayout.Sider>
-        <DshLayout.Content className="dsh-codebuddy-panel-content">
-          {/* 左上返回 + 页面标题；右侧仅保留刷新等当前页动作 */}
-          <div className="dsh-codebuddy-panel-toolbar">
+        {/* 右侧内容区：内层 Layout（不含 Sider）自动是 column，即上下布局。
+            外层 Layout 含 Sider，Semi 会加 .semi-layout-has-sider 切成 row，
+            于是整体就是「左菜单 + 右内容」，不需要自建 flex 容器。 */}
+        <DshLayout className="dsh-codebuddy-panel-main">
+          {/* header：固定不滚动（Layout.Header 渲染为语义化的 <header>）。 */}
+          <DshLayout.Header className="dsh-codebuddy-panel-toolbar">
             <DshIconButton
               type="tertiary"
               theme="borderless"
@@ -1748,8 +1751,11 @@ export function CodeBuddyPanelPage({ rpc, route, t }: PanelPageProps): ReactNode
               {pageDescription === undefined ? null : <p className="dsh-codebuddy-muted">{pageDescription}</p>}
             </div>
             <div style={{ flex: 1 }} />
-          </div>
+          </DshLayout.Header>
 
+          {/* Content：唯一滚动容器（渲染为 <main>）。
+              header 在它之外，因此滚动时保持固定。 */}
+          <DshLayout.Content className="dsh-codebuddy-panel-views">
           {/*
            * keep-alive：三个页面都保持挂载，只把非当前页隐藏。
            *
@@ -1765,36 +1771,35 @@ export function CodeBuddyPanelPage({ rpc, route, t }: PanelPageProps): ReactNode
            * 按 visited 惰性挂载：首次进入某页才真正渲染，避免一进面板就并发拉
            * 三页数据。
            */}
-          <div className="dsh-codebuddy-panel-views">
-            {visited.has('accounts') ? (
-              <div className="dsh-codebuddy-panel-view" hidden={snapshot.page !== 'accounts'}>
-                <AccountsPage
-                  rpc={rpc}
-                  t={t}
-                  notify={notify}
-                  rosterTick={rosterTick}
-                  loginWaiting={loginState !== undefined}
-                  {...loginLink === undefined ? {} : { loginLink }}
-                  onCopyLoginLink={cbCopyLoginLink}
-                  onRename={openRename}
-                  onDelete={openDelete}
-                  onAddAccount={() => { setAddOpen(true) }}
-                  onCheckinChange={bumpRoster}
-                />
-              </div>
-            ) : null}
-            {visited.has('credits') ? (
-              <div className="dsh-codebuddy-panel-view" hidden={snapshot.page !== 'credits'}>
-                <CreditsPage rpc={rpc} t={t} rosterTick={rosterTick} />
-              </div>
-            ) : null}
-            {visited.has('tokens') ? (
-              <div className="dsh-codebuddy-panel-view" hidden={snapshot.page !== 'tokens'}>
-                <TokenStatsPage rpc={rpc} t={t} />
-              </div>
-            ) : null}
-          </div>
-        </DshLayout.Content>
+          {visited.has('accounts') ? (
+            <div className="dsh-codebuddy-panel-view" hidden={snapshot.page !== 'accounts'}>
+              <AccountsPage
+                rpc={rpc}
+                t={t}
+                notify={notify}
+                rosterTick={rosterTick}
+                loginWaiting={loginState !== undefined}
+                {...loginLink === undefined ? {} : { loginLink }}
+                onCopyLoginLink={cbCopyLoginLink}
+                onRename={openRename}
+                onDelete={openDelete}
+                onAddAccount={() => { setAddOpen(true) }}
+                onCheckinChange={bumpRoster}
+              />
+            </div>
+          ) : null}
+          {visited.has('credits') ? (
+            <div className="dsh-codebuddy-panel-view" hidden={snapshot.page !== 'credits'}>
+              <CreditsPage rpc={rpc} t={t} rosterTick={rosterTick} />
+            </div>
+          ) : null}
+          {visited.has('tokens') ? (
+            <div className="dsh-codebuddy-panel-view" hidden={snapshot.page !== 'tokens'}>
+              <TokenStatsPage rpc={rpc} t={t} />
+            </div>
+          ) : null}
+          </DshLayout.Content>
+        </DshLayout>
       </DshLayout>
 
       {/* 添加账号（共享设置页弹框组件） */}
