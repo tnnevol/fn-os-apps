@@ -86,22 +86,48 @@ describe('面板弹框展示完整账户信息', () => {
     expect(modal).toContain("t('environmentLabel')")
   })
 
-  it('身份信息与资源包共用一套 Tab：身份页 + 三个生命周期页', () => {
-    const modal = PANEL.slice(PANEL.indexOf('function AccountResourcesModal'), PANEL.indexOf('function AccountsPage'))
-    // 身份信息不再与台账上下堆叠（纵向描述表会让弹框逼近视口高度），
-    // 而是与三个生命周期页并列成 4 个 Tab。
-    expect(modal).toMatch(/itemKey="identity"/)
-    expect(modal).toContain("t('accountIdentity')")
-    expect(modal).toMatch(/\(\['usable', 'depleted', 'expired'\] as const\)\.map/)
-    // 台账的小节标题随堆叠结构一起移除——Tab 标签本身已是分区标题。
-    expect(modal).not.toContain("t('resourcesTitle')")
+  const modal = (): string =>
+    PANEL.slice(PANEL.indexOf('function AccountResourcesModal'), PANEL.indexOf('function AccountsPage'))
+
+  it('顶层两个大类：身份信息 / 用量信息', () => {
+    // 顶层按「账号是什么」与「账号用了多少」划分，两者语义互斥。
+    expect(modal()).toMatch(/itemKey="identity"/)
+    expect(modal()).toMatch(/itemKey="usage"/)
+    expect(modal()).toContain("t('accountIdentity')")
+    expect(modal()).toContain("t('accountUsage')")
+  })
+
+  it('套餐状态是**用量之下**的二级 Tab，不与身份信息平级', () => {
+    // 若把三个生命周期提到顶层，读者会以为「可使用/已用完」与「身份信息」
+    // 是同一层级的概念。
+    const m = modal()
+    const usageAt = m.indexOf('itemKey="usage"')
+    const statusAt = m.indexOf("t('accountResourceStatus')")
+    const lifecycleAt = m.indexOf("(['usable', 'depleted', 'expired'] as const).map")
+    expect(usageAt).toBeGreaterThan(-1)
+    expect(statusAt).toBeGreaterThan(usageAt)
+    expect(lifecycleAt).toBeGreaterThan(statusAt)
+  })
+
+  it('两层 Tab 用不同 type（line vs button）区分层级', () => {
+    const m = modal()
+    // 同类型会让两层看起来平级。
+    expect(m).toMatch(/<DshTabs\s+type="line"/)
+    expect(m).toMatch(/<DshTabs\s+type="button"/)
+  })
+
+  it('嵌套 Tab 数量与开关状态各自独立', () => {
+    const m = modal()
+    expect(m).toMatch(/const \[topKey, setTopKey\] = useState<TopTab>\('identity'\)/)
+    expect(m).toMatch(/const \[statusKey, setStatusKey\] = useState<ResourceLifecycle>\('usable'\)/)
+    // 换账号时两级都要复位，否则会停在上一个账号的查看位置。
+    expect(m).toMatch(/setTopKey\('identity'\); setStatusKey\('usable'\)/)
   })
 
   it('身份表用横向布局压高度（默认 vertical 每项占两行）', () => {
-    const modal = PANEL.slice(PANEL.indexOf('function AccountResourcesModal'), PANEL.indexOf('function AccountsPage'))
     // 10 项在 vertical 下约 400px；horizontal + column 压到约 5 行。
-    expect(modal.match(/layout="horizontal"/g)?.length).toBe(2)
-    expect(modal).toMatch(/column=\{2\}/)
+    expect(modal().match(/layout="horizontal"/g)?.length).toBe(2)
+    expect(modal()).toMatch(/column=\{2\}/)
   })
 })
 

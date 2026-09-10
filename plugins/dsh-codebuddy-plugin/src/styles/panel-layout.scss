@@ -584,6 +584,22 @@
 
 .dsh-codebuddy-resource-dialog { display: flex; flex-direction: column; gap: 14px; }
 
+/* 用量信息页之下的二级 Tab（套餐状态）。
+   顶层用 line 型、这里用 button 型，两层不会看起来平级。
+   给二级 Tab 与上方小标题留出节奏，并与 Tab 内容区对齐。 */
+.dsh-codebuddy-resource-status {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 0 0;
+}
+
+/* 二级 Tab 的按钮条：button 型自带浅底，在弹框白底上偏灰，故让它稍作收缩、
+   靠左排列，与台账列表左边缘对齐。 */
+.dsh-codebuddy-resource-status .semi-tabs-bar {
+  margin-bottom: 2px;
+}
+
 /* 身份信息页（弹框内的一个 Tab）。
    两组描述表：账户身份 + 登录来源，中间一条细分隔线，避免读成一张表。 */
 .dsh-codebuddy-account-identity {
