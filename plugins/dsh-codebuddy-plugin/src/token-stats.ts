@@ -185,13 +185,36 @@ function messageText(value: unknown): string | undefined {
   return undefined
 }
 
-function titleFromEvents(events: readonly SessionEvent[], fallback: string): string {
+/**
+ * DSH 会自动注入的内容，不构成会话标题：workspace 说明、运行时上下文快照、
+ * 可用 skill 清单、任务看板提示等。它们总是排在真实用户输入之前，若当成标题
+ * 会把整列表显示成同一种系统文本。
+ */
+function isInjectedContext(value: string): boolean {
+  const head = value.trimStart().slice(0, 32)
+  return head.startsWith('<system-reminder>')
+    || head.startsWith('Current runtime context')
+    || head.startsWith('The following workspace instructions')
+    || head.startsWith('# AGENTS.md')
+}
+
+/**
+ * 从会话事件里取标题：用**第一条真实用户输入**的文本。
+ *
+ * 事件结构注意：`user/message` 的正文在 `data.content`（不是 `data.message`
+ * ——那是 `assistant/message` 的形状）。此前误读 `data.message`，取到的一直是
+ * undefined，于是标题永远回退成会话 id，列表里显示的就是一串 uuid。
+ *
+ * 取不到时返回空串而不是会话 id：id 是无意义的 uuid，不该出现在界面上，
+ * 由客户端用本地化占位文案呈现。
+ */
+function titleFromEvents(events: readonly SessionEvent[]): string {
   for (const event of events) {
     if (event.type !== 'user/message') continue
-    const title = messageText(event.data.message)
-    if (title !== undefined) return title
+    const title = messageText(event.data)
+    if (title !== undefined && !isInjectedContext(title)) return title
   }
-  return fallback
+  return ''
 }
 
 function breakdown(
@@ -280,7 +303,7 @@ export async function collectCodeBuddyTokenStats(
       const workspaceName = workspacePath === undefined ? '未指定工作区' : workspacePath.split('/').filter(Boolean).pop() ?? workspacePath
       const session = {
         id: sessionId,
-        title: titleFromEvents(observation.events, sessionId),
+        title: titleFromEvents(observation.events),
         ...workspacePath === undefined ? {} : { workspace: workspacePath },
         total: 0,
         input: 0,

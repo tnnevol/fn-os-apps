@@ -923,17 +923,29 @@ function WorkspaceList({ items, empty }: { items: TokenStats['workspaces'], empt
   )
 }
 
-function SessionRanking({ items, empty }: { items: TokenStats['sessions'], empty: string }): ReactNode {
+function SessionRanking({ items, empty, untitled, noWorkspace, callSuffix }: {
+  items: TokenStats['sessions']
+  empty: string
+  untitled: string
+  noWorkspace: string
+  callSuffix: string
+}): ReactNode {
   if (items.length === 0) return <div className="dsh-codebuddy-token-empty">{empty}</div>
   return (
     <div className="dsh-codebuddy-token-session-list">
-      {items.slice(0, 8).map((item, index) => (
+      {/* 服务端已按用量截取前 10，这里不再二次截断——否则表头写「Top 10」
+          却只列出 8 条，与文案不符。 */}
+      {items.map((item, index) => (
         <div key={item.id} className="dsh-codebuddy-token-session-row">
           <span className="dsh-codebuddy-token-rank">{String(index + 1).padStart(2, '0')}</span>
           <div className="dsh-codebuddy-token-session-main">
-            <DshTypography.Text strong className="dsh-codebuddy-token-session-title" ellipsis={{ showTooltip: true }}>{item.title}</DshTypography.Text>
+            {/* 只显示标题，不把会话 id（无意义 uuid）当标题顶上。
+                title 为空串时用本地化占位。 */}
+            <DshTypography.Text strong className="dsh-codebuddy-token-session-title" ellipsis={{ showTooltip: true }}>
+              {item.title.length > 0 ? item.title : untitled}
+            </DshTypography.Text>
             <DshTypography.Text size="small" type="tertiary" className="dsh-codebuddy-token-session-workspace" ellipsis={{ showTooltip: true }}>
-              {`${item.workspace ?? '未指定工作区'} · ${item.calls} 次调用`}
+              {`${item.workspace ?? noWorkspace} · ${item.calls}${callSuffix}`}
             </DshTypography.Text>
           </div>
           <div className="dsh-codebuddy-token-session-total"><strong>{compact(item.total)}</strong><small>{item.percent}%</small></div>
@@ -948,7 +960,7 @@ function activityWeekday(day: string): number {
   return new Date(year, month - 1, date).getDay()
 }
 
-function ActivityGrid({ activity }: { activity: TokenStats['activity'] }): ReactNode {
+function ActivityGrid({ activity, callSuffix }: { activity: TokenStats['activity'], callSuffix: string }): ReactNode {
   const max = Math.max(1, ...activity.map(item => item.tokens))
   const leading = activity[0] === undefined ? 0 : activityWeekday(activity[0].day)
   const cells: Array<TokenStats['activity'][number] | undefined> = [
@@ -979,7 +991,7 @@ function ActivityGrid({ activity }: { activity: TokenStats['activity'] }): React
             if (item === undefined) return <span key={`padding-${index}`} className="is-padding" aria-hidden="true" />
             const level = item.tokens === 0 ? 0 : Math.min(4, Math.ceil((item.tokens / max) * 4))
             return (
-              <DshTooltip key={item.day} content={`${item.day} · ${compact(item.tokens)} · ${item.calls} 次调用`}>
+              <DshTooltip key={item.day} content={`${item.day} · ${compact(item.tokens)} · ${item.calls}${callSuffix}`}>
                 <span className={`level-${level}`} />
               </DshTooltip>
             )
@@ -1180,7 +1192,7 @@ function TokenStatsPage({ rpc, t }: { rpc: ConnectionRpc, t: Translate }): React
         <div className="dsh-codebuddy-panel-section-title"><strong>{t('tokenActivity')}</strong><span>{t('tokenDaily')}</span></div>
         <DshCard className="dsh-codebuddy-token-activity-card">
           <div className="dsh-codebuddy-token-activity-meta"><span>{t('tokenActivityRange')}</span><span>{compact(data.totals.records)} {t('tokenRecords')}</span></div>
-          <ActivityGrid activity={data.activity} />
+          <ActivityGrid activity={data.activity} callSuffix={t('tokenCallSuffix')} />
           <div className="dsh-codebuddy-token-activity-scale"><span>少</span><i className="level-1" /><i className="level-2" /><i className="level-3" /><i className="level-4" /><span>多</span></div>
         </DshCard>
       </section>
@@ -1234,7 +1246,15 @@ function TokenStatsPage({ rpc, t }: { rpc: ConnectionRpc, t: Translate }): React
         <DshCard className="dsh-codebuddy-token-list-card">
           {sessions.data === undefined
             ? <div className="dsh-codebuddy-token-empty" />
-            : <SessionRanking items={sessions.data.sessions} empty={t('tokenNoSession')} />}
+            : (
+              <SessionRanking
+                items={sessions.data.sessions}
+                empty={t('tokenNoSession')}
+                untitled={t('tokenSessionUntitled')}
+                noWorkspace={t('tokenNoWorkspaceName')}
+                callSuffix={t('tokenCallSuffix')}
+              />
+            )}
         </DshCard>
       </TokenPanel>
     </div>

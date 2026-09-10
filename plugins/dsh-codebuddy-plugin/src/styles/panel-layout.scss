@@ -392,7 +392,10 @@
   border-radius: 3px;
   background: var(--dsw-alias-bg-layer-2);
 }
-.dsh-codebuddy-token-activity-grid span:not(.is-padding) { cursor: help; }
+/* 热力图格子挂了 Tooltip：用 pointer 表示「可以悬停查看」。
+   不用 `cursor: help`——那个问号光标语义是「点击获取帮助文档」，
+   而这格子并不能点开任何东西，容易误导。 */
+.dsh-codebuddy-token-activity-grid span:not(.is-padding) { cursor: pointer; }
 .dsh-codebuddy-token-activity-grid .is-padding { visibility: hidden; }
 .dsh-codebuddy-token-activity-grid .level-1, .dsh-codebuddy-token-activity-scale .level-1 { background: color-mix(in srgb, var(--dcb-mint) 28%, var(--dsw-alias-bg-layer-1)); }
 .dsh-codebuddy-token-activity-grid .level-2, .dsh-codebuddy-token-activity-scale .level-2 { background: color-mix(in srgb, var(--dcb-mint) 52%, var(--dsw-alias-bg-layer-1)); }

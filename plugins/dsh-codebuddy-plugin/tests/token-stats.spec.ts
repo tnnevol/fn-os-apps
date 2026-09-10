@@ -23,7 +23,9 @@ describe('CodeBuddy token analytics', () => {
       ['session-a', {
         header: sessions[0]!.header,
         events: [
-          { type: 'user/message', time: now, data: { message: { content: [{ type: 'text', text: 'alpha task' }] } } },
+          // 真实结构：user/message 的正文在 data.content，没有 data.message 这一层。
+          // （此前 fixture 用的是 assistant 的形状，于是盖住了线上取不到标题的缺陷。）
+          { type: 'user/message', time: now, data: { role: 'user', content: [{ type: 'text', text: 'alpha task' }] } },
           event(now, 'codebuddy', 'deepseek-v4-flash', 100, 20, 50, 5),
           event(now - 30 * 86_400_000, 'codebuddy', 'deepseek-v4-flash', 8, 2),
           event(now, 'openai', 'gpt-4o', 999, 999),
@@ -101,5 +103,62 @@ describe('CodeBuddy token analytics', () => {
     const result = await collectCodeBuddyTokenStats(query, { days: 1 })
     expect(result.totals.total).toBe(120)
     expect(result.sessions.map(row => row.id)).toEqual(['healthy'])
+  })
+})
+
+describe('会话标题取自真实用户输入', () => {
+  /**
+   * 这组守的是一个真实缺陷：`user/message` 的正文在 `data.content`，而代码读的是
+   * `data.message`（那是 `assistant/message` 的形状），于是永远取不到标题、回退成
+   * 会话 id，界面上「会话排名」显示一串 uuid。
+   *
+   * 关键点：测试 fixture 必须用**真实事件结构**。原 fixture 恰好写成了错误结构，
+   * 于是断言一直通过，缺陷因此蒙混过关。
+   */
+  function queryWith(events: unknown[]): SessionQueryService {
+    return {
+      async listSessions() { return [{ header: { id: 'session-x', cwd: '/w/demo' }, live: false, persisted: true }] },
+      async observeSession(id: string) { return { header: { id, cwd: '/w/demo' }, events } as never },
+    }
+  }
+
+  it('从 data.content 取标题（真实结构）', async () => {
+    const result = await collectCodeBuddyTokenStats(queryWith([
+      { type: 'user/message', time: Date.now(), data: { role: 'user', content: [{ type: 'text', text: '更新 codex 插件' }] } },
+      event(Date.now(), 'codebuddy', 'm', 10, 1),
+    ]), { days: 7 })
+    expect(result.sessions[0]?.title).toBe('更新 codex 插件')
+  })
+
+  it('跳过 DSH 注入的 system-reminder / 运行时上下文', async () => {
+    const now = Date.now()
+    const result = await collectCodeBuddyTokenStats(queryWith([
+      { type: 'user/message', time: now, data: { role: 'user', content: [{ type: 'text', text: '<system-reminder>\nworkspace instructions…' }] } },
+      { type: 'user/message', time: now, data: { role: 'user', content: [{ type: 'text', text: 'Current runtime context. This snapshot…' }] } },
+      { type: 'user/message', time: now, data: { role: 'user', content: [{ type: 'text', text: '真正的用户问题' }] } },
+      event(now, 'codebuddy', 'm', 10, 1),
+    ]), { days: 7 })
+    expect(result.sessions[0]?.title).toBe('真正的用户问题')
+  })
+
+  it('没有真实用户输入时标题为空串，而不是会话 id', async () => {
+    const result = await collectCodeBuddyTokenStats(queryWith([
+      { type: 'user/message', time: Date.now(), data: { role: 'user', content: [{ type: 'text', text: '<system-reminder>\nonly injected…' }] } },
+      event(Date.now(), 'codebuddy', 'm', 10, 1),
+    ]), { days: 7 })
+    const title = result.sessions[0]?.title
+    // 不能是 uuid：界面由客户端用本地化占位呈现。
+    expect(title).toBe('')
+    expect(title).not.toMatch(/^session-/)
+  })
+
+  it('标题压缩空白并截断，避免超长首行撑破布局', async () => {
+    const result = await collectCodeBuddyTokenStats(queryWith([
+      { type: 'user/message', time: Date.now(), data: { role: 'user', content: [{ type: 'text', text: `  多   空格\n换行 ${'x'.repeat(200)}` }] } },
+      event(Date.now(), 'codebuddy', 'm', 10, 1),
+    ]), { days: 7 })
+    const title = result.sessions[0]?.title ?? ''
+    expect(title.startsWith('多 空格 换行')).toBe(true)
+    expect(title.length).toBeLessThanOrEqual(80)
   })
 })
