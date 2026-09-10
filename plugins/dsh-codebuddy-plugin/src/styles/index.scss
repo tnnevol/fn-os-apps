@@ -455,7 +455,17 @@
 .dsh-codebuddy-panel-nav .semi-navigation-header-logo { display: inline-flex; align-items: center; }
 .dsh-codebuddy-panel-nav .semi-navigation-header-logo svg { display: block; }
 .dsh-codebuddy-panel-content { flex: 1; padding: 24px clamp(16px, 2vw, 32px) 40px; overflow: auto; }
+/* 工具栏与视图容器都受同一宽度约束并居中，否则标题会与页面内容左右不对齐。 */
 .dsh-codebuddy-panel-content > * { width: min(100%, 1480px); margin: 0 auto; }
+
+/* keep-alive 的视图容器：三个页面都保持挂载，只隐藏非当前页。
+   容器本身不产生额外盒模型（无内边距/边框/背景），对版面完全透明——
+   页面内容看起来仍像直接挂在内容区下。 */
+.dsh-codebuddy-panel-views { min-width: 0; }
+.dsh-codebuddy-panel-view { min-width: 0; }
+/* `hidden` 的浏览器默认 display:none 会被任何 display 声明覆盖，这里显式兜底，
+   确保隐藏页确实不参与布局（也避免其内部 flex 容器影响可见页的高度）。 */
+.dsh-codebuddy-panel-view[hidden] { display: none; }
 
 /* 工具栏：左上返回 + 页面标题 */
 .dsh-codebuddy-panel-toolbar {

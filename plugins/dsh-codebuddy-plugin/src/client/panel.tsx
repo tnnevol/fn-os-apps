@@ -961,8 +961,11 @@ function AccountsPage({
   )
 }
 
-function CreditsPage({ rpc, t }: { rpc: ConnectionRpc, t: Translate }): ReactNode {
-  const { data, loading, reload } = usePanelData<{ accounts: PanelAccountRow[], currentId?: string }>(rpc, 'panelStatus', {}, [])
+function CreditsPage({ rpc, t, rosterTick }: { rpc: ConnectionRpc, t: Translate, rosterTick: number }): ReactNode {
+  // 与账号页共用 panelStatus：账号增删/改名/登录完成后必须一起失效。
+  // 此前这个 deps 是空的——那时页面每次进入都会重新挂载、顺带重拉，掩盖了
+  // 缺陷；改成 keep-alive 后会一直显示旧账号，因此补上（见 rosterTick）。
+  const { data, loading, reload } = usePanelData<{ accounts: PanelAccountRow[], currentId?: string }>(rpc, 'panelStatus', {}, [rosterTick])
   if (loading && data === undefined) return <PageLoading variant="accounts" />
   const rows = data?.accounts ?? []
   if (rows.length === 0) return <DshEmpty title={t('accountsEmpty')} />
@@ -1538,8 +1541,26 @@ function TokenUsageChart({ days, inputLabel, outputLabel, cacheReadLabel, cacheW
     const resizeObserver = typeof ResizeObserver === 'undefined' ? undefined : new ResizeObserver(resize)
     if (resizeObserver !== undefined) resizeObserver.observe(element)
     else window.addEventListener('resize', resize)
+    /**
+     * 页面被 keep-alive 保留后，从隐藏切回可见时容器会由 0 宽度变回真实宽度。
+     * ResizeObserver 在多数浏览器会因此回调，但在「元素刚从 display:none 恢复」
+     * 这一刻不保证一定触发——尤其图表初始化就发生在隐藏状态下（0×0）时，
+     * 它会一直保持空白。因此额外观察承载页面的 hidden 变化，恢复可见时主动
+     * resize 一次。
+     */
+    const view = element.closest('.dsh-codebuddy-panel-view')
+    const visibilityObserver = typeof MutationObserver === 'undefined' || view === null
+      ? undefined
+      : new MutationObserver(() => {
+        if ((view as HTMLElement).hidden) return
+        // 等一帧后再量：hidden 刚被移除时容器尺寸可能尚未完成布局。
+        if (typeof requestAnimationFrame === 'function') requestAnimationFrame(resize)
+        else resize()
+      })
+    visibilityObserver?.observe(view as Node, { attributes: true, attributeFilter: ['hidden'] })
     return () => {
       resizeObserver?.disconnect()
+      visibilityObserver?.disconnect()
       if (resizeObserver === undefined) window.removeEventListener('resize', resize)
       chart.dispose()
     }
@@ -1574,6 +1595,11 @@ export function CodeBuddyPanelPage({ rpc, route, t }: PanelPageProps): ReactNode
   // 账号列表数据版本：登录完成 / 删除 / 改名后自增以触发面板重拉。
   const [rosterTick, setRosterTick] = useState(0)
   const bumpRoster = (): void => { setRosterTick(v => v + 1) }
+  // 已进入过的页面：首次进入才挂载，之后一直保留（keep-alive，见下方渲染处）。
+  const [visited, setVisited] = useState<ReadonlySet<PanelRoute>>(() => new Set([snapshot.page]))
+  useEffect(() => {
+    setVisited(prev => prev.has(snapshot.page) ? prev : new Set([...prev, snapshot.page]))
+  }, [snapshot.page])
 
   const doRename = async (): Promise<void> => {
     const target = renaming
@@ -1680,23 +1706,50 @@ export function CodeBuddyPanelPage({ rpc, route, t }: PanelPageProps): ReactNode
             <div style={{ flex: 1 }} />
           </div>
 
-          {snapshot.page === 'accounts' ? (
-            <AccountsPage
-              rpc={rpc}
-              t={t}
-              notify={notify}
-              rosterTick={rosterTick}
-              loginWaiting={loginState !== undefined}
-              {...loginLink === undefined ? {} : { loginLink }}
-              onCopyLoginLink={cbCopyLoginLink}
-              onRename={openRename}
-              onDelete={openDelete}
-              onAddAccount={() => { setAddOpen(true) }}
-              onCheckinChange={bumpRoster}
-            />
-          ) : null}
-          {snapshot.page === 'credits' ? <CreditsPage rpc={rpc} t={t} /> : null}
-          {snapshot.page === 'tokens' ? <TokenStatsPage rpc={rpc} t={t} /> : null}
+          {/*
+           * keep-alive：三个页面都保持挂载，只把非当前页隐藏。
+           *
+           * 原先用条件渲染（`page === 'x' ? <XPage/> : null`），切走即卸载：
+           * 页面内的 useState（Token 各面板的已选范围）与 useMemo 里的
+           * TokenStatsStore、已拉到的数据、echarts 实例全部销毁，切回只能重新
+           * 请求并重建图表——这正是「每次进菜单都重新拉取」的原因。
+           *
+           * 用 `hidden` 属性而不是只写 CSS display：hidden 会把子树从可访问性树
+           * 移除且不可聚焦，隐藏页里的按钮不会被 Tab 选中；只控制显示会留下
+           * 「隐藏但仍可聚焦」的缺口。
+           *
+           * 按 visited 惰性挂载：首次进入某页才真正渲染，避免一进面板就并发拉
+           * 三页数据。
+           */}
+          <div className="dsh-codebuddy-panel-views">
+            {visited.has('accounts') ? (
+              <div className="dsh-codebuddy-panel-view" hidden={snapshot.page !== 'accounts'}>
+                <AccountsPage
+                  rpc={rpc}
+                  t={t}
+                  notify={notify}
+                  rosterTick={rosterTick}
+                  loginWaiting={loginState !== undefined}
+                  {...loginLink === undefined ? {} : { loginLink }}
+                  onCopyLoginLink={cbCopyLoginLink}
+                  onRename={openRename}
+                  onDelete={openDelete}
+                  onAddAccount={() => { setAddOpen(true) }}
+                  onCheckinChange={bumpRoster}
+                />
+              </div>
+            ) : null}
+            {visited.has('credits') ? (
+              <div className="dsh-codebuddy-panel-view" hidden={snapshot.page !== 'credits'}>
+                <CreditsPage rpc={rpc} t={t} rosterTick={rosterTick} />
+              </div>
+            ) : null}
+            {visited.has('tokens') ? (
+              <div className="dsh-codebuddy-panel-view" hidden={snapshot.page !== 'tokens'}>
+                <TokenStatsPage rpc={rpc} t={t} />
+              </div>
+            ) : null}
+          </div>
         </DshLayout.Content>
       </DshLayout>
 

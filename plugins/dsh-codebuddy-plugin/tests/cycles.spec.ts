@@ -393,18 +393,29 @@ describe('两个旅行周期并发领取同一账号', () => {
     let claimCalls = 0
     let releaseClaim: (() => void) | undefined
     const claimGate = new Promise<void>((resolve) => { releaseClaim = resolve })
+    let signalClaimInFlight: (() => void) | undefined
+    const claimInFlight = new Promise<void>((resolve) => { signalClaimInFlight = resolve })
+    let statusCalls = 0
+    let signalBothStatuses: (() => void) | undefined
+    const bothStatuses = new Promise<void>((resolve) => { signalBothStatuses = resolve })
 
     vi.stubGlobal('fetch', vi.fn(async (url: string) => {
       const path = String(url)
       if (path.endsWith('/claim')) {
         claimCalls += 1
-        await claimGate
+        if (claimCalls === 1) {
+          signalClaimInFlight?.()
+          // 阻塞到测试放行：期间一直持有「领取中」标记。
+          await claimGate
+        }
         return new Response(JSON.stringify({ code: 0, msg: 'OK', data: { reward_credit: 7 } }), {
           status: 200,
           headers: { 'content-type': 'application/json' },
         })
       }
-      // 两个周期都会先查状态，都看到 arrived。
+      // 记录两个周期各自查过状态，供测试判断「双方都已就位」。
+      statusCalls += 1
+      if (statusCalls >= 2) signalBothStatuses?.()
       return new Response(JSON.stringify({ code: 0, msg: 'OK', data: { state: 'arrived', record_id: 42 } }), {
         status: 200,
         headers: { 'content-type': 'application/json' },
@@ -414,12 +425,19 @@ describe('两个旅行周期并发领取同一账号', () => {
     // 两个周期同时开跑，且都在自己的守卫内（标志独立，谁也挡不住谁）。
     const dispatch = service.runTravelCycle()
     const claim = service.runTravelClaimCycle()
-    // 让两个周期都走到 claim 之前。
-    await new Promise(resolve => setTimeout(resolve, 5))
+    // 让第一个 claim 先进入在途状态（此时它被 gate 挡住），
+    // 再等两个周期都查过状态——保证第二个周期即将走到 claim 那一步。
+    await claimInFlight
+    await bothStatuses
+    // 排空微任务：第二个周期的状态回调会在此刻同步推进到 claim 去重检查。
+    // 这一步是 macrotask 边界，microtask 队列必定先被清空，因此不依赖墙钟。
+    await new Promise(resolve => setTimeout(resolve, 0))
+    // 此刻第一个 claim 仍被 gate 挡住；若去重生效，就不应发生第二次 claim。
+    expect(claimCalls).toBe(1)
     releaseClaim?.()
     const [dispatchResult, claimResult] = await Promise.all([dispatch, claim])
 
-    // 关键：服务端只被 claim 触发一次。
+    // 关键：服务端只被 claim 触发一次（含放行前已断言的那次）。
     expect(claimCalls).toBe(1)
     const rows = [...dispatchResult.accounts, ...claimResult.accounts]
     const results = rows.map(row => row.result)
