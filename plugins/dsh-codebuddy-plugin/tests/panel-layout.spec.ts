@@ -162,3 +162,22 @@ describe('固定 header 的分隔与阴影', () => {
     expect(toolbarBlock()).not.toMatch(/inset/)
   })
 })
+
+describe('Token 页「数据更新于 …」的间距', () => {
+  const block = (): string =>
+    /\.dsh-codebuddy-token-updated\s*\{([^}]*)\}/.exec(
+      readFileSync(
+        '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/styles/panel-layout.scss',
+        'utf8',
+      ),
+    )?.[1] ?? ''
+
+  it('顶部有 15px 内边距', () => {
+    expect(block()).toMatch(/padding-top:\s*15px/)
+  })
+
+  it('用 padding 而非 margin（父容器 align-items:center 会让 margin 参与居中计算）', () => {
+    expect(block()).not.toMatch(/(^|[^-])margin-top:/)
+    expect(block()).toMatch(/(^|[^-])margin:\s*0/)
+  })
+})
