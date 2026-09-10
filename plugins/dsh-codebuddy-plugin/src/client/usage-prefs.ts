@@ -12,6 +12,7 @@
 import {
   CODEBUDDY_AUTO_CHECKIN_KEY,
   CODEBUDDY_AUTO_SWITCH_KEY,
+  CODEBUDDY_AUTO_TRAVEL_KEY,
   CODEBUDDY_SHOW_USAGE_KEY,
 } from './constants.ts'
 
@@ -106,6 +107,25 @@ export function setAutoCheckinPref(value: boolean): void {
   emitUsagePref()
 }
 
+/** Read the automatic buddy-travel preference; defaults to on. */
+export function getAutoTravelPref(): boolean {
+  try {
+    return window.localStorage.getItem(CODEBUDDY_AUTO_TRAVEL_KEY) !== '0'
+  } catch {
+    return true
+  }
+}
+
+/** Persist the automatic buddy-travel preference and notify subscribers. */
+export function setAutoTravelPref(value: boolean): void {
+  try {
+    window.localStorage.setItem(CODEBUDDY_AUTO_TRAVEL_KEY, value ? '1' : '0')
+  } catch {
+    // See setUsagePref.
+  }
+  emitUsagePref()
+}
+
 // Cross-tab sync: a `storage` event fires in every *other* tab when any key
 // changes, so each tab's indicator and controls re-read without a Host call.
 if (typeof window !== 'undefined' && window.localStorage !== undefined) {
@@ -113,6 +133,7 @@ if (typeof window !== 'undefined' && window.localStorage !== undefined) {
     if (event.key === CODEBUDDY_SHOW_USAGE_KEY
       || event.key === CODEBUDDY_AUTO_SWITCH_KEY
       || event.key === CODEBUDDY_AUTO_CHECKIN_KEY
+      || event.key === CODEBUDDY_AUTO_TRAVEL_KEY
       || event.key === null) {
       emitUsagePref()
     }

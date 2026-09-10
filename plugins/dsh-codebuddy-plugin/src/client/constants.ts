@@ -10,3 +10,4 @@ export const CODEBUDDY_USAGE_REFRESH_MS = 60_000
 export const CODEBUDDY_SHOW_USAGE_KEY = 'dsh-codebuddy:show-usage'
 export const CODEBUDDY_AUTO_SWITCH_KEY = 'dsh-codebuddy-auto-switch'
 export const CODEBUDDY_AUTO_CHECKIN_KEY = 'dsh-codebuddy-auto-checkin'
+export const CODEBUDDY_AUTO_TRAVEL_KEY = 'dsh-codebuddy-auto-travel'

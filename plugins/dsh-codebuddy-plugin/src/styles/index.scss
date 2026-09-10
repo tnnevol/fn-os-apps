@@ -542,6 +542,23 @@
   color: var(--dsw-alias-state-success-primary, #26a269);
 }
 
+/* 旅行状态 chip：与签到 chip 同排，颜色区分「进行中 / 已结束 / 不可用」。 */
+.dsh-codebuddy-travel-chip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 1px 8px;
+  font-size: 12px;
+  background: var(--dsw-alias-bg-layer-2);
+  color: var(--dsw-alias-label-secondary);
+  font-variant-numeric: tabular-nums;
+}
+.dsh-codebuddy-travel-chip.is-traveling {
+  background: color-mix(in srgb, var(--dsw-alias-brand-primary) 14%, transparent);
+  color: var(--dsw-alias-brand-primary);
+}
+.dsh-codebuddy-travel-chip.is-muted { color: var(--dsw-alias-label-tertiary); }
+
 .dsh-codebuddy-account-card-body {
   display: flex;
   flex-direction: column;

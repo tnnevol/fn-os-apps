@@ -53,7 +53,7 @@ import { classifyResources, forgetResources, readResources, recordResources } fr
 import type { ClassifiedResource, LiveResource, ResourceLifecycle } from './resource-history.ts'
 import { CodeBuddyLogo } from '../components/CodeBuddyLogo.tsx'
 import { AddAccountModal, startLoginPolling } from '../components/AddAccountModal.tsx'
-import { getAutoCheckinPref, setAutoCheckinPref } from './usage-prefs.ts'
+import { getAutoCheckinPref, getAutoTravelPref, setAutoCheckinPref, setAutoTravelPref } from './usage-prefs.ts'
 
 useECharts([BarChart, LineChart, AriaComponent, GridComponent, LegendComponent, TooltipComponent, CanvasRenderer])
 
@@ -84,6 +84,16 @@ interface PanelAccountRow {
   todayCheckedIn: boolean | null
   checkinOk: boolean
   checkinError: string | null
+  /** 派猫猫旅行状态；企业账号或查询失败为 null。 */
+  travel: {
+    state: string | null
+    buddyId: number
+    locationName: string | null
+    arriveAt: number
+    serverNow: number
+    dailyLimitReached: boolean
+    rewardCredit: number
+  } | null
   result?: string
   skipped?: boolean
 }
@@ -188,6 +198,14 @@ interface AccountCardProps {
     renameLabel: string
     resourcesLabel: string
     noBalanceHint: string
+    travel: {
+      untraveled: string
+      noBuddy: string
+      traveling: string
+      arrivesIn: string
+      dailyLimit: string
+      reward: string
+    }
   }
   /** 自动签到开启时不显示手动签到动作。 */
   autoCheckin: boolean
@@ -210,6 +228,30 @@ function AccountCard({ row, labels, autoCheckin, resources, busy, onCheckin, onS
   const remainingSum = row.totalRemaining
   // 卡片是概览：最多两个套餐，按 可使用 → 已用完 → 已过期 取前二。
   const cardResources = resources.slice(0, CARD_RESOURCE_LIMIT)
+  // 旅行状态 chip：只在能表达有用信息时渲染（企业账号没有成长中心）。
+  const travelChip = (() => {
+    const travel = row.travel
+    if (row.enterprise || travel === null) return null
+    if (travel.buddyId <= 0) {
+      return <span className="dsh-codebuddy-travel-chip is-muted">{labels.travel.noBuddy}</span>
+    }
+    if (travel.state === 'traveling') {
+      const left = Math.max(0, travel.arriveAt - travel.serverNow)
+      const hours = Math.floor(left / 3600)
+      const minutes = Math.floor((left % 3600) / 60)
+      const countdown = hours > 0 ? `${hours}小时${minutes}分` : `${minutes}分`
+      return (
+        <span className="dsh-codebuddy-travel-chip is-traveling" title={travel.locationName ?? undefined}>
+          {labels.travel.traveling}
+          {left > 0 ? ` · ${labels.travel.arrivesIn}${countdown}` : ''}
+        </span>
+      )
+    }
+    if (travel.dailyLimitReached) {
+      return <span className="dsh-codebuddy-travel-chip is-muted">{labels.travel.dailyLimit}</span>
+    }
+    return <span className="dsh-codebuddy-travel-chip">{labels.travel.untraveled}</span>
+  })()
   // 企业账号不支持签到；自动签到开启或已签到时不显示手动签到入口。
   const checkinVisible = !row.enterprise && !autoCheckin
   const checkinDisabled = row.expired || !row.checkinOk || row.todayCheckedIn === true || busy
@@ -273,11 +315,14 @@ function AccountCard({ row, labels, autoCheckin, resources, busy, onCheckin, onS
               ? <DshTag size="small" type="light">{CODEBUDDY_ENVIRONMENT_LABELS[env as keyof typeof CODEBUDDY_ENVIRONMENT_LABELS] ?? env}</DshTag>
               : null}
           </div>
-          {!row.enterprise && row.checkinOk ? (
+          {(!row.enterprise && row.checkinOk) || travelChip !== undefined ? (
             <div className="dsh-codebuddy-account-card-chips">
-              <span className={'dsh-codebuddy-checkin-chip' + (row.todayCheckedIn === true ? ' dsh-codebuddy-checkin-chip-done' : '')}>
-                {row.todayCheckedIn === true ? checkedIn : unchecked}
-              </span>
+              {!row.enterprise && row.checkinOk ? (
+                <span className={'dsh-codebuddy-checkin-chip' + (row.todayCheckedIn === true ? ' dsh-codebuddy-checkin-chip-done' : '')}>
+                  {row.todayCheckedIn === true ? checkedIn : unchecked}
+                </span>
+              ) : null}
+              {travelChip}
             </div>
           ) : null}
         </div>
@@ -519,6 +564,8 @@ function AccountsPage({
   const [resourceTarget, setResourceTarget] = useState<PanelAccountRow | undefined>(undefined)
   // 自动签到开关状态：开启时隐藏手动签到动作。
   const [autoCheckinOn, setAutoCheckinOn] = useState<boolean>(autoCheckinPref())
+  // 自动旅行开关状态（成长中心）。
+  const [autoTravelOn, setAutoTravelOn] = useState<boolean>(autoTravelPref())
   // 资源台账版本：记录完本次探测结果后自增，让卡片用上最新的分类。
   const [ledgerTick, setLedgerTick] = useState(0)
   const rows = data?.accounts ?? []
@@ -549,6 +596,7 @@ function AccountsPage({
 
   useEffect(() => {
     void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoCheckin', { enabled: autoCheckinOn })
+    void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoTravel', { enabled: autoTravelOn })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rpc])
 
@@ -624,6 +672,15 @@ function AccountsPage({
                   void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoCheckin', { enabled: checked })
                 }}
               />
+              <AutoTravelToggle
+                checked={autoTravelOn}
+                t={t}
+                onChange={(checked: boolean) => {
+                  setAutoTravelOn(checked)
+                  setAutoTravelPref(checked)
+                  void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoTravel', { enabled: checked })
+                }}
+              />
               <DshButton size="small" theme="light" icon={<DshIconRefresh />} onClick={reload}>{t('refresh')}</DshButton>
             </div>
           </div>
@@ -647,6 +704,14 @@ function AccountsPage({
                 renameLabel: t('renameLabel'),
                 resourcesLabel: t('resourcesTitle'),
                 noBalanceHint: t('noBalanceHint'),
+                travel: {
+                  untraveled: t('travelUntraveled'),
+                  noBuddy: t('travelNoBuddy'),
+                  traveling: t('travelTraveling'),
+                  arrivesIn: t('travelArrivesIn'),
+                  dailyLimit: t('travelDailyLimit'),
+                  reward: t('travelReward'),
+                },
               }}
               onCheckin={(id) => { void checkinOne(id) }}
               onSwitch={(id) => { void switchOne(id) }}
@@ -1202,8 +1267,11 @@ export function CodeBuddyPanelPage({ rpc, route, t }: PanelPageProps): ReactNode
 /** 自动签到偏好（与设置页同一键）。 */
 const autoCheckinPref = (): boolean => getAutoCheckinPref()
 
-/** 自动签到开关（位于账号页标题行、刷新按钮左侧）。受控组件：状态由
- *  AccountsPage 持有并在切换时同步到 host（localStorage 与设置页共享）。 */
+/** 自动旅行偏好（与设置页同一键）。 */
+const autoTravelPref = (): boolean => getAutoTravelPref()
+
+/** 自动签到开关（账号页标题行）。受控组件：状态由 AccountsPage 持有并在
+ *  切换时同步到 host（localStorage 与设置页共享）。 */
 function AutoCheckinToggle({ checked, t, onChange }: {
   checked: boolean
   t: Translate
@@ -1217,6 +1285,26 @@ function AutoCheckinToggle({ checked, t, onChange }: {
         checked={checked}
         onChange={onChange}
         aria-label={t('autoCheckin')}
+      />
+    </span>
+  )
+}
+
+/** 自动旅行开关（账号页标题行，自动签到右侧）。受控组件：状态由
+ *  AccountsPage 持有并在切换时同步到 host。 */
+function AutoTravelToggle({ checked, t, onChange }: {
+  checked: boolean
+  t: Translate
+  onChange: (checked: boolean) => void
+}): ReactNode {
+  return (
+    <span className="dsh-codebuddy-auto-checkin-toggle" title={t('travelAutoDesc')}>
+      <span className="dsh-codebuddy-muted">{t('travelAuto')}</span>
+      <DshSwitch
+        size="small"
+        checked={checked}
+        onChange={onChange}
+        aria-label={t('travelAuto')}
       />
     </span>
   )

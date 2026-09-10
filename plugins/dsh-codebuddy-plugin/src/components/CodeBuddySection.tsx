@@ -38,10 +38,12 @@ import {
   getAutoCheckinPref,
   getAutoSwitchPref,
   getAutoSwitchThresholdPref,
+  getAutoTravelPref,
   getUsagePref,
   setAutoCheckinPref,
   setAutoSwitchPref,
   setAutoSwitchThresholdPref,
+  setAutoTravelPref,
   setUsagePref,
   subscribeUsagePref,
 } from '../client/usage-prefs.ts'
@@ -108,6 +110,7 @@ export function CodeBuddySection({ rpc, t, panelRoute, close }: CodeBuddySection
   const [autoSwitch, setAutoSwitchState] = useState<boolean>(getAutoSwitchPref())
   const [autoSwitchPct, setAutoSwitchPctState] = useState<number>(getAutoSwitchThresholdPref())
   const [autoCheckin, setAutoCheckinState] = useState<boolean>(getAutoCheckinPref())
+  const [autoTravel, setAutoTravelState] = useState<boolean>(getAutoTravelPref())
   const [editTarget, setEditTarget] = useState<string | undefined>(undefined)
   const [editNote, setEditNote] = useState('')
   // 各账号剩余额度快照（设置页用户信息面板展示；来源 panelStatus）。
@@ -121,6 +124,9 @@ export function CodeBuddySection({ rpc, t, panelRoute, close }: CodeBuddySection
     const nextCheckin = getAutoCheckinPref()
     setAutoCheckinState(nextCheckin)
     void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoCheckin', { enabled: nextCheckin })
+    const nextTravel = getAutoTravelPref()
+    setAutoTravelState(nextTravel)
+    void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoTravel', { enabled: nextTravel })
   }), [])
 
   const refresh = useCallback(async () => {
@@ -230,6 +236,12 @@ export function CodeBuddySection({ rpc, t, panelRoute, close }: CodeBuddySection
     setAutoCheckinState(enabled)
     setAutoCheckinPref(enabled)
     void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoCheckin', { enabled })
+  }, [rpc])
+
+  const toggleAutoTravel = useCallback((enabled: boolean) => {
+    setAutoTravelState(enabled)
+    setAutoTravelPref(enabled)
+    void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoTravel', { enabled })
   }, [rpc])
 
   const changeAutoSwitchThreshold = useCallback((pct: number) => {
@@ -548,6 +560,15 @@ export function CodeBuddySection({ rpc, t, panelRoute, close }: CodeBuddySection
             checked={autoCheckin}
             onChange={(checked: boolean) => { toggleAutoCheckin(checked) }}
             aria-label={t('autoCheckin')}
+          />
+        </DshForm.Slot>
+        <DshForm.Slot
+          label={<PreferenceLabel title={t('travelAuto')} description={t('travelAutoDesc')} />}
+        >
+          <DshSwitch
+            checked={autoTravel}
+            onChange={(checked: boolean) => { toggleAutoTravel(checked) }}
+            aria-label={t('travelAuto')}
           />
         </DshForm.Slot>
         <DshForm.Slot

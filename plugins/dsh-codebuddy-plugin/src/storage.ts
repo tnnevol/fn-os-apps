@@ -404,6 +404,42 @@ export async function saveAutoCheckinConfig(config: AutoCheckinConfig): Promise<
   }
 }
 
+/** Persisted auto-travel preference: whether the plugin dispatches the
+ *  growth-centre buddy travel (and claims its reward) without manual action.
+ *  Defaults on, mirroring workbuddy-switch. */
+export interface AutoTravelConfig {
+  enabled: boolean
+}
+
+function getAutoTravelConfigPath(): string {
+  return `${getStoragePath()}.auto-travel.json`
+}
+
+/** Read the auto-travel preference; defaults on. */
+export async function loadAutoTravelConfig(): Promise<AutoTravelConfig> {
+  try {
+    const raw = await fs.readFile(getAutoTravelConfigPath(), 'utf-8')
+    const parsed = JSON.parse(raw) as Partial<AutoTravelConfig>
+    return { enabled: parsed.enabled === true }
+  } catch {
+    return { enabled: true }
+  }
+}
+
+/** Write the auto-travel preference atomically. */
+export async function saveAutoTravelConfig(config: AutoTravelConfig): Promise<void> {
+  const path = getAutoTravelConfigPath()
+  await fs.mkdir(dirname(path), { recursive: true })
+  const temp = `${path}.${randomBytes(6).toString('hex')}.tmp`
+  try {
+    await fs.writeFile(temp, JSON.stringify(config, null, 2), { encoding: 'utf-8', mode: 0o600 })
+    await fs.rename(temp, path)
+  } catch (error) {
+    await fs.unlink(temp).catch(() => {})
+    throw error
+  }
+}
+
 /** Remove the stored credential document, if any. */
 export async function clearStorage(): Promise<void> {
   await fs.unlink(getStoragePath()).catch(() => {

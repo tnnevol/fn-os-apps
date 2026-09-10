@@ -19,6 +19,7 @@ import {
 } from './constants.ts'
 
 import { getCheckinStatus, performCheckin, fetchUsage } from './usage.ts'
+import { claimTravel, departTravel, fetchTravelLocations, fetchTravelStatus } from './travel.ts'
 import { getLoginAccount, pollAuthToken, requestAuthState } from './codebuddy.ts'
 import {
   clearStorage,
@@ -31,6 +32,8 @@ import {
   saveAutoSwitchConfig,
   loadAutoCheckinConfig,
   saveAutoCheckinConfig,
+  loadAutoTravelConfig,
+  saveAutoTravelConfig,
 } from './storage.ts'
 import type { CodeBuddySession } from './session.ts'
 import type { CodeBuddyAccountEntry, CodeBuddyStorage } from './storage.ts'
@@ -240,6 +243,12 @@ export class CodeBuddyAuthService {
     }).catch(() => {
       // Loading prefs is advisory; the in-code defaults already stand.
     })
+    void loadAutoTravelConfig().then((config) => {
+      this.autoTravel = config.enabled
+      if (config.enabled) this.startTravelCycle()
+    }).catch(() => {
+      // Loading prefs is advisory; the in-code defaults already stand.
+    })
   }
 
   /** Automatic daily sign-in flag (all accounts). Defaults on. */
@@ -324,6 +333,191 @@ export class CodeBuddyAuthService {
     if (this.autoCheckinTimer !== undefined) {
       clearInterval(this.autoCheckinTimer)
       this.autoCheckinTimer = undefined
+    }
+  }
+
+  /** Automatic buddy-travel flag (personal accounts only). Defaults on. */
+  autoTravel = true
+
+  /**
+   * Consecutive travel rounds in which EVERY eligible account failed. After the
+   * limit the cycle stands down rather than hammering an unreachable plane.
+   */
+  private travelAllFailures = 0
+  private static readonly TRAVEL_FAILURE_LIMIT = 3
+  private travelTimer: ReturnType<typeof setInterval> | undefined
+  private travelClaimTimer: ReturnType<typeof setInterval> | undefined
+
+  /** 一次旅行周期：逐账号同步状态并按状态机推进。
+   *
+   * - `arrived` → 领取奖励；
+   * - `traveling` → 等待（记录到达时间供 UI 倒计时）；
+   * - `idle` + `daily_limit_reached` → 今日已结束；
+   * - `idle` → 派发（依次尝试地点列表）。
+   *
+   * 企业账号成长中心不可用（403），无 Buddy 的账号派发会被拒——
+   * 后者属可重试原因，不能记为当日完成。 */
+  async runTravelCycle(): Promise<{ status: string, accounts: Array<{ id: string, name: string, result: string, state?: string, arriveAt?: number, locationName?: string, rewardCredit?: number, error?: string }> }> {
+    if (!this.autoTravel) return { status: 'disabled', accounts: [] }
+    if (this.travelAllFailures >= CodeBuddyAuthService.TRAVEL_FAILURE_LIMIT) return { status: 'standby', accounts: [] }
+    const storage = await loadStorage()
+    if (storage === undefined) return { status: 'no_accounts', accounts: [] }
+    type TravelRow = { id: string, name: string, result: string, state?: string, arriveAt?: number, locationName?: string, rewardCredit?: number, error?: string }
+    const rows: TravelRow[] = []
+    let eligible = 0
+    let failed = 0
+    for (const entry of storage.accounts) {
+      const identity = this.session?.identityFor(entry)
+      if (identity === undefined) continue
+      const name = entry.account.label ?? entry.account.nickname
+      const push = (row: Omit<TravelRow, 'id' | 'name'>): void => { rows.push({ id: entry.id, name, ...row }) }
+      // 成长中心仅对个人用户开放，企业账号直接跳过。
+      if (identity.enterpriseId !== undefined) {
+        push({ result: 'skipped' })
+        continue
+      }
+      if (entry.auth.refreshExpiresAt <= Date.now()) {
+        push({ result: 'expired' })
+        continue
+      }
+      eligible += 1
+      const endpoint = resolveEntryEndpoint(entry)
+      try {
+        const status = await fetchTravelStatus(endpoint, identity)
+        if (!status.ok) {
+          if (status.unsupported === true) push({ result: 'skipped' })
+          else {
+            push({ result: 'error', ...status.error === undefined ? {} : { error: status.error } })
+            failed += 1
+          }
+          continue
+        }
+        if (status.state === 'traveling') {
+          push({
+            result: 'traveling',
+            state: 'traveling',
+            arriveAt: status.arriveAt,
+            ...status.locationName === undefined ? {} : { locationName: status.locationName },
+          })
+          continue
+        }
+        if (status.state === 'arrived') {
+          const claimed = await claimTravel(endpoint, identity, status.recordId)
+          if (claimed.ok) {
+            push({
+              result: 'claimed',
+              state: 'idle',
+              ...claimed.rewardCredit === undefined ? {} : { rewardCredit: claimed.rewardCredit },
+            })
+          } else {
+            push({ result: 'error', ...claimed.error === undefined ? {} : { error: claimed.error } })
+            failed += 1
+          }
+          continue
+        }
+        // state === 'idle'
+        if (status.dailyLimitReached) {
+          push({ result: 'daily-limit', state: 'idle' })
+          continue
+        }
+        if (status.buddyId <= 0) {
+          // 没有 Buddy：官网同样无法派发。这是可重试原因（账号后来可能获得 Buddy）。
+          push({ result: 'no-buddy' })
+          continue
+        }
+        const departed = await this.departAtAnyLocation(endpoint, identity)
+        if (departed.ok) {
+          push({
+            result: 'departed',
+            state: 'traveling',
+            ...departed.arriveAt === undefined ? {} : { arriveAt: departed.arriveAt },
+            ...departed.locationName === undefined ? {} : { locationName: departed.locationName },
+          })
+        } else if (departed.already === true) {
+          push({ result: 'traveling', state: 'traveling' })
+        } else {
+          push({ result: 'error', ...departed.error === undefined ? {} : { error: departed.error } })
+          failed += 1
+        }
+      } catch {
+        push({ result: 'error', error: 'probe failed' })
+        failed += 1
+      }
+    }
+    this.travelAllFailures = eligible > 0 && failed === eligible
+      ? this.travelAllFailures + 1
+      : 0
+    return { status: 'ok', accounts: rows }
+  }
+
+  /** 依次尝试地点列表派发，返回首个成功的结果（含到达时间）。 */
+  private async departAtAnyLocation(
+    endpoint: string,
+    identity: CodeBuddyIdentity,
+  ): Promise<{ ok: boolean, already?: boolean, arriveAt?: number, locationName?: string, error?: string }> {
+    const locations = await fetchTravelLocations(endpoint, identity)
+    if (locations.length === 0) return { ok: false, error: 'no locations available' }
+    let lastError = 'depart failed'
+    for (const location of locations) {
+      const result = await departTravel(endpoint, identity, location.id)
+      if (result.ok) {
+        // 派发成功后回读一次状态：到达时间只有 status 会给出。
+        const status = await fetchTravelStatus(endpoint, identity)
+        return {
+          ok: true,
+          ...status.arriveAt > 0 ? { arriveAt: status.arriveAt } : {},
+          ...status.locationName === undefined ? {} : { locationName: status.locationName },
+        }
+      }
+      if (result.already === true) return { ok: false, already: true }
+      lastError = result.error ?? lastError
+      // 企业账号等确定性拒绝不再换地点重试。
+      if (result.unsupported === true) return { ok: false, error: lastError }
+    }
+    return { ok: false, error: lastError }
+  }
+
+  /** 只查状态、不改状态：面板展示用（不触发派发）。 */
+  async travelStatusAll(): Promise<unknown> {
+    const storage = await loadStorage()
+    if (storage === undefined) return { accounts: [] }
+    const rows = []
+    for (const entry of storage.accounts) {
+      const identity = this.session?.identityFor(entry)
+      const name = entry.account.label ?? entry.account.nickname
+      if (identity === undefined) continue
+      if (identity.enterpriseId !== undefined) {
+        rows.push({ id: entry.id, name, ok: false, unsupported: true, buddyId: 0 })
+        continue
+      }
+      const status = await fetchTravelStatus(resolveEntryEndpoint(entry), identity)
+      rows.push({ id: entry.id, name, ...status })
+    }
+    return { accounts: rows }
+  }
+
+  /** Start the travel cycles: dispatch on startup then every 30 min, claims
+   *  every 15 min (matching workbuddy-switch's TRAVEL_* intervals). */
+  startTravelCycle(): void {
+    if (this.travelTimer === undefined) {
+      void this.runTravelCycle()
+      this.travelTimer = setInterval(() => { void this.runTravelCycle() }, 30 * 60_000)
+    }
+    if (this.travelClaimTimer === undefined) {
+      // 领取与派发同一轮处理：到达时间可能落在两个派发周期之间，
+      // 15 分钟的领取节奏能更快把奖励落袋。
+      this.travelClaimTimer = setInterval(() => { void this.runTravelCycle() }, 15 * 60_000)
+    }
+  }
+
+  stopTravelCycle(): void {
+    if (this.travelTimer !== undefined) {
+      clearInterval(this.travelTimer)
+      this.travelTimer = undefined
+    }
+    if (this.travelClaimTimer !== undefined) {
+      clearInterval(this.travelClaimTimer)
+      this.travelClaimTimer = undefined
     }
   }
 
@@ -492,6 +686,19 @@ export class CodeBuddyAuthService {
         void saveAutoCheckinConfig({ enabled })
         return ok({ enabled })
       }
+      case 'autoTravel': {
+        const raw = typeof payload === 'object' && payload !== null
+          ? payload as { enabled?: unknown }
+          : undefined
+        const enabled = raw?.enabled === true
+        this.autoTravel = enabled
+        if (enabled) this.startTravelCycle()
+        else this.stopTravelCycle()
+        void saveAutoTravelConfig({ enabled })
+        return ok({ enabled })
+      }
+      case 'travelStatus': return ok(await this.travelStatusAll())
+      case 'travelRun': return ok(await this.runTravelCycle())
       case 'renameLabel': {
         const raw = typeof payload === 'object' && payload !== null
           ? payload as { id?: unknown, label?: unknown }
@@ -856,12 +1063,17 @@ export class CodeBuddyAuthService {
     if (storage === undefined) return { accounts: [], currentId: undefined }
     const activeId = storage.activeId
     const rows = await this.forEachAccount(async item => {
-      // 企业账号不支持签到：不探测签到状态，卡片上也不显示签到入口。
-      const [snapshot, checkin] = item.enterprise
-        ? await Promise.all([fetchUsage(item.endpoint, item.identity, signal).catch(() => undefined), Promise.resolve({ ok: false, todayCheckedIn: false })])
+      // 企业账号不支持签到，也不支持成长中心（旅行）：都不探测。
+      const [snapshot, checkin, travel] = item.enterprise
+        ? await Promise.all([
+          fetchUsage(item.endpoint, item.identity, signal).catch(() => undefined),
+          Promise.resolve({ ok: false, todayCheckedIn: false }),
+          Promise.resolve(undefined),
+        ])
         : await Promise.all([
           fetchUsage(item.endpoint, item.identity, signal).catch(() => undefined),
           getCheckinStatus(item.endpoint, item.identity, signal).catch(() => ({ ok: false, todayCheckedIn: false, error: 'probe failed' })),
+          fetchTravelStatus(item.endpoint, item.identity, signal).catch(() => undefined),
         ])
       // 资源：合并为“剩余额度”“总量”“最近到期”语义（align wb 卡片）
       const resources = (snapshot?.windows ?? []).map(w => ({
@@ -892,6 +1104,18 @@ export class CodeBuddyAuthService {
         checkinOk: checkin.ok,
         todayCheckedIn: checkin.ok ? checkin.todayCheckedIn : null,
         checkinError: checkin.ok ? null : ('error' in checkin ? checkin.error ?? 'probe failed' : undefined),
+        // 旅行状态（成长中心；企业账号与查询失败为 null）
+        travel: travel === undefined || !travel.ok
+          ? null
+          : {
+              state: travel.state ?? null,
+              buddyId: travel.buddyId,
+              locationName: travel.locationName ?? null,
+              arriveAt: travel.arriveAt,
+              serverNow: travel.serverNow,
+              dailyLimitReached: travel.dailyLimitReached,
+              rewardCredit: travel.rewardCredit,
+            },
         // 前端据此禁用“设为当前/选择账号”：无余额或查询失败都不可接管
         usable,
       }
