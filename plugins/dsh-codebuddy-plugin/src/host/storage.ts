@@ -211,6 +211,7 @@ function normalizeEntry(entry: CodeBuddyAccountEntry): CodeBuddyAccountEntry {
   const label = pick(a.label)?.trim()
   const environment = pick(entry.environment)?.toLowerCase()
   const endpoint = pick(entry.endpoint)?.replace(/\/+$/, '')
+  const client = normalizeClientId(entry.client)
   return {
     id: entry.id,
     auth: entry.auth,
@@ -226,6 +227,16 @@ function normalizeEntry(entry: CodeBuddyAccountEntry): CodeBuddyAccountEntry {
     },
     ...environment === undefined ? {} : { environment },
     ...endpoint === undefined ? {} : { endpoint },
+    // **客户端身份必须原样保留**。它是决定请求发往哪个服务平面的字段
+    // （见 resolveEntryEndpoint），而本函数是逐字段白名单重建——漏掉它会让
+    // 每次读盘都把 WorkBuddy 账号降级成 CLI：
+    //   client 丢失 → normalizeClientId 回落 'cli' → 端点变成 copilot.tencent.com，
+    //   而凭据签发于 www.workbuddy.cn → 服务端不认，账号表现为「掉线」。
+    // 且 loadStorage 的结果会被各写路径（切换/改名/删除/刷新）回写磁盘，
+    // 因此不是内存态问题，而是**持久化擦除**。
+    // 教训：白名单重建时新增的持久化字段必须同步加到这里。
+    client,
+    clientVersion: entry.clientVersion ?? CODEBUDDY_CLIENT_VERSIONS[client],
   }
 }
 

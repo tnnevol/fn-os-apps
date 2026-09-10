@@ -49,16 +49,41 @@ export interface SessionLogger {
  */
 export class CodeBuddySession {
   private storage: CodeBuddyStorage | undefined
-  private refreshing: Promise<CodeBuddyIdentity> | undefined
+  /**
+   * 在途的 token 刷新，按**账号 id** 隔离。
+   *
+   * 用一个全局单槽（原先的 `refreshing`）会在切换账号后串味：新当前账号若也
+   * 需要刷新，`??=` 会命中旧账号仍在途的 promise，于是**用旧账号的凭据为
+   * 新账号发请求**（accessToken / uid / domain 全套都是旧的）。按账号 id 分槽
+   * 后，各账号只复用自己那次刷新。
+   *
+   * 代际（generation）再兜一层：账号被删除或文档被重写后，旧条目即使 id 相同
+   * 也不该复用，因此 id 与代际一起作为键。
+   */
+  private refreshing = new Map<string, Promise<CodeBuddyIdentity>>()
   private catalog: { models: readonly CodeBuddyModel[], readAt: number } | undefined
-  private catalogRead: Promise<readonly CodeBuddyModel[]> | undefined
+  /** 在途的目录读取，同样按 `账号 id@代际` 隔离（理由见 refresh 侧注释）。 */
+  private catalogRead = new Map<string, Promise<readonly CodeBuddyModel[]>>()
+  /**
+   * 每次凭据/账号集合发生变化就自增。在途操作返回时用它判断「我出发时的世界
+   * 是否还在」——不在就丢弃结果，避免把陈旧快照写回磁盘。
+   */
+  private generation = 0
 
   constructor(private readonly logger?: SessionLogger) {}
 
-  /** Forget the in-memory credentials and catalog, forcing a re-read from disk. */
+  /**
+   * Forget the in-memory credentials and catalog, forcing a re-read from disk.
+   *
+   * 同时自增代际：在途的刷新/目录读取据此判定自己已过期，**既不复用也不回写**。
+   * 只清 `storage`/`catalog` 是不够的——在途 promise 仍会把陈旧快照落地。
+   */
   invalidate(): void {
     this.storage = undefined
     this.catalog = undefined
+    this.generation += 1
+    this.refreshing.clear()
+    this.catalogRead.clear()
   }
 
   /** Public identity resolution for panel probes (per-entry, no refresh). */
@@ -128,13 +153,24 @@ export class CodeBuddySession {
         + ' CodeBuddy in the Web UI.',
       )
     }
-    this.refreshing ??= this.refresh(storage, entry).finally(() => {
-      this.refreshing = undefined
+    const key = `${entry.id}@${this.generation}`
+    const inFlight = this.refreshing.get(key)
+    if (inFlight !== undefined) return inFlight
+    const started = this.refresh(storage, entry, this.generation)
+    this.refreshing.set(key, started)
+    void started.finally(() => {
+      // 只清自己那一槽：期间可能已有别的账号/代际的刷新在跑。
+      if (this.refreshing.get(key) === started) this.refreshing.delete(key)
     })
-    return this.refreshing
+    return started
   }
 
-  private async refresh(storage: CodeBuddyStorage, entry: CodeBuddyAccountEntry): Promise<CodeBuddyIdentity> {
+  private async refresh(
+    storage: CodeBuddyStorage,
+    entry: CodeBuddyAccountEntry,
+    /** 出发时的代际；返回时若已变化，说明账号集合被改过，结果不再可信。 */
+    startedAt: number,
+  ): Promise<CodeBuddyIdentity> {
     const endpoint = resolveEntryEndpoint(entry)
     const refreshed = await refreshAccessToken(endpoint, this.identityOf(entry), entry.auth.refreshToken)
     if (refreshed === undefined) {
@@ -155,6 +191,13 @@ export class CodeBuddySession {
         refreshExpiresAt: Date.now() + (refreshed.refreshExpiresIn ?? 0) * 1000,
         domain: refreshed.domain,
       },
+    }
+    // 代际变化 = 期间发生过切换/删除/登出。此时**绝不回写**：`storage` 是刷新
+    // 开始前的快照，整份写回会把已删除的账号复活、把 activeId 改回旧值，
+    // 或撤销一次登出。刷新结果只用于本次请求的凭据。
+    if (startedAt !== this.generation) {
+      this.logger?.warn?.('dsh-codebuddy: discarded a session refresh that finished after the account set changed')
+      return this.identityOf(refreshedEntry)
     }
     const next: CodeBuddyStorage = {
       activeId: storage.activeId,
@@ -324,10 +367,18 @@ export class CodeBuddySession {
     if (cached !== undefined && Date.now() - cached.readAt < CATALOG_TTL_MS) {
       return cached.models
     }
-    this.catalogRead ??= this.readModels(signal).finally(() => {
-      this.catalogRead = undefined
+    // 目录是**按账号**取的（企业账号与个人账号返回不同集合），因此缓存键必须
+    // 含账号 id；再加代际，让切换/删除后不再复用旧账号那次读取。
+    const storage = await this.require()
+    const key = `${activeEntry(storage).id}@${this.generation}`
+    const inFlight = this.catalogRead.get(key)
+    if (inFlight !== undefined) return inFlight
+    const started = this.readModels(signal)
+    this.catalogRead.set(key, started)
+    void started.finally(() => {
+      if (this.catalogRead.get(key) === started) this.catalogRead.delete(key)
     })
-    return this.catalogRead
+    return started
   }
 
   private async readModels(signal?: AbortSignal): Promise<readonly CodeBuddyModel[]> {

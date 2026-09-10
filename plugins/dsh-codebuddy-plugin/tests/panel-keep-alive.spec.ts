@@ -50,7 +50,10 @@ describe('管理面板的 keep-alive 结构', () => {
     const nextFn = rest.indexOf('\nfunction ')
     const body = nextFn === -1 ? rest : rest.slice(0, nextFn)
     expect(body).toContain("'panelStatus'")
-    expect(body).toMatch(/usePanelData<[^>]*>\(rpc, 'panelStatus', \{\}, \[rosterTick\]\)/)
+    // deps 里必须含 rosterTick（面板内操作触发的重取）。
+    // 不写死整个数组：账号页同时还依赖 accountEpoch（设置页/自动切换触发的
+    // 重取），把它钉成 [rosterTick] 会在加第二个依赖时误报。
+    expect(body).toMatch(/usePanelData<[^>]*>\(\s*rpc, 'panelStatus', \{\}, \[rosterTick[^\]]*\]/)
   })
 
   it('积分总览随账号页一起刷新（数据由 AccountsPage 以 props 传入）', () => {

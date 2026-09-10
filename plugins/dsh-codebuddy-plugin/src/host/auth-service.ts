@@ -261,7 +261,7 @@ export class CodeBuddyAuthService {
           handle: (
             channel: string,
             handler: (endpoint: string, payload: unknown, signal: AbortSignal) => Promise<unknown>,
-          ) => () => Promise<void>
+          ) => () => Promise<void> | void
         }
       }
       connectionCtx.effect(() => {
@@ -273,9 +273,15 @@ export class CodeBuddyAuthService {
           CODEBUDDY_AUTH_CHANNEL,
           (endpoint, payload, signal) => this.dispatch(endpoint, payload, signal),
         )
-        // The rc.1 channel disposer is asynchronous; hand the fiber a
-        // synchronous one.
-        return () => { void dispose() }
+        // 直接返回（可能返回 Promise 的）disposer，让 Cordis 等待它完成。
+        //
+        // 曾经的写法是 `return () => { void dispose() }`，注释说「通道 disposer
+        // 是异步的，交给 fiber 一个同步的」—— 那个前提不成立：Cordis 对每个
+        // disposable 的结果做 `if (isObject(result) && "then" in result) task = result`
+        // （cordis/lib/index.js:1181），**会 await thenable**。用 void 包一层反而
+        // 丢掉这个能力：注销未完成就返回，旧 handler 仍挂着，热重载后可能与新
+        // 实例注册同名 channel 冲突。
+        return dispose
       }, 'dsh-codebuddy: auth RPC channel')
     })
     void loadAutoSwitchConfig().then((config) => {
@@ -906,7 +912,13 @@ export class CodeBuddyAuthService {
         this.autoSwitchThresholdPct = thresholdPct
         if (enabled) this.startAutoSwitchCycle()
         else this.stopAutoSwitchCycle()
-        void saveAutoSwitchConfig({ enabled, thresholdPct })
+        // 吞掉 rejection：偏好落盘失败不应把请求变成失败（内存态已生效、
+        // 本次会话可用），但也不能让它变成未处理拒绝——那会被 harness 的
+        // fail-loud 捕获并终止进程，而 RPC 已经回过 ok 了。
+        void saveAutoSwitchConfig({ enabled, thresholdPct }).catch((error: unknown) => {
+          this.logger.warn('dsh-codebuddy: could not persist the auto-switch preference')
+          this.logger.warn(error)
+        })
         return ok({ enabled, thresholdPct })
       }
       case 'autoCheckin': {
@@ -917,7 +929,10 @@ export class CodeBuddyAuthService {
         this.autoCheckin = enabled
         if (enabled) this.startAutoCheckinCycle()
         else this.stopAutoCheckinCycle()
-        void saveAutoCheckinConfig({ enabled })
+        void saveAutoCheckinConfig({ enabled }).catch((error: unknown) => {
+          this.logger.warn('dsh-codebuddy: could not persist the auto-checkin preference')
+          this.logger.warn(error)
+        })
         return ok({ enabled })
       }
       case 'autoTravel': {
@@ -928,7 +943,10 @@ export class CodeBuddyAuthService {
         this.autoTravel = enabled
         if (enabled) this.startTravelCycle()
         else this.stopTravelCycle()
-        void saveAutoTravelConfig({ enabled })
+        void saveAutoTravelConfig({ enabled }).catch((error: unknown) => {
+          this.logger.warn('dsh-codebuddy: could not persist the auto-travel preference')
+          this.logger.warn(error)
+        })
         return ok({ enabled })
       }
       case 'travelStatus': return ok(await this.travelStatusAll())
@@ -1235,6 +1253,15 @@ export class CodeBuddyAuthService {
       if (token === undefined) return undefined
       const account = await getLoginAccount(endpoint, state, token.accessToken, token.domain)
       const fresh = buildAccountEntry(token, account, options)
+      /**
+       * 本次登录是否**显式**指定了客户端。
+       *
+       * `options.client` 为 undefined 时 `buildAccountEntry` 会按 `cli` 落一个值，
+       * 因此不能只看 `fresh.client` 是否为空。重新登录（设置页的「重新登录」）不会
+       * 带客户端，若此时用 fresh 覆盖，会把 WorkBuddy 账号静默改成 CLI，
+       * 之后请求发往错误的服务平面、凭据不被承认。
+       */
+      const clientSpecified = options.client !== undefined
       const stored = await loadStorage()
       // The existing entry for the same uid (if any) keeps its local id and
       // position; its credential is replaced by the fresh one. A brand-new
@@ -1258,10 +1285,18 @@ export class CodeBuddyAuthService {
               ? { label: existing.account.label }
               : {}),
           },
-          // 客户端标识以本次登录为准：同一 uid 先用 CLI 登录、后用 WorkBuddy
-          // 登录时，端点与版本都必须跟着换，否则会用错平面发请求。
-          ...fresh.client === undefined ? {} : { client: fresh.client },
-          ...fresh.clientVersion === undefined ? {} : { clientVersion: fresh.clientVersion },
+          // 客户端标识：**仅当本次登录显式指定时**才以此为准（同一 uid 先用 CLI
+          // 登录、后用 WorkBuddy 登录，端点与版本必须跟着换）；未指定时保留原值，
+          // 否则「重新登录」会把 WorkBuddy 账号降级成 CLI。
+          ...clientSpecified
+            ? {
+                ...fresh.client === undefined ? {} : { client: fresh.client },
+                ...fresh.clientVersion === undefined ? {} : { clientVersion: fresh.clientVersion },
+              }
+            : {
+                ...existing.client === undefined ? {} : { client: existing.client },
+                ...existing.clientVersion === undefined ? {} : { clientVersion: existing.clientVersion },
+              },
         }
         const wasActive = stored.activeId === existing.id
         next = {

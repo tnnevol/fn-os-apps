@@ -193,3 +193,37 @@ describe('添加账号弹框内选择框的左间距', () => {
     expect(m?.[1]?.trim()).toBe('.dsh-codebuddy-add-form .semi-select-selection')
   })
 })
+
+describe('管理面板订阅账号代际', () => {
+  const PANEL = readFileSync(
+    '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/client/panel.tsx',
+    'utf8',
+  )
+  const EPOCH = readFileSync(
+    '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/client/account-epoch.ts',
+    'utf8',
+  )
+
+  it('账号页订阅 accountEpoch（否则设置页/自动切换后面板停留旧值）', () => {
+    // 面板是 keep-alive 常驻挂载，不会因切走而重挂载；只有 rosterTick（面板内
+    // 操作触发）或 accountEpoch（宿主广播的账号切换）变化才重取。
+    // account-epoch.ts 的模块注释明确要求「管理面板各页」订阅本模块。
+    expect(PANEL).toContain('subscribeAccountEpoch')
+    expect(PANEL).toMatch(/useSyncExternalStore\(subscribeAccountEpoch, accountEpoch, accountEpoch\)/)
+    // 必须真的进入 usePanelData 的 deps —— 只订阅不使用不会触发重取。
+    expect(PANEL).toMatch(/'panelStatus', \{\}, \[rosterTick, accountVersion\]/)
+  })
+
+  it('代际由宿主广播驱动（三条切换路径都广播）', () => {
+    const INDEX = readFileSync(
+      '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/client/index.tsx',
+      'utf8',
+    )
+    expect(INDEX).toContain("remote.$on('llm/adapters-updated'")
+    expect(INDEX).toContain('bumpAccountEpoch()')
+  })
+
+  it('代际模块自述要求面板订阅（与实现一致）', () => {
+    expect(EPOCH).toContain('管理面板各页')
+  })
+})

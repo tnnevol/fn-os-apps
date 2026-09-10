@@ -414,6 +414,17 @@ export class CodeBuddyAdapter extends LlmAdapter {
           ...clientIdentityHeaders(),
           'content-type': 'application/json',
           'accept': 'text/event-stream',
+          // **不能**改用 `attributionHeaders()`。DSH 的契约要求适配器每个请求都带
+          // harness 归因（`deepseek-harness/x.y.z (+url)`），但那与本服务的要求
+          // 直接冲突——实测（真实凭据）：
+          //   UA = CLI/2.148.0 CodeBuddy/2.148.0        → HTTP 200
+          //   UA = deepseek-harness/0.1.2-rc.1 (+url)   → HTTP 400 code=11128
+          //   UA = harness/... CLI/...（拼接）          → HTTP 400
+          //   UA = CLI/... harness/...（追加）          → HTTP 400
+          // 即：UA 里只要出现 harness 标识就被安全策略拦截。该字段在这里是**服务端
+          // 的准入门槛**而非归因信息，因此必须保持 CodeBuddy 客户端签名。
+          // harness 侧的归因由 `X-IDE-*` 之外的本插件语义承担；若上游调整该策略，
+          // 这里需要与 DSH 的 attribution 契约重新对齐。
           'user-agent': `CLI/${CODEBUDDY_CLI_VERSION} CodeBuddy/${CODEBUDDY_CLI_VERSION}`,
         },
         body: payload,

@@ -68,6 +68,7 @@ import {
 } from '../contracts/constants.ts'
 import { formatResetDate, formatUpdatedAt } from './format-time.ts'
 import { identityRows, type AccountIdentityDetail } from './identity.ts'
+import { accountEpoch, subscribeAccountEpoch } from './account-epoch.ts'
 import { DEFAULT_TOKEN_RANGE, optionsFor, rangeLabel as rangeLabelOf, type TokenRangeKey } from './token-range.ts'
 import { CodeBuddyLogo } from '../components/CodeBuddyLogo.tsx'
 import { AddAccountModal, startLoginPolling } from '../components/AddAccountModal.tsx'
@@ -958,7 +959,13 @@ function AccountsPage({
   onAddAccount: () => void
   onCheckinChange: () => void
 }): ReactNode {
-  const { data, loading, reload } = usePanelData<{ accounts: PanelAccountRow[], currentId?: string }>(rpc, 'panelStatus', {}, [rosterTick])
+  // 同时依赖账号代际（accountEpoch）：设置页切换、或宿主自动切换当前账号时，
+  // 面板不会重挂载（keep-alive），只有代际变化才能让它重取 —— 否则「当前账号」
+  // 徽标与「设为当前账号」的可用状态会停留旧值，直到手动刷新。
+  const accountVersion = useSyncExternalStore(subscribeAccountEpoch, accountEpoch, accountEpoch)
+  const { data, loading, reload } = usePanelData<{ accounts: PanelAccountRow[], currentId?: string }>(
+    rpc, 'panelStatus', {}, [rosterTick, accountVersion],
+  )
   const [busyId, setBusyId] = useState<string | undefined>(undefined)
   // 资源包弹框目标账号。
   const [resourceTarget, setResourceTarget] = useState<PanelAccountRow | undefined>(undefined)
