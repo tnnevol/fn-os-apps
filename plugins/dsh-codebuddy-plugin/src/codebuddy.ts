@@ -13,12 +13,15 @@
 
 import {
   AUTH_PENDING_CODE,
+  CODEBUDDY_CLIENT_PLATFORMS,
+  CODEBUDDY_CLIENT_VERSIONS,
+  CODEBUDDY_DEFAULT_CLIENT,
   CODEBUDDY_IDE_VERSION,
-  CODEBUDDY_LOGIN_VERSION,
   CODEBUDDY_PLUGIN_PREFIX,
   LOGIN_POLL_INTERVAL_MS,
   LOGIN_TIMEOUT_MS,
 } from './constants.ts'
+import type { CodeBuddyClientId } from './constants.ts'
 import type {
   Account,
   AccountResponse,
@@ -60,30 +63,47 @@ function delay(ms: number, signal?: AbortSignal): Promise<void> {
 }
 
 /**
- * Stamp the client `version` query parameter onto a CodeBuddy login URL.
+ * Stamp the client `version` query parameter onto a login URL.
  *
  * The auth-state service returns `authUrl` already carrying `platform` and
  * the server-issued `state`; the version is the client's own product version,
- * appended the same way the CodeBuddy client does before opening the page.
+ * appended the same way the official client does before opening the page.
+ *
+ * 版本按客户端取自 {@link CODEBUDDY_CLIENT_VERSIONS}，都是固定发布版本：
+ * 例如 WorkBuddy 是 5.5.4。不要写成随机值——服务端以此归因客户端版本。
+ *
  * @param authUrl - the server-provided login URL.
+ * @param client - which client identity is signing in.
  * @returns the URL with the fixed `version` parameter set.
  */
-function withLoginVersion(authUrl: string): string {
+function withLoginVersion(authUrl: string, client: CodeBuddyClientId = CODEBUDDY_DEFAULT_CLIENT): string {
   const url = new URL(authUrl)
-  url.searchParams.set('version', CODEBUDDY_LOGIN_VERSION)
+  url.searchParams.set('version', CODEBUDDY_CLIENT_VERSIONS[client])
   return url.toString()
 }
 
 /**
  * Start a browser-login handshake.
+ *
+ * 服务端按 `platform` 区分客户端并据此生成登录页；实测同一个
+ * `/plugin/auth/state` 端点对 `CLI` 与 `workbuddy` 都返回可用的 `state` 与
+ * `authUrl`，返回的 URL 会带上调用时所用的 platform，因此两个客户端共用这一
+ * 套握手，只是参数不同。
+ *
  * @param endpoint - the service root of the environment being signed in to.
+ * @param client - which client identity is signing in (`cli` / `workbuddy`).
  * @param signal - optional cancellation.
  * @returns the handshake state and the URL the user must open (with the
- *   client `version` parameter stamped, per the CodeBuddy client protocol).
+ *   client `version` parameter stamped, per the client protocol).
  * @throws Error when the service refuses or answers an unusable body.
  */
-export async function requestAuthState(endpoint: string, signal?: AbortSignal): Promise<AuthState> {
-  const response = await fetch(`${endpoint}/v2${CODEBUDDY_PLUGIN_PREFIX}/auth/state?platform=CLI`, {
+export async function requestAuthState(
+  endpoint: string,
+  client: CodeBuddyClientId = CODEBUDDY_DEFAULT_CLIENT,
+  signal?: AbortSignal,
+): Promise<AuthState> {
+  const platform = CODEBUDDY_CLIENT_PLATFORMS[client]
+  const response = await fetch(`${endpoint}/v2${CODEBUDDY_PLUGIN_PREFIX}/auth/state?platform=${encodeURIComponent(platform)}`, {
     method: 'POST',
     headers: {
       'Accept': 'application/json',
@@ -100,7 +120,7 @@ export async function requestAuthState(endpoint: string, signal?: AbortSignal): 
   if (body.code !== 0 || body.data === undefined) {
     throw new Error(`CodeBuddy auth state request failed: ${body.code} - ${body.msg}`)
   }
-  return { ...body.data, authUrl: withLoginVersion(body.data.authUrl) }
+  return { ...body.data, authUrl: withLoginVersion(body.data.authUrl, client) }
 }
 
 /**

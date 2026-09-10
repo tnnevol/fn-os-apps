@@ -18,6 +18,14 @@ import {
   DshSwitch,
 } from '@tnnevol/dsh-semi-ui'
 import { CODEBUDDY_AUTH_CHANNEL } from '../client/constants.ts'
+import {
+  CODEBUDDY_CLIENT_IDS,
+  CODEBUDDY_CLIENT_LABELS,
+  CODEBUDDY_CLIENT_VERSIONS,
+  CODEBUDDY_DEFAULT_CLIENT,
+  normalizeClientId,
+  type CodeBuddyClientId,
+} from '../constants.ts'
 import type { CodeBuddyLocaleKey } from '../client/locales.ts'
 import type { ConnectionRpc, LoginPoll, LoginStart, RpcResult } from '../client/rpc.ts'
 import { describeRpcError } from '../client/rpc.ts'
@@ -38,6 +46,8 @@ const POLL_DEADLINE_MS = 10 * 60 * 1000
 export interface AddAccountOptions {
   /** Local display label; omitted → falls back to nickname. */
   label?: string
+  /** 客户端身份：决定登录页与后续请求所用的服务地址。 */
+  client?: CodeBuddyClientId
   /** Network environment id; defaults to the plugin default. */
   environment: string
   /** Explicit service root, required for cloudhosted/selfhosted. */
@@ -71,6 +81,7 @@ export function AddAccountModal({
   submitLabel,
 }: AddAccountModalProps): React.ReactElement | null {
   const [note, setNote] = useState(initial?.label ?? '')
+  const [client, setClient] = useState<CodeBuddyClientId>(initial?.client ?? CODEBUDDY_DEFAULT_CLIENT)
   const [environment, setEnvironment] = useState<string>(initial?.environment ?? CODEBUDDY_DEFAULT_ENVIRONMENT)
   const [endpoint, setEndpoint] = useState(initial?.endpoint ?? '')
   const [enterprise, setEnterprise] = useState(initial?.enterprise ?? false)
@@ -84,6 +95,7 @@ export function AddAccountModal({
     setLastOpen(open)
     if (open) {
       setNote(initial?.label ?? '')
+      setClient(initial?.client ?? CODEBUDDY_DEFAULT_CLIENT)
       setEnvironment(initial?.environment ?? CODEBUDDY_DEFAULT_ENVIRONMENT)
       setEndpoint(initial?.endpoint ?? '')
       setEnterprise(initial?.enterprise ?? false)
@@ -95,10 +107,16 @@ export function AddAccountModal({
   const submit = async (): Promise<void> => {
     if (submitting) return
     setSubmitting(true)
+    // 只把对当前客户端有意义的字段发出去：WorkBuddy 的端点由客户端身份决定，
+    // 若仍带上 environment，会被原样存进账号条目，日后误导排查。
+    const cliOnly = client === 'cli'
     const options = {
       ...(note.trim().length > 0 ? { label: note.trim() } : {}),
-      environment,
-      ...(environment === 'cloudhosted' || environment === 'selfhosted' ? { endpoint: endpoint.trim() } : {}),
+      client,
+      ...cliOnly ? { environment } : {},
+      ...cliOnly && (environment === 'cloudhosted' || environment === 'selfhosted')
+        ? { endpoint: endpoint.trim() }
+        : {},
     }
     const result = await rpc.call<LoginStart>(CODEBUDDY_AUTH_CHANNEL, 'startLogin', options)
     setSubmitting(false)
@@ -138,18 +156,38 @@ export function AddAccountModal({
               maxLength={30}
             />
           </DshForm.Slot>
+          {/* 客户端选择放在环境之前：它决定登录页与请求所用的服务地址
+              （WorkBuddy 走 workbuddy.cn），环境只在 CLI 客户端下生效。 */}
           <DshForm.Slot
-            label={<PreferenceLabel title={t('environmentLabel')} description={t('environmentDesc')} />}
+            label={<PreferenceLabel title={t('clientLabel')} description={t('clientDesc')} />}
           >
             <DshSelect
               className="dsh-codebuddy-env-select"
-              value={environment}
-              onChange={(value: string | number | string[]) => { setEnvironment(String(value)) }}
-              aria-label={t('environmentLabel')}
-              optionList={CODEBUDDY_ENVIRONMENTS.map(env => ({ value: env, label: CODEBUDDY_ENVIRONMENT_LABELS[env] }))}
+              value={client}
+              onChange={(value: string | number | string[]) => { setClient(normalizeClientId(value)) }}
+              aria-label={t('clientLabel')}
+              optionList={CODEBUDDY_CLIENT_IDS.map(id => ({
+                value: id,
+                label: `${CODEBUDDY_CLIENT_LABELS[id]} · v${CODEBUDDY_CLIENT_VERSIONS[id]}`,
+              }))}
             />
           </DshForm.Slot>
-          {environment === 'cloudhosted' || environment === 'selfhosted' ? (
+          {/* 环境只对 CLI 客户端有效：WorkBuddy 固定访问自己的服务地址，与环境
+              无关。此时隐藏该选择器——留一个改了也没有作用的控件会误导用户。 */}
+          {client === 'cli' ? (
+            <DshForm.Slot
+              label={<PreferenceLabel title={t('environmentLabel')} description={t('environmentDesc')} />}
+            >
+              <DshSelect
+                className="dsh-codebuddy-env-select"
+                value={environment}
+                onChange={(value: string | number | string[]) => { setEnvironment(String(value)) }}
+                aria-label={t('environmentLabel')}
+                optionList={CODEBUDDY_ENVIRONMENTS.map(env => ({ value: env, label: CODEBUDDY_ENVIRONMENT_LABELS[env] }))}
+              />
+            </DshForm.Slot>
+          ) : null}
+          {client === 'cli' && (environment === 'cloudhosted' || environment === 'selfhosted') ? (
             <DshForm.Slot
               label={<PreferenceLabel title={t('endpointLabel')} description={t('endpointDesc')} />}
             >

@@ -13,8 +13,12 @@
 import type { Context } from '@deepseek-ai/cordis'
 import type { CodeBuddyIdentity } from './codebuddy.ts'
 import {
+  CODEBUDDY_CLIENT_ENDPOINTS,
+  CODEBUDDY_CLIENT_VERSIONS,
   CODEBUDDY_DEFAULT_ENVIRONMENT,
   CODEBUDDY_ENVIRONMENT_ENDPOINTS,
+  normalizeClientId,
+  type CodeBuddyClientId,
   type CodeBuddyEnvironment,
 } from './constants.ts'
 
@@ -809,16 +813,26 @@ export class CodeBuddyAuthService {
       case 'status': return ok(await this.status())
       case 'startLogin': {
         const raw = typeof payload === 'object' && payload !== null
-          ? payload as { label?: unknown, environment?: unknown, endpoint?: unknown, activate?: unknown }
+          ? payload as {
+            label?: unknown
+            environment?: unknown
+            endpoint?: unknown
+            activate?: unknown
+            client?: unknown
+          }
           : undefined
         const label = typeof raw?.label === 'string' ? raw.label : undefined
         const environment = typeof raw?.environment === 'string' ? raw.environment : undefined
         const endpoint = typeof raw?.endpoint === 'string' ? raw.endpoint : undefined
         const activate = raw?.activate === undefined ? true : raw.activate === true
+        // client 走 normalizeClientId 收敛：非法值一律回退 CLI，避免一个拼错的
+        // 客户端名把端点解析带到错误的服务上。
+        const client = raw?.client === undefined ? undefined : normalizeClientId(raw.client)
         return ok(await this.startLogin({
           ...(label === undefined ? {} : { label }),
           ...(environment === undefined ? {} : { environment }),
           ...(endpoint === undefined ? {} : { endpoint }),
+          ...(client === undefined ? {} : { client }),
           activate,
         }))
       }
@@ -1091,22 +1105,32 @@ export class CodeBuddyAuthService {
    *   service root for cloudhosted/selfhosted).
    * @returns the URL the user must open.
    */
-  async startLogin(options: { label?: string, environment?: string, endpoint?: string, activate?: boolean } = {}): Promise<CodeBuddyLoginStart> {
+  async startLogin(options: {
+    label?: string
+    environment?: string
+    endpoint?: string
+    activate?: boolean
+    client?: CodeBuddyClientId
+  } = {}): Promise<CodeBuddyLoginStart> {
+    const client = normalizeClientId(options.client)
     const environment = options.environment?.trim().toLowerCase()
     // cloudhosted/selfhosted have no default endpoint: an explicit one is
     // required, otherwise the handshake would go to the wrong host.
     const explicitEndpoint = options.endpoint?.trim().replace(/\/+$/, '')
     const defaultEndpoint = CODEBUDDY_ENVIRONMENT_ENDPOINTS[CODEBUDDY_DEFAULT_ENVIRONMENT as Exclude<CodeBuddyEnvironment, 'cloudhosted' | 'selfhosted'>]
+    // 显式端点优先；WorkBuddy 客户端固定走自己的服务地址（与环境无关）。
     const endpoint = explicitEndpoint !== undefined && explicitEndpoint.length > 0
       ? explicitEndpoint
-      : environment !== undefined && environment in CODEBUDDY_ENVIRONMENT_ENDPOINTS
-        ? CODEBUDDY_ENVIRONMENT_ENDPOINTS[environment as Exclude<CodeBuddyEnvironment, 'cloudhosted' | 'selfhosted'>]
-        : defaultEndpoint
-    const handshake = await requestAuthState(endpoint)
+      : client !== 'cli'
+        ? CODEBUDDY_CLIENT_ENDPOINTS[client]
+        : environment !== undefined && environment in CODEBUDDY_ENVIRONMENT_ENDPOINTS
+          ? CODEBUDDY_ENVIRONMENT_ENDPOINTS[environment as Exclude<CodeBuddyEnvironment, 'cloudhosted' | 'selfhosted'>]
+          : defaultEndpoint
+    const handshake = await requestAuthState(endpoint, client)
     const pending: PendingLogin = {
       state: handshake.state,
       authUrl: handshake.authUrl,
-      promise: this.runLogin(endpoint, handshake.state, options),
+      promise: this.runLogin(endpoint, handshake.state, { ...options, client }),
     }
     this.pending.set(handshake.state, pending)
     // Reap the entry once the handshake settles either way, so the table does
@@ -1186,7 +1210,13 @@ export class CodeBuddyAuthService {
   private async runLogin(
     endpoint: string,
     state: string,
-    options: { label?: string, environment?: string, endpoint?: string, activate?: boolean } = {},
+    options: {
+      label?: string
+      environment?: string
+      endpoint?: string
+      activate?: boolean
+      client?: CodeBuddyClientId
+    } = {},
   ): Promise<CodeBuddyAccountEntry | undefined> {
     try {
       const token = await pollAuthToken(endpoint, state)
@@ -1216,6 +1246,10 @@ export class CodeBuddyAuthService {
               ? { label: existing.account.label }
               : {}),
           },
+          // 客户端标识以本次登录为准：同一 uid 先用 CLI 登录、后用 WorkBuddy
+          // 登录时，端点与版本都必须跟着换，否则会用错平面发请求。
+          ...fresh.client === undefined ? {} : { client: fresh.client },
+          ...fresh.clientVersion === undefined ? {} : { clientVersion: fresh.clientVersion },
         }
         const wasActive = stored.activeId === existing.id
         next = {
@@ -1245,7 +1279,7 @@ export class CodeBuddyAuthService {
    * 4 个账号的面板刷新要 400ms 以上，而并发只需最慢那一个账号的时间。
    * 结果按账号存储顺序回填，卡片顺序不会随响应快慢抖动。
    */
-  private async forEachAccount<T>(fn: (item: { id: string, name: string, environment: string | undefined, endpoint: string, identity: CodeBuddyIdentity, expired: boolean, enterprise: boolean }) => Promise<T>, signal?: AbortSignal): Promise<T[]> {
+  private async forEachAccount<T>(fn: (item: { id: string, name: string, environment: string | undefined, endpoint: string, identity: CodeBuddyIdentity, expired: boolean, enterprise: boolean, client: CodeBuddyClientId, clientVersion: string }) => Promise<T>, signal?: AbortSignal): Promise<T[]> {
     const storage = await loadStorage()
     if (storage === undefined) return []
     const slots: Array<T | undefined> = new Array<T | undefined>(storage.accounts.length).fill(undefined)
@@ -1263,6 +1297,9 @@ export class CodeBuddyAuthService {
           identity,
           expired: entry.auth.refreshExpiresAt <= Date.now(),
           enterprise: identity.enterpriseId !== undefined,
+          // 客户端身份与其固定版本：面板据此展示标识，用户可分辨账号来源。
+          client: normalizeClientId(entry.client),
+          clientVersion: entry.clientVersion ?? CODEBUDDY_CLIENT_VERSIONS[normalizeClientId(entry.client)],
         })
       } catch {
         // 单账号失败跳过，不阻断其他账号；该位置保持 undefined 并被过滤。
@@ -1311,6 +1348,8 @@ export class CodeBuddyAuthService {
         name: item.name,
         nickname: item.name,
         environment: item.environment,
+        client: item.client,
+        clientVersion: item.clientVersion,
         active: item.id === activeId,
         expired: item.expired,
         enterprise: item.enterprise,

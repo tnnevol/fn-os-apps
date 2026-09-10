@@ -105,16 +105,55 @@ export const CODEBUDDY_IDE_VERSION = '4.9.8'
 export const CODEBUDDY_CLI_VERSION = '2.145.0'
 
 /**
- * Client version stamped on the browser-login page URL as `version`.
+ * 登录/请求时声明的客户端身份。
  *
- * The auth-state service returns a login URL that already carries
- * `platform` and the server-issued `state`; the CodeBuddy client then appends
- * its own product version (`openAuthUrl` in the codebuddy-code CLI does
- * `searchParams.set('version', pluginVersion)`). The value is fixed per
- * release, never random — this mirrors the current CodeBuddy CLI release
- * (2.145.0) the plugin presents itself as on this channel.
+ * 服务端用 `platform` 参数（`/plugin/auth/state?platform=<id>`）区分客户端类型，
+ * 并把该值原样回填进 `authUrl`；不同客户端的登录页与用量平面都可能不同：
+ *
+ * - `cli`：CodeBuddy CLI（`platform=CLI`），走 `CODEBUDDY_ENVIRONMENT_ENDPOINTS`
+ *   定义的服务地址。
+ * - `workbuddy`：WorkBuddy 客户端（`platform=workbuddy`），登录与计费都在
+ *   `www.workbuddy.cn`。
+ *
+ * 两者的**版本号都是产品发布版本、固定不变**（不是随机值也不是每次会话新生成）：
+ * 服务端以此把请求归因到具体客户端版本，随机化会让归因失真。
  */
-export const CODEBUDDY_LOGIN_VERSION = '2.145.0'
+export type CodeBuddyClientId = 'cli' | 'workbuddy'
+
+/** 客户端字典：id → `platform` 查询参数取值（服务端原样回填 authUrl）。 */
+export const CODEBUDDY_CLIENT_PLATFORMS: Readonly<Record<CodeBuddyClientId, string>> = {
+  cli: 'CLI',
+  workbuddy: 'workbuddy',
+}
+
+/** 客户端字典：id → 固定版本号。 */
+export const CODEBUDDY_CLIENT_VERSIONS: Readonly<Record<CodeBuddyClientId, string>> = {
+  cli: CODEBUDDY_CLI_VERSION,
+  workbuddy: '5.5.4',
+}
+
+/** 客户端字典：id → 登录页/计费所在的服务地址。 */
+export const CODEBUDDY_CLIENT_ENDPOINTS: Readonly<Record<CodeBuddyClientId, string>> = {
+  cli: CODEBUDDY_ENDPOINT_INTERNAL,
+  workbuddy: 'https://www.workbuddy.cn',
+}
+
+/** 客户端字典：id → 面板展示名。 */
+export const CODEBUDDY_CLIENT_LABELS: Readonly<Record<CodeBuddyClientId, string>> = {
+  cli: 'CodeBuddy CLI',
+  workbuddy: 'WorkBuddy',
+}
+
+/** 全部客户端 id，供选择器按稳定顺序枚举。 */
+export const CODEBUDDY_CLIENT_IDS: readonly CodeBuddyClientId[] = ['cli', 'workbuddy']
+
+/** 默认客户端：既有账号都是 CLI，保持向后兼容。 */
+export const CODEBUDDY_DEFAULT_CLIENT: CodeBuddyClientId = 'cli'
+
+/** 把任意输入收敛为合法客户端 id（历史数据缺字段时回退到 CLI）。 */
+export function normalizeClientId(value: unknown): CodeBuddyClientId {
+  return value === 'workbuddy' ? 'workbuddy' : 'cli'
+}
 
 /**
  * Context capacity assumed for a model the catalog does not describe at all.

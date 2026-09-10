@@ -135,6 +135,15 @@
   color: var(--dsw-alias-label-primary);
 }
 
+/* 客户端标识：账号用哪个客户端登录（CLI / WorkBuddy）及其固定版本。
+   名称可能较长（如 "CodeBuddy CLI · v2.145.0"），因此不参与压缩、也不换行，
+   空间不足时优先压缩账号名（它的 ellipsis 已就绪）。 */
+.dsh-codebuddy-client-tag {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
 .dsh-codebuddy-account-body {
   display: flex;
   flex-direction: column;

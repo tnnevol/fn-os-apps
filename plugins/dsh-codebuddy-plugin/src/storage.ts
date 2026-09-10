@@ -19,7 +19,15 @@ import { promises as fs } from 'node:fs'
 import { dirname } from 'node:path'
 import { randomBytes, randomUUID } from 'node:crypto'
 import { dshHomePath } from '@deepseek-ai/dsh-home-paths'
-import { CODEBUDDY_ENDPOINT, CODEBUDDY_ENVIRONMENT_ENDPOINTS, type CodeBuddyEnvironment } from './constants.ts'
+import {
+  CODEBUDDY_CLIENT_ENDPOINTS,
+  CODEBUDDY_CLIENT_VERSIONS,
+  CODEBUDDY_ENDPOINT,
+  CODEBUDDY_ENVIRONMENT_ENDPOINTS,
+  normalizeClientId,
+  type CodeBuddyClientId,
+  type CodeBuddyEnvironment,
+} from './constants.ts'
 import type { Account, AuthToken } from './types.ts'
 
 /** One stored account: credential facts plus the account facts they were issued for. */
@@ -61,6 +69,20 @@ export interface CodeBuddyAccountEntry {
    * enterprise's own address). Absent means "use the environment default".
    */
   endpoint?: string
+  /**
+   * 登录时声明的客户端身份（`cli` / `workbuddy`）。
+   *
+   * 决定登录页与用量平面：WorkBuddy 走 `www.workbuddy.cn`，CLI 走环境默认地址。
+   * 缺省视为 `cli`——历史条目在建此字段之前全部由 CLI 登录产生。
+   */
+  client?: CodeBuddyClientId
+  /**
+   * 该客户端上报的固定版本号（CLI 2.145.0 / WorkBuddy 5.5.4）。
+   *
+   * 存下来是为了让面板展示与实际请求一致：版本是产品发布版本、不随时间变化，
+   * 因此它是账号属性而不是运行时随机值。
+   */
+  clientVersion?: string
 }
 
 /**
@@ -101,11 +123,13 @@ export interface LegacyCodeBuddyStorage {
 export function buildAccountEntry(
   token: AuthToken,
   account: Account,
-  options: { label?: string, environment?: string, endpoint?: string } = {},
+  options: { label?: string, environment?: string, endpoint?: string, client?: CodeBuddyClientId } = {},
 ): CodeBuddyAccountEntry {
   const trimmed = options.label?.trim()
   const environment = options.environment?.trim()
   const endpoint = options.endpoint?.trim().replace(/\/+$/, '')
+  // 客户端身份与版本都是账号的稳定属性：版本取自固定映射，不随机生成。
+  const client = normalizeClientId(options.client)
   return {
     id: randomUUID(),
     auth: {
@@ -129,6 +153,8 @@ export function buildAccountEntry(
     },
     ...environment === undefined || environment.length === 0 ? {} : { environment },
     ...endpoint === undefined || endpoint.length === 0 ? {} : { endpoint },
+    client,
+    clientVersion: CODEBUDDY_CLIENT_VERSIONS[client],
   }
 }
 
@@ -154,6 +180,10 @@ export function buildStorage(token: AuthToken, account: Account): CodeBuddyAccou
 export function resolveEntryEndpoint(entry: CodeBuddyAccountEntry): string {
   const explicit = entry.endpoint?.trim().replace(/\/+$/, '')
   if (explicit !== undefined && explicit.length > 0) return explicit
+  // WorkBuddy 账号的登录与计费都在 workbuddy.cn，与环境无关：环境端点表里没有
+  // 它，若按环境解析会把请求打到 CodeBuddy 的地址上（凭据不被承认）。
+  const client = normalizeClientId(entry.client)
+  if (client !== 'cli') return CODEBUDDY_CLIENT_ENDPOINTS[client]
   const env = entry.environment?.trim().toLowerCase() as CodeBuddyEnvironment | undefined
   if (env !== undefined && env in CODEBUDDY_ENVIRONMENT_ENDPOINTS) {
     return CODEBUDDY_ENVIRONMENT_ENDPOINTS[env as Exclude<CodeBuddyEnvironment, 'cloudhosted' | 'selfhosted'>]

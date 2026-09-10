@@ -61,6 +61,12 @@ import type { ClassifiedResource, LiveResource, ResourceLifecycle } from './reso
 import { TokenStatsStore } from './token-stats-store.ts'
 import { activityCellSize } from './activity-grid.ts'
 import { sortSegmentsByValueDesc } from './segment-bar.ts'
+import {
+  CODEBUDDY_CLIENT_LABELS,
+  CODEBUDDY_CLIENT_VERSIONS,
+  normalizeClientId,
+  type CodeBuddyClientId,
+} from '../constants.ts'
 import { formatUpdatedAt } from './format-time.ts'
 import { DEFAULT_TOKEN_RANGE, optionsFor, rangeLabel as rangeLabelOf, type TokenRangeKey } from './token-range.ts'
 import { CodeBuddyLogo } from '../components/CodeBuddyLogo.tsx'
@@ -77,6 +83,10 @@ interface PanelAccountRow {
   name: string
   nickname: string
   environment?: string
+  /** 登录该账号所用客户端（`cli` / `workbuddy`）；历史条目缺省视为 cli。 */
+  client?: CodeBuddyClientId
+  /** 该客户端的固定版本号（CLI 2.145.0 / WorkBuddy 5.5.4）。 */
+  clientVersion?: string
   active: boolean
   expired: boolean
   /** 企业账号：不支持签到（隐藏签到入口、跳过签到与自动签到）。 */
@@ -433,6 +443,9 @@ interface AccountCardProps {
 
 function AccountCard({ row, labels, autoCheckin, resources, busy, onCheckin, onSwitch, onDelete, onRename, onOpenResources }: AccountCardProps): ReactNode {
   const env = row.environment
+  // 历史条目没有 client 字段（那时只有 CLI），缺省按 cli 展示。
+  const clientId = normalizeClientId(row.client)
+  const clientVersion = row.clientVersion ?? CODEBUDDY_CLIENT_VERSIONS[clientId]
   const name = row.nickname
   const { active, offline, checkedIn, unchecked, checkin, remaining, switchLabel, deleteLabel, renameLabel, noBalanceHint } = labels
   const totalPct = row.totalCapacity > 0 ? Math.max(0, Math.min(100, (row.totalRemaining / row.totalCapacity) * 100)) : null
@@ -530,6 +543,14 @@ function AccountCard({ row, labels, autoCheckin, resources, busy, onCheckin, onS
             </DshTypography.Text>
             {row.active ? <DshTag size="small" type="solid" color="green">{active}</DshTag> : null}
             {row.expired ? <DshTag size="small" type="light" color="orange">{offline}</DshTag> : null}
+            {/* 客户端标识：账号用哪个客户端登录（CLI / WorkBuddy），并带上其
+                固定版本号。用户据此分辨账号来源——两个客户端的登录页与用量
+                平面不同，出问题时这是第一个要看的信息。 */}
+            <DshTooltip content={`${CODEBUDDY_CLIENT_LABELS[clientId]} · v${clientVersion}`}>
+              <DshTag size="small" type="light" className="dsh-codebuddy-client-tag">
+                {CODEBUDDY_CLIENT_LABELS[clientId]} · v{clientVersion}
+              </DshTag>
+            </DshTooltip>
             {env !== undefined
               ? <DshTag size="small" type="light">{CODEBUDDY_ENVIRONMENT_LABELS[env as keyof typeof CODEBUDDY_ENVIRONMENT_LABELS] ?? env}</DshTag>
               : null}
