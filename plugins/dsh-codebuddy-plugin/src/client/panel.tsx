@@ -41,6 +41,8 @@ import {
   DshTabs,
   DshTag,
   DshToast,
+  DshTooltip,
+  DshTypography,
 } from '@tnnevol/dsh-semi-ui'
 import { CODEBUDDY_AUTH_CHANNEL } from './constants.ts'
 import { CODEBUDDY_ENVIRONMENT_LABELS } from '../constants.ts'
@@ -170,7 +172,9 @@ function SegmentBar({ segments }: { segments: Array<{ label: string, value: numb
     <div className="dsh-codebuddy-panel-segment-wrap">
       <div className="dsh-codebuddy-panel-segment-bar" role="img" aria-label={segments.map(segment => `${segment.label} ${compact(segment.value)}`).join('，')}>
         {segments.map(segment => (
-          <span key={segment.label} title={`${segment.label}: ${compact(segment.value)}`} style={{ width: total > 0 ? `${(Math.max(0, segment.value) / total) * 100}%` : '0%', background: segment.color }} />
+          <DshTooltip key={segment.label} content={`${segment.label}: ${compact(segment.value)}`}>
+            <span style={{ width: total > 0 ? `${(Math.max(0, segment.value) / total) * 100}%` : '0%', background: segment.color }} />
+          </DshTooltip>
         ))}
       </div>
       <div className="dsh-codebuddy-panel-segment-legend">
@@ -240,12 +244,16 @@ function AccountCard({ row, labels, autoCheckin, resources, busy, onCheckin, onS
       const hours = Math.floor(left / 3600)
       const minutes = Math.floor((left % 3600) / 60)
       const countdown = hours > 0 ? `${hours}小时${minutes}分` : `${minutes}分`
-      return (
-        <span className="dsh-codebuddy-travel-chip is-traveling" title={travel.locationName ?? undefined}>
+      const chip = (
+        <span className="dsh-codebuddy-travel-chip is-traveling">
           {labels.travel.traveling}
           {left > 0 ? ` · ${labels.travel.arrivesIn}${countdown}` : ''}
         </span>
       )
+      // 地点名可能缺失（尚未派发到具体地点），此时不挂 Tooltip。
+      return travel.locationName === null
+        ? chip
+        : <DshTooltip content={travel.locationName}>{chip}</DshTooltip>
     }
     if (travel.dailyLimitReached) {
       return <span className="dsh-codebuddy-travel-chip is-muted">{labels.travel.dailyLimit}</span>
@@ -308,7 +316,11 @@ function AccountCard({ row, labels, autoCheckin, resources, busy, onCheckin, onS
         <span className="dsh-codebuddy-account-card-avatar" aria-hidden>{name.charAt(0).toUpperCase()}</span>
         <div className="dsh-codebuddy-account-card-main">
           <div className="dsh-codebuddy-account-card-title-row">
-            <span className="dsh-codebuddy-account-name" title={name}>{name}</span>
+            {/* 名称可能很长：Typography.Text 负责截断，showTooltip 在真正溢出时
+                才挂 Tooltip，短名称不会弹出多余气泡。 */}
+            <DshTypography.Text className="dsh-codebuddy-account-name" ellipsis={{ showTooltip: true }}>
+              {name}
+            </DshTypography.Text>
             {row.active ? <DshTag size="small" type="solid" color="green">{active}</DshTag> : null}
             {row.expired ? <DshTag size="small" type="light" color="orange">{offline}</DshTag> : null}
             {env !== undefined
@@ -374,7 +386,9 @@ function AccountCard({ row, labels, autoCheckin, resources, busy, onCheckin, onS
                   <div className="dsh-codebuddy-account-card-resources">
                     {cardResources.map((r) => (
                       <div key={r.key} className={`dsh-codebuddy-credit-resource-row is-${r.lifecycle}`}>
-                        <span className="dsh-codebuddy-credit-resource-name" title={r.name}>{r.name}</span>
+                        <DshTypography.Text className="dsh-codebuddy-credit-resource-name" ellipsis={{ showTooltip: true }}>
+                          {r.name}
+                        </DshTypography.Text>
                         <span className="dsh-codebuddy-credit-resource-meta">
                           {r.remaining !== null ? formatCredit(r.remaining) : '—'} / {r.total !== null ? formatCredit(r.total) : '∞'}
                           {r.resetsAt !== null ? ` · ${r.resetsAt}` : ''}
@@ -429,7 +443,9 @@ function ResourceRow({ item, t }: { item: ClassifiedResource, t: Translate }): R
       <span className="dsh-codebuddy-resource-bar" aria-hidden />
       <div className="dsh-codebuddy-resource-main">
         <div className="dsh-codebuddy-resource-head">
-          <strong title={item.name}>{item.name}</strong>
+          <DshTypography.Text strong className="dsh-codebuddy-resource-name" ellipsis={{ showTooltip: true }}>
+            {item.name}
+          </DshTypography.Text>
           {item.total === null
             ? <span className="dsh-codebuddy-resource-amount">{t('resourceNoQuota')}</span>
             : (
@@ -505,7 +521,9 @@ function AccountResourcesModal({ row, items, t, onClose }: {
         <div className="dsh-codebuddy-resource-dialog">
           <div className="dsh-codebuddy-resource-summary">
             <div>
-              <span className="dsh-codebuddy-resource-account" title={row.nickname}>{row.nickname}</span>
+              <DshTypography.Text className="dsh-codebuddy-resource-account" ellipsis={{ showTooltip: true }}>
+                {row.nickname}
+              </DshTypography.Text>
               {row.active ? <DshTag size="small" type="solid" color="green">{t('accountActive')}</DshTag> : null}
               {row.expired ? <DshTag size="small" type="light" color="orange">{t('accountOffline')}</DshTag> : null}
             </div>
@@ -805,7 +823,7 @@ function BreakdownList({ items, empty }: { items: TokenStats['models'], empty: s
     <div className="dsh-codebuddy-token-breakdown-list">
       {items.slice(0, 6).map((item, index) => (
         <div key={item.name} className="dsh-codebuddy-token-breakdown-row">
-          <div className="dsh-codebuddy-token-breakdown-label"><span className="dsh-codebuddy-token-rank">{String(index + 1).padStart(2, '0')}</span><strong title={item.name}>{item.name}</strong><small>{item.calls} 次</small></div>
+          <div className="dsh-codebuddy-token-breakdown-label"><span className="dsh-codebuddy-token-rank">{String(index + 1).padStart(2, '0')}</span><DshTypography.Text strong className="dsh-codebuddy-token-breakdown-name" ellipsis={{ showTooltip: true }}>{item.name}</DshTypography.Text><small>{item.calls} 次</small></div>
           <div className="dsh-codebuddy-token-breakdown-track"><i style={{ width: `${Math.min(100, item.percent)}%` }} /></div>
           <span className="dsh-codebuddy-token-breakdown-value">{compact(item.total)}</span>
         </div>
@@ -820,7 +838,7 @@ function WorkspaceList({ items, empty }: { items: TokenStats['workspaces'], empt
     <div className="dsh-codebuddy-token-breakdown-list">
       {items.slice(0, 6).map((item, index) => (
         <div key={`${item.name}-${item.path ?? ''}`} className="dsh-codebuddy-token-breakdown-row">
-          <div className="dsh-codebuddy-token-breakdown-label"><span className="dsh-codebuddy-token-rank">{String(index + 1).padStart(2, '0')}</span><strong title={item.path ?? item.name}>{item.name}</strong><small>{item.calls} 次</small></div>
+          <div className="dsh-codebuddy-token-breakdown-label"><span className="dsh-codebuddy-token-rank">{String(index + 1).padStart(2, '0')}</span><DshTypography.Text strong className="dsh-codebuddy-token-breakdown-name" ellipsis={{ showTooltip: { opts: { content: item.path ?? item.name } } }}>{item.name}</DshTypography.Text><small>{item.calls} 次</small></div>
           <div className="dsh-codebuddy-token-breakdown-track"><i style={{ width: `${Math.min(100, item.percent)}%` }} /></div>
           <span className="dsh-codebuddy-token-breakdown-value">{compact(item.total)}</span>
         </div>
@@ -836,7 +854,12 @@ function SessionRanking({ items, empty }: { items: TokenStats['sessions'], empty
       {items.slice(0, 8).map((item, index) => (
         <div key={item.id} className="dsh-codebuddy-token-session-row">
           <span className="dsh-codebuddy-token-rank">{String(index + 1).padStart(2, '0')}</span>
-          <div className="dsh-codebuddy-token-session-main"><strong title={item.title}>{item.title}</strong><small title={item.workspace}>{item.workspace ?? '未指定工作区'} · {item.calls} 次调用</small></div>
+          <div className="dsh-codebuddy-token-session-main">
+            <DshTypography.Text strong className="dsh-codebuddy-token-session-title" ellipsis={{ showTooltip: true }}>{item.title}</DshTypography.Text>
+            <DshTypography.Text size="small" type="tertiary" className="dsh-codebuddy-token-session-workspace" ellipsis={{ showTooltip: true }}>
+              {`${item.workspace ?? '未指定工作区'} · ${item.calls} 次调用`}
+            </DshTypography.Text>
+          </div>
           <div className="dsh-codebuddy-token-session-total"><strong>{compact(item.total)}</strong><small>{item.percent}%</small></div>
         </div>
       ))}
@@ -879,7 +902,11 @@ function ActivityGrid({ activity }: { activity: TokenStats['activity'] }): React
           {cells.map((item, index) => {
             if (item === undefined) return <span key={`padding-${index}`} className="is-padding" aria-hidden="true" />
             const level = item.tokens === 0 ? 0 : Math.min(4, Math.ceil((item.tokens / max) * 4))
-            return <span key={item.day} className={`level-${level}`} title={`${item.day} · ${compact(item.tokens)} · ${item.calls} 次调用`} />
+            return (
+              <DshTooltip key={item.day} content={`${item.day} · ${compact(item.tokens)} · ${item.calls} 次调用`}>
+                <span className={`level-${level}`} />
+              </DshTooltip>
+            )
           })}
         </div>
       </div>
@@ -1298,14 +1325,16 @@ function AutoTravelToggle({ checked, t, onChange }: {
   onChange: (checked: boolean) => void
 }): ReactNode {
   return (
-    <span className="dsh-codebuddy-auto-checkin-toggle" title={t('travelAutoDesc')}>
-      <span className="dsh-codebuddy-muted">{t('travelAuto')}</span>
-      <DshSwitch
-        size="small"
-        checked={checked}
-        onChange={onChange}
-        aria-label={t('travelAuto')}
-      />
-    </span>
+    <DshTooltip content={t('travelAutoDesc')}>
+      <span className="dsh-codebuddy-auto-checkin-toggle">
+        <span className="dsh-codebuddy-muted">{t('travelAuto')}</span>
+        <DshSwitch
+          size="small"
+          checked={checked}
+          onChange={onChange}
+          aria-label={t('travelAuto')}
+        />
+      </span>
+    </DshTooltip>
   )
 }

@@ -64,3 +64,14 @@ CodeBuddy 支持图片输入的模型（`supportsImages`）在插件中以原生
 
 - **会话内联图片**（粘贴/拖拽上传）：DSH 以 `ImageBlock` 交给模型 → 插件原生上传，无需 `read_image`。
 - **`read_image` 工具结果图片**：后续轮次中插件会把工具结果里嵌入的图片一并原生上传给 CodeBuddy，模型可直接看到图片内容而无需重复读图。
+
+## 界面约定
+
+- **悬停提示统一用 Tooltip 组件**，不使用 DOM `title` 属性：原生 `title` 的样式与延迟不受主题控制，且在禁用按钮上不可靠。需要说明禁用原因的按钮用 `DshTooltip` 包裹；不处于该状态时直接渲染按钮，不挂空 Tooltip。
+- **文本截断统一用 `DshTypography.Text` 的 `ellipsis`**，不使用 CSS `text-overflow`：`ellipsis` 开启 `showTooltip` 后，Semi 在**真正溢出时**才挂 Tooltip，短文本不会弹出多余气泡，同时省掉手写的 `nowrap`/`overflow`/`text-overflow` 三件套。
+
+```tsx
+<DshTypography.Text ellipsis={{ showTooltip: true }}>{name}</DshTypography.Text>
+```
+
+  样式类只保留颜色、字号、字重与在 flex/grid 中的收缩能力（`min-width: 0`）。

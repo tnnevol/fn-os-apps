@@ -337,7 +337,9 @@
 .dsh-codebuddy-token-breakdown-list { display: flex; flex-direction: column; gap: 16px; }
 .dsh-codebuddy-token-breakdown-row { display: grid; grid-template-columns: minmax(120px, 1.1fr) minmax(70px, 1fr) auto; align-items: center; gap: 12px; min-width: 0; }
 .dsh-codebuddy-token-breakdown-label { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.dsh-codebuddy-token-breakdown-label strong { overflow: hidden; color: var(--dsw-alias-label-primary); font-size: 12px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+/* 截断由 Typography.Text 的 ellipsis 负责（它自己会加 nowrap/overflow 与
+   Tooltip），样式只保留排版：颜色、字号、字重与在 flex 行里的收缩能力。 */
+.dsh-codebuddy-token-breakdown-name { flex: 1; min-width: 0; color: var(--dsw-alias-label-primary); font-size: 12px; font-weight: 600; }
 .dsh-codebuddy-token-breakdown-label small { flex: 0 0 auto; color: var(--dsw-alias-label-tertiary); font-size: 10px; }
 .dsh-codebuddy-token-rank { flex: 0 0 auto; color: var(--dsw-alias-label-tertiary); font-size: 10px; font-variant-numeric: tabular-nums; }
 .dsh-codebuddy-token-breakdown-track { height: 5px; overflow: hidden; border-radius: 5px; background: var(--dsw-alias-bg-layer-2); }
@@ -348,8 +350,9 @@
 .dsh-codebuddy-token-session-row:first-child { padding-top: 2px; }
 .dsh-codebuddy-token-session-row:last-child { padding-bottom: 2px; border-bottom: 0; }
 .dsh-codebuddy-token-session-main { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-.dsh-codebuddy-token-session-main strong { overflow: hidden; color: var(--dsw-alias-label-primary); font-size: 13px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
-.dsh-codebuddy-token-session-main small { overflow: hidden; color: var(--dsw-alias-label-tertiary); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+/* 列向 flex 的子项需要 min-width:0 才肯收缩，截断交给 Typography.Text。 */
+.dsh-codebuddy-token-session-title { min-width: 0; color: var(--dsw-alias-label-primary); font-size: 13px; font-weight: 600; }
+.dsh-codebuddy-token-session-workspace { min-width: 0; color: var(--dsw-alias-label-tertiary); font-size: 10px; }
 .dsh-codebuddy-token-session-total { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
 .dsh-codebuddy-token-session-total strong { color: var(--dsw-alias-label-primary); font-size: 13px; font-variant-numeric: tabular-nums; }
 .dsh-codebuddy-token-session-total small { color: var(--dsw-alias-label-tertiary); font-size: 10px; }
@@ -414,12 +417,10 @@
 }
 
 .dsh-codebuddy-resource-account {
-  overflow: hidden;
+  min-width: 0;
   color: var(--dsw-alias-label-primary);
   font-size: 15px;
   font-weight: 600;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .dsh-codebuddy-resource-total { display: flex; align-items: baseline; gap: 6px; flex-shrink: 0; }
@@ -473,13 +474,11 @@
 .dsh-codebuddy-resource-main { display: flex; flex-direction: column; gap: 7px; min-width: 0; }
 
 .dsh-codebuddy-resource-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; min-width: 0; }
-.dsh-codebuddy-resource-head strong {
-  overflow: hidden;
+.dsh-codebuddy-resource-name {
+  min-width: 0;
   color: var(--dsw-alias-label-primary);
   font-size: 13px;
   font-weight: 600;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 .dsh-codebuddy-resource-amount {
   flex-shrink: 0;
@@ -490,7 +489,7 @@
 }
 .dsh-codebuddy-resource-amount small { color: var(--dsw-alias-label-tertiary); font-size: 11px; font-weight: 400; }
 
-.dsh-codebuddy-resource-row.is-expired .dsh-codebuddy-resource-head strong,
+.dsh-codebuddy-resource-row.is-expired .dsh-codebuddy-resource-name,
 .dsh-codebuddy-resource-row.is-expired .dsh-codebuddy-resource-amount { color: var(--dsw-alias-label-secondary); }
 
 .dsh-codebuddy-resource-foot {

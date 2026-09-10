@@ -23,6 +23,7 @@ import {
   DshSwitch,
   DshTag,
   DshToast,
+  DshTooltip,
   DshTypography,
 } from '@tnnevol/dsh-semi-ui'
 import { CODEBUDDY_AUTH_CHANNEL } from '../client/constants.ts'
@@ -375,7 +376,8 @@ export function CodeBuddySection({ rpc, t, panelRoute, close }: CodeBuddySection
                         itemKey={account.id}
                         header={(
                           <span className="dsh-codebuddy-account-header">
-                            <span className="dsh-codebuddy-account-name" title={displayName}>{displayName}</span>
+                            {/* 备注名可能很长：Typography.Text 截断，溢出时才挂 Tooltip。 */}
+                            <DshTypography.Text className="dsh-codebuddy-account-name" ellipsis={{ showTooltip: true }}>{displayName}</DshTypography.Text>
                             {account.expired
                               ? <DshTag size="small" type="light" color="orange">{t('accountOffline')}</DshTag>
                               : account.active ? <DshTag size="small" type="solid" color="green">{t('accountActive')}</DshTag> : null}
@@ -432,17 +434,26 @@ export function CodeBuddySection({ rpc, t, panelRoute, close }: CodeBuddySection
                                   ] satisfies Array<{ key: string, value: string } | undefined>).filter((item): item is { key: string, value: string } => item !== undefined)}
                                 />
                                 <div className="dsh-codebuddy-account-remove">
-                                  <DshButton
-                                    htmlType="button"
-                                    size="small"
-                                    type="secondary"
-                                    theme="borderless"
-                                    disabled={(autoSwitch || (balance !== undefined && !balance.usable)) && account.id !== accounts.find(item => item.active)?.id}
-                                    title={balance !== undefined && !balance.usable ? t('noBalanceHint') : ''}
-                                    onClick={() => { void switchAccount(account.id) }}
-                                  >
-                                    {t('selectAccount')}
-                                  </DshButton>
+                                  {/* 无可用余额时按钮被禁用，DOM title 在禁用按钮上
+                                      不可靠（且与 Tooltip 组件不一致）：用 Tooltip 包裹
+                                      说明禁用原因；有余额时直接渲染按钮，不挂 Tooltip。 */}
+                                  {(() => {
+                                    const button = (
+                                      <DshButton
+                                        htmlType="button"
+                                        size="small"
+                                        type="secondary"
+                                        theme="borderless"
+                                        disabled={(autoSwitch || (balance !== undefined && !balance.usable)) && account.id !== accounts.find(item => item.active)?.id}
+                                        onClick={() => { void switchAccount(account.id) }}
+                                      >
+                                        {t('selectAccount')}
+                                      </DshButton>
+                                    )
+                                    return balance !== undefined && !balance.usable
+                                      ? <DshTooltip content={t('noBalanceHint')}>{button}</DshTooltip>
+                                      : button
+                                  })()}
                                   <DshButton
                                     htmlType="button"
                                     size="small"

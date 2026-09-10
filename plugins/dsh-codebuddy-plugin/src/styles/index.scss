@@ -127,7 +127,10 @@
   flex-shrink: 0;
 }
 
+/* 截断由 Typography.Text 的 ellipsis 负责；这里只让名称在 flex 行里可收缩。 */
 .dsh-codebuddy-account-name {
+  flex: 0 1 auto;
+  min-width: 0;
   font-weight: 600;
   color: var(--dsw-alias-label-primary);
 }
@@ -595,11 +598,11 @@
   /* 单套餐账号也要占住两行高度，卡片网格才不会出现参差。 */
   min-height: 18px;
 }
+/* 截断交给 Typography.Text（ellipsis），这里只负责颜色与在 flex 行里可收缩。 */
 .dsh-codebuddy-credit-resource-name {
+  flex: 1;
+  min-width: 0;
   color: var(--dsw-alias-label-secondary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 .dsh-codebuddy-credit-resource-meta {
   color: var(--dsw-alias-label-tertiary);
