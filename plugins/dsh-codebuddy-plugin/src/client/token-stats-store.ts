@@ -28,6 +28,15 @@ export class TokenStatsStore {
   private readonly cache = new Map<number, TokenStatsPayload>()
   private readonly pending = new Map<number, Promise<void>>()
   private readonly failures = new Map<number, string>()
+  /**
+   * 这次加载由哪个面板发起，key 是 `days`。
+   *
+   * 数据按范围共享是对的（同范围只该取一次），但**加载指示不能按范围共享**：
+   * 五个面板默认都停在 30 天，若 loading 只用 range 做键，刷新总览会让另外
+   * 四个同范围的面板一起转圈，看起来仍像全局刷新。因此记下发起者，只有它能
+   * 观察到这次加载。
+   */
+  private readonly loader = new Map<number, symbol>()
   private readonly listeners = new Set<() => void>()
   /** 任何变化都自增；`useSyncExternalStore` 的快照就用它，保证引用稳定。 */
   private version = 0
@@ -46,8 +55,19 @@ export class TokenStatsStore {
     return this.cache.get(days)
   }
 
-  isLoading(days: number): boolean {
-    return this.pending.has(days)
+  /**
+   * 是否处于加载中。
+   *
+   * @param days 范围
+   * @param owner 调用者的面板令牌。传入时仅发起者会看到 loading，用于「各面板
+   *   只为自己发起的刷新显示遮罩」；不传则按范围判断（首次填充时用，此时还没有
+   *   发起者，同范围的面板都该显示等待）。
+   */
+  isLoading(days: number, owner?: symbol): boolean {
+    if (!this.pending.has(days)) return false
+    if (owner === undefined) return true
+    const current = this.loader.get(days)
+    return current === undefined || current === owner
   }
 
   errorOf(days: number): string | undefined {
@@ -60,23 +80,30 @@ export class TokenStatsStore {
     this.start(days)
   }
 
-  /** 强制重新拉取某一范围（该面板的刷新按钮）。 */
-  reload(days: number): void {
-    this.cache.delete(days)
+  /**
+   * 强制重新拉取某一范围（该面板的刷新按钮）。
+   *
+   * **不清缓存**：清掉会让 `get(days)` 返回 undefined，面板据此认为「还没数据」
+   * 而回到初次加载占位——这正是「刷新总览变全局刷新」的原因。保留上一份数据，
+   * 仅在 isLoading 上体现刷新中，面板就能留着内容只叠遮罩。
+   *
+   * @param owner 发起刷新的面板令牌，用于只让该面板显示加载态。
+   */
+  reload(days: number, owner?: symbol): void {
     // 已有在途请求就让它跑完，避免同一范围出现两个并发请求。
     if (this.pending.has(days)) return
-    this.start(days)
+    this.start(days, owner)
   }
 
-  /** 重新拉取所有已知范围（页头刷新）。 */
+  /** 重新拉取所有已知范围（页头刷新）。语义同 `reload`：保留旧数据。 */
   reloadAll(): void {
     const known = new Set([...this.cache.keys(), ...this.pending.keys()])
-    this.cache.clear()
     for (const days of known) if (!this.pending.has(days)) this.start(days)
     this.bump()
   }
 
-  private start(days: number): void {
+  private start(days: number, owner?: symbol): void {
+    if (owner !== undefined) this.loader.set(days, owner)
     const task = this.rpc.call<TokenStatsPayload>(CODEBUDDY_AUTH_CHANNEL, 'tokenStats', { days })
       .then((result) => {
         if (result.ok) {
@@ -89,6 +116,7 @@ export class TokenStatsStore {
       .catch(() => { this.failures.set(days, 'unavailable') })
       .finally(() => {
         this.pending.delete(days)
+        this.loader.delete(days)
         this.bump()
       })
     this.pending.set(days, task)

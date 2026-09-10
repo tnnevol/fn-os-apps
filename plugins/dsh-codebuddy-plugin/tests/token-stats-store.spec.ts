@@ -126,3 +126,151 @@ describe('TokenStatsStore', () => {
     expect(listener.mock.calls.length).toBe(before)
   })
 })
+
+describe('刷新不得让面板退回「初次加载」状态', () => {
+  /**
+   * 这条守的是一个真实回归：reload 曾经先 `cache.delete(days)`，于是
+   * `get(days)` 返回 undefined，面板据此判定「还没数据」而整页换成初次加载
+   * 占位——表现就是「刷新总览变成了全局刷新」。
+   *
+   * 不变式：刷新期间旧数据必须一直在，只有 isLoading 变化。
+   */
+  it('reload 期间旧数据保持可见（不会短暂变成 undefined）', async () => {
+    const { rpc } = makeRpc({ delayMs: 20 })
+    const store = new TokenStatsStore(rpc)
+    store.ensure(30)
+    await vi.waitFor(() => { expect(store.isLoading(30)).toBe(false) })
+    const before = store.get(30)
+    expect(before).toBeDefined()
+
+    store.reload(30)
+    // 关键：请求在途时，数据依然可读。
+    expect(store.isLoading(30)).toBe(true)
+    expect(store.get(30)).toBe(before)
+    // 而且不能处于「从未加载过」的状态。
+    expect(store.get(30)).toBeDefined()
+
+    await vi.waitFor(() => { expect(store.isLoading(30)).toBe(false) })
+  })
+
+  it('reload 后拿到的是新数据，而不是沿用旧值', async () => {
+    let round = 0
+    const rpc: ConnectionRpc = {
+      call: async <T>(_c: string, _e: string, payload?: unknown): Promise<RpcResult<T>> => {
+        round += 1
+        return { ok: true, value: { rangeDays: (payload as { days: number }).days, tag: `round-${round}` } as unknown as T }
+      },
+    }
+    const store = new TokenStatsStore(rpc)
+    store.ensure(30)
+    await vi.waitFor(() => { expect(store.isLoading(30)).toBe(false) })
+    expect(store.get(30)).toMatchObject({ tag: 'round-1' })
+
+    store.reload(30)
+    await vi.waitFor(() => { expect(store.get(30)).toMatchObject({ tag: 'round-2' }) })
+  })
+
+  it('reloadAll 同样保留旧数据', async () => {
+    const { rpc } = makeRpc({ delayMs: 15 })
+    const store = new TokenStatsStore(rpc)
+    store.ensure(7)
+    store.ensure(30)
+    await vi.waitFor(() => { expect(store.isLoading(7)).toBe(false) })
+    await vi.waitFor(() => { expect(store.isLoading(30)).toBe(false) })
+    const before7 = store.get(7)
+    const before30 = store.get(30)
+
+    store.reloadAll()
+    expect(store.get(7)).toBe(before7)
+    expect(store.get(30)).toBe(before30)
+    await vi.waitFor(() => { expect(store.isLoading(30)).toBe(false) })
+    await vi.waitFor(() => { expect(store.isLoading(7)).toBe(false) })
+  })
+
+  it('刷新失败时保留旧数据并标记错误（供 UI 提示），而不是清空', async () => {
+    let fail = false
+    const rpc: ConnectionRpc = {
+      call: async <T>(_c: string, _e: string, payload?: unknown): Promise<RpcResult<T>> => {
+        if (fail) return { ok: false, error: { code: 'transport', message: 'down', details: {} } }
+        return { ok: true, value: { rangeDays: (payload as { days: number }).days, tag: 'ok' } as unknown as T }
+      },
+    }
+    const store = new TokenStatsStore(rpc)
+    store.ensure(30)
+    await vi.waitFor(() => { expect(store.isLoading(30)).toBe(false) })
+
+    fail = true
+    store.reload(30)
+    await vi.waitFor(() => { expect(store.isLoading(30)).toBe(false) })
+    // 旧数据仍在（界面不闪），同时有错误可提示。
+    expect(store.get(30)).toMatchObject({ tag: 'ok' })
+    expect(store.errorOf(30)).toBe('unavailable')
+
+    // 下次成功要清掉错误标记。
+    fail = false
+    store.reload(30)
+    await vi.waitFor(() => { expect(store.isLoading(30)).toBe(false) })
+    expect(store.errorOf(30)).toBeUndefined()
+  })
+})
+
+describe('加载指示按面板隔离', () => {
+  /**
+   * 五个面板默认都停在 30 天。数据按范围共享是对的（同范围只该取一次），
+   * 但若 loading 也按范围共享，刷新总览会让另外四个同范围的面板一起转圈
+   * ——看起来仍然像全局刷新。因此加载指示必须只属于发起刷新的面板。
+   */
+  it('刷新某范围时，同范围的其他面板不显示加载', async () => {
+    const { rpc } = makeRpc({ delayMs: 20 })
+    const store = new TokenStatsStore(rpc)
+    await vi.waitFor(() => { expect(store.isLoading(30)).toBe(false) })
+    store.ensure(30)
+    await vi.waitFor(() => { expect(store.isLoading(30)).toBe(false) })
+
+    const overview = Symbol('overview')
+    const trend = Symbol('trend')
+    store.reload(30, overview)
+
+    // 发起者看到加载；同范围的其他面板不受影响。
+    expect(store.isLoading(30, overview)).toBe(true)
+    expect(store.isLoading(30, trend)).toBe(false)
+
+    await vi.waitFor(() => { expect(store.isLoading(30, overview)).toBe(false) })
+    expect(store.isLoading(30, trend)).toBe(false)
+  })
+
+  it('首次填充（无发起者）时，同范围的面板都应显示等待', async () => {
+    const { rpc } = makeRpc({ delayMs: 20 })
+    const store = new TokenStatsStore(rpc)
+    store.ensure(30)
+    // ensure 不指定发起者：此时还没有人是「刷新发起方」，同范围面板都该等待。
+    expect(store.isLoading(30, Symbol('a'))).toBe(true)
+    expect(store.isLoading(30, Symbol('b'))).toBe(true)
+    await vi.waitFor(() => { expect(store.isLoading(30)).toBe(false) })
+  })
+
+  it('不传 owner 时退化为按范围判断（兼容既有调用）', async () => {
+    const { rpc } = makeRpc({ delayMs: 20 })
+    const store = new TokenStatsStore(rpc)
+    store.ensure(30)
+    expect(store.isLoading(30)).toBe(true)
+    await vi.waitFor(() => { expect(store.isLoading(30)).toBe(false) })
+  })
+
+  it('加载结束后发起者标记被清理，不会污染后续刷新', async () => {
+    const { rpc } = makeRpc({ delayMs: 10 })
+    const store = new TokenStatsStore(rpc)
+    const a = Symbol('a')
+    const b = Symbol('b')
+    store.ensure(30)
+    await vi.waitFor(() => { expect(store.isLoading(30)).toBe(false) })
+
+    store.reload(30, a)
+    await vi.waitFor(() => { expect(store.isLoading(30, a)).toBe(false) })
+    // a 的刷新结束后，b 发起刷新应当只让 b 看到加载。
+    store.reload(30, b)
+    expect(store.isLoading(30, b)).toBe(true)
+    expect(store.isLoading(30, a)).toBe(false)
+    await vi.waitFor(() => { expect(store.isLoading(30, b)).toBe(false) })
+  })
+})

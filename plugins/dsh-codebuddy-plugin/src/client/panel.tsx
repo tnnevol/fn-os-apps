@@ -162,17 +162,34 @@ function usePanelData<T>(
  * 订阅 Token 统计缓存。每个面板用**自己的** range 调用本 hook：
  * 范围相同的面板共享同一份数据与同一个在途请求，范围不同才各自取一次。
  *
- * 之所以要按范围共享而不是各自裸调 RPC：服务端每次都要重放全部会话
- * （实测 200 会话约 50ms），面板多起来会线性放大。缓存放在 store 里而不是
- * 每个面板的 state 里，就是为了让「换回旧范围」零成本命中。
+ * 返回两个不同的加载态，用途严格区分：
+ * - `initialLoading`：从未取到过数据 → 该面板/整页需要占位。
+ * - `loading`：请求在途（可能已有陈旧数据）→ 只叠遮罩。
+ *
+ * 混用这两者会导致「刷新时整页回到初次加载占位」，即所谓的全局刷新。
  */
-function useTokenStats(store: TokenStatsStore, days: number): { data: TokenStats | undefined, loading: boolean, reload: () => void } {
+function useTokenStats(store: TokenStatsStore, days: number): {
+  data: TokenStats | undefined
+  loading: boolean
+  initialLoading: boolean
+  error: string | undefined
+  reload: () => void
+} {
   useSyncExternalStore(store.subscribe, store.getSnapshot, store.getSnapshot)
+  // 每个面板一份稳定令牌：数据按范围共享，但加载指示只属于发起刷新的面板，
+  // 否则五个默认都在 30 天的面板会一起转圈（看起来还是全局刷新）。
+  const owner = useRef<symbol>(Symbol('token-panel'))
   useEffect(() => { store.ensure(days) }, [store, days])
   const data = store.get(days) as TokenStats | undefined
-  const loading = data === undefined || store.isLoading(days)
-  const reload = useCallback(() => { store.reload(days) }, [store, days])
-  return { data, loading, reload }
+  const inFlight = store.isLoading(days, owner.current)
+  const reload = useCallback(() => { store.reload(days, owner.current) }, [store, days])
+  return {
+    data,
+    loading: inFlight,
+    initialLoading: data === undefined && inFlight,
+    error: store.errorOf(days),
+    reload,
+  }
 }
 
 function StatMetric({ icon, label, value }: { icon: ReactNode, label: string, value: string }): ReactNode {
@@ -1029,9 +1046,26 @@ function TokenStatsPage({ rpc, t }: { rpc: ConnectionRpc, t: Translate }): React
   const models = useTokenStats(store, modelsDays)
   const sessions = useTokenStats(store, sessionsDays)
 
-  const data = overview.data
-  // 首次进入（还没有任何数据）才整页占位；之后刷新都走各面板的局部遮罩。
-  if (data === undefined && overview.loading) {
+  // 刷新失败必须说出来。因为 reload 刻意保留旧数据（否则会整页闪烁），
+  // 失败时界面看起来「什么都没发生」——静默失败比报错更糟。
+  const panels = [overview, trend, distribution, models, sessions]
+  const failureSignature = panels.map(panel => panel.error ?? '').join('|')
+  const lastFailure = useRef('')
+  useEffect(() => {
+    if (failureSignature.replace(/\|/g, '') === '') return
+    if (lastFailure.current === failureSignature) return
+    lastFailure.current = failureSignature
+    DshToast.warning({ content: t('tokenRefreshFailed') })
+  }, [failureSignature, t])
+
+  // 页面级渲染（空状态、活动判断）需要一个稳定依据。总览面板切到尚未加载过的
+  // 范围时 overview.data 会短暂为 undefined，若直接用它会整页退回占位/空状态。
+  // 因此粘住最后一次有效数据：整页只在「从未有过任何数据」时才占位。
+  const lastData = useRef<TokenStats | undefined>(undefined)
+  if (overview.data !== undefined) lastData.current = overview.data
+  const data = overview.data ?? lastData.current
+
+  if (data === undefined && overview.initialLoading) {
     return <div className="dsh-codebuddy-panel-page dsh-codebuddy-token-loading"><DshSpin size="large" /></div>
   }
   if (data === undefined) {
@@ -1061,9 +1095,11 @@ function TokenStatsPage({ rpc, t }: { rpc: ConnectionRpc, t: Translate }): React
     )
   }
 
-  const cacheRate = data.totals.cacheHitRate === undefined ? '—' : `${Math.round(data.totals.cacheHitRate * 100)}%`
   // 指标到系列色的映射：与 CSS 中的 --dcb-series-* 保持一致（单一事实来源），
   // 这样总览、趋势图、分布图对同一指标永远用同一颜色。
+  const cacheRateOf = (value: TokenStats): string => value.totals.cacheHitRate === undefined
+    ? '—'
+    : `${Math.round(value.totals.cacheHitRate * 100)}%`
   const SERIES = {
     input: 'var(--dcb-series-input)',
     output: 'var(--dcb-series-output)',
@@ -1094,25 +1130,33 @@ function TokenStatsPage({ rpc, t }: { rpc: ConnectionRpc, t: Translate }): React
         onRefresh={overview.reload}
       >
         <DshCard className="dsh-codebuddy-token-overview-card">
-          <div className="dsh-codebuddy-token-overview-head">
-            <div>
-              <span>{t('tokenTotal')}</span>
-              <strong>{compact(data.totals.total)}</strong>
-            </div>
-            <DshTag color="green" type="light">{rangeFormat(data.rangeDays)}</DshTag>
-          </div>
-          <SegmentBar segments={[
-            { label: t('tokenInput'), value: data.totals.input, color: SERIES.input },
-            { label: t('tokenOutput'), value: data.totals.output, color: SERIES.output },
-            { label: t('tokenCacheRead'), value: data.totals.read, color: SERIES.cacheRead },
-            { label: t('tokenCacheWrite'), value: data.totals.write, color: SERIES.cacheWrite },
-          ]} />
-          <div className="dsh-codebuddy-token-overview-stats">
-            <StatMetric icon={<DshIconArrowLeft />} label={t('tokenInput')} value={compact(data.totals.input)} />
-            <StatMetric icon={<DshIconCommand />} label={t('tokenOutput')} value={compact(data.totals.output)} />
-            <StatMetric icon={<DshIconElementStroked />} label={t('tokenCacheRate')} value={cacheRate} />
-            <StatMetric icon={<DshIconElementStroked />} label={t('tokenRecords')} value={compact(data.totals.records)} />
-          </div>
+          {/* 面板内容只用**本范围**的数据：切到新范围时旧范围的数字不能顶着
+              新标签显示——那会让人以为数字属于新范围。等数据到位期间由遮罩
+              表达进度，卡片用 min-height 维持高度避免跳动。 */}
+          {overview.data === undefined ? <div className="dsh-codebuddy-token-overview-pending" />
+            : (
+              <>
+                <div className="dsh-codebuddy-token-overview-head">
+                  <div>
+                    <span>{t('tokenTotal')}</span>
+                    <strong>{compact(overview.data.totals.total)}</strong>
+                  </div>
+                  <DshTag color="green" type="light">{rangeFormat(overview.data.rangeDays)}</DshTag>
+                </div>
+                <SegmentBar segments={[
+                  { label: t('tokenInput'), value: overview.data.totals.input, color: SERIES.input },
+                  { label: t('tokenOutput'), value: overview.data.totals.output, color: SERIES.output },
+                  { label: t('tokenCacheRead'), value: overview.data.totals.read, color: SERIES.cacheRead },
+                  { label: t('tokenCacheWrite'), value: overview.data.totals.write, color: SERIES.cacheWrite },
+                ]} />
+                <div className="dsh-codebuddy-token-overview-stats">
+                  <StatMetric icon={<DshIconArrowLeft />} label={t('tokenInput')} value={compact(overview.data.totals.input)} />
+                  <StatMetric icon={<DshIconCommand />} label={t('tokenOutput')} value={compact(overview.data.totals.output)} />
+                  <StatMetric icon={<DshIconElementStroked />} label={t('tokenCacheRate')} value={cacheRateOf(overview.data)} />
+                  <StatMetric icon={<DshIconElementStroked />} label={t('tokenRecords')} value={compact(overview.data.totals.records)} />
+                </div>
+              </>
+            )}
         </DshCard>
       </TokenPanel>
       <TokenPanel

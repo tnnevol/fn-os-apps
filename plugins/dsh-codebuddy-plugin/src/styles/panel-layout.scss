@@ -265,6 +265,8 @@
 
 .dsh-codebuddy-token-overview-card { overflow: hidden; }
 .dsh-codebuddy-token-overview-card > .semi-card-body { padding: 0; }
+/* 切换到尚未加载的范围时，用等高的空壳占位：避免卡片塌陷导致下方内容跳动。 */
+.dsh-codebuddy-token-overview-pending { min-height: 196px; }
 .dsh-codebuddy-token-overview-head { padding: 21px 24px 4px; }
 .dsh-codebuddy-token-overview-head > div { display: flex; align-items: baseline; gap: 12px; min-width: 0; }
 .dsh-codebuddy-token-overview-head span { color: var(--dsw-alias-label-secondary); font-size: 12px; }
