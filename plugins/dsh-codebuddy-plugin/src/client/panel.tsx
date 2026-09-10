@@ -66,7 +66,7 @@ import {
   normalizeClientId,
   type CodeBuddyClientId,
 } from '../constants.ts'
-import { formatUpdatedAt } from './format-time.ts'
+import { formatResetDate, formatUpdatedAt } from './format-time.ts'
 import { DEFAULT_TOKEN_RANGE, optionsFor, rangeLabel as rangeLabelOf, type TokenRangeKey } from './token-range.ts'
 import { CodeBuddyLogo } from '../components/CodeBuddyLogo.tsx'
 import { AddAccountModal, startLoginPolling } from '../components/AddAccountModal.tsx'
@@ -635,7 +635,9 @@ function AccountCard({ row, labels, autoCheckin, autoSwitch, resources, busy, on
                         </DshTypography.Text>
                         <span className="dsh-codebuddy-credit-resource-meta">
                           {r.remaining !== null ? formatCredit(r.remaining) : '—'} / {r.total !== null ? formatCredit(r.total) : '∞'}
-                          {r.resetsAt !== null ? ` · ${r.resetsAt}` : ''}
+                          {/* 只显示到日：卡片上这是次要信息，秒级精度读不出也占宽度，
+                              同一天到期的多个套餐还会因时分秒不同而看似不同日期。 */}
+                          {r.resetsAt !== null ? ` · ${formatResetDate(r.resetsAt)}` : ''}
                         </span>
                       </div>
                     ))}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatUpdatedAt } from '../src/client/format-time.ts'
+import { formatResetDate, formatUpdatedAt } from '../src/client/format-time.ts'
 
 /**
  * 顶部时间戳要求固定布局 `yyyy-MM-dd HH:mm:ss`。
@@ -46,5 +46,44 @@ describe('formatUpdatedAt', () => {
       new Date(2026, 11, 31, 23, 59, 59).getTime(),
     ]
     for (const stamp of stamps) expect(formatUpdatedAt(stamp)).toHaveLength(19)
+  })
+})
+
+describe('formatResetDate（套餐重置时间裁到日）', () => {
+  it('完整时间戳裁到日', () => {
+    // 实测服务端返回 `2026-10-10 15:47:09` 这类完整时间戳。
+    expect(formatResetDate('2026-10-10 15:47:09')).toBe('2026-10-10')
+    expect(formatResetDate('2026-10-01 00:00:00')).toBe('2026-10-01')
+  })
+
+  it('同一天的不同时分秒得到同一结果（这正是要消除的干扰）', () => {
+    const same = ['2026-10-10 10:13:37', '2026-10-10 15:40:51', '2026-10-10 23:59:59']
+      .map(formatResetDate)
+    expect(new Set(same).size).toBe(1)
+    expect(same[0]).toBe('2026-10-10')
+  })
+
+  it('已经是纯日期时不变', () => {
+    expect(formatResetDate('2026-10-10')).toBe('2026-10-10')
+  })
+
+  it('不依赖 Date 解析：跨时区不会偏移到前一天', () => {
+    // 服务端给的是无时区标记的本地时间串。若用 new Date() 解析再格式化，
+    // 在 UTC 环境下会被当作 UTC，东八区显示时可能落到前一天。
+    // 字符串裁剪与此无关，因此结果恒定。
+    expect(formatResetDate('2026-01-01 00:00:00')).toBe('2026-01-01')
+    expect(formatResetDate('2026-12-31 23:59:59')).toBe('2026-12-31')
+  })
+
+  it('缺失或不可识别时给出可读结果而不是空串', () => {
+    expect(formatResetDate(null)).toBe('—')
+    expect(formatResetDate(undefined)).toBe('—')
+    // 未知格式原样返回，便于发现服务端变了格式。
+    expect(formatResetDate('长期有效')).toBe('长期有效')
+    expect(formatResetDate('')).toBe('')
+  })
+
+  it('容忍两侧空白', () => {
+    expect(formatResetDate('  2026-10-10 15:47:09  ')).toBe('2026-10-10')
   })
 })

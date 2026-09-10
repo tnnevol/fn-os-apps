@@ -22,3 +22,23 @@ export function formatUpdatedAt(timestamp: number | undefined): string {
   if (timestamp === undefined || !Number.isFinite(timestamp) || timestamp <= 0) return '—'
   return dayjs(timestamp).format('YYYY-MM-DD HH:mm:ss')
 }
+
+/**
+ * 把服务端返回的重置时间字符串裁到「日」。
+ *
+ * 服务端给的是完整时间戳（实测形如 `2026-10-10 15:47:09`，见
+ * `normalizeResetTime`）。账号卡片上它只是套餐行的次要信息，跟在
+ * 「已用 / 总量」之后，秒级精度既读不出也占宽度；同一天到期的多个套餐还会因为
+ * 时分秒不同而看起来是不同日期，反而干扰扫视。
+ *
+ * 只取日期部分是**字符串裁剪**而非 Date 解析：这是展示层的格式收缩，不是时间
+ * 计算，用 Date 会引入时区转换风险（服务端给的是无时区标记的本地时间字符串，
+ * 被当成 UTC 解析后在东八区会显示成前一天）。
+ *
+ * 无法识别为 `YYYY-MM-DD` 前缀时原样返回，避免把未知格式截成空串。
+ */
+export function formatResetDate(resetsAt: string | null | undefined): string {
+  if (resetsAt === null || resetsAt === undefined) return '—'
+  const match = /^(\d{4}-\d{2}-\d{2})/.exec(resetsAt.trim())
+  return match === null ? resetsAt : match[1]!
+}
