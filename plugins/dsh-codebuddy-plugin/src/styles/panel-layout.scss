@@ -522,6 +522,49 @@
   min-width: 0;
   border-radius: 16px;
   cursor: pointer;
+  /* 让整条「栅格子项 → Card」的高度链撑满：
+     CSS Grid 默认 align-items: stretch，会把**子项**（本 wrap）拉到行高，但
+     内部的 .semi-card 只按内容高度渲染（.dsh-codebuddy-panel-card 只设了
+     width: 100%），于是本卡片底部会留白，与同一行内内容更多的卡片参差。
+     wrap 与 Card 都设 height: 100%，后续 flex 才能把剩余空间分配下去。 */
+  height: 100%;
+}
+
+.dsh-codebuddy-account-card-wrap > .dsh-codebuddy-panel-card {
+  height: 100%;
+}
+
+/* Card 内部改为纵向 flex：body 之后若有剩余空间，由 body 吸收，
+   这样无论内容多少，卡片的可视高度都等于所在栅格行的高度。 */
+.dsh-codebuddy-account-card-wrap > .dsh-codebuddy-panel-card > .semi-card-body {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 正文吸收剩余高度：内容少的卡片（积分查询失败、已离线）因此与同排内容多的
+   卡片等高，而不是底部空出一截。行高本身由栅格取「本行最高的卡片」决定，
+   所以正常卡片的高度不受影响。 */
+.dsh-codebuddy-account-card-wrap .dsh-codebuddy-account-card-body,
+.dsh-codebuddy-account-card-wrap .dsh-codebuddy-account-expired-pad {
+  flex: 1 1 auto;
+}
+
+/* .dsh-codebuddy-account-expired-pad 原本自带 margin-top（那时它只是正文下方的
+   一行文字）；现在它同时充当状态块，位置由 flex 居中决定，外边距归零。 */
+.dsh-codebuddy-account-card-wrap .dsh-codebuddy-account-expired-pad { margin-top: 0; }
+
+/* 读取失败 / 已离线时正文只有一行，给它一个与「剩余额度 + 进度 + 两行资源包」
+   相当的最小高度，避免即便整行都被拉伸、内容仍挤在顶部显得空荡。
+   数值对齐正常卡片：额度大字(26px) + 进度(≈8px) + 资源包预留(2×18+6) + 间距。
+   用 min-height 而非固定 height：内容真变多时仍可自然增高。 */
+.dsh-codebuddy-account-card-wrap .dsh-codebuddy-account-body-state {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 96px;
+  text-align: center;
 }
 
 .dsh-codebuddy-account-card-wrap:focus-visible {

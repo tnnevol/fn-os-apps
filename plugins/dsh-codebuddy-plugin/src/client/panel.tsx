@@ -591,7 +591,9 @@ function AccountCard({ row, labels, autoCheckin, resources, busy, onCheckin, onS
       {!row.expired ? (
         <div className="dsh-codebuddy-account-card-body">
           {!row.creditOk
-            ? <div className="dsh-codebuddy-muted">积分查询失败</div>
+            // 拉取失败时正文只剩一行，用与正常卡片等高的状态块占位，
+            // 保证同一栅格行内所有卡片高度一致（否则这张会明显更矮、布局参差）。
+            ? <div className="dsh-codebuddy-account-body-state"><span className="dsh-codebuddy-muted">积分查询失败</span></div>
             : (
                 <>
                   <div className="dsh-codebuddy-account-card-credits">
@@ -628,7 +630,10 @@ function AccountCard({ row, labels, autoCheckin, resources, busy, onCheckin, onS
               )}
         </div>
       ) : (
-        <div className="dsh-codebuddy-account-expired-pad">{offline}，请重新登录</div>
+        // 已离线同样只有一行：走同一套等高状态块（不另套一层容器）。
+        <div className="dsh-codebuddy-account-body-state dsh-codebuddy-account-expired-pad">
+          <span className="dsh-codebuddy-muted">{offline}，请重新登录</span>
+        </div>
       )}
       </DshCard>
     </div>
