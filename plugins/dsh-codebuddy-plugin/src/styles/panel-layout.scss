@@ -584,25 +584,28 @@
 
 .dsh-codebuddy-resource-dialog { display: flex; flex-direction: column; gap: 14px; }
 
-/* 弹框现同时承载身份信息与资源包台账，两者各带一个小标题。
-   描述表两两并排（宽屏）能在一屏内看完，窄屏自动落回单列。 */
+/* 身份信息页（弹框内的一个 Tab）。
+   两组描述表：账户身份 + 登录来源，中间一条细分隔线，避免读成一张表。 */
 .dsh-codebuddy-account-identity {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
+  /* 与 Tab 内容区顶部留白；台账列表自带内边距，这里对齐同一节奏。 */
+  padding: 4px 0 2px;
 }
 
 .dsh-codebuddy-account-identity .dsh-codebuddy-account-descriptions + .dsh-codebuddy-account-descriptions {
-  /* 两组描述表（身份 / 登录来源）之间留一点缝，避免读成一张表。 */
-  margin-top: -2px;
+  padding-top: 10px;
+  border-top: 1px solid var(--dsw-alias-border-l3);
 }
 
-/* 值的列宽给足：UID、企业 ID、部门名都可能较长，且已在
-   .dsh-codebuddy-account-descriptions .semi-descriptions-value 上设了
-   word-break: break-all，过窄会把它们折成多条。 */
+/* 标签列定宽：描述表在 horizontal 布局下按 column 分列，标签宽度不一致会让
+   各列的值起始位置参差。定宽 84px 后同行两个字段的值左边缘对齐。
+   值列仍保留 word-break: break-all（见 .dsh-codebuddy-account-descriptions），
+   因此较长的 UID / 企业 ID 会折行而不是撑破列宽。 */
 .dsh-codebuddy-account-identity .semi-descriptions-key {
-  width: 96px;
-  padding-right: 12px;
+  width: 84px;
+  padding-right: 10px;
 }
 
 .dsh-codebuddy-resource-summary {

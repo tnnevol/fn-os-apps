@@ -751,6 +751,14 @@ function ResourceGroup({ items, lifecycle, t }: { items: ClassifiedResource[], l
 }
 
 /** 账号资源包弹框：头部账号摘要 + 三组生命周期 Tabs。 */
+/**
+ * 账户信息弹框：身份资料与资源包台账分页展示。
+ *
+ * 为什么把身份信息也做成 Tab（而不是与台账上下堆叠）：身份字段有 8–10 项，用
+ * Semi `Descriptions` 的**默认纵向布局**时每项占「key 一行 + value 一行」，单是
+ * 这一段就有约 400px，加上顶部摘要与台账列表会逼近视口高度。改成 Tab 后同一时刻
+ * 只渲染一页，弹框高度由最高的那一页决定，身份信息与各生命周期台账互不挤占。
+ */
 function AccountResourcesModal({ row, items, t, onClose }: {
   row: PanelAccountRow | undefined
   /** 该账号已分类的资源包（由 AccountsPage 统一计算，与卡片同源）。 */
@@ -758,7 +766,9 @@ function AccountResourcesModal({ row, items, t, onClose }: {
   t: Translate
   onClose: () => void
 }): ReactNode {
-  const [activeKey, setActiveKey] = useState<ResourceLifecycle>('usable')
+  /** 弹框内的当前页：身份信息，或资源包的某个生命周期。 */
+  type ModalTab = 'identity' | ResourceLifecycle
+  const [activeKey, setActiveKey] = useState<ModalTab>('usable')
   // 换账号时回到「可使用」：Tab 是这次查看的临时状态，不跟着上一个账号走。
   useEffect(() => { setActiveKey('usable') }, [row?.id])
   const groups = useMemo(() => ({
@@ -766,6 +776,19 @@ function AccountResourcesModal({ row, items, t, onClose }: {
     depleted: items.filter(item => item.lifecycle === 'depleted'),
     expired: items.filter(item => item.lifecycle === 'expired'),
   }), [items])
+
+  const identityData = row === undefined
+    ? []
+    : identityRows(row.account ?? { uid: '—', nickname: row.nickname }, {
+        uid: t('uid'),
+        nickname: t('nickname'),
+        label: t('renameLabel'),
+        uin: t('uin'),
+        enterprise: t('enterprise'),
+        enterpriseId: t('enterpriseId'),
+        enterpriseUser: t('enterpriseUser'),
+        department: t('department'),
+      })
 
   return (
     <DshModal
@@ -790,57 +813,49 @@ function AccountResourcesModal({ row, items, t, onClose }: {
               <span>{t('remaining')}</span>
             </div>
           </div>
-          {/* 身份信息：完整账户资料。此前这个弹框只显示昵称与额度，而设置页能
-              看到 UID/企业/部门等——同一账号在两个入口信息量不一致。现补齐，
-              只渲染**有值**的行（缺失字段留给设置页的完整表单，不铺占位符）。 */}
-          <div className="dsh-codebuddy-account-identity">
-            <div className="dsh-codebuddy-panel-section-title">
-              <strong>{t('accountIdentity')}</strong>
-            </div>
-            <DshDescriptions
-              className="dsh-codebuddy-account-descriptions"
-              align="left"
-              size="small"
-              data={identityRows(row.account ?? { uid: '—', nickname: row.nickname }, {
-                uid: t('uid'),
-                nickname: t('nickname'),
-                label: t('renameLabel'),
-                uin: t('uin'),
-                enterprise: t('enterprise'),
-                enterpriseId: t('enterpriseId'),
-                enterpriseUser: t('enterpriseUser'),
-                department: t('department'),
-              })}
-            />
-            {/* 登录来源：客户端与网络环境决定了账号连的是哪个服务平面，
-                排查「为什么这个账号查不到额度」时是第一个要看的信息。 */}
-            <DshDescriptions
-              className="dsh-codebuddy-account-descriptions"
-              align="left"
-              size="small"
-              data={[
-                { key: t('clientLabel'), value: `${CODEBUDDY_CLIENT_LABELS[normalizeClientId(row.client)]} · v${row.clientVersion ?? CODEBUDDY_CLIENT_VERSIONS[normalizeClientId(row.client)]}` },
-                ...row.environment === undefined
-                  ? []
-                  : [{
-                      key: t('environmentLabel'),
-                      value: CODEBUDDY_ENVIRONMENT_LABELS[row.environment as keyof typeof CODEBUDDY_ENVIRONMENT_LABELS] ?? row.environment,
-                    }],
-              ]}
-            />
-          </div>
-          {/* 资源包台账。弹框现在同时承载身份信息，因此这里也加一个小标题，
-              两个区块的层级才对称、读者知道下半部分在讲什么。 */}
-          <div className="dsh-codebuddy-panel-section-title">
-            <strong>{t('resourcesTitle')}</strong>
-            <span>{items.length}</span>
-          </div>
           <DshTabs
             type="line"
             size="small"
             activeKey={activeKey}
-            onChange={(key: string) => { setActiveKey(key as ResourceLifecycle) }}
+            onChange={(key: string) => { setActiveKey(key as ModalTab) }}
           >
+            {/* 身份信息排在第一位：它是「这个账号是谁」，比「还剩多少额度」更基础。
+                计数用字段数——与右侧各页的条目计数保持同一种语法。 */}
+            <DshTabs.TabPane
+              itemKey="identity"
+              tab={<span className="dsh-codebuddy-resource-tab">{t('accountIdentity')}<i>{identityData.length}</i></span>}
+            >
+              <div className="dsh-codebuddy-account-identity">
+                {/* 身份表用 **horizontal** 布局：默认的 vertical 是 key/value 上下排，
+                    10 项就要约 400px；横向多列一行放 3 对，压到约 4 行。 */}
+                <DshDescriptions
+                  className="dsh-codebuddy-account-descriptions"
+                  align="left"
+                  size="small"
+                  layout="horizontal"
+                  column={2}
+                  data={identityData}
+                />
+                {/* 登录来源：客户端与网络环境决定账号连的是哪个服务平面，
+                    排查「这个账号为何查不到额度」时是第一个要看的信息。 */}
+                <DshDescriptions
+                  className="dsh-codebuddy-account-descriptions"
+                  align="left"
+                  size="small"
+                  layout="horizontal"
+                  column={2}
+                  data={[
+                    { key: t('clientLabel'), value: `${CODEBUDDY_CLIENT_LABELS[normalizeClientId(row.client)]} · v${row.clientVersion ?? CODEBUDDY_CLIENT_VERSIONS[normalizeClientId(row.client)]}` },
+                    ...row.environment === undefined
+                      ? []
+                      : [{
+                          key: t('environmentLabel'),
+                          value: CODEBUDDY_ENVIRONMENT_LABELS[row.environment as keyof typeof CODEBUDDY_ENVIRONMENT_LABELS] ?? row.environment,
+                        }],
+                  ]}
+                />
+              </div>
+            </DshTabs.TabPane>
             {(['usable', 'depleted', 'expired'] as const).map(lifecycle => (
               <DshTabs.TabPane
                 key={lifecycle}

@@ -86,12 +86,22 @@ describe('面板弹框展示完整账户信息', () => {
     expect(modal).toContain("t('environmentLabel')")
   })
 
-  it('资源包台账仍有自己的小节标题', () => {
+  it('身份信息与资源包共用一套 Tab：身份页 + 三个生命周期页', () => {
     const modal = PANEL.slice(PANEL.indexOf('function AccountResourcesModal'), PANEL.indexOf('function AccountsPage'))
-    const resIdx = modal.indexOf("t('resourcesTitle')")
-    const tabsIdx = modal.indexOf('<DshTabs')
-    expect(resIdx).toBeGreaterThan(-1)
-    expect(resIdx).toBeLessThan(tabsIdx)
+    // 身份信息不再与台账上下堆叠（纵向描述表会让弹框逼近视口高度），
+    // 而是与三个生命周期页并列成 4 个 Tab。
+    expect(modal).toMatch(/itemKey="identity"/)
+    expect(modal).toContain("t('accountIdentity')")
+    expect(modal).toMatch(/\(\['usable', 'depleted', 'expired'\] as const\)\.map/)
+    // 台账的小节标题随堆叠结构一起移除——Tab 标签本身已是分区标题。
+    expect(modal).not.toContain("t('resourcesTitle')")
+  })
+
+  it('身份表用横向布局压高度（默认 vertical 每项占两行）', () => {
+    const modal = PANEL.slice(PANEL.indexOf('function AccountResourcesModal'), PANEL.indexOf('function AccountsPage'))
+    // 10 项在 vertical 下约 400px；horizontal + column 压到约 5 行。
+    expect(modal.match(/layout="horizontal"/g)?.length).toBe(2)
+    expect(modal).toMatch(/column=\{2\}/)
   })
 })
 
