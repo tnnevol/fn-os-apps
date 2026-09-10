@@ -366,3 +366,147 @@
   .dsh-codebuddy-token-columns { grid-template-columns: 1fr; gap: 22px; }
   .dsh-codebuddy-token-breakdown-row { grid-template-columns: minmax(110px, 1.1fr) minmax(52px, 1fr) auto; gap: 8px; }
 }
+
+/* ==========================================================================
+   账号卡片：整卡可点击查看资源包台账。
+   交互提示只放在悬停/聚焦的边框与指针上——卡片内部已经承载了额度、
+   进度与状态信息，再加装饰会淹没它们。
+   ========================================================================== */
+.dsh-codebuddy-account-card-wrap {
+  display: block;
+  min-width: 0;
+  border-radius: 16px;
+  cursor: pointer;
+}
+
+.dsh-codebuddy-account-card-wrap:focus-visible {
+  outline: 2px solid var(--dsw-alias-brand-primary);
+  outline-offset: 2px;
+}
+
+.dsh-codebuddy-account-card-wrap:hover > .dsh-codebuddy-panel-card {
+  border-color: color-mix(in srgb, var(--dsw-alias-brand-primary) 45%, var(--dsw-alias-border-l2));
+}
+
+/* ==========================================================================
+   资源包弹框：账号摘要 + 三组生命周期台账。
+   列表用行式台账而不是卡片网格：每行一条资源包，状态由左侧色条与用量
+   进度表达，右侧对齐剩余/总量，数字走等宽以便纵向比较。
+   ========================================================================== */
+.dsh-codebuddy-resource-modal { width: min(640px, 92vw); }
+
+.dsh-codebuddy-resource-dialog { display: flex; flex-direction: column; gap: 14px; }
+
+.dsh-codebuddy-resource-summary {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--dsw-alias-border-l2);
+}
+
+.dsh-codebuddy-resource-summary > div:first-child {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.dsh-codebuddy-resource-account {
+  overflow: hidden;
+  color: var(--dsw-alias-label-primary);
+  font-size: 15px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dsh-codebuddy-resource-total { display: flex; align-items: baseline; gap: 6px; flex-shrink: 0; }
+.dsh-codebuddy-resource-total strong {
+  color: var(--dsw-alias-label-primary);
+  font-size: 22px;
+  font-weight: 650;
+  letter-spacing: -.02em;
+  font-variant-numeric: tabular-nums;
+}
+.dsh-codebuddy-resource-total span { color: var(--dsw-alias-label-tertiary); font-size: 11px; }
+
+.dsh-codebuddy-resource-tab { display: inline-flex; align-items: center; gap: 6px; }
+.dsh-codebuddy-resource-tab i {
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--dsw-alias-bg-layer-2);
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 11px;
+  font-style: normal;
+  line-height: 16px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.dsh-codebuddy-resource-list {
+  display: flex;
+  flex-direction: column;
+  max-height: min(52vh, 420px);
+  overflow-y: auto;
+}
+
+.dsh-codebuddy-resource-row {
+  display: grid;
+  grid-template-columns: 3px minmax(0, 1fr);
+  gap: 12px;
+  padding: 12px 2px 12px 0;
+  border-bottom: 1px solid var(--dsw-alias-border-l2);
+}
+
+.dsh-codebuddy-resource-row:last-child { border-bottom: 0; }
+
+.dsh-codebuddy-resource-bar {
+  border-radius: 999px;
+  background: var(--dcb-resource-color, var(--dsw-alias-border-l3));
+}
+
+.dsh-codebuddy-resource-row.is-expired .dsh-codebuddy-resource-bar { opacity: .55; }
+
+.dsh-codebuddy-resource-main { display: flex; flex-direction: column; gap: 7px; min-width: 0; }
+
+.dsh-codebuddy-resource-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; min-width: 0; }
+.dsh-codebuddy-resource-head strong {
+  overflow: hidden;
+  color: var(--dsw-alias-label-primary);
+  font-size: 13px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dsh-codebuddy-resource-amount {
+  flex-shrink: 0;
+  color: var(--dsw-alias-label-primary);
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.dsh-codebuddy-resource-amount small { color: var(--dsw-alias-label-tertiary); font-size: 11px; font-weight: 400; }
+
+.dsh-codebuddy-resource-row.is-expired .dsh-codebuddy-resource-head strong,
+.dsh-codebuddy-resource-row.is-expired .dsh-codebuddy-resource-amount { color: var(--dsw-alias-label-secondary); }
+
+.dsh-codebuddy-resource-foot {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.dsh-codebuddy-resource-empty {
+  margin: 0;
+  padding: 26px 0;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 12px;
+  text-align: center;
+}

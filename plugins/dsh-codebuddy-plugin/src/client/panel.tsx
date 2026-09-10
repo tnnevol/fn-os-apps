@@ -13,7 +13,7 @@ import { AriaComponent, GridComponent, LegendComponent, TooltipComponent } from 
 import { init as initChart, use as useECharts } from 'echarts/core'
 import type { ECharts } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
-import type { ReactNode } from 'react'
+import type { CSSProperties, KeyboardEvent as ReactKeyboardEvent, MouseEvent as ReactMouseEvent, ReactNode } from 'react'
 import {
   DshButton,
   DshCard,
@@ -38,6 +38,7 @@ import {
   DshProgress,
   DshSpin,
   DshSwitch,
+  DshTabs,
   DshTag,
   DshToast,
 } from '@tnnevol/dsh-semi-ui'
@@ -48,6 +49,9 @@ import type { ConnectionRpc, AccountsResult } from './rpc.ts'
 import { describeRpcError } from './rpc.ts'
 import { PanelRouteController } from './panel-route.ts'
 import type { PanelRoute } from './panel-route.ts'
+import { classifyResources, forgetResources, recordResources } from './resource-history.ts'
+import type { ClassifiedResource, ResourceLifecycle, ResourceSnapshot } from './resource-history.ts'
+import { CodeBuddyLogo } from '../components/CodeBuddyLogo.tsx'
 import { AddAccountModal, startLoginPolling } from '../components/AddAccountModal.tsx'
 import { getAutoCheckinPref, setAutoCheckinPref } from './usage-prefs.ts'
 
@@ -182,6 +186,7 @@ interface AccountCardProps {
     switchLabel: string
     deleteLabel: string
     renameLabel: string
+    resourcesLabel: string
     noBalanceHint: string
   }
   /** 自动签到开启时不显示手动签到动作。 */
@@ -191,9 +196,11 @@ interface AccountCardProps {
   onSwitch: (id: string) => void
   onDelete: (row: PanelAccountRow) => void
   onRename: (row: PanelAccountRow) => void
+  /** 点击卡片主体查看该账号全部资源包。 */
+  onOpenResources: (row: PanelAccountRow) => void
 }
 
-function AccountCard({ row, labels, autoCheckin, busy, onCheckin, onSwitch, onDelete, onRename }: AccountCardProps): ReactNode {
+function AccountCard({ row, labels, autoCheckin, busy, onCheckin, onSwitch, onDelete, onRename, onOpenResources }: AccountCardProps): ReactNode {
   const env = row.environment
   const name = row.nickname
   const { active, offline, checkedIn, unchecked, checkin, remaining, switchLabel, deleteLabel, renameLabel, noBalanceHint } = labels
@@ -236,7 +243,20 @@ function AccountCard({ row, labels, autoCheckin, busy, onCheckin, onSwitch, onDe
   )
 
   return (
-    <DshCard className={'dsh-codebuddy-panel-card' + (row.active ? ' dsh-codebuddy-panel-card-active' : '')}>
+    <div
+      className={'dsh-codebuddy-account-card-wrap' + (row.active ? ' is-active' : '')}
+      role="button"
+      tabIndex={0}
+      aria-label={`${name} ${labels.resourcesLabel}`}
+      onClick={() => { onOpenResources(row) }}
+      onKeyDown={(event: ReactKeyboardEvent) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault()
+          onOpenResources(row)
+        }
+      }}
+    >
+      <DshCard className={'dsh-codebuddy-panel-card dsh-codebuddy-account-card' + (row.active ? ' dsh-codebuddy-panel-card-active' : '')}>
       {/* 头部：头像 + 名称/环境 + 状态 chips + 「…」操作菜单 */}
       <div className="dsh-codebuddy-account-card-head">
         <span className="dsh-codebuddy-account-card-avatar" aria-hidden>{name.charAt(0).toUpperCase()}</span>
@@ -257,7 +277,12 @@ function AccountCard({ row, labels, autoCheckin, busy, onCheckin, onSwitch, onDe
             </div>
           ) : null}
         </div>
-        <span className="dsh-codebuddy-account-card-more">
+        {/* 菜单与卡片点击互斥：菜单区域吞掉冒泡，避免点「…」同时打开弹框。 */}
+        <span
+          className="dsh-codebuddy-account-card-more"
+          onClick={(event: ReactMouseEvent) => { event.stopPropagation() }}
+          onKeyDown={(event: ReactKeyboardEvent) => { event.stopPropagation() }}
+        >
           <DshDropdown
             trigger="click"
             position="bottomRight"
@@ -309,7 +334,146 @@ function AccountCard({ row, labels, autoCheckin, busy, onCheckin, onSwitch, onDe
       ) : (
         <div className="dsh-codebuddy-account-expired-pad">{offline}，请重新登录</div>
       )}
-    </DshCard>
+      </DshCard>
+    </div>
+  )
+}
+
+/* ============================================================================
+ * 资源包弹框：账号下全部资源包，按生命周期分三组（可使用 / 已用完 / 已过期）
+ * ========================================================================== */
+
+/** 一类资源包的呈现元数据：语义色 + 说明，避免每个调用点各写一套判断。 */
+const RESOURCE_LIFECYCLE_META: Record<ResourceLifecycle, { labelKey: CodeBuddyLocaleKey, emptyKey: CodeBuddyLocaleKey, color: string }> = {
+  usable: { labelKey: 'resourcesUsable', emptyKey: 'resourcesEmptyUsable', color: 'var(--dsw-alias-state-success-primary)' },
+  depleted: { labelKey: 'resourcesDepleted', emptyKey: 'resourcesEmptyDepleted', color: 'var(--dsw-alias-state-warn-primary)' },
+  expired: { labelKey: 'resourcesExpired', emptyKey: 'resourcesEmptyExpired', color: 'var(--dsw-alias-label-tertiary)' },
+}
+
+/** 一行资源包：左侧状态条 + 名称与用量 + 右侧剩余/总量。 */
+function ResourceRow({ item, t }: { item: ClassifiedResource, t: Translate }): ReactNode {
+  const meta = RESOURCE_LIFECYCLE_META[item.lifecycle]
+  const pct = item.total !== null && item.total > 0 && item.remaining !== null
+    ? Math.max(0, Math.min(100, (item.remaining / item.total) * 100))
+    : null
+  const used = item.total !== null && item.remaining !== null ? Math.max(item.total - item.remaining, 0) : null
+  return (
+    <div className={`dsh-codebuddy-resource-row is-${item.lifecycle}`} style={{ '--dcb-resource-color': meta.color } as CSSProperties}>
+      <span className="dsh-codebuddy-resource-bar" aria-hidden />
+      <div className="dsh-codebuddy-resource-main">
+        <div className="dsh-codebuddy-resource-head">
+          <strong title={item.name}>{item.name}</strong>
+          {item.total === null
+            ? <span className="dsh-codebuddy-resource-amount">{t('resourceNoQuota')}</span>
+            : (
+                <span className="dsh-codebuddy-resource-amount">
+                  {item.remaining !== null ? formatCredit(item.remaining) : '—'}
+                  <small> / {formatCredit(item.total)}</small>
+                </span>
+              )}
+        </div>
+        {pct !== null ? (
+          <DshProgress
+            percent={pct}
+            showInfo={false}
+            aria-label={item.name}
+            stroke={meta.color}
+            orbitStroke="var(--dsw-alias-border-l3)"
+          />
+        ) : null}
+        <div className="dsh-codebuddy-resource-foot">
+          <span>
+            {used !== null ? `${t('resourceUsedOf')} ${formatCredit(used)}` : ''}
+          </span>
+          <span>
+            {item.resetsAt === null
+              ? t('resourceLongTerm')
+              : `${item.lifecycle === 'expired' ? t('resourceExpiredAt') : t('resourceExpiresAt')} ${item.resetsAt}`}
+          </span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/** 一个生命周期分组的内容：列表或一句明确的空态说明。 */
+function ResourceGroup({ items, lifecycle, t }: { items: ClassifiedResource[], lifecycle: ResourceLifecycle, t: Translate }): ReactNode {
+  const meta = RESOURCE_LIFECYCLE_META[lifecycle]
+  if (items.length === 0) {
+    return <p className="dsh-codebuddy-resource-empty">{t(meta.emptyKey)}</p>
+  }
+  return (
+    <div className="dsh-codebuddy-resource-list">
+      {items.map(item => <ResourceRow key={item.key} item={item} t={t} />)}
+    </div>
+  )
+}
+
+/** 账号资源包弹框：头部账号摘要 + 三组生命周期 Tabs。 */
+function AccountResourcesModal({ row, t, onClose }: { row: PanelAccountRow | undefined, t: Translate, onClose: () => void }): ReactNode {
+  const [activeKey, setActiveKey] = useState<ResourceLifecycle>('usable')
+  // 本次探测到的实时资源包（弹框每次打开都以最新一版为准）。
+  const live = useMemo(() => (row?.resources ?? []).map(r => ({
+    name: r.name,
+    total: r.total,
+    remaining: r.remaining,
+    resetsAt: r.resetsAt,
+  })), [row])
+  // 台账记录放在 effect 里：写 localStorage 属于副作用，不应发生在渲染期。
+  const [ledger, setLedger] = useState<ResourceSnapshot[]>([])
+  useEffect(() => {
+    if (row === undefined) return
+    setLedger(recordResources(row.id, live))
+  }, [row, live])
+  const groups = useMemo(() => {
+    const classified = classifyResources(ledger, live)
+    return {
+      usable: classified.filter(item => item.lifecycle === 'usable'),
+      depleted: classified.filter(item => item.lifecycle === 'depleted'),
+      expired: classified.filter(item => item.lifecycle === 'expired'),
+    }
+  }, [ledger, live])
+
+  return (
+    <DshModal
+      title={t('resourcesTitle')}
+      visible={row !== undefined}
+      footer={null}
+      onCancel={onClose}
+      className="dsh-codebuddy-resource-modal"
+    >
+      {row === undefined ? null : (
+        <div className="dsh-codebuddy-resource-dialog">
+          <div className="dsh-codebuddy-resource-summary">
+            <div>
+              <span className="dsh-codebuddy-resource-account" title={row.nickname}>{row.nickname}</span>
+              {row.active ? <DshTag size="small" type="solid" color="green">{t('accountActive')}</DshTag> : null}
+              {row.expired ? <DshTag size="small" type="light" color="orange">{t('accountOffline')}</DshTag> : null}
+            </div>
+            <div className="dsh-codebuddy-resource-total">
+              <strong>{formatCredit(row.totalRemaining)}</strong>
+              <span>{t('remaining')}</span>
+            </div>
+          </div>
+          <DshTabs
+            type="line"
+            size="small"
+            activeKey={activeKey}
+            onChange={(key: string) => { setActiveKey(key as ResourceLifecycle) }}
+          >
+            {(['usable', 'depleted', 'expired'] as const).map(lifecycle => (
+              <DshTabs.TabPane
+                key={lifecycle}
+                itemKey={lifecycle}
+                tab={<span className="dsh-codebuddy-resource-tab">{t(RESOURCE_LIFECYCLE_META[lifecycle].labelKey)}<i>{groups[lifecycle].length}</i></span>}
+              >
+                <ResourceGroup items={groups[lifecycle]} lifecycle={lifecycle} t={t} />
+              </DshTabs.TabPane>
+            ))}
+          </DshTabs>
+        </div>
+      )}
+    </DshModal>
   )
 }
 
@@ -337,6 +501,8 @@ function AccountsPage({
 }): ReactNode {
   const { data, loading, reload } = usePanelData<{ accounts: PanelAccountRow[], currentId?: string }>(rpc, 'panelStatus', {}, [rosterTick])
   const [busyId, setBusyId] = useState<string | undefined>(undefined)
+  // 资源包弹框目标账号。
+  const [resourceTarget, setResourceTarget] = useState<PanelAccountRow | undefined>(undefined)
   // 自动签到开关状态：开启时隐藏手动签到动作。
   const [autoCheckinOn, setAutoCheckinOn] = useState<boolean>(autoCheckinPref())
   useEffect(() => {
@@ -437,17 +603,24 @@ function AccountsPage({
                 switchLabel: t('accountSwitch'),
                 deleteLabel: t('accountRemove'),
                 renameLabel: t('renameLabel'),
+                resourcesLabel: t('resourcesTitle'),
                 noBalanceHint: t('noBalanceHint'),
               }}
               onCheckin={(id) => { void checkinOne(id) }}
               onSwitch={(id) => { void switchOne(id) }}
               onDelete={(row_) => { onDelete(row_) }}
               onRename={(row_) => { onRename(row_) }}
+              onOpenResources={(row_) => { setResourceTarget(row_) }}
             />
             ))}
           </div>
         </>
       )}
+      <AccountResourcesModal
+        row={resourceTarget}
+        t={t}
+        onClose={() => { setResourceTarget(undefined) }}
+      />
     </div>
   )
 }
@@ -840,6 +1013,8 @@ export function CodeBuddyPanelPage({ rpc, route, t }: PanelPageProps): ReactNode
     if (target === undefined) return
     const result = await rpc.call<AccountsResult>(CODEBUDDY_AUTH_CHANNEL, 'removeAccount', { id: target.id })
     if (result.ok) {
+      // 账号已移除：其资源台账不再有归属，一并清掉。
+      forgetResources(target.id)
       notify(true, t('accountRemoved'))
       bumpRoster()
     } else {
@@ -898,7 +1073,7 @@ export function CodeBuddyPanelPage({ rpc, route, t }: PanelPageProps): ReactNode
             items={items}
             onSelect={(data_: { itemKey: string }) => { route.open(data_.itemKey as PanelRoute) }}
             footer={{ collapseButton: false }}
-            header={{ text: 'CodeBuddy' }}
+            header={{ logo: <CodeBuddyLogo size={28} />, text: 'CodeBuddy' }}
           />
         </DshLayout.Sider>
         <DshLayout.Content className="dsh-codebuddy-panel-content">

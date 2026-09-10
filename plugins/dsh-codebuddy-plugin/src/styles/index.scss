@@ -448,6 +448,9 @@
   border-right: 1px solid var(--dsw-alias-border-l2);
 }
 .dsh-codebuddy-panel-nav { height: 100%; background: transparent; }
+/* 侧栏品牌：彩色 CodeBuddy logo 作为后台的视觉锚点，与导航文字同排。 */
+.dsh-codebuddy-panel-nav .semi-navigation-header-logo { display: inline-flex; align-items: center; }
+.dsh-codebuddy-panel-nav .semi-navigation-header-logo svg { display: block; }
 .dsh-codebuddy-panel-content { flex: 1; padding: 24px clamp(16px, 2vw, 32px) 40px; overflow: auto; }
 .dsh-codebuddy-panel-content > * { width: min(100%, 1480px); margin: 0 auto; }
 
