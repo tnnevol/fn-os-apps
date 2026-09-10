@@ -68,6 +68,7 @@ import {
   type CodeBuddyClientId,
 } from '../constants.ts'
 import { formatResetDate, formatUpdatedAt } from './format-time.ts'
+import { identityRows, type AccountIdentityDetail } from './identity.ts'
 import { DEFAULT_TOKEN_RANGE, optionsFor, rangeLabel as rangeLabelOf, type TokenRangeKey } from './token-range.ts'
 import { CodeBuddyLogo } from '../components/CodeBuddyLogo.tsx'
 import { AddAccountModal, startLoginPolling } from '../components/AddAccountModal.tsx'
@@ -92,6 +93,8 @@ interface PanelAccountRow {
   client?: CodeBuddyClientId
   /** 该客户端的固定版本号（CLI 2.145.0 / WorkBuddy 5.5.4）。 */
   clientVersion?: string
+  /** 账户身份明细，供「账户信息」弹框展示完整资料。 */
+  account?: AccountIdentityDetail
   active: boolean
   expired: boolean
   /** 企业账号：不支持签到（隐藏签到入口、跳过签到与自动签到）。 */
@@ -766,7 +769,7 @@ function AccountResourcesModal({ row, items, t, onClose }: {
 
   return (
     <DshModal
-      title={t('resourcesTitle')}
+      title={t('accountInfoTitle')}
       visible={row !== undefined}
       footer={null}
       onCancel={onClose}
@@ -786,6 +789,51 @@ function AccountResourcesModal({ row, items, t, onClose }: {
               <strong>{formatCredit(row.totalRemaining)}</strong>
               <span>{t('remaining')}</span>
             </div>
+          </div>
+          {/* 身份信息：完整账户资料。此前这个弹框只显示昵称与额度，而设置页能
+              看到 UID/企业/部门等——同一账号在两个入口信息量不一致。现补齐，
+              只渲染**有值**的行（缺失字段留给设置页的完整表单，不铺占位符）。 */}
+          <div className="dsh-codebuddy-account-identity">
+            <div className="dsh-codebuddy-panel-section-title">
+              <strong>{t('accountIdentity')}</strong>
+            </div>
+            <DshDescriptions
+              className="dsh-codebuddy-account-descriptions"
+              align="left"
+              size="small"
+              data={identityRows(row.account ?? { uid: '—', nickname: row.nickname }, {
+                uid: t('uid'),
+                nickname: t('nickname'),
+                label: t('renameLabel'),
+                uin: t('uin'),
+                enterprise: t('enterprise'),
+                enterpriseId: t('enterpriseId'),
+                enterpriseUser: t('enterpriseUser'),
+                department: t('department'),
+              })}
+            />
+            {/* 登录来源：客户端与网络环境决定了账号连的是哪个服务平面，
+                排查「为什么这个账号查不到额度」时是第一个要看的信息。 */}
+            <DshDescriptions
+              className="dsh-codebuddy-account-descriptions"
+              align="left"
+              size="small"
+              data={[
+                { key: t('clientLabel'), value: `${CODEBUDDY_CLIENT_LABELS[normalizeClientId(row.client)]} · v${row.clientVersion ?? CODEBUDDY_CLIENT_VERSIONS[normalizeClientId(row.client)]}` },
+                ...row.environment === undefined
+                  ? []
+                  : [{
+                      key: t('environmentLabel'),
+                      value: CODEBUDDY_ENVIRONMENT_LABELS[row.environment as keyof typeof CODEBUDDY_ENVIRONMENT_LABELS] ?? row.environment,
+                    }],
+              ]}
+            />
+          </div>
+          {/* 资源包台账。弹框现在同时承载身份信息，因此这里也加一个小标题，
+              两个区块的层级才对称、读者知道下半部分在讲什么。 */}
+          <div className="dsh-codebuddy-panel-section-title">
+            <strong>{t('resourcesTitle')}</strong>
+            <span>{items.length}</span>
           </div>
           <DshTabs
             type="line"

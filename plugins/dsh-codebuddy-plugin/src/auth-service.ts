@@ -1299,7 +1299,36 @@ export class CodeBuddyAuthService {
    * 4 个账号的面板刷新要 400ms 以上，而并发只需最慢那一个账号的时间。
    * 结果按账号存储顺序回填，卡片顺序不会随响应快慢抖动。
    */
-  private async forEachAccount<T>(fn: (item: { id: string, name: string, environment: string | undefined, endpoint: string, identity: CodeBuddyIdentity, expired: boolean, enterprise: boolean, client: CodeBuddyClientId, clientVersion: string }) => Promise<T>, signal?: AbortSignal): Promise<T[]> {
+  private async forEachAccount<T>(fn: (item: {
+    id: string
+    name: string
+    environment: string | undefined
+    endpoint: string
+    identity: CodeBuddyIdentity
+    expired: boolean
+    enterprise: boolean
+    client: CodeBuddyClientId
+    clientVersion: string
+    /**
+     * 账户身份明细：面板的「账户信息」弹框据此展示完整资料。
+     *
+     * 这些字段此前只存在于设置页（它直接读 `accounts` RPC），面板的
+     * `panelStatus` 没有带上，于是面板侧的弹框只能显示昵称——同一个账号在
+     * 两个入口看到的信息量不一致。缺失一律为 `undefined`（而非空串），
+     * 便于前端按「有无」决定是否渲染该行。
+     */
+    account: {
+      uid: string
+      nickname: string
+      /** 本地备注名；仅当与昵称不同才有展示价值。 */
+      label?: string
+      uin?: string
+      enterpriseId?: string
+      enterpriseName?: string
+      enterpriseUserName?: string
+      departmentFullName?: string
+    }
+  }) => Promise<T>, signal?: AbortSignal): Promise<T[]> {
     const storage = await loadStorage()
     if (storage === undefined) return []
     const slots: Array<T | undefined> = new Array<T | undefined>(storage.accounts.length).fill(undefined)
@@ -1320,6 +1349,21 @@ export class CodeBuddyAuthService {
           // 客户端身份与其固定版本：面板据此展示标识，用户可分辨账号来源。
           client: normalizeClientId(entry.client),
           clientVersion: entry.clientVersion ?? CODEBUDDY_CLIENT_VERSIONS[normalizeClientId(entry.client)],
+          // 账户身份明细，供「账户信息」弹框展示。
+          account: {
+            uid: entry.account.uid,
+            nickname: entry.account.nickname,
+            ...entry.account.label === undefined ? {} : { label: entry.account.label },
+            ...entry.account.uin === undefined ? {} : { uin: entry.account.uin },
+            ...entry.account.enterpriseId === undefined ? {} : { enterpriseId: entry.account.enterpriseId },
+            ...entry.account.enterpriseName === undefined ? {} : { enterpriseName: entry.account.enterpriseName },
+            ...entry.account.enterpriseUserName === undefined
+              ? {}
+              : { enterpriseUserName: entry.account.enterpriseUserName },
+            ...entry.account.departmentFullName === undefined
+              ? {}
+              : { departmentFullName: entry.account.departmentFullName },
+          },
         })
       } catch {
         // 单账号失败跳过，不阻断其他账号；该位置保持 undefined 并被过滤。
@@ -1370,6 +1414,8 @@ export class CodeBuddyAuthService {
         environment: item.environment,
         client: item.client,
         clientVersion: item.clientVersion,
+        // 账户身份明细（弹框展示完整信息用）
+        account: item.account,
         active: item.id === activeId,
         expired: item.expired,
         enterprise: item.enterprise,
