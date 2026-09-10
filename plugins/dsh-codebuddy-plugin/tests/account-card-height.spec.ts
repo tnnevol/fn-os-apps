@@ -86,3 +86,51 @@ describe('改动不外溢到其它卡片网格', () => {
     }
   })
 })
+
+describe('账号卡片的套餐行只展示名称与到期日', () => {
+  const PANEL = readFileSync(
+    '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/client/panel.tsx',
+    'utf8',
+  )
+  const INDEX_SCSS = readFileSync(
+    '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/styles/index.scss',
+    'utf8',
+  )
+  /** 卡片内的套餐行（概览，最多两行）。 */
+  const cardRow = (): string => {
+    const start = PANEL.indexOf('dsh-codebuddy-account-card-resources')
+    return PANEL.slice(start, PANEL.indexOf('</div>', PANEL.indexOf('credit-resource-meta', start)))
+  }
+
+  it('不再出现「剩余 / 总值」', () => {
+    // 同一账号的额度合计已在上方大字给出；逐个套餐的用量留给详情弹框
+    // （那里有进度条做比例表达）。
+    expect(cardRow()).not.toMatch(/formatCredit\(r\.remaining\)/)
+    expect(cardRow()).not.toMatch(/formatCredit\(r\.total\)/)
+    expect(cardRow()).not.toContain('∞')
+  })
+
+  it('保留套餐名与到期日（只到日）', () => {
+    expect(cardRow()).toContain('{r.name}')
+    expect(cardRow()).toContain('formatResetDate(r.resetsAt)')
+  })
+
+  it('无到期日的套餐显示「长期有效」而不是空白', () => {
+    expect(cardRow()).toMatch(/r\.resetsAt === null \? longTerm : formatResetDate/)
+  })
+
+  it('已过期行不再给日期加删除线', () => {
+    // 删除线原意是划掉「已作废的额度数字」；现在 meta 装的是到期日，
+    // 日期是事实，划掉会读成「这个日期不算数」。
+    const expired = /\.dsh-codebuddy-credit-resource-row\.is-expired \.dsh-codebuddy-credit-resource-meta\s*\{([^}]*)\}/
+      .exec(INDEX_SCSS)?.[1] ?? ''
+    expect(expired).toMatch(/color:/)
+    expect(expired).not.toContain('line-through')
+  })
+
+  it('详情弹框仍保留用量与进度条（只有卡片被简化）', () => {
+    const dialogRow = PANEL.slice(PANEL.indexOf('function ResourceRow'))
+    expect(dialogRow).toContain('formatCredit(item.remaining)')
+    expect(dialogRow).toContain('<DshProgress')
+  })
+})

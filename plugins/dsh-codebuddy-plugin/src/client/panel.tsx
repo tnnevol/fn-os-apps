@@ -430,6 +430,8 @@ interface AccountCardProps {
     deleteLabel: string
     renameLabel: string
     resourcesLabel: string
+    /** 套餐无到期日时的文案。 */
+    longTerm: string
     noBalanceHint: string
     travel: {
       untraveled: string
@@ -461,7 +463,7 @@ function AccountCard({ row, labels, autoCheckin, autoSwitch, resources, busy, on
   const clientId = normalizeClientId(row.client)
   const clientVersion = row.clientVersion ?? CODEBUDDY_CLIENT_VERSIONS[clientId]
   const name = row.nickname
-  const { active, offline, checkedIn, unchecked, checkin, remaining, switchLabel, deleteLabel, renameLabel, noBalanceHint } = labels
+  const { active, offline, checkedIn, unchecked, checkin, remaining, switchLabel, deleteLabel, renameLabel, longTerm, noBalanceHint } = labels
   const totalPct = row.totalCapacity > 0 ? Math.max(0, Math.min(100, (row.totalRemaining / row.totalCapacity) * 100)) : null
   const remainingSum = row.totalRemaining
   // 卡片是概览：最多两个套餐，按 可使用 → 已用完 → 已过期 取前二。
@@ -635,11 +637,13 @@ function AccountCard({ row, labels, autoCheckin, autoSwitch, resources, busy, on
                         <DshTypography.Text className="dsh-codebuddy-credit-resource-name" ellipsis={{ showTooltip: true }}>
                           {r.name}
                         </DshTypography.Text>
+                        {/* 卡片只列套餐名与到期日：卡片是概览，用量数字在读「还有
+                            哪些套餐能用」时是干扰——同一账号的额度合计已在上方大字给出，
+                            逐个套餐的剩余/总量留给详情弹框（那里还有进度条做比例表达）。
+                            到期日只到日：秒级精度读不出也占宽度，同一天到期的多个套餐
+                            还会因时分秒不同而看似不同日期。 */}
                         <span className="dsh-codebuddy-credit-resource-meta">
-                          {r.remaining !== null ? formatCredit(r.remaining) : '—'} / {r.total !== null ? formatCredit(r.total) : '∞'}
-                          {/* 只显示到日：卡片上这是次要信息，秒级精度读不出也占宽度，
-                              同一天到期的多个套餐还会因时分秒不同而看似不同日期。 */}
-                          {r.resetsAt !== null ? ` · ${formatResetDate(r.resetsAt)}` : ''}
+                          {r.resetsAt === null ? longTerm : formatResetDate(r.resetsAt)}
                         </span>
                       </div>
                     ))}
@@ -1125,6 +1129,7 @@ function AccountsPage({
                 deleteLabel: t('accountRemove'),
                 renameLabel: t('renameLabel'),
                 resourcesLabel: t('resourcesTitle'),
+                longTerm: t('resourceLongTerm'),
                 noBalanceHint: t('noBalanceHint'),
                 travel: {
                   untraveled: t('travelUntraveled'),

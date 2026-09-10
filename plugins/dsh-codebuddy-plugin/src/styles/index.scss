@@ -740,13 +740,16 @@
   white-space: nowrap;
   flex-shrink: 0;
 }
-/* 概览行文字颜色跟随资源生命周期：还能用=正常前景，已用完=警示，已过期=弱化。 */
+/* 概览行文字颜色跟随资源生命周期：还能用=正常前景，已用完=警示，已过期=弱化。
+   已过期行**不再给日期加删除线**：那原本是划掉「已作废的额度数字」，而现在 meta
+   装的是到期日——日期是事实，划掉会读成「这个日期不算数」。弱化色已足够表达
+   「不再可用」。 */
 .dsh-codebuddy-credit-resource-row.is-usable .dsh-codebuddy-credit-resource-name { color: var(--dsw-alias-label-primary); }
 .dsh-codebuddy-credit-resource-row.is-usable .dsh-codebuddy-credit-resource-meta { color: var(--dsw-alias-state-success-primary); }
 .dsh-codebuddy-credit-resource-row.is-depleted .dsh-codebuddy-credit-resource-name { color: var(--dsw-alias-label-secondary); }
 .dsh-codebuddy-credit-resource-row.is-depleted .dsh-codebuddy-credit-resource-meta { color: var(--dsw-alias-state-warn-primary); }
 .dsh-codebuddy-credit-resource-row.is-expired .dsh-codebuddy-credit-resource-name { color: var(--dsw-alias-label-tertiary); }
-.dsh-codebuddy-credit-resource-row.is-expired .dsh-codebuddy-credit-resource-meta { color: var(--dsw-alias-label-tertiary); text-decoration: line-through; }
+.dsh-codebuddy-credit-resource-row.is-expired .dsh-codebuddy-credit-resource-meta { color: var(--dsw-alias-label-tertiary); }
 .dsh-codebuddy-account-expired-pad { margin-top: 10px; font-size: 13px; }
 .dsh-codebuddy-account-card-footer {
   display: flex;
