@@ -54,6 +54,7 @@ import type { PanelRoute } from './panel-route.ts'
 import { classifyResources, forgetResources, readResources, recordResources } from './resource-history.ts'
 import type { ClassifiedResource, LiveResource, ResourceLifecycle } from './resource-history.ts'
 import { TokenStatsStore } from './token-stats-store.ts'
+import { activityCellSize } from './activity-grid.ts'
 import { CodeBuddyLogo } from '../components/CodeBuddyLogo.tsx'
 import { AddAccountModal, startLoginPolling } from '../components/AddAccountModal.tsx'
 import { getAutoCheckinPref, getAutoTravelPref, setAutoCheckinPref, setAutoTravelPref } from './usage-prefs.ts'
@@ -190,6 +191,22 @@ function useTokenStats(store: TokenStatsStore, days: number): {
     error: store.errorOf(days),
     reload,
   }
+}
+
+/**
+ * 页面首次加载时的整页占位。
+ *
+ * 三个页面共用同一个组件与同一套样式（`.dsh-codebuddy-page-loading`），避免
+ * 各自写一个裸 `<DshSpin/>` 而落点不一致——裸 Spin 没有容器也不会居中，
+ * 会贴到左上角。注意 `.dsh-codebuddy-panel-page` 是 flex column，所以这里
+ * 需要自己撑开高度并居中，不能依赖父容器。
+ */
+function PageLoading(): ReactNode {
+  return (
+    <div className="dsh-codebuddy-panel-page dsh-codebuddy-page-loading">
+      <DshSpin size="large" />
+    </div>
+  )
 }
 
 function StatMetric({ icon, label, value }: { icon: ReactNode, label: string, value: string }): ReactNode {
@@ -488,6 +505,14 @@ const RESOURCE_LIFECYCLE_META: Record<ResourceLifecycle, { labelKey: CodeBuddyLo
 /** 卡片行优先展示的套餐数：卡片是概览，全量台账在弹框里。 */
 const CARD_RESOURCE_LIMIT = 2
 
+/* ---------------------------------------------------------------------------
+ * Token 活动热力图的几何常量。
+ *
+ * 热力图是列优先（一周一列、一天一行），而「一/三/五」星期标签另占一列、按行
+ * 对齐；星期列有固定宽度，无法从热力图列宽反推行高。因此格子边长由 JS 量宽后
+ * 算一次，写进 --dcb-cell-size，三处（月份行 / 热力图 / 星期列）共用同一个值，
+ * 对齐由构造保证，而不是靠两套像素算术碰巧一致。
+ * ------------------------------------------------------------------------- */
 /** 把一个账号的实时资源包转成台账输入（卡片与弹框共用同一映射）。 */
 function liveResourcesOf(row: PanelAccountRow): LiveResource[] {
   return row.resources.map(r => ({
@@ -709,7 +734,7 @@ function AccountsPage({
 
   // 首次加载才整页占位；刷新时保留已渲染的内容，只叠一层遮罩。
   // 整页替换会让所有卡片卸载重建、页面闪一下，滚动位置也会丢。
-  if (loading && data === undefined) return <DshSpin size="large" />
+  if (loading && data === undefined) return <PageLoading />
   return (
     <div className="dsh-codebuddy-panel-page">
       <PanelRefreshOverlay visible={loading} />
@@ -823,7 +848,7 @@ function AccountsPage({
 
 function CreditsPage({ rpc, t }: { rpc: ConnectionRpc, t: Translate }): ReactNode {
   const { data, loading, reload } = usePanelData<{ accounts: PanelAccountRow[], currentId?: string }>(rpc, 'panelStatus', {}, [])
-  if (loading && data === undefined) return <DshSpin size="large" />
+  if (loading && data === undefined) return <PageLoading />
   const rows = data?.accounts ?? []
   if (rows.length === 0) return <DshEmpty title={t('accountsEmpty')} />
   const totalRemaining = rows.reduce((sum, row) => sum + row.totalRemaining, 0)
@@ -979,14 +1004,51 @@ function ActivityGrid({ activity, callSuffix }: { activity: TokenStats['activity
     if (month !== '') previousMonth = month
   }
 
+  /**
+   * 让 53 周正好铺满内容区。
+   *
+   * 为什么用 JS 量宽而不是纯 CSS：热力图是**列优先**（一周一列、一天一行），
+   * 而「一/三/五」星期标签在**另一列**里、按行对齐。星期列自有宽度（18px），
+   * 无法从热力图列宽反推行高——纯 CSS 下两者的行高必然逐渐错位。所以这里量一次
+   * 可用宽度，算出统一的格子边长写进 CSS 变量，三处（月份行、热力图、星期列）
+   * 共用同一个值，对齐由构造保证。
+   *
+   * 上下限的作用：低于 min 时格子会小到看不清，改由外层横向滚动承担；
+   * 高于 max 时继续放大会让格子显得笨重，此时整块居中、留白比变形好看。
+   */
+  const shellRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const shell = shellRef.current
+    if (shell === null) return
+    const applyCellSize = (): void => {
+      const width = shell.clientWidth
+      if (width <= 0) return
+      shell.style.setProperty('--dcb-cell-size', `${activityCellSize(width, weekCount).toFixed(2)}px`)
+    }
+    applyCellSize()
+    if (typeof ResizeObserver === 'undefined') {
+      window.addEventListener('resize', applyCellSize)
+      return () => { window.removeEventListener('resize', applyCellSize) }
+    }
+    const observer = new ResizeObserver(applyCellSize)
+    observer.observe(shell)
+    return () => { observer.disconnect() }
+  }, [weekCount])
+
   return (
-    <div className="dsh-codebuddy-token-activity-shell">
+    <div
+      className="dsh-codebuddy-token-activity-shell"
+      ref={shellRef}
+      // 列数只与数据有关，用内联样式声明（不放进量宽回调，免得被其提前 return 跳过）。
+      // 月份行与热力图共用这个模板，两者才不会错列。
+      style={{ '--dcb-week-count': String(weekCount) } as CSSProperties}
+    >
       <div className="dsh-codebuddy-token-weekdays" aria-hidden="true"><span /><span>一</span><span /><span>三</span><span /><span>五</span><span /></div>
       <div className="dsh-codebuddy-token-activity-scroll">
-        <div className="dsh-codebuddy-token-months" style={{ gridTemplateColumns: `repeat(${weekCount}, 12px)` }} aria-hidden="true">
+        <div className="dsh-codebuddy-token-months" aria-hidden="true">
           {monthLabels.map((label, index) => <span key={`${index}-${label}`}>{label}</span>)}
         </div>
-        <div className="dsh-codebuddy-token-activity-grid" style={{ gridTemplateColumns: `repeat(${weekCount}, 12px)` }} role="img" aria-label="最近一年 CodeBuddy Token 活动热力图">
+        <div className="dsh-codebuddy-token-activity-grid" role="img" aria-label="最近一年 CodeBuddy Token 活动热力图">
           {cells.map((item, index) => {
             if (item === undefined) return <span key={`padding-${index}`} className="is-padding" aria-hidden="true" />
             const level = item.tokens === 0 ? 0 : Math.min(4, Math.ceil((item.tokens / max) * 4))
@@ -1078,7 +1140,7 @@ function TokenStatsPage({ rpc, t }: { rpc: ConnectionRpc, t: Translate }): React
   const data = overview.data ?? lastData.current
 
   if (data === undefined && overview.initialLoading) {
-    return <div className="dsh-codebuddy-panel-page dsh-codebuddy-token-loading"><DshSpin size="large" /></div>
+    return <PageLoading />
   }
   if (data === undefined) {
     return <div className="dsh-codebuddy-panel-page"><DshEmpty title={t('usageUnavailable')} /></div>

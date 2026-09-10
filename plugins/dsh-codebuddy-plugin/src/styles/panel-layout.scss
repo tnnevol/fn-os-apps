@@ -223,7 +223,11 @@
   padding-bottom: 18px;
 }
 
-.dsh-codebuddy-token-loading {
+/* 整页占位（账号管理 / 积分统计 / Token 统计共用）：撑开高度并居中。
+   三个页面共用同一个类名，避免各自实现导致 spinner 落点不一致。
+   `.dsh-codebuddy-panel-page` 是 flex column，所以这里必须自己撑开：只靠
+   justify-content 不会有效果（高度由内容决定），spinner 会贴左上角。 */
+.dsh-codebuddy-page-loading {
   min-height: 360px;
   align-items: center;
   justify-content: center;
@@ -355,23 +359,44 @@
   grid-template-columns: 18px minmax(0, 1fr);
   gap: 8px;
   margin-top: 17px;
+  /* 格子边长与间隙：由组件按可用宽度算好后写入 --dcb-cell-size（见 panel.tsx
+     的 ActivityGrid）。三处共用同一个值，星期列与热力图的行高因此天然对齐。
+     这里的具体数值只是 JS 尚未跑完时的兜底。 */
+  --dcb-cell-gap: 4px;
+  --dcb-cell-size: 12px;
+  /* 月份行「占位总高」= 行高 16px + 下边距 4px。星期列用同一个值做 padding-top，
+     两者因此始终对齐；改一处即可，不会各自漂移。 */
+  --dcb-month-height: 16px;
+  --dcb-month-gap: 4px;
+  --dcb-month-row: calc(var(--dcb-month-height) + var(--dcb-month-gap));
 }
 .dsh-codebuddy-token-weekdays {
   display: grid;
-  grid-template-rows: repeat(7, 12px);
-  gap: 4px;
-  padding-top: 20px;
+  grid-template-rows: repeat(7, var(--dcb-cell-size));
+  gap: var(--dcb-cell-gap);
+  /* 与月份行同高，使第一行格子正对「一」。
+     高度由 --dcb-month-row 统一给出：星期列与月份行都用它，
+     避免两个手写数字（16 + 4 = 20）各自漂移导致错位。 */
+  padding-top: var(--dcb-month-row);
   color: var(--dsw-alias-label-tertiary);
   font-size: 9px;
-  line-height: 12px;
+  line-height: var(--dcb-cell-size);
 }
+/* 热力图尺寸。
+ *
+ * 一年恒为 53 周（365 天补位后总是 371 格），列数固定。此前把列宽写死成 12px，
+ * 整块宽度被钉死在 53*12+52*4=844px，卡片更宽时右侧就留白——「没填满」即由此
+ * 而来。现改为列宽/行高都由 --dcb-cell-size 驱动，格子边长按容器宽度算出，
+ * 53 周正好铺满内容区。
+ */
 .dsh-codebuddy-token-activity-scroll { min-width: 0; overflow-x: auto; padding-bottom: 4px; }
 .dsh-codebuddy-token-months {
   display: grid;
-  gap: 4px;
+  grid-template-columns: repeat(var(--dcb-week-count, 53), var(--dcb-cell-size));
+  gap: var(--dcb-cell-gap);
   width: max-content;
-  height: 16px;
-  margin-bottom: 4px;
+  height: var(--dcb-month-height);
+  margin-bottom: var(--dcb-month-gap);
   color: var(--dsw-alias-label-tertiary);
   font-size: 9px;
   line-height: 12px;
@@ -379,15 +404,18 @@
 .dsh-codebuddy-token-months span { overflow: visible; white-space: nowrap; }
 .dsh-codebuddy-token-activity-grid {
   display: grid;
-  grid-template-rows: repeat(7, 12px);
+  grid-template-columns: repeat(var(--dcb-week-count, 53), var(--dcb-cell-size));
+  grid-template-rows: repeat(7, var(--dcb-cell-size));
   grid-auto-flow: column;
-  gap: 4px;
+  gap: var(--dcb-cell-gap);
   width: max-content;
 }
 .dsh-codebuddy-token-activity-grid span {
   display: block;
-  width: 12px;
-  height: 12px;
+  width: var(--dcb-cell-size);
+  height: var(--dcb-cell-size);
+  /* 无全局 box-sizing:border-box，边框会额外撑大格子并破坏与行高的一致性。 */
+  box-sizing: border-box;
   border: 1px solid color-mix(in srgb, var(--dsw-alias-border-l2) 72%, transparent);
   border-radius: 3px;
   background: var(--dsw-alias-bg-layer-2);
