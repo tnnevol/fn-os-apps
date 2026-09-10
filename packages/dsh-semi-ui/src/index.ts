@@ -17,6 +17,7 @@ export {
   DshForm,
   DshHotKeys,
   DshSpin,
+  DshSkeleton,
   DshToast,
   DshTooltip,
   DshPopover,

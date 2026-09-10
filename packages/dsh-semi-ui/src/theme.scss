@@ -117,6 +117,15 @@ body[data-dsh-semi-theme] .semi-progress {
   --semi-color-success: var(--dsw-alias-label-tertiary);
 }
 
+/* Skeleton stands in for content that has not arrived yet. The global
+   --semi-color-fill-0 maps to a hover tint, which is too faint to read as a
+   placeholder over a card surface; use the border tone so the blocks are
+   clearly visible, plus a slightly stronger tone for the shimmer band. */
+body[data-dsh-semi-theme] .semi-skeleton {
+  --semi-color-fill-0: var(--dsw-alias-border-l3);
+  --semi-color-fill-1: var(--dsw-alias-border-l2);
+}
+
 /* Keep horizontal Slider geometry aligned with DSH controls. The vertical
    wrapper is excluded so its axis-specific dimensions remain intact. */
 body[data-dsh-semi-theme] .semi-slider-wrapper:not(.semi-slider-vertical-wrapper) > .semi-slider-rail,

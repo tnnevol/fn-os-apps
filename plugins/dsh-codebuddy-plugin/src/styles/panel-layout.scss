@@ -233,14 +233,26 @@
   padding-bottom: 18px;
 }
 
-/* 整页占位（账号管理 / 积分统计 / Token 统计共用）：撑开高度并居中。
-   三个页面共用同一个类名，避免各自实现导致 spinner 落点不一致。
-   `.dsh-codebuddy-panel-page` 是 flex column，所以这里必须自己撑开：只靠
-   justify-content 不会有效果（高度由内容决定），spinner 会贴左上角。 */
-.dsh-codebuddy-page-loading {
-  min-height: 360px;
-  align-items: center;
-  justify-content: center;
+/* 首次加载的骨架占位。
+   骨架的形状由 panel.tsx 铺（与各页真实结构一致），这里只补齐骨架块之间的
+   间距与卡内排布，使骨架与真实内容占用同样的高度，切换时不跳动。 */
+.dsh-codebuddy-skeleton-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px 22px;
+}
+.dsh-codebuddy-skeleton-overview-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 21px 24px 18px;
+}
+.dsh-codebuddy-skeleton-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 4px 0;
 }
 
 .dsh-codebuddy-token-toolbar,

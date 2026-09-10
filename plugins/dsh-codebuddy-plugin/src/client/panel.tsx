@@ -36,6 +36,7 @@ import {
   DshModal,
   DshNav,
   DshProgress,
+  DshSkeleton,
   DshSpin,
   DshSwitch,
   DshTabs,
@@ -194,19 +195,97 @@ function useTokenStats(store: TokenStatsStore, days: number): {
 }
 
 /**
- * 页面首次加载时的整页占位。
+ * 页面首次加载时的占位。
  *
- * 三个页面共用同一个组件与同一套样式（`.dsh-codebuddy-page-loading`），避免
- * 各自写一个裸 `<DshSpin/>` 而落点不一致——裸 Spin 没有容器也不会居中，
- * 会贴到左上角。注意 `.dsh-codebuddy-panel-page` 是 flex column，所以这里
- * 需要自己撑开高度并居中，不能依赖父容器。
+ * 不用整屏转圈（`<DshSpin size="large"/>`）：那会先出现一大片空白再「啪」地换成
+ * 内容，视觉上像卡了一下。改用 Semi 的 `Skeleton` 铺出**与真实页面同形**的骨架，
+ * 内容到位时骨架就地替换，不发生版面跳动。
+ *
+ * 之所以每个页面各写一套骨架（而不是一个通用占位）：骨架的价值就在于形状对得上
+ * ——卡片网格、指标格、图表的高度与真实元素一致，切换时才不闪。通用占位做不到
+ * 这一点，也就退化成「换个样子的转圈」。
+ *
+ * Semi 的 `Skeleton` 支持 `loading` 开关与 `placeholder` 自定义，这里直接把它们
+ * 组合成静态骨架（数据到位后整块被真实内容取代，故不需要 loading 切换）。
  */
-function PageLoading(): ReactNode {
+function SkeletonBlock({ height, width = '100%', radius = 8 }: { height: number, width?: number | string, radius?: number }): ReactNode {
+  // 用 `Skeleton.Title` 而不是裸 div：它自带 .semi-skeleton-title 类与底色，
+  // 且能被祖先 `.semi-skeleton-active` 选中而产生微光动画（见下方 wrapper）。
+  return <DshSkeleton.Title style={{ height, width, borderRadius: radius }} />
+}
+
+/** 账号管理 / 积分统计：操作卡 + 账号卡片网格。 */
+function AccountsSkeleton(): ReactNode {
   return (
-    <div className="dsh-codebuddy-panel-page dsh-codebuddy-page-loading">
-      <DshSpin size="large" />
-    </div>
+    <DshSkeleton active className="dsh-codebuddy-panel-page" aria-busy="true">
+      <DshCard className="dsh-codebuddy-panel-action-card">
+        <div className="dsh-codebuddy-panel-action-copy">
+          <SkeletonBlock height={18} width="42%" />
+          <SkeletonBlock height={12} width="70%" radius={6} />
+        </div>
+        <div className="dsh-codebuddy-panel-action-cta">
+          <SkeletonBlock height={28} width={96} radius={6} />
+        </div>
+      </DshCard>
+      <div className="dsh-codebuddy-panel-section-head">
+        <SkeletonBlock height={16} width={140} />
+        <SkeletonBlock height={28} width={180} radius={6} />
+      </div>
+      <div className="dsh-codebuddy-panel-cards">
+        {[0, 1].map(index => (
+          <DshCard key={index} className="dsh-codebuddy-panel-card">
+            <div className="dsh-codebuddy-skeleton-card-body">
+              <SkeletonBlock height={20} width="55%" />
+              <SkeletonBlock height={12} width="80%" radius={6} />
+              <SkeletonBlock height={8} radius={999} />
+              <SkeletonBlock height={12} width="65%" radius={6} />
+            </div>
+          </DshCard>
+        ))}
+      </div>
+    </DshSkeleton>
   )
+}
+
+/** Token 统计：总览卡 + 趋势图 + 列表。与真实的卡片/图表高度对齐。 */
+function TokensSkeleton(): ReactNode {
+  return (
+    <DshSkeleton active className="dsh-codebuddy-panel-page dsh-codebuddy-panel-tokens" aria-busy="true">
+      <div className="dsh-codebuddy-token-toolbar">
+        <div>
+          <SkeletonBlock height={18} width={160} />
+          <SkeletonBlock height={12} width={240} radius={6} />
+        </div>
+      </div>
+      <DshCard className="dsh-codebuddy-token-overview-card">
+        <div className="dsh-codebuddy-skeleton-overview-body">
+          <SkeletonBlock height={26} width="40%" />
+          <SkeletonBlock height={9} radius={999} />
+          <div className="dsh-codebuddy-panel-stat-grid">
+            {[0, 1, 2, 3].map(index => <SkeletonBlock key={index} height={38} radius={6} />)}
+          </div>
+        </div>
+      </DshCard>
+      <section className="dsh-codebuddy-token-section">
+        <SkeletonBlock height={16} width={120} />
+        <DshCard className="dsh-codebuddy-panel-chart-card">
+          <SkeletonBlock height={310} radius={10} />
+        </DshCard>
+      </section>
+      <section className="dsh-codebuddy-token-section">
+        <SkeletonBlock height={16} width={120} />
+        <DshCard className="dsh-codebuddy-token-list-card">
+          <div className="dsh-codebuddy-skeleton-list">
+            {[0, 1, 2, 3, 4, 5].map(index => <SkeletonBlock key={index} height={18} radius={6} />)}
+          </div>
+        </DshCard>
+      </section>
+    </DshSkeleton>
+  )
+}
+
+function PageLoading({ variant }: { variant: 'accounts' | 'tokens' }): ReactNode {
+  return variant === 'tokens' ? <TokensSkeleton /> : <AccountsSkeleton />
 }
 
 function StatMetric({ icon, label, value }: { icon: ReactNode, label: string, value: string }): ReactNode {
@@ -755,7 +834,7 @@ function AccountsPage({
 
   // 首次加载才整页占位；刷新时保留已渲染的内容，只叠一层遮罩。
   // 整页替换会让所有卡片卸载重建、页面闪一下，滚动位置也会丢。
-  if (loading && data === undefined) return <PageLoading />
+  if (loading && data === undefined) return <PageLoading variant="accounts" />
   return (
     <div className="dsh-codebuddy-panel-page">
       <PanelRefreshOverlay visible={loading} />
@@ -869,7 +948,7 @@ function AccountsPage({
 
 function CreditsPage({ rpc, t }: { rpc: ConnectionRpc, t: Translate }): ReactNode {
   const { data, loading, reload } = usePanelData<{ accounts: PanelAccountRow[], currentId?: string }>(rpc, 'panelStatus', {}, [])
-  if (loading && data === undefined) return <PageLoading />
+  if (loading && data === undefined) return <PageLoading variant="accounts" />
   const rows = data?.accounts ?? []
   if (rows.length === 0) return <DshEmpty title={t('accountsEmpty')} />
   const totalRemaining = rows.reduce((sum, row) => sum + row.totalRemaining, 0)
@@ -1161,7 +1240,7 @@ function TokenStatsPage({ rpc, t }: { rpc: ConnectionRpc, t: Translate }): React
   const data = overview.data ?? lastData.current
 
   if (data === undefined && overview.initialLoading) {
-    return <PageLoading />
+    return <PageLoading variant="tokens" />
   }
   if (data === undefined) {
     return <div className="dsh-codebuddy-panel-page"><DshEmpty title={t('usageUnavailable')} /></div>
