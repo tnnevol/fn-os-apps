@@ -516,7 +516,9 @@
  * 缩进，而分隔线要通栏。 */
 .dsh-codebuddy-panel-toolbar {
   flex: 0 0 auto;
-  /* 纵向间距保持原值；横向改用 padding-inline 按 1480px 列计算（见下方注释）。 */
+  /* 通栏：不加宽度上限，底部分隔线因此横跨整个面板。 */
+  width: 100%;
+  /* 纵向间距保持原值；横向内部留白由 padding-inline 按 1480px 列计算（见下方注释）。 */
   padding-top: 24px;
   padding-bottom: 16px;
   padding-inline: max(clamp(16px, 2vw, 32px), calc((100% - 1480px) / 2));

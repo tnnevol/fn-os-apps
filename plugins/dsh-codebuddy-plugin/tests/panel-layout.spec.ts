@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
+import { join } from 'node:path'
 
 /**
  * 后台面板的布局必须用 **Semi Layout 组件**表达，不自建 HTML 容器。
@@ -22,6 +23,14 @@ const PANEL = readFileSync(
   '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/client/panel.tsx',
   'utf8',
 )
+/** Semi layout 的 CSS：用于确认 box-sizing 前提（width:100% + padding 不溢出）。 */
+const SEMI_LAYOUT_CSS = (() => {
+  const pnpm = '/Users/tnnevol/workspace/fn-packages/fn-os-apps/node_modules/.pnpm'
+  const dir = readdirSync(pnpm).find(d => d.startsWith('@douyinfe+semi-foundation@'))
+  if (dir === undefined) throw new Error('未找到 semi-foundation')
+  return join(pnpm, dir, 'node_modules/@douyinfe/semi-foundation/lib/es/layout/layout.css')
+})()
+
 const INDEX_SCSS = readFileSync(
   '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/styles/index.scss',
   'utf8',
@@ -103,9 +112,22 @@ describe('标题与内容的横向对齐', () => {
     expect(toolbarPad()).toMatch(/max\(clamp\(16px,\s*2vw,\s*32px\),\s*calc\(\(100% - 1480px\) \/ 2\)\)/)
   })
 
-  it('header 通栏：不再设 width 上限（否则分隔线两端悬空）', () => {
+  it('header 通栏：显式 width: 100%（分隔线才能横跨整个面板）', () => {
     const block = /\.dsh-codebuddy-panel-toolbar\s*\{([^}]*)\}/.exec(INDEX_SCSS)?.[1] ?? ''
+    expect(block).toMatch(/(^|[^-])width:\s*100%/)
+    // 且不得残留宽度上限——那会让分隔线在宽屏下两端悬空。
     expect(block).not.toMatch(/(^|[^-])width:\s*min\(/)
+    expect(block).not.toMatch(/max-width:/)
+  })
+
+  it('width: 100% 与 padding-inline 并存不溢出（依赖 Semi 的 border-box）', () => {
+    // Semi 的 layout.css 已为 .semi-layout-header 设 box-sizing: border-box，
+    // 因此 padding 计在 100% 之内；若哪天该前提失效，这条会提醒复核。
+    const semiLayout = readFileSync(
+      SEMI_LAYOUT_CSS,
+      'utf8',
+    )
+    expect(semiLayout).toMatch(/\.semi-layout-header[^{}]*\{[^}]*box-sizing:\s*border-box/)
   })
 
   it('页面内容列仍受 1480px 上限约束', () => {
