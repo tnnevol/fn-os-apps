@@ -239,18 +239,21 @@ function AccountsSkeleton(): ReactNode {
       aria-busy="true"
       placeholder={(
         <>
-          <DshCard className="dsh-codebuddy-panel-action-card">
-        <div className="dsh-codebuddy-panel-action-copy">
-          <SkeletonBlock height={18} width="42%" />
-          <SkeletonBlock height={12} width="70%" radius={6} />
-        </div>
-        <div className="dsh-codebuddy-panel-action-cta">
-          <SkeletonBlock height={28} width={96} radius={6} />
+          {/* 与真实页面对齐：先积分总览卡，再区块头（标题 + 右侧动作区）。
+          操作卡已移除，骨架里不能再画它，否则加载完成时会跳一下。 */}
+      <DshCard className="dsh-codebuddy-panel-stat-card">
+        <div className="dsh-codebuddy-panel-stat-grid">
+          {[0, 1, 2, 3].map(index => (
+            <div key={index} className="dsh-codebuddy-panel-stat">
+              <SkeletonBlock height={12} width="52%" radius={6} />
+              <SkeletonBlock height={26} width="40%" radius={8} />
+            </div>
+          ))}
         </div>
       </DshCard>
       <div className="dsh-codebuddy-panel-section-head">
         <SkeletonBlock height={16} width={140} />
-        <SkeletonBlock height={28} width={180} radius={6} />
+        <SkeletonBlock height={28} width={220} radius={6} />
       </div>
       <div className="dsh-codebuddy-panel-cards">
         {[0, 1].map(index => (
@@ -886,23 +889,6 @@ function AccountsPage({
   return (
     <div className="dsh-codebuddy-panel-page">
       <PanelRefreshOverlay visible={loading} />
-      <DshCard className="dsh-codebuddy-panel-action-card">
-        <div className="dsh-codebuddy-panel-action-copy">
-          <strong>{t('accountActionTitle')}</strong>
-          <p className="dsh-codebuddy-muted">{t('accountActionDesc')}</p>
-        </div>
-        <div className="dsh-codebuddy-panel-action-cta">
-          <DshButton
-            size="small"
-            theme="solid"
-            type="primary"
-            disabled={loginWaiting}
-            onClick={onAddAccount}
-          >
-            {loginWaiting ? t('signingIn') : t('createUser')}
-          </DshButton>
-        </div>
-      </DshCard>
       {loginWaiting ? (
         <div className="dsh-codebuddy-login-waiting">
           <span className="dsh-codebuddy-muted">{t('loginWaitingCopy')}</span>
@@ -920,36 +906,47 @@ function AccountsPage({
       {/* 原「积分管理」页的账号积分总览，迁入本页顶部：四张指标卡与账号列表
           同源同屏，读者不必在两个菜单之间来回切换。 */}
       <CreditsOverview rows={rows} t={t} />
+      {/* 区块头常驻（不随「有账号」条件渲染）：添加账号按钮放在标题右侧，
+          空列表时必须仍可用——那正是最需要添加入口的情形。 */}
+      <div className="dsh-codebuddy-panel-section-head">
+        <div className="dsh-codebuddy-panel-section-title"><strong>{t('accountsTitle')}</strong><span>{rows.length}</span></div>
+        <div className="dsh-codebuddy-accounts-head-actions">
+          {/* 主操作按钮排在动作区首位，沿用原先的 solid/primary 强调。 */}
+          <DshButton
+            size="small"
+            theme="solid"
+            type="primary"
+            disabled={loginWaiting}
+            onClick={onAddAccount}
+          >
+            {loginWaiting ? t('signingIn') : t('createUser')}
+          </DshButton>
+          <AutoCheckinToggle
+            checked={autoCheckinOn}
+            t={t}
+            onChange={(checked: boolean) => {
+              setAutoCheckinOn(checked)
+              setAutoCheckinPref(checked)
+              void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoCheckin', { enabled: checked })
+            }}
+          />
+          <AutoTravelToggle
+            checked={autoTravelOn}
+            t={t}
+            onChange={(checked: boolean) => {
+              setAutoTravelOn(checked)
+              setAutoTravelPref(checked)
+              void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoTravel', { enabled: checked })
+            }}
+          />
+          <DshButton size="small" theme="light" icon={<DshIconRefresh />} onClick={reload}>{t('refresh')}</DshButton>
+        </div>
+      </div>
       {rows.length === 0 ? (
         <DshEmpty title={t('accountsEmpty')} />
       ) : (
-        <>
-          <div className="dsh-codebuddy-panel-section-head">
-            <div className="dsh-codebuddy-panel-section-title"><strong>{t('accountsTitle')}</strong><span>{rows.length}</span></div>
-            <div className="dsh-codebuddy-accounts-head-actions">
-              <AutoCheckinToggle
-                checked={autoCheckinOn}
-                t={t}
-                onChange={(checked: boolean) => {
-                  setAutoCheckinOn(checked)
-                  setAutoCheckinPref(checked)
-                  void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoCheckin', { enabled: checked })
-                }}
-              />
-              <AutoTravelToggle
-                checked={autoTravelOn}
-                t={t}
-                onChange={(checked: boolean) => {
-                  setAutoTravelOn(checked)
-                  setAutoTravelPref(checked)
-                  void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoTravel', { enabled: checked })
-                }}
-              />
-              <DshButton size="small" theme="light" icon={<DshIconRefresh />} onClick={reload}>{t('refresh')}</DshButton>
-            </div>
-          </div>
-          <div className="dsh-codebuddy-panel-cards">
-            {rows.map(row => (
+        <div className="dsh-codebuddy-panel-cards">
+          {rows.map(row => (
             <AccountCard
               key={row.id}
               row={row}
@@ -983,9 +980,8 @@ function AccountsPage({
               onRename={(row_) => { onRename(row_) }}
               onOpenResources={(row_) => { setResourceTarget(row_) }}
             />
-            ))}
-          </div>
-        </>
+          ))}
+        </div>
       )}
       <AccountResourcesModal
         row={resourceTarget}

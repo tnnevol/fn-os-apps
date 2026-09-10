@@ -92,6 +92,10 @@
 .dsh-codebuddy-accounts-head-actions {
   display: inline-flex;
   align-items: center;
+  /* 允许换行：动作区现含「添加账号 + 两个开关 + 刷新」四个控件，窄屏一行放不下，
+     不给 wrap 会横向溢出并把页面撑出滚动。 */
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 8px;
 }
 
