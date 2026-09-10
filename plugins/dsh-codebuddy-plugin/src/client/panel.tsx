@@ -218,8 +218,13 @@ function SkeletonBlock({ height, width = '100%', radius = 8 }: { height: number,
 /** 账号管理 / 积分统计：操作卡 + 账号卡片网格。 */
 function AccountsSkeleton(): ReactNode {
   return (
-    <DshSkeleton active className="dsh-codebuddy-panel-page" aria-busy="true">
-      <DshCard className="dsh-codebuddy-panel-action-card">
+    <DshSkeleton
+      active
+      className="dsh-codebuddy-panel-page"
+      aria-busy="true"
+      placeholder={(
+        <>
+          <DshCard className="dsh-codebuddy-panel-action-card">
         <div className="dsh-codebuddy-panel-action-copy">
           <SkeletonBlock height={18} width="42%" />
           <SkeletonBlock height={12} width="70%" radius={6} />
@@ -244,15 +249,22 @@ function AccountsSkeleton(): ReactNode {
           </DshCard>
         ))}
       </div>
-    </DshSkeleton>
+        </>
+      )}
+    />
   )
 }
 
 /** Token 统计：总览卡 + 趋势图 + 列表。与真实的卡片/图表高度对齐。 */
 function TokensSkeleton(): ReactNode {
   return (
-    <DshSkeleton active className="dsh-codebuddy-panel-page dsh-codebuddy-panel-tokens" aria-busy="true">
-      <div className="dsh-codebuddy-token-toolbar">
+    <DshSkeleton
+      active
+      className="dsh-codebuddy-panel-page dsh-codebuddy-panel-tokens"
+      aria-busy="true"
+      placeholder={(
+        <>
+          <div className="dsh-codebuddy-token-toolbar">
         {/* 与真实页面对应：这里是一行「数据更新于 …」，不再是标题块。 */}
         <SkeletonBlock height={12} width={220} radius={6} />
       </div>
@@ -279,7 +291,9 @@ function TokensSkeleton(): ReactNode {
           </div>
         </DshCard>
       </section>
-    </DshSkeleton>
+        </>
+      )}
+    />
   )
 }
 
