@@ -97,3 +97,25 @@ describe('CodeBuddy panel hash route', () => {
     dispose()
   })
 })
+
+describe('已移除的「积分管理」路由', () => {
+  it('旧链接 #/codebuddy/credits 回落到入口页（账号管理）', async () => {
+    // 积分面板已迁入账号页、菜单项移除。用户可能存过这个书签，
+    // 未知子页由 pageFromHash 回落到 DEFAULT_PAGE，因此不会白屏。
+    const { PanelRouteController } = await import('../src/client/panel-route.ts')
+    const browser = {
+      location: { hash: '#/codebuddy/credits' },
+      history: { replaceState: (_d: unknown, _u: string, url?: string | URL | null) => { browser.location.hash = String(url) } },
+    }
+    const route = new PanelRouteController(browser as never)
+    expect(route.getSnapshot().active).toBe(true)
+    expect(route.getSnapshot().page).toBe('accounts')
+    // 地址栏被改写为规范子页，刷新后不会再落到未知路由。
+    expect(browser.location.hash).toBe('#/codebuddy/accounts')
+  })
+
+  it('PANEL_HASHES 不再包含 credits', async () => {
+    const { PANEL_HASHES } = await import('../src/client/panel-route.ts')
+    expect(Object.keys(PANEL_HASHES)).not.toContain('credits')
+  })
+})

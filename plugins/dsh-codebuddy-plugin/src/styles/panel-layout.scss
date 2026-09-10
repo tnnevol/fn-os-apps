@@ -121,6 +121,15 @@
 
 .dsh-codebuddy-panel-card-active { box-shadow: inset 0 0 0 1px var(--dsw-alias-state-success-primary); }
 
+/* 积分总览（迁入账号页）：标题与指标卡组成一个区块。外层 .dsh-codebuddy-panel-page
+   的 gap 只作用于区块之间，因此这里自己给标题与卡片之间留出间距。 */
+.dsh-codebuddy-credits-overview {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
 .dsh-codebuddy-panel-stat-card { padding: 0; overflow: hidden; }
 .dsh-codebuddy-panel-stat-grid {
   display: grid;

@@ -23,12 +23,12 @@ const LAB_ROOT = '/Users/tnnevol/workspace/fn-packages/fn-os-apps/node_modules/.
 describe('左侧菜单图标', () => {
   const items = PANEL.slice(PANEL.indexOf('const items = ['), PANEL.indexOf('return (\n    <div className="dsh-codebuddy-panel"'))
 
-  it('三个菜单项都使用 Lab（彩色）图标', () => {
+  it('两个菜单项都使用 Lab（彩色）图标', () => {
+    // 「积分管理」已并入「账号管理」，菜单回到两项。
     const icons = items.match(/<DshIconLab\w+ \/>/g) ?? []
-    expect(icons).toHaveLength(3)
+    expect(icons).toHaveLength(2)
     expect(items).toContain('DshIconLabAvatar')
     expect(items).toContain('DshIconLabChart')
-    expect(items).toContain('DshIconLabToken')
   })
 
   it('菜单项不再使用单色图标', () => {

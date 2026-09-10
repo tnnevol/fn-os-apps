@@ -7,7 +7,6 @@
 
 export const PANEL_HASHES = {
   accounts: '#/codebuddy/accounts',
-  credits: '#/codebuddy/credits',
   tokens: '#/codebuddy/tokens',
 } as const
 

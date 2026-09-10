@@ -24,7 +24,6 @@ import {
   DshIconButton,
   DshIconLabAvatar,
   DshIconLabChart,
-  DshIconLabToken,
   DshIconArrowLeft,
   DshIconClose,
   DshIconCommand,
@@ -918,6 +917,9 @@ function AccountsPage({
           </DshButton>
         </div>
       ) : null}
+      {/* 原「积分管理」页的账号积分总览，迁入本页顶部：四张指标卡与账号列表
+          同源同屏，读者不必在两个菜单之间来回切换。 */}
+      <CreditsOverview rows={rows} t={t} />
       {rows.length === 0 ? (
         <DshEmpty title={t('accountsEmpty')} />
       ) : (
@@ -995,27 +997,30 @@ function AccountsPage({
   )
 }
 
-function CreditsPage({ rpc, t, rosterTick }: { rpc: ConnectionRpc, t: Translate, rosterTick: number }): ReactNode {
-  // 与账号页共用 panelStatus：账号增删/改名/登录完成后必须一起失效。
-  // 此前这个 deps 是空的——那时页面每次进入都会重新挂载、顺带重拉，掩盖了
-  // 缺陷；改成 keep-alive 后会一直显示旧账号，因此补上（见 rosterTick）。
-  const { data, loading, reload } = usePanelData<{ accounts: PanelAccountRow[], currentId?: string }>(rpc, 'panelStatus', {}, [rosterTick])
-  if (loading && data === undefined) return <PageLoading variant="accounts" />
-  const rows = data?.accounts ?? []
-  if (rows.length === 0) return <DshEmpty title={t('accountsEmpty')} />
+/**
+ * 账号积分总览（原「积分管理」页的主要内容，现迁入「账号管理」页顶部）。
+ *
+ * 数据由调用方以 props 传入而非自己拉取：账号页已经通过 `panelStatus` 拿到了
+ * 同一份 `PanelAccountRow[]`（含 `resources`），再拉一次既浪费一次 RPC，
+ * 也会让两处数据出现短暂不一致。因此这里只负责呈现。
+ *
+ * 展示四张指标：剩余额度、积分包总数、可用账号、已掉线。
+ */
+function CreditsOverview({ rows, t }: { rows: readonly PanelAccountRow[], t: Translate }): ReactNode {
+  if (rows.length === 0) return null
   const totalRemaining = rows.reduce((sum, row) => sum + row.totalRemaining, 0)
   const resourceCount = rows.reduce((sum, row) => sum + row.resources.length, 0)
   const usableCount = rows.filter(row => row.usable).length
   const offlineCount = rows.filter(row => row.expired).length
   return (
-    <div className="dsh-codebuddy-panel-page">
-      <PanelRefreshOverlay visible={loading} />
-      <div className="dsh-codebuddy-panel-section-head">
-        <div>
-          <strong>{t('creditTitle')}</strong>
-          <p className="dsh-codebuddy-muted">{t('usageUnavailable')}</p>
-        </div>
-        <DshButton size="small" theme="light" icon={<DshIconRefresh />} onClick={reload}>{t('refresh')}</DshButton>
+    <div className="dsh-codebuddy-credits-overview">
+      {/* 区块标题沿用页面既有写法（strong + 计数），与下方「账号管理」区块同级，
+          读者一眼看出这组指标属于积分而非账号。
+          计数用**账号数**而非积分包数：后者已作为「积分包」指标出现在卡片里，
+          重复显示同一个数字没有增量信息。 */}
+      <div className="dsh-codebuddy-panel-section-title">
+        <strong>{t('creditTitle')}</strong>
+        <span>{rows.length}</span>
       </div>
       <DshCard className="dsh-codebuddy-panel-stat-card">
         <div className="dsh-codebuddy-panel-stat-grid">
@@ -1025,30 +1030,6 @@ function CreditsPage({ rpc, t, rosterTick }: { rpc: ConnectionRpc, t: Translate,
           <StatMetric icon={<DshIconElementStroked />} label={t('accountOffline')} value={String(offlineCount)} />
         </div>
       </DshCard>
-      <div className="dsh-codebuddy-panel-section-title"><strong>{t('creditTitle')}</strong><span>{rows.length}</span></div>
-      <div className="dsh-codebuddy-panel-cards">
-        {rows.map(row => (
-          <DshCard key={row.id} className={'dsh-codebuddy-panel-card' + (row.active ? ' dsh-codebuddy-panel-card-active' : '')}>
-            <div className="dsh-codebuddy-account-card-title-row">
-              <span className="dsh-codebuddy-account-name">{row.nickname}</span>
-              {row.active ? <DshTag size="small" type="solid" color="green">{t('accountActive')}</DshTag> : null}
-              {row.expired ? <DshTag size="small" type="light" color="orange">{t('accountOffline')}</DshTag> : null}
-            </div>
-            {!row.creditOk ? <div className="dsh-codebuddy-muted">积分查询失败</div> : row.resources.length === 0 ? <div className="dsh-codebuddy-muted">{t('usageUnavailable')}</div> : (
-              row.resources.map(w => {
-                const pct = w.remainingPct ?? 0
-                return (
-                  <div key={w.name} className="dsh-codebuddy-panel-credit-row">
-                    <div className="dsh-codebuddy-usage-popover-heading"><span>{w.name}</span><span>{w.remaining !== null ? `${formatCredit(w.remaining)} / ${w.total !== null ? formatCredit(w.total) : '∞'}` : '—'}</span></div>
-                    <DshProgress percent={pct} showInfo={false} stroke="var(--dsw-alias-state-success-primary)" orbitStroke="var(--dsw-alias-border-l3)" />
-                    <span className="dsh-codebuddy-usage-popover-reset">{w.resetsAt !== null ? `${t('usageResets')} ${w.resetsAt}` : t('usageLongTerm')}</span>
-                  </div>
-                )
-              })
-            )}
-          </DshCard>
-        ))}
-      </div>
     </div>
   )
 }
@@ -1731,15 +1712,11 @@ export function CodeBuddyPanelPage({ rpc, route, t }: PanelPageProps): ReactNode
 
   if (!snapshot.active) return null
 
-  const pageTitle = snapshot.page === 'accounts'
-    ? t('accountsTitle')
-    : snapshot.page === 'credits' ? t('creditTitle') : t('tokenTitle')
+  const pageTitle = snapshot.page === 'accounts' ? t('accountsTitle') : t('tokenTitle')
   // 副标题只在真有补充信息时才渲染。Token 页原先标题与描述同为 tokenTitle，
   // 于是 h1 下方又重复印了一遍「Token 统计」；既然没有额外信息可讲，就不渲染，
   // 由页面工具栏的「数据更新于 …」承担这一行的信息。
-  const pageDescription = snapshot.page === 'accounts'
-    ? t('accountsDesc')
-    : snapshot.page === 'credits' ? t('creditResourceCount') : undefined
+  const pageDescription = snapshot.page === 'accounts' ? t('accountsDesc') : undefined
 
   // 左侧菜单用彩色图标（semi-icons-lab）：该包是硬编码多色 fill 的彩色图标集，
   // 语义上分别对应账号（头像）、Token（图表）、积分（代币）。
@@ -1747,7 +1724,6 @@ export function CodeBuddyPanelPage({ rpc, route, t }: PanelPageProps): ReactNode
   const items = [
     { itemKey: 'accounts', text: t('accountsTitle'), icon: <DshIconLabAvatar /> },
     { itemKey: 'tokens', text: t('tokenTitle'), icon: <DshIconLabChart /> },
-    { itemKey: 'credits', text: t('creditTitle'), icon: <DshIconLabToken /> },
   ]
 
   return (
@@ -1815,11 +1791,6 @@ export function CodeBuddyPanelPage({ rpc, route, t }: PanelPageProps): ReactNode
                 onAddAccount={() => { setAddOpen(true) }}
                 onCheckinChange={bumpRoster}
               />
-            </div>
-          ) : null}
-          {visited.has('credits') ? (
-            <div className="dsh-codebuddy-panel-view" hidden={snapshot.page !== 'credits'}>
-              <CreditsPage rpc={rpc} t={t} rosterTick={rosterTick} />
             </div>
           ) : null}
           {visited.has('tokens') ? (

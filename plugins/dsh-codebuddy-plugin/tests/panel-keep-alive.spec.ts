@@ -17,9 +17,10 @@ const panel = readFileSync(
 )
 
 describe('管理面板的 keep-alive 结构', () => {
-  it('三个页面都渲染在视图容器内，且用 hidden 而非条件渲染', () => {
+  it('两个页面都渲染在视图容器内，且用 hidden 而非条件渲染', () => {
     // 每个页面都被包在 .dsh-codebuddy-panel-view 里，并带 hidden 开关。
-    for (const page of ['AccountsPage', 'CreditsPage', 'TokenStatsPage']) {
+    // 「积分管理」已并入账号页，不再是独立页面。
+    for (const page of ['AccountsPage', 'TokenStatsPage']) {
       const re = new RegExp(`className="dsh-codebuddy-panel-view" hidden=\\{[^}]+\\}[\\s\\S]{0,220}?<${page}`)
       expect(panel).toMatch(re)
     }
@@ -28,7 +29,6 @@ describe('管理面板的 keep-alive 结构', () => {
   it('不再用 `page === x ? <XPage/> : null` 的条件渲染', () => {
     // 条件渲染会让页面卸载，正是要避免的写法。
     expect(panel).not.toMatch(/snapshot\.page === 'accounts' \? \(/)
-    expect(panel).not.toMatch(/snapshot\.page === 'credits' \? <CreditsPage/)
     expect(panel).not.toMatch(/snapshot\.page === 'tokens' \? <TokenStatsPage/)
   })
 
@@ -38,21 +38,32 @@ describe('管理面板的 keep-alive 结构', () => {
     expect(panel).toMatch(/new Set\(\[snapshot\.page\]\)/)
   })
 
-  it('账号数据变化会让共用 panelStatus 的页面一起失效', () => {
-    // CreditsPage 与 AccountsPage 同源（panelStatus）；若它不带 rosterTick，
-    // keep-alive 下会一直显示旧账号（此前靠每次重新挂载掩盖了这个缺口）。
+  it('账号页在 rosterTick 变化时重拉账号列表', () => {
+    // 账号增删/改名/登录完成都会让父级自增 rosterTick。keep-alive 下页面不再
+    // 重新挂载，若 deps 里没有它就会一直显示旧账号。
     //
-    // 注意断言必须限定在 CreditsPage 自身的代码段内：rosterTick 在文件别处
-    // 也出现（AccountsPage、Props 定义），查整份文件会假通过——这条曾经漏网。
-    const start = panel.indexOf('function CreditsPage')
+    // 断言必须限定在 AccountsPage 自身的代码段内：rosterTick 在文件别处也出现
+    // （Props 定义等），查整份文件会假通过——这条曾经漏网。
+    const start = panel.indexOf('function AccountsPage')
     expect(start).toBeGreaterThan(-1)
-    // 取到下一个顶层 function 为止，确保只覆盖该组件。
     const rest = panel.slice(start + 1)
     const nextFn = rest.indexOf('\nfunction ')
     const body = nextFn === -1 ? rest : rest.slice(0, nextFn)
     expect(body).toContain("'panelStatus'")
-    expect(body).toContain('rosterTick')
-    // 且它确实作为 deps 传入，而不是只出现在参数里。
     expect(body).toMatch(/usePanelData<[^>]*>\(rpc, 'panelStatus', \{\}, \[rosterTick\]\)/)
+  })
+
+  it('积分总览随账号页一起刷新（数据由 AccountsPage 以 props 传入）', () => {
+    // 迁入后不再自己拉取 panelStatus：账号页已有同一份 PanelAccountRow[]，
+    // 再拉一次既浪费 RPC，也会让两处数据短暂不一致。
+    const start = panel.indexOf('function CreditsOverview')
+    expect(start).toBeGreaterThan(-1)
+    const rest = panel.slice(start + 1)
+    const nextFn = rest.indexOf('\nfunction ')
+    const body = nextFn === -1 ? rest : rest.slice(0, nextFn)
+    expect(body).not.toContain('usePanelData')
+    expect(body).not.toContain('rpc.')
+    // 由账号页传入 rows。
+    expect(panel).toMatch(/<CreditsOverview rows=\{rows\} t=\{t\} \/>/)
   })
 })
