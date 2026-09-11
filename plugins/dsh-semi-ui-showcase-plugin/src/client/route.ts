@@ -26,6 +26,16 @@ export const SEMI_UI_COMPONENT_HASHES = {
   card: '#/plugins/semi-ui/card',
   descriptions: '#/plugins/semi-ui/descriptions',
   empty: '#/plugins/semi-ui/empty',
+  tag: '#/plugins/semi-ui/tag',
+  avatar: '#/plugins/semi-ui/avatar',
+  badge: '#/plugins/semi-ui/badge',
+  select: '#/plugins/semi-ui/select',
+  skeleton: '#/plugins/semi-ui/skeleton',
+  tabs: '#/plugins/semi-ui/tabs',
+  list: '#/plugins/semi-ui/list',
+  typography: '#/plugins/semi-ui/typography',
+  scrollList: '#/plugins/semi-ui/scroll-list',
+  hotKeys: '#/plugins/semi-ui/hot-keys',
   'codebuddy-accounts': '#/plugins/semi-ui/codebuddy-accounts',
 } as const
 

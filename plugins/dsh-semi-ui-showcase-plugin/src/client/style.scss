@@ -1,7 +1,7 @@
 [data-dsh-semi-ui-showcase].dsh-semi-showcase-page {
   position: absolute;
   inset: 0;
-  overflow: auto;
+  overflow: hidden;
   background: var(--dsw-alias-bg-base);
   color: var(--dsw-alias-label-primary);
 
@@ -60,16 +60,28 @@
     gap: 8px;
   }
 
+  // 用 Layout 组件承载的三栏骨架：Header 固定，Sider(菜单)/Content(主体)/Sider(目录)
+  // 各自独立滚动。关键是滚动容器必须 min-height: 0 —— 嵌套 flex 里默认 min-height:auto
+  // 会让内容撑破容器，导致 overflow-y 失效（整页滚动而不是区域滚动）。
   .dsh-semi-showcase-shell {
-    display: grid;
-    grid-template-columns: 220px minmax(0, 1fr) 180px;
-    min-height: calc(100% - 64px);
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
   }
 
   .dsh-semi-showcase-sidebar {
     min-width: 0;
+    width: 220px;
+    flex-shrink: 0;
+    overflow-y: auto;
     padding: 24px 12px;
     border-right: 1px solid var(--dsw-alias-border-l2);
+
+    // Semi 把 Sider 内容包在 height:100% 的固定容器里，会裁掉菜单滚动，
+    // 改为随内容自然撑高、由 Sider 自身承担滚动。
+    .semi-layout-sider-children {
+      height: auto;
+    }
   }
 
   .dsh-semi-showcase-sidebar-group {
@@ -123,8 +135,11 @@
     color: var(--dsw-alias-primary);
   }
 
+  // 主体内容区：唯一的纵向滚动区域之一，与左右侧栏滚动互不影响。
   .dsh-semi-showcase-main {
     min-width: 0;
+    min-height: 0;
+    overflow-y: auto;
     padding: 42px clamp(24px, 5vw, 72px) 72px;
   }
 
@@ -133,12 +148,20 @@
     margin: 0 auto;
   }
 
+  // 右侧页面目录：第三个独立滚动区域。
   .dsh-semi-showcase-outline {
     min-width: 0;
+    width: 180px;
+    flex-shrink: 0;
+    overflow-y: auto;
     padding: 42px 18px;
     border-left: 1px solid var(--dsw-alias-border-l2);
     color: var(--dsw-alias-label-tertiary);
     font-size: 12px;
+
+    .semi-layout-sider-children {
+      height: auto;
+    }
   }
 
   .dsh-semi-showcase-outline-heading {
@@ -651,9 +674,146 @@
     font-size: 24px;
   }
 
+  // ---- 新增组件 demo 样式 ----
+  .dsh-semi-showcase-typography-text-stack {
+    gap: 10px;
+  }
+
+  .dsh-semi-showcase-scrolllist {
+    width: 220px;
+    border: 1px solid var(--dsw-alias-border-l2);
+  }
+
+  // 去滚轮外壳后的普通滚动容器。
+  .dsh-semi-showcase-scrolllist-plain.semi-scrolllist {
+    width: 100%;
+    max-width: 420px;
+    height: auto;
+    border: 1px solid var(--dsw-alias-border-l2);
+    background: transparent;
+    box-shadow: none;
+    border-radius: var(--semi-border-radius-small, 4px);
+    overflow: visible;
+    user-select: auto;
+  }
+
+  .dsh-semi-showcase-scrolllist-plain .semi-scrolllist-body {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+
+  .dsh-semi-showcase-scrolllist-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--dsw-alias-border-l2);
+
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+
+  .dsh-semi-showcase-hotkeys-target {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 12px;
+    border: 1px dashed var(--dsw-alias-border-l2);
+    border-radius: var(--semi-border-radius-small, 4px);
+  }
+
+  .dsh-semi-showcase-layout-demo {
+    padding: 12px;
+    border: 1px dashed var(--dsw-alias-border-l2);
+    border-radius: var(--semi-border-radius-small, 4px);
+  }
+
+  .dsh-semi-showcase-layout {
+    border-radius: var(--semi-border-radius-small, 4px);
+    overflow: hidden;
+  }
+
+  %dsh-semi-showcase-layout-cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 48px;
+    color: var(--dsw-alias-label-secondary);
+    font-size: 13px;
+  }
+
+  .dsh-semi-showcase-layout-header {
+    @extend %dsh-semi-showcase-layout-cell;
+
+    background: var(--dsw-alias-fill-l1);
+  }
+
+  .dsh-semi-showcase-layout-sider {
+    @extend %dsh-semi-showcase-layout-cell;
+
+    min-height: 120px;
+    min-width: 96px;
+    background: var(--dsw-alias-fill-l0, var(--semi-color-fill-0));
+  }
+
+  .dsh-semi-showcase-layout-content {
+    @extend %dsh-semi-showcase-layout-cell;
+
+    min-height: 120px;
+    background: var(--dsw-alias-bg-layer-2);
+  }
+
+  .dsh-semi-showcase-layout-footer {
+    @extend %dsh-semi-showcase-layout-cell;
+
+    background: var(--dsw-alias-fill-l1);
+  }
+
+  .dsh-semi-showcase-nav-demo {
+    padding: 12px;
+    border: 1px dashed var(--dsw-alias-border-l2);
+    border-radius: var(--semi-border-radius-small, 4px);
+  }
+
+  .dsh-semi-showcase-nav {
+    width: 260px;
+
+    &.semi-navigation-vertical {
+      border: 1px solid var(--dsw-alias-border-l2);
+      border-radius: var(--semi-border-radius-small, 4px);
+    }
+  }
+
+  .dsh-semi-showcase-nav-horizontal {
+    border: 1px solid var(--dsw-alias-border-l2);
+    border-radius: var(--semi-border-radius-small, 4px);
+  }
+
+  .dsh-semi-showcase-table {
+    width: 100%;
+  }
+
+  .dsh-semi-showcase-empty-demo {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+  }
+
+  // List / Descriptions 等 demo 内容容器限制最大宽度，避免铺满演示区。
+  .dsh-semi-showcase-demo-preview > .semi-list,
+  .dsh-semi-showcase-demo-preview > .semi-descriptions {
+    max-width: 560px;
+  }
+
   @media (max-width: 1100px) {
-    .dsh-semi-showcase-shell {
-      grid-template-columns: 200px minmax(0, 1fr);
+    .dsh-semi-showcase-sidebar {
+      width: 200px;
     }
 
     .dsh-semi-showcase-outline {
@@ -676,10 +836,6 @@
 
     .dsh-semi-showcase-sidebar {
       display: none;
-    }
-
-    .dsh-semi-showcase-shell {
-      display: block;
     }
 
     .dsh-semi-showcase-main {
