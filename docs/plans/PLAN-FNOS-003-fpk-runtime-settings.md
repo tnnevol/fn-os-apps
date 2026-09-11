@@ -64,7 +64,9 @@ wizard/install 中的运行字段
 
 ### P0：应用配置审计
 
-状态：<Badge type="info" text="规划中" />
+状态：<Badge type="tip" text="已完成" />
+
+审计结论：15 个应用全部提供 `cmd/main`、`cmd/config_init`、`cmd/config_callback`、`cmd/uninstall_callback`；11 个已提供 `wizard/config`；`fn-nvm`、`fn-ohmyzsh`、`fn-uv` 为 Shell/CLI 工具（`ctl_stop=false`，无守护进程），`fn-xiaoya-only` 仅在安装向导收集一次性账号凭据，四者均无运行参数，不纳入。
 
 | 任务 ID | 实现内容 | 验收 |
 | --- | --- | --- |
@@ -74,13 +76,15 @@ wizard/install 中的运行字段
 
 ### P1：运行设置与脚本接入
 
-状态：<Badge type="info" text="规划中" />
+状态：<Badge type="warning" text="部分实现，待 NAS 验证" />
 
 | 任务 ID | 实现内容 | 验收 |
 | --- | --- | --- |
 | PLAN-FNOS-003-R01 | 为目标应用新增或补齐 `wizard/config`，只加入审计确认的运行字段 | 应用设置显示正确字段，不出现一次性参数 |
-| PLAN-FNOS-003-R02 | 让 `wizard/install` 与 `wizard/config` 的运行字段保持契约一致，并使用 `wizard_*` 变量 | 安装后读取值与设置保存后的读取值一致 |
+| PLAN-FNOS-003-R02 | 让 `wizard/install` 与 `wizard/config` 的运行字段保持契约一致；Native 用 `wizard_*`，Docker 沿用 compose 裸名 | 安装后读取值与设置保存后的读取值一致 |
 | PLAN-FNOS-003-R03 | 检查 `cmd/main`、`cmd/config_init` 和 `cmd/config_callback` 的读取和生效逻辑 | 保存后安全重载/重启，状态可查询 |
+| PLAN-FNOS-003-R04 | 补齐 `cmd/config_callback` 的真实生效逻辑：Native 重载/重启，Docker 明确记录 appcenter 重建容器路径 | 回调不再是占位；改配置后行为与文档一致，且不产生重复进程 |
+| PLAN-FNOS-003-R05 | DSH FPK 运行参数约束：`0.0.0.0` 置灰标注暂不支持，可信访问地址必填且不填 DSH 端口 | 无法选择 `0.0.0.0`；填 3080 时校验拒绝；保存后按新配置重启且状态正确 |
 
 ### P1：构建与目标环境验证
 
@@ -120,6 +124,10 @@ wizard/install 中的运行字段
 | PLAN-FNOS-003-C06 | 凭据文档的读-改-写串行化，并给切换加 CAS 期望当前账号 | 并发切换/改名/删除不互相覆盖；已删除账号不复活；过期期望值放弃切换而非覆盖 |
 | PLAN-FNOS-003-C07 | 抽出主动/被动切换的纯决策模块，含冷却、最小收益差、候选下限与活跃请求避让 | 决策可用一组输入直接断言；额度未知时不切换；预期结果对相同输入稳定 |
 | PLAN-FNOS-003-C08 | 遵守 `Retry-After`（有上限、可中断），并把已尝试账号收敛为请求级状态 | 被限流时有限等待后可继续；等待期间可被取消；同一请求不重复使用同一账号 |
+| PLAN-FNOS-003-C09 | 登录支持 WorkBuddy 客户端：客户端决定端点与版本标识，token 解析容忍 camelCase/snake_case，失败原因可见 | 两种客户端均可登录；解析缺字段按失败处理而非发出 `Bearer undefined`；失败在界面可见 |
+| PLAN-FNOS-003-C10 | 账号运营自动化：自动签到、派猫猫旅行派发与领取分离、资源包本地台账按可使用/已用完/已过期分组 | 周期防重入、按账号去重、失败退避可自愈；企业账号跳过成长中心不报错 |
+| PLAN-FNOS-003-C11 | 面板体验：keep-alive、首次加载 Skeleton、刷新局部更新、偏好与台账迁到 nanostores | 切菜单不重新拉取；刷新保留旧数据并按面板隔离指示；偏好跨界面一致 |
+| PLAN-FNOS-003-C12 | 模型图片输入：支持图片的模型以原生 `image_url` 发送，工具结果图片一并上传 | 会话内联图片与 `read_image` 结果图都能被模型看到；不支持时仍走 DSH 读图工具 |
 | PLAN-FNOS-003-C09 | 统一额度探测：抽出带 TTL 与单飞的 `UsageProbe`，面板/策略/被动切换共用一份快照 | 同一 TTL 窗口内的重复刷新不重复请求远端；面板展示的额度与策略决策来自同一次探测 |
 
 ## 详细交互
