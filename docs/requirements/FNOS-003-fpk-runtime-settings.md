@@ -1,7 +1,7 @@
 ---
 id: FNOS-003
 title: FNOS-003 FPK 应用运行设置统一
-description: 为需要运行参数配置的 fnOS FPK 应用补齐应用设置入口，承接 FNOS-002 遗留的 FPK/NAS 集成验收，并承接 CodeBuddy 多账号、额度与 Token 统计面板需求。
+description: 为需要运行参数配置的 fnOS FPK 应用补齐应用设置入口，承接 FNOS-002 遗留的 FPK/NAS 集成验收，并承接 CodeBuddy 多账号、额度与 Token 统计面板需求（该插件与 fnOS 无关，任一 DSH 客户端均可使用）。
 status: planned
 owner: tnnevol
 targetVersion: 5.3.1
@@ -21,7 +21,7 @@ lastVerified: 2026-09-09
 
 目前仓库内 15 个应用都已提供 `cmd/main`、`cmd/config_init`、`cmd/config_callback` 与 `cmd/uninstall_callback`，其中 11 个已提供 `wizard/config`。没有 `wizard/config` 时，用户无法在 fnOS 的“应用设置”中修改应用运行参数；已有安装向导的配置也可能与运行时配置分散，导致字段、默认值和校验规则不一致。剩余未提供 `wizard/config` 的 4 个应用经审计均无运行参数（Shell 工具与 Docker 一次性参数），按需求边界不新增空配置页。
 
-本需求同时承接 FNOS-002 已实现但尚未完成目标环境验收的工作：DSH FPK 内置插件包与发布清单版本对齐、安装/升级/回滚保留配置、网关完整代理场景，以及 Codex 动态模型和 CodeBuddy 管理面板在真实 NAS 上的验收；原 FNOS-002-06 的 CodeBuddy 需求与计划内容也整体迁入本需求。
+本需求同时承接 FNOS-002 已实现但尚未完成目标环境验收的工作：DSH FPK 内置插件包与发布清单版本对齐、安装/升级/回滚保留配置、网关完整代理场景，以及 Codex 动态模型目录的目标环境验收；原 FNOS-002-06 的 CodeBuddy 需求与计划内容也整体迁入本需求，但该插件不依赖 fnOS——它只依赖 DSH 的插件接缝，任一 DSH 客户端（Web、桌面、其它发行形态）均可使用，因此其验收在 DSH 客户端完成，不绑定 NAS。
 
 本需求统一需要运行参数配置的 FPK 应用的设置入口，明确安装配置、运行设置和生命周期脚本的职责边界。是否纳入配置不以“存在 `cmd/main`”作为唯一条件，而以应用确实存在可修改的运行参数为准。
 
@@ -32,7 +32,7 @@ lastVerified: 2026-09-09
 - 保存后通过 `cmd/config_callback` 使配置生效；`cmd/main` 继续负责启动、停止和状态维护。
 - 一次性安装参数不出现在运行设置中；不需要运行配置的应用不增加空设置页。
 - 完成 FNOS-002 遗留的 DSH FPK 构建、插件加载、版本升级/回滚和网关完整代理验收。
-- 完成 Codex 动态模型目录、CodeBuddy 多账号管理面板及 Token 统计在真实 NAS 环境的验收，并回写 FNOS-002 状态。
+- 完成 Codex 动态模型目录的目标环境验收，并回写 FNOS-002 状态。
 - CodeBuddy 支持多账号管理、当前账号切换、额度/有效期查看、签到和额度不足时的自动切换，并提供独立管理面板。
 - CodeBuddy 管理面板的 Token 统计使用 ECharts 绘制按日输入/输出堆叠柱状图，支持 7/30/90 天范围、悬浮明细、图例和容器自适应；统计数据继续来自本地会话日志。
 - DSH FPK 应用设置只暴露可安全修改的运行参数：`0.0.0.0` 监听地址标注为暂不支持并禁用，可信访问地址必填且指向 NAS Web 的 host 或 host:port。
@@ -59,14 +59,14 @@ lastVerified: 2026-09-09
 | FNOS-003-04 | P1 | 一次性配置边界 | 仅安装阶段使用的路径、初始化选项和迁移参数不出现在运行设置中 | <Badge type="warning" text="代码已实现，待 NAS 验证" /> |
 | FNOS-003-05 | P1 | DSH FPK 与版本验收 | FPK 内置插件包与发布清单、插件兼容版本保持一致，安装/升级/回滚保留用户配置 | <Badge type="info" text="规划中" /> |
 | FNOS-003-06 | P1 | DSH 网关完整场景验收 | 完成 API 反代即时生效、SSE/WebSocket、权限、并发、异常和恢复场景验证 | <Badge type="info" text="规划中" /> |
-| FNOS-003-07 | P1 | DSH 插件管理面板验收 | 验证 Codex 动态模型目录（含上下文窗口写入）和 CodeBuddy 多账号、额度、签到、Token 统计面板在真实 NAS 可用 | <Badge type="info" text="规划中" /> |
+| FNOS-003-07 | P1 | DSH 插件管理面板验收 | 验证 Codex 动态模型目录（含上下文窗口写入）的目标环境表现 | <Badge type="info" text="规划中" /> |
 | FNOS-003-11 | P1 | DSH 应用运行参数约束 | 监听地址只能选 `127.0.0.1`，`0.0.0.0` 置灰并说明未适配；可信访问地址必填且不得填 DSH 自身端口 | <Badge type="warning" text="代码已实现，待 NAS 验证" /> |
-| FNOS-003-12 | P1 | CodeBuddy 多客户端登录 | 添加账号时可选择 CodeBuddy CLI 或 WorkBuddy 客户端，卡片展示客户端与固定版本标识 | <Badge type="warning" text="代码已实现，待 NAS 验证" /> |
-| FNOS-003-13 | P1 | CodeBuddy 账号运营自动化 | 自动签到、派猫猫旅行自动派发与奖励领取、资源包台账按可使用/已用完/已过期分组 | <Badge type="warning" text="代码已实现，待 NAS 验证" /> |
-| FNOS-003-14 | P1 | CodeBuddy 面板体验与状态持久化 | 面板 keep-alive、首次加载骨架、刷新局部更新、偏好与台账走统一状态库 | <Badge type="warning" text="代码已实现，待 NAS 验证" /> |
-| FNOS-003-15 | P1 | CodeBuddy 模型图片输入 | 支持图片的模型以原生 `image_url` 发送图片，不支持时仍由 DSH 读图工具兜底 | <Badge type="warning" text="代码已实现，待 NAS 验证" /> |
-| FNOS-003-08 | P1 | CodeBuddy 多账号与管理面板 | 管理多个 CodeBuddy 账号，支持切换、签到、额度/有效期查看、自动切换和 Token 统计 | <Badge type="warning" text="代码已实现，待 NAS 验证" /> |
-| FNOS-003-09 | P1 | CodeBuddy Token 统计图表 | 面板按日展示输入/输出堆叠柱状图，支持 7/30/90 天范围、悬浮明细、图例和容器自适应 | <Badge type="warning" text="代码已实现，待 NAS 验证" /> |
+| FNOS-003-12 | P1 | CodeBuddy 多客户端登录 | 添加账号时可选择 CodeBuddy CLI 或 WorkBuddy 客户端，卡片展示客户端与固定版本标识 | <Badge type="tip" text="代码已实现，本地已验证" /> |
+| FNOS-003-13 | P1 | CodeBuddy 账号运营自动化 | 自动签到、派猫猫旅行自动派发与奖励领取、资源包台账按可使用/已用完/已过期分组 | <Badge type="tip" text="代码已实现，本地已验证" /> |
+| FNOS-003-14 | P1 | CodeBuddy 面板体验与状态持久化 | 面板 keep-alive、首次加载骨架、刷新局部更新、偏好与台账走统一状态库 | <Badge type="tip" text="代码已实现，本地已验证" /> |
+| FNOS-003-15 | P1 | CodeBuddy 模型图片输入 | 支持图片的模型以原生 `image_url` 发送图片，不支持时仍由 DSH 读图工具兜底 | <Badge type="tip" text="代码已实现，本地已验证" /> |
+| FNOS-003-08 | P1 | CodeBuddy 多账号与管理面板 | 管理多个 CodeBuddy 账号，支持切换、签到、额度/有效期查看、自动切换和 Token 统计 | <Badge type="tip" text="代码已实现，本地已验证" /> |
+| FNOS-003-09 | P1 | CodeBuddy Token 统计图表 | 面板按日展示输入/输出堆叠柱状图，支持 7/30/90 天范围、悬浮明细、图例和容器自适应 | <Badge type="tip" text="代码已实现，本地已验证" /> |
 | FNOS-003-10 | P1 | CodeBuddy 状态源与切换策略收敛 | 自动开关配置以 Host 为唯一权威，凭据写入串行化且切换带期望当前账号，主动/被动切换由纯决策模块判定并遵守 `Retry-After` | <Badge type="tip" text="代码已实现，本地已验证" /> |
 
 ## 交互和行为约束
@@ -107,12 +107,13 @@ lastVerified: 2026-09-09
 - 完成 FPK 构建和真实 NAS 安装验证后，需求状态才能改为已完成。
 - DSH FPK 中内置插件版本与 `published-dsh-plugins.json` 一致，安装、升级、回滚和插件加载不丢失用户配置。
 - DSH 网关的 HTTP、SSE、WebSocket、权限、并发、异常恢复场景在目标 NAS 验收通过。
-- Codex 动态模型目录和 CodeBuddy 管理面板在目标 NAS 可访问、可操作，Token 统计数据和图表显示正确。
+- Codex 动态模型目录在目标环境可访问、可操作。
+- CodeBuddy 管理面板在 DSH 客户端可访问、可操作，Token 统计数据和图表显示正确（与 fnOS 无关）。
 - Codex 模型目录刷新把账号返回的最大上下文窗口写入 DSH，长上下文响应不再被误判为 `CONTEXT_WINDOW_EXCEEDED`；账号接口未提供最大值时才回退默认窗口。
 - DSH FPK 应用设置中 `0.0.0.0` 监听地址不可选，可信访问地址校验拒绝 DSH 自身端口；保存后应用以新配置重启且状态正确。
 - CodeBuddy 可添加、重登录、重命名、删除多个账号并切换当前账号；额度/有效期、签到状态和额度不足时的自动切换按预期工作。
 - CodeBuddy 可用 CLI 与 WorkBuddy 两种客户端登录成功，登录失败在界面上给出原因；卡片显示正确的客户端与版本标识。
-- CodeBuddy 自动签到与旅行周期在目标 NAS 按间隔运行，重复触发不重复提交，企业账号被跳过且不报错。
+- CodeBuddy 自动签到与旅行周期在 DSH 客户端按间隔运行，重复触发不重复提交，企业账号被跳过且不报错。
 - CodeBuddy 面板切换菜单不重新拉取、刷新保留旧数据，首次加载显示骨架；偏好在刷新与其他界面间保持一致。
 - CodeBuddy 自动开关配置以 Host 为唯一权威：在任一界面修改后，其它界面与刷新后的页面都读到同一值，不被旧的浏览器本地值覆盖。
 - CodeBuddy 在并发切换、改名、删除并存时结果保持一致（不互相覆盖、已删账号不复活）；被限流时按 `Retry-After` 有限等待且可取消。
@@ -124,7 +125,7 @@ lastVerified: 2026-09-09
 | --- | --- | --- | --- |
 | P1 运行设置统一 | <Badge type="warning" text="代码已实现，待 NAS 验证" /> | 11 个应用已提供 `wizard/config`；4 个无运行参数的应用已确认不纳入 | 补齐 `cmd/config_callback` 真实生效逻辑，并在 NAS 逐个验证展示与保存 |
 | FNOS-002 遗留 DSH 验收 | <Badge type="info" text="规划中" /> | 承接 FPK/网关/插件管理面板的目标环境验收 | 完成 FPK 构建、安装升级回滚、网关完整场景和插件面板验收 |
-| P1 CodeBuddy 多账号与管理面板 | <Badge type="warning" text="代码已实现，待 NAS 验证" /> | 多账号、双客户端登录、自动切换、签到、旅行、资源包台账、Token ECharts 面板代码已落地 | 补充本地回归并在真实 NAS 验收账号操作、运营周期与统计图表 |
+| P1 CodeBuddy 多账号与管理面板 | <Badge type="tip" text="代码已实现，本地已验证" /> | 多账号、双客户端登录、自动切换、签到、旅行、资源包台账、Token ECharts 面板代码已落地 | 在 DSH 客户端验收账号操作、运营周期与统计图表（不依赖 fnOS） |
 
 ## 变更记录
 
@@ -135,5 +136,6 @@ lastVerified: 2026-09-09
 | 2026-09-08 | 承接 FNOS-002 遗留验收 | 将 DSH FPK 版本与内置插件包、网关完整场景、Codex 动态模型和 CodeBuddy 管理面板的未完成目标环境验收纳入 FNOS-003 |
 | 2026-09-09 | 迁入 CodeBuddy 需求 | 新增 FNOS-003-08、FNOS-003-09，承接原 FNOS-002-06 的多账号管理、账号切换、额度/有效期、签到、自动切换和 Token ECharts 统计图表需求 |
 | 2026-09-11 | 新增状态源与切换策略收敛 | 新增 FNOS-003-10：Host 配置唯一权威、凭据写入串行化与 CAS、纯决策模块、`Retry-After` 等待与请求级已尝试账号 |
+| 2026-09-11 | 修正 CodeBuddy 的验收环境 | CodeBuddy 插件与 fnOS 无关（只依赖 DSH 插件接缝，任一 DSH 客户端均可用），原文把其验收绑在「真实 NAS」上是错误描述。需求表中 6 条 CodeBuddy 需求（FNOS-003-08/09/12～15）与状态看板合计 7 处改为「本地已验证」，验收表述改为在 DSH 客户端完成；NAS/FPK 相关验收仍保留在 FPK 与网关条目上 |
 | 2026-09-11 | 依据 v5.3.1 后实现刷新范围 | FNOS-003-01～04 从规划中改为已实现待验证；新增 FNOS-003-11～15（DSH 运行参数约束、多客户端登录、账号运营自动化、面板体验、模型图片输入） |
 | 2026-09-11 | 明确字段命名与回调边界 | `wizard/config` 字段名按 Native（`wizard_*`）与 Docker（compose 裸名）分类；`cmd/config_callback` 不得占位，须按形态实现重载/重启或记录容器重建路径 |
