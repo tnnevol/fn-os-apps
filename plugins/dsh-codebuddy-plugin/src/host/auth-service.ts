@@ -1475,14 +1475,22 @@ export class CodeBuddyAuthService {
     const activeId = storage.activeId
     const rows = await this.forEachAccount(async item => {
       // 企业账号不支持签到，也不支持成长中心（旅行）：都不探测。
+      // 额度走统一探测缓存（与切换策略共用同一份快照，且 30s 内的重复刷新不打远端）；
+      // 签到与旅行是**状态查询**不是额度，仍各自直连。
+      // session 缺席（无持久化/查询能力的 profile）时退回直连探测，保持可用。
+      const usage: Promise<UsageSnapshot | undefined> = this.session === undefined
+        ? fetchUsage(item.endpoint, item.identity, signal)
+        : this.session.usageProbes
+          .probeAccount(item.id, item.endpoint, item.identity, signal === undefined ? {} : { signal })
+          .then(result => result.snapshot)
       const [snapshot, checkin, travel] = item.enterprise
         ? await Promise.all([
-          fetchUsage(item.endpoint, item.identity, signal).catch(() => undefined),
+          usage.catch(() => undefined),
           Promise.resolve({ ok: false, todayCheckedIn: false }),
           Promise.resolve(undefined),
         ])
         : await Promise.all([
-          fetchUsage(item.endpoint, item.identity, signal).catch(() => undefined),
+          usage.catch(() => undefined),
           getCheckinStatus(item.endpoint, item.identity, signal).catch(() => ({ ok: false, todayCheckedIn: false, error: 'probe failed' })),
           fetchTravelStatus(item.endpoint, item.identity, signal).catch(() => undefined),
         ])
@@ -1579,7 +1587,15 @@ export class CodeBuddyAuthService {
   /** 面板：全部账号的积分资源与到期（复用 meter 平面的 usage 快照）。 */
   async creditExpiryAll(signal?: AbortSignal): Promise<unknown> {
     const rows = await this.forEachAccount(async item => {
-      const snapshot = await fetchUsage(item.endpoint, item.identity, signal)
+      // 与 panelStatus 共用同一份缓存快照：两个页面在同一 TTL 窗口内不打两次远端。
+      const snapshot = this.session === undefined
+        ? await fetchUsage(item.endpoint, item.identity, signal)
+        : (await this.session.usageProbes.probeAccount(
+            item.id,
+            item.endpoint,
+            item.identity,
+            signal === undefined ? {} : { signal },
+          )).snapshot
       return {
         id: item.id,
         name: item.name,

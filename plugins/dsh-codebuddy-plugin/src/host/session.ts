@@ -14,7 +14,7 @@
 import { getConfig, getEnterpriseModels, refreshAccessToken } from './codebuddy.ts'
 import type { CodeBuddyIdentity } from './codebuddy.ts'
 import { decideProactiveTarget, type SwitchCandidate } from './switch-policy.ts'
-import { fetchUsage } from './usage.ts'
+import { UsageProbeCache } from './usage-probe.ts'
 import type { UsageSnapshot } from './usage.ts'
 import { loadStorage, saveStorage, mutateStorage, activeEntry, resolveEntryEndpoint } from './storage.ts'
 import type { CodeBuddyAccountEntry, CodeBuddyStorage } from './storage.ts'
@@ -95,11 +95,31 @@ export class CodeBuddySession {
    */
   private inFlightRequests = 0
 
+  /**
+   * 额度探测缓存：与面板、切换周期共用**同一份**快照。
+   *
+   * 引入它之前，额度有 5 个各自独立的探测点（面板两处、主动周期、被动切换、
+   * 本类的 remainingPercentOf），同一账号常在一轮里被探 2–3 次；更要紧的是
+   * 面板显示的额度与策略决策用的额度来自两次不同探测，meter 一抖动就会出现
+   * 「面板说还剩 60%，策略却判不足」。
+   */
+  private readonly probes = new UsageProbeCache()
+
   constructor(private readonly logger?: SessionLogger) {}
 
   /** 进行中的流式请求数，供主动切换判定是否避让。 */
   get activeRequestCount(): number {
     return this.inFlightRequests
+  }
+
+  /**
+   * 额度探测缓存（与面板共用**同一实例**）。
+   *
+   * 暴露出来而不是让 auth-service 自建一个：面板显示的额度与策略决策用的额度
+   * 必须来自同一次探测，否则 meter 一抖动就会出现两者自相矛盾的表现。
+   */
+  get usageProbes(): UsageProbeCache {
+    return this.probes
   }
 
   /** 标记一个流式请求开始；调用方必须在结束时 endRequest（用 finally）。 */
@@ -321,17 +341,14 @@ export class CodeBuddySession {
    * @param signal - optional cancellation.
    */
   private async remainingPercentOf(entry: CodeBuddyAccountEntry, signal?: AbortSignal): Promise<number | undefined> {
-    const snapshot = await fetchUsage(resolveEntryEndpoint(entry), this.identityOf(entry), signal)
-    if (snapshot === undefined) return undefined
-    const { used, limit } = snapshot.windows.reduce(
-      (acc, window) => ({
-        used: acc.used + (window.used ?? 0),
-        limit: acc.limit + (window.limit ?? 0),
-      }),
-      { used: 0, limit: 0 },
+    // 走统一探测缓存：与面板共享同一份快照，避免「面板说还剩 60%，策略却判不足」。
+    const result = await this.probes.probeAccount(
+      entry.id,
+      resolveEntryEndpoint(entry),
+      this.identityOf(entry),
+      signal === undefined ? {} : { signal },
     )
-    if (limit <= 0) return undefined
-    return Math.max(0, Math.min(100, 100 - (used / limit) * 100))
+    return result.remainingPct
   }
 
   /**
@@ -562,9 +579,12 @@ export class CodeBuddySession {
   async usage(signal?: AbortSignal): Promise<UsageSnapshot | undefined> {
     let identity: CodeBuddyIdentity
     let endpoint: string
+    let accountId: string
     try {
       const storage = await this.require()
-      endpoint = resolveEntryEndpoint(activeEntry(storage))
+      const active = activeEntry(storage)
+      accountId = active.id
+      endpoint = resolveEntryEndpoint(active)
       identity = await this.identity()
     } catch (error) {
       if (error instanceof NotLoggedInError) return undefined
@@ -572,6 +592,13 @@ export class CodeBuddySession {
       this.logger?.warn(error)
       return undefined
     }
-    return fetchUsage(endpoint, identity, signal)
+    // 也走统一缓存：输入框旁的用量指示器与面板/策略读到的应是同一份数据。
+    const result = await this.probes.probeAccount(
+      accountId,
+      endpoint,
+      identity,
+      signal === undefined ? {} : { signal },
+    )
+    return result.snapshot
   }
 }
