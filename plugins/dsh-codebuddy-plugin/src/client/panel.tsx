@@ -66,7 +66,7 @@ import {
   normalizeClientId,
   type CodeBuddyClientId,
 } from '../contracts/constants.ts'
-import { formatResetDate, formatUpdatedAt } from './format-time.ts'
+import { formatProbeAge, formatResetDate, formatUpdatedAt } from './format-time.ts'
 import { identityRows, type AccountIdentityDetail } from './identity.ts'
 import { accountEpoch, subscribeAccountEpoch } from './account-epoch.ts'
 import { DEFAULT_TOKEN_RANGE, optionsFor, rangeLabel as rangeLabelOf, type TokenRangeKey } from './token-range.ts'
@@ -102,6 +102,18 @@ interface PanelAccountRow {
   /** 企业账号：不支持签到（隐藏签到入口、跳过签到与自动签到）。 */
   enterprise: boolean
   creditOk: boolean
+  /**
+   * 该额度数据的产出时刻（epoch ms）。
+   *
+   * 面板**没有自动刷新**（只有输入框旁的用量指示器每 60s 拉一次），因此面板
+   * 开着不动时数据可以陈旧很久；叠加统探测的 30s TTL 缓存，用户看到「8649」
+   * 时也无法判断这是 3 秒前还是 5 分钟前的数据。据此显示陈旧提示。
+   */
+  probedAt?: number
+  /** 该数据是否来自统探测缓存（而非本次真实请求）。 */
+  probedFromCache?: boolean
+  /** 探测失败的原因；与「额度为 0」严格区分。 */
+  probeError?: string | null
   totalRemaining: number
   totalCapacity: number
   usable: boolean
@@ -466,6 +478,13 @@ function AccountCard({ row, labels, autoCheckin, autoSwitch, resources, busy, on
   const name = row.nickname
   const { active, offline, checkedIn, unchecked, checkin, remaining, switchLabel, deleteLabel, renameLabel, longTerm, noBalanceHint } = labels
   const totalPct = row.totalCapacity > 0 ? Math.max(0, Math.min(100, (row.totalRemaining / row.totalCapacity) * 100)) : null
+  /**
+   * 额度数据的陈旧提示（够新时为 null，不占位）。
+   *
+   * 阈值与文案见 formatProbeAge：面板无自动刷新，正常情况不提示，只在陈旧到
+   * 值得点刷新时出现。
+   */
+  const probeAge = formatProbeAge(row.probedAt)
   const remainingSum = row.totalRemaining
   // 卡片是概览：最多两个套餐，按 可使用 → 已用完 → 已过期 取前二。
   const cardResources = resources.slice(0, CARD_RESOURCE_LIMIT)
@@ -612,13 +631,36 @@ function AccountCard({ row, labels, autoCheckin, autoSwitch, resources, busy, on
           {!row.creditOk
             // 拉取失败时正文只剩一行，用与正常卡片等高的状态块占位，
             // 保证同一栅格行内所有卡片高度一致（否则这张会明显更矮、布局参差）。
-            ? <div className="dsh-codebuddy-account-body-state"><span className="dsh-codebuddy-muted">积分查询失败</span></div>
+            //
+            // 用 tooltip 承载失败原因：卡片上只放一句「积分查询失败」保持简洁，
+            // 但把 meter 的原话留在悬浮里 —— 排查「为什么查不到」时需要它，
+            // 而它与「额度为 0」（正常卡片显示 0）是两种完全不同的状态。
+            ? (
+                <div className="dsh-codebuddy-account-body-state">
+                  {row.probeError === undefined || row.probeError === null
+                    ? <span className="dsh-codebuddy-muted">积分查询失败</span>
+                    : (
+                        <DshTooltip content={row.probeError}>
+                          <span className="dsh-codebuddy-muted">积分查询失败</span>
+                        </DshTooltip>
+                      )}
+                </div>
+              )
             : (
                 <>
                   <div className="dsh-codebuddy-account-card-credits">
                     <strong className="dsh-codebuddy-account-card-credits-value">{formatCredit(remainingSum)}</strong>
                     <span className="dsh-codebuddy-muted">{remaining}</span>
                     <span className="dsh-codebuddy-muted">{resources.length} 个资源包</span>
+                    {/* 陈旧提示：默认不显示（见 formatProbeAge）——面板没有自动刷新，
+                        数据本来就有一定年纪，正常情况下提示是噪音。只在陈旧到值得
+                        点刷新时出现，并说明是否来自缓存（「刷新了但拿的是缓存」与
+                        「一直没刷新」是两种不同的陈旧）。 */}
+                    {probeAge !== null && (
+                      <span className="dsh-codebuddy-account-card-stale">
+                        {row.probedFromCache === true ? `缓存于 ${probeAge}` : probeAge}
+                      </span>
+                    )}
                   </div>
                   {totalPct !== null && (
                     <DshProgress

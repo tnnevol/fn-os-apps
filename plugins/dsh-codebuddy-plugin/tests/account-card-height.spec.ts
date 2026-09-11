@@ -31,7 +31,14 @@ const SCSS = readFileSync(
 
 describe('两个「拉取不到数据」的分支都走等高状态块', () => {
   it('积分查询失败用状态块，而不是裸的一行文字', () => {
-    expect(PANEL).toMatch(/!row\.creditOk[\s\S]{0,200}dsh-codebuddy-account-body-state/)
+    // 窗口不能太窄：曾用 200，加了 tooltip 包裹层后距离变成 321 就误报。
+    // 要断言的是「该分支用了状态块」这一不变量，与包裹层数无关。
+    expect(PANEL).toMatch(/!row\.creditOk[\s\S]{0,400}dsh-codebuddy-account-body-state/)
+  })
+
+  it('查询失败时可看到失败原因（与「额度为 0」区分）', () => {
+    // 失败：状态块 + 原因 tooltip；额度 0：正常卡片显示 0 —— 两者是不同状态。
+    expect(PANEL).toMatch(/DshTooltip content=\{row\.probeError\}/)
   })
 
   it('已离线也用状态块', () => {

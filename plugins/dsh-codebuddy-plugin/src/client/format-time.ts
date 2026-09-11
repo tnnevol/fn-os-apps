@@ -42,3 +42,33 @@ export function formatResetDate(resetsAt: string | null | undefined): string {
   const match = /^(\d{4}-\d{2}-\d{2})/.exec(resetsAt.trim())
   return match === null ? resetsAt : match[1]!
 }
+
+/** 陈旧提示的阈值：超过这么久才提示，避免每次刷新都跳出来。 */
+export const STALE_HINT_AFTER_MS = 2 * 60_000
+
+/**
+ * 额度数据「有多旧」的相对描述；**数据足够新时返回 `null`**。
+ *
+ * 返回 `null` 而不是「刚刚」是刻意的：面板**没有自动刷新**，正常情况下数据就
+ * 是打开时那一刻的，显示「刚刚」既无信息量又占用每张卡片的宽度。只有在数据陈旧
+ * 到值得用户点刷新时才提示：
+ *
+ *   - 面板开着不动（无自动刷新，可以陈旧很久）
+ *   - 命中统探测的 30s TTL 缓存（刷新了但拿到的是缓存快照）
+ *
+ * 超过一天只说「N 天前」，秒级/分钟级精度在那个尺度上没有意义。
+ * @param probedAt - 数据产出时刻（epoch ms）。
+ * @param now - 当前时刻；显式传入以便测试。
+ * @returns 相对时间描述，或 `null` 表示不必提示。
+ */
+export function formatProbeAge(probedAt: number | undefined, now: number = Date.now()): string | null {
+  if (probedAt === undefined || !Number.isFinite(probedAt) || probedAt <= 0) return null
+  const age = now - probedAt
+  // 时钟回拨（age 为负）不提示：那不是「数据陈旧」，且提示会误导。
+  if (age < STALE_HINT_AFTER_MS) return null
+  const minutes = Math.floor(age / 60_000)
+  if (minutes < 60) return `${minutes} 分钟前`
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return `${hours} 小时前`
+  return `${Math.floor(hours / 24)} 天前`
+}

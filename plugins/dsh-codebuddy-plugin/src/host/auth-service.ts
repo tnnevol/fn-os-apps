@@ -68,6 +68,32 @@ function isNoBuddyError(message: string): boolean {
  */
 const CONCURRENCY = 4
 
+/**
+ * 主动切换周期的间隔。
+ *
+ * 主动切换靠轮询实现：只有周期性探测才能在「没有请求发生」时发现额度将尽，
+ * 从而在下一个提问到来前把账号换好（这正是它相对纯被动换号的价值——用户不
+ * 感知一次失败）。纯被动机制（如 DSH 自带的重连）只在失败后触发，替代不了它。
+ *
+ * 取 1 分钟而非 30s：额度是分钟级变化的东西，30s 窗口内的变化通常为零，而每次
+ * 探测都是一次远端往返。1 分钟足以让「快用完」被及时换掉，请求量减半；叠加
+ * 统探测的 30s TTL 缓存后，相邻两轮若落在同一 TTL 窗口内还会直接命中缓存。
+ */
+const AUTO_SWITCH_INTERVAL_MS = 60_000
+
+/**
+ * 一次额度探测的结果（供面板区分「缓存/新鲜」与「失败/为 0」）。
+ *
+ * 与 `UsageProbeResult` 同形，但这里不依赖 session 是否存在——session 缺席的
+ * profile 会退回直连探测，此时同样需要产出这个形状。
+ */
+interface ProbeOutcome {
+  snapshot: UsageSnapshot | undefined
+  probedAt: number
+  fromCache: boolean
+  error?: string
+}
+
 /** The shape `status` returns to the client. */
 export interface CodeBuddyAuthStatus {
   /** Whether a usable credential is stored. */
@@ -819,11 +845,23 @@ export class CodeBuddyAuthService {
     }
   }
 
-  /** Start the periodic proactive check (30s cadence, cheap meter probes). */
+  /**
+   * Start the periodic proactive check (1min cadence, cheap meter probes).
+   *
+   * 间隔的取舍：主动切换的价值是「无感」——额度将尽时下一个提问悄悄换号，用户
+   * 不感知一次失败。这要求轮询（纯被动只在失败后才知道）。
+   *
+   * 但额度是**分钟级**变化的东西，30s 偏密：每次探测都是一次远端往返，而额度
+   * 在一个 30s 窗口里的变化通常为零。1 分钟已足够让「快用完」被及时发现，同时
+   * 把周期请求量减半。
+   *
+   * 叠加统探测的 30s TTL 缓存后，相邻两轮周期若落在同一 TTL 窗口内会直接命中
+   * 缓存，实际远端请求进一步减少。
+   */
   startAutoSwitchCycle(): void {
     if (this.disposed) return
     if (this.autoSwitchTimer !== undefined) return
-    this.autoSwitchTimer = setInterval(() => { void this.runAutoSwitchCycle() }, 30_000)
+    this.autoSwitchTimer = setInterval(() => { void this.runAutoSwitchCycle() }, AUTO_SWITCH_INTERVAL_MS)
   }
 
   stopAutoSwitchCycle(): void {
@@ -1478,19 +1516,20 @@ export class CodeBuddyAuthService {
       // 额度走统一探测缓存（与切换策略共用同一份快照，且 30s 内的重复刷新不打远端）；
       // 签到与旅行是**状态查询**不是额度，仍各自直连。
       // session 缺席（无持久化/查询能力的 profile）时退回直连探测，保持可用。
-      const usage: Promise<UsageSnapshot | undefined> = this.session === undefined
-        ? fetchUsage(item.endpoint, item.identity, signal)
+      const usageResult: Promise<ProbeOutcome> = this.session === undefined
+        ? fetchUsage(item.endpoint, item.identity, signal).then(
+            (snapshot): ProbeOutcome => ({ snapshot, probedAt: Date.now(), fromCache: false }),
+            (): ProbeOutcome => ({ snapshot: undefined, probedAt: Date.now(), fromCache: false, error: 'probe failed' }),
+          )
         : this.session.usageProbes
           .probeAccount(item.id, item.endpoint, item.identity, signal === undefined ? {} : { signal })
-          .then(result => result.snapshot)
-      const [snapshot, checkin, travel] = item.enterprise
-        ? await Promise.all([
-          usage.catch(() => undefined),
-          Promise.resolve({ ok: false, todayCheckedIn: false }),
-          Promise.resolve(undefined),
-        ])
+      const outcome = await usageResult.catch(
+        (): ProbeOutcome => ({ snapshot: undefined, probedAt: Date.now(), fromCache: false, error: 'probe failed' }),
+      )
+      const snapshot = outcome.snapshot
+      const [checkin, travel] = item.enterprise
+        ? [{ ok: false, todayCheckedIn: false }, undefined]
         : await Promise.all([
-          usage.catch(() => undefined),
           getCheckinStatus(item.endpoint, item.identity, signal).catch(() => ({ ok: false, todayCheckedIn: false, error: 'probe failed' })),
           fetchTravelStatus(item.endpoint, item.identity, signal).catch(() => undefined),
         ])
@@ -1526,6 +1565,21 @@ export class CodeBuddyAuthService {
         totalRemaining,
         totalCapacity,
         resources,
+        /**
+         * 该额度数据的产出时刻（epoch ms）与是否来自缓存。
+         *
+         * 面板据此显示「数据时间」与「来自缓存」——统探测带 30s TTL，不显示的话
+         * 用户无法分辨「刚刷新过」与「看到的是 20 秒前的数据」。
+         */
+        probedAt: outcome.probedAt,
+        probedFromCache: outcome.fromCache,
+        /**
+         * 探测失败的原因。
+         *
+         * 与「额度为 0」严格区分：失败是「没查成」，0 是「查到了确实没有」。
+         * 面板据此显示不同的空状态，而不是把两者都说成「无可用额度」。
+         */
+        probeError: snapshot === undefined ? (outcome.error ?? 'meter unreachable') : null,
         // 签到状态
         checkinOk: checkin.ok,
         todayCheckedIn: checkin.ok ? checkin.todayCheckedIn : null,

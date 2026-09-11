@@ -712,6 +712,13 @@
   line-height: 1;
   color: var(--dsw-alias-label-primary);
 }
+/* 额度数据陈旧提示。正常情况下不渲染（见 formatProbeAge），因此可以放心用更弱的
+   颜色：它出现时本就是想让人注意到「该刷新了」。 */
+.dsh-codebuddy-account-card-stale {
+  font-size: 12px;
+  color: var(--dsw-alias-label-tertiary);
+  font-variant-numeric: tabular-nums;
+}
 .dsh-codebuddy-account-card-resources {
   display: flex;
   flex-direction: column;
