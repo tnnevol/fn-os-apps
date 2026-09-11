@@ -31,6 +31,7 @@ import {
   clearStorage,
   loadStorage,
   saveStorage,
+  mutateStorage,
   buildAccountEntry,
   activeEntry,
   resolveEntryEndpoint,
@@ -287,6 +288,7 @@ export class CodeBuddyAuthService {
     void loadAutoSwitchConfig().then((config) => {
       this.autoSwitch = config.enabled
       this.autoSwitchThresholdPct = config.thresholdPct
+      this.prefsLoadedFromDisk = config.fromDisk
       if (config.enabled) this.startAutoSwitchCycle()
     }).catch(() => {
       // Loading prefs is advisory; the in-code defaults already stand.
@@ -740,6 +742,15 @@ export class CodeBuddyAuthService {
   }
 
   /** Whether quota failures may switch the active account automatically. */
+  /**
+   * Host 上是否读取到了**磁盘上已有的** auto-switch 配置。
+   *
+   * 用于区分两种情形：① 老用户首次升级（磁盘无配置，只有 localStorage 有）；
+   * ② Host 已有权威配置。前者允许客户端一次性迁移，后者必须一律以 Host 为准，
+   * 否则就是「用旧值覆盖新值」。
+   */
+  private prefsLoadedFromDisk = false
+
   autoSwitch = true
   /** Switch proactively once the active account's remaining allowance is under this percentage. */
   autoSwitchThresholdPct = 10
@@ -900,6 +911,33 @@ export class CodeBuddyAuthService {
           ...(sessionIds === undefined ? {} : { sessionIds }),
         }, signal))
       }
+      case 'autoPrefs': {
+        /**
+         * 只读端点：三个自动开关与阈值。客户端据此把 **Host 作为配置权威**。
+         *
+         * 在此之前 Host 对这几个偏好只写不读 —— 客户端 mount 时把 localStorage
+         * 的值推上来，于是 Host 上更新的值（例如另一个窗口改过的）会在下次挂载
+         * 时被**静默覆盖**。实测复现：Host 为 `{enabled:false, thresholdPct:25}`，
+         * 被另一窗口的旧 localStorage 上推成 `{enabled:true, thresholdPct:10}`。
+         *
+         * 有了这个读通道，挂载改为「先读 Host → 写入本地 store（不推回）」，
+         * 未迁移过的浏览器仍可通过下面的 `hasStoredPrefs` 走一次性迁移。
+         */
+        return ok({
+          autoSwitch: this.autoSwitch,
+          autoSwitchThresholdPct: this.autoSwitchThresholdPct,
+          autoCheckin: this.autoCheckin,
+          autoTravel: this.autoTravel,
+          /**
+           * Host 上是否已有**显式**持久化过的配置。
+           *
+           * `false` 表示 Host 只是用了默认值，此时允许客户端把已有的
+           * localStorage 值迁移上来（老用户升级路径）；`true` 表示 Host 有真实
+           * 配置，客户端必须无条件服从而不得反向覆盖。
+           */
+          hasStoredPrefs: this.prefsLoadedFromDisk,
+        })
+      }
       case 'autoSwitch': {
         const raw = typeof payload === 'object' && payload !== null
           ? payload as { enabled?: unknown, thresholdPct?: unknown }
@@ -1028,28 +1066,39 @@ export class CodeBuddyAuthService {
    * @returns the accounts projection after the removal.
    */
   async removeAccount(id: string): Promise<CodeBuddyAccountsChanged> {
-    const storage = await loadStorage()
-    if (storage === undefined) return { loggedIn: false, accounts: [] }
-    const remaining = storage.accounts.filter(entry => entry.id !== id)
-    if (remaining.length === storage.accounts.length) {
-      // Unknown id: no mutation, report the unchanged roster.
-      return this.projectAccounts()
-    }
-    if (remaining.length === 0) {
+    /**
+     * 删除同样走 storage 事务。
+     *
+     * 这处尤其危险：若在锁外读到快照、删除后再整份回写，而期间另一个写入
+     * （并发的 token 刷新、或另一次切换）刚保存过，就会把**已删除的账号复活**。
+     * 锁内基于最新文档计算 `remaining` 才不会复活任何条目。
+     */
+    let emptied = false
+    let activeChanged = false
+    const outcome = await mutateStorage((storage) => {
+      if (storage === undefined) return undefined
+      const remaining = storage.accounts.filter(entry => entry.id !== id)
+      if (remaining.length === storage.accounts.length) {
+        // Unknown id: no mutation, report the unchanged roster.
+        return undefined
+      }
+      if (remaining.length === 0) {
+        emptied = true
+        return undefined
+      }
+      const activeId = remaining.some(entry => entry.id === storage.activeId)
+        ? storage.activeId
+        : remaining[0]!.id
+      activeChanged = activeId !== storage.activeId
+      return { activeId, accounts: remaining }
+    })
+    // 全部删完：清空文档而不是写一个空 accounts（否则 loadStorage 视为损坏）。
+    if (emptied) {
       await clearStorage()
       this.notifyModels()
       return { loggedIn: false, accounts: [] }
     }
-    const next: CodeBuddyStorage = {
-      // Keep the active entry when it survived; otherwise the first survivor
-      // becomes active.
-      activeId: remaining.some(entry => entry.id === storage.activeId)
-        ? storage.activeId
-        : remaining[0]!.id,
-      accounts: remaining,
-    }
-    const activeChanged = next.activeId !== storage.activeId
-    await saveStorage(next)
+    if (outcome === undefined) return this.projectAccounts()
     if (activeChanged) this.notifyModels()
     else this.session?.invalidate()
     return this.projectAccounts()
@@ -1062,21 +1111,22 @@ export class CodeBuddyAuthService {
    * @returns the accounts projection after the rename.
    */
   async renameLabel(id: string, label: string | undefined): Promise<CodeBuddyAccountsChanged> {
-    const storage = await loadStorage()
-    if (storage === undefined) return { loggedIn: false, accounts: [] }
-    if (!storage.accounts.some(entry => entry.id === id)) {
-      return this.projectAccounts()
-    }
     const trimmed = label?.trim()
-    await saveStorage({
-      ...storage,
-      accounts: storage.accounts.map(entry => {
-        if (entry.id !== id) return entry
-        const account = { ...entry.account }
-        if (trimmed === undefined || trimmed.length === 0) delete account.label
-        else account.label = trimmed
-        return { ...entry, account }
-      }),
+    // 在锁内基于**最新**文档改动：锁外读到的快照可能已被并发写入替换，
+    // 直接回写会整体覆盖那次改动（例如同时发生的账号切换）。
+    await mutateStorage((storage) => {
+      if (storage === undefined) return undefined
+      if (!storage.accounts.some(entry => entry.id === id)) return undefined
+      return {
+        ...storage,
+        accounts: storage.accounts.map(entry => {
+          if (entry.id !== id) return entry
+          const account = { ...entry.account }
+          if (trimmed === undefined || trimmed.length === 0) delete account.label
+          else account.label = trimmed
+          return { ...entry, account }
+        }),
+      }
     })
     this.session?.invalidate()
     return this.projectAccounts()
@@ -1088,18 +1138,26 @@ export class CodeBuddyAuthService {
    * @returns the accounts projection after the switch.
    */
   async switchAccount(id: string): Promise<CodeBuddyAccountsChanged> {
-    const storage = await loadStorage()
-    if (storage === undefined) return { loggedIn: false, accounts: [] }
-    if (!storage.accounts.some(entry => entry.id === id)) {
-      return this.projectAccounts()
-    }
-    if (storage.activeId === id) {
-      // 已是当前账号：无需切换，仍失效一次以重读最新凭据（防文件被外部刷新）。
-      this.session?.invalidate()
-      return this.projectAccounts()
-    }
-    await saveStorage({ ...storage, activeId: id })
-    this.notifyModels()
+    /**
+     * 读-改-写走 storage 事务：与 session 的切换、改名、删除、登录互斥。
+     *
+     * 锁外先读一份快照再回写，会整体覆盖并发写入（例如「切换」与「改名」同时
+     * 发生时，后写的把前一次的结果丢掉）。
+     */
+    let activeChanged = false
+    const outcome = await mutateStorage((current) => {
+      if (current === undefined) return undefined
+      if (!current.accounts.some(entry => entry.id === id)) return undefined
+      if (current.activeId === id) {
+        // 已是当前账号：无需写入，仍失效一次以重读最新凭据（防文件被外部刷新）。
+        return undefined
+      }
+      activeChanged = true
+      return { ...current, activeId: id }
+    })
+    void outcome
+    this.session?.invalidate()
+    if (activeChanged) this.notifyModels()
     return this.projectAccounts()
   }
 

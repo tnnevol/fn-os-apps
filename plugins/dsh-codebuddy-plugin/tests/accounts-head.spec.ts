@@ -116,9 +116,17 @@ describe('自动切换账号开关', () => {
     expect(PANEL).toContain('$autoSwitch.set(checked)')
   })
 
-  it('挂载与切换时同步到 host', () => {
+  it('切换开关时同步到 host', () => {
+    // 用户在面板里拨动开关 → 推给 host。
     expect(accountsBody).toMatch(/rpc\.call\(CODEBUDDY_AUTH_CHANNEL, 'autoSwitch', \{ enabled: checked \}\)/)
-    expect(accountsBody).toMatch(/rpc\.call\(CODEBUDDY_AUTH_CHANNEL, 'autoSwitch', \{ enabled: autoSwitchOn \}\)/)
+  })
+
+  it('挂载时**读** host 配置，而不是把本地值推上去', () => {
+    // 曾经挂载时会推 { enabled: autoSwitchOn }，那会让 host 上更新的值被旧
+    // localStorage 静默覆盖（实测：host false/25 被上推成 true/10）。
+    // 现在挂载走 autoPrefs 读通道，方向改为「host 为准」。
+    expect(accountsBody).toContain("'autoPrefs'")
+    expect(accountsBody).not.toMatch(/rpc\.call\(CODEBUDDY_AUTH_CHANNEL, 'autoSwitch', \{ enabled: autoSwitchOn \}\)/)
   })
 
   it('只传 enabled，不覆盖设置页维护的阈值', () => {

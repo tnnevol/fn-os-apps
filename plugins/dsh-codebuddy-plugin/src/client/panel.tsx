@@ -1005,11 +1005,25 @@ function AccountsPage({
   }, [rows, ledgerTick])
 
   useEffect(() => {
-    // 首次挂载把三个开关的持久化状态同步给主机。
-    void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoCheckin', { enabled: autoCheckinOn })
-    void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoTravel', { enabled: autoTravelOn })
-    // 只传 enabled，阈值留给设置页——主机侧缺省沿用已加载的阈值。
-    void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoSwitch', { enabled: autoSwitchOn })
+    // 挂载时**从 Host 采纳**配置，而不是把本地的推上去。
+    //
+    // 曾经这里把三个开关的持久化值推给主机，会让 Host 上更新的值被旧 localStorage
+    // 静默覆盖（与设置页同一问题）。现在方向统一为「Host 为准」；store 的 set 带
+    // 相等性检查，值相同时不通知，因此不会触发回写循环。
+    void rpc.call<{
+      autoSwitch: boolean
+      autoSwitchThresholdPct: number
+      autoCheckin: boolean
+      autoTravel: boolean
+      hasStoredPrefs: boolean
+    }>(CODEBUDDY_AUTH_CHANNEL, 'autoPrefs', {}).then((result) => {
+      if (!result.ok) return
+      const host = result.value
+      if (!host.hasStoredPrefs) return   // 老用户升级由设置页负责迁移，面板不重复推
+      $autoSwitch.set(host.autoSwitch)
+      $autoCheckin.set(host.autoCheckin)
+      $autoTravel.set(host.autoTravel)
+    })
     // 偏好变化后把新值同步给 host。展示值本身由 store 驱动（见上面的 useStore），
     // 这里只负责 host 侧：面板关闭时组件仍挂载，设置页改动的开关必须让 host 也知道。
     return subscribeUsagePref(() => {

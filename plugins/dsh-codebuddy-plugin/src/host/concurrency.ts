@@ -135,3 +135,43 @@ export async function mapWithConcurrency<T>(
   })
   await Promise.all(workers)
 }
+
+/**
+ * 串行队列：把并发调用排成一条链，逐个执行。
+ *
+ * 用于保护「读-改-写」序列。凭据文档是**单个 JSON**（所有账号共处一份），
+ * 而写入点分散在 session 与 auth-service 两处（切换、改名、删除、登录、刷新）。
+ * 两个并发写各读一次旧值再各自写回，后写的那次会**整体覆盖**前一次的结果——
+ * 表现为「刚切过去的账号又变回去了」「刚删掉的账号复活」。
+ *
+ * 与 `RunGuard` 的区别：`RunGuard` 是**丢弃**策略（拿不到就跳过本轮），
+ * 这里必须**排队**——切换这类用户操作不能被静默跳过。
+ *
+ * 前一个任务抛错不会卡住队列：用 then 的两个分支保证后续任务照常执行。
+ */
+export class SerialQueue {
+  private tail: Promise<unknown> = Promise.resolve()
+  private queued = 0
+
+  /** 当前排队（含正在执行）的任务数，供诊断与测试观察。 */
+  get pending(): number {
+    return this.queued
+  }
+
+  /** 排队执行 `task`，并返回它的结果或异常。 */
+  async runExclusive<T>(task: () => Promise<T>): Promise<T> {
+    this.queued += 1
+    // 无论前一个任务是成功还是失败，都继续执行——否则一次失败会永久卡死队列。
+    const run = this.tail.then(() => task(), () => task())
+    // 队列自身只关心「跑完了」，不关心结果；成功失败都要让出位置。
+    this.tail = run.then(
+      () => undefined,
+      () => undefined,
+    )
+    try {
+      return await run
+    } finally {
+      this.queued -= 1
+    }
+  }
+}

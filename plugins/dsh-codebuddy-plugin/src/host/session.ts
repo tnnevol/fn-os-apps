@@ -15,7 +15,7 @@ import { getConfig, getEnterpriseModels, refreshAccessToken } from './codebuddy.
 import type { CodeBuddyIdentity } from './codebuddy.ts'
 import { fetchUsage } from './usage.ts'
 import type { UsageSnapshot } from './usage.ts'
-import { loadStorage, saveStorage, activeEntry, resolveEntryEndpoint } from './storage.ts'
+import { loadStorage, saveStorage, mutateStorage, activeEntry, resolveEntryEndpoint } from './storage.ts'
 import type { CodeBuddyAccountEntry, CodeBuddyStorage } from './storage.ts'
 import type { CodeBuddyModel } from './types.ts'
 
@@ -336,12 +336,41 @@ export class CodeBuddySession {
    * @param id - the local account id.
    * @returns whether the switch was applied.
    */
-  async switchTo(id: string): Promise<boolean> {
-    const storage = await loadStorage()
-    if (storage === undefined) return false
-    if (!storage.accounts.some(entry => entry.id === id)) return false
-    if (storage.activeId === id) return true
-    await saveStorage({ ...storage, activeId: id })
+  async switchTo(id: string, expectedActiveId?: string): Promise<boolean> {
+    /**
+     * 整个「读 → 判断 → 写」必须在同一把锁内完成。
+     *
+     * 凭据文档是**单个 JSON**（所有账号共处一份），写入点却分散在 session 与
+     * auth-service 两处。两个并发写各读一次旧值再各自写回时，后写的那次会整体
+     * 覆盖前一次——表现为「刚切过去的账号又变回去」「刚删掉的账号复活」。
+     * 同类竞态此前已在 token 刷新路径上真实发生过（见 refresh 的代际守卫）。
+     */
+    // 走 storage 层的事务：锁在**文档**上，因此与 auth-service 的改名/删除/登录
+    // 写入互斥。锁放在本类里只能串行本类的写入，挡不住跨模块竞态。
+    let switched = false
+    await mutateStorage((current) => {
+      if (current === undefined) return undefined
+      if (!current.accounts.some(entry => entry.id === id)) return undefined
+      /**
+       * CAS：调用方若带上「它认为的当前账号」，而实际已被别人改掉，则**放弃**本次
+       * 切换而不是覆盖。
+       *
+       * 挡的是这个序列：请求 A 看到当前是账号 1 → 请求 B 把当前切到账号 2 →
+       * 请求 A 拿着旧状态又把当前切回账号 3。放弃后由调用方重新读状态再决策，
+       * 保证「最后一次用户操作」获胜。
+       */
+      if (expectedActiveId !== undefined && current.activeId !== expectedActiveId) {
+        return undefined
+      }
+      if (current.activeId === id) {
+        // 已经是目标账号：无需写入，但算作成功。
+        switched = true
+        return undefined
+      }
+      switched = true
+      return { ...current, activeId: id }
+    })
+    if (!switched) return false
     // Drop the in-memory caches so the next request re-reads disk and picks up
     // the new credential, endpoint, and catalog.
     this.invalidate()

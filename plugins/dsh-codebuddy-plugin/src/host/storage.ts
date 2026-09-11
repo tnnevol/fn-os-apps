@@ -19,6 +19,7 @@ import { promises as fs } from 'node:fs'
 import { dirname } from 'node:path'
 import { randomBytes, randomUUID } from 'node:crypto'
 import { dshHomePath } from '@deepseek-ai/dsh-home-paths'
+import { SerialQueue } from './concurrency.ts'
 import {
   CODEBUDDY_CLIENT_ENDPOINTS,
   CODEBUDDY_CLIENT_VERSIONS,
@@ -354,6 +355,42 @@ export function activeEntry(storage: CodeBuddyStorage): CodeBuddyAccountEntry {
 }
 
 /**
+ * 凭据文档的写入串行队列。
+ *
+ * 文档是**单个 JSON**（全部账号共处一份），写入点分散在 session 与 auth-service
+ * 两处（切换、改名、删除、登录、token 刷新）。并发写各读一次旧值再各自写回时，
+ * 后写的那次会**整体覆盖**前一次的结果，表现为「刚切过去的账号又变回去」
+ * 「刚删掉的账号复活」「刚改的备注名丢了」。同类竞态此前已在 token 刷新路径上
+ * 真实发生过。
+ *
+ * 锁放在 storage 层而不是各调用方：只有包住「读-改-写」整个事务才能挡住跨模块
+ * 的竞态；放在某个类里只能串行那个类自己的写入。
+ */
+const mutationQueue = new SerialQueue()
+
+/**
+ * 在锁内对凭据文档做一次「读 → 改 → 写」事务。
+ *
+ * `mutate` 收到**锁内最新**的文档（可能是别的写入刚改过的），返回的新文档会被
+ * 立即持久化；返回 `undefined` 表示放弃本次写入（例如 CAS 失败或账号不存在），
+ * 此时不落盘也不报错。整个事务期间持有锁，因此不会与其它写入交叉。
+ *
+ * @param mutate - 纯函数式改动；返回新文档则写入，返回 `undefined` 则放弃。
+ * @returns `mutate` 的返回值（写入后的文档或 `undefined`）。
+ */
+export async function mutateStorage(
+  mutate: (current: CodeBuddyStorage | undefined) => CodeBuddyStorage | undefined | Promise<CodeBuddyStorage | undefined>,
+): Promise<CodeBuddyStorage | undefined> {
+  return mutationQueue.runExclusive(async () => {
+    const current = await loadStorage()
+    const next = await mutate(current)
+    if (next === undefined) return undefined
+    await saveStorage(next)
+    return next
+  })
+}
+
+/**
  * Write the credential document atomically with owner-only permissions.
  * @param storage - the credential document to persist.
  */
@@ -380,6 +417,14 @@ export async function saveStorage(storage: CodeBuddyStorage): Promise<void> {
 export interface AutoSwitchConfig {
   enabled: boolean
   thresholdPct: number
+  /**
+   * 磁盘上是否确实存在这份配置。
+   *
+   * 区分「读到了真实配置」与「文件不存在、返回了默认值」——调用方据此判断
+   * 能否让客户端把已有的 localStorage 值迁移上来（老用户升级），还是必须
+   * 一律以 Host 为准（否则就是用旧值覆盖新值）。
+   */
+  fromDisk: boolean
 }
 
 function getAutoSwitchConfigPath(): string {
@@ -396,14 +441,16 @@ export async function loadAutoSwitchConfig(): Promise<AutoSwitchConfig> {
       thresholdPct: typeof parsed.thresholdPct === 'number' && Number.isFinite(parsed.thresholdPct)
         ? Math.max(0, Math.min(100, Math.round(parsed.thresholdPct)))
         : 10,
+      fromDisk: true,
     }
   } catch {
-    return { enabled: true, thresholdPct: 10 }
+    // 文件不存在或损坏：返回默认值，并标明它**不是**磁盘上的权威配置。
+    return { enabled: true, thresholdPct: 10, fromDisk: false }
   }
 }
 
 /** Write the auto-switch preferences atomically. */
-export async function saveAutoSwitchConfig(config: AutoSwitchConfig): Promise<void> {
+export async function saveAutoSwitchConfig(config: Omit<AutoSwitchConfig, 'fromDisk'>): Promise<void> {
   const path = getAutoSwitchConfigPath()
   await fs.mkdir(dirname(path), { recursive: true })
   const temp = `${path}.${randomBytes(6).toString('hex')}.tmp`

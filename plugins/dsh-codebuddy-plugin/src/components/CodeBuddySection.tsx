@@ -158,12 +158,40 @@ export function CodeBuddySection({ rpc, t, panelRoute, close }: CodeBuddySection
     return () => { document.removeEventListener('keydown', onKey, true) }
   }, [editTarget])
 
-  // Load status once on mount; sync the persisted auto-switch flag to the host.
+  // Load status once on mount, then adopt the **Host** auto-switch configuration.
+  //
+  // 曾经这里是反的：挂载时把 localStorage 的值推给 Host。那会让 Host 上更新的
+  // 值被旧 localStorage 静默覆盖（实测：Host 为 false/25 被上推成 true/10）。
+  // 现在方向改为「读 Host → 写本地 store」：
+  //   · Host 已有磁盘配置（hasStoredPrefs）→ 一律以 Host 为准；
+  //   · Host 没有（老用户首次升级）→ 把 localStorage 的既有值一次性迁移上去。
+  // store 的 set 带相等性检查，值相同时不通知，因此不会触发回写循环。
   useEffect(() => {
     void refresh()
-    void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoSwitch', {
-      enabled: $autoSwitch.get(),
-      thresholdPct: $autoSwitchThreshold.get(),
+    void rpc.call<{
+      autoSwitch: boolean
+      autoSwitchThresholdPct: number
+      autoCheckin: boolean
+      autoTravel: boolean
+      hasStoredPrefs: boolean
+    }>(CODEBUDDY_AUTH_CHANNEL, 'autoPrefs', {}).then((result) => {
+      if (!result.ok) return
+      const host = result.value
+      if (host.hasStoredPrefs) {
+        // Host 是权威：采纳它的值（可能来自另一个窗口的修改）。
+        $autoSwitch.set(host.autoSwitch)
+        setThreshold(host.autoSwitchThresholdPct)
+        $autoCheckin.set(host.autoCheckin)
+        $autoTravel.set(host.autoTravel)
+        return
+      }
+      // 老用户升级路径：Host 尚无配置，把本地既有值迁移上去，只此一次。
+      void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoSwitch', {
+        enabled: $autoSwitch.get(),
+        thresholdPct: $autoSwitchThreshold.get(),
+      })
+      void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoCheckin', { enabled: $autoCheckin.get() })
+      void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoTravel', { enabled: $autoTravel.get() })
     })
   }, [refresh, rpc])
 
