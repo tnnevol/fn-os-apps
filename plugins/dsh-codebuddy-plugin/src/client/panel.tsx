@@ -1601,70 +1601,6 @@ function startOfDay(date: Date): Date {
  *  - **选择器 → 档位**：选区间进入 custom 档（按钮组全灭）；**不回写**固定档。
  *  - 清空选择 → 回默认档并清空 dates。
  */
-function PanelRangeControls({ options, range, dates, onRangeChange, onDatesChange, t }: {
-  options: readonly TokenRangeKey[]
-  range: TokenRangeKey
-  /** 选择器显示的区间；**非空**——清空自定义时回到上一个固定档的区间，不留白。 */
-  dates: [Date, Date]
-  onRangeChange: (value: TokenRangeKey) => void
-  onDatesChange: (value: [Date, Date]) => void
-  t: Translate
-}): ReactNode {
-  return (
-    <>
-      <RangeToggle
-        options={options}
-        range={range}
-        onChange={(key) => {
-          // 档位 → 选择器：回填该档的日期区间（纯显示，不发第二次查询——
-          // range 变化本身已触发一次）。
-          onRangeChange(key)
-          onDatesChange([rangeStart(key), new Date()])
-        }}
-        label={t('tokenRangeLabel')}
-        format={(key) => rangeLabelOf(key, t)}
-      />
-      <CustomRangePicker
-        value={dates}
-        onChange={(picked) => {
-          if (picked !== undefined) {
-            /**
-             * 先写窗口天数、再进 custom 档——顺序不能反。
-             *
-             * 曾有的回归：只调 `onRangeChange('custom')` 而漏了 `setCustomRangeDays`，
-             * `resolveRange('custom')` 恒返回初始值 1（今天），选任何区间数据都不变，
-             * 用户看到「选了日期但面板没反应」。
-             */
-            const days = Math.max(1, Math.ceil((Date.now() - picked[0].getTime()) / 86_400_000) + 1)
-            setCustomRangeDays(days)
-            onDatesChange(picked)
-            // 选择器 → 档位：进入 custom（按钮组全灭，**不回写**固定档）。
-            onRangeChange('custom')
-          }
-          // picked === undefined 不发生：选择器非受控清空被禁用（见 CustomRangePicker
-          // 的 showClear 未开启），清自定义一律通过点固定档完成，档位状态与显示一致。
-        }}
-        startPlaceholder={t('tokenDateStart')}
-        endPlaceholder={t('tokenDateEnd')}
-        label={t('tokenDateRange')}
-      />
-    </>
-  )
-}
-
-/**
- * 一个统计面板的外壳：标题 + 该面板**自己的**时间周期选择器 + 局部刷新。
- *
- * 时间周期必须落在每个面板内部（而不是页面顶部一个全局选择器）：总览、趋势、
- * 工作区分布、模型分布、会话排行各自回答不同问题，读者经常需要让它们停在
- * 不同窗口上对比——全局选择器会强迫所有面板同时跳变，反而看不出差异。
- *
- * `hint`（副标题）已随「维度改为面板内切换」一并移除：维度以前就写在副标题里
- * （「按工作区」「按模型」），现在成了可切换的控件，再用一行小字重复它只会
- * 占掉一行高度；时间周期信息也一直由选择器自身表达。
- *
- * 刷新只作用于本面板；遮罩只盖住面板内容，卡片外壳不参与重建。
- */
 function TokenPanel({ title, hint, extra, options, range, dates, onRangeChange, onDatesChange, refreshLabel, loading, onRefresh, children, t }: {
   title: string
   /**
@@ -1692,16 +1628,41 @@ function TokenPanel({ title, hint, extra, options, range, dates, onRangeChange, 
   return (
     <section className="dsh-codebuddy-token-section">
       <div className="dsh-codebuddy-token-panel-head">
-        <div className="dsh-codebuddy-panel-section-title"><strong>{title}</strong>{hint !== undefined && hint.length > 0 ? <span>{hint}</span> : null}</div>
+        {/* 左侧：标题 + 日期范围选择器；右侧：维度切换 + 档位按钮组 + 刷新。
+            两端对齐（head 本身 space-between），不再让多控件挤在右端。 */}
+        <div className="dsh-codebuddy-token-panel-lead">
+          <div className="dsh-codebuddy-panel-section-title"><strong>{title}</strong>{hint !== undefined && hint.length > 0 ? <span>{hint}</span> : null}</div>
+          <CustomRangePicker
+            value={dates}
+            onChange={(picked) => {
+              if (picked !== undefined) {
+                // 先写窗口天数、再进 custom 档——顺序不能反（见 PanelRangeControls 注释）。
+                const days = Math.max(1, Math.ceil((Date.now() - picked[0].getTime()) / 86_400_000) + 1)
+                setCustomRangeDays(days)
+                onDatesChange(picked)
+                onRangeChange('custom')
+              }
+              // picked === undefined 不发生：选择器非受控清空被禁用，清自定义
+              // 一律通过点固定档完成，档位状态与显示一致。
+            }}
+            startPlaceholder={t('tokenDateStart')}
+            endPlaceholder={t('tokenDateEnd')}
+            label={t('tokenDateRange')}
+          />
+        </div>
         <div className="dsh-codebuddy-token-panel-actions">
           {extra}
-          <PanelRangeControls
+          <RangeToggle
             options={options}
             range={range}
-            dates={dates}
-            onRangeChange={onRangeChange}
-            onDatesChange={onDatesChange}
-            t={t}
+            onChange={(key) => {
+              // 档位 → 选择器：回填该档的日期区间（纯显示，不发第二次查询——
+              // range 变化本身已触发一次）。
+              onRangeChange(key)
+              onDatesChange([rangeStart(key), new Date()])
+            }}
+            label={t('tokenRangeLabel')}
+            format={(key) => rangeLabelOf(key, t)}
           />
           <DshIconButton
             size="small"

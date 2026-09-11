@@ -221,15 +221,20 @@
   min-width: 0;
   padding: 0 2px;
 }
-.dsh-codebuddy-token-panel-head .dsh-codebuddy-panel-section-title { flex: 1; min-width: 0; }
-.dsh-codebuddy-token-panel-actions {
+/* 左侧组：标题 + 日期范围选择器（标题在左、选择器紧随其后）。
+   flex:1 占满剩余宽度，把右侧的维度/档位/刷新推到右端。 */
+.dsh-codebuddy-token-panel-lead {
   display: flex;
-  /* flex:1 让 actions 占满标题行剩余宽度，内部 space-between 把档位按钮组
-     推到左端、日期范围选择器推到右端，两端与标题对齐（用户要求的布局）。 */
   flex: 1 1 auto;
   min-width: 0;
   align-items: center;
-  justify-content: space-between;
+  gap: 12px;
+}
+.dsh-codebuddy-token-panel-lead .dsh-codebuddy-panel-section-title { flex: 0 0 auto; }
+.dsh-codebuddy-token-panel-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
   gap: 8px;
 }
 
@@ -375,5 +380,6 @@
   .dsh-codebuddy-token-breakdown-row { grid-template-columns: minmax(110px, 1.1fr) minmax(52px, 1fr) auto; gap: 8px; }
   /* 窄屏下面板头改为纵向：三按钮的周期选择器放不下会挤压标题。 */
   .dsh-codebuddy-token-panel-head { align-items: stretch; flex-direction: column; }
-  .dsh-codebuddy-token-panel-actions { margin-left: 0; justify-content: space-between; }
+  .dsh-codebuddy-token-panel-lead { flex-direction: column; align-items: stretch; }
+  .dsh-codebuddy-token-panel-actions { margin-left: 0; justify-content: flex-end; }
 }

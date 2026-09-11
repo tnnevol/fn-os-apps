@@ -44,25 +44,29 @@ describe('custom 档', () => {
 })
 
 describe('DatePicker 接线', () => {
-  it('四个面板的头部都有日期选择器（经 PanelRangeControls 统一注入）', () => {
+  it('四个面板的头部都有日期选择器（TokenPanel 头部直接渲染）', () => {
     // 用户要求：所有带日期档位的面板都要有日期范围控件，且放在模块标题右侧
-    // （头部），不放内容面板内部。
-    const ctrl = PANEL.slice(PANEL.indexOf('function PanelRangeControls'), PANEL.indexOf('function PanelRangeControls') + 1800)
-    expect(ctrl).toContain('<CustomRangePicker')
+    // （头部），不放内容面板内部。日期选择器在左侧组（标题旁）。
+    const head = PANEL.slice(PANEL.indexOf('dsh-codebuddy-token-panel-head'), PANEL.indexOf('PanelBody loading'))
+    expect(head).toContain('<CustomRangePicker')
+    expect(head).toMatch(/token-panel-lead[\s\S]{0,400}<CustomRangePicker/)
   })
 
   it('档位切换回填日期到选择器（不发第二次查询）', () => {
-    const ctrl = PANEL.slice(PANEL.indexOf('function PanelRangeControls'), PANEL.indexOf('function PanelRangeControls') + 1800)
-    // onRangeChange(key) 之后立即 onDatesChange([rangeStart(key), 今天])
-    expect(ctrl).toMatch(/onRangeChange\(key\)\s*\n\s*onDatesChange\(\[rangeStart\(key\), new Date\(\)\]\)/)
+    const head = PANEL.slice(PANEL.indexOf('dsh-codebuddy-token-panel-head'), PANEL.indexOf('PanelBody loading'))
+    // RangeToggle 的 onChange：onRangeChange(key) 之后立即 onDatesChange([rangeStart(key), 今天])
+    expect(head).toMatch(/onRangeChange\(key\)\s*\n\s*onDatesChange\(\[rangeStart\(key\), new Date\(\)\]\)/)
   })
 
   it('选择器修改 → 先写窗口天数再进 custom 档，不回写固定档', () => {
-    const ctrl = PANEL.slice(PANEL.indexOf('function PanelRangeControls'), PANEL.indexOf('function PanelRangeControls') + 1800)
-    expect(ctrl).toMatch(/setCustomRangeDays\(days\)/)
-    expect(ctrl).toMatch(/onRangeChange\('custom'\)/)
-    // 单向：选择器分支里不得回写某个固定档位名
-    expect(ctrl).not.toMatch(/onRangeChange\('(?:today|7d|30d)'\)/)
+    const head = PANEL.slice(PANEL.indexOf('dsh-codebuddy-token-panel-head'), PANEL.indexOf('PanelBody loading'))
+    // 实现形态：const days = …; setCustomRangeDays(days); onDatesChange; onRangeChange('custom')
+    const days = head.indexOf('setCustomRangeDays(days)')
+    const enter = head.indexOf("onRangeChange('custom')")
+    expect(days).toBeGreaterThan(-1)
+    expect(enter).toBeGreaterThan(days)
+    // 单向：不得回写某个固定档位名
+    expect(head).not.toMatch(/onRangeChange\('(?:today|7d|30d)'\)/)
   })
 
   it('选择器非空（清自定义通过点固定档完成，不留白）', () => {
@@ -72,7 +76,7 @@ describe('DatePicker 接线', () => {
   })
 
   it('禁止选择今天之后的日期', () => {
-    const fn = PANEL.slice(PANEL.indexOf('function CustomRangePicker'), PANEL.indexOf('function PanelRangeControls'))
+    const fn = PANEL.slice(PANEL.indexOf('function CustomRangePicker'), PANEL.indexOf('function todayRange'))
     expect(fn).toMatch(/disabledDate/)
     expect(fn).toMatch(/startOfDay\(new Date\(\)\)\.getTime\(\)/)
   })
@@ -155,7 +159,7 @@ describe('选择自定义区间必须真正生效（回归）', () => {
      * `setCustomRangeDays(天数)`。于是 `resolveRange('custom')` 恒返回初始值 1，
      * 选任何区间数据都不变——用户看到「选了日期但面板没反应」。
      */
-    const ctrl = PANEL_LIVE.slice(PANEL.indexOf('function PanelRangeControls'), PANEL.indexOf('function PanelRangeControls') + 2600)
+    const ctrl = PANEL_LIVE.slice(PANEL_LIVE.indexOf('dsh-codebuddy-token-panel-head'), PANEL_LIVE.indexOf('PanelBody loading'))
     // onChange 分支里必须先写天数再进 custom。
     // 注意 indexOf 会撞上**注释里的同名字样**（回归说明注释恰好引用了这两个调用），
     // 因此只认**代码行**：行首缩进 + 无注释前缀（* 或 //）。
@@ -174,7 +178,7 @@ describe('选择自定义区间必须真正生效（回归）', () => {
   })
 
   it('写入的天数 = 起点相对今天的天数（至少 1）', () => {
-    const ctrl = PANEL_LIVE.slice(PANEL.indexOf('function PanelRangeControls'), PANEL.indexOf('function PanelRangeControls') + 2600)
+    const ctrl = PANEL_LIVE.slice(PANEL_LIVE.indexOf('dsh-codebuddy-token-panel-head'), PANEL_LIVE.indexOf('PanelBody loading'))
     // 实现形态：const days = Math.max(1, …); setCustomRangeDays(days)
     expect(ctrl).toMatch(/const days = Math\.max\(1, Math\.ceil\([\s\S]{0,120}setCustomRangeDays\(days\)/)
   })
