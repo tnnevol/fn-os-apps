@@ -75,6 +75,8 @@ export {
   DshIconSync,
   DshIconTreeTriangleRight,
   DshIconUser,
+  type DshIconProps,
+  type DshIconSize,
   DshIconLabAvatar,
   DshIconLabButton,
   DshIconLabCascader,

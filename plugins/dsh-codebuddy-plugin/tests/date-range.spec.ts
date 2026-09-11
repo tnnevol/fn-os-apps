@@ -43,21 +43,32 @@ describe('custom 档', () => {
 })
 
 describe('DatePicker 接线', () => {
-  it('分布面板的工具栏里有 CustomRangePicker', () => {
-    const block = PANEL.slice(PANEL.indexOf("title={t('tokenDistribution')}"), PANEL.indexOf("title={t('tokenTopSessions')}"))
-    expect(block).toContain('<CustomRangePicker')
+  it('四个面板的头部都有日期选择器（经 PanelRangeControls 统一注入）', () => {
+    // 用户要求：所有带日期档位的面板都要有日期范围控件，且放在模块标题右侧
+    // （头部），不放内容面板内部。
+    const ctrl = PANEL.slice(PANEL.indexOf('function PanelRangeControls'), PANEL.indexOf('function PanelRangeControls') + 1800)
+    expect(ctrl).toContain('<CustomRangePicker')
   })
 
-  it('选择自定义区间 → 进入 custom 档；清空 → 回默认档', () => {
-    const block = PANEL.slice(PANEL.indexOf('<CustomRangePicker'), PANEL.indexOf('<CustomRangePicker') + 700)
-    expect(block).toMatch(/setDistributionRange\('custom'\)/)
-    expect(block).toMatch(/setDistributionRange\(DEFAULT_TOKEN_RANGE\)/)
+  it('档位切换回填日期到选择器（不发第二次查询）', () => {
+    const ctrl = PANEL.slice(PANEL.indexOf('function PanelRangeControls'), PANEL.indexOf('function PanelRangeControls') + 1800)
+    // onRangeChange 里同时 onDatesChange(rangeStart(key), end)
+    // 实际形态：onRangeChange(key) 之后紧跟 if (key !== 'custom') → onDatesChange
+    expect(ctrl).toMatch(/onRangeChange\(key\)/)
+    expect(ctrl).toMatch(/if \(key !== 'custom'\) \{\s*\n\s*const end = new Date\(\)\s*\n\s*onDatesChange\(\[rangeStart\(key\), end\]\)/)
   })
 
-  it('天数计算：终点视为今天、至少 1 天', () => {
-    const block = PANEL.slice(PANEL.indexOf('<CustomRangePicker'), PANEL.indexOf('<CustomRangePicker') + 700)
-    // Math.max(1, ceil((now - start)/DAY) + 1)
-    expect(block).toMatch(/Math\.max\(1, Math\.ceil\(\(Date\.now\(\) - range\[0\]\.getTime\(\)\) \/ 86_400_000\) \+ 1\)/)
+  it('选择器修改 → 进入 custom 档，不回写固定档；清空 → 回默认档', () => {
+    const ctrl = PANEL.slice(PANEL.indexOf('function PanelRangeControls'), PANEL.indexOf('function PanelRangeControls') + 1800)
+    expect(ctrl).toMatch(/onRangeChange\('custom'\)/)
+    expect(ctrl).toMatch(/onRangeChange\(DEFAULT_TOKEN_RANGE\)/)
+    // 单向：选择器分支里不得回填某个固定档位名
+    expect(ctrl).not.toMatch(/onRangeChange\('(?:today|7d|30d)'\)/)
+  })
+
+  it('天数换算助手：终点视为今天', () => {
+    expect(PANEL).toContain('function rangeStart(')
+    expect(PANEL).toMatch(/range === 'today'\) return end/)
   })
 
   it('包装组件对 Semi 的值形状归一（[Date,Date] 保留、空串→undefined）', () => {
@@ -72,8 +83,8 @@ describe('配色：只改 semi 变量，不覆盖组件样式', () => {
     expect(SCSS).toMatch(/--semi-color-primary-light-default:/)
   })
 
-  it('作用域是工具栏 + 弹层（datepicker 挂在 body 下）', () => {
-    expect(SCSS).toMatch(/\.dsh-codebuddy-token-card-toolbar,\s*\n\.semi-popover \.semi-datepicker \{/)
+  it('作用域是面板头部 actions + 弹层（datepicker 挂在 body 下）', () => {
+    expect(SCSS).toMatch(/\.dsh-codebuddy-token-panel-actions,\s*\n\.semi-popover \.semi-datepicker \{/)
   })
 
   it('不出现 .semi-datepicker-* 的**属性**覆盖（变量作用域不算）', () => {

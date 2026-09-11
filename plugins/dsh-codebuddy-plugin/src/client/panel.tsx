@@ -1538,21 +1538,90 @@ function CustomRangePicker({ value, onChange, startPlaceholder, endPlaceholder, 
   label: string
 }): ReactNode {
   return (
-    <DshDatePicker
-      {...({
-        type: 'dateRange',
-        size: 'small',
-        density: 'compact',
-        placeholder: [startPlaceholder, endPlaceholder],
-        value,
-        onChange: (date: Date | string | [Date, Date] | undefined) => {
-          // Semi dateRange 的值是 [Date, Date]；清空时是空串。
-          const range = Array.isArray(date) && date[0] instanceof Date ? date as [Date, Date] : undefined
-          onChange(range)
-        },
-        'aria-label': label,
-      } as DatePickerRangeProps & { 'aria-label': string })}
-    />
+    <div className="dsh-codebuddy-token-datepicker-scope">
+      <DshDatePicker
+        {...({
+          type: 'dateRange',
+          size: 'small',
+          density: 'compact',
+          placeholder: [startPlaceholder, endPlaceholder],
+          value,
+          onChange: (date: Date | string | [Date, Date] | undefined) => {
+            // Semi dateRange 的值是 [Date, Date]；清空时是空串。
+            const range = Array.isArray(date) && date[0] instanceof Date ? date as [Date, Date] : undefined
+            onChange(range)
+          },
+          'aria-label': label,
+        } as DatePickerRangeProps & { 'aria-label': string })}
+      />
+    </div>
+  )
+}
+
+/** 把「起点距今天的天数」换算成日历起点（终点固定为今天）。 */
+function rangeStart(range: TokenRangeKey, now: Date = new Date()): Date {
+  const end = startOfDay(now)
+  if (range === 'today') return end
+  const days = range === '7d' ? 7 : 30
+  return new Date(end.getTime() - (days - 1) * 86_400_000)
+}
+
+function startOfDay(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate())
+}
+
+/**
+ * 面板头部的周期控件组：**档位按钮组 + 日期范围选择器**，二者的状态由调用方
+ * 分别持有（range / dates），这里的职责只是把两者拼在一行。
+ *
+ * 同步语义（用户指定）：
+ *  - **档位 → 选择器**：切固定档时把该档的日期区间填入选择器（由调用方在
+ *    onRangeChange 里做，见 `rangeToDates`）；因为 range 变化本身已触发一次
+ *    查询，dates 只是回填显示，不产生第二次请求。
+ *  - **选择器 → 档位**：选区间进入 custom 档（按钮组全灭）；**不回写**固定档。
+ *  - 清空选择 → 回默认档并清空 dates。
+ */
+function PanelRangeControls({ options, range, dates, onRangeChange, onDatesChange, t }: {
+  options: readonly TokenRangeKey[]
+  range: TokenRangeKey
+  dates: [Date, Date] | undefined
+  onRangeChange: (value: TokenRangeKey) => void
+  onDatesChange: (value: [Date, Date] | undefined) => void
+  t: Translate
+}): ReactNode {
+  return (
+    <>
+      <RangeToggle
+        options={options}
+        range={range}
+        onChange={(key) => {
+          onRangeChange(key)
+          // 档位 → 选择器：回填该档的日期区间（纯显示，不发第二次查询）。
+          if (key !== 'custom') {
+            const end = new Date()
+            onDatesChange([rangeStart(key), end])
+          }
+        }}
+        label={t('tokenRangeLabel')}
+        format={(key) => rangeLabelOf(key, t)}
+      />
+      <CustomRangePicker
+        value={dates}
+        onChange={(picked) => {
+          onDatesChange(picked)
+          if (picked !== undefined) {
+            // 选择器 → 档位：进入 custom（按钮组全灭，单向不回写固定档）。
+            onRangeChange('custom')
+          } else {
+            // 清空 → 回默认档。
+            onRangeChange(DEFAULT_TOKEN_RANGE)
+          }
+        }}
+        startPlaceholder={t('tokenDateStart')}
+        endPlaceholder={t('tokenDateEnd')}
+        label={t('tokenDateRange')}
+      />
+    </>
   )
 }
 
@@ -1569,27 +1638,26 @@ function CustomRangePicker({ value, onChange, startPlaceholder, endPlaceholder, 
  *
  * 刷新只作用于本面板；遮罩只盖住面板内容，卡片外壳不参与重建。
  */
-function TokenPanel({ title, hint, extra, options, range, onRangeChange, rangeLabel, rangeFormat, refreshLabel, loading, onRefresh, children }: {
+function TokenPanel({ title, hint, extra, options, range, dates, onRangeChange, onDatesChange, refreshLabel, loading, onRefresh, children, t }: {
   title: string
   /**
-   * 副标题（标题旁的小字）。
-   *
-   * 只保留**数据型**副标题（如「N 个活跃会话」「总计 X Token」——它们随数据变化、
-   * 有信息量）。静态的维度副标题已删：那两处（用量分布/模型排行）的维度改成了
-   * 面板内切换控件，再用小字重复一遍只会占高度。
+   * 副标题（标题旁的小字）。只保留**数据型**副标题（如「N 个活跃会话」「总计 X
+   * Token」——它们随数据变化、有信息量）。
    */
   hint?: string
-  /** 面板内部的附加控件（如维度切换），渲染在标题行右侧、时间周期选择器之前。 */
+  /** 面板头部的附加控件（如维度切换），渲染在周期控件之前。 */
   extra?: ReactNode
   options: readonly TokenRangeKey[]
   range: TokenRangeKey
+  /** 日期范围选择器显示的区间（档位切换时被回填；用户自选时进入 custom 档）。 */
+  dates: [Date, Date] | undefined
   onRangeChange: (value: TokenRangeKey) => void
-  rangeLabel: string
-  rangeFormat: (key: TokenRangeKey) => string
+  onDatesChange: (value: [Date, Date] | undefined) => void
   refreshLabel: string
   loading: boolean
   onRefresh: () => void
   children: ReactNode
+  t: Translate
 }): ReactNode {
   return (
     <section className="dsh-codebuddy-token-section">
@@ -1597,7 +1665,14 @@ function TokenPanel({ title, hint, extra, options, range, onRangeChange, rangeLa
         <div className="dsh-codebuddy-panel-section-title"><strong>{title}</strong>{hint !== undefined && hint.length > 0 ? <span>{hint}</span> : null}</div>
         <div className="dsh-codebuddy-token-panel-actions">
           {extra}
-          <RangeToggle options={options} range={range} onChange={onRangeChange} label={rangeLabel} format={rangeFormat} />
+          <PanelRangeControls
+            options={options}
+            range={range}
+            dates={dates}
+            onRangeChange={onRangeChange}
+            onDatesChange={onDatesChange}
+            t={t}
+          />
           <DshIconButton
             size="small"
             theme="borderless"
@@ -1620,6 +1695,11 @@ function TokenStatsPage({ rpc, t }: { rpc: ConnectionRpc, t: Translate }): React
   const [trendRange, setTrendRange] = useState<TokenRangeKey>(DEFAULT_TOKEN_RANGE)
   const [distributionRange, setDistributionRange] = useState<TokenRangeKey>(DEFAULT_TOKEN_RANGE)
   const [sessionsRange, setSessionsRange] = useState<TokenRangeKey>(DEFAULT_TOKEN_RANGE)
+  // 各面板日期选择器显示的区间：档位切换时被回填（纯显示）；用户自选则进入 custom。
+  const [overviewDates, setOverviewDates] = useState<[Date, Date] | undefined>(undefined)
+  const [trendDates, setTrendDates] = useState<[Date, Date] | undefined>(undefined)
+  const [distributionDates, setDistributionDates] = useState<[Date, Date] | undefined>(undefined)
+  const [sessionsDates, setSessionsDates] = useState<[Date, Date] | undefined>(undefined)
   /**
    * 用量分布与模型排行的维度（按工作区 / 按模型），各面板**独立**。
    *
@@ -1627,13 +1707,6 @@ function TokenStatsPage({ rpc, t }: { rpc: ConnectionRpc, t: Translate }): React
    * 看到的内容与之前一致，切换只是新增能力而不改变默认。
    */
   const [distributionDimension, setDistributionDimension] = useState<StatsDimension>('workspace')
-  /**
-   * 日期范围选择器的值（起点，终点为今天）。
-   *
-   * 选了自定义区间后 `distributionRange` 进入 'custom' 档；把按钮组切回任一固定档
-   * 即退出自定义（选择器的值保留，便于再次进入）。
-   */
-  const [distributionDates, setDistributionDates] = useState<[Date, Date] | undefined>(undefined)
   const store = useMemo(() => new TokenStatsStore(rpc), [rpc])
   const overview = useTokenStats(store, overviewRange)
   const trend = useTokenStats(store, trendRange)
@@ -1710,11 +1783,12 @@ function TokenStatsPage({ rpc, t }: { rpc: ConnectionRpc, t: Translate }): React
         hint={`${data.totals.sessions} ${t('tokenActiveSessions')}`}
         options={optionsFor('overview')}
         range={overviewRange}
+        dates={overviewDates}
+        onDatesChange={setOverviewDates}
         onRangeChange={setOverviewRange}
-        rangeLabel={rangeLabel}
-        rangeFormat={rangeFormat}
         refreshLabel={refreshPanel}
         loading={overview.loading}
+        t={t}
         onRefresh={overview.reload}
       >
         <DshCard className="dsh-codebuddy-token-overview-card">
@@ -1751,11 +1825,12 @@ function TokenStatsPage({ rpc, t }: { rpc: ConnectionRpc, t: Translate }): React
         hint={trend.data === undefined ? '' : `${compact(trend.data.totals.total)} Token`}
         options={optionsFor('trend')}
         range={trendRange}
+        dates={trendDates}
+        onDatesChange={setTrendDates}
         onRangeChange={setTrendRange}
-        rangeLabel={rangeLabel}
-        rangeFormat={rangeFormat}
         refreshLabel={refreshPanel}
         loading={trend.loading}
+        t={t}
         onRefresh={trend.reload}
       >
         <DshCard className="dsh-codebuddy-panel-chart-card">
@@ -1779,38 +1854,18 @@ function TokenStatsPage({ rpc, t }: { rpc: ConnectionRpc, t: Translate }): React
           「按模型」视角保留在维度切换的第二档里。 */}
       <TokenPanel
         title={t('tokenDistribution')}
+        extra={<DimensionToggle dimension={distributionDimension} onChange={setDistributionDimension} t={t} />}
         options={optionsFor('other')}
         range={distributionRange}
+        dates={distributionDates}
+        onDatesChange={setDistributionDates}
         onRangeChange={setDistributionRange}
-        rangeLabel={rangeLabel}
-        rangeFormat={rangeFormat}
         refreshLabel={refreshPanel}
         loading={distribution.loading}
+        t={t}
         onRefresh={distribution.reload}
       >
         <DshCard className="dsh-codebuddy-token-list-card">
-          {/* 维度切换放在**排行卡片内部**：它切换的是这份列表的统计口径，
-              与列表是同一个整体；放面板头部会显得像在控制整个面板（含周期）。 */}
-          <div className="dsh-codebuddy-token-card-toolbar">
-            <DimensionToggle dimension={distributionDimension} onChange={setDistributionDimension} t={t} />
-            <CustomRangePicker
-              value={distributionDates}
-              onChange={(range) => {
-                if (range !== undefined) {
-                  // 终点视为今天：窗口 = 起点相对今天的天数（至少 1）。
-                  const days = Math.max(1, Math.ceil((Date.now() - range[0].getTime()) / 86_400_000) + 1)
-                  setCustomRangeDays(days)
-                  setDistributionRange('custom')
-                } else {
-                  // 清空选择 → 回到默认档。
-                  setDistributionRange(DEFAULT_TOKEN_RANGE)
-                }
-              }}
-              startPlaceholder={t('tokenDateStart')}
-              endPlaceholder={t('tokenDateEnd')}
-              label={t('tokenDateRange')}
-            />
-          </div>
           {distribution.data === undefined
             ? <div className="dsh-codebuddy-token-empty" />
             : distributionDimension === 'workspace'
@@ -1823,11 +1878,12 @@ function TokenStatsPage({ rpc, t }: { rpc: ConnectionRpc, t: Translate }): React
         hint={t('tokenTopTen')}
         options={optionsFor('other')}
         range={sessionsRange}
+        dates={sessionsDates}
+        onDatesChange={setSessionsDates}
         onRangeChange={setSessionsRange}
-        rangeLabel={rangeLabel}
-        rangeFormat={rangeFormat}
         refreshLabel={refreshPanel}
         loading={sessions.loading}
+        t={t}
         onRefresh={sessions.reload}
       >
         <DshCard className="dsh-codebuddy-token-list-card">

@@ -103,27 +103,23 @@ describe('副标题移除（仅限这两个模块）', () => {
 })
 
 describe('样式与位置：按钮组放在排行卡片内部', () => {
-  it('维度切换渲染在卡片内部的 toolbar 里（而不是面板头部）', () => {
-    // 用户要求：按钮组属于这份列表（切换的是列表的统计口径），
-    // 放面板头部会像在控制整个面板（含周期选择器）。
+  it('维度切换渲染在面板头部（extra 插槽）', () => {
+    // 与日期范围控件同一行：两面板的能力重合后，维度切换属于面板级视角。
     const block = PANEL.slice(
       PANEL.indexOf("title={t('tokenDistribution')}"),
       PANEL.indexOf("title={t('tokenTopSessions')}"),
     )
-    const toolbarAt = block.indexOf('dsh-codebuddy-token-card-toolbar')
-    const toggleAt = block.indexOf('<DimensionToggle')
-    expect(toolbarAt).toBeGreaterThan(-1)
-    expect(toggleAt).toBeGreaterThan(toolbarAt)
-    // 面板头部不传 extra
-    expect(block).not.toContain('extra=')
+    expect(block).toMatch(/extra=\{<DimensionToggle/)
+    // 卡片内部不再有维度 toolbar
+    expect(block).not.toContain('dsh-codebuddy-token-card-toolbar')
   })
 
-  it('dimension 按钮组在窄屏占满宽度（卡片内部规则）', () => {
-    expect(SCSS).toMatch(/\.dsh-codebuddy-token-card-toolbar \.dsh-codebuddy-panel-dimension \{ width: 100%; \}/)
+  it('日期选择器在窄屏占满宽度（头部 actions 规则）', () => {
+    expect(SCSS).toMatch(/\.dsh-codebuddy-token-panel-actions \.dsh-codebuddy-token-datepicker-scope \{ width: 100%; \}/)
   })
 
-  it('toolbar 与列表之间有间距（不贴着排行首行）', () => {
-    expect(SCSS).toMatch(/\.dsh-codebuddy-token-card-toolbar\s*\{[^}]*margin-bottom:\s*14px/)
+  it('配色作用域同时覆盖头部与弹层', () => {
+    expect(SCSS).toMatch(/\.dsh-codebuddy-token-panel-actions,\s*\n\.semi-popover \.semi-datepicker \{[^}]*--semi-color-primary:/)
   })
 
   it('使用独立的 class，不与时间周期按钮组混用', () => {

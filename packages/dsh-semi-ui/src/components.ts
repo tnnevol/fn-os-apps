@@ -65,6 +65,8 @@ export { default as DshList } from '@douyinfe/semi-ui/lib/es/list/index'
 export { default as DshAvatarGroup } from '@douyinfe/semi-ui/lib/es/avatar/avatarGroup'
 export { default as DshScrollItem } from '@douyinfe/semi-ui/lib/es/scrollList/scrollItem'
 export { default as DshIconSearch } from '@douyinfe/semi-icons/lib/es/icons/IconSearch.js'
+/** Semi 图标的渲染契约（svg/type 已由具体图标固定），供消费方做宽松的组件类型标注。 */
+export type { IconProps as DshIconProps, IconSize as DshIconSize } from '@douyinfe/semi-icons'
 
 export { default as DshTypography } from '@douyinfe/semi-ui/lib/es/typography/index'
 /**

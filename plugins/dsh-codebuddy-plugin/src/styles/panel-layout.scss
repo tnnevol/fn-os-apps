@@ -385,7 +385,6 @@
 
 /* 面板内容体：刷新遮罩的定位上下文，保证遮罩只盖内容、不动卡片外壳。 */
 .dsh-codebuddy-panel-body { position: relative; min-width: 0; }
-.dsh-codebuddy-token-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
 .dsh-codebuddy-panel-tokens .dsh-codebuddy-panel-chart-card { padding: 14px 18px 18px; }
 .dsh-codebuddy-panel-tokens .dsh-codebuddy-panel-chart { height: 310px; }
 .dsh-codebuddy-token-activity-card { padding: 20px 22px 16px; }
@@ -470,16 +469,6 @@
 .dsh-codebuddy-token-activity-scale i { width: 10px; height: 10px; border-radius: 3px; background: var(--dsw-alias-bg-layer-2); }
 
 .dsh-codebuddy-token-list-card { padding: 15px 20px; }
-/* 排行卡片内部的维度切换（按工作区/按模型）。
-   与列表之间留出间距；靠左与序号列对齐。窄屏占满宽度（与面板级按钮组同规则）。 */
-.dsh-codebuddy-token-card-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  justify-content: flex-start;
-  margin-bottom: 14px;
-}
-
 /* 日期范围选择器的配色作用域。
    用户要求：**只改 semi 变量、不覆盖组件样式** —— Semi 的 DatePicker 全部用
    `--semi-color-primary*` 系列上色（已核实 dist/css/semi.css）：
@@ -488,7 +477,7 @@
      悬停范围                → --semi-color-primary-light-active / -hover
    因此把这几个变量 scoped 到触发器所在的 toolbar 内即可；弹层面板挂在 body 下，
    需要单独一段作用域（见下）。不写任何 .semi-datepicker-* 的样式覆盖。 */
-.dsh-codebuddy-token-card-toolbar,
+.dsh-codebuddy-token-panel-actions,
 .semi-popover .semi-datepicker {
   --semi-color-primary: #17b890;
   --semi-color-primary-hover: #14a582;
@@ -527,14 +516,12 @@
   .dsh-codebuddy-token-toolbar-actions .dsh-codebuddy-panel-range { justify-content: flex-start; }
   /* 四个选项在窄屏可能换行，让按钮组占满宽度以免被压扁。 */
   .dsh-codebuddy-token-panel-actions .dsh-codebuddy-panel-range { width: 100%; }
-  /* 维度切换与日期选择器同处卡片内 toolbar，窄屏纵向排列、各自占满宽度。 */
-  .dsh-codebuddy-token-card-toolbar { flex-direction: column; align-items: stretch; }
-  .dsh-codebuddy-token-card-toolbar .dsh-codebuddy-panel-dimension { width: 100%; }
+  /* 日期范围选择器在窄屏占满宽度，与档位按钮组纵向堆叠。 */
+  .dsh-codebuddy-token-panel-actions .dsh-codebuddy-token-datepicker-scope { width: 100%; }
   .dsh-codebuddy-token-overview-head { align-items: flex-start; flex-direction: column; }
   .dsh-codebuddy-token-overview-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .dsh-codebuddy-token-overview-stats .dsh-codebuddy-panel-stat:nth-child(odd) { border-left: 0; }
   .dsh-codebuddy-token-overview-stats .dsh-codebuddy-panel-stat:nth-child(n + 3) { border-top: 1px solid var(--dsw-alias-border-l2); }
-  .dsh-codebuddy-token-columns { grid-template-columns: 1fr; gap: 22px; }
   .dsh-codebuddy-token-breakdown-row { grid-template-columns: minmax(110px, 1.1fr) minmax(52px, 1fr) auto; gap: 8px; }
   /* 窄屏下面板头改为纵向：三按钮的周期选择器放不下会挤压标题。 */
   .dsh-codebuddy-token-panel-head { align-items: stretch; flex-direction: column; }
