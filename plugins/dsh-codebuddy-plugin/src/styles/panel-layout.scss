@@ -474,8 +474,28 @@
    与列表之间留出间距；靠左与序号列对齐。窄屏占满宽度（与面板级按钮组同规则）。 */
 .dsh-codebuddy-token-card-toolbar {
   display: flex;
+  align-items: center;
+  gap: 10px;
   justify-content: flex-start;
   margin-bottom: 14px;
+}
+
+/* 日期范围选择器的配色作用域。
+   用户要求：**只改 semi 变量、不覆盖组件样式** —— Semi 的 DatePicker 全部用
+   `--semi-color-primary*` 系列上色（已核实 dist/css/semi.css）：
+     选中日（绿底白字）       → --semi-color-primary
+     范围内日期（浅绿底）     → --semi-color-primary-light-default
+     悬停范围                → --semi-color-primary-light-active / -hover
+   因此把这几个变量 scoped 到触发器所在的 toolbar 内即可；弹层面板挂在 body 下，
+   需要单独一段作用域（见下）。不写任何 .semi-datepicker-* 的样式覆盖。 */
+.dsh-codebuddy-token-card-toolbar,
+.semi-popover .semi-datepicker {
+  --semi-color-primary: #17b890;
+  --semi-color-primary-hover: #14a582;
+  --semi-color-primary-active: #109374;
+  --semi-color-primary-light-default: color-mix(in srgb, #17b890 16%, transparent);
+  --semi-color-primary-light-hover: color-mix(in srgb, #17b890 26%, transparent);
+  --semi-color-primary-light-active: color-mix(in srgb, #17b890 34%, transparent);
 }
 .dsh-codebuddy-token-breakdown-list { display: flex; flex-direction: column; gap: 16px; }
 .dsh-codebuddy-token-breakdown-row { display: grid; grid-template-columns: minmax(120px, 1.1fr) minmax(70px, 1fr) auto; align-items: center; gap: 12px; min-width: 0; }
@@ -507,7 +527,8 @@
   .dsh-codebuddy-token-toolbar-actions .dsh-codebuddy-panel-range { justify-content: flex-start; }
   /* 四个选项在窄屏可能换行，让按钮组占满宽度以免被压扁。 */
   .dsh-codebuddy-token-panel-actions .dsh-codebuddy-panel-range { width: 100%; }
-  /* 维度切换已移入排行卡片内部，窄屏同样占满宽度以免被压扁。 */
+  /* 维度切换与日期选择器同处卡片内 toolbar，窄屏纵向排列、各自占满宽度。 */
+  .dsh-codebuddy-token-card-toolbar { flex-direction: column; align-items: stretch; }
   .dsh-codebuddy-token-card-toolbar .dsh-codebuddy-panel-dimension { width: 100%; }
   .dsh-codebuddy-token-overview-head { align-items: flex-start; flex-direction: column; }
   .dsh-codebuddy-token-overview-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }

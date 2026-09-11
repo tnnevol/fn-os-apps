@@ -39,11 +39,11 @@ describe('TokenStatsStore', () => {
   it('在途请求会被复用，不会因为并发 ensure 而重复发起', async () => {
     const { rpc, calls } = makeRpc({ delayMs: 20 })
     const store = new TokenStatsStore(rpc)
-    store.ensure('90d')
-    store.ensure('90d')
-    expect(store.isLoading('90d')).toBe(true)
-    await vi.waitFor(() => { expect(store.isLoading('90d')).toBe(false) })
-    expect(calls.map(c => c.days)).toEqual([90])
+    store.ensure('30d')
+    store.ensure('30d')
+    expect(store.isLoading('30d')).toBe(true)
+    await vi.waitFor(() => { expect(store.isLoading('30d')).toBe(false) })
+    expect(calls.map(c => c.days)).toEqual([30])
   })
 
   it('不同范围各自请求一次——这是功能本身要求的', async () => {
@@ -51,11 +51,11 @@ describe('TokenStatsStore', () => {
     const store = new TokenStatsStore(rpc)
     store.ensure('7d')
     store.ensure('30d')
-    store.ensure('90d')
+    store.ensure('today')
     await vi.waitFor(() => { expect(store.isLoading('7d')).toBe(false) })
     await vi.waitFor(() => { expect(store.isLoading('30d')).toBe(false) })
-    await vi.waitFor(() => { expect(store.isLoading('90d')).toBe(false) })
-    expect(calls.map(c => c.days).sort((a, b) => a - b)).toEqual([7, 30, 90])
+    await vi.waitFor(() => { expect(store.isLoading('today')).toBe(false) })
+    expect(calls.map(c => c.days).sort((a, b) => a - b)).toEqual([1, 7, 30])
   })
 
   it('切回已加载过的范围直接命中缓存，不再请求', async () => {

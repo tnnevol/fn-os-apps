@@ -19,6 +19,7 @@ import {
   DshButton,
   DshButtonGroup,
   DshCard,
+  DshDatePicker,
   DshDescriptions,
   DshDropdown,
   DshEmpty,
@@ -69,7 +70,7 @@ import {
 import { formatProbeAge, formatResetDate, formatUpdatedAt } from './format-time.ts'
 import { identityRows, type AccountIdentityDetail } from './identity.ts'
 import { accountEpoch, subscribeAccountEpoch } from './account-epoch.ts'
-import { DEFAULT_TOKEN_RANGE, optionsFor, rangeLabel as rangeLabelOf, type TokenRangeKey } from './token-range.ts'
+import { DEFAULT_TOKEN_RANGE, optionsFor, rangeLabel as rangeLabelOf, setCustomRangeDays, type TokenRangeKey } from './token-range.ts'
 import { CodeBuddyLogo } from '../components/CodeBuddyLogo.tsx'
 import { AddAccountModal, startLoginPolling } from '../components/AddAccountModal.tsx'
 import {
@@ -1465,7 +1466,32 @@ const DIMENSIONS: ReadonlyArray<{ key: StatsDimension, labelKey: 'tokenByWorkspa
 ]
 
 /**
- * 维度切换（按工作区 / 按模型）。
+ * 日期范围选择器的**本地 props**。
+ *
+ * 为什么不直接用 `DshDatePickerProps`：本仓库的 pnpm 结构里
+ * `@douyinfe/semi-foundation`（承载 DatePickerProps 的接口继承链）**无法被 TS
+ * 解析**——它的 package.json 没有 main/module/types/exports 任何入口字段，是纯
+ * 内容包；`skipLibCheck` 让这个解析失败被静默跳过，结果是 `DatePickerProps` 的
+ * 继承链断裂、除自有字段外全部丢失（`type`、`density` 等全在 foundation 上）。
+ * 已尝试把 foundation 加进 catalog 与两侧 devDependencies，均无效（插件视角仍
+ * 解析不到）。
+ *
+ * 因此这里只声明**本面板实际用到的字段**（运行时 props 由 Semi 的 PropTypes 与
+ * 内部实现正常消费，不受类型缺失影响）；styles 里对配色只改 semi 变量、不覆盖
+ * 组件样式。若上游修好了入口字段，删掉本接口、恢复直接用 DshDatePickerProps。
+ */
+interface DatePickerRangeProps {
+  type?: 'date' | 'dateRange'
+  size?: 'small' | 'default' | 'large'
+  density?: 'default' | 'compact'
+  placeholder?: [string, string] | string
+  value?: [Date, Date]
+  onChange?: (date: Date | string | [Date, Date], ...rest: unknown[]) => void
+  format?: string
+  'aria-label'?: string
+}
+
+/** 维度切换（按工作区 / 按模型）。
  *
  * 交互复用时间周期的 `RangeToggle`：同一形态的互斥单选、同一种 solid/borderless
  * 激活表达，读者学一次就两个地方都会用。放在**面板内部**而不是页面级——两个面板
@@ -1491,6 +1517,42 @@ function DimensionToggle({ dimension, onChange, t }: {
         </DshButton>
       ))}
     </DshButtonGroup>
+  )
+}
+
+/**
+ * 自定义日期范围选择器（Semi DatePicker `type="dateRange"` 的类型化薄包装）。
+ *
+ * 类型问题的背景见 `DatePickerRangeProps` 注释：semi-foundation 的类型链在本仓库
+ * 无法解析，`DatePickerProps` 缺失大部分字段。包装在这里是为了让「值形状
+ * （[Date, Date]）」与「清空语义」只有一处定义。
+ *
+ * 配色约束（用户要求）：**只改 semi 变量，不覆盖组件样式** —— 见
+ * styles/panel-layout.scss 中 `.dsh-codebuddy-token-datepicker-scope` 的说明。
+ */
+function CustomRangePicker({ value, onChange, startPlaceholder, endPlaceholder, label }: {
+  value: [Date, Date] | undefined
+  onChange: (range: [Date, Date] | undefined) => void
+  startPlaceholder: string
+  endPlaceholder: string
+  label: string
+}): ReactNode {
+  return (
+    <DshDatePicker
+      {...({
+        type: 'dateRange',
+        size: 'small',
+        density: 'compact',
+        placeholder: [startPlaceholder, endPlaceholder],
+        value,
+        onChange: (date: Date | string | [Date, Date] | undefined) => {
+          // Semi dateRange 的值是 [Date, Date]；清空时是空串。
+          const range = Array.isArray(date) && date[0] instanceof Date ? date as [Date, Date] : undefined
+          onChange(range)
+        },
+        'aria-label': label,
+      } as DatePickerRangeProps & { 'aria-label': string })}
+    />
   )
 }
 
@@ -1557,7 +1619,6 @@ function TokenStatsPage({ rpc, t }: { rpc: ConnectionRpc, t: Translate }): React
   const [overviewRange, setOverviewRange] = useState<TokenRangeKey>(DEFAULT_TOKEN_RANGE)
   const [trendRange, setTrendRange] = useState<TokenRangeKey>(DEFAULT_TOKEN_RANGE)
   const [distributionRange, setDistributionRange] = useState<TokenRangeKey>(DEFAULT_TOKEN_RANGE)
-  const [modelsRange, setModelsRange] = useState<TokenRangeKey>(DEFAULT_TOKEN_RANGE)
   const [sessionsRange, setSessionsRange] = useState<TokenRangeKey>(DEFAULT_TOKEN_RANGE)
   /**
    * 用量分布与模型排行的维度（按工作区 / 按模型），各面板**独立**。
@@ -1566,17 +1627,22 @@ function TokenStatsPage({ rpc, t }: { rpc: ConnectionRpc, t: Translate }): React
    * 看到的内容与之前一致，切换只是新增能力而不改变默认。
    */
   const [distributionDimension, setDistributionDimension] = useState<StatsDimension>('workspace')
-  const [modelsDimension, setModelsDimension] = useState<StatsDimension>('model')
+  /**
+   * 日期范围选择器的值（起点，终点为今天）。
+   *
+   * 选了自定义区间后 `distributionRange` 进入 'custom' 档；把按钮组切回任一固定档
+   * 即退出自定义（选择器的值保留，便于再次进入）。
+   */
+  const [distributionDates, setDistributionDates] = useState<[Date, Date] | undefined>(undefined)
   const store = useMemo(() => new TokenStatsStore(rpc), [rpc])
   const overview = useTokenStats(store, overviewRange)
   const trend = useTokenStats(store, trendRange)
   const distribution = useTokenStats(store, distributionRange)
-  const models = useTokenStats(store, modelsRange)
   const sessions = useTokenStats(store, sessionsRange)
 
   // 刷新失败必须说出来。因为 reload 刻意保留旧数据（否则会整页闪烁），
   // 失败时界面看起来「什么都没发生」——静默失败比报错更糟。
-  const panels = [overview, trend, distribution, models, sessions]
+  const panels = [overview, trend, distribution, sessions]
   const failureSignature = panels.map(panel => panel.error ?? '').join('|')
   const lastFailure = useRef('')
   useEffect(() => {
@@ -1706,54 +1772,52 @@ function TokenStatsPage({ rpc, t }: { rpc: ConnectionRpc, t: Translate }): React
           <div className="dsh-codebuddy-token-activity-scale"><span>少</span><i className="level-1" /><i className="level-2" /><i className="level-3" /><i className="level-4" /><span>多</span></div>
         </DshCard>
       </section>
-      <div className="dsh-codebuddy-token-columns">
-        <TokenPanel
-          title={t('tokenDistribution')}
-          options={optionsFor('other')}
-          range={distributionRange}
-          onRangeChange={setDistributionRange}
-          rangeLabel={rangeLabel}
-          rangeFormat={rangeFormat}
-          refreshLabel={refreshPanel}
-          loading={distribution.loading}
-          onRefresh={distribution.reload}
-        >
-          <DshCard className="dsh-codebuddy-token-list-card">
-            {/* 维度切换放在**排行卡片内部**：它切换的是这份列表的统计口径，
-                与列表是同一个整体；放面板头部会显得像在控制整个面板（含周期）。 */}
-            <div className="dsh-codebuddy-token-card-toolbar">
-              <DimensionToggle dimension={distributionDimension} onChange={setDistributionDimension} t={t} />
-            </div>
-            {distribution.data === undefined
-              ? <div className="dsh-codebuddy-token-empty" />
-              : distributionDimension === 'workspace'
-                ? <WorkspaceList items={distribution.data.workspaces} empty={t('tokenNoWorkspace')} />
-                : <BreakdownList items={distribution.data.models} empty={t('tokenNoModel')} />}
-          </DshCard>
-        </TokenPanel>
-        <TokenPanel
-          title={t('tokenModels')}
-          options={optionsFor('other')}
-          range={modelsRange}
-          onRangeChange={setModelsRange}
-          rangeLabel={rangeLabel}
-          rangeFormat={rangeFormat}
-          refreshLabel={refreshPanel}
-          loading={models.loading}
-          onRefresh={models.reload}
-        >
-          <DshCard className="dsh-codebuddy-token-list-card">
-            <div className="dsh-codebuddy-token-card-toolbar">
-              <DimensionToggle dimension={modelsDimension} onChange={setModelsDimension} t={t} />
-            </div>
-            {models.data === undefined
-              ? <div className="dsh-codebuddy-token-empty" />
-              : modelsDimension === 'model'
-                ? <BreakdownList items={models.data.models} empty={t('tokenNoModel')} />
-                : <WorkspaceList items={models.data.workspaces} empty={t('tokenNoWorkspace')} />}
-          </DshCard>
-        </TokenPanel>
-      </div>
+      {/* 用量分布：独占一行。
+          「模型用量排行」面板已移除 —— 它与分布面板共用同一份聚合
+          （`TokenStats.workspaces` / `TokenStats.models`），维度改为可切换后
+          两者能力完全重合，保留两个只会让同屏出现两份镜像数据。
+          「按模型」视角保留在维度切换的第二档里。 */}
+      <TokenPanel
+        title={t('tokenDistribution')}
+        options={optionsFor('other')}
+        range={distributionRange}
+        onRangeChange={setDistributionRange}
+        rangeLabel={rangeLabel}
+        rangeFormat={rangeFormat}
+        refreshLabel={refreshPanel}
+        loading={distribution.loading}
+        onRefresh={distribution.reload}
+      >
+        <DshCard className="dsh-codebuddy-token-list-card">
+          {/* 维度切换放在**排行卡片内部**：它切换的是这份列表的统计口径，
+              与列表是同一个整体；放面板头部会显得像在控制整个面板（含周期）。 */}
+          <div className="dsh-codebuddy-token-card-toolbar">
+            <DimensionToggle dimension={distributionDimension} onChange={setDistributionDimension} t={t} />
+            <CustomRangePicker
+              value={distributionDates}
+              onChange={(range) => {
+                if (range !== undefined) {
+                  // 终点视为今天：窗口 = 起点相对今天的天数（至少 1）。
+                  const days = Math.max(1, Math.ceil((Date.now() - range[0].getTime()) / 86_400_000) + 1)
+                  setCustomRangeDays(days)
+                  setDistributionRange('custom')
+                } else {
+                  // 清空选择 → 回到默认档。
+                  setDistributionRange(DEFAULT_TOKEN_RANGE)
+                }
+              }}
+              startPlaceholder={t('tokenDateStart')}
+              endPlaceholder={t('tokenDateEnd')}
+              label={t('tokenDateRange')}
+            />
+          </div>
+          {distribution.data === undefined
+            ? <div className="dsh-codebuddy-token-empty" />
+            : distributionDimension === 'workspace'
+              ? <WorkspaceList items={distribution.data.workspaces} empty={t('tokenNoWorkspace')} />
+              : <BreakdownList items={distribution.data.models} empty={t('tokenNoModel')} />}
+        </DshCard>
+      </TokenPanel>
       <TokenPanel
         title={t('tokenTopSessions')}
         hint={t('tokenTopTen')}

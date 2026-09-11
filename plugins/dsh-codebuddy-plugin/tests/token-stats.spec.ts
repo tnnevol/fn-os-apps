@@ -246,6 +246,7 @@ describe('各范围窗口确实生效（合成跨年数据）', () => {
         return {
           header: { id, cwd: '/w/demo' },
           events: [
+            event(now, 'codebuddy', 'm', 2, 0),                        // 今天
             event(now - 3 * 86_400_000, 'codebuddy', 'm', 7, 0),      // 3 天前
             event(now - 20 * 86_400_000, 'codebuddy', 'm', 30, 0),    // 20 天前
             event(now - 60 * 86_400_000, 'codebuddy', 'm', 90, 0),    // 60 天前
@@ -256,41 +257,30 @@ describe('各范围窗口确实生效（合成跨年数据）', () => {
     }
   }
 
-  it('近 7 天只算 7 天内的用量', async () => {
+  it('近 7 天只算 7 天内的用量（今天 + 3 天前）', async () => {
     const s = await collectCodeBuddyTokenStats(spreadQuery(), resolveRange('7d'))
-    expect(s.totals.input).toBe(7)
+    expect(s.totals.input).toBe(2 + 7)
   })
 
   it('近 30 天纳入 20 天前那条', async () => {
     const s = await collectCodeBuddyTokenStats(spreadQuery(), resolveRange('30d'))
-    expect(s.totals.input).toBe(7 + 30)
+    expect(s.totals.input).toBe(2 + 7 + 30)
   })
 
-  it('近 90 天纳入 60 天前那条', async () => {
-    const s = await collectCodeBuddyTokenStats(spreadQuery(), resolveRange('90d'))
-    expect(s.totals.input).toBe(7 + 30 + 90)
+  it('今天只纳入今天那条', async () => {
+    // days=1 → 服务端起点 = 今天 00:00。
+    const s = await collectCodeBuddyTokenStats(spreadQuery(), resolveRange('today'))
+    expect(s.totals.input).toBe(2)
   })
 
-  it('总计纳入一年多前那条（说明 allTime 真的不受上限影响）', async () => {
-    const s = await collectCodeBuddyTokenStats(spreadQuery(), resolveRange('all'))
-    expect(s.totals.input).toBe(7 + 30 + 90 + 400)
-  })
-
-  it('范围为单调不减：7d ≤ 30d ≤ 90d ≤ 总计', async () => {
+  it('范围为单调不减：今天 ≤ 7d ≤ 30d', async () => {
     const query = spreadQuery()
     const totals: number[] = []
-    for (const key of ['7d', '30d', '90d', 'all'] as const) {
+    for (const key of ['today', '7d', '30d'] as const) {
       totals.push((await collectCodeBuddyTokenStats(query, resolveRange(key))).totals.input)
     }
     const sorted = [...totals].sort((a, b) => a - b)
     expect(totals).toEqual(sorted)
-  })
-
-  it('本月的窗口不超过近 30 天（日历月最多 31 天）', async () => {
-    const s = await collectCodeBuddyTokenStats(spreadQuery(), resolveRange('month'))
-    // 3 天前的那条必在；20 天前那条取决于今天几号。
-    expect(s.totals.input).toBeGreaterThanOrEqual(7)
-    expect(s.totals.input).toBeLessThanOrEqual(7 + 30)
   })
 })
 

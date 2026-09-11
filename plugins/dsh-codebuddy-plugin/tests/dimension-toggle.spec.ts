@@ -70,36 +70,25 @@ describe('两个面板都接上了切换', () => {
     expect(block).toContain('<BreakdownList items={distribution.data.models}')
   })
 
-  it('模型排行：同样接上，默认档是「按模型」（沿用历史视角）', () => {
-    const block = PANEL.slice(PANEL.indexOf("title={t('tokenModels')}"), PANEL.indexOf("title={t('tokenTopSessions')}"))
-    expect(block).toContain('<DimensionToggle dimension={modelsDimension}')
-    expect(block).toMatch(/modelsDimension === 'model'/)
-    expect(block).toContain('<BreakdownList items={models.data.models}')
-    expect(block).toContain('<WorkspaceList items={models.data.workspaces}')
+  it('「模型用量排行」面板已移除（与分布面板能力重合）', () => {
+    // 维度可切换后，分布与排行两个面板的能力集合完全相同（同数据源、同两维度），
+    // 保留两个只会同屏出现镜像数据。按模型视角保留在分布面板的第二档里。
+    expect(PANEL).not.toContain("title={t('tokenModels')}")
+    // 双栏容器也随之移除（分布面板独占一行）
+    expect(PANEL).not.toContain('dsh-codebuddy-token-columns')
   })
 
-  it('两个面板的维度状态相互独立', () => {
-    expect(PANEL).toMatch(/const \[distributionDimension, setDistributionDimension\] = useState<StatsDimension>\('workspace'\)/)
-    expect(PANEL).toMatch(/const \[modelsDimension, setModelsDimension\] = useState<StatsDimension>\('model'\)/)
-  })
-
-  it('默认档与历史视角一致（不改变老读者看到的内容）', () => {
-    // 分布面板默认 workspace、排行面板默认 model —— 切换是新增能力而非行为变更
-    const stateBlock = PANEL.slice(
-      PANEL.indexOf('const [distributionDimension'),
-      PANEL.indexOf('const [modelsDimension') + 120,
-    )
-    expect(stateBlock).toMatch(/useState<StatsDimension>\('workspace'\)/)
-    expect(stateBlock).toMatch(/useState<StatsDimension>\('model'\)/)
+  it('分布面板独占一行（不再包在双栏容器里）', () => {
+    const block = PANEL.slice(PANEL.indexOf("title={t('tokenDistribution')}"), PANEL.indexOf("title={t('tokenTopSessions')}"))
+    expect(block).toContain('<DimensionToggle')
+    expect(block).not.toContain('dsh-codebuddy-token-columns')
   })
 })
 
 describe('副标题移除（仅限这两个模块）', () => {
-  it('用量分布与模型排行不再传 hint', () => {
-    for (const title of ["title={t('tokenDistribution')}", "title={t('tokenModels')}"]) {
-      const block = PANEL.slice(PANEL.indexOf(title), PANEL.indexOf(title) + 600)
-      expect(block).not.toMatch(/\bhint=/)
-    }
+  it('用量分布不再传静态维度 hint', () => {
+    const block = PANEL.slice(PANEL.indexOf("title={t('tokenDistribution')}"), PANEL.indexOf("title={t('tokenTopSessions')}"))
+    expect(block).not.toMatch(/hint=\{t\('tokenBy/)
   })
 
   it('其余面板的数据型副标题保留（信息量不同，不在此需求范围）', () => {
@@ -117,15 +106,16 @@ describe('样式与位置：按钮组放在排行卡片内部', () => {
   it('维度切换渲染在卡片内部的 toolbar 里（而不是面板头部）', () => {
     // 用户要求：按钮组属于这份列表（切换的是列表的统计口径），
     // 放面板头部会像在控制整个面板（含周期选择器）。
-    const dist = PANEL.slice(PANEL.indexOf("title={t('tokenDistribution')}"), PANEL.indexOf("title={t('tokenModels')}")),
-          models = PANEL.slice(PANEL.indexOf("title={t('tokenModels')}"), PANEL.indexOf("title={t('tokenTopSessions')}")),
-          toolbarOf = (block: string): boolean =>
-            block.indexOf('dsh-codebuddy-token-card-toolbar') > -1
-            && block.indexOf('<DimensionToggle') > -1
-            && block.indexOf('token-card-toolbar') < block.indexOf('<DimensionToggle')
-            && block.indexOf('extra=') === -1
-    expect(toolbarOf(dist)).toBe(true)
-    expect(toolbarOf(models)).toBe(true)
+    const block = PANEL.slice(
+      PANEL.indexOf("title={t('tokenDistribution')}"),
+      PANEL.indexOf("title={t('tokenTopSessions')}"),
+    )
+    const toolbarAt = block.indexOf('dsh-codebuddy-token-card-toolbar')
+    const toggleAt = block.indexOf('<DimensionToggle')
+    expect(toolbarAt).toBeGreaterThan(-1)
+    expect(toggleAt).toBeGreaterThan(toolbarAt)
+    // 面板头部不传 extra
+    expect(block).not.toContain('extra=')
   })
 
   it('dimension 按钮组在窄屏占满宽度（卡片内部规则）', () => {
