@@ -92,7 +92,7 @@ interface PanelAccountRow {
   environment?: string
   /** 登录该账号所用客户端（`cli` / `workbuddy`）；历史条目缺省视为 cli。 */
   client?: CodeBuddyClientId
-  /** 该客户端的固定版本号（CLI 2.145.0 / WorkBuddy 5.5.4）。 */
+  /** 该客户端的固定版本号（CLI 2.145.0 / WorkBuddy 5.5.6）。 */
   clientVersion?: string
   /** 账户身份明细，供「账户信息」弹框展示完整资料。 */
   account?: AccountIdentityDetail

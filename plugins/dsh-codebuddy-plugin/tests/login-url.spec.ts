@@ -13,12 +13,12 @@ import {
  * 本地桩无法验证协议是否被接受；只断言形状，不断言具体 state 值。
  */
 describe('登录握手 URL（真实请求）', () => {
-  it('workbuddy：platform=WorkBuddy 且 version=5.5.4', async () => {
+  it('workbuddy：platform=WorkBuddy 且 version=5.5.6', async () => {
     const hs = await requestAuthState(CODEBUDDY_CLIENT_ENDPOINTS.workbuddy, 'workbuddy')
     const url = new URL(hs.authUrl)
     expect(url.host).toBe('www.workbuddy.cn')
     expect(url.searchParams.get('platform')).toBe('WorkBuddy')
-    expect(url.searchParams.get('version')).toBe('5.5.4')
+    expect(url.searchParams.get('version')).toBe('5.5.6')
     expect(url.searchParams.get('state')).toBe(hs.state)
     expect(hs.state.length).toBeGreaterThan(0)
   }, 60_000)

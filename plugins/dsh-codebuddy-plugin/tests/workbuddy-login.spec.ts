@@ -45,8 +45,8 @@ describe('客户端标识字典', () => {
     expect(first).toBe(CODEBUDDY_CLI_VERSION)
     // 多次读取完全一致（若写成随机值或函数，这里会暴露）。
     expect(CODEBUDDY_CLIENT_VERSIONS.cli).toBe(first)
-    expect(CODEBUDDY_CLIENT_VERSIONS.workbuddy).toBe('5.5.4')
-    expect(CODEBUDDY_CLIENT_VERSIONS.workbuddy).toBe('5.5.4')
+    expect(CODEBUDDY_CLIENT_VERSIONS.workbuddy).toBe('5.5.6')
+    expect(CODEBUDDY_CLIENT_VERSIONS.workbuddy).toBe('5.5.6')
   })
 
   it('workbuddy 走自己的服务地址（不是 CodeBuddy 的）', () => {
@@ -82,7 +82,7 @@ describe('账号条目记录客户端', () => {
     const account = { uid: 'u1', nickname: 'n1' }
     const wb = buildAccountEntry(token, account, { client: 'workbuddy' })
     expect(wb.client).toBe('workbuddy')
-    expect(wb.clientVersion).toBe('5.5.4')
+    expect(wb.clientVersion).toBe('5.5.6')
 
     // 不传 client 时按 cli 记录（而不是留空）
     const cli = buildAccountEntry(token, account, {})
@@ -122,7 +122,7 @@ describe('添加账号弹框的客户端选择', () => {
   it('提供客户端选择器，并把版本一并展示（让用户看到固定版本）', () => {
     expect(MODAL).toContain("t('clientLabel')")
     expect(MODAL).toContain('CODEBUDDY_CLIENT_IDS')
-    // 选项文案带上版本，例如 "WorkBuddy · v5.5.4"。
+    // 选项文案带上版本，例如 "WorkBuddy · v5.5.6"。
     expect(MODAL).toMatch(/CODEBUDDY_CLIENT_VERSIONS\[id\]/)
   })
 

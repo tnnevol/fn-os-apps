@@ -49,7 +49,7 @@ describe('session 暴露当前账号的客户端身份', () => {
     // 再取客户端身份。这里照做，否则 activeClient() 尚无数据可读。
     await session.authHeaders()
     expect(session.activeClient()).toBe('workbuddy')
-    expect(session.activeClientVersion()).toBe('5.5.4')
+    expect(session.activeClientVersion()).toBe('5.5.6')
 
     // 切到 CLI 账号后，身份随之变化（switchTo 会 invalidate，需重新读）
     await session.switchTo(cli.id)
@@ -110,7 +110,7 @@ describe('客户端版本的取值', () => {
   it('两个客户端的版本各不相同且固定', async () => {
     const { CODEBUDDY_CLIENT_VERSIONS } = await import('../src/contracts/constants.ts')
     expect(CODEBUDDY_CLIENT_VERSIONS.cli).toBe('2.148.0')
-    expect(CODEBUDDY_CLIENT_VERSIONS.workbuddy).toBe('5.5.4')
+    expect(CODEBUDDY_CLIENT_VERSIONS.workbuddy).toBe('5.5.6')
     expect(CODEBUDDY_CLIENT_VERSIONS.cli).not.toBe(CODEBUDDY_CLIENT_VERSIONS.workbuddy)
   })
 

@@ -161,7 +161,7 @@ export const CODEBUDDY_CLIENT_PLATFORMS: Readonly<Record<CodeBuddyClientId, stri
 /** 客户端字典：id → 固定版本号。 */
 export const CODEBUDDY_CLIENT_VERSIONS: Readonly<Record<CodeBuddyClientId, string>> = {
   cli: CODEBUDDY_CLI_VERSION,
-  workbuddy: '5.5.4',
+  workbuddy: '5.5.6',
 }
 
 /** 客户端字典：id → 登录页/计费所在的服务地址。 */

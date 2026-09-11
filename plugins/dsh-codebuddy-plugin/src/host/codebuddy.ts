@@ -67,7 +67,7 @@ function delay(ms: number, signal?: AbortSignal): Promise<void> {
  * version 是客户端自己的产品版本，按官方客户端打开页面前的方式追加。
  *
  * 版本按客户端取自 {@link CODEBUDDY_CLIENT_VERSIONS}，都是固定发布版本：
- * 例如 WorkBuddy 是 5.5.4。不要写成随机值——服务端以此归因客户端版本。
+ * 例如 WorkBuddy 是 5.5.6。不要写成随机值——服务端以此归因客户端版本。
  *
  * @param authUrl - 服务端提供的登录 URL。
  * @param client - 以哪个客户端身份登录。

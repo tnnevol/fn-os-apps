@@ -338,7 +338,7 @@ export class CodeBuddySession {
    * 当前活动账号应声明的客户端**版本**。
    *
    * 与 `activeClient()` 配套：版本必须跟着客户端走（CLI 是 `2.148.0`、WorkBuddy
-   * 是 `5.5.4`），两者都不随会话随机化——服务端以此把请求归因到具体客户端版本。
+   * 是 `5.5.6`），两者都不随会话随机化——服务端以此把请求归因到具体客户端版本。
    * @returns 版本号；未登录时为 `undefined`。
    */
   activeClientVersion(): string | undefined {

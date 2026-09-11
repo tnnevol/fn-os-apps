@@ -199,7 +199,7 @@ describe('normalizeEntry 必须保留客户端身份字段', () => {
     const loadedWb = loaded.accounts.find(e => e.account.uid === 'u1')!
     const loadedCli = loaded.accounts.find(e => e.account.uid === 'u2')!
     expect(loadedWb.client).toBe('workbuddy')
-    expect(loadedWb.clientVersion).toBe('5.5.4')
+    expect(loadedWb.clientVersion).toBe('5.5.6')
     expect(loadedCli.client).toBe('cli')
 
     // 且端点解析正确 —— 这是该字段的实际用途
