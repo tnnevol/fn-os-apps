@@ -75,7 +75,7 @@ describe('adapter 按账号生成请求标识', () => {
     expect(fn).toMatch(/'X-IDE-Type': platform/)
     expect(fn).toMatch(/'X-IDE-Name': platform/)
     expect(fn).toMatch(/'X-IDE-Version': version \?\? CODEBUDDY_CLIENT_VERSIONS\[client\]/)
-    // platform 来自字典（CLI / workbuddy），与登录时声明的一致
+    // platform 来自字典（CLI / WorkBuddy），与登录时声明的一致
     expect(fn).toMatch(/CODEBUDDY_CLIENT_PLATFORMS\[client\]/)
   })
 
@@ -114,9 +114,9 @@ describe('客户端版本的取值', () => {
     expect(CODEBUDDY_CLIENT_VERSIONS.cli).not.toBe(CODEBUDDY_CLIENT_VERSIONS.workbuddy)
   })
 
-  it('platform 取值与登录声明一致（CLI / workbuddy）', async () => {
+  it('平台标识与展示形态一致（CLI / WorkBuddy）', async () => {
     const { CODEBUDDY_CLIENT_PLATFORMS } = await import('../src/contracts/constants.ts')
     expect(CODEBUDDY_CLIENT_PLATFORMS.cli).toBe('CLI')
-    expect(CODEBUDDY_CLIENT_PLATFORMS.workbuddy).toBe('workbuddy')
+    expect(CODEBUDDY_CLIENT_PLATFORMS.workbuddy).toBe('WorkBuddy')
   })
 })

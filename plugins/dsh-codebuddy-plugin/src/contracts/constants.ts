@@ -134,7 +134,7 @@ export const CODEBUDDY_CLI_VERSION = '2.148.0'
  *
  * - `cli`：CodeBuddy CLI（`platform=CLI`），走 `CODEBUDDY_ENVIRONMENT_ENDPOINTS`
  *   定义的服务地址。
- * - `workbuddy`：WorkBuddy 客户端（`platform=workbuddy`），登录与计费都在
+ * - `workbuddy`：WorkBuddy 客户端（`platform=WorkBuddy`），登录与计费都在
  *   `www.workbuddy.cn`。
  *
  * 两者的**版本号都是产品发布版本、固定不变**（不是随机值也不是每次会话新生成）：
@@ -142,10 +142,24 @@ export const CODEBUDDY_CLI_VERSION = '2.148.0'
  */
 export type CodeBuddyClientId = 'cli' | 'workbuddy'
 
-/** 客户端字典：id → `platform` 查询参数取值（服务端原样回填 authUrl）。 */
+/**
+ * 客户端字典：id → 客户端**标识**（登录 `platform` 参数 + 请求的 `X-IDE-Type`/`X-IDE-Name`）。
+ *
+ * 一个取值同时供多处使用，因此大小写在这里统一：
+ *  - 登录握手的 `?platform=` 查询参数（服务端**原样回填**进 `authUrl`）；
+ *  - 请求头的 `X-IDE-Type` / `X-IDE-Name`（见 adapter 的 clientIdentityHeaders）。
+ *
+ * 两个客户端都写成产品名形态（`CLI` / `WorkBuddy`），不再混用小写。
+ *
+ * **为什么改大小写是安全的**（已核实，非推测）：
+ *  - 服务端不校验：实测 `workbuddy` / `WorkBuddy` / `WORKBUDDY` 三种都返回 200，
+ *    并原样回填进 `authUrl`；
+ *  - 登录页显式做大小写归一：其前端 bundle 里两处比较都是
+ *    `get("platform")?.toLowerCase() === "workbuddy"`，没有精确匹配。
+ */
 export const CODEBUDDY_CLIENT_PLATFORMS: Readonly<Record<CodeBuddyClientId, string>> = {
   cli: 'CLI',
-  workbuddy: 'workbuddy',
+  workbuddy: 'WorkBuddy',
 }
 
 /** 客户端字典：id → 固定版本号。 */
@@ -173,8 +187,19 @@ export const CODEBUDDY_CLIENT_IDS: readonly CodeBuddyClientId[] = ['cli', 'workb
 export const CODEBUDDY_DEFAULT_CLIENT: CodeBuddyClientId = 'cli'
 
 /** 把任意输入收敛为合法客户端 id（历史数据缺字段时回退到 CLI）。 */
+/**
+ * 把任意输入收敛为合法客户端 id（历史数据缺字段时回退到 CLI）。
+ *
+ * 大小写不敏感：标识在不同场合出现过 `workbuddy` / `WorkBuddy` / `WORKBUDDY`
+ * 等写法，存储里也可能残留旧值。归一化时统一小写比较，避免同一客户端被识别成
+ * 两个（那会让「按账号取标识」的判定失效，回退到 CLI）。
+ * @param value - 存储或调用方给出的原始值。
+ * @returns 合法的客户端 id。
+ */
 export function normalizeClientId(value: unknown): CodeBuddyClientId {
-  return value === 'workbuddy' ? 'workbuddy' : 'cli'
+  return typeof value === 'string' && value.trim().toLowerCase() === 'workbuddy'
+    ? 'workbuddy'
+    : 'cli'
 }
 
 /**

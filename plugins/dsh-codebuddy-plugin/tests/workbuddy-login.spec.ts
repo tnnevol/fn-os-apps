@@ -29,10 +29,12 @@ describe('客户端标识字典', () => {
     }
   })
 
-  it('platform 取值与官方约定一致（CLI 大写、workbuddy 小写）', () => {
+  it('平台标识统一为产品名形态（CLI / WorkBuddy）', () => {
     // 服务端把该值原样回填进 authUrl，大小写必须与官方客户端一致。
     expect(CODEBUDDY_CLIENT_PLATFORMS.cli).toBe('CLI')
-    expect(CODEBUDDY_CLIENT_PLATFORMS.workbuddy).toBe('workbuddy')
+    // 客户端标识统一为产品名形态：不再混用小写 workbuddy。
+    // 安全性已核实：服务端不校验大小写，且登录页比较前做了 toLowerCase()。
+    expect(CODEBUDDY_CLIENT_PLATFORMS.workbuddy).toBe('WorkBuddy')
   })
 
   it('版本是固定值，不是随机/会话生成', () => {
@@ -58,11 +60,18 @@ describe('客户端标识字典', () => {
 
   it('normalizeClientId 收敛非法输入，不把拼错的值带进端点解析', () => {
     expect(normalizeClientId('workbuddy')).toBe('workbuddy')
-    expect(normalizeClientId('WorkBuddy')).toBe('cli') // 大小写敏感，未知即回退
+    // 大小写不敏感：标识在不同场合出现过 workbuddy / WorkBuddy / WORKBUDDY，
+    // 存储里也可能残留旧值。若大小写敏感，WorkBuddy 会被当成「未知」而回退到
+    // cli —— 端点、版本、请求标识全错，等于把 WorkBuddy 账号静默降级成 CLI。
+    expect(normalizeClientId('WorkBuddy')).toBe('workbuddy')
+    expect(normalizeClientId('WORKBUDDY')).toBe('workbuddy')
+    expect(normalizeClientId('  WorkBuddy  ')).toBe('workbuddy')
+    // 真正的非法/缺失输入仍回退到 CLI
     expect(normalizeClientId(undefined)).toBe('cli')
     expect(normalizeClientId(null)).toBe('cli')
     expect(normalizeClientId('')).toBe('cli')
     expect(normalizeClientId(123)).toBe('cli')
+    expect(normalizeClientId('workbudd')).toBe('cli')
   })
 })
 
