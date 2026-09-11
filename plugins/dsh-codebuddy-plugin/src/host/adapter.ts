@@ -77,63 +77,18 @@ export interface CodeBuddyAdapterOptions {
 }
 
 /**
- * 等待 `Retry-After` 的上限。
+ * 「等待与退避」为什么**不在本模块**里。
  *
- * 服务端可能给出很大的值（例如额度窗口按小时重置）。真的等下去会把整个会话挂住，
- * 而用户看到的是「卡住不动」；超过这个上限就直接换账号——换账号同样能解除限流，
- * 且不需要阻塞。
- */
-const MAX_RETRY_WAIT_MS = 30_000
-
-/** 无 `Retry-After` 时的指数退避基数（毫秒）。 */
-const RETRY_BACKOFF_BASE_MS = 500
-
-/**
- * 可被 `AbortSignal` 打断的等待。
+ * 这里曾经实现过一套 `Retry-After` 解析 + 有限等待 + 指数退避（上限 30s）。
+ * 后来核实：DSH 自带的 `@deepseek-ai/dsh-llm-retry` 已随 `dsh-base` 挂载，工作
+ * 在整个 agent 请求层面，默认 `maxRetries: 5`，自带指数退避（500ms 起、上限
+ * 10s、±10% 抖动）**以及 `Retry-After` 支持**。而且它的语义更准确：当服务端给出
+ * 的间隔超过 `maxDelayMs` 时直接放弃重试，而不是截断后硬等。
  *
- * 用 `setTimeout` + `abort` 监听而不是 `AbortSignal.timeout`：后者无法与外部信号
- * 组合，也没有超时后的清理。这里保证两件事——无论哪条路径结束都清掉定时器与
- * 监听器，且已中止的信号不会留下悬挂的定时器。
- * @param ms - 等待毫秒数。
- * @param signal - 外部取消信号；中止时立即 resolve（由调用方检查 `aborted`）。
- * @returns 等待结束时 resolve；不会 reject。
+ * 两套并存会产生乘法关系：外层每次重试都会把内层整个跑一遍。因此本模块只保留
+ * 官方**不做**的那件事——`QUOTA`（额度耗尽）时换账号，因为官方默认不重试该码，
+ * 而换账号是唯一有效手段。等待与退避交给外层。
  */
-function waitFor(ms: number, signal?: AbortSignal): Promise<void> {
-  if (ms <= 0) return Promise.resolve()
-  if (signal?.aborted === true) return Promise.resolve()
-  return new Promise<void>((resolve) => {
-    const timer = setTimeout(finish, ms)
-    function finish(): void {
-      clearTimeout(timer)
-      signal?.removeEventListener('abort', finish)
-      resolve()
-    }
-    signal?.addEventListener('abort', finish, { once: true })
-  })
-}
-
-/**
- * 计算本次失败后应等待多久。
- *
- * 优先采用服务端给出的 `Retry-After`（它最了解什么时候能恢复），但夹到
- * {@link MAX_RETRY_WAIT_MS} 以内；没有该头时退回指数退避。
- * @param error - 触发切换的错误，可能带 `providerRetryAfterMs`。
- * @param attempt - 已尝试次数（从 0 起算），用于指数退避。
- * @returns 等待毫秒数与来源，便于日志说明。
- */
-function retryDelayFor(error: LlmError, attempt: number): { ms: number, source: 'provider' | 'backoff', clipped: boolean } {
-  // `providerRetryAfterMs` 是 DSH 在 LlmFailure 上定义的一等字段（不是自定义
-  // details），因此由 harness 统一保证它的来源与类型。
-  const provider = error.failure.providerRetryAfterMs
-  if (provider !== undefined && provider > 0) {
-    const clipped = provider > MAX_RETRY_WAIT_MS
-    return { ms: Math.min(provider, MAX_RETRY_WAIT_MS), source: 'provider', clipped }
-  }
-  // 指数退避 500ms / 1s / 2s / 4s…，同样夹在上限内。
-  const ms = Math.min(RETRY_BACKOFF_BASE_MS * 2 ** Math.max(0, attempt), MAX_RETRY_WAIT_MS)
-  return { ms, source: 'backoff', clipped: false }
-}
-
 /** Parse a `retry-after` header into milliseconds, when it carries a usable delay. */
 function providerRetryAfterMs(value: string | null): number | undefined {
   if (value === null) return undefined
@@ -373,7 +328,29 @@ export class CodeBuddyAdapter extends LlmAdapter {
     }
   }
 
-  /** 一次请求的完整生命周期（含账号故障转移），由 `stream` 包裹。 */
+  /**
+   * 一次请求的完整生命周期（含账号故障转移），由 `stream` 包裹。
+   *
+   * ## 与外层官方重试的职责划分（重要）
+   *
+   * DSH 自带的 `@deepseek-ai/dsh-llm-retry` 已随 `dsh-base` 挂载，工作在整个
+   * **agent 请求**层面（`agent/request-error`），默认 `maxRetries: 5`
+   * （即首次 + 最多 5 次重试），带指数退避与 `Retry-After` 支持，可重试码为
+   * `EMPTY_RESPONSE / RATE_LIMIT / SERVER / TIMEOUT / TRANSPORT`。
+   *
+   * 因此本层**只做官方不做的那一件事**：
+   *
+   * | 故障 | 由谁处理 | 为什么 |
+   * | --- | --- | --- |
+   * | 瞬时故障（网络、5xx、超时） | 外层 | 原地重试即可，换账号无益 |
+   * | `RATE_LIMIT` | 外层 | 限流是**服务端对该账号的节流**，换账号不解决，且官方会按 `Retry-After` 等待 |
+   * | `Retry-After` 等待 | 外层 | 官方已实现（含「超过 maxDelayMs 则放弃」的更优语义） |
+   * | **`QUOTA` 额度耗尽** | **本层** | 官方默认**不重试** `QUOTA`；换账号是唯一有效手段 |
+   *
+   * 这个划分是为了避免**两层对同一错误各重试一遍**。若本层也把 `RATE_LIMIT` 当
+   * 可切换错误，最坏情况会变成「内层次数 × 外层 6 次」的远端请求（内层 5 次时
+   * 即 30 次），且外层每次重试都会把内层整个重跑。
+   */
   private async * runWithFailover(options: GenerateOptions): AsyncIterable<StreamChunk> {
     /**
      * 本次请求**已尝试过**的账号。必须是请求级状态（不能放 session 或全局）：
@@ -382,48 +359,64 @@ export class CodeBuddyAdapter extends LlmAdapter {
     const attempted = new Set<string>()
     const current = await this.config.session.activeAccountSummary()
     if (current !== undefined) attempted.add(current.id)
-    try {
-      yield* this.attemptStream(options)
-    } catch (error) {
-      if (!(error instanceof LlmError)) throw error
-      // Only account-exhaustion classes warrant a switch; transport faults and
-      // context-window overruns would fail on every account alike.
-      const autoSwitch = this.config.autoSwitch?.() ?? true
-      const swappable = autoSwitch
-        && (error.code === QUOTA_EXCEEDED_CODE || error.code === 'RATE_LIMIT')
-      if (!swappable) throw error
-      /**
-       * 遵守服务端的 `Retry-After`：被限流时先等一会再换账号。
-       *
-       * 等待是可中断的（`options.signal`），且夹到 MAX_RETRY_WAIT_MS 以内 ——
-       * 服务端可能给出按小时计的间隔，真等下去会让会话看起来卡死。超上限就直接
-       * 换账号：换号同样能解除限流，且不阻塞。
-       */
-      // 退避次数用「已尝试账号数 - 1」：首个账号不算重试。clipped 表示服务端
-      // 要求的间隔超过上限，此时等待被截断，日志由 session 侧统一记录。
-      const delay = retryDelayFor(error, Math.max(0, attempted.size - 1))
-      if (delay.ms > 0) {
-        await waitFor(delay.ms, options.signal)
-        // 等待期间被取消：按调用方取消处理，不再换号重试。
-        if (options.signal?.aborted === true) {
-          throw new LlmError('CodeBuddy request aborted while waiting to retry', 'ABORTED')
+
+    /**
+     * 尝试上限 = 账号总数。
+     *
+     * 不写死成 5：本层的语义是「每个账号试一次」，所以上限天然由账号数决定。
+     * 账号少时对着空气重试没有意义，账号多时也不该被一个魔数截断。
+     */
+    const total = await this.config.session.accountCount()
+    const maxAttempts = Math.max(1, total)
+
+    let lastError: LlmError | undefined
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+      // 首次尝试前不切换；之后的每一轮都已经由上一轮末尾切好了账号。
+      if (attempt > 0) {
+        const switched = await this.failoverToNextAccount(lastError as LlmError, attempted)
+        if (switched === undefined) break
+        attempted.add(switched.id)
+        // Surface the takeover as visible assistant text before the retried
+        // stream starts: the StreamChunk union has no status member, and the
+        // user should see why the request momentarily paused and whose quota
+        // now pays for the rest of the conversation.
+        yield {
+          type: 'text-delta',
+          index: 0,
+          text: `\n[CodeBuddy] 账号「${switched.from}」额度不足，已自动切换至「${switched.to}」继续。\n`,
         }
       }
 
-      const switched = await this.failoverToNextAccount(error, attempted)
-      if (!switched) throw error
-      attempted.add(switched.id)
-      // Surface the takeover as visible assistant text before the retried
-      // stream starts: the StreamChunk union has no status member, and the
-      // user should see why the request momentarily paused and whose quota
-      // now pays for the rest of the conversation.
-      yield {
-        type: 'text-delta',
-        index: 0,
-        text: `\n[CodeBuddy] 账号「${switched.from}」额度不足，已自动切换至「${switched.to}」继续。\n`,
+      /**
+       * 是否已经向调用方产出过 chunk。
+       *
+       * 一旦产出过，后续错误**必须直接抛出**：重试意味着重新发送整个请求，会让
+       * 用户看到重复内容、工具调用被重复执行，并可能造成重复计费。
+       *
+       * 当前 `attemptStream` 里所有 `throw` 都发生在唯一一条 `yield*` 之前，
+       * 因此这个标志恒为假；显式写出来是为了把该不变量**固化在代码里**——将来
+       * 若有人在流中途抛出可切换错误，这里会挡住重放而不是静默行为改变。
+       */
+      let emitted = false
+      try {
+        for await (const chunk of this.attemptStream(options)) {
+          emitted = true
+          yield chunk
+        }
+        return
+      } catch (error) {
+        if (!(error instanceof LlmError)) throw error
+        // 已产出内容：不重试、不换号。宁可失败，也不重复生成。
+        if (emitted) throw error
+        lastError = error
+        // 只有额度耗尽才换账号。限流与瞬时故障交给外层官方重试——理由见方法注释。
+        const autoSwitch = this.config.autoSwitch?.() ?? true
+        if (!autoSwitch || error.code !== QUOTA_EXCEEDED_CODE) throw error
       }
-      yield* this.attemptStream(options)
     }
+    // 换不动了（没有未尝试过的账号、或尝试次数用尽）：把最后一次的失败如实抛出，
+    // 由外层官方重试决定是否继续。
+    throw lastError ?? new LlmError('CodeBuddy request failed with no account available', QUOTA_EXCEEDED_CODE)
   }
 
   /**

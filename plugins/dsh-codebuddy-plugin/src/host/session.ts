@@ -332,6 +332,17 @@ export class CodeBuddySession {
   }
 
   /**
+   * 凭据文档中的账号总数。
+   *
+   * 供 adapter 决定内层尝试上限：内层语义是「每个账号试一次」，上限因此天然由
+   * 账号数决定，不写死魔数。无文档时返回 1（按「只有当前账号」处理）。
+   */
+  async accountCount(): Promise<number> {
+    const storage = await loadStorage()
+    return storage === undefined ? 1 : Math.max(1, storage.accounts.length)
+  }
+
+  /**
    * The remaining-allowance percentage for one account, probed against its
    * own endpoint: 100 − usedPercent across the combined metering windows, or
    * `undefined` when the meter plane was unreachable or answered nothing
