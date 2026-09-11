@@ -59,6 +59,7 @@ lastVerified: 2026-09-09
 | FNOS-003-07 | P1 | DSH 插件管理面板验收 | 验证 Codex 动态模型目录和 CodeBuddy 多账号、额度、签到、Token 统计面板在真实 NAS 可用 | <Badge type="info" text="规划中" /> |
 | FNOS-003-08 | P1 | CodeBuddy 多账号与管理面板 | 管理多个 CodeBuddy 账号，支持切换、签到、额度/有效期查看、自动切换和 Token 统计 | <Badge type="warning" text="代码已实现，待 NAS 验证" /> |
 | FNOS-003-09 | P1 | CodeBuddy Token 统计图表 | 面板按日展示输入/输出堆叠柱状图，支持 7/30/90 天范围、悬浮明细、图例和容器自适应 | <Badge type="warning" text="代码已实现，待 NAS 验证" /> |
+| FNOS-003-10 | P1 | CodeBuddy 状态源与切换策略收敛 | 自动开关配置以 Host 为唯一权威，凭据写入串行化且切换带期望当前账号，主动/被动切换由纯决策模块判定并遵守 `Retry-After` | <Badge type="tip" text="代码已实现，本地已验证" /> |
 
 ## 交互和行为约束
 
@@ -93,6 +94,8 @@ lastVerified: 2026-09-09
 - DSH 网关的 HTTP、SSE、WebSocket、权限、并发、异常恢复场景在目标 NAS 验收通过。
 - Codex 动态模型目录和 CodeBuddy 管理面板在目标 NAS 可访问、可操作，Token 统计数据和图表显示正确。
 - CodeBuddy 可添加、重登录、重命名、删除多个账号并切换当前账号；额度/有效期、签到状态和额度不足时的自动切换按预期工作。
+- CodeBuddy 自动开关配置以 Host 为唯一权威：在任一界面修改后，其它界面与刷新后的页面都读到同一值，不被旧的浏览器本地值覆盖。
+- CodeBuddy 在并发切换、改名、删除并存时结果保持一致（不互相覆盖、已删账号不复活）；被限流时按 `Retry-After` 有限等待且可取消。
 - CodeBuddy 管理面板的 Token 统计按日展示输入/输出堆叠柱状图，7/30/90 天范围切换、悬浮明细、图例和容器自适应正常，数据来自本地会话日志。
 
 ### 状态看板
@@ -111,3 +114,4 @@ lastVerified: 2026-09-09
 | 2026-08-31 | 明确配置职责 | 确认 `wizard/config` 负责应用设置表单，`cmd/main` 负责生命周期，`cmd/config_callback` 负责保存后生效 |
 | 2026-09-08 | 承接 FNOS-002 遗留验收 | 将 DSH FPK 版本与内置插件包、网关完整场景、Codex 动态模型和 CodeBuddy 管理面板的未完成目标环境验收纳入 FNOS-003 |
 | 2026-09-09 | 迁入 CodeBuddy 需求 | 新增 FNOS-003-08、FNOS-003-09，承接原 FNOS-002-06 的多账号管理、账号切换、额度/有效期、签到、自动切换和 Token ECharts 统计图表需求 |
+| 2026-09-11 | 新增状态源与切换策略收敛 | 新增 FNOS-003-10：Host 配置唯一权威、凭据写入串行化与 CAS、纯决策模块、`Retry-After` 等待与请求级已尝试账号 |

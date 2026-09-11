@@ -39,6 +39,8 @@ import {
 } from '../contracts/constants.ts'
 import { NotLoggedInError } from './session.ts'
 import type { CodeBuddySession } from './session.ts'
+import { decideReactiveTarget } from './switch-policy.ts'
+import type { SwitchCandidate } from './switch-policy.ts'
 import { parseSse } from './sse.ts'
 import { serializeRequest } from './serialize.ts'
 import { hasRequestImages, serializeRequestWithImages } from './serialize-image.ts'
@@ -72,6 +74,64 @@ export interface CodeBuddyAdapterOptions {
   resolveAttachments?: () => AttachmentStore | undefined
   /** Resolve current tool access for one durable image handle, when available. */
   resolveImageAccess?: (attachments: AttachmentStore, ref: ImageAttachmentRef) => ImageAttachmentAccess | undefined
+}
+
+/**
+ * 等待 `Retry-After` 的上限。
+ *
+ * 服务端可能给出很大的值（例如额度窗口按小时重置）。真的等下去会把整个会话挂住，
+ * 而用户看到的是「卡住不动」；超过这个上限就直接换账号——换账号同样能解除限流，
+ * 且不需要阻塞。
+ */
+const MAX_RETRY_WAIT_MS = 30_000
+
+/** 无 `Retry-After` 时的指数退避基数（毫秒）。 */
+const RETRY_BACKOFF_BASE_MS = 500
+
+/**
+ * 可被 `AbortSignal` 打断的等待。
+ *
+ * 用 `setTimeout` + `abort` 监听而不是 `AbortSignal.timeout`：后者无法与外部信号
+ * 组合，也没有超时后的清理。这里保证两件事——无论哪条路径结束都清掉定时器与
+ * 监听器，且已中止的信号不会留下悬挂的定时器。
+ * @param ms - 等待毫秒数。
+ * @param signal - 外部取消信号；中止时立即 resolve（由调用方检查 `aborted`）。
+ * @returns 等待结束时 resolve；不会 reject。
+ */
+function waitFor(ms: number, signal?: AbortSignal): Promise<void> {
+  if (ms <= 0) return Promise.resolve()
+  if (signal?.aborted === true) return Promise.resolve()
+  return new Promise<void>((resolve) => {
+    const timer = setTimeout(finish, ms)
+    function finish(): void {
+      clearTimeout(timer)
+      signal?.removeEventListener('abort', finish)
+      resolve()
+    }
+    signal?.addEventListener('abort', finish, { once: true })
+  })
+}
+
+/**
+ * 计算本次失败后应等待多久。
+ *
+ * 优先采用服务端给出的 `Retry-After`（它最了解什么时候能恢复），但夹到
+ * {@link MAX_RETRY_WAIT_MS} 以内；没有该头时退回指数退避。
+ * @param error - 触发切换的错误，可能带 `providerRetryAfterMs`。
+ * @param attempt - 已尝试次数（从 0 起算），用于指数退避。
+ * @returns 等待毫秒数与来源，便于日志说明。
+ */
+function retryDelayFor(error: LlmError, attempt: number): { ms: number, source: 'provider' | 'backoff', clipped: boolean } {
+  // `providerRetryAfterMs` 是 DSH 在 LlmFailure 上定义的一等字段（不是自定义
+  // details），因此由 harness 统一保证它的来源与类型。
+  const provider = error.failure.providerRetryAfterMs
+  if (provider !== undefined && provider > 0) {
+    const clipped = provider > MAX_RETRY_WAIT_MS
+    return { ms: Math.min(provider, MAX_RETRY_WAIT_MS), source: 'provider', clipped }
+  }
+  // 指数退避 500ms / 1s / 2s / 4s…，同样夹在上限内。
+  const ms = Math.min(RETRY_BACKOFF_BASE_MS * 2 ** Math.max(0, attempt), MAX_RETRY_WAIT_MS)
+  return { ms, source: 'backoff', clipped: false }
 }
 
 /** Parse a `retry-after` header into milliseconds, when it carries a usable delay. */
@@ -303,6 +363,25 @@ export class CodeBuddyAdapter extends LlmAdapter {
    * be replayed), and the NEXT conversation turn starts on the new account.
    */
   async * stream(options: GenerateOptions): AsyncIterable<StreamChunk> {
+    // 登记在途请求：主动切换据此避让，不打断正在输出的流。finally 保证任何
+    // 结束路径（正常、抛错、被取消、调用方提前 return）都会减回去。
+    this.config.session.beginRequest()
+    try {
+      yield* this.runWithFailover(options)
+    } finally {
+      this.config.session.endRequest()
+    }
+  }
+
+  /** 一次请求的完整生命周期（含账号故障转移），由 `stream` 包裹。 */
+  private async * runWithFailover(options: GenerateOptions): AsyncIterable<StreamChunk> {
+    /**
+     * 本次请求**已尝试过**的账号。必须是请求级状态（不能放 session 或全局）：
+     * 它是「同一请求内不重复使用同一账号」的依据，跨请求共享会误伤后续请求。
+     */
+    const attempted = new Set<string>()
+    const current = await this.config.session.activeAccountSummary()
+    if (current !== undefined) attempted.add(current.id)
     try {
       yield* this.attemptStream(options)
     } catch (error) {
@@ -313,8 +392,27 @@ export class CodeBuddyAdapter extends LlmAdapter {
       const swappable = autoSwitch
         && (error.code === QUOTA_EXCEEDED_CODE || error.code === 'RATE_LIMIT')
       if (!swappable) throw error
-      const switched = await this.failoverToNextAccount(error)
+      /**
+       * 遵守服务端的 `Retry-After`：被限流时先等一会再换账号。
+       *
+       * 等待是可中断的（`options.signal`），且夹到 MAX_RETRY_WAIT_MS 以内 ——
+       * 服务端可能给出按小时计的间隔，真等下去会让会话看起来卡死。超上限就直接
+       * 换账号：换号同样能解除限流，且不阻塞。
+       */
+      // 退避次数用「已尝试账号数 - 1」：首个账号不算重试。clipped 表示服务端
+      // 要求的间隔超过上限，此时等待被截断，日志由 session 侧统一记录。
+      const delay = retryDelayFor(error, Math.max(0, attempted.size - 1))
+      if (delay.ms > 0) {
+        await waitFor(delay.ms, options.signal)
+        // 等待期间被取消：按调用方取消处理，不再换号重试。
+        if (options.signal?.aborted === true) {
+          throw new LlmError('CodeBuddy request aborted while waiting to retry', 'ABORTED')
+        }
+      }
+
+      const switched = await this.failoverToNextAccount(error, attempted)
       if (!switched) throw error
+      attempted.add(switched.id)
       // Surface the takeover as visible assistant text before the retried
       // stream starts: the StreamChunk union has no status member, and the
       // user should see why the request momentarily paused and whose quota
@@ -334,16 +432,40 @@ export class CodeBuddyAdapter extends LlmAdapter {
    * @returns the from/to display names, or `undefined` when no other account
    *   can take over (single account, or every other credential expired).
    */
-  private async failoverToNextAccount(error: LlmError): Promise<{ from: string, to: string } | undefined> {
+  private async failoverToNextAccount(
+    error: LlmError,
+    attempted: ReadonlySet<string>,
+  ): Promise<{ from: string, to: string, id: string } | undefined> {
     const current = await this.config.session.activeAccountSummary()
-    const candidates = await this.config.session.failoverCandidates()
-    if (candidates === undefined || current === undefined) return undefined
-    const next = candidates.find(entry => entry.id !== current.id)
-    if (next === undefined) return undefined
-    const applied = await this.config.session.switchTo(next.id)
+    if (current === undefined) return undefined
+    const entries = await this.config.session.failoverCandidates()
+    if (entries === undefined) return undefined
+
+    // 交给纯函数决策：它负责排除已尝试过的账号、排除凭据失效者，并按剩余额度排序。
+    // 让 adapter 只做「取数 → 决策 → 执行」，切换规则才能被单测覆盖。
+    const candidates: SwitchCandidate[] = []
+    for (const entry of entries) {
+      const remainingPct = await this.config.session.remainingPercentFor(entry)
+      candidates.push({
+        id: entry.id,
+        nickname: entry.account.nickname,
+        credentialValid: entry.auth.refreshExpiresAt > Date.now(),
+        ...remainingPct === undefined ? {} : { remainingPct },
+      })
+    }
+    const decision = decideReactiveTarget({
+      candidates,
+      failedId: current.id,
+      triedIds: [...attempted],
+    })
+    if (decision.kind === 'stay') return undefined
+
+    // CAS：探测期间当前账号可能已被改动（用户手动切换、或并发的主动切换）。
+    // 不匹配就放弃，避免拿着过期状态把账号切回去。
+    const applied = await this.config.session.switchTo(decision.targetId, current.id)
     if (!applied) return undefined
     try { this.config.onAccountSwitched?.() } catch { /* 广播失败不影响请求继续 */ }
-    return { from: current.nickname, to: next.account.nickname }
+    return { from: current.nickname, to: decision.targetNickname, id: decision.targetId }
   }
 
   /**

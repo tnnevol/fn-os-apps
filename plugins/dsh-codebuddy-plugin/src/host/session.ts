@@ -13,6 +13,7 @@
 
 import { getConfig, getEnterpriseModels, refreshAccessToken } from './codebuddy.ts'
 import type { CodeBuddyIdentity } from './codebuddy.ts'
+import { decideProactiveTarget, type SwitchCandidate } from './switch-policy.ts'
 import { fetchUsage } from './usage.ts'
 import type { UsageSnapshot } from './usage.ts'
 import { loadStorage, saveStorage, mutateStorage, activeEntry, resolveEntryEndpoint } from './storage.ts'
@@ -24,6 +25,21 @@ const REFRESH_SKEW_MS = 60_000
 
 /** How long a read catalog is reused before the service is asked again. */
 const CATALOG_TTL_MS = 5 * 60 * 1000
+
+/**
+ * 主动切换所需的最小收益差（百分点）。
+ *
+ * 挡的是「为了 0.3% 的差别换一次账号」：切换有成本（重新探测、目录缓存失效、
+ * 模型选择器刷新），收益太小不值得。
+ */
+const MIN_SWITCH_GAIN_PCT = 5
+
+/**
+ * 候选账号自身所需的最小剩余额度（百分点）。
+ *
+ * 挡的是「切到一个同样快用完的账号」——那只是把问题推迟一次请求。
+ */
+const CANDIDATE_MIN_REMAINING_PCT = 1
 
 /** Raised when nothing is signed in; carries the remedy in its message. */
 export class NotLoggedInError extends Error {
@@ -70,7 +86,31 @@ export class CodeBuddySession {
    */
   private generation = 0
 
+  /**
+   * 正在进行中的流式请求数。
+   *
+   * 主动切换据此避让：切换是「优化下一次请求」的操作，没必要打断正在输出的流，
+   * 中途换账号还可能让已产出内容与后续内容来自不同账号。由 adapter 在 stream 的
+   * 开始与结束处增减（见 beginRequest / endRequest）。
+   */
+  private inFlightRequests = 0
+
   constructor(private readonly logger?: SessionLogger) {}
+
+  /** 进行中的流式请求数，供主动切换判定是否避让。 */
+  get activeRequestCount(): number {
+    return this.inFlightRequests
+  }
+
+  /** 标记一个流式请求开始；调用方必须在结束时 endRequest（用 finally）。 */
+  beginRequest(): void {
+    this.inFlightRequests += 1
+  }
+
+  /** 标记一个流式请求结束；幂等由调用方的 finally 保证。 */
+  endRequest(): void {
+    this.inFlightRequests = Math.max(0, this.inFlightRequests - 1)
+  }
 
   /**
    * Forget the in-memory credentials and catalog, forcing a re-read from disk.
@@ -84,6 +124,19 @@ export class CodeBuddySession {
     this.generation += 1
     this.refreshing.clear()
     this.catalogRead.clear()
+  }
+
+  /**
+   * 单个账号的剩余额度百分比，供被动切换决策取数。
+   *
+   * 与主动路径共用 `remainingPercentOf`（同一套窗口聚合规则），保证两条路径
+   * 对「还剩多少」的判断一致——否则同一次请求里主动与被动会得出不同结论。
+   * @param entry - 目标账号条目。
+   * @param signal - 可选取消。
+   * @returns 0–100 的百分比，或 `undefined` 表示未知。
+   */
+  async remainingPercentFor(entry: CodeBuddyAccountEntry, signal?: AbortSignal): Promise<number | undefined> {
+    return this.remainingPercentOf(entry, signal)
   }
 
   /** Public identity resolution for panel probes (per-entry, no refresh). */
@@ -302,32 +355,53 @@ export class CodeBuddySession {
     const storage = await loadStorage()
     if (storage === undefined || storage.accounts.length < 2) return undefined
     const active = activeEntry(storage)
-    if (active.auth.refreshExpiresAt <= Date.now()) return undefined
 
-    const activeRemaining = await this.remainingPercentOf(active, signal)
-    // Unknown remaining (meter outage) is not a reason to switch — the
-    // reactive path still covers a hard quota rejection.
-    if (activeRemaining === undefined || activeRemaining >= thresholdPct) return undefined
-
-    // Probe the other live accounts; pick the one with the most remaining.
-    let best: { entry: CodeBuddyAccountEntry, remaining: number } | undefined
+    // 探测**全部**账号后交给纯函数决策：把「取数」与「判断」分开，判断规则
+    // 因此可以单独测（见 switch-policy.ts 与 tests/switch-policy.spec.ts）。
+    //
+    // 这里一次性探测所有账号（原先只探测到第一个更优的就停）是为了让候选排序
+    // 拿到完整数据——多探几次的代价远小于切错账号。
+    const candidates: SwitchCandidate[] = []
     for (const entry of storage.accounts) {
-      if (entry.id === active.id) continue
-      if (entry.auth.refreshExpiresAt <= Date.now()) continue
-      const remaining = await this.remainingPercentOf(entry, signal)
-      if (remaining === undefined) continue
-      if (best === undefined || remaining > best.remaining) {
-        best = { entry, remaining }
-      }
+      const credentialValid = entry.auth.refreshExpiresAt > Date.now()
+      // 凭据已失效的账号不必探测额度（既不能选中，也不该浪费一次请求）。
+      const remainingPct = credentialValid
+        ? await this.remainingPercentOf(entry, signal)
+        : undefined
+      candidates.push({
+        id: entry.id,
+        nickname: entry.account.nickname,
+        credentialValid,
+        ...remainingPct === undefined ? {} : { remainingPct },
+      })
     }
-    if (best === undefined) return undefined
 
-    const applied = await this.switchTo(best.entry.id)
+    const decision = decideProactiveTarget({
+      candidates,
+      activeId: active.id,
+      thresholdPct,
+      now: Date.now(),
+      activeRequestCount: this.activeRequestCount,
+      minGapPct: MIN_SWITCH_GAIN_PCT,
+      candidateMinRemainingPct: CANDIDATE_MIN_REMAINING_PCT,
+    })
+    if (decision.kind === 'stay') {
+      // 说明「为什么没切」——此前只能看到「没切换」，排查时缺少依据。
+      this.logger?.warn(`dsh-codebuddy: 未切换账号：${decision.reason}`)
+      return undefined
+    }
+
+    /**
+     * 带 CAS 切换：探测期间当前账号可能已被别的路径改掉（例如用户在面板里手动
+     * 切了、或并发的被动切换生效了）。不匹配时放弃并让调用方下一轮重新决策，
+     * 避免「拿着过期状态把账号切回去」。
+     */
+    const applied = await this.switchTo(decision.targetId, active.id)
     if (!applied) return undefined
     return {
       from: active.account.nickname,
-      to: best.entry.account.nickname,
-      remaining: best.remaining,
+      to: decision.targetNickname,
+      remaining: decision.remainingPct ?? 0,
     }
   }
 
