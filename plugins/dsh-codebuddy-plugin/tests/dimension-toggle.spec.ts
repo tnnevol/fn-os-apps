@@ -113,9 +113,27 @@ describe('副标题移除（仅限这两个模块）', () => {
   })
 })
 
-describe('样式：窄屏下维度按钮组占满宽度（与时间周期按钮组同规则）', () => {
-  it('dimension 按钮组有窄屏规则', () => {
-    expect(SCSS).toMatch(/\.dsh-codebuddy-token-panel-actions \.dsh-codebuddy-panel-dimension \{ width: 100%; \}/)
+describe('样式与位置：按钮组放在排行卡片内部', () => {
+  it('维度切换渲染在卡片内部的 toolbar 里（而不是面板头部）', () => {
+    // 用户要求：按钮组属于这份列表（切换的是列表的统计口径），
+    // 放面板头部会像在控制整个面板（含周期选择器）。
+    const dist = PANEL.slice(PANEL.indexOf("title={t('tokenDistribution')}"), PANEL.indexOf("title={t('tokenModels')}")),
+          models = PANEL.slice(PANEL.indexOf("title={t('tokenModels')}"), PANEL.indexOf("title={t('tokenTopSessions')}")),
+          toolbarOf = (block: string): boolean =>
+            block.indexOf('dsh-codebuddy-token-card-toolbar') > -1
+            && block.indexOf('<DimensionToggle') > -1
+            && block.indexOf('token-card-toolbar') < block.indexOf('<DimensionToggle')
+            && block.indexOf('extra=') === -1
+    expect(toolbarOf(dist)).toBe(true)
+    expect(toolbarOf(models)).toBe(true)
+  })
+
+  it('dimension 按钮组在窄屏占满宽度（卡片内部规则）', () => {
+    expect(SCSS).toMatch(/\.dsh-codebuddy-token-card-toolbar \.dsh-codebuddy-panel-dimension \{ width: 100%; \}/)
+  })
+
+  it('toolbar 与列表之间有间距（不贴着排行首行）', () => {
+    expect(SCSS).toMatch(/\.dsh-codebuddy-token-card-toolbar\s*\{[^}]*margin-bottom:\s*14px/)
   })
 
   it('使用独立的 class，不与时间周期按钮组混用', () => {

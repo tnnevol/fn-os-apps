@@ -1709,7 +1709,6 @@ function TokenStatsPage({ rpc, t }: { rpc: ConnectionRpc, t: Translate }): React
       <div className="dsh-codebuddy-token-columns">
         <TokenPanel
           title={t('tokenDistribution')}
-          extra={<DimensionToggle dimension={distributionDimension} onChange={setDistributionDimension} t={t} />}
           options={optionsFor('other')}
           range={distributionRange}
           onRangeChange={setDistributionRange}
@@ -1720,6 +1719,11 @@ function TokenStatsPage({ rpc, t }: { rpc: ConnectionRpc, t: Translate }): React
           onRefresh={distribution.reload}
         >
           <DshCard className="dsh-codebuddy-token-list-card">
+            {/* 维度切换放在**排行卡片内部**：它切换的是这份列表的统计口径，
+                与列表是同一个整体；放面板头部会显得像在控制整个面板（含周期）。 */}
+            <div className="dsh-codebuddy-token-card-toolbar">
+              <DimensionToggle dimension={distributionDimension} onChange={setDistributionDimension} t={t} />
+            </div>
             {distribution.data === undefined
               ? <div className="dsh-codebuddy-token-empty" />
               : distributionDimension === 'workspace'
@@ -1729,7 +1733,6 @@ function TokenStatsPage({ rpc, t }: { rpc: ConnectionRpc, t: Translate }): React
         </TokenPanel>
         <TokenPanel
           title={t('tokenModels')}
-          extra={<DimensionToggle dimension={modelsDimension} onChange={setModelsDimension} t={t} />}
           options={optionsFor('other')}
           range={modelsRange}
           onRangeChange={setModelsRange}
@@ -1740,6 +1743,9 @@ function TokenStatsPage({ rpc, t }: { rpc: ConnectionRpc, t: Translate }): React
           onRefresh={models.reload}
         >
           <DshCard className="dsh-codebuddy-token-list-card">
+            <div className="dsh-codebuddy-token-card-toolbar">
+              <DimensionToggle dimension={modelsDimension} onChange={setModelsDimension} t={t} />
+            </div>
             {models.data === undefined
               ? <div className="dsh-codebuddy-token-empty" />
               : modelsDimension === 'model'
