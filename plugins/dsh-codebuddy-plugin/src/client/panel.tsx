@@ -1820,6 +1820,14 @@ function TokenStatsPage({ rpc, t }: { rpc: ConnectionRpc, t: Translate }): React
             )}
         </DshCard>
       </TokenPanel>
+      <section className="dsh-codebuddy-token-section">
+        <div className="dsh-codebuddy-panel-section-title"><strong>{t('tokenActivity')}</strong><span>{t('tokenDaily')}</span></div>
+        <DshCard className="dsh-codebuddy-token-activity-card">
+          <div className="dsh-codebuddy-token-activity-meta"><span>{t('tokenActivityRange')}</span><span>{compact(data.totals.records)} {t('tokenRecords')}</span></div>
+          <ActivityGrid activity={data.activity} callSuffix={t('tokenCallSuffix')} />
+          <div className="dsh-codebuddy-token-activity-scale"><span>少</span><i className="level-1" /><i className="level-2" /><i className="level-3" /><i className="level-4" /><span>多</span></div>
+        </DshCard>
+      </section>
       <TokenPanel
         title={t('tokenTrend')}
         hint={trend.data === undefined ? '' : `${compact(trend.data.totals.total)} Token`}
@@ -1839,14 +1847,6 @@ function TokenStatsPage({ rpc, t }: { rpc: ConnectionRpc, t: Translate }): React
             : <TokenUsageChart days={trend.data.days} inputLabel={t('tokenInput')} outputLabel={t('tokenOutput')} cacheReadLabel={t('tokenCacheRead')} recordsLabel={t('tokenRecords')} />}
         </DshCard>
       </TokenPanel>
-      <section className="dsh-codebuddy-token-section">
-        <div className="dsh-codebuddy-panel-section-title"><strong>{t('tokenActivity')}</strong><span>{t('tokenDaily')}</span></div>
-        <DshCard className="dsh-codebuddy-token-activity-card">
-          <div className="dsh-codebuddy-token-activity-meta"><span>{t('tokenActivityRange')}</span><span>{compact(data.totals.records)} {t('tokenRecords')}</span></div>
-          <ActivityGrid activity={data.activity} callSuffix={t('tokenCallSuffix')} />
-          <div className="dsh-codebuddy-token-activity-scale"><span>少</span><i className="level-1" /><i className="level-2" /><i className="level-3" /><i className="level-4" /><span>多</span></div>
-        </DshCard>
-      </section>
       {/* 用量分布：独占一行。
           「模型用量排行」面板已移除 —— 它与分布面板共用同一份聚合
           （`TokenStats.workspaces` / `TokenStats.models`），维度改为可切换后
