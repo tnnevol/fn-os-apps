@@ -370,9 +370,20 @@ export class CodeBuddyAdapter extends LlmAdapter {
     const maxAttempts = Math.max(1, total)
 
     let lastError: LlmError | undefined
+    /**
+     * 开关是否允许换号。**在切换点显式检查**，而不是依赖「上一轮 catch 检查过」
+     * 这个隐式前提。
+     *
+     * 当前控制流下后者也确实成立（开关关闭时第 0 轮的 catch 就抛出了，走不到这里），
+     * 但那种「安全性由另一个分支的副作用保证」的写法很脆：一旦有人把切换挪个位置
+     * 或调整循环结构，用户关掉的开关就会被静默绕过——而「关掉自动切换」的预期是
+     * **包含被动换号在内**的全部自动换号。
+     */
+    const autoSwitchAllowed = (): boolean => this.config.autoSwitch?.() ?? true
     for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
       // 首次尝试前不切换；之后的每一轮都已经由上一轮末尾切好了账号。
       if (attempt > 0) {
+        if (!autoSwitchAllowed()) throw lastError as LlmError
         const switched = await this.failoverToNextAccount(lastError as LlmError, attempted)
         if (switched === undefined) break
         attempted.add(switched.id)
@@ -410,8 +421,7 @@ export class CodeBuddyAdapter extends LlmAdapter {
         if (emitted) throw error
         lastError = error
         // 只有额度耗尽才换账号。限流与瞬时故障交给外层官方重试——理由见方法注释。
-        const autoSwitch = this.config.autoSwitch?.() ?? true
-        if (!autoSwitch || error.code !== QUOTA_EXCEEDED_CODE) throw error
+        if (!autoSwitchAllowed() || error.code !== QUOTA_EXCEEDED_CODE) throw error
       }
     }
     // 换不动了（没有未尝试过的账号、或尝试次数用尽）：把最后一次的失败如实抛出，

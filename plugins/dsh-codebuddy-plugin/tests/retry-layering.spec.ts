@@ -32,7 +32,7 @@ describe('内层只负责换账号，不重复外层的等待与重试', () => {
      */
     expect(run).not.toContain('RATE_LIMIT')
     // 同时确认判定只由 QUOTA 一个码驱动（单一职责，便于将来审查）
-    const switchPredicate = /if \(!autoSwitch \|\| ([^)]*)\) throw error/.exec(run)?.[1] ?? ''
+    const switchPredicate = /if \(!autoSwitchAllowed\(\) \|\| ([^)]*)\) throw error/.exec(run)?.[1] ?? ''
     expect(switchPredicate).toContain('QUOTA_EXCEEDED_CODE')
     expect(switchPredicate).not.toContain('RATE_LIMIT')
   })
