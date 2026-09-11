@@ -82,9 +82,18 @@ export class TokenStatsStore {
     return this.failures.get(key)
   }
 
-  /** 确保该范围有数据在取；已有缓存或在途时直接复用。 */
+  /**
+   * 确保该范围有数据在取；已有缓存或在途时直接复用。
+   *
+   * **`'custom'` 不复用缓存**：custom 档的窗口由模块级 `customDays` 动态决定
+   * （用户在日期选择器里选出的窗口），同一个键 `'custom'` 实际可能对应不同的
+   * `days`——继续走 `cache.has(key)` 会让 `start` 永远不触发，后续选择再
+   * 改窗口也无数据更新（用户报过的回归）。所以 custom 总是拉，pending 节流
+   * 避免同一窗口并发；其它固定档（today/7d/30d）仍然命中复用。
+   */
   ensure(key: TokenRangeKey): void {
-    if (this.cache.has(key) || this.pending.has(key)) return
+    if (this.pending.has(key)) return
+    if (key !== 'custom' && this.cache.has(key)) return
     this.start(key)
   }
 
@@ -99,6 +108,7 @@ export class TokenStatsStore {
    */
   reload(key: TokenRangeKey, owner?: symbol): void {
     // 已有在途请求就让它跑完，避免同一范围出现两个并发请求。
+    // custom 档同 ensure：不能因有缓存就跳过——窗口变了数据要重拉。
     if (this.pending.has(key)) return
     this.start(key, owner)
   }

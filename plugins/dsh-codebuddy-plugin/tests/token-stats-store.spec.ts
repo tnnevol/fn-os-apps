@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { TokenStatsStore } from '../src/client/store/token-stats.ts'
 import type { ConnectionRpc, RpcResult } from '../src/client/rpc.ts'
+import { setCustomRangeDays } from '../src/client/token-range.ts'
 
 /**
  * Token 页每个面板都有自己的时间周期，若各自裸调 RPC，同一范围会被重复请求，
@@ -272,5 +273,53 @@ describe('加载指示按面板隔离', () => {
     expect(store.isLoading('30d', b)).toBe(true)
     expect(store.isLoading('30d', a)).toBe(false)
     await vi.waitFor(() => { expect(store.isLoading('30d', b)).toBe(false) })
+  })
+})
+
+describe('custom 档：窗口变化后必须重新拉数据（用户报过的回归）', () => {
+  /**
+   * `custom` 档的窗口由模块级 `customDays` 决定（用户在日期选择器里改）。
+   * 它不能用范围键 `'custom'` 做缓存键——同一个键能对应多个不同窗口。
+   * 老代码用 `cache.has(key)` 把 `custom` 也当成「同范围可复用」，导致：
+   *   第一次 ensure('custom') → 发请求（拉 14 天的窗口）
+   *   用户改选择器窗口到 7 天 → onDatesChange → store 因 cache.has('custom') 跳过
+   *                      → 面板仍显示 14 天的数据，不刷新。
+   */
+  it('custom 档两次 ensure 都会发请求（窗口可能不同）', async () => {
+    const { rpc, calls } = makeRpc()
+    const store = new TokenStatsStore(rpc)
+    // 模拟用户第一次进入 custom 档（customDays = 14 → resolveRange 返回 14）。
+    setCustomRangeDays(14)
+    store.ensure('custom')
+    await vi.waitFor(() => { expect(store.isLoading('custom')).toBe(false) })
+    expect(calls.map(c => c.days)).toEqual([14])
+
+    // 用户在日期选择器里选了新窗口（customDays = 7）。再次 ensure 必须发新请求，
+    // 不能因 cache.has('custom') 跳过——这是用户报过的「选一次刷新、之后不再刷新」。
+    setCustomRangeDays(7)
+    store.ensure('custom')
+    await vi.waitFor(() => { expect(store.isLoading('custom')).toBe(false) })
+    expect(calls.map(c => c.days)).toEqual([14, 7])
+  })
+
+  it('custom 在途并发仍然被节流', async () => {
+    // 节流是按「同一窗口」避免并发；custom 档走 in-flight 节流，不走 cache 命中。
+    const { rpc, calls } = makeRpc({ delayMs: 20 })
+    const store = new TokenStatsStore(rpc)
+    store.ensure('custom')
+    store.ensure('custom')
+    store.ensure('custom')
+    await vi.waitFor(() => { expect(store.isLoading('custom')).toBe(false) })
+    // 三次并发只产生一次请求（pending 节流）。
+    expect(calls).toHaveLength(1)
+  })
+
+  it('固定档缓存复用仍正常（today/7d/30d）', async () => {
+    const { rpc, calls } = makeRpc()
+    const store = new TokenStatsStore(rpc)
+    store.ensure('today'); store.ensure('today'); store.ensure('today')
+    await vi.waitFor(() => { expect(store.isLoading('today')).toBe(false) })
+    // today 是固定档，cache 复用生效：三次 ensure 一次 RPC。
+    expect(calls).toHaveLength(1)
   })
 })
