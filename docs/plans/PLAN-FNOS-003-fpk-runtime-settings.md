@@ -41,22 +41,45 @@ v5.3.1 之后落地的实现一并纳入本计划：应用设置本体（`FNOS-0
 
 ## 目标架构和数据流
 
-```text
-wizard/install 中的运行字段
-        ├─ 安装阶段：初始化应用
-        └─ wizard/config：应用设置中的运行配置
-                         │ 保存
-                         ▼
-                   wizard_* 环境变量
-                         │
-                         ▼
-                cmd/config_callback
-                         │
-                 安全重载或重启
-                         │
-                         ▼
-                    cmd/main status
-```
+<FlowGrid
+  :columns="3"
+  :steps="[
+    {
+      label: 'wizard/install',
+      detail: '安装向导收集的运行字段；其中运行字段在安装后保留为初始值',
+      variant: 'primary'
+    },
+    {
+      label: 'wizard/config',
+      detail: '应用中心「应用设置」中的运行配置；仅展示审计确认的运行字段',
+      variant: 'primary',
+      children: [
+        { label: 'Native 应用', detail: '字段名以 wizard_* 为前缀，脚本直接读取' },
+        { label: 'Docker 应用', detail: '沿用 compose 裸名（如 DB_TYPE / APP_PORT），由 compose 引用' }
+      ]
+    },
+    {
+      label: '生效路径',
+      detail: '保存后由 fnOS 触发 cmd/config_callback，应用按形态决定如何应用新配置',
+      children: [
+        { label: 'Native：重载/重启', detail: 'cmd/main 重读 wizard_* 后 start / status' },
+        { label: 'Docker：容器重建', detail: 'appcenter 用新环境变量重建容器' }
+      ]
+    }
+  ]"
+/>
+
+<FlowGrid
+  :columns="3"
+  :steps="[
+    { label: '① 用户在应用中心编辑运行配置', detail: '修改 wizard/config 字段并保存', variant: 'primary' },
+    { label: '② fnOS 写回 wizard_* 环境变量', detail: '取消则不提交，旧值保留' },
+    { label: '③ cmd/config_callback 执行', detail: 'Native 重载/重启；Docker 由 appcenter 重建容器', variant: 'success' },
+    { label: '④ cmd/main status 校验新状态', detail: 'PID 健康、应用就绪', variant: 'success' },
+    { label: '⑤ 失败保留旧配置并展示错误', detail: '不伪造成功；凭据和工作目录不删除', variant: 'warning' },
+    { label: '⑥ 升级/回滚保留运行配置与用户数据', detail: '一次性安装参数不会被覆盖' }
+  ]"
+/>
 
 安装字段只在确有运行时用途时复用；路径初始化、首次迁移和一次性账号创建等字段不得直接复制到运行设置。
 
