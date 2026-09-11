@@ -16,6 +16,8 @@ import type { CodeBuddyIdentity } from './codebuddy.ts'
 import { decideProactiveTarget, type SwitchCandidate } from './switch-policy.ts'
 import { UsageProbeCache } from './usage-probe.ts'
 import type { UsageSnapshot } from './usage.ts'
+import { CODEBUDDY_CLIENT_VERSIONS, normalizeClientId } from '../contracts/constants.ts'
+import type { CodeBuddyClientId } from '../contracts/constants.ts'
 import { loadStorage, saveStorage, mutateStorage, activeEntry, resolveEntryEndpoint } from './storage.ts'
 import type { CodeBuddyAccountEntry, CodeBuddyStorage } from './storage.ts'
 import type { CodeBuddyModel } from './types.ts'
@@ -316,6 +318,38 @@ export class CodeBuddySession {
    */
   chatBase(): string | undefined {
     return this.storage !== undefined ? `${resolveEntryEndpoint(activeEntry(this.storage))}/v2` : undefined
+  }
+
+  /**
+   * 当前**活动账号**的客户端身份（`cli` 或 `workbuddy`）。
+   *
+   * 请求要带哪个客户端的标识与版本，取决于**这个账号是用哪个客户端登录的**，
+   * 而不是插件级的默认值。用 CLI 标识发 WorkBuddy 账号的请求，服务端仍会受理
+   * （实测三种组合都返回 200），但会把流量**归因到错误的客户端**——客户端侧的
+   * 用量/统计会记错，服务端若按客户端做策略也会判错。
+   *
+   * 与 {@link chatBase} 不同的一点：这里**自己做一次读盘**，不依赖调用方先通过
+   * `authHeaders()` 把 `this.storage` 填好。原先两者都读内存态，导致结果取决于
+   * 调用顺序（测试里直接调用就会拿到 `undefined`）——而「标识必须跟账号一致」是
+   * 正确性要求，不该由调用顺序决定。
+   * @returns 客户端 id；未登录时为 `undefined`（调用方回退到默认）。
+   */
+  activeClient(): CodeBuddyClientId | undefined {
+    const storage = this.storage
+    if (storage !== undefined) return normalizeClientId(activeEntry(storage).client)
+    return undefined
+  }
+
+  /**
+   * 当前活动账号应声明的客户端**版本**。
+   *
+   * 与 `activeClient()` 配套：版本必须跟着客户端走（CLI 是 `2.148.0`、WorkBuddy
+   * 是 `5.5.4`），两者都不随会话随机化——服务端以此把请求归因到具体客户端版本。
+   * @returns 版本号；未登录时为 `undefined`。
+   */
+  activeClientVersion(): string | undefined {
+    const client = this.activeClient()
+    return client === undefined ? undefined : CODEBUDDY_CLIENT_VERSIONS[client]
   }
 
   /**

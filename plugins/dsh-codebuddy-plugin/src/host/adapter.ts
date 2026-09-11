@@ -32,7 +32,6 @@ import type {
   StreamChunk,
 } from '@deepseek-ai/dsh-llm'
 import {
-  CODEBUDDY_CLI_VERSION,
   CODEBUDDY_DISPLAY_NAME,
   DEFAULT_CONTEXT_WINDOW,
   DEFAULT_MAX_TOKENS,
@@ -45,6 +44,12 @@ import { parseSse } from './sse.ts'
 import { serializeRequest } from './serialize.ts'
 import { hasRequestImages, serializeRequestWithImages } from './serialize-image.ts'
 import { translate } from './translate.ts'
+import {
+  CODEBUDDY_CLIENT_PLATFORMS,
+  CODEBUDDY_CLIENT_VERSIONS,
+  CODEBUDDY_DEFAULT_CLIENT,
+} from '../contracts/constants.ts'
+import type { CodeBuddyClientId } from '../contracts/constants.ts'
 import { hasDisclosedCapacity } from './types.ts'
 import type { CodeBuddyModel, WireError, WireRequest } from './types.ts'
 import type { ImageAttachmentAccess } from '@deepseek-ai/dsh-llm'
@@ -106,20 +111,47 @@ function requestId(headers: Headers): ReturnType<typeof ProviderRequestId> | und
 }
 
 /**
- * The client-identity headers the official CodeBuddy CLI sends on every chat
- * request. Reverse-engineered from `@tencent-ai/codebuddy-code` (2.145.0): it
- * identifies itself as the CLI product through the `X-IDE-*` family, and the
- * service attributes traffic to the official client from these headers.
+ * The client-identity headers the official client sends on every chat request.
  *
- * Only this fixed client-identity set is stamped — no per-request ids are
- * invented for the conversation/request/message headers.
+ * 服务端用这组头把流量**归因到具体客户端**（`X-IDE-*` 家族），因此它们必须与
+ * 「这个账号是用哪个客户端登录的」一致 —— 不是插件级的固定值。
+ *
+ * 用 CLI 标识发 WorkBuddy 账号的请求，服务端**仍会受理**（实测三种组合都返回
+ * 200），但会把流量记到错误的客户端上：客户端侧的用量/统计归因会错，服务端若
+ * 按客户端做策略（限流、灰度、审计）也会对这个账号判错。
+ *
+ * 版本也必须跟着客户端走：CLI 与 WorkBuddy 是两条产品线、版本号各不相同
+ * （见 {@link CODEBUDDY_CLIENT_VERSIONS}），且都是产品发布版本、不随会话变化。
+ *
+ * @param client - 当前活动账号的客户端 id。
+ * @param version - 该客户端的版本号；缺省时按字典回退。
+ * @returns `X-IDE-*` 头集合。
  */
-function clientIdentityHeaders(): Record<string, string> {
+function clientIdentityHeaders(client: CodeBuddyClientId, version: string | undefined): Record<string, string> {
+  // 取值与登录时声明的 `platform` 参数一致（`CLI` / `workbuddy`）。
+  const platform = CODEBUDDY_CLIENT_PLATFORMS[client]
   return {
-    'X-IDE-Type': 'CLI',
-    'X-IDE-Name': 'CLI',
-    'X-IDE-Version': CODEBUDDY_CLI_VERSION,
+    'X-IDE-Type': platform,
+    'X-IDE-Name': platform,
+    'X-IDE-Version': version ?? CODEBUDDY_CLIENT_VERSIONS[client],
   }
+}
+
+/**
+ * 客户端身份的 `User-Agent`。
+ *
+ * 官方 CLI 的形态是 `CLI/<v> CodeBuddy/<v>`（产品名 + 版本，重复两次）；WorkBuddy
+ * 同形，把产品名换成 `WorkBuddy`。实测服务端对 UA 做安全策略校验：
+ *  - 含 `deepseek-harness` 标识 → HTTP 400 code=11128（被拦截，见调用点注释）
+ *  - CLI / WorkBuddy 两种签名 → HTTP 200
+ * @param client - 当前活动账号的客户端 id。
+ * @param version - 该客户端的版本号。
+ * @returns 可直接作为 `user-agent` 的值。
+ */
+function clientUserAgent(client: CodeBuddyClientId, version: string | undefined): string {
+  const v = version ?? CODEBUDDY_CLIENT_VERSIONS[client]
+  const product = client === 'workbuddy' ? 'WorkBuddy' : 'CLI'
+  return `${product}/${v} CodeBuddy/${v}`
 }
 
 /**
@@ -483,9 +515,18 @@ export class CodeBuddyAdapter extends LlmAdapter {
     const connection = this.config.options()
     let headers: Record<string, string>
     let chatBase = connection.baseURL
+    /**
+     * 当前账号的客户端身份。与 headers/chatBase 同源：**请求带哪个客户端的
+     * 标识与版本，取决于这个账号是用哪个客户端登录的**，不是插件级固定值。
+     * 未登录时回退到默认客户端（与既有的 chatBase 回退同一策略）。
+     */
+    let client: CodeBuddyClientId = CODEBUDDY_DEFAULT_CLIENT
+    let clientVersion: string | undefined
     try {
       headers = await this.config.session.authHeaders()
       chatBase = this.config.session.chatBase() ?? connection.baseURL
+      client = this.config.session.activeClient() ?? CODEBUDDY_DEFAULT_CLIENT
+      clientVersion = this.config.session.activeClientVersion()
     } catch (error) {
       if (error instanceof NotLoggedInError) {
         throw new LlmError(error.message, 'MISSING_CREDENTIAL', { cause: error })
@@ -546,7 +587,7 @@ export class CodeBuddyAdapter extends LlmAdapter {
         method: 'POST',
         headers: {
           ...headers,
-          ...clientIdentityHeaders(),
+          ...clientIdentityHeaders(client, clientVersion),
           'content-type': 'application/json',
           'accept': 'text/event-stream',
           // **不能**改用 `attributionHeaders()`。DSH 的契约要求适配器每个请求都带
@@ -560,7 +601,7 @@ export class CodeBuddyAdapter extends LlmAdapter {
           // 的准入门槛**而非归因信息，因此必须保持 CodeBuddy 客户端签名。
           // harness 侧的归因由 `X-IDE-*` 之外的本插件语义承担；若上游调整该策略，
           // 这里需要与 DSH 的 attribution 契约重新对齐。
-          'user-agent': `CLI/${CODEBUDDY_CLI_VERSION} CodeBuddy/${CODEBUDDY_CLI_VERSION}`,
+          'user-agent': clientUserAgent(client, clientVersion),
         },
         body: payload,
         ...options.signal === undefined ? {} : { signal: options.signal },
