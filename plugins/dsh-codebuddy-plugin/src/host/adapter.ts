@@ -1,12 +1,11 @@
 /**
- * `CodeBuddyAdapter`: fetch + SSE against CodeBuddy's OpenAI-compatible chat
- * route, with identity and the model catalog resolved from the OAuth session.
+ * `CodeBuddyAdapter`：对 CodeBuddy 的 OpenAI 兼容聊天路由做 fetch + SSE，
+ * 身份与模型目录由 OAuth 会话解析。
  *
- * The split matters: the chat plane is OpenAI-compatible, but the catalog plane
- * is not, so models are described from CodeBuddy's own `/v3/config` reply — that
- * is where per-model tool-call, reasoning, image, and size facts come from. No
- * API key exists anywhere in this class; every request is authorized by the
- * browser-minted bearer token the session refreshes.
+ * 这个拆分很关键：聊天平面是 OpenAI 兼容的，但目录平面不是，因此模型描述
+ * 来自 CodeBuddy 自己的 `/v3/config` 应答——每个模型的工具调用、推理、图像
+ * 与大小等事实都出自那里。本类中任何地方都不存在 API key；每个请求都由
+ * 会话刷新的浏览器签发 bearer token 授权。
  *
  * @module dsh-codebuddy/adapter
  */
@@ -55,29 +54,29 @@ import type { CodeBuddyModel, WireError, WireRequest } from './types.ts'
 import type { ImageAttachmentAccess } from '@deepseek-ai/dsh-llm'
 import type { AttachmentStore, ImageAttachmentRef } from '@deepseek-ai/dsh-attachment'
 
-/** Connection facts the registering plugin resolves and the adapter trusts. */
+/** 注册插件解析、适配器信任的连接事实。 */
 export interface CodeBuddyConnectionOptions {
-  /** Chat endpoint base; `/chat/completions` is appended. */
+  /** 聊天端点基址；后接 `/chat/completions`。 */
   baseURL: string
-  /** Context capacity used when the catalog does not size a model. */
+  /** 模型目录未给出模型大小时使用的上下文容量。 */
   defaultContextWindow: number
-  /** Per-request output cap used when the catalog does not cap a model. */
+  /** 模型目录未给模型设上限时使用的单次请求输出上限。 */
   defaultMaxTokens: number
-  /** Maximum provider idle time while one stream read is outstanding. */
+  /** 一次流读取未完成时允许的最大 provider 空闲时间。 */
   streamIdleTimeoutMs: number
 }
 
-/** Constructor options: the session plus the per-operation connection thunk. */
+/** 构造参数：会话加上每次操作取连接配置的 thunk。 */
 export interface CodeBuddyAdapterOptions {
   session: CodeBuddySession
   options: () => CodeBuddyConnectionOptions
-  /** Whether quota failures may auto-switch the active account. */
+  /** 额度失败时是否允许自动切换当前活动账号。 */
   autoSwitch?: () => boolean
   /** 自动接管切号成功后回调（触发 harness 模型目录/用量即时刷新）。 */
   onAccountSwitched?: () => void
-  /** Durable attachment service (`ctx.attachments`); required only for image input. */
+  /** 持久化附件服务（`ctx.attachments`）；仅图像输入时必需。 */
   resolveAttachments?: () => AttachmentStore | undefined
-  /** Resolve current tool access for one durable image handle, when available. */
+  /** 在可用时解析某个持久化图像句柄的当前工具访问权。 */
   resolveImageAccess?: (attachments: AttachmentStore, ref: ImageAttachmentRef) => ImageAttachmentAccess | undefined
 }
 
@@ -94,7 +93,7 @@ export interface CodeBuddyAdapterOptions {
  * 官方**不做**的那件事——`QUOTA`（额度耗尽）时换账号，因为官方默认不重试该码，
  * 而换账号是唯一有效手段。等待与退避交给外层。
  */
-/** Parse a `retry-after` header into milliseconds, when it carries a usable delay. */
+/** 把 `retry-after` 头解析为毫秒数（当它带有可用延迟时）。 */
 function providerRetryAfterMs(value: string | null): number | undefined {
   if (value === null) return undefined
   if (/^\d+$/.test(value)) {
@@ -111,7 +110,7 @@ function requestId(headers: Headers): ReturnType<typeof ProviderRequestId> | und
 }
 
 /**
- * The client-identity headers the official client sends on every chat request.
+ * 官方客户端在每个聊天请求上都发送的客户端身份头。
  *
  * 服务端用这组头把流量**归因到具体客户端**（`X-IDE-*` 家族），因此它们必须与
  * 「这个账号是用哪个客户端登录的」一致 —— 不是插件级的固定值。
@@ -175,10 +174,10 @@ function clientUserAgent(client: CodeBuddyClientId, version: string | undefined)
 const CODEBUDDY_QUOTA_EXHAUSTED_CODE = '6004'
 
 /**
- * Map an HTTP status onto a stable harness error code.
- * @param status - the non-2xx status.
- * @param error - the parsed provider error body, when readable.
- * @returns the normalized code.
+ * 把 HTTP 状态映射为稳定的 harness 错误码。
+ * @param status - 非 2xx 的状态码。
+ * @param error - 可读时为解析出的 provider 错误体。
+ * @returns 规范化后的错误码。
  */
 export function httpErrorCode(status: number, error?: WireError): string {
   if (status === 401 || status === 403) return 'AUTH'
@@ -204,22 +203,19 @@ export function httpErrorCode(status: number, error?: WireError): string {
   return `HTTP_${status}`
 }
 
-/** Build the harness model descriptor for one catalog entry. */
+/** 为一条目录条目构建 harness 模型描述符。 */
 function modelInfo(provider: string, model: CodeBuddyModel): LlmModelInfo {
-  // The credit label goes in `description` — "user-facing distinction from
-  // otherwise similar models" — rather than being spliced into `name`. Keeping
-  // `name` as CodeBuddy's own name means a credit change (which CodeBuddy can
-  // make at any time) no longer looks like the model was renamed. Note this is
-  // display metadata only: the harness does not route or budget on it. The
-  // shipped composer ModelSelect renders only `model.name`, so the rate is
-  // not visible there — it stays visible via the `/model` popup's detail row.
+  // credit 标签放进 `description`——"user-facing distinction from
+  // otherwise similar models"（与相似模型对用户可见的区分）——而不是拼进
+  // `name`。保持 `name` 为 CodeBuddy 自己的名字，意味着 credit 变化（
+  // CodeBuddy 随时可能做）不再看起来像模型被改名了。注意这只是展示元数据：
+  // harness 不据此做路由或预算。随包发布的 composer ModelSelect 只渲染
+  // `model.name`，所以倍率在那里不可见——它仍可通过 `/model` 弹窗的详情行看到。
   //
-  // The wire value is already a formatted multiplier ("x3.33", "x0.05"), so it
-  // is shown bare: it is the whole point of the field here, and the selector
-  // renders `description` on one nowrap line with an ellipsis, so every extra
-  // word costs visible information. `x0.00` is kept rather than hidden — a
-  // zero-rate model is a fact worth showing, and suppressing it would make the
-  // field look broken.
+  // 网络值本身就是已格式化的倍率（"x3.33"、"x0.05"），所以直接裸展示：
+  // 它就是这个字段在此处的全部意义，而且选择器把 `description` 渲染在单行
+  // 不换行加省略号上，每多一个词都在消耗可见信息。`x0.00` 保留而不是隐藏——
+  // 零倍率模型是一个值得展示的事实，压掉它会让这个字段看起来像坏了。
   const credits = model.credits?.trim()
   return {
     provider,
@@ -230,7 +226,7 @@ function modelInfo(provider: string, model: CodeBuddyModel): LlmModelInfo {
   }
 }
 
-/** Human-readable names for CodeBuddy's effort vocabulary. */
+/** CodeBuddy 的努力程度词表的人类可读名称。 */
 const EFFORT_NAMES: Readonly<Record<string, string>> = {
   low: 'Low',
   medium: 'Medium',
@@ -240,21 +236,19 @@ const EFFORT_NAMES: Readonly<Record<string, string>> = {
 }
 
 /**
- * Translate CodeBuddy's disclosed thinking levels into harness reasoning
- * metadata, or `undefined` when the catalog gives nothing selectable.
+ * 把 CodeBuddy 披露的思考档位翻译成 harness 的推理元数据；当目录没有给出
+ * 任何可选档位时为 `undefined`。
  *
- * The levels are passed through as opaque ids rather than mapped onto a fixed
- * scale: they are exactly what the chat endpoint accepts as `reasoning_effort`,
- * so a level CodeBuddy adds later needs no code change here. An unrecognized id
- * still gets a readable name from its own spelling.
+ * 档位以不透明 id 的形式透传，而不是映射到固定刻度：它们正是聊天端点接受
+ * 的 `reasoning_effort` 值，因此 CodeBuddy 以后新增档位也不需要改这里的
+ * 代码。无法识别的 id 仍能从其拼写得到一个可读名称。
  *
- * `undefined` is returned rather than a partial value in three cases, because
- * the harness rejects each as INVALID_MODEL_REASONING and a rejected catalog is
- * worse than an absent capability:
- *   - no reasoning block at all;
- *   - a block with no `supportedEfforts` (`auto` declares an active `effort`
- *     but no list, so there is nothing for a user to choose between);
- *   - an empty or duplicate-only list.
+ * 三种情况下返回 `undefined` 而不是部分值，因为 harness 会把每一种都判为
+ * INVALID_MODEL_REASONING，而被拒的目录比缺失的能力更糟：
+ *   - 完全没有 reasoning 块；
+ *   - 有块但没有 `supportedEfforts`（`auto` 声明了活动的 `effort` 却没有
+ *     列表，用户没有可选的项）；
+ *   - 空列表或仅含重复项的列表。
  */
 function reasoningInfo(model: CodeBuddyModel): LlmModelReasoningInfo | undefined {
   const supported = model.reasoning?.supportedEfforts
@@ -273,10 +267,9 @@ function reasoningInfo(model: CodeBuddyModel): LlmModelReasoningInfo | undefined
   }
   if (efforts.length === 0) return undefined
 
-  // `defaultEffort` is preferred, falling back to the server-side active
-  // `effort`. Either is only honoured if it appears in the selectable list —
-  // the harness rejects a default it cannot find, and some catalog entries name
-  // an `effort` outside their own list.
+  // 优先使用 `defaultEffort`，回退到服务端的活动 `effort`。两者只有在
+  // 出现在可选列表里时才被采纳——harness 会拒绝它找不到的默认值，而有些
+  // 目录条目把 `effort` 写在自己列表之外。
   const candidate = model.reasoning?.defaultEffort ?? model.reasoning?.effort
   const defaultEffort = candidate !== undefined && seen.has(candidate)
     ? ReasoningEffortId(candidate)
@@ -289,8 +282,8 @@ function reasoningInfo(model: CodeBuddyModel): LlmModelReasoningInfo | undefined
 }
 
 /**
- * The CodeBuddy adapter. One instance serves the single `codebuddy` route and
- * every model that route's catalog reports.
+ * CodeBuddy 适配器。一个实例服务于单一的 `codebuddy` 路由以及该路由目录
+ * 报告的每一个模型。
  */
 export class CodeBuddyAdapter extends LlmAdapter {
   constructor(private readonly config: CodeBuddyAdapterOptions) {
@@ -303,11 +296,9 @@ export class CodeBuddyAdapter extends LlmAdapter {
 
   override async listModels(provider: string): Promise<readonly LlmModelInfo[]> {
     const models = await this.config.session.modelsOrEmpty()
-    // Entries whose capacities the catalog withholds are left out rather than
-    // sized by invention: CodeBuddy omits them on its non-chat models, so
-    // offering them would put unusable choices in the picker. An id dropped
-    // here stays routable through `resolveModel` for anyone who names it
-    // explicitly.
+    // 目录未披露容量的条目被剔除而不是靠编造补上尺寸：CodeBuddy 在它的
+    // 非聊天模型上就是这样省略的，把它们放出去会往选择器里塞不可用的选项。
+    // 在这里被丢弃的 id 仍可经 `resolveModel` 路由，供显式点名它的人使用。
     return models
       .filter(model => hasDisclosedCapacity(model))
       .map(model => modelInfo(provider, model))
@@ -322,10 +313,9 @@ export class CodeBuddyAdapter extends LlmAdapter {
     const models = await this.config.session.modelsOrEmpty(signal)
     const entry = models.find(candidate => candidate.id === model)
     if (entry === undefined) {
-      // An unlisted id is still routable — the catalog is advisory — but
-      // nothing is known about it, so the conservative text-only shape is
-      // declared rather than letting the host persist images the serializer
-      // would then reject.
+      // 未列入目录的 id 仍可路由——目录只是建议性的——但对它一无所知，
+      // 因此声明保守的纯文本形态，而不是让 host 把序列化器随后会拒绝的
+      // 图像持久化下来。
       return {
         provider,
         id: model,
@@ -346,20 +336,18 @@ export class CodeBuddyAdapter extends LlmAdapter {
       defaultMaxTokens: entry.maxOutputTokens !== undefined && entry.maxOutputTokens > 0
         ? entry.maxOutputTokens
         : connection.defaultMaxTokens,
-      // Reasoning levels come straight from the catalog's own `supportedEfforts`
-      // and `defaultEffort`. Declaring them is only safe because `stream()`
-      // forwards the selected level as `reasoning_effort`: the harness
-      // materializes its default into every request, so a declared-but-unsent
-      // capability would be a control that silently does nothing.
+      // 推理档位直接取自目录自身的 `supportedEfforts` 与 `defaultEffort`。
+      // 声明它们之所以安全，是因为 `stream()` 会把选中的档位作为
+      // `reasoning_effort` 转发：harness 把它的默认值物化进每个请求，所以
+      // 一个"声明了却从不发送"的能力会变成一个静默失效的控件。
       ...reasoning === undefined ? {} : { reasoning },
     }
   }
 
   /**
-   * Bind model metadata and dispatch to one adapter generation. Kept explicit
-   * rather than inherited so the call path does not depend on which dsh-llm
-   * copy the host resolves: every copy in the supported peer range
-   * (>=0.1.2-rc.1) carries this default, and the override is its equivalent.
+   * 绑定模型元数据并派发到一代适配器调用。保持显式实现而不是继承，这样
+   * 调用路径不依赖 host 解析到哪个 dsh-llm 副本：支持区间（>=0.1.2-rc.1）
+   * 内的每个副本都带有这个默认实现，此覆写与其等价。
    */
   override async prepareCall(
     provider: string,
@@ -373,12 +361,10 @@ export class CodeBuddyAdapter extends LlmAdapter {
   }
 
   /**
-   * The public entry the harness drives. Failover lives here: the first
-   * attempt runs against the active account, and a quota-exhausted or
-   * rate-limited response switches to the next usable account and retries
-   * once. Retrying is only safe BEFORE the stream yields its first chunk —
-   * a failure mid-stream rethrows to the caller (the consumed prefix must not
-   * be replayed), and the NEXT conversation turn starts on the new account.
+   * harness 驱动的公开入口。故障转移在这里：首次尝试对当前活动账号发出，
+   * 额度耗尽或被限流的应答会切换到下一个可用账号并重试一次。只有在流产出
+   * 第一个 chunk 之前重试才是安全的——流中途的失败直接重抛给调用方（已
+   * 消费的前缀绝不能重放），下一轮对话从新账号开始。
    */
   async * stream(options: GenerateOptions): AsyncIterable<StreamChunk> {
     // 登记在途请求：主动切换据此避让，不打断正在输出的流。finally 保证任何
@@ -460,10 +446,9 @@ export class CodeBuddyAdapter extends LlmAdapter {
         const switched = await this.failoverToNextAccount(lastError as LlmError, attempted)
         if (switched === undefined) break
         attempted.add(switched.id)
-        // Surface the takeover as visible assistant text before the retried
-        // stream starts: the StreamChunk union has no status member, and the
-        // user should see why the request momentarily paused and whose quota
-        // now pays for the rest of the conversation.
+        // 在重试的流开始前，把接管以可见的助手文本呈现出来：StreamChunk
+        // 联合类型没有 status 成员，而用户应当看到请求为何短暂停顿、以及
+        // 后续对话由谁的额度来支付。
         yield {
           type: 'text-delta',
           index: 0,
@@ -521,10 +506,10 @@ export class CodeBuddyAdapter extends LlmAdapter {
   }
 
   /**
-   * Switch the active account to the next usable one after a quota failure.
-   * @param error - the failure that triggered the switch.
-   * @returns the from/to display names, or `undefined` when no other account
-   *   can take over (single account, or every other credential expired).
+   * 在额度失败后，把当前活动账号切换到下一个可用的账号。
+   * @param error - 触发切换的失败。
+   * @returns from/to 展示名；当没有其他账号能接管时为 `undefined`
+   *   （只有一个账号，或其余凭据全部过期）。
    */
   private async failoverToNextAccount(
     error: LlmError,
@@ -563,14 +548,12 @@ export class CodeBuddyAdapter extends LlmAdapter {
   }
 
   /**
-   * One request attempt against the ACTIVE account: resolve identity and
-   * endpoint, fetch, and translate the SSE body. No retry, no failover — the
-   * wrapper above owns those.
+   * 对当前活动账号的一次请求尝试：解析身份与端点、fetch 并翻译 SSE 体。
+   * 不重试、不故障转移——那些由上面的包装层负责。
    */
   private async * attemptStream(options: GenerateOptions): AsyncIterable<StreamChunk> {
-    // One resolution per call, before the first yield: the endpoint facts and
-    // the identity freeze together, so a token refreshed mid-stream cannot be
-    // paired with a different generation's endpoint.
+    // 每次调用只解析一次，且发生在第一个 yield 之前：端点事实与身份一起
+    // 冻结，流中途刷新的 token 不会与另一代端点配对。
     const connection = this.config.options()
     let headers: Record<string, string>
     let chatBase = connection.baseURL
@@ -636,8 +619,7 @@ export class CodeBuddyAdapter extends LlmAdapter {
     } else {
       body = serializeRequest(options, supportsImages)
     }
-    // Serialized before the try so the transport label below covers only the
-    // transport boundary.
+    // 在 try 之前完成序列化，让下面的 transport 标签只覆盖传输边界。
     const payload = JSON.stringify(body)
 
     let response: Response
@@ -669,9 +651,8 @@ export class CodeBuddyAdapter extends LlmAdapter {
       if (options.signal?.aborted) {
         throw new LlmError('CodeBuddy request aborted by caller', 'ABORTED', { cause: error })
       }
-      // fetch reports every transport fault as a bare `TypeError: fetch
-      // failed`; the endpoint and the chained cause are what make it
-      // diagnosable.
+      // fetch 把所有传输故障都报成裸的 `TypeError: fetch failed`；端点与
+      // 链式 cause 才是让它可诊断的部分。
       throw new LlmError(
         `CodeBuddy request to ${chatBase} failed`,
         'TRANSPORT',
@@ -694,13 +675,11 @@ export class CodeBuddyAdapter extends LlmAdapter {
         const text = wireErrorMessage(providerError)
         if (text !== undefined) message = text
       } catch {
-        // Only error-body parsing is swallowed: the status still identifies the
-        // failure, so malformed JSON must not mask it.
+        // 只吞掉错误体解析失败：状态码仍能标识故障，畸形的 JSON 不能掩盖它。
       }
       if (response.status === 401 || response.status === 403) {
-        // The stored token was rejected outright; drop it from memory so the
-        // next call re-reads the file (a concurrent login may have replaced it)
-        // instead of retrying a token already known to be refused.
+        // 已存储的 token 被直接拒绝；把它从内存里丢弃，让下一次调用重新读
+        // 文件（并发的登录可能已经替换了它），而不是重试一个已知被拒的 token。
         this.config.session.invalidate()
       }
       const delay = providerRetryAfterMs(response.headers.get('retry-after'))

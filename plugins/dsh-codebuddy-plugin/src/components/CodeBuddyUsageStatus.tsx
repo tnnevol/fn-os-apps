@@ -1,4 +1,4 @@
-/** Compact CodeBuddy quota readout for the conversation composer dock. */
+/** 会话输入框 dock 的紧凑 CodeBuddy 额度读数。 */
 
 import { useEffect, useState, useSyncExternalStore } from 'react'
 import type { KeyboardEvent } from 'react'
@@ -6,11 +6,11 @@ import { DshPopover, DshProgress, DshScrollList, DshTooltip } from '@tnnevol/dsh
 import { CODEBUDDY_USAGE_REFRESH_MS } from '../client/constants.ts'
 import { CODEBUDDY_AUTH_CHANNEL } from '../contracts/constants.ts'
 
-import { accountEpoch, subscribeAccountEpoch } from '../client/account-epoch.ts'
-import type { CodeBuddyLocaleKey } from '../client/locales.ts'
+import { accountEpoch, subscribeAccountEpoch } from '../client/store/account-epoch.ts'
+import type { CodeBuddyLocaleKey } from '../client/locales/index.ts'
 import type { ConnectionRpc, UsageResult, UsageWindow } from '../client/rpc.ts'
 import { useStore } from '@nanostores/react'
-import { $showUsage } from '../client/usage-prefs.ts'
+import { $showUsage } from '../client/store/usage-prefs.ts'
 import { CodeBuddyLogo } from './CodeBuddyLogo.tsx'
 
 type Translate = (key: CodeBuddyLocaleKey) => string
@@ -42,9 +42,8 @@ function resetLabel(window: UsageWindow | undefined, t: Translate): string | und
 }
 
 /**
- * The earliest reset timestamp across windows. The combined pool shrinks when
- * any package resets, so the hint stays conservative by showing the first
- * reset that will reduce it.
+ * 各计量窗口中最早的重置时间戳。任一资源包重置时，合并池都会缩小，
+ * 因此提示保持保守：显示第一个会减少额度的重置时间。
  */
 function earliestReset(windows: UsageWindow[] | undefined): string | undefined {
   const times = (windows ?? [])
@@ -54,7 +53,7 @@ function earliestReset(windows: UsageWindow[] | undefined): string | undefined {
   return times[0]
 }
 
-/** Build the tooltip text: the remaining percentage plus a reset hint. */
+/** 构建 tooltip 文案：剩余百分比加一条重置提示。 */
 function usageSummary(label: string, window: UsageWindow, t: Translate): string {
   const remaining = window.usedPercent !== undefined
     ? percent(100 - window.usedPercent) ?? '—'
@@ -166,15 +165,13 @@ export function CodeBuddyUsageStatus({ t, timer, rpc }: CodeBuddyUsageStatusProp
   }, [rpc, showUsage, timer, accountVersion])
 
   const primary = usage?.primary
-  // The ring and tooltip read the COMBINED allowance: every capped window the
-  // account holds contributes its used and limit (e.g. a base pack plus a
-  // bonus pack share one pool in the UI), so the percentage reflects
-  // `used total / package-sum`, not the first package alone.
+  // 圆环与 tooltip 读取的是合并后的总额度：账号持有的每个有上限的计量窗口
+  // 都贡献自己的 used 与 limit（例如基础包与奖励包在 UI 里共享一个池），
+  // 因此百分比反映的是 `used 总量 / 各包之和`，而不是第一个资源包。
   //
-  // Both the ring and the per-package rows fill by REMAINING percentage —
-  // "剩多少填多少" — so the arc and every "剩余 XX%" text always agree. The
-  // arc shrinks as the quota drains, which matches how the surrounding copy
-  // is phrased; the underlying usedPercent stays consumed-based as parsed.
+  // 圆环与每个资源包行都按剩余百分比填充——「剩多少填多少」——这样圆弧与
+  // 每处「剩余 XX%」文案始终一致。额度耗尽时圆弧随之缩小，与周围文案的
+  // 表述方式吻合；底层的 usedPercent 仍按解析出的已消耗口径保持不变。
   const totals = (usage?.windows ?? []).reduce(
     (acc, window) => ({
       used: acc.used + (window.used ?? 0),
@@ -195,12 +192,12 @@ export function CodeBuddyUsageStatus({ t, timer, rpc }: CodeBuddyUsageStatusProp
         used,
         ...(limit === undefined ? {} : { limit }),
         ...(usedPct === undefined ? {} : { usedPercent: usedPct }),
-        // The earliest reset across the windows keeps the "resets at" hint
-        // conservative — the combined pool shrinks when any package resets.
+        // 取各计量窗口中最早的重置时间，让「重置时间」提示保持保守
+        // ——任一资源包重置时，合并池都会缩小。
         ...(nextReset === undefined ? {} : { resetsAt: nextReset }),
       }
-  // The popover keeps per-package detail rows so the combined figure in the
-  // ring stays traceable to each package's own allowance.
+  // 弹出层保留每个资源包的明细行，让圆环里的合并数字能追溯
+  // 到每个资源包各自的额度。
   const popoverWindows: UsageWindow[] = usage?.windows ?? []
 
   useEffect(() => {
@@ -235,7 +232,7 @@ export function CodeBuddyUsageStatus({ t, timer, rpc }: CodeBuddyUsageStatusProp
     </span>
   )
 
-  // Tooltip must be unmounted while Popover is open.
+  // Popover 打开时必须卸载 Tooltip。
   const progress = popoverOpen
     ? progressContent
     : (

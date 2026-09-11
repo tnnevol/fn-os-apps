@@ -16,11 +16,11 @@ const PANEL = readFileSync(
   'utf8',
 )
 const INDEX_SCSS = readFileSync(
-  '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/styles/index.scss',
+  '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/styles/accounts.scss',
   'utf8',
 )
 const LAYOUT_SCSS = readFileSync(
-  '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/styles/panel-layout.scss',
+  '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/styles/panel-shell.scss',
   'utf8',
 )
 
@@ -87,7 +87,7 @@ describe('动作区可容纳多个控件', () => {
   })
 
   it('窄屏竖排后动作区靠左，避免换行时与标题错开', () => {
-    const narrow = LAYOUT_SCSS.slice(LAYOUT_SCSS.indexOf('@media (max-width: 720px)'))
+    const narrow = INDEX_SCSS.slice(INDEX_SCSS.indexOf('@media (max-width: 720px)'))
     expect(narrow).toMatch(/\.dsh-codebuddy-accounts-head-actions\s*\{\s*justify-content:\s*flex-start/)
   })
 })
@@ -184,7 +184,7 @@ describe('面板与设置页的开关保持同步', () => {
 
 describe('添加账号弹框内选择框的左间距', () => {
   const INDEX = readFileSync(
-    '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/styles/index.scss',
+    '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/styles/add-account-modal.scss',
     'utf8',
   )
 
@@ -208,7 +208,7 @@ describe('管理面板订阅账号代际', () => {
     'utf8',
   )
   const EPOCH = readFileSync(
-    '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/client/account-epoch.ts',
+    '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/client/store/account-epoch.ts',
     'utf8',
   )
 

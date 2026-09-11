@@ -15,9 +15,9 @@
  * @module dsh-codebuddy/token-stats-store
  */
 
-import { CODEBUDDY_AUTH_CHANNEL } from '../contracts/constants.ts'
-import type { ConnectionRpc } from './rpc.ts'
-import { resolveRange, type TokenRangeKey } from './token-range.ts'
+import { CODEBUDDY_AUTH_CHANNEL } from '../../contracts/constants.ts'
+import type { ConnectionRpc } from '../rpc.ts'
+import { resolveRange, type TokenRangeKey } from '../token-range.ts'
 
 /** 与 panel.tsx 的 TokenStats 同形；这里只要求可缓存即可。 */
 export interface TokenStatsPayload {

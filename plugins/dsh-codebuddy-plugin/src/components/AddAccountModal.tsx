@@ -1,9 +1,8 @@
 /**
- * Shared "add account" modal for the settings section and the management
- * panel. It owns the form state (备注名 + 网络环境 + 企业服务地址 + 企业开关)
- * and the start-login handshake, and reports the in-flight state + result to
- * the caller so both surfaces can show a waiting / done status and refresh
- * their roster once the login completes.
+ * 设置区块与管理面板共享的「添加账号」弹框。它持有表单状态
+ * （备注名 + 网络环境 + 企业服务地址 + 企业开关）与 start-login 握手，
+ * 并把进行中的状态与结果回报给调用方，让两处界面都能展示等待/完成状态，
+ * 在登录完成后各自刷新名册。
  *
  * @module dsh-codebuddy/add-account-modal
  */
@@ -31,7 +30,7 @@ import {
   normalizeClientId,
   type CodeBuddyClientId,
 } from '../contracts/constants.ts'
-import type { CodeBuddyLocaleKey } from '../client/locales.ts'
+import type { CodeBuddyLocaleKey } from '../client/locales/index.ts'
 import type { ConnectionRpc, LoginPoll, LoginStart, RpcResult } from '../client/rpc.ts'
 import { describeRpcError } from '../client/rpc.ts'
 import {
@@ -43,21 +42,21 @@ import { PreferenceLabel } from './PreferenceLabel.tsx'
 
 type Translate = (key: CodeBuddyLocaleKey) => string
 
-/** How often the caller polls a started login, in ms. */
+/** 调用方轮询已发起登录的间隔（ms）。 */
 const POLL_INTERVAL_MS = 1500
-/** How long the caller keeps polling before giving up, in ms. */
+/** 调用方放弃前的最长轮询时长（ms）。 */
 const POLL_DEADLINE_MS = 10 * 60 * 1000
 
 export interface AddAccountOptions {
-  /** Local display label; omitted → falls back to nickname. */
+  /** 本地展示备注名；省略 → 回落到昵称。 */
   label?: string
   /** 客户端身份：决定登录页与后续请求所用的服务地址。 */
   client?: CodeBuddyClientId
-  /** Network environment id; defaults to the plugin default. */
+  /** 网络环境 id；缺省为插件默认值。 */
   environment: string
-  /** Explicit service root, required for cloudhosted/selfhosted. */
+  /** 显式服务根，cloudhosted/selfhosted 时必填。 */
   endpoint: string
-  /** Enterprise-account toggle (kept for parity with the settings form). */
+  /** 企业账号开关（保留以与设置表单对齐）。 */
   enterprise: boolean
 }
 
@@ -66,12 +65,12 @@ export interface AddAccountModalProps {
   t: Translate
   visible: boolean
   initial?: AddAccountOptions
-  /** Copy of a started login, when the caller shows the wait card below. */
+  /** 调用方在下方展示等待卡时，已发起登录的文案。 */
   onLoginStart?: (start: { authUrl: string, state: string }) => void
   onCancel: () => void
-  /** Called once a started login finishes (or errors out) so the caller can refresh. */
+  /** 已发起的登录结束（或出错）后调用一次，供调用方刷新。 */
   onFinished?: (ok: boolean, text?: string) => void
-  /** Primary-action label; defaults to the shared "Open sign-in" copy. */
+  /** 主操作按钮文案；缺省为共享的「打开登录」文案。 */
   submitLabel?: string
 }
 
@@ -101,8 +100,7 @@ export function AddAccountModal({
    */
   const [started, setStarted] = useState<{ authUrl: string, state: string } | null>(null)
 
-  // Reset the fields every time the modal opens so a previous edit does not
-  // leak into the next add-account flow.
+  // 弹框每次打开都重置字段，避免上一次的编辑泄漏到下一次添加账号流程。
   const open = visible
   const [lastOpen, setLastOpen] = useState(visible)
   if (open !== lastOpen) {
@@ -287,7 +285,7 @@ export function AddAccountModal({
   )
 }
 
-/** Poll a started login to completion; useful for the waiting card surfaces. */
+/** 轮询一次已发起的登录直至完成；供等待卡界面使用。 */
 export function startLoginPolling(
   rpc: ConnectionRpc,
   state: string,

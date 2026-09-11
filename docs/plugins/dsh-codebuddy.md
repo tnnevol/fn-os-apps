@@ -102,9 +102,16 @@ src/
                   usage / travel / token-stats / serialize / sse / translate / …
   contracts/      host 与 client 共享的协议常量
   client/         浏览器入口（lib/client.js）与面板
+  client/store/   状态管理，按模块拆 store 单元：token-stats（按范围缓存）、
+                  usage-prefs（偏好持久化）、account-epoch（账号代际通知）
+  client/locales/ 文案按语言拆分：en.ts（键集合的唯一定义）/ zh.ts / index.ts
+                  （对外保持与旧单文件相同的导入形态）
   components/     两个挂载点共用的 UI
-  styles/
+  styles/         样式按组件拆分：panel-shell / accounts / add-account-modal /
+                  usage-status / token-panel，index.scss 只做入口聚合
 ```
+
+注释语言约定：**全部注释使用中文**（技术名词、标识符、协议值保留英文）。运行时字符串——logger 前缀、错误 message、对外导出的英文字段——不是注释，不受此约束。dayjs 只引 core（`import dayjs from 'dayjs'`，7KB）：其 plugins/ 与 locale/ 均为独立子路径，未按需引入的不会被打进产物。
 
 这个划分不是按命名猜的，而是按**入口可达性**定的：从 `src/index.ts` 出发可达 14 个模块，从 `src/client/index.tsx` 出发可达 20 个，两者交集只有 `contracts/constants.ts`——共享面就这么大，其余一律属于 host。
 
@@ -191,7 +198,12 @@ dsh --profile web --dump-config
 
 **「模型用量排行」面板已移除**：维度可切换后它与分布面板能力完全重合（同数据源、同两维度），保留两个只会同屏出现镜像数据；分布面板独占一行，「按模型」视角保留在维度切换的第二档。
 
-**所有带日期档位的面板（总览 / 趋势 / 分布 / 会话排名）头部都有日期范围选择器**（`PanelRangeControls` 统一注入，放标题右侧），与档位按钮组并排。同步语义是**单向的**：切固定档时把该档的日期区间**回填**进选择器（纯显示，不发第二次查询——range 变化本身已触发一次）；在**选择器里改区间**则进入 `custom` 档且**不回写**固定档（按钮组全灭）；清空选择回到默认档。`custom` 档的窗口 = 起点相对今天的天数（终点视为今天，服务端按 `days` 计算无需改动）。
+**所有带日期档位的面板（总览 / 趋势 / 分布 / 会话排名）头部都有日期范围选择器**（`PanelRangeControls` 统一注入）。头部 actions 占满标题行剩余宽度、内部 `space-between`：档位按钮组靠左、日期选择器靠右，两端与标题对齐。同步语义是**单向的**：切固定档时把该档的日期区间**回填**进选择器（纯显示，不发第二次查询——range 变化本身已触发一次）；在**选择器里改区间**则**先写窗口天数、再进** `custom` 档且**不回写**固定档（按钮组全灭）。
+
+- `custom` 档的窗口 = 起点相对今天的天数（终点视为今天，服务端按 `days` 计算无需改动）。曾有的回归：只进 `custom` 档而漏写窗口天数，`resolveRange('custom')` 恒为 1（今天），选任何区间数据都不变——**必须先 `setCustomRangeDays(days)` 再 `onRangeChange('custom')`**，顺序由测试锁定（注意断言只能认代码行，注释里的同名字样会撞 `indexOf`）。
+- 选择器**非空**：初始为今天（`todayRange()`），清自定义通过点固定档完成、回到该档的区间——不留白。
+- **只能选到今天**（`disabledDate` 把今天之后禁选）：统计窗口的终点固定是今天，未来的数据不存在。
+- 菜单与内容区的分隔**只靠背景色分层**：Semi 竖排 Navigation 主规则自带 `border-right: 1px solid var(--semi-color-border)`，已显式 `border-right: none` 去掉；sider 自定义的 border 一并移除（原先两条叠加）。
 
 **时间档位收敛为「今天 / 近 7 天 / 近 30 天」（默认今天）**——「总计 / 本月 / 近 90 天」移除。
 

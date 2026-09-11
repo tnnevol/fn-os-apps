@@ -1,9 +1,8 @@
 /**
- * CodeBuddy-only token analytics over DSH's logical session corpus.
+ * 基于 DSH 逻辑会话语料的 CodeBuddy 专属 token 统计。
  *
- * The query service is deliberately used instead of walking the JSONL backend:
- * this keeps the dashboard compatible with live sessions, restored sessions,
- * projection caches and future persistence implementations.
+ * 刻意使用查询服务而不是遍历 JSONL 后端：这让面板与活动会话、已恢复会话、
+ * 投影缓存以及未来的持久化实现保持兼容。
  *
  * @module dsh-codebuddy/token-stats
  */
@@ -261,7 +260,7 @@ function disposeObservation(observation: SessionObservation): void {
   observation[Symbol.dispose]?.()
 }
 
-/** Aggregate CodeBuddy usage for a selected logical session set. */
+/** 为所选逻辑会话集合聚合 CodeBuddy 用量。 */
 export async function collectCodeBuddyTokenStats(
   query: SessionQueryService | undefined,
   request: CodeBuddyTokenStatsRequest = {},
@@ -317,18 +316,18 @@ export async function collectCodeBuddyTokenStats(
   const records = await query.listSessions(signal)
   const selectedIds = request.sessionIds === undefined ? undefined : new Set(request.sessionIds)
   const selected = records.filter(item => selectedIds === undefined || selectedIds.has(item.header.id))
-  // Request all projections so the built-in token-meter is folded alongside
-  // the event snapshot. Its tokenUsage view is provider-agnostic by design;
-  // the CodeBuddy filter below therefore uses assistant provenance directly.
+  // 请求全部投影，让内置 token 计量与事件快照合并在同一次读取里。它的
+  // tokenUsage 视图按设计与提供方无关；因此下面对 CodeBuddy 的过滤直接使用
+  // assistant 来源判定。
   const observeOptions = signal === undefined ? { projectionMode: 'all' as const } : { signal, projectionMode: 'all' as const }
-  // A corrupt or interrupted persistence log must not take down the whole
-  // dashboard: one broken session is skipped, healthy sessions still count.
+  // 损坏或被中断的持久化日志不能拖垮整个面板：跳过损坏的那个会话，健康的
+  // 会话照常计入。
   const observations = (await Promise.all(selected.map(async item => {
     try {
       return { item, observation: await query.observeSession(item.header.id, observeOptions) }
     } catch (error) {
-      // An all-or-nothing failure previously surfaced as "usage temporarily
-      // unavailable" whenever a single session log could not be replayed.
+      // 之前「要么全成要么全败」的失败，曾因为单个会话日志无法重放，就把整个
+      // 面板变成「用量暂时不可用」。
       return { item, observation: undefined }
     }
   }))).filter((entry): entry is { item: SessionRecord, observation: SessionObservation } => entry.observation !== undefined)

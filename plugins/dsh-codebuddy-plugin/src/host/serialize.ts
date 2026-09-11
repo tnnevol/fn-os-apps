@@ -1,10 +1,9 @@
 /**
- * Serialize harness messages into a CodeBuddy (OpenAI-compatible) chat request.
+ * 把 harness 消息序列化为 CodeBuddy（OpenAI 兼容）聊天请求。
  *
- * User text is joined, assistant text becomes `content`, tool calls become
- * `tool_calls`, and each tool result becomes its own `role: 'tool'` message —
- * the harness carries tool results inside user messages, which this wire route
- * does not accept.
+ * 用户文本被拼接，assistant 文本成为 `content`，工具调用成为 `tool_calls`，
+ * 每个工具结果各自成为一条 `role: 'tool'` 消息——harness 把工具结果装在 user
+ * 消息里，而这条线缆路由不接受那种形式。
  *
  * @module dsh-codebuddy/serialize
  */
@@ -13,7 +12,7 @@ import { contentHasImage, LlmError } from '@deepseek-ai/dsh-llm'
 import type { ContentBlock, GenerateOptions, Message } from '@deepseek-ai/dsh-llm'
 import type { WireMessage, WireRequest, WireTool } from './types.ts'
 
-/** Join the text blocks of one message. */
+/** 拼接一条消息的文本块。 */
 export function flattenText(blocks: readonly ContentBlock[]): string {
   return blocks
     .filter(block => block.type === 'text')
@@ -22,25 +21,24 @@ export function flattenText(blocks: readonly ContentBlock[]): string {
 }
 
 /**
- * CodeBuddy's chat gateway rejects tool-call ids longer than 64 characters
- * (`Invalid 'input[n].call_id': string too long`). The harness replays durable
- * history verbatim, so a session that earlier ran a different adapter (whose
- * tool-call ids exceed 64 chars, e.g. the pi-ai/codex `call_...|fc_...` ids)
- * would otherwise 400 the moment a CodeBuddy custom model resumes it.
+ * CodeBuddy 的聊天网关拒绝超过 64 字符的工具调用 id
+ * （`Invalid 'input[n].call_id': string too long`）。harness 会逐字重放持久
+ * 历史，因此一个早前用其他 adapter 跑过的会话（其工具调用 id 超过 64 字符，
+ * 例如 pi-ai/codex 的 `call_...|fc_...` 形式）会在换用 CodeBuddy 自定义模型
+ * 恢复的那一刻收到 400。
  *
- * Ids that already fit pass through untouched; longer ones are replaced with a
- * stable short alias derived from the original. Determinism matters twice:
- * the assistant `tool_calls[].id` and its matching `role: 'tool'` message's
- * `tool_call_id` both derive from the same harness id, so a pure function keeps
- * them paired on the wire regardless of ordering.
- * @param id - the harness tool-call id.
- * @returns the same id when it fits, otherwise a deterministic ≤64-char alias.
+ * 已符合长度的 id 原样通过；超长的被替换为由原 id 推导出的稳定短别名。确定性
+ * 有两处重要：assistant 的 `tool_calls[].id` 与对应 `role: 'tool'` 消息的
+ * `tool_call_id` 都从同一个 harness id 推导，纯函数保证它们在线缆上始终配对，
+ * 与顺序无关。
+ * @param id - harness 的工具调用 id。
+ * @returns 符合长度时是原 id；否则是确定性的 ≤64 字符别名。
  */
-/** Keep wire tool-call ids inside CodeBuddy's 64-char cap deterministically. */
+/** 以确定性的方式把线缆工具调用 id 限制在 CodeBuddy 的 64 字符上限内。 */
 export function boundToolCallId(id: string): string {
   if (id.length <= 64) return id
-  // FNV-1a 64-bit over the original, hex-encoded. `call_` + 16 hex chars is a
-  // stable, collision-resistant short form that stays far below the cap.
+  // 对原 id 做 FNV-1a 64 位散列，十六进制编码。`call_` + 16 个十六进制字符是
+  // 一个稳定、抗碰撞的短形式，远低于上限。
   let hash = 0xcbf29ce484222325n
   for (let i = 0; i < id.length; i++) {
     hash ^= BigInt(id.charCodeAt(i))
@@ -50,9 +48,9 @@ export function boundToolCallId(id: string): string {
 }
 
 /**
- * Refuse image content before any text flattening could silently drop it.
- * @param blocks - the message content.
- * @param supportsImages - whether the selected model declared image input.
+ * 在任何文本扁平化可能静默丢掉图像内容之前，先拒绝它。
+ * @param blocks - 消息内容。
+ * @param supportsImages - 所选模型是否声明支持图像输入。
  */
 function assertSupportedContent(blocks: readonly ContentBlock[], supportsImages: boolean): void {
   if (!supportsImages && contentHasImage(blocks)) {
@@ -63,7 +61,7 @@ function assertSupportedContent(blocks: readonly ContentBlock[], supportsImages:
   }
 }
 
-/** Serialize one assistant turn: text, replayed reasoning, and tool calls. */
+/** 序列化一条 assistant 回合：文本、重放的推理与工具调用。 */
 function serializeAssistant(message: Message): WireMessage {
   const text = flattenText(message.content)
   const reasoning = message.content
@@ -79,23 +77,22 @@ function serializeAssistant(message: Message): WireMessage {
     }))
   return {
     role: 'assistant',
-    // Always a string, never null: a reasoning-only or pure tool-call turn
-    // sits durably in the session log, and gateways that reject null content
-    // would break every later turn of that session rather than just this one.
+    // 始终是字符串，绝不取 null：只含推理或纯工具调用的回合会持久存在于会话
+    // 日志中，而拒绝 null content 的网关会把该会话后续的每个回合都弄坏，
+    // 而不只是这一回合。
     content: text,
-    // Reasoning is replayed only on tool-call turns, where providers that
-    // support thinking-mode passback require it; elsewhere it is ignored and
-    // would only cost tokens.
+    // 推理只在工具调用回合上重放：支持思考模式回传的提供方在那里要求它；
+    // 其他场合它会被忽略，只会白花 token。
     ...toolCalls.length > 0 && reasoning.length > 0 ? { reasoning_content: reasoning } : {},
     ...toolCalls.length > 0 ? { tool_calls: toolCalls } : {},
   }
 }
 
 /**
- * Serialize the conversation in order.
- * @param messages - the harness conversation.
- * @param supportsImages - whether the selected model declared image input.
- * @returns the wire messages, each tool result expanded into its own entry.
+ * 按顺序序列化整个会话。
+ * @param messages - harness 的会话消息。
+ * @param supportsImages - 所选模型是否声明支持图像输入。
+ * @returns 线缆消息；每个工具结果各自展开成一条独立条目。
  */
 export function serializeMessages(
   messages: readonly Message[],
@@ -121,7 +118,7 @@ export function serializeMessages(
       wire.push({
         role: 'tool',
         tool_call_id: boundToolCallId(result.toolCallId as unknown as string),
-        // Empty output still needs some content on the wire.
+        // 空输出在线缆上也需要一些内容。
         content: flattenText(result.content) || '(no output)',
       })
     }
@@ -130,12 +127,11 @@ export function serializeMessages(
 }
 
 /**
- * Build the chat-completions request body. Always streaming with usage
- * reporting; absent options are omitted rather than sent as null so the
- * provider's own defaults apply.
- * @param options - the assembled harness request.
- * @param supportsImages - whether the selected model declared image input.
- * @returns the request body.
+ * 构造 chat-completions 请求体。始终流式并上报 usage；缺失的选项被省略而不是
+ * 以 null 发送，从而让提供方自己的默认值生效。
+ * @param options - 组装好的 harness 请求。
+ * @param supportsImages - 所选模型是否声明支持图像输入。
+ * @returns 请求体。
  */
 export function serializeRequest(
   options: GenerateOptions,
@@ -144,7 +140,7 @@ export function serializeRequest(
   return buildWireRequest(serializeMessages(options.messages, supportsImages), options)
 }
 
-/** Wrap one serialized message list into the full chat-completions request. */
+/** 把一条已序列化的消息列表包装成完整的 chat-completions 请求。 */
 export function buildWireRequest(messages: WireMessage[], options: GenerateOptions): WireRequest {
   const tools: WireTool[] | undefined = options.tools?.map(tool => ({
     type: 'function' as const,
@@ -170,9 +166,8 @@ export function buildWireRequest(messages: WireMessage[], options: GenerateOptio
     ...options.temperature === undefined ? {} : { temperature: options.temperature },
     ...options.maxTokens === undefined ? {} : { max_tokens: options.maxTokens },
     ...options.stop === undefined ? {} : { stop: options.stop },
-    // The harness materializes a model's default effort into every request, so
-    // this is normally set even when the caller chose nothing explicitly. The
-    // id is CodeBuddy's own spelling, forwarded verbatim.
+    // harness 会把模型的默认 effort 具体化进每个请求，因此即使调用方没有显式
+    // 选择，这里通常也是有值的。id 用 CodeBuddy 自己的拼写，原样转发。
     ...options.reasoningEffort === undefined ? {} : { reasoning_effort: options.reasoningEffort },
   }
 }

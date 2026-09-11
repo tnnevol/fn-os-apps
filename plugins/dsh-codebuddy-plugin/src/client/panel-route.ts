@@ -27,17 +27,17 @@ const DEFAULT_PAGE: PanelRoute = 'accounts'
  * 因此「`/#/codebuddy` 刷新后回到会话页」只会由本匹配器造成：精确相等
  * 会把带尾斜杠的 `#/codebuddy/`、或任何未知子页判成非面板。用前缀匹配
  * 兜住全部变体，刷新才稳定停在面板里。
- * @param hash - the raw `location.hash` value.
- * @returns whether the panel owns this hash.
+ * @param hash - 原始 `location.hash` 取值。
+ * @returns 面板是否拥有该 hash。
  */
 function isPanelHash(hash: string): boolean {
   return hash === PANEL_PREFIX || hash.startsWith(`${PANEL_PREFIX}/`)
 }
 
 /**
- * Resolve the page a hash addresses, defaulting to the entry page.
- * @param hash - the raw `location.hash` value.
- * @returns the addressed page, or the entry page when the hash is unknown.
+ * 解析 hash 指向的页面，缺省落到入口页。
+ * @param hash - 原始 `location.hash` 取值。
+ * @returns 被指向的页面；hash 无法识别时返回入口页。
  */
 function pageFromHash(hash: string): PanelRoute {
   return entries.find(([, h]) => h === hash)?.[0] ?? DEFAULT_PAGE
@@ -45,7 +45,7 @@ function pageFromHash(hash: string): PanelRoute {
 
 type PanelBrowser = {
   location: { hash: string }
-  /** Optional: canonicalization uses `replaceState` so a refresh adds no entry. */
+  /** 可选：规范化使用 `replaceState`，刷新不会新增历史条目。 */
   history?: { replaceState: (data: unknown, unused: string, url?: string | URL | null) => void }
   addEventListener: (type: string, listener: () => void) => void
   removeEventListener: (type: string, listener: () => void) => void
@@ -59,14 +59,14 @@ export class PanelRouteController {
 
   constructor(private readonly browser: PanelBrowser = window) {
     this.syncFromHash()
-    // A bare or unrecognized panel hash is rewritten to its canonical subpage.
-    // Without this, a bookmarked `/#/codebuddy` renders the panel but leaves a
-    // URL that only this matcher's prefix rule understands; canonicalizing on
-    // load keeps the address bar and any later refresh unambiguous.
+    // 裸面板 hash 或无法识别的面板 hash 会被改写为规范子页。
+    // 不这样做的话，书签里的 `/#/codebuddy` 能渲染面板，但留下的 URL
+    // 只有本匹配器的前缀规则才认得；加载时即规范化，地址栏与之后的
+    // 刷新就都不再有歧义。
     if (this.active) this.canonicalize()
-    // `useSyncExternalStore` reads the snapshot before effects run. Hydrating
-    // the snapshot here keeps a direct refresh of #/codebuddy/accounts on the
-    // panel instead of briefly (or permanently) falling back to the session.
+    // `useSyncExternalStore` 会在 effects 运行前读取快照。在这里先填充
+    // 快照，直接刷新 #/codebuddy/accounts 才能停留在面板上，而不是短暂
+    // （或永久）回落到会话页。
     this.snapshot = { active: this.active, page: this.page }
   }
 
@@ -80,8 +80,8 @@ export class PanelRouteController {
   readonly sync = (): void => {
     const before = `${this.active}:${this.page}`
     this.syncFromHash()
-    // Same canonicalization as load, so a runtime navigation to the bare route
-    // (`/#/codebuddy`) also settles on a concrete subpage.
+    // 与加载时相同的规范化，这样运行期导航到裸路由（`/#/codebuddy`）
+    // 也会落定在具体子页上。
     if (this.active) this.canonicalize()
     if (`${this.active}:${this.page}` !== before) {
       this.snapshot = { active: this.active, page: this.page }
@@ -101,13 +101,13 @@ export class PanelRouteController {
     if (this.browser.location.hash === canonical) return
     const history = this.browser.history
     if (history === undefined) {
-      // No history handle (minimal test browser): a plain hash write still
-      // lands on the canonical page, at the cost of one history entry.
+      // 没有 history 句柄（最小化测试浏览器）：直接写 hash 也能落到规范页，
+      // 代价是多一条历史记录。
       this.browser.location.hash = canonical
       return
     }
-    // `replaceState` rewrites the address bar without pushing an entry, so a
-    // refresh of the bare route leaves no extra Back step behind.
+    // `replaceState` 只改写地址栏、不压入历史条目，刷新裸路由就不会
+    // 留下多余的一步「后退」。
     history.replaceState(null, '', canonical)
   }
 

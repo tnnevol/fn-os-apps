@@ -1,9 +1,8 @@
 /**
- * Local usage-indicator preferences shared by the settings page and the
- * composer indicator.
+ * 设置页与输入框指示器共享的本地用量指示器偏好。
  *
- * These are UI-only affordances with no business meaning beyond the display,
- * so they live in browser storage rather than a Host user-settings document.
+ * 这些是纯 UI 辅助开关，除展示外没有业务含义，因此存放在浏览器 storage
+ * 而不是 Host 的用户设置文档里。
  *
  * 用 nanostores 的持久化 atom 承载，而不是各处直接读写 `localStorage`：
  *
@@ -27,7 +26,7 @@ import {
   CODEBUDDY_AUTO_SWITCH_KEY,
   CODEBUDDY_AUTO_TRAVEL_KEY,
   CODEBUDDY_SHOW_USAGE_KEY,
-} from './constants.ts'
+} from '../constants.ts'
 
 /**
  * 布尔偏好的编解码：沿用 `'1'`/`'0'`，缺省值为 `true`。

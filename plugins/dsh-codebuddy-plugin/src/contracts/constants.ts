@@ -1,9 +1,9 @@
 /**
- * Fixed CodeBuddy service facts.
+ * CodeBuddy 服务的固定事实。
  *
- * These are protocol constants rather than user configuration: the endpoint is
- * where the OAuth handshake and the model catalog both live, and the version
- * strings are what the service expects a plugin client to identify itself as.
+ * 这些是协议常量而非用户配置：endpoint 是 OAuth 握手与模型目录
+ * 共同所在之处，version 字符串则是服务端期望插件客户端自报身份
+ * 的取值。
  *
  * @module dsh-codebuddy/constants
  */
@@ -27,33 +27,31 @@ export const CODEBUDDY_PROVIDER = 'codebuddy'
  */
 export const CODEBUDDY_AUTH_CHANNEL = '/codebuddy'
 
-/** Display name shown in model selectors and settings surfaces. */
+/** 模型选择器与设置界面中展示的名称。 */
 export const CODEBUDDY_DISPLAY_NAME = 'CodeBuddy'
 
 /**
- * Network environments the official client distinguishes, mirroring
- * `CODEBUDDY_INTERNET_ENVIRONMENT` and the `product.<env>.json` files the
- * official CLI ships. The endpoint decides where the OAuth handshake, the
- * model catalog, metering, and the OpenAI-compatible chat route live; the
- * authority part doubles as the default `X-Domain` header value.
+ * 官方客户端区分的网络环境，与 `CODEBUDDY_INTERNET_ENVIRONMENT` 及官方 CLI
+ * 附带的 `product.<env>.json` 文件对应。endpoint 决定 OAuth 握手、模型目录、
+ * 计量与 OpenAI 兼容聊天路由所在之处；authority 部分同时兼作默认的
+ * `X-Domain` 请求头取值。
  */
 export const CODEBUDDY_ENVIRONMENTS = ['external', 'internal', 'ioa', 'cloudhosted', 'selfhosted'] as const
 
-/** One network environment id. */
+/** 一个网络环境 id。 */
 export type CodeBuddyEnvironment = (typeof CODEBUDDY_ENVIRONMENTS)[number]
 
-/** Default service root for the external environment (`product.json`). */
+/** external 环境的默认服务根（`product.json`）。 */
 export const CODEBUDDY_ENDPOINT_EXTERNAL = 'https://www.codebuddy.ai'
 
-/** Default service root for the internal and ioa environments
- *  (`product.internal.json` / `product.ioa.json` — both point here). */
+/** internal 与 ioa 环境的默认服务根
+ *  （`product.internal.json` / `product.ioa.json` — 两者都指向这里）。 */
 export const CODEBUDDY_ENDPOINT_INTERNAL = 'https://copilot.tencent.com'
 
 /**
- * Default endpoints keyed by environment. `cloudhosted`/`selfhosted` are
- * deliberately absent: the official CLI ships no default for them and
- * requires the enterprise's own service address, so an account on those
- * environments must carry an explicit endpoint.
+ * 按环境索引的默认 endpoint。特意不提供 `cloudhosted`/`selfhosted`：
+ * 官方 CLI 没有为它们提供默认值，而是要求使用企业自己的服务地址，
+ * 因此这两种环境下的账号必须显式携带 endpoint。
  */
 export const CODEBUDDY_ENVIRONMENT_ENDPOINTS: Readonly<
   Record<Exclude<CodeBuddyEnvironment, 'cloudhosted' | 'selfhosted'>, string>
@@ -76,42 +74,40 @@ export const CODEBUDDY_ENVIRONMENT_LABELS: Readonly<Record<CodeBuddyEnvironment,
 }
 
 /**
- * IOA-only header defaults the official client applies
- * (`IOAUtils.applyIOADefaultHeaders`): the auth domain defaults to the SSO
- * host rather than the endpoint authority, and a personal (enterprise-less)
- * session carries the product's default enterprise id.
+ * 仅 IOA 环境使用的默认请求头，由官方客户端应用
+ * （`IOAUtils.applyIOADefaultHeaders`）：认证域默认取 SSO 主机而非 endpoint
+ * authority，且不带企业的个人会话携带该产品的默认企业 id。
  */
 export const CODEBUDDY_IOA_DOMAIN = 'tencent.sso.copilot.tencent.com'
 export const CODEBUDDY_IOA_DEFAULT_ENTERPRISE_ID = 'etahzsqej0n4'
 
 /**
- * Legacy hard-coded endpoint. Accounts stored before environments existed
- * were all signed in against the China service, so a migrated legacy entry
- * and any document without explicit environment facts resolve here.
+ * 旧版硬编码 endpoint。环境概念出现之前存储的账号全部是对中国服务
+ * 登录的，因此迁移而来的旧条目以及任何缺少显式环境事实的文档都解析到这里。
  */
 export const CODEBUDDY_ENDPOINT = 'https://copilot.tencent.com'
 
-/** The default environment; the official CLI treats absent as external. */
+/** 默认环境；官方 CLI 把缺省当作 external。 */
 export const CODEBUDDY_DEFAULT_ENVIRONMENT: CodeBuddyEnvironment = 'internal'
 
 /**
- * The auth path prefix the official client inserts between `/v2` and the
- * auth routes (`authentication.attributes.prefixPath`).
+ * 官方客户端插入在 `/v2` 与认证路由之间的路径前缀
+ * （`authentication.attributes.prefixPath`）。
  */
 export const CODEBUDDY_PLUGIN_PREFIX = '/plugin'
 
 /**
- * OpenAI-compatible chat base. Only the chat wire route is compatible; the
- * model catalog at `/v3/config` is not, which is why this plugin owns its own
- * catalog reader instead of using an OpenAI `GET /models` listing.
+ * OpenAI 兼容聊天的 base。只有聊天的线上路由是兼容的；`/v3/config` 的模型
+ * 目录并不兼容，这正是本插件自持目录读取逻辑、而不使用 OpenAI `GET /models`
+ * 列表的原因。
  */
 export const CODEBUDDY_CHAT_BASE = `${CODEBUDDY_ENDPOINT}/v2`
 
-/** IDE version reported when reading the config/model catalog. */
+/** 读取配置/模型目录时上报的 IDE 版本。 */
 export const CODEBUDDY_IDE_VERSION = '4.9.8'
 
 /**
- * CLI version reported on chat requests.
+ * 聊天请求上报的 CLI 版本。
  *
  * 对齐 `@tencent-ai/codebuddy-code` 的正式发布版本。官方 CLI 发的是**自己的
  * package.json version**（源码里 `getCurrentPackageJson()` 取值），服务端用这组头
@@ -203,28 +199,26 @@ export function normalizeClientId(value: unknown): CodeBuddyClientId {
 }
 
 /**
- * Context capacity assumed for a model the catalog does not describe at all.
+ * 目录完全没有描述的模型所假定的上下文容量。
  *
- * This is a convention, not a CodeBuddy-provided figure: the service discloses
- * `maxAllowedSize` per model and offers no global default to fall back on.
- * Listed models are therefore never sized from this — an entry that withholds
- * its capacity is dropped from the listing instead. It applies only to an id
- * named explicitly that the catalog does not list, where something must be
- * assumed to resolve the route at all.
+ * 这是一个约定值，不是 CodeBuddy 提供的数字：服务端按模型披露
+ * `maxAllowedSize`，没有可回退的全局默认值。因此列出的模型从不以这个值
+ * 定容量——不肯披露容量的条目会直接从列表中剔除。它只适用于被显式点名、
+ * 但目录未列出的 id，此时必须假定一个值才能解析路由。
  */
 export const DEFAULT_CONTEXT_WINDOW = 128_000
 
-/** Output cap assumed for an unlisted model; a convention, as above. */
+/** 未列出模型假定的输出上限；约定值，同上。 */
 export const DEFAULT_MAX_TOKENS = 8_192
 
-/** Default maximum provider idle time while one stream read is outstanding. */
+/** 一次流式读进行中时，provider 允许的最大空闲时间。 */
 export const DEFAULT_STREAM_IDLE_TIMEOUT_MS = 300_000
 
-/** How long the browser login flow waits for the user to finish, in ms. */
+/** 浏览器登录流程等待用户完成的时长（ms）。 */
 export const LOGIN_TIMEOUT_MS = 10 * 60 * 1000
 
-/** Poll interval while waiting for the browser login to complete, in ms. */
+/** 等待浏览器登录完成时的轮询间隔（ms）。 */
 export const LOGIN_POLL_INTERVAL_MS = 1_000
 
-/** Service code meaning "the browser login has not completed yet". */
+/** 表示「浏览器登录尚未完成」的服务错误码。 */
 export const AUTH_PENDING_CODE = 11217

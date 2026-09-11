@@ -1,0 +1,568 @@
+/* 账号页：账号卡片与资源行、积分总览、掉线/接管警示、签到与旅行 chip、
+   账号身份描述表、额度陈旧提示，以及资源包台账弹框。 */
+
+/* 区块头左端：标题 + 主操作（添加账号）。两者紧贴，与右端动作区分别贴齐
+   区块头的左右两端（.dsh-codebuddy-panel-section-head 已是 space-between）。 */
+.dsh-codebuddy-accounts-head-lead {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  min-width: 0;
+}
+
+.dsh-codebuddy-accounts-head-actions {
+  display: inline-flex;
+  align-items: center;
+  /* 允许换行：动作区现含「自动切换 + 自动签到 + 自动旅行 + 刷新」四个控件，
+     窄屏一行放不下，不给 wrap 会横向溢出并把页面撑出滚动。 */
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* Multi-account roster: the section title row carries the add-account button,
+   and each account is one collapsible panel. */
+.dsh-codebuddy-accounts {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.dsh-codebuddy-accounts-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.dsh-codebuddy-accounts-title {
+  font-weight: 600;
+  color: var(--dsw-alias-label-primary);
+}
+
+.dsh-codebuddy-accounts-desc {
+  margin: 0;
+  color: var(--dsw-alias-label-secondary);
+  font-size: 13px;
+}
+
+.dsh-codebuddy-accounts-collapse {
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: var(--dsw-alias-radius-m, 6px);
+}
+
+.dsh-codebuddy-account-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  width: 100%;
+}
+
+.dsh-codebuddy-account-header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+/* 截断由 Typography.Text 的 ellipsis 负责；这里只让名称在 flex 行里可收缩。 */
+.dsh-codebuddy-account-name {
+  flex: 0 1 auto;
+  min-width: 0;
+  font-weight: 600;
+  color: var(--dsw-alias-label-primary);
+}
+
+/* 客户端标识：账号用哪个客户端登录（CLI / WorkBuddy）及其固定版本。
+   名称可能较长（如 "CodeBuddy CLI · v2.145.0"），因此不参与压缩、也不换行，
+   空间不足时优先压缩账号名（它的 ellipsis 已就绪）。 */
+.dsh-codebuddy-client-tag {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.dsh-codebuddy-account-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.dsh-codebuddy-account-body .dsh-codebuddy-row:last-child {
+  border-bottom: none;
+}
+
+.dsh-codebuddy-account-descriptions {
+  width: 100%;
+}
+
+.dsh-codebuddy-account-descriptions .semi-descriptions-key {
+  color: var(--dsw-alias-label-secondary);
+  font-size: 13px;
+}
+
+.dsh-codebuddy-account-descriptions .semi-descriptions-value {
+  color: var(--dsw-alias-label-primary);
+  font-size: 13px;
+  word-break: break-all;
+}
+
+.dsh-codebuddy-account-remove {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 4px;
+}
+
+/* 掉线账号的展开内容：黄底警示条 + 恢复动作。 */
+.dsh-codebuddy-account-expired {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--dsw-alias-state-warn-primary, var(--semi-color-warning));
+  border-radius: var(--dsw-alias-radius-m, 6px);
+  background: color-mix(in srgb, var(--dsw-alias-state-warn-primary, var(--semi-color-warning)) 8%, transparent);
+}
+
+.dsh-codebuddy-account-expired-text {
+  color: var(--dsw-alias-label-secondary);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* 当前账号掉线时的接管警示条：位于面板列表上方。 */
+.dsh-codebuddy-account-takeover {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--dsw-alias-state-warn-primary, var(--semi-color-warning));
+  border-radius: var(--dsw-alias-radius-m, 6px);
+  background: color-mix(in srgb, var(--dsw-alias-state-warn-primary, var(--semi-color-warning)) 8%, transparent);
+  color: var(--dsw-alias-label-primary);
+  font-size: 13px;
+
+  .semi-icon {
+    color: var(--dsw-alias-state-warn-primary, var(--semi-color-warning));
+    flex-shrink: 0;
+  }
+}
+
+/* 积分总览（迁入账号页）：标题与指标卡组成一个区块。外层 .dsh-codebuddy-panel-page
+   的 gap 只作用于区块之间，因此这里自己给标题与卡片之间留出间距。 */
+.dsh-codebuddy-credits-overview {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.dsh-codebuddy-panel-stat-card { padding: 0; overflow: hidden; }
+.dsh-codebuddy-panel-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.dsh-codebuddy-panel-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  gap: 10px;
+  padding: 24px 18px;
+  text-align: center;
+}
+.dsh-codebuddy-panel-stat + .dsh-codebuddy-panel-stat { border-left: 1px solid var(--dsw-alias-border-l2); }
+.dsh-codebuddy-panel-stat-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--dsw-alias-label-secondary);
+  font-size: 13px;
+  white-space: nowrap;
+}
+.dsh-codebuddy-panel-stat-value {
+  color: var(--dsw-alias-label-primary);
+  font-size: 28px;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.dsh-codebuddy-account-card-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.dsh-codebuddy-account-card-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(135deg, var(--dsw-alias-brand-primary), #7a5cff);
+  flex-shrink: 0;
+}
+.dsh-codebuddy-account-card-main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+.dsh-codebuddy-account-card-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.dsh-codebuddy-account-card-chips { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; min-height: 20px; }
+.dsh-codebuddy-account-card-more { flex-shrink: 0; }
+.dsh-codebuddy-account-card-actions { flex-shrink: 0; }
+
+.dsh-codebuddy-checkin-chip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 1px 8px;
+  font-size: 12px;
+  background: var(--dsw-alias-bg-layer-2);
+  color: var(--dsw-alias-label-tertiary);
+}
+.dsh-codebuddy-checkin-chip-done {
+  background: var(--dsw-alias-state-success-tertiary, rgba(38,162,105,.14));
+  color: var(--dsw-alias-state-success-primary, #26a269);
+}
+
+/* 旅行状态 chip：与签到 chip 同排，颜色区分「进行中 / 已结束 / 不可用」。 */
+.dsh-codebuddy-travel-chip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 1px 8px;
+  font-size: 12px;
+  background: var(--dsw-alias-bg-layer-2);
+  color: var(--dsw-alias-label-secondary);
+  font-variant-numeric: tabular-nums;
+}
+.dsh-codebuddy-travel-chip.is-traveling {
+  background: color-mix(in srgb, var(--dsw-alias-brand-primary) 14%, transparent);
+  color: var(--dsw-alias-brand-primary);
+}
+.dsh-codebuddy-travel-chip.is-muted { color: var(--dsw-alias-label-tertiary); }
+
+.dsh-codebuddy-account-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+  min-width: 0;
+}
+.dsh-codebuddy-account-card-credits {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.dsh-codebuddy-account-card-credits-value {
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--dsw-alias-label-primary);
+}
+/* 额度数据陈旧提示。正常情况下不渲染（见 formatProbeAge），因此可以放心用更弱的
+   颜色：它出现时本就是想让人注意到「该刷新了」。 */
+.dsh-codebuddy-account-card-stale {
+  font-size: 12px;
+  color: var(--dsw-alias-label-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+.dsh-codebuddy-account-card-resources {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 2px;
+  /* 预留两行：只有一或零个套餐的账号也保持与两个套餐一致的高度。 */
+  min-height: calc(2 * 18px + 6px);
+}
+.dsh-codebuddy-credit-resource-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12px;
+  /* 单套餐账号也要占住两行高度，卡片网格才不会出现参差。 */
+  min-height: 18px;
+}
+/* 截断交给 Typography.Text（ellipsis），这里只负责颜色与在 flex 行里可收缩。 */
+.dsh-codebuddy-credit-resource-name {
+  flex: 1;
+  min-width: 0;
+  color: var(--dsw-alias-label-secondary);
+}
+.dsh-codebuddy-credit-resource-meta {
+  color: var(--dsw-alias-label-tertiary);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+/* 概览行文字颜色跟随资源生命周期：还能用=正常前景，已用完=警示，已过期=弱化。
+   已过期行**不再给日期加删除线**：那原本是划掉「已作废的额度数字」，而现在 meta
+   装的是到期日——日期是事实，划掉会读成「这个日期不算数」。弱化色已足够表达
+   「不再可用」。 */
+.dsh-codebuddy-credit-resource-row.is-usable .dsh-codebuddy-credit-resource-name { color: var(--dsw-alias-label-primary); }
+.dsh-codebuddy-credit-resource-row.is-usable .dsh-codebuddy-credit-resource-meta { color: var(--dsw-alias-state-success-primary); }
+.dsh-codebuddy-credit-resource-row.is-depleted .dsh-codebuddy-credit-resource-name { color: var(--dsw-alias-label-secondary); }
+.dsh-codebuddy-credit-resource-row.is-depleted .dsh-codebuddy-credit-resource-meta { color: var(--dsw-alias-state-warn-primary); }
+.dsh-codebuddy-credit-resource-row.is-expired .dsh-codebuddy-credit-resource-name { color: var(--dsw-alias-label-tertiary); }
+.dsh-codebuddy-credit-resource-row.is-expired .dsh-codebuddy-credit-resource-meta { color: var(--dsw-alias-label-tertiary); }
+.dsh-codebuddy-account-expired-pad { margin-top: 10px; font-size: 13px; }
+.dsh-codebuddy-account-card-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--dsw-alias-border-l2);
+}
+
+/* ==========================================================================
+   账号卡片：整卡可点击查看资源包台账。
+   交互提示只放在悬停/聚焦的边框与指针上——卡片内部已经承载了额度、
+   进度与状态信息，再加装饰会淹没它们。
+   ========================================================================== */
+.dsh-codebuddy-account-card-wrap {
+  display: block;
+  min-width: 0;
+  border-radius: 16px;
+  cursor: pointer;
+  /* 让整条「栅格子项 → Card」的高度链撑满：
+     CSS Grid 默认 align-items: stretch，会把**子项**（本 wrap）拉到行高，但
+     内部的 .semi-card 只按内容高度渲染（.dsh-codebuddy-panel-card 只设了
+     width: 100%），于是本卡片底部会留白，与同一行内内容更多的卡片参差。
+     wrap 与 Card 都设 height: 100%，后续 flex 才能把剩余空间分配下去。 */
+  height: 100%;
+}
+
+.dsh-codebuddy-account-card-wrap > .dsh-codebuddy-panel-card {
+  height: 100%;
+}
+
+/* Card 内部改为纵向 flex：body 之后若有剩余空间，由 body 吸收，
+   这样无论内容多少，卡片的可视高度都等于所在栅格行的高度。 */
+.dsh-codebuddy-account-card-wrap > .dsh-codebuddy-panel-card > .semi-card-body {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 正文吸收剩余高度：内容少的卡片（积分查询失败、已离线）因此与同排内容多的
+   卡片等高，而不是底部空出一截。行高本身由栅格取「本行最高的卡片」决定，
+   所以正常卡片的高度不受影响。 */
+.dsh-codebuddy-account-card-wrap .dsh-codebuddy-account-card-body,
+.dsh-codebuddy-account-card-wrap .dsh-codebuddy-account-expired-pad {
+  flex: 1 1 auto;
+}
+
+/* .dsh-codebuddy-account-expired-pad 原本自带 margin-top（那时它只是正文下方的
+   一行文字）；现在它同时充当状态块，位置由 flex 居中决定，外边距归零。 */
+.dsh-codebuddy-account-card-wrap .dsh-codebuddy-account-expired-pad { margin-top: 0; }
+
+/* 读取失败 / 已离线时正文只有一行，给它一个与「剩余额度 + 进度 + 两行资源包」
+   相当的最小高度，避免即便整行都被拉伸、内容仍挤在顶部显得空荡。
+   数值对齐正常卡片：额度大字(26px) + 进度(≈8px) + 资源包预留(2×18+6) + 间距。
+   用 min-height 而非固定 height：内容真变多时仍可自然增高。 */
+.dsh-codebuddy-account-card-wrap .dsh-codebuddy-account-body-state {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 96px;
+  text-align: center;
+}
+
+.dsh-codebuddy-account-card-wrap:focus-visible {
+  outline: 2px solid var(--dsw-alias-brand-primary);
+  outline-offset: 2px;
+}
+
+.dsh-codebuddy-account-card-wrap:hover > .dsh-codebuddy-panel-card {
+  border-color: color-mix(in srgb, var(--dsw-alias-brand-primary) 45%, var(--dsw-alias-border-l2));
+}
+
+/* ==========================================================================
+   资源包弹框：账号摘要 + 三组生命周期台账。
+   列表用行式台账而不是卡片网格：每行一条资源包，状态由左侧色条与用量
+   进度表达，右侧对齐剩余/总量，数字走等宽以便纵向比较。
+   ========================================================================== */
+.dsh-codebuddy-resource-modal { width: min(640px, 92vw); }
+
+.dsh-codebuddy-resource-dialog { display: flex; flex-direction: column; gap: 14px; }
+
+/* 用量信息页之下的二级 Tab（套餐状态）。
+   顶层用 line 型、这里用 button 型，两层不会看起来平级。
+   给二级 Tab 与上方小标题留出节奏，并与 Tab 内容区对齐。 */
+.dsh-codebuddy-resource-status {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 0 0;
+}
+
+/* 二级 Tab 的按钮条：button 型自带浅底，在弹框白底上偏灰，故让它稍作收缩、
+   靠左排列，与台账列表左边缘对齐。 */
+.dsh-codebuddy-resource-status .semi-tabs-bar {
+  margin-bottom: 2px;
+}
+
+/* 身份信息页（弹框内的一个 Tab）。
+   两组描述表：账户身份 + 登录来源，中间一条细分隔线，避免读成一张表。 */
+.dsh-codebuddy-account-identity {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  /* 与 Tab 内容区顶部留白；台账列表自带内边距，这里对齐同一节奏。 */
+  padding: 4px 0 2px;
+}
+
+.dsh-codebuddy-account-identity .dsh-codebuddy-account-descriptions + .dsh-codebuddy-account-descriptions {
+  padding-top: 10px;
+  border-top: 1px solid var(--dsw-alias-border-l3);
+}
+
+/* 标签列定宽：描述表是单列 horizontal（key 左、value 右），标签不定宽会让
+   各行的值起始位置参差。96px 容纳最长的标签（「服务端点」4 字、英文
+   'Service endpoint'），值统一从同一水平位置开始。
+   值列保留 word-break: break-all（见 .dsh-codebuddy-account-descriptions），
+   因此较长的 UID / 端点地址会折行而不是撑破弹框。 */
+.dsh-codebuddy-account-identity .semi-descriptions-key {
+  width: 96px;
+  padding-right: 12px;
+}
+
+/* 单列时值左对齐、允许换行；值之间留出可读的行距。 */
+.dsh-codebuddy-account-identity .semi-descriptions-value {
+  color: var(--dsw-alias-label-primary);
+}
+
+.dsh-codebuddy-resource-summary {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--dsw-alias-border-l2);
+}
+
+.dsh-codebuddy-resource-summary > div:first-child {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.dsh-codebuddy-resource-account {
+  min-width: 0;
+  color: var(--dsw-alias-label-primary);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.dsh-codebuddy-resource-total { display: flex; align-items: baseline; gap: 6px; flex-shrink: 0; }
+.dsh-codebuddy-resource-total strong {
+  color: var(--dsw-alias-label-primary);
+  font-size: 22px;
+  font-weight: 650;
+  letter-spacing: -.02em;
+  font-variant-numeric: tabular-nums;
+}
+.dsh-codebuddy-resource-total span { color: var(--dsw-alias-label-tertiary); font-size: 11px; }
+
+.dsh-codebuddy-resource-tab { display: inline-flex; align-items: center; gap: 6px; }
+.dsh-codebuddy-resource-tab i {
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--dsw-alias-bg-layer-2);
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 11px;
+  font-style: normal;
+  line-height: 16px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.dsh-codebuddy-resource-list {
+  display: flex;
+  flex-direction: column;
+  max-height: min(52vh, 420px);
+  overflow-y: auto;
+}
+
+.dsh-codebuddy-resource-row {
+  display: grid;
+  grid-template-columns: 3px minmax(0, 1fr);
+  gap: 12px;
+  padding: 12px 2px 12px 0;
+  border-bottom: 1px solid var(--dsw-alias-border-l2);
+}
+
+.dsh-codebuddy-resource-row:last-child { border-bottom: 0; }
+
+.dsh-codebuddy-resource-bar {
+  border-radius: 999px;
+  background: var(--dcb-resource-color, var(--dsw-alias-border-l3));
+}
+
+.dsh-codebuddy-resource-row.is-expired .dsh-codebuddy-resource-bar { opacity: .55; }
+
+.dsh-codebuddy-resource-main { display: flex; flex-direction: column; gap: 7px; min-width: 0; }
+
+.dsh-codebuddy-resource-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; min-width: 0; }
+.dsh-codebuddy-resource-name {
+  min-width: 0;
+  color: var(--dsw-alias-label-primary);
+  font-size: 13px;
+  font-weight: 600;
+}
+.dsh-codebuddy-resource-amount {
+  flex-shrink: 0;
+  color: var(--dsw-alias-label-primary);
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.dsh-codebuddy-resource-amount small { color: var(--dsw-alias-label-tertiary); font-size: 11px; font-weight: 400; }
+
+.dsh-codebuddy-resource-row.is-expired .dsh-codebuddy-resource-name,
+.dsh-codebuddy-resource-row.is-expired .dsh-codebuddy-resource-amount { color: var(--dsw-alias-label-secondary); }
+
+.dsh-codebuddy-resource-foot {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.dsh-codebuddy-resource-empty {
+  margin: 0;
+  padding: 26px 0;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 12px;
+  text-align: center;
+}
+
+@media (max-width: 720px) {
+  .dsh-codebuddy-accounts-head-actions { justify-content: flex-start; }
+  .dsh-codebuddy-accounts-head-lead { width: 100%; }
+}

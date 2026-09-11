@@ -1,11 +1,10 @@
 /**
- * Decode an SSE byte stream into event `data` payloads.
+ * 把 SSE 字节流解码为事件的 `data` 载荷。
  *
- * Framing uses `eventsource-parser`'s `createParser` callback API over a
- * manual reader, which avoids the `TextDecoderStream`/`EventSourceParserStream`
- * DOM type coupling and works identically on the Node host. The literal
- * `[DONE]` sentinel is yielded so the caller owns final flushing, and EOF
- * before it is truncation rather than a completable response.
+ * 帧解析用 `eventsource-parser` 的 `createParser` 回调 API 配合手动 reader，
+ * 避开了 `TextDecoderStream`/`EventSourceParserStream` 的 DOM 类型耦合，并且在
+ * Node 宿主上行为一致。字面量 `[DONE]` 哨兵会被产出，让调用方掌握最终冲刷；
+ * 在它之前遇到 EOF 即是截断，而不是一个可完成的响应。
  *
  * @module dsh-codebuddy/sse
  */
@@ -13,15 +12,15 @@
 import { createParser } from 'eventsource-parser'
 import { LlmError } from '@deepseek-ai/dsh-llm'
 
-/** The terminal payload an OpenAI-compatible stream sends after the last chunk. */
+/** OpenAI 兼容流在最后一个块之后发送的终结载荷。 */
 export const DONE = '[DONE]'
 
 /**
- * Parse an SSE byte stream into data payloads.
- * @param stream - raw SSE byte chunks; reads may split anywhere.
- * @param onComment - transport-activity callback; comments never enter the payload stream.
- * @returns each payload in arrival order, `[DONE]` last.
- * @throws LlmError `STREAM_CLOSED` when the stream ends without `[DONE]`.
+ * 把 SSE 字节流解析为 data 载荷。
+ * @param stream - 原始 SSE 字节分块；读取可能在任意位置切分。
+ * @param onComment - 传输活动回调；注释永远不会进入载荷流。
+ * @returns 按到达顺序产出每个载荷，`[DONE]` 在最后。
+ * @throws LlmError 流未以 `[DONE]` 结束时抛 `STREAM_CLOSED`。
  */
 export async function* parseSse(
   stream: ReadableStream<Uint8Array>,
@@ -30,8 +29,8 @@ export async function* parseSse(
   const decoder = new TextDecoder()
   const reader = stream.getReader()
 
-  // Data payloads are pushed into this queue by the parser; the generator
-  // drains it as it iterates, keeping the loop's flow straightforward.
+  // 解析器把 data 载荷推进这个队列；生成器迭代时将其排空，让循环的控制流
+  // 保持直观。
   const queue: string[] = []
   let ended = false
   let resolveWake: (() => void) | undefined
@@ -69,7 +68,7 @@ export async function* parseSse(
       if (ended) {
         throw new LlmError('CodeBuddy SSE stream ended without [DONE]', 'STREAM_CLOSED')
       }
-      // Wait for more data without busy-polling.
+      // 等待更多数据，而不忙轮询。
       await new Promise<void>((resolve) => {
         resolveWake = resolve
       })
@@ -77,10 +76,10 @@ export async function* parseSse(
   } finally {
     ended = true
     await reader.cancel().catch(() => {
-      // The stream may already be closed; cancellation is best-effort.
+      // 流可能已经关闭；取消尽力而为。
     })
     await pumping.catch(() => {
-      // A read error surfaces through `pumping`; the generator already threw.
+      // 读取错误经 `pumping` 浮现；生成器已经抛出。
     })
   }
 }

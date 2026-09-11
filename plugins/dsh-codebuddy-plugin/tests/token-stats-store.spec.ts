@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { TokenStatsStore } from '../src/client/token-stats-store.ts'
+import { TokenStatsStore } from '../src/client/store/token-stats.ts'
 import type { ConnectionRpc, RpcResult } from '../src/client/rpc.ts'
 
 /**

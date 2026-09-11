@@ -16,10 +16,13 @@ const PANEL = readFileSync(
   '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/client/panel.tsx', 'utf8',
 )
 const SCSS = readFileSync(
-  '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/styles/panel-layout.scss', 'utf8',
+  '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/styles/token-panel.scss', 'utf8',
 )
-const LOCALES = readFileSync(
-  '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/client/locales.ts', 'utf8',
+const LOCALES_EN = readFileSync(
+  '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/client/locales/en.ts', 'utf8',
+)
+const LOCALES_ZH = readFileSync(
+  '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/client/locales/zh.ts', 'utf8',
 )
 
 describe('DimensionToggle：结构与交互', () => {
@@ -53,9 +56,9 @@ describe('DimensionToggle：结构与交互', () => {
 
   it('文案键存在（en + zh）', () => {
     for (const key of ['tokenByWorkspace', 'tokenByModel', 'tokenDimension']) {
-      // 每个 key 在 en 与 zh 两段各出现一次
-      const count = LOCALES.split('\n').filter(l => l.includes(`${key}:`)).length
-      expect(count).toBe(2)
+      // 按语言文件检查：en 与 zh 各出现一次（locales 已按语言拆分）
+      expect(LOCALES_EN.split('\n').filter(l => l.includes(`${key}:`)).length).toBe(1)
+      expect(LOCALES_ZH.split('\n').filter(l => l.includes(`${key}:`)).length).toBe(1)
     }
   })
 })

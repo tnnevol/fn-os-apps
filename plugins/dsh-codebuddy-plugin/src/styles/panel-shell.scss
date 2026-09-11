@@ -1,0 +1,266 @@
+/* 管理面板外壳：Layout 骨架 / 侧栏导航与品牌 / 固定 header（返回工具栏） /
+   滚动主区 / keep-alive 视图容器 / 区块头与页面通用卡片网格。 */
+
+/* ==========================================================================
+   CodeBuddy 管理面板（shell.overlay 全页面，hash 路由隔离）
+   ========================================================================== */
+
+/* ==========================================================================
+   管理面板（重做：wb 风格卡片 + 左上返回）
+   ========================================================================== */
+.dsh-codebuddy-panel {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  background: var(--dsw-alias-bg-base);
+}
+.dsh-codebuddy-panel .semi-layout { flex: 1; display: flex; }
+.dsh-codebuddy-panel .semi-layout-sider {
+  background: var(--dsw-alias-bg-layer-1);
+}
+/* 菜单与内容区的分隔**只靠背景色分层**（layer-1 vs base），不加线：
+   Semi 竖排 Navigation 主规则自带 `border-right: 1px solid var(--semi-color-border)`，
+   这里显式去掉；只动 border 一个属性，其余 Semi 样式保持原样。 */
+.dsh-codebuddy-panel-nav { height: 100%; background: transparent; border-right: none; }
+/* 侧栏品牌：彩色 CodeBuddy logo 作为后台的视觉锚点，与导航文字同排。 */
+.dsh-codebuddy-panel-nav .semi-navigation-header-logo { display: inline-flex; align-items: center; }
+.dsh-codebuddy-panel-nav .semi-navigation-header-logo svg { display: block; }
+/* ---------------------------------------------------------------------------
+   右侧内容区：用 Semi Layout 做上下布局
+   ---------------------------------------------------------------------------
+   整体是「左菜单 + 右内容」，由 Semi Layout 自己完成，没有自建 flex 容器：
+
+       <Layout>                    ← 含 Sider，Semi 自动加 .semi-layout-has-sider
+         <Layout.Sider>  ↕ 菜单        → 切成 row（左右）
+         <Layout className="…-main">
+           <Layout.Header>  ↗ 固定       ← 内层不含 Sider，默认 column（上下）
+           <Layout.Content> ↓ 滚动
+         </Layout>
+       </Layout>
+
+   组件产出语义化标签：Header→<header>、Content→<main>、Sider→<aside>。
+
+   滚动行为：滚动容器是 **Content**，Header 在它之外，因此标题固定不动、
+   只有主体滚动；菜单在 Sider 里、同样是独立容器，不随主体滚动。
+   若把 overflow 放在外层 .…-main 上，header 会与内容同处一个滚动上下文而被带走。
+
+   横向对齐：Header 与 Content 使用**完全相同**的宽度约束与横向内边距
+   （min(100%,1480px) + 居中 + 同 padding），标题才与下方卡片左边界齐平。
+   只给其中一个加 padding 会让两者错开一个 padding 的距离。
+   --------------------------------------------------------------------------- */
+.dsh-codebuddy-panel-main {
+  /* 内层 Layout 默认 column；这里只需确保它填满右半侧且自身不滚动。 */
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* 固定 header（渲染为 <header>）：不收缩、不参与滚动。
+ *
+ * 分隔方案是「主题感知描边 + 一层浅阴影」，只用阴影不够——核算 token 后两点：
+ *
+ * 1. DSH 的 `--dsw-elevation-*` 全部只是 `0 0 0 .5px` 的描边环（hairline），并非
+ *    模糊阴影；而 `--dsw-shadow-lv*` 是**固定的 5% 纯黑**（`#0000000d`）、不随主题
+ *    变化。在深色底（#151517）上叠 5% 黑，对比度只有 1.009:1 —— 等于看不见。
+ * 2. `--dsw-alias-border-*` 是**主题感知**的：浅色主题取 `#000000xx`、深色主题取
+ *    `#ffffffxx`（同一 token 两个值）。因此分隔由它承担，阴影只作浅色下的辅助。
+ *
+ * **header 必须通栏**（不再设 width 上限），理由有二：
+ *
+ * - 分隔线应当横跨整个面板。若沿用 `width: min(100%, 1480px)`，宽屏下这条线会比
+ *   面板窄一截、两端悬空（主区 1720px 时两侧各空 120px）。
+ * - 顺带修掉一个对齐缺陷：宽度上限 + 自带横向 padding 会让 padding 落在宽度**之内**，
+ *   而 `.dsh-codebuddy-panel-view` 的 padding 在宽度**之外**，于是主区 >1544px 时
+ *   header 里的标题比下方卡片多缩进 32px。改为通栏 + `padding-inline` 按同一公式
+ *   计算后，两者左边界在宽/中/窄屏都一致（见下方 padding-inline 注释）。
+ *
+ * 用 `border-bottom` 而非 inset box-shadow：后者的边缘贴着内容盒、会被 padding
+ * 缩进，而分隔线要通栏。 */
+.dsh-codebuddy-panel-toolbar {
+  flex: 0 0 auto;
+  /* 通栏：不加宽度上限，底部分隔线因此横跨整个面板。 */
+  width: 100%;
+  /* 纵向间距保持原值；横向内部留白由 padding-inline 按 1480px 列计算（见下方注释）。 */
+  padding-top: 24px;
+  padding-bottom: 16px;
+  padding-inline: max(clamp(16px, 2vw, 32px), calc((100% - 1480px) / 2));
+  /* 待滚动内容滚到 header 之下时，分隔线仍在最上层——否则上滑的卡片会盖住它。 */
+  border-bottom: 1px solid var(--dsw-alias-border-l2);
+  box-shadow: var(--dsw-shadow-lv1);
+  position: relative;
+  z-index: 1;
+}
+
+/* 主体（渲染为 <main>）：唯一滚动容器。 */
+.dsh-codebuddy-panel-views {
+  flex: 1;
+  /* min-height: 0 是必需的：flex 子项默认 min-height: auto，不设它就不会收缩到
+     容器高度以下，overflow 也就不生效——内容把容器撑高后滚动条会落到整页上，
+     header 依旧被带走。 */
+  min-height: 0;
+  /* 顶部留白给固定 header 之下的内容：header 自带 16px 下内边距，再加这 15px，
+     滚动内容与分隔线之间不会贴在一起。放在滚动容器上而不是页面内的某个元素上，
+     三个页面（账号/积分/Token）因此统一，也避免每页各自补一条间距。
+     横向与底部沿用 clamp 内边距。 */
+  padding: 15px clamp(16px, 2vw, 32px) 40px;
+  overflow-y: auto;
+  /* 始终为滚动条预留空间：在「不足一屏」与「需要滚动」之间切换时内容宽度不跳动。 */
+  scrollbar-gutter: stable;
+}
+
+/* 页面内容列宽上限。header 不在此列——它已通栏，内容靠 padding-inline 对齐
+   （见 .dsh-codebuddy-panel-toolbar 的说明），这样分隔线才能横跨整个面板。 */
+.dsh-codebuddy-panel-view {
+  width: min(100%, 1480px);
+  margin: 0 auto;
+}
+
+/* keep-alive 的视图容器：三个页面都保持挂载，只隐藏非当前页。
+   容器本身不产生额外盒模型（无内边距/边框/背景），对版面完全透明。 */
+.dsh-codebuddy-panel-view { min-width: 0; }
+/* `hidden` 的浏览器默认 display:none 会被任何 display 声明覆盖，这里显式兜底，
+   确保隐藏页确实不参与布局（也避免其内部 flex 容器影响可见页的高度）。 */
+.dsh-codebuddy-panel-view[hidden] { display: none; }
+
+/* 工具栏：左上返回 + 页面标题。
+   宽度约束与 .dsh-codebuddy-panel-view 共用（见上方布局段落），此处只管排布。 */
+.dsh-codebuddy-panel-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.dsh-codebuddy-panel-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--dsw-alias-label-primary);
+}
+.dsh-codebuddy-auto-checkin-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+/* 账号 / 积分卡片 */
+.dsh-codebuddy-panel-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 640px;
+}
+.dsh-codebuddy-panel-card { width: 100%; }
+.dsh-codebuddy-panel-card-active {
+  box-shadow: inset 0 0 0 1px var(--dsw-alias-state-success-primary);
+}
+
+/* WorkBuddy Switch-inspired management dashboard layout. */
+.dsh-codebuddy-panel-page {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  min-width: 0;
+  /* 刷新遮罩的定位上下文：遮罩只覆盖内容区，不参与 flex 布局。 */
+  position: relative;
+}
+
+/* 局部刷新遮罩：刷新时保留已渲染内容，只叠半透明层 + 转圈，避免整页闪动
+   与滚动位置丢失。pointer-events 保留为 none，使遮罩本身不抢交互——
+   refresh 按钮因此仍可点击（连点不会重复请求，usePanelData 就地更新）。 */
+.dsh-codebuddy-refresh-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--dsw-alias-bg-base) 55%, transparent);
+  pointer-events: none;
+  animation: dsh-codebuddy-refresh-fade-in 160ms ease-out;
+}
+
+@keyframes dsh-codebuddy-refresh-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dsh-codebuddy-refresh-overlay { animation: none; }
+}
+
+.dsh-codebuddy-panel-heading { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.dsh-codebuddy-panel-heading p { font-size: 13px; }
+
+.dsh-codebuddy-panel-section-head strong,
+.dsh-codebuddy-panel-section-title strong {
+  color: var(--dsw-alias-label-primary);
+  font-size: 16px;
+}
+
+.dsh-codebuddy-panel-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-width: 0;
+}
+
+.dsh-codebuddy-panel-section-head > div:first-child { min-width: 0; }
+.dsh-codebuddy-panel-section-head p { margin-top: 5px; font-size: 13px; }
+
+.dsh-codebuddy-panel-section-title {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  color: var(--dsw-alias-label-primary);
+}
+
+.dsh-codebuddy-panel-section-title > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: var(--dsw-alias-bg-layer-2);
+  color: var(--dsw-alias-label-secondary);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.dsh-codebuddy-panel-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  gap: 16px;
+  max-width: none;
+}
+
+.dsh-codebuddy-panel-card {
+  width: 100%;
+  min-width: 0;
+  border-radius: 16px;
+  border-color: var(--dsw-alias-border-l2);
+  background: var(--dsw-alias-bg-layer-1);
+  box-shadow: none;
+}
+
+.dsh-codebuddy-panel-card-active { box-shadow: inset 0 0 0 1px var(--dsw-alias-state-success-primary); }
+
+@media (max-width: 720px) {
+  .dsh-codebuddy-panel .semi-layout-sider { width: 168px; min-width: 168px; }
+  /* 窄屏：header 的横向 padding-inline 与 views 的横向 padding 必须同步收窄，
+     否则标题与内容左边界会错开。header 的 padding-inline 是
+     max(clamp(...), calc(...))，窄屏下 clamp 生效，故只需覆盖这个下界；
+     上面那条 padding-inline 里的 clamp(16px, 2vw, 32px) 在此已被覆盖为 14px。 */
+  .dsh-codebuddy-panel-toolbar {
+    padding-top: 16px;
+    padding-bottom: 12px;
+    padding-inline: max(14px, calc((100% - 1480px) / 2));
+  }
+  .dsh-codebuddy-panel-views { padding-left: 14px; padding-right: 14px; padding-bottom: 32px; }
+  .dsh-codebuddy-panel-section-head { align-items: flex-start; flex-direction: column; }
+}

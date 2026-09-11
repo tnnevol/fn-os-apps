@@ -1,16 +1,14 @@
 /**
- * CodeBuddy chat image serialization.
+ * CodeBuddy 聊天图像序列化。
  *
- * CodeBuddy's chat plane is OpenAI-compatible: user content that carries a
- * durable image block is sent as an ordered content array in which each image
- * becomes `{ type: 'image_url', image_url: { url: <data URI> } }` with a small
- * text handle before it (the same stable text the harness shows text-only
- * models, so replays read consistently). Tool-result images follow their
- * string-only tool message in a separate user message.
+ * CodeBuddy 的聊天平面与 OpenAI 兼容：携带持久图像块的用户内容以有序内容数组
+ * 发送，其中每张图像成为 `{ type: 'image_url', image_url: { url: <data URI> } }`，
+ * 并在其前面放一个小的文本把手（与 harness 给纯文本模型展示的是同一份稳定
+ * 文本，因此重放读起来一致）。工具结果里的图像跟在其纯字符串工具消息之后，
+ * 装在一条单独的 user 消息里。
  *
- * Durable bytes stay out of the session messages: this module reads the
- * normalized request version through the attachment store (`ctx.attachments`)
- * exactly like the DeepSeek and pi-ai adapters do.
+ * 持久字节不进入会话消息：本模块通过附件存储（`ctx.attachments`）读取归一化
+ * 的请求版本，与 DeepSeek 和 pi-ai adapter 的做法完全一致。
  *
  * @module dsh-codebuddy/serialize-image
  */
@@ -21,29 +19,29 @@ import type { AttachmentStore, ImageAttachmentRef, ImageRequestPolicy, RequestIm
 import { boundToolCallId, buildWireRequest, flattenText } from './serialize.ts'
 import type { WireContent, WireMessage, WirePart, WireRequest } from './types.ts'
 
-/** Re-exported wire request type for adapter callers. */
+/** 供 adapter 调用方重导出的线缆请求类型。 */
 export type { WireRequest }
 
-/** Exact request-image policy used for the chat route (bytes/pixels). */
+/** 聊天路由使用的确切请求图像策略（字节/像素）。 */
 const REQUEST_IMAGE_POLICY: ImageRequestPolicy = {
-  // Keep the harness default conservative so very large screenshots do not
-  // inflate the request beyond what CodeBuddy's own IDE client would send.
+  // 保持 harness 默认的保守限制，避免超大截图把请求撑到超过 CodeBuddy 自己的
+  // IDE 客户端会发送的规模。
   maxPixels: 4_000_000,
   maxBytes: 8 * 1024 * 1024,
 }
 
-/** True when one block list carries a durable image at any nesting depth. */
+/** 任一块列表在任意嵌套深度携带持久图像时为 true。 */
 function listHasImage(blocks: readonly ContentBlock[]): boolean {
   return blocks.some(block => block.type === 'image'
     || block.type === 'tool-result' && listHasImage(block.content))
 }
 
-/** Whether one message carries an image at any nesting depth. */
+/** 单条消息是否在任意嵌套深度携带图像。 */
 function messageHasImage(message: Message): boolean {
   return listHasImage(message.content)
 }
 
-/** Collect every durable image ref (recursing tool results) in order. */
+/** 按顺序收集所有持久图像引用（递归进工具结果）。 */
 function collectRefs(blocks: readonly ContentBlock[], refs: ImageAttachmentRef[]): void {
   for (const block of blocks) {
     if (block.type === 'image') refs.push(block.attachment)
@@ -51,7 +49,7 @@ function collectRefs(blocks: readonly ContentBlock[], refs: ImageAttachmentRef[]
   }
 }
 
-/** Build ordered content parts from one block list (text + inline images). */
+/** 由一个块列表构造有序内容分片（文本 + 内联图像）。 */
 async function contentParts(
   blocks: readonly ContentBlock[],
   versions: ReadonlyMap<ImageAttachmentRef['attachmentId'], RequestImageAttachment>,
@@ -85,13 +83,13 @@ async function contentParts(
   return parts
 }
 
-/** Compact all-text content arrays back to the plain string wire form. */
+/** 把全文本的内容数组压缩回纯字符串的线缆形式。 */
 function compactParts(parts: WirePart[]): WireContent {
   if (parts.every(part => part.type === 'text')) return parts.map(part => (part as { type: 'text', text: string }).text).join('')
   return parts
 }
 
-/** Serialize one assistant turn (replayed tool calls use the shared id bound). */
+/** 序列化一条 assistant 回合（重放的工具调用共用同一个 id 绑定）。 */
 function serializeAssistant(message: Message): WireMessage {
   const text = flattenText(message.content)
   const reasoning = message.content
@@ -114,23 +112,21 @@ function serializeAssistant(message: Message): WireMessage {
 }
 
 /**
- * Serialize a conversation that contains image content into OpenAI-compatible
- * wire messages. Tool results stay string-only `role: 'tool'` entries; any
- * image nested in a tool result is carried by the following `role: 'user'`
- * message (with a "tool result image" text marker, mirroring the DeepSeek and
- * pi-ai adapters).
+ * 把包含图像内容的会话序列化为 OpenAI 兼容的线缆消息。工具结果保持纯字符串的
+ * `role: 'tool'` 条目；嵌在工具结果里的任何图像由紧随其后的 `role: 'user'`
+ * 消息携带（带「工具结果图像」文本标记，与 DeepSeek 和 pi-ai adapter 一致）。
  *
- * @param messages - transient request history after request-size offloading.
- * @param attachments - durable attachment service (`ctx.attachments`).
- * @param resolveImageAccess - optional current execution-world access for text handles.
- * @returns ordered wire messages with inline `image_url` parts.
+ * @param messages - 请求尺寸卸载后的临时请求历史。
+ * @param attachments - 持久附件服务（`ctx.attachments`）。
+ * @param resolveImageAccess - 可选的当前执行世界访问权限，用于文本把手。
+ * @returns 带内联 `image_url` 分片的有序线缆消息。
  */
 export async function serializeMessagesWithImages(
   messages: readonly Message[],
   attachments: AttachmentStore,
   resolveImageAccess: ImageAttachmentAccessResolver | undefined,
 ): Promise<WireMessage[]> {
-  // Reject image roles the OpenAI-compatible history cannot carry.
+  // 拒绝 OpenAI 兼容历史无法承载的图像角色。
   for (const message of messages) {
     if (message.role !== 'user' && messageHasImage(message)) {
       throw new LlmError(
@@ -180,8 +176,8 @@ export async function serializeMessagesWithImages(
       flushToolImages()
       wire.push({ role: 'user', content })
     }
-    // Images nested inside tool results are deferred into one user message so
-    // the `role: 'tool'` entries stay string-only (OpenAI wire constraint).
+    // 嵌在工具结果里的图像被推迟进一条 user 消息，使 `role: 'tool'` 条目保持
+    // 纯字符串（OpenAI 线缆约束）。
     const toolImageParts: WirePart[] = []
     for (const result of toolResults) {
       const resultParts = await contentParts(result.content, versions, resolveImageAccess)
@@ -203,18 +199,18 @@ export async function serializeMessagesWithImages(
   return wire
 }
 
-/** True when the request carries at least one durable image block. */
+/** 请求至少携带一个持久图像块时为 true。 */
 export function hasRequestImages(messages: readonly Message[]): boolean {
   return messages.some(message => messageHasImage(message))
 }
 
 /**
- * Build the full chat-completions request for image-bearing history.
+ * 为含图像的历史构造完整的 chat-completions 请求。
  *
- * @param options - harness request (model, history, system, tools, sampling).
- * @param attachments - durable attachment service.
- * @param resolveImageAccess - optional current tool access for text handles.
- * @returns the fully materialized request body.
+ * @param options - harness 请求（模型、历史、system、工具、采样）。
+ * @param attachments - 持久附件服务。
+ * @param resolveImageAccess - 可选的当前工具访问权限，用于文本把手。
+ * @returns 完全具体化的请求体。
  */
 export async function serializeRequestWithImages(
   options: GenerateOptions,

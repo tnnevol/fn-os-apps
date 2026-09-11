@@ -1,0 +1,112 @@
+/* 输入框用量指示器：进度环 / 弹出卡片（usage-popover-* 系列）。 */
+
+/* Composer usage indicator. */
+.dsh-codebuddy-usage-progress {
+  display: inline-flex;
+  align-items: center;
+}
+
+.dsh-codebuddy-usage-progress-track {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dsh-codebuddy-usage-popover-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.dsh-codebuddy-usage-popover-trigger:focus-visible {
+  outline: 1.5px solid var(--dsw-alias-brand-primary);
+  outline-offset: 2px;
+}
+
+/* Mirrors the Codex plugin's usage popover surface: a flat, borderless card
+   so both providers read as one DSH pattern in the composer dock. */
+.dsh-codebuddy-usage-popover {
+  box-sizing: border-box;
+  width: 340px;
+  max-width: 90vw;
+  padding: 12px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--dsw-alias-label-secondary);
+}
+
+.dsh-codebuddy-usage-popover-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dsh-codebuddy-usage-popover-empty {
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+/* ScrollList 外壳去壳：只借用其 body 的滚动能力，外壳透明。 */
+.dsh-codebuddy-usage-popover-scroll.semi-scrolllist {
+  width: 100%;
+  height: auto;
+  background: transparent !important;
+  box-shadow: none !important;
+  border-radius: 0;
+  overflow: visible;
+  user-select: auto;
+}
+
+/* body：单列纵向、gap 12px、max-height 388px 超出后 Y 轴滚动。 */
+.dsh-codebuddy-usage-popover-scroll .semi-scrolllist-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: auto;
+  max-height: 388px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 0 4px 0 0;
+}
+
+.dsh-codebuddy-usage-popover-window {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dsh-codebuddy-usage-popover-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--dsw-alias-label-primary);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.dsh-codebuddy-usage-popover-amounts {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--dsw-alias-label-secondary);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.dsh-codebuddy-usage-popover-progress {
+  height: 8px;
+  width: 100%;
+}
+
+.dsh-codebuddy-usage-popover-reset {
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 11px;
+  line-height: 16px;
+}

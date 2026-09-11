@@ -1,7 +1,6 @@
-/** Browser half of the CodeBuddy plugin. */
+/** CodeBuddy 插件的浏览器端部分。 */
 
 import '../styles/index.scss'
-import '../styles/panel-layout.scss'
 import type { Context as ClientContext } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-client-connection/client'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
@@ -16,16 +15,16 @@ import { CodeBuddyUsageStatus } from '../components/CodeBuddyUsageStatus.tsx'
 import type { CodeBuddyUsageStatusProps } from '../components/CodeBuddyUsageStatus.tsx'
 import { CodeBuddyPanelPage } from './panel.tsx'
 import { PanelRouteController } from './panel-route.ts'
-import { bumpAccountEpoch } from './account-epoch.ts'
-import { en, zh } from './locales.ts'
-import type { CodeBuddyLocaleKey } from './locales.ts'
+import { bumpAccountEpoch } from './store/account-epoch.ts'
+import { en, zh } from './locales/index.ts'
+import type { CodeBuddyLocaleKey } from './locales/index.ts'
 import type { ConnectionRpc } from './rpc.ts'
 
-/** This plugin's settings namespace for copy. */
+/** 本插件文案的设置命名空间。 */
 const NS = 'settings.codebuddy'
 
-// Keep the renderer-provided slot service visible to consumers that resolve the
-// renderer package through a different peer dependency path.
+// 让 renderer 提供的 slot service 对经由不同 peer dependency 路径解析
+// renderer 包的消费者保持可见。
 declare module '@deepseek-ai/cordis' {
   interface Context {
     slots: SlotRegistry
@@ -61,9 +60,8 @@ export function apply(ctx: ClientContext): void {
 
   const t = ctx.locale.bind(NS) as CodeBuddySectionProps['t']
   const rpc = (ctx.get('connection') as { rpc: ConnectionRpc }).rpc
-  // The composer indicator refreshes on a timer service when present; the DSH
-  // client exposes `ctx.timer` for this purpose. Fall back to a local timer
-  // shim so the indicator still works on minimal compositions.
+  // 输入框指示器在存在 timer service 时按其刷新；DSH client 为此暴露了
+  // `ctx.timer`。回退到本地 timer shim，让指示器在最小化组合下也能工作。
   const timer = (ctx.get('timer') as TimerService | undefined) ?? {
     interval(callback: () => void, delay: number): () => void {
       const id = window.setInterval(callback, delay)
@@ -71,7 +69,7 @@ export function apply(ctx: ClientContext): void {
     },
   }
 
-  // Settings page (login + usage preferences) keeps its original surface.
+  // 设置页（登录 + 用量偏好）保持原有界面。
   ctx.slots.inject('settings.section', () => ctx.slots.register({
     name: 'settings.section',
     id: 'codebuddy',
@@ -80,7 +78,7 @@ export function apply(ctx: ClientContext): void {
     inject: (): CodeBuddySectionProps => ({ rpc, t, panelRoute }),
   }, CodeBuddySection))
 
-  // Live quota readout lives in the composer dock, matching the Codex plugin.
+  // 实时额度读数放在 composer dock，与 Codex 插件一致。
   ctx.slots.inject('conversation.input.right', () => ctx.slots.register({
     name: 'conversation.input.right',
     id: 'codebuddy-usage',

@@ -1,13 +1,13 @@
 /**
- * Tencent CodeBuddy provider plugin for DeepSeek Harness.
+ * DeepSeek Harness 的腾讯 CodeBuddy provider 插件。
  *
- * Registers one `codebuddy` route on `ctx.llm`, authorized by a browser OAuth
- * login rather than an API key, and serving the models CodeBuddy's own
- * (non-OpenAI) catalog endpoint reports.
+ * 在 `ctx.llm` 上注册一个 `codebuddy` 路由，通过浏览器 OAuth 登录而非
+ * API key 完成授权，并 serving CodeBuddy 自有（非 OpenAI）目录端点
+ * 报告的模型。
  *
- * Everything — sign in, sign out, account info, usage preferences — happens in
- * the Web UI: Settings → CodeBuddy. No API key is required, and the running
- * harness picks the credential up without a restart.
+ * 一切操作——登录、登出、账号信息、用量偏好——都在 Web UI 的
+ * 设置 → CodeBuddy 中完成。无需 API key，运行中的 harness 无需重启
+ * 即可拾取凭据。
  *
  * @module dsh-codebuddy
  */
@@ -57,41 +57,39 @@ export * from './contracts/constants.ts'
 export { hasDisclosedCapacity } from './host/types.ts'
 export type * from './host/types.ts'
 
-/** Cordis plugin name. */
+/** Cordis 插件名。 */
 export const name = 'dsh-codebuddy'
 
-/** The route needs LLM; analytics needs the logical DSH session query seam. */
+/** 路由需要 llm；用量统计需要逻辑 DSH 会话查询接缝。 */
 export const inject = ['llm', 'sessionQuery']
 
-// The module is deliberately exported as named members only, with no default
-// export. Cordis's loader collapses a module via `exports.default ?? exports`,
-// so a `export default apply` would make the plugin a bare function and discard
-// `inject` and `name` alongside it — the mount then fails with `cannot get
-// property "llm" without inject`.
+// 本模块刻意只以命名成员导出，不提供默认导出。Cordis 的加载器会通过
+// `exports.default ?? exports` 收敛模块，因此 `export default apply` 会让插件
+// 退化为一个裸函数，连同丢弃 `inject` 与 `name`——挂载随即报错
+// `cannot get property "llm" without inject`。
 
 /**
- * Plugin config. Every field is optional: the shipped defaults reach the public
- * CodeBuddy service, and there is no credential field at all by design — the
- * only way in is the browser login.
+ * 插件配置。每个字段都是可选的：随包默认值直连公开的 CodeBuddy 服务，
+ * 并且设计上完全没有凭据字段——唯一的进入方式就是浏览器登录。
  */
 export interface Config {
-  /** Chat endpoint base; defaults to CodeBuddy's OpenAI-compatible route. */
+  /** 聊天 endpoint base；默认为 CodeBuddy 的 OpenAI 兼容路由。 */
   baseURL?: string
-  /** Context capacity for a model the catalog does not size. */
+  /** 目录未给出容量的模型所用的上下文容量。 */
   defaultContextWindow?: number
-  /** Per-request output cap for a model the catalog does not cap. */
+  /** 目录未设上限的模型所用的单请求输出上限。 */
   defaultMaxTokens?: number
-  /** Maximum provider idle time while one stream read is outstanding. */
+  /** 一次流式读进行中时 provider 允许的最大空闲时间。 */
   streamIdleTimeoutMs?: number
 }
 
 /**
- * Validate and complete the raw config.
+ * 校验并补全原始配置。
  *
- * Programmatic construction can bypass any schema, so bounds are judged here
- * and a bad value fails at load with the field named, rather than mid-request.
- * @param config - the raw entry config.
- * @returns the resolved connection facts.
+ * 编程式构造可以绕过任何 schema，因此在这里判定边界，坏值会在加载时
+ * 带字段名失败，而不是等到请求中途。
+ * @param config - 原始入口配置。
+ * @returns 解析后的连接事实。
  */
 export function resolveConnectionOptions(config: Config = {}): CodeBuddyConnectionOptions {
   const positiveInteger = (value: number | undefined, field: string, fallback: number): number => {
@@ -110,8 +108,7 @@ export function resolveConnectionOptions(config: Config = {}): CodeBuddyConnecti
     throw new Error('dsh-codebuddy: baseURL must not be empty')
   }
   return {
-    // A trailing slash would produce `//chat/completions`, which some gateways
-    // route differently.
+    // 末尾斜杠会产生 `//chat/completions`，某些网关对它的路由方式不同。
     baseURL: baseURL.replace(/\/+$/, ''),
     defaultContextWindow: positiveInteger(
       config.defaultContextWindow,
@@ -123,10 +120,10 @@ export function resolveConnectionOptions(config: Config = {}): CodeBuddyConnecti
   }
 }
 
-/** Mount the plugin: resolve config, then register the route. */
+/** 挂载插件：解析配置，然后注册路由。 */
 export function apply(ctx: Context, config: Config = {}): void {
-  // Resolved once at load so a bad entry config fails loudly here; the thunk
-  // keeps the adapter reading it per operation.
+  // 在加载时解析一次，让坏的入口配置在这里响亮地失败；thunk 让 adapter
+  // 在每次操作时读取它。
   const resolved = resolveConnectionOptions(config)
   const session = new CodeBuddySession(ctx.logger)
 
@@ -167,9 +164,8 @@ export function apply(ctx: Context, config: Config = {}): void {
     replace(providers: readonly string[]): void
   }
 
-  // A signed-out mount is legitimate: the route registers, and the first
-  // request explains how to sign in. Saying so once at load keeps that from
-  // being a surprise at the first prompt.
+  // 未登录时挂载是合法状态：路由照常注册，第一个请求会说明如何登录。
+  // 在加载时说明一次，避免用户在第一条 prompt 时才意外发现。
   void session.isLoggedIn().then((loggedIn) => {
     if (loggedIn) return
     ctx.logger.info(
@@ -177,6 +173,6 @@ export function apply(ctx: Context, config: Config = {}): void {
       + ' → CodeBuddy page in the Web UI (no API key needed).',
     )
   }).catch(() => {
-    // Reporting login state is advisory and must never fail the mount.
+    // 上报登录状态只是提示性质，绝不能让挂载失败。
   })
 }

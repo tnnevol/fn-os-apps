@@ -1,11 +1,11 @@
 /**
- * Host-side OAuth service exposed to the Web client over a private RPC channel.
+ * Host 侧 OAuth 服务，通过私有 RPC 通道暴露给 Web 客户端。
  *
- * The browser login is long-running (it waits for a human to finish signing
- * in), so it is split across two RPC endpoints: `startLogin` mints the
- * handshake and returns the URL the user must open, and `pollLogin` checks
- * whether that handshake has completed. `status` and `logout` are the
- * read/clear pair the settings page drives the rest of the time.
+ * 浏览器登录是长时运行的操作（要等待人工完成登录），因此把登录
+ * 流程拆成了两个 RPC endpoint：`startLogin` 负责生成握手，并
+ * 返回用户必须打开的 URL；`pollLogin` 则检查该握手是否已经
+ * 完成。`status` 与 `logout` 是设置页其余时间驱动的读取/清除
+ * 一对。
  *
  * @module dsh-codebuddy/auth-service
  */
@@ -94,39 +94,39 @@ interface ProbeOutcome {
   error?: string
 }
 
-/** The shape `status` returns to the client. */
+/** `status` 返回给客户端的形状。 */
 export interface CodeBuddyAuthStatus {
-  /** Whether a usable credential is stored. */
+  /** 是否存有可用凭据。 */
   loggedIn: boolean
-  /** Signed-in display name, when available. */
+  /** 已登录的显示昵称（若可用）。 */
   nickname?: string
-  /** Account uid, when available. */
+  /** 账号 uid（若可用）。 */
   uid?: string
-  /** Tencent user identity number (e.g. QQ openid), when the account discloses one. */
+  /** 腾讯用户身份号码（如 QQ openid），账号披露时才有。 */
   uin?: string
-  /** Enterprise/organization id, when the account is an enterprise tenant. */
+  /** 企业/组织 id，企业租户账号才有。 */
   enterpriseId?: string
-  /** Enterprise display name, when the account is an enterprise tenant. */
+  /** 企业显示名称，企业租户账号才有。 */
   enterpriseName?: string
-  /** Enterprise user name (the account's name within the tenant). */
+  /** 企业用户名（账号在租户内的名字）。 */
   enterpriseUserName?: string
-  /** Department full name, when the enterprise account discloses one. */
+  /** 部门全名，企业账号披露时才有。 */
   departmentFullName?: string
 }
 
-/** The shape `startLogin` returns to the client. */
+/** `startLogin` 返回给客户端的形状。 */
 export interface CodeBuddyLoginStart {
-  /** URL the user must open to sign in. */
+  /** 用户需要打开进行登录的 URL。 */
   authUrl: string
-  /** Handshake id; the client passes it back to `pollLogin`. */
+  /** 握手 id；客户端会把它回传给 `pollLogin`。 */
   state: string
 }
 
-/** The shape `pollLogin` returns to the client. */
+/** `pollLogin` 返回给客户端的形状。 */
 export interface CodeBuddyLoginPoll {
-  /** Whether the handshake has completed and the credential was persisted. */
+  /** 握手是否已完成且凭据已持久化。 */
   done: boolean
-  /** Signed-in display name, when the login just completed. */
+  /** 已登录的显示昵称（登录刚完成时给出）。 */
   nickname?: string
   /**
    * 失败原因（登录已确定失败时给出）。有值即表示不必再轮询：继续等待不会有结果，
@@ -136,8 +136,8 @@ export interface CodeBuddyLoginPoll {
 }
 
 /**
- * One metering window shipped to the client, a plain-data projection of
- * {@link UsageWindow} with optional fields made safe to omit.
+ * 发送到客户端的一个计量窗口，是 {@link UsageWindow} 的纯数据投影，
+ * 可选字段仅在存在时输出，缺省是安全的。
  */
 export interface CodeBuddyUsageWindow {
   name: string
@@ -147,27 +147,27 @@ export interface CodeBuddyUsageWindow {
   resetsAt?: string
 }
 
-/** The shape `usage` returns to the client. */
+/** `usage` 返回给客户端的形状。 */
 export interface CodeBuddyUsageResult {
-  /** Whether a usable credential is stored; false means no usage to show. */
+  /** 是否存有可用凭据；false 表示没有可展示的用量。 */
   loggedIn: boolean
-  /** One entry per metering window; empty when the plane answered nothing usable. */
+  /** 每个计量窗口一条；meter 平面没有可用数据时为空。 */
   windows: CodeBuddyUsageWindow[]
   /**
-   * The first window, surfaced for a single-bar affordance; `undefined` when
-   * the plane reported no windows.
+   * 第一个窗口，供单条进度条的呈现使用；平面未报告任何窗口时
+   * 为 `undefined`。
    */
   primary?: CodeBuddyUsageWindow
 }
 
-/** One stored account projected to the client. */
+/** 投影到客户端的一个存储账号。 */
 export interface CodeBuddyAccountView {
-  /** Stable local id; pass it to `switchAccount` / `removeAccount`. */
+  /** 稳定的本地 id；传给 `switchAccount` / `removeAccount` 使用。 */
   id: string
   nickname: string
-  /** Local display label; falls back to nickname when absent. */
+  /** 本地展示备注名；缺失时回退到昵称。 */
   label?: string
-  /** Network environment this credential was issued against, when known. */
+  /** 该凭据签发时所对应的网络环境（若已知）。 */
   environment?: string
   uid: string
   uin?: string
@@ -175,35 +175,35 @@ export interface CodeBuddyAccountView {
   enterpriseName?: string
   enterpriseUserName?: string
   departmentFullName?: string
-  /** Whether this is the active account every request authenticates with. */
+  /** 是否是所有请求都以其鉴权的当前账号。 */
   active: boolean
-  /** Whether the refresh token has expired — the account is offline and needs re-login. */
+  /** refresh token 是否已过期——该账号已离线，需要重新登录。 */
   expired: boolean
 }
 
-/** The shape `accounts` returns to the client. */
+/** `accounts` 返回给客户端的形状。 */
 export interface CodeBuddyAccountsResult {
-  /** Whether at least one usable credential is stored. */
+  /** 是否至少存有一个可用凭据。 */
   loggedIn: boolean
-  /** The active account, when signed in. */
+  /** 当前账号（已登录时给出）。 */
   current?: CodeBuddyAccountView
-  /** One entry per stored account, active first then insertion order. */
+  /** 每个存储账号一条，当前账号在前，其余按存储顺序。 */
   accounts: CodeBuddyAccountView[]
 }
 
-/** The shape `removeAccount` / `switchAccount` return to the client. */
+/** `removeAccount` / `switchAccount` 返回给客户端的形状。 */
 export interface CodeBuddyAccountsChanged {
   loggedIn: boolean
   current?: CodeBuddyAccountView
   accounts: CodeBuddyAccountView[]
 }
 
-/** One in-flight browser-login handshake, keyed by its own state. */
+/** 一次进行中的浏览器登录握手，以其自身的 state 为键。 */
 interface PendingLogin {
-  /** The exact URL handed to the browser; the copy button serves the same link. */
+  /** 交给浏览器打开的确切 URL；复制按钮提供的是同一个链接。 */
   authUrl?: string
   state: string
-  /** Resolves to the persisted storage once `pollAuthToken` succeeds. */
+  /** `pollAuthToken` 成功后 resolve 为已持久化的存储条目。 */
   promise: Promise<CodeBuddyAccountEntry | undefined>
   /**
    * 失败原因。登录失败时由 {@link CodeBuddyAuthService.runLogin} 写入，
@@ -213,9 +213,9 @@ interface PendingLogin {
   failure?: string
 }
 
-/** A successful RPC result. */
+/** 一个成功的 RPC 结果。 */
 interface RpcOk<T> { ok: true, value: T }
-/** A failed RPC result. */
+/** 一个失败的 RPC 结果。 */
 interface RpcErr { ok: false, error: { code: string, message: string, details: Record<string, unknown> } }
 
 function ok<T>(value: T): RpcOk<T> {
@@ -227,10 +227,10 @@ function err(code: string, message: string): RpcErr {
 }
 
 /**
- * Project one owned-data {@link UsageWindow} into the RPC-safe shape the
- * client receives, widening optional fields only when present.
- * @param window - the metering window.
- * @returns the client-safe projection.
+ * 把自有数据 {@link UsageWindow} 投影成客户端接收的 RPC 安全形状，
+ * 可选字段仅在存在时拓宽输出。
+ * @param window - 该计量窗口。
+ * @returns 客户端安全的投影。
  */
 function projectWindow(window: UsageWindow): CodeBuddyUsageWindow {
   return {
@@ -243,15 +243,15 @@ function projectWindow(window: UsageWindow): CodeBuddyUsageWindow {
 }
 
 /**
- * The CodeBuddy auth RPC service.
+ * CodeBuddy 鉴权 RPC 服务。
  *
- * A handshake is started by `startLogin`, polled to completion by `pollLogin`,
- * and its credential is picked up by the adapter's `CodeBuddySession` on its
- * next request — so a login completed through the UI reaches a running harness
- * without a restart. `logout` clears the file and invalidates the session cache.
+ * 握手由 `startLogin` 发起，再由 `pollLogin` 轮询至完成，
+ * 其凭据由适配器的 `CodeBuddySession` 在下一次请求时取用——
+ * 因此通过 UI 完成的登录，无需重启即可作用于正在运行的
+ * harness。`logout` 则会清空凭据文件，并使 session 缓存失效。
  */
 export class CodeBuddyAuthService {
-  /** In-flight handshakes by state id. */
+  /** 按 state id 索引的进行中握手。 */
   private readonly pending = new Map<string, PendingLogin>()
 
   private readonly logger: { warn: (m: unknown) => void, info: (m: unknown) => void }
@@ -268,7 +268,7 @@ export class CodeBuddyAuthService {
     private readonly session?: CodeBuddySession,
     /** 当前账号（或其凭据）变化后回调：用于触发 llm/adapters-updated，让模型选择器与用量即时刷新。 */
     private readonly onActiveChanged?: () => void,
-    /** DSH logical session query; absent only in profiles without persistence/query support. */
+    /** DSH logical session 查询；仅在无持久化/查询支持的 profile 中缺席。 */
     private readonly analytics?: SessionAnalyticsServices,
   ) {
     this.logger = ctx.logger
@@ -292,10 +292,10 @@ export class CodeBuddyAuthService {
         }
       }
       connectionCtx.effect(() => {
-        // dsh 0.1.2-rc.1 removed the per-channel `{ authority: 'loopback' }`
-        // trust option: every registered channel now rides the connection's
-        // own browser authentication and Host/Origin fence, which the web
-        // settings page already satisfies.
+        // dsh 0.1.2-rc.1 移除了按通道的 `{ authority: 'loopback' }`
+        // 信任选项：现在，每个注册的通道都依托连接自身的浏览器
+        // 鉴权与 Host/Origin 围栏，而 Web 设置页已经满足
+        // 这些要求。
         const dispose = connection.rpc.handle(
           CODEBUDDY_AUTH_CHANNEL,
           (endpoint, payload, signal) => this.dispatch(endpoint, payload, signal),
@@ -317,28 +317,28 @@ export class CodeBuddyAuthService {
       this.prefsLoadedFromDisk = config.fromDisk
       if (config.enabled) this.startAutoSwitchCycle()
     }).catch(() => {
-      // Loading prefs is advisory; the in-code defaults already stand.
+      // 读取偏好只是建议性的；代码内默认值已经生效。
     })
     void loadAutoCheckinConfig().then((config) => {
       this.autoCheckin = config.enabled
       if (config.enabled) this.startAutoCheckinCycle()
     }).catch(() => {
-      // Loading prefs is advisory; the in-code defaults already stand.
+      // 读取偏好只是建议性的；代码内默认值已经生效。
     })
     void loadAutoTravelConfig().then((config) => {
       this.autoTravel = config.enabled
       if (config.enabled) this.startTravelCycle()
     }).catch(() => {
-      // Loading prefs is advisory; the in-code defaults already stand.
+      // 读取偏好只是建议性的；代码内默认值已经生效。
     })
   }
 
-  /** Automatic daily sign-in flag (all accounts). Defaults on. */
+  /** 自动每日签到开关（全部账号）。默认开启。 */
   autoCheckin = true
 
   /**
-   * Consecutive auto-checkin cycle rounds in which EVERY account failed.
-   * After the limit the cycle stands down until the next successful round.
+   * 连续「每个账号都失败」的自动签到周期轮数。达到上限后周期退避停止，
+   * 直到出现下一轮成功。
    */
   private static readonly AUTO_CHECKIN_FAILURE_LIMIT = 3
   /**
@@ -423,8 +423,8 @@ export class CodeBuddyAuthService {
     return { status: 'ok', accounts: rows }
   }
 
-  /** Start the periodic automatic sign-in (startup once, then every 30 min,
-   *  matching workbuddy-switch's CHECKIN_RECOVERY_INTERVAL). */
+  /** 启动周期性自动签到（启动时执行一次，之后每 30 分钟一次，
+   *  对应 workbuddy-switch 的 CHECKIN_RECOVERY_INTERVAL）。 */
   startAutoCheckinCycle(): void {
     if (this.disposed) return
     if (this.autoCheckinTimer !== undefined) return
@@ -439,12 +439,12 @@ export class CodeBuddyAuthService {
     }
   }
 
-  /** Automatic buddy-travel flag (personal accounts only). Defaults on. */
+  /** 自动猫猫旅行开关（仅个人账号）。默认开启。 */
   autoTravel = true
 
   /**
-   * Consecutive travel rounds in which EVERY eligible account failed. After the
-   * limit the cycle stands down rather than hammering an unreachable plane.
+   * 连续「每个够格账号都失败」的旅行轮数。达到上限后周期退避停止，
+   * 而不是对一个不可达的平面持续捶打。
    */
   private static readonly TRAVEL_FAILURE_LIMIT = 3
   /**
@@ -732,9 +732,9 @@ export class CodeBuddyAuthService {
     }
   }
 
-  /** Start the travel cycles: dispatch on startup then every 30 min; claims on
-   *  startup then every 15 min, matching workbuddy-switch's TRAVEL_RETRY_INTERVAL
-   *  / TRAVEL_CLAIM_INTERVAL split. */
+  /** 启动旅行周期：派发在启动时执行一次，之后每 30 分钟一次；领取在启动时
+   *  执行一次，之后每 15 分钟一次，对应 workbuddy-switch 的
+   *  TRAVEL_RETRY_INTERVAL / TRAVEL_CLAIM_INTERVAL 拆分。 */
   startTravelCycle(): void {
     if (this.disposed) return
     if (this.travelTimer === undefined) {
@@ -767,7 +767,7 @@ export class CodeBuddyAuthService {
     try { this.onActiveChanged?.() } catch { /* 广播失败不影响账号操作结果 */ }
   }
 
-  /** Whether quota failures may switch the active account automatically. */
+  /** 额度失败时是否允许自动切换当前账号。 */
   /**
    * Host 上是否读取到了**磁盘上已有的** auto-switch 配置。
    *
@@ -778,13 +778,13 @@ export class CodeBuddyAuthService {
   private prefsLoadedFromDisk = false
 
   autoSwitch = true
-  /** Switch proactively once the active account's remaining allowance is under this percentage. */
+  /** 当前账号剩余额度低于该百分比时主动切换。 */
   autoSwitchThresholdPct = 10
   /**
-   * Consecutive auto-switch cycle rounds in which EVERY account probe failed
-   * (meter unreachable for all). After this many rounds the cycle stands down
-   * until the next successful probe — "all accounts errored" ends auto-switch
-   * instead of hammering a dead meter plane forever.
+   * 连续「每个账号探测都失败」的自动切换周期轮数（meter 对所有
+   * 账号都不可达）。达到该轮数后，周期退避停止，直到下一轮探测
+   * 成功——「所有账号都报错」应终止自动切换，而不是永远捶打
+   * 一个死掉的 meter 平面。
    */
   private static readonly ALL_PROBE_FAILURE_LIMIT = 3
   /**
@@ -798,16 +798,16 @@ export class CodeBuddyAuthService {
   private autoSwitchTimer: ReturnType<typeof setInterval> | undefined
   private readonly autoSwitchGuard = new RunGuard('auto-switch')
 
-  /** Push the persisted prefs to the host-side gate and cycle. */
+  /** 把已持久化的偏好推到 host 侧的门与周期。 */
   setAutoSwitchConfig(enabled: boolean, thresholdPct: number): void {
     this.autoSwitch = enabled
     this.autoSwitchThresholdPct = Math.max(0, Math.min(100, Math.round(thresholdPct)))
   }
 
   /**
-   * One proactive auto-switch pass: below-threshold check on the active
-   * account, probe the others, switch to the healthiest. Tracks consecutive
-   * all-probe-failure rounds and stands down after the limit.
+   * 一次主动自动切换轮：对当前账号做低于阈值的检查，探测其余
+   * 账号，并切换到其中最健康的那个。周期会记录连续「全部探测
+   * 失败」的轮数，并在达到上限之后退避停止。
    */
   async runAutoSwitchCycle(): Promise<void> {
     if (!this.autoSwitch) return
@@ -832,8 +832,8 @@ export class CodeBuddyAuthService {
         }
         void before
       } catch (error) {
-        // A thrown cycle means even the active-account probe errored: count it
-        // as a failed round when no probe succeeded.
+        // 抛异常的一轮意味着连当前账号的探测都出错了：在没有任何探测
+        // 成功时把它记为一轮失败。
         if (!probed) {
           this.autoSwitchBackoff.fail()
           this.logger?.warn?.(`dsh-codebuddy: auto-switch probe failed (${this.autoSwitchBackoff.consecutiveFailures}/${CodeBuddyAuthService.ALL_PROBE_FAILURE_LIMIT})`)
@@ -846,7 +846,7 @@ export class CodeBuddyAuthService {
   }
 
   /**
-   * Start the periodic proactive check (1min cadence, cheap meter probes).
+   * 启动周期性主动检查（1 分钟节奏，廉价的 meter 探测）。
    *
    * 间隔的取舍：主动切换的价值是「无感」——额度将尽时下一个提问悄悄换号，用户
    * 不感知一次失败。这要求轮询（纯被动只在失败后才知道）。
@@ -871,7 +871,7 @@ export class CodeBuddyAuthService {
     }
   }
 
-  /** Route one RPC endpoint to its handler. */
+  /** 把一个 RPC endpoint 路由到对应的 handler。 */
   private async dispatch(endpoint: string, payload: unknown, signal: AbortSignal): Promise<RpcOk<unknown> | RpcErr> {
     switch (endpoint) {
       case 'status': return ok(await this.status())
@@ -1047,7 +1047,7 @@ export class CodeBuddyAuthService {
     }
   }
 
-  /** Project one stored entry to its client view. */
+  /** 把一个存储条目投影成其客户端视图。 */
   private projectEntry(storage: CodeBuddyStorage, index: number, activeId: string): CodeBuddyAccountView {
     const entry = storage.accounts[index]!
     const account = entry.account
@@ -1067,15 +1067,15 @@ export class CodeBuddyAuthService {
     }
   }
 
-  /** The accounts projection from the current document. */
+  /** 基于当前文档的账号投影。 */
   private async projectAccounts(): Promise<CodeBuddyAccountsResult> {
     const storage = await loadStorage()
     if (storage === undefined) return { loggedIn: false, accounts: [] }
     const activeId = storage.accounts.some(entry => entry.id === storage.activeId)
       ? storage.activeId
       : storage.accounts[0]!.id
-    // Preserve the persisted account order for stable account presentation and
-    // automatic fallback behavior.
+    // 保持持久化的账号顺序，以获得稳定的账号展示顺序，
+    // 以及一致的自动回退行为。
     const accounts = storage.accounts.map((_, index) => this.projectEntry(storage, index, activeId))
     const current = accounts.find(account => account.active) ?? accounts[0]
     return {
@@ -1086,22 +1086,22 @@ export class CodeBuddyAuthService {
   }
 
   /**
-   * Read the stored accounts without requiring one.
-   * @returns every stored account with the active one first.
+   * 读取存储账号而不要求存在。
+   * @returns 全部存储账号，当前账号在前。
    */
   async accounts(): Promise<CodeBuddyAccountsResult> {
     return this.projectAccounts()
   }
 
   /**
-   * Remove one stored account by id.
+   * 按 id 移除一个存储账号。
    *
-   * Removing the active account promotes the next stored entry (in insertion
-   * order) so the harness stays signed in with the remaining account rather
-   * than dropping to signed-out. Removing the last account is the signed-out
-   * end state.
-   * @param id - the local account id from `accounts`.
-   * @returns the accounts projection after the removal.
+   * 移除当前账号时，会按存储顺序提升下一个条目，好让 harness
+   * 继续保持以剩余账号登录的状态，而不会掉到未登录的状态。
+   * 若把最后一个账号也给移除掉，则等于进入了未登录的最终状态。
+   * 该操作完成后的返回值是移除之后的账号投影。
+   * @param id - `accounts` 返回的本地账号 id。
+   * @returns 移除后的账号投影。
    */
   async removeAccount(id: string): Promise<CodeBuddyAccountsChanged> {
     /**
@@ -1117,7 +1117,7 @@ export class CodeBuddyAuthService {
       if (storage === undefined) return undefined
       const remaining = storage.accounts.filter(entry => entry.id !== id)
       if (remaining.length === storage.accounts.length) {
-        // Unknown id: no mutation, report the unchanged roster.
+        // 未知 id：不做变更，原样返回账号列表。
         return undefined
       }
       if (remaining.length === 0) {
@@ -1143,10 +1143,10 @@ export class CodeBuddyAuthService {
   }
 
   /**
-   * Set or clear one account's local display label.
-   * @param id - the local account id from `accounts`.
-   * @param label - the new label (≤30 chars); empty clears it.
-   * @returns the accounts projection after the rename.
+   * 设置或清除一个账号的本地展示备注名。
+   * @param id - `accounts` 返回的本地账号 id。
+   * @param label - 新备注名（≤30 字符）；空串表示清除。
+   * @returns 改名后的账号投影。
    */
   async renameLabel(id: string, label: string | undefined): Promise<CodeBuddyAccountsChanged> {
     const trimmed = label?.trim()
@@ -1171,9 +1171,9 @@ export class CodeBuddyAuthService {
   }
 
   /**
-   * Make one stored account active.
-   * @param id - the local account id from `accounts`.
-   * @returns the accounts projection after the switch.
+   * 把一个存储账号设为当前账号。
+   * @param id - `accounts` 返回的本地账号 id。
+   * @returns 切换后的账号投影。
    */
   async switchAccount(id: string): Promise<CodeBuddyAccountsChanged> {
     /**
@@ -1200,8 +1200,8 @@ export class CodeBuddyAuthService {
   }
 
   /**
-   * Read the active account's credential without requiring one.
-   * @returns the current auth status; `loggedIn` is false when nothing is stored.
+   * 读取当前账号的凭据而不要求存在。
+   * @returns 当前鉴权状态；没有存储内容时 `loggedIn` 为 false。
    */
   async status(): Promise<CodeBuddyAuthStatus> {
     const stored = await loadStorage()
@@ -1222,11 +1222,11 @@ export class CodeBuddyAuthService {
   }
 
   /**
-   * Start a browser-login handshake against the requested environment.
-   * @param options - `label` (local display name), `environment`
-   *   (`CODEBUDDY_INTERNET_ENVIRONMENT` value) and `endpoint` (explicit
-   *   service root for cloudhosted/selfhosted).
-   * @returns the URL the user must open.
+   * 针对请求的环境发起一次浏览器登录握手。
+   * @param options - `label`（本地显示名）、`environment`
+   *   （`CODEBUDDY_INTERNET_ENVIRONMENT` 值）和 `endpoint`
+   *   （cloudhosted/selfhosted 的显式服务根地址）。
+   * @returns 用户需要打开的 URL。
    */
   async startLogin(options: {
     label?: string
@@ -1237,8 +1237,8 @@ export class CodeBuddyAuthService {
   } = {}): Promise<CodeBuddyLoginStart> {
     const client = normalizeClientId(options.client)
     const environment = options.environment?.trim().toLowerCase()
-    // cloudhosted/selfhosted have no default endpoint: an explicit one is
-    // required, otherwise the handshake would go to the wrong host.
+    // cloudhosted/selfhosted 没有默认端点：必须显式给出，否则握手会
+    // 打到错误的主机。
     const explicitEndpoint = options.endpoint?.trim().replace(/\/+$/, '')
     const defaultEndpoint = CODEBUDDY_ENVIRONMENT_ENDPOINTS[CODEBUDDY_DEFAULT_ENVIRONMENT as Exclude<CodeBuddyEnvironment, 'cloudhosted' | 'selfhosted'>]
     // 显式端点优先；WorkBuddy 客户端固定走自己的服务地址（与环境无关）。
@@ -1256,8 +1256,8 @@ export class CodeBuddyAuthService {
       promise: this.runLogin(endpoint, handshake.state, { ...options, client }),
     }
     this.pending.set(handshake.state, pending)
-    // Reap the entry once the handshake settles either way, so the table does
-    // not grow without bound for abandoned logins.
+    // 握手无论成败、一旦落定就回收该条目，避免被用户放弃的登录
+    // 让这张表无界增长。
     void pending.promise.finally(() => {
       if (this.pending.get(handshake.state) === pending) {
         this.pending.delete(handshake.state)
@@ -1267,25 +1267,25 @@ export class CodeBuddyAuthService {
   }
 
   /**
-   * The sign-in URL of a started handshake — the SAME link the host opened.
-   * Served for the copy button so cross-device authorization shares one link.
-   * @param state - the handshake id from `startLogin`.
-   * @returns the link, or `undefined` when the handshake is unknown/expired.
+   * 已发起握手的登录 URL——与 host 打开的是**同一个**链接。
+   * 供复制按钮使用，让跨设备授权共享同一条链接。
+   * @param state - `startLogin` 返回的握手 id。
+   * @returns 该链接；握手未知/已过期时为 `undefined`。
    */
   async loginLink(state: string): Promise<string | undefined> {
     return this.pending.get(state)?.authUrl
   }
 
   /**
-   * Check whether a started handshake has completed.
-   * @param state - the handshake id from `startLogin`.
-   * @returns whether the login completed and the credential was persisted.
+   * 检查已发起的握手是否已完成。
+   * @param state - `startLogin` 返回的握手 id。
+   * @returns 登录是否完成且凭据已持久化。
    */
   async pollLogin(state: string): Promise<CodeBuddyLoginPoll> {
     const pending = this.pending.get(state)
     if (pending === undefined) {
-      // Unknown/already-reaped state: surface as not-done rather than an error,
-      // because the client's poll loop may outlive the entry by one tick.
+      // 未知/已被回收的 state：以未完成而非错误呈现，因为客户端的轮询
+      // 循环可能比条目多活一拍。
       return { done: false }
     }
     const entry = await pending.promise
@@ -1298,20 +1298,20 @@ export class CodeBuddyAuthService {
     }
   }
 
-  /** Remove every stored account. */
+  /** 移除全部存储账号。 */
   async logout(): Promise<void> {
     await clearStorage()
     this.notifyModels()
   }
 
   /**
-   * Read the CodeBuddy usage snapshot for the settings surface.
+   * 读取设置页所需的 CodeBuddy 用量快照。
    *
-   * Delegates to the session, which resolves a refreshed identity before the
-   * meter read and never throws on a meter outage. A signed-out account is
-   * reported as `loggedIn: false` with empty windows so the client can hide
-   * the affordance rather than render a broken bar.
-   * @returns the usage projection, or a signed-out shape when nothing is stored.
+   * 委托给 session 处理：session 会在读取 meter 前先解析出一个
+   * 刷新过的身份，并且在 meter 故障时绝不抛出。未登录的账号以
+   * `loggedIn: false` 加空 windows 呈现，好让客户端隐藏该呈现，
+   * 而不是渲染一条坏掉进度条。
+   * @returns 用量投影；没有存储内容时返回未登录形状。
    */
   async usage(): Promise<CodeBuddyUsageResult> {
     const snapshot: UsageSnapshot | undefined = await this.session?.usage()
@@ -1324,14 +1324,14 @@ export class CodeBuddyAuthService {
   }
 
   /**
-   * Drive one handshake to a persisted credential.
+   * 把一次握手驱动成一个已持久化的凭据。
    *
-   * Uses `buildAccountEntry` so the on-disk shape is the one every consumer
-   * reads. A completed login appends a new entry and makes it active; a
-   * re-login of an account already in the store replaces that account's
-   * entry (dedupe by uid) rather than duplicating it. Returns `undefined` on
-   * any failure so the client's poll resolves `done: false` and may retry
-   * from `startLogin`.
+   * 使用 `buildAccountEntry`，确保落盘的形状与所有消费方读取
+   * 到的完全一致。完成的登录会追加一个新条目，并将其设为当前
+   * 账号；对已在库中的账号重新登录，会替换该账号的条目（按 uid
+   * 去重），而不是复制一份。任何失败都会返回 `undefined`，让
+   * 客户端的轮询 resolve 为 `done: false`，并允许从 `startLogin`
+   * 重试。
    */
   private async runLogin(
     endpoint: string,
@@ -1367,14 +1367,14 @@ export class CodeBuddyAuthService {
        */
       const labelSpecified = options.label !== undefined && options.label.trim().length > 0
       const stored = await loadStorage()
-      // The existing entry for the same uid (if any) keeps its local id and
-      // position; its credential is replaced by the fresh one. A brand-new
-      // account is appended and becomes active. A fresh label overrides an
-      // existing one; an empty label keeps whatever was there before.
+      // 同 uid 的已有条目（若存在）会保留其本地的 id 与位置；其凭据
+      // 则会被新凭据给替换掉。全新的账号则会被追加进列表，并成为
+      // 当前的账号。新的 label 会覆盖旧的；而空 label 则会保留原有
+      // 的取值。
       const existing = stored?.accounts.find(entry => entry.account.uid === account.uid)
-      // The login becomes the active account unless the caller asked to keep
-      // the current one (a re-login of an offline account must not steal
-      // traffic from whoever took over while it was down).
+      // 本次登录会成为当前账号，除非调用方明确要求了保留当前账号
+      // （对离线账号的重新登录来说，它是不能去抢走此前下线期间接管了
+      // 流量的那个账号的）。
       const activate = options.activate !== false
       let next: CodeBuddyStorage
       if (stored === undefined) {
@@ -1432,8 +1432,8 @@ export class CodeBuddyAuthService {
       this.notifyModels()
       return fresh
     } catch (error) {
-      // A transport or service failure ends the handshake; the client may
-      // retry from `startLogin`. 但**必须把原因带回**：静默返回 undefined 会让
+      // 传输或服务层面的失败都会终结本次握手；客户端可以从
+      // `startLogin` 重试。但**必须把原因带回**：静默返回 undefined 会让
       // 前端一直轮询到超时，用户看不到失败原因（workbuddy 登录无反应即由此而来）。
       // 原因写在本次握手的 pending 条目上，而不是实例字段——并发登录时后者会串台。
       const pendingEntry = this.pending.get(state)

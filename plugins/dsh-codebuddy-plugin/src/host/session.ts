@@ -1,12 +1,11 @@
 /**
- * The signed-in session: token freshness and the cached model catalog.
+ * 已登录会话：token 的新鲜度与缓存的模型目录。
  *
- * One object owns both because they share a failure mode — an expired token
- * makes the catalog unreadable — and because both must be resolved before a
- * request can be built. Refresh is single-flighted: the adapter resolves the
- * identity once per stream call and the catalog once per listing, so without
- * coalescing a burst of concurrent calls would each spend the refresh token
- * and all but one would be racing to write the file.
+ * 两者由同一个对象持有，因为它们共享同一种失败模式——token 过期会导致目录
+ * 不可读——也因为两者都必须先解析出来才能构造请求。刷新是单飞（single-flight）
+ * 的：adapter 每次流式调用解析一次身份、每次列表读取解析一次目录，如果不做
+ * 合并，一波并发调用会各自消耗一次 refresh token，而且除一个之外全都在竞态
+ * 写文件。
  *
  * @module dsh-codebuddy/session
  */
@@ -22,10 +21,10 @@ import { loadStorage, saveStorage, mutateStorage, activeEntry, resolveEntryEndpo
 import type { CodeBuddyAccountEntry, CodeBuddyStorage } from './storage.ts'
 import type { CodeBuddyModel } from './types.ts'
 
-/** Refresh this long before the recorded expiry rather than exactly at it. */
+/** 比记录的过期时间提前很久刷新，而不是卡着过期点刷新。 */
 const REFRESH_SKEW_MS = 60_000
 
-/** How long a read catalog is reused before the service is asked again. */
+/** 读到的目录复用多久后才重新向服务端请求。 */
 const CATALOG_TTL_MS = 5 * 60 * 1000
 
 /**
@@ -43,7 +42,7 @@ const MIN_SWITCH_GAIN_PCT = 5
  */
 const CANDIDATE_MIN_REMAINING_PCT = 1
 
-/** Raised when nothing is signed in; carries the remedy in its message. */
+/** 未登录任何账号时抛出；message 中携带解决办法。 */
 export class NotLoggedInError extends Error {
   constructor(detail: string) {
     super(detail)
@@ -51,19 +50,18 @@ export class NotLoggedInError extends Error {
   }
 }
 
-/** A logger surface compatible with cordis's, so the session can be used bare. */
+/** 与 cordis 兼容的 logger 接口，使 session 可以脱离宿主直接使用。 */
 export interface SessionLogger {
   warn: (message: unknown) => void
   error: (message: unknown) => void
 }
 
 /**
- * Owns the stored credentials for one plugin instance.
+ * 持有一个插件实例的存储凭据。
  *
- * The store is multi-account; every request authenticates with the active
- * entry. The document is re-read from disk when absent from memory, which is
- * what lets a login or a switch completed in the Web UI reach a *running*
- * harness without a restart.
+ * 存储支持多账号；每个请求都以当前活动条目认证。文档在内存缺失时从磁盘重读，
+ * 这正是让在 Web UI 完成的登录或切换无需重启就能触达一个*运行中的* harness
+ * 的机制。
  */
 export class CodeBuddySession {
   private storage: CodeBuddyStorage | undefined
@@ -135,7 +133,7 @@ export class CodeBuddySession {
   }
 
   /**
-   * Forget the in-memory credentials and catalog, forcing a re-read from disk.
+   * 忘记内存中的凭据与目录，强制从磁盘重读。
    *
    * 同时自增代际：在途的刷新/目录读取据此判定自己已过期，**既不复用也不回写**。
    * 只清 `storage`/`catalog` 是不够的——在途 promise 仍会把陈旧快照落地。
@@ -161,7 +159,7 @@ export class CodeBuddySession {
     return this.remainingPercentOf(entry, signal)
   }
 
-  /** Public identity resolution for panel probes (per-entry, no refresh). */
+  /** 面板探测用的公开身份解析（按条目、不触发刷新）。 */
   identityFor(entry: CodeBuddyAccountEntry): CodeBuddyIdentity {
     return this.identityOf(entry)
   }
@@ -181,9 +179,8 @@ export class CodeBuddySession {
   }
 
   /**
-   * The stored credential document, read from disk on first use and after
-   * invalidation.
-   * @throws NotLoggedInError when nothing is stored.
+   * 存储的凭据文档，首次使用及失效后从磁盘读取。
+   * @throws NotLoggedInError 未存储任何凭据时抛出。
    */
   private async require(): Promise<CodeBuddyStorage> {
     this.storage ??= await loadStorage()
@@ -196,24 +193,24 @@ export class CodeBuddySession {
     return this.storage
   }
 
-  /** Whether any account credential exists, without requiring one. */
+  /** 是否存在任意账号凭据，但不强制要求有。 */
   async isLoggedIn(): Promise<boolean> {
     this.storage ??= await loadStorage()
     return this.storage !== undefined
   }
 
-  /** The active account's nickname, when a credential exists. */
+  /** 存在凭据时，当前活动账号的昵称。 */
   async nickname(): Promise<string | undefined> {
     this.storage ??= await loadStorage()
     return this.storage !== undefined ? activeEntry(this.storage).account.nickname : undefined
   }
 
   /**
-   * A usable identity for the active account, refreshing the access token
-   * when it is at or near expiry. Concurrent callers share one refresh.
-   * @returns the identity to authenticate a request with.
-   * @throws NotLoggedInError when nothing is stored, or when the refresh token
-   *   has itself expired and only a new browser login can recover.
+   * 当前活动账号的可用身份，token 已到或临近过期时刷新。并发调用方共享同一次
+   * 刷新。
+   * @returns 用于认证请求的身份。
+   * @throws NotLoggedInError 未存储任何凭据时抛出；或 refresh token 本身已过期、
+   *   只能重新走浏览器登录才能恢复时抛出。
    */
   async identity(): Promise<CodeBuddyIdentity> {
     const storage = await this.require()
@@ -279,16 +276,14 @@ export class CodeBuddySession {
       accounts: storage.accounts.map(candidate => candidate.id === entry.id ? refreshedEntry : candidate),
     }
     this.storage = next
-    // A catalog read under the old token is still valid, but the write below
-    // may fail and leave the next process on a stale token; the catalog is
-    // cheap to re-read, so it is dropped rather than reasoned about.
+    // 旧 token 下读到的目录仍然有效，但下面的写入可能失败，导致下一个进程拿
+    // 到陈旧 token；目录重读代价很小，所以直接丢弃而不是去推理各种情况。
     this.catalog = undefined
     try {
       await saveStorage(next)
     } catch (error) {
-      // The refreshed token works for this process even if it could not be
-      // persisted; failing the request would turn a storage problem into an
-      // outage.
+      // 即使未能持久化，刷新出的 token 对本进程依然可用；让请求失败会把一个
+      // 存储问题变成一次服务中断。
       this.logger?.warn('dsh-codebuddy: refreshed the session but could not persist it')
       this.logger?.warn(error)
     }
@@ -296,8 +291,8 @@ export class CodeBuddySession {
   }
 
   /**
-   * The headers every authenticated CodeBuddy request carries.
-   * @returns the identity headers, with the session refreshed if needed.
+   * 每个已认证的 CodeBuddy 请求都会携带的请求头。
+   * @returns 身份请求头；必要时会先刷新会话。
    */
   async authHeaders(): Promise<Record<string, string>> {
     const identity = await this.identity()
@@ -311,10 +306,9 @@ export class CodeBuddySession {
   }
 
   /**
-   * The OpenAI-compatible chat base for the ACTIVE account
-   * (`<entry endpoint>/v2`), or `undefined` when nothing is stored — the
-   * caller then falls back to its configured default.
-   * @returns the chat base URL, or `undefined` when signed out.
+   * 当前**活动账号**的 OpenAI 兼容聊天基址（`<entry endpoint>/v2`）；未存储
+   * 任何凭据时为 `undefined`——调用方随即回退到其配置的默认值。
+   * @returns 聊天基址 URL；未登录时为 `undefined`。
    */
   chatBase(): string | undefined {
     return this.storage !== undefined ? `${resolveEntryEndpoint(activeEntry(this.storage))}/v2` : undefined
@@ -353,10 +347,9 @@ export class CodeBuddySession {
   }
 
   /**
-   * Accounts that can take over traffic right now: a stored credential whose
-   * refresh token has not expired. Order follows the stored roster, so the
-   * caller's first candidate is the most recently added fallback.
-   * @returns the candidate entries, or `undefined` when signed out.
+   * 此刻能够接管流量的账号：凭据已存储且 refresh token 尚未过期。顺序跟随
+   * 存储的花名册，因此调用方的第一个候选就是最近添加的备用账号。
+   * @returns 候选账号条目；未登录时为 `undefined`。
    */
   async failoverCandidates(): Promise<readonly CodeBuddyAccountEntry[] | undefined> {
     const storage = await loadStorage()
@@ -377,13 +370,11 @@ export class CodeBuddySession {
   }
 
   /**
-   * The remaining-allowance percentage for one account, probed against its
-   * own endpoint: 100 − usedPercent across the combined metering windows, or
-   * `undefined` when the meter plane was unreachable or answered nothing
-   * usable. A probe failure is NOT a quota verdict — the account stays a
-   * candidate.
-   * @param entry - the account to probe.
-   * @param signal - optional cancellation.
+   * 单个账号的剩余额度百分比，针对其自身端点探测：跨合计计量窗口取
+   * 100 − 已用百分比；meter 平面不可达或没有返回可用数据时为 `undefined`。
+   * 探测失败不等于额度判决——该账号仍是候选。
+   * @param entry - 要探测的账号。
+   * @param signal - 可选取消。
    */
   private async remainingPercentOf(entry: CodeBuddyAccountEntry, signal?: AbortSignal): Promise<number | undefined> {
     // 走统一探测缓存：与面板共享同一份快照，避免「面板说还剩 60%，策略却判不足」。
@@ -397,18 +388,15 @@ export class CodeBuddySession {
   }
 
   /**
-   * Proactive failover: called by the auto-switch cycle (settings toggle +
-   * usage polling). Probes every non-active, non-expired account and switches
-   * to the one with the most remaining allowance when the ACTIVE account's
-   * remaining percentage has dropped below `thresholdPct`. Accounts that
-   * fail their probe are skipped, not penalized; when no candidate beats the
-   * threshold the active account stays — the reactive adapter failover on a
-   * real quota rejection remains the last line of defense.
-   * @param thresholdPct - switch once the active account's remaining
-   *   allowance falls under this percentage (0–100).
-   * @param signal - optional cancellation for the probes.
-   * @returns the takeover names, or `undefined` when no switch was made
-   *   (not yet below threshold, no candidate, or every probe failed).
+   * 主动故障转移：由自动切换周期（设置开关 + 用量轮询）调用。探测所有非活动、
+   * 未过期的账号，当活动账号的剩余百分比跌破 `thresholdPct` 时，切换到剩余
+   * 额度最多的那一个。探测失败的账号会被跳过而不是受罚；没有候选能胜过阈值时
+   * 活动账号保持不动——面对真实的额度拒绝，adapter 的被动故障转移仍是最后
+   * 一道防线。
+   * @param thresholdPct - 活动账号的剩余额度低于该百分比（0–100）即切换。
+   * @param signal - 探测的可选取消。
+   * @returns 接管的账号名；未发生切换时为 `undefined`（尚未跌破阈值、没有候选、
+   *   或所有探测都失败）。
    */
   async failoverIfBelowThreshold(
     thresholdPct: number,
@@ -468,9 +456,9 @@ export class CodeBuddySession {
   }
 
   /**
-   * Make one stored account active and persist the switch.
-   * @param id - the local account id.
-   * @returns whether the switch was applied.
+   * 把一个已存储的账号置为活动账号并持久化切换。
+   * @param id - 本地账号 id。
+   * @returns 切换是否生效。
    */
   async switchTo(id: string, expectedActiveId?: string): Promise<boolean> {
     /**
@@ -507,13 +495,12 @@ export class CodeBuddySession {
       return { ...current, activeId: id }
     })
     if (!switched) return false
-    // Drop the in-memory caches so the next request re-reads disk and picks up
-    // the new credential, endpoint, and catalog.
+    // 丢弃内存缓存，让下一个请求重读磁盘，取到新的凭据、端点与目录。
     this.invalidate()
     return true
   }
 
-  /** The active account's display facts, for takeover notices. */
+  /** 当前活动账号的展示信息，供接管通知使用。 */
   async activeAccountSummary(): Promise<{ id: string, nickname: string } | undefined> {
     const storage = await loadStorage()
     if (storage === undefined) return undefined
@@ -522,10 +509,9 @@ export class CodeBuddySession {
   }
 
   /**
-   * The CodeBuddy model catalog, cached briefly and shared between concurrent
-   * readers.
-   * @param signal - optional cancellation for the underlying read.
-   * @returns the catalog models in service order.
+   * CodeBuddy 模型目录，短暂缓存并在并发读取者之间共享。
+   * @param signal - 底层读取的可选取消。
+   * @returns 按服务端顺序排列的目录模型。
    */
   async models(signal?: AbortSignal): Promise<readonly CodeBuddyModel[]> {
     const cached = this.catalog
@@ -555,19 +541,16 @@ export class CodeBuddySession {
       getEnterpriseModels(endpoint, identity, signal),
     ])
     const personal = config.models.filter(model => typeof model.id === 'string' && model.id.length > 0)
-    // Enterprise custom models live on a separate console endpoint (the
-    // personal catalog does not list them). Their capacity field is
-    // `maxInputTokens`, so it is normalized onto the shared `maxAllowedSize`
-    // spelling the listing and resolve paths already consume. A duplicate id
-    // is dropped in favor of the personal entry, which carries the richer
-    // capability/reasoning metadata.
+    // 企业自定义模型走独立的控制台端点（个人目录不列出它们）。其容量字段是
+    // `maxInputTokens`，因此归一化到列表与解析路径已经在消费的共享拼写
+    // `maxAllowedSize` 上。重复的 id 会被丢弃、以个人条目为准，后者携带更丰富的
+    // 能力/推理元数据。
     const seen = new Set<string>(personal.map(model => model.id))
     const custom: CodeBuddyModel[] = []
     for (const model of enterpriseModels) {
       if (typeof model.id !== 'string' || model.id.length === 0 || seen.has(model.id)) continue
-      // `disabledMultiModel` marks a model the console does not offer in the
-      // multi-model selector (e.g. a completion-only model); the official
-      // client likewise keeps it out of the picker.
+      // `disabledMultiModel` 标记控制台多模型选择器不提供的模型（例如仅补全的
+      // 模型）；官方客户端同样不把它放进选择器。
       if (model.disabledMultiModel === true) continue
       seen.add(model.id)
       custom.push({
@@ -589,13 +572,12 @@ export class CodeBuddySession {
   }
 
   /**
-   * The catalog, or an empty list when it cannot be read.
+   * 模型目录；无法读取时返回空列表。
    *
-   * Listing models is a browsing action on a settings page, so a failure must
-   * degrade to "nothing to show" rather than break the page. The request path
-   * uses {@link models} directly and keeps the real failure.
-   * @param signal - optional cancellation.
-   * @returns the catalog, or an empty list.
+   * 列出模型是设置页上的浏览动作，因此失败必须降级为「没有可展示的内容」，
+   * 而不是弄坏页面。请求路径直接使用 {@link models} 并保留真实错误。
+   * @param signal - 可选取消。
+   * @returns 目录；或空列表。
    */
   async modelsOrEmpty(signal?: AbortSignal): Promise<readonly CodeBuddyModel[]> {
     try {
@@ -609,17 +591,15 @@ export class CodeBuddySession {
   }
 
   /**
-   * The CodeBuddy usage/quota snapshot, or `undefined` when it cannot be read.
+   * CodeBuddy 用量/额度快照；无法读取时为 `undefined`。
    *
-   * Usage is an advisory read on a settings surface, so a meter outage must
-   * degrade to "nothing to show" rather than propagate: a {@link NotLoggedInError}
-   * surfaces as a signed-out state, and every other failure (transport, parse,
-   * expired refresh) resolves to `undefined` after a warning. The identity is
-   * resolved through the same single-flight refresh as a chat request, so a
-   * concurrent meter read never spends the refresh token twice.
-   * @param signal - optional cancellation.
-   * @returns the snapshot, or `undefined` when nothing is stored or the meter
-   *   plane was unreachable.
+   * 用量是设置界面上的提示性读取，因此 meter 故障必须降级为「没有可展示的
+   * 内容」而不是向上传播：{@link NotLoggedInError} 表现为未登录状态，其余一切
+   * 失败（传输、解析、refresh token 过期）在告警后解析为 `undefined`。身份与
+   * 聊天请求走同一个单飞刷新解析，因此并发的 meter 读取绝不会把 refresh token
+   * 消耗两次。
+   * @param signal - 可选取消。
+   * @returns 快照；未存储任何凭据或 meter 平面不可达时为 `undefined`。
    */
   async usage(signal?: AbortSignal): Promise<UsageSnapshot | undefined> {
     let identity: CodeBuddyIdentity

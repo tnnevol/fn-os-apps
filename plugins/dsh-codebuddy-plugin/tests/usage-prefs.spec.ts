@@ -4,7 +4,7 @@ import {
   setTestStorageKey,
   useTestStorageEngine,
 } from '@nanostores/persistent'
-import { $autoSwitch, $autoSwitchThreshold, $showUsage, USAGE_PREF_STORES } from '../src/client/usage-prefs.ts'
+import { $autoSwitch, $autoSwitchThreshold, $showUsage, USAGE_PREF_STORES } from '../src/client/store/usage-prefs.ts'
 
 /**
  * 偏好持久化：**存储格式必须与迁移前完全一致**。
@@ -72,7 +72,7 @@ describe('阈值偏好的存储格式与边界', () => {
   })
 
   it('小数按四舍五入，且**内存与存储一致**（不留到刷新才生效）', async () => {
-    const { setThreshold } = await import('../src/client/usage-prefs.ts')
+    const { setThreshold } = await import('../src/client/store/usage-prefs.ts')
     setThreshold(7.6)
     // persistentAtom 的 set 只把编码值写进 storage，atom 自身保留原始值，
     // 因此必须在写入前归一化，否则内存读到 7.6 而 storage 里是 "8"。
@@ -81,7 +81,7 @@ describe('阈值偏好的存储格式与边界', () => {
   })
 
   it('越界写入也被夹紧（内存与存储同样一致）', async () => {
-    const { setThreshold } = await import('../src/client/usage-prefs.ts')
+    const { setThreshold } = await import('../src/client/store/usage-prefs.ts')
     setThreshold(999)
     expect($autoSwitchThreshold.get()).toBe(10)
     expect(getTestStorage()['dsh-codebuddy-auto-switch:threshold']).toBe('10')
@@ -94,7 +94,7 @@ describe('批量订阅', () => {
   it('订阅时**不**立即触发（否则同步 host 会多发请求）', async () => {
     // nanostores 的 atom.subscribe 会立即回调一次；这里有 5 个 store，
     // 用 subscribe 会造成订阅瞬间 5 次回调 = 5 次多余 RPC。实现里用的是 listen。
-    const { subscribeUsagePref } = await import('../src/client/usage-prefs.ts')
+    const { subscribeUsagePref } = await import('../src/client/store/usage-prefs.ts')
     let calls = 0
     const dispose = subscribeUsagePref(() => { calls += 1 })
     expect(calls).toBe(0)
@@ -102,7 +102,7 @@ describe('批量订阅', () => {
   })
 
   it('任一偏好变化都会触发一次回调', async () => {
-    const { subscribeUsagePref } = await import('../src/client/usage-prefs.ts')
+    const { subscribeUsagePref } = await import('../src/client/store/usage-prefs.ts')
     let calls = 0
     const dispose = subscribeUsagePref(() => { calls += 1 })
     $showUsage.set(false)
@@ -113,7 +113,7 @@ describe('批量订阅', () => {
   })
 
   it('取消订阅后不再回调', async () => {
-    const { subscribeUsagePref } = await import('../src/client/usage-prefs.ts')
+    const { subscribeUsagePref } = await import('../src/client/store/usage-prefs.ts')
     let calls = 0
     const dispose = subscribeUsagePref(() => { calls += 1 })
     dispose()

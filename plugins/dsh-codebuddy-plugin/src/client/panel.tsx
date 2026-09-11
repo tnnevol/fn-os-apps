@@ -51,14 +51,14 @@ import {
   DshTypography,
 } from '@tnnevol/dsh-semi-ui'
 import { CODEBUDDY_AUTH_CHANNEL, CODEBUDDY_ENVIRONMENT_LABELS } from '../contracts/constants.ts'
-import type { CodeBuddyLocaleKey } from './locales.ts'
+import type { CodeBuddyLocaleKey } from './locales/index.ts'
 import type { ConnectionRpc, AccountsResult } from './rpc.ts'
 import { describeRpcError } from './rpc.ts'
 import { PanelRouteController } from './panel-route.ts'
 import type { PanelRoute } from './panel-route.ts'
 import { classifyResources, forgetResources, readResources, recordResources } from './resource-history.ts'
 import type { ClassifiedResource, LiveResource, ResourceLifecycle } from './resource-history.ts'
-import { TokenStatsStore } from './token-stats-store.ts'
+import { TokenStatsStore } from './store/token-stats.ts'
 import { activityCellSize } from './activity-grid.ts'
 import { sortSegmentsByValueDesc } from './segment-bar.ts'
 import {
@@ -69,7 +69,7 @@ import {
 } from '../contracts/constants.ts'
 import { formatProbeAge, formatResetDate, formatUpdatedAt } from './format-time.ts'
 import { identityRows, type AccountIdentityDetail } from './identity.ts'
-import { accountEpoch, subscribeAccountEpoch } from './account-epoch.ts'
+import { accountEpoch, subscribeAccountEpoch } from './store/account-epoch.ts'
 import { DEFAULT_TOKEN_RANGE, optionsFor, rangeLabel as rangeLabelOf, setCustomRangeDays, type TokenRangeKey } from './token-range.ts'
 import { CodeBuddyLogo } from '../components/CodeBuddyLogo.tsx'
 import { AddAccountModal, startLoginPolling } from '../components/AddAccountModal.tsx'
@@ -78,7 +78,7 @@ import {
   $autoSwitch,
   $autoTravel,
   subscribeUsagePref,
-} from './usage-prefs.ts'
+} from './store/usage-prefs.ts'
 
 useECharts([BarChart, LineChart, AriaComponent, GridComponent, LegendComponent, TooltipComponent, CanvasRenderer])
 
@@ -1489,6 +1489,8 @@ interface DatePickerRangeProps {
   onChange?: (date: Date | string | [Date, Date], ...rest: unknown[]) => void
   format?: string
   'aria-label'?: string
+  /** 返回 true 表示该日期禁选。 */
+  disabledDate?: (date: Date | Date[]) => boolean
 }
 
 /** 维度切换（按工作区 / 按模型）。
@@ -1545,6 +1547,12 @@ function CustomRangePicker({ value, onChange, startPlaceholder, endPlaceholder, 
           size: 'small',
           density: 'compact',
           placeholder: [startPlaceholder, endPlaceholder],
+          // 只能选到今天：统计窗口的终点固定是今天，未来的数据不存在，
+          // 让用户选到明天只会得到一个必然为空的窗口。
+          disabledDate: (date: Date | Date[]): boolean => {
+            const day = startOfDay(Array.isArray(date) ? (date[0] as Date) : date)
+            return day.getTime() > startOfDay(new Date()).getTime()
+          },
           value,
           onChange: (date: Date | string | [Date, Date] | undefined) => {
             // Semi dateRange 的值是 [Date, Date]；清空时是空串。
@@ -1566,6 +1574,18 @@ function rangeStart(range: TokenRangeKey, now: Date = new Date()): Date {
   return new Date(end.getTime() - (days - 1) * 86_400_000)
 }
 
+/**
+ * 「今天」的 [起点, 终点] 区间。
+ *
+ * 面板的日期选择器**初始就显示这个值**（而不是空白）：默认档是「今天」，
+ * 选择器与档位显示同一个区间，两者一致——空白的选择器会让读者以为没选过。
+ * useState 的惰性初始化形式，避免每次渲染都新建 Date。
+ */
+function todayRange(): [Date, Date] {
+  const today = startOfDay(new Date())
+  return [today, today]
+}
+
 function startOfDay(date: Date): Date {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate())
 }
@@ -1584,9 +1604,10 @@ function startOfDay(date: Date): Date {
 function PanelRangeControls({ options, range, dates, onRangeChange, onDatesChange, t }: {
   options: readonly TokenRangeKey[]
   range: TokenRangeKey
-  dates: [Date, Date] | undefined
+  /** 选择器显示的区间；**非空**——清空自定义时回到上一个固定档的区间，不留白。 */
+  dates: [Date, Date]
   onRangeChange: (value: TokenRangeKey) => void
-  onDatesChange: (value: [Date, Date] | undefined) => void
+  onDatesChange: (value: [Date, Date]) => void
   t: Translate
 }): ReactNode {
   return (
@@ -1595,12 +1616,10 @@ function PanelRangeControls({ options, range, dates, onRangeChange, onDatesChang
         options={options}
         range={range}
         onChange={(key) => {
+          // 档位 → 选择器：回填该档的日期区间（纯显示，不发第二次查询——
+          // range 变化本身已触发一次）。
           onRangeChange(key)
-          // 档位 → 选择器：回填该档的日期区间（纯显示，不发第二次查询）。
-          if (key !== 'custom') {
-            const end = new Date()
-            onDatesChange([rangeStart(key), end])
-          }
+          onDatesChange([rangeStart(key), new Date()])
         }}
         label={t('tokenRangeLabel')}
         format={(key) => rangeLabelOf(key, t)}
@@ -1608,14 +1627,22 @@ function PanelRangeControls({ options, range, dates, onRangeChange, onDatesChang
       <CustomRangePicker
         value={dates}
         onChange={(picked) => {
-          onDatesChange(picked)
           if (picked !== undefined) {
-            // 选择器 → 档位：进入 custom（按钮组全灭，单向不回写固定档）。
+            /**
+             * 先写窗口天数、再进 custom 档——顺序不能反。
+             *
+             * 曾有的回归：只调 `onRangeChange('custom')` 而漏了 `setCustomRangeDays`，
+             * `resolveRange('custom')` 恒返回初始值 1（今天），选任何区间数据都不变，
+             * 用户看到「选了日期但面板没反应」。
+             */
+            const days = Math.max(1, Math.ceil((Date.now() - picked[0].getTime()) / 86_400_000) + 1)
+            setCustomRangeDays(days)
+            onDatesChange(picked)
+            // 选择器 → 档位：进入 custom（按钮组全灭，**不回写**固定档）。
             onRangeChange('custom')
-          } else {
-            // 清空 → 回默认档。
-            onRangeChange(DEFAULT_TOKEN_RANGE)
           }
+          // picked === undefined 不发生：选择器非受控清空被禁用（见 CustomRangePicker
+          // 的 showClear 未开启），清自定义一律通过点固定档完成，档位状态与显示一致。
         }}
         startPlaceholder={t('tokenDateStart')}
         endPlaceholder={t('tokenDateEnd')}
@@ -1649,10 +1676,13 @@ function TokenPanel({ title, hint, extra, options, range, dates, onRangeChange, 
   extra?: ReactNode
   options: readonly TokenRangeKey[]
   range: TokenRangeKey
-  /** 日期范围选择器显示的区间（档位切换时被回填；用户自选时进入 custom 档）。 */
-  dates: [Date, Date] | undefined
+  /**
+   * 日期范围选择器显示的区间；**非空**——初始为今天，清自定义时回到上一个
+   * 固定档的区间，选择器不留白。
+   */
+  dates: [Date, Date]
   onRangeChange: (value: TokenRangeKey) => void
-  onDatesChange: (value: [Date, Date] | undefined) => void
+  onDatesChange: (value: [Date, Date]) => void
   refreshLabel: string
   loading: boolean
   onRefresh: () => void
@@ -1696,10 +1726,10 @@ function TokenStatsPage({ rpc, t }: { rpc: ConnectionRpc, t: Translate }): React
   const [distributionRange, setDistributionRange] = useState<TokenRangeKey>(DEFAULT_TOKEN_RANGE)
   const [sessionsRange, setSessionsRange] = useState<TokenRangeKey>(DEFAULT_TOKEN_RANGE)
   // 各面板日期选择器显示的区间：档位切换时被回填（纯显示）；用户自选则进入 custom。
-  const [overviewDates, setOverviewDates] = useState<[Date, Date] | undefined>(undefined)
-  const [trendDates, setTrendDates] = useState<[Date, Date] | undefined>(undefined)
-  const [distributionDates, setDistributionDates] = useState<[Date, Date] | undefined>(undefined)
-  const [sessionsDates, setSessionsDates] = useState<[Date, Date] | undefined>(undefined)
+  const [overviewDates, setOverviewDates] = useState<[Date, Date]>(todayRange)
+  const [trendDates, setTrendDates] = useState<[Date, Date]>(todayRange)
+  const [distributionDates, setDistributionDates] = useState<[Date, Date]>(todayRange)
+  const [sessionsDates, setSessionsDates] = useState<[Date, Date]>(todayRange)
   /**
    * 用量分布与模型排行的维度（按工作区 / 按模型），各面板**独立**。
    *

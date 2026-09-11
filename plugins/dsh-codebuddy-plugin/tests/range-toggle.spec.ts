@@ -18,7 +18,7 @@ const PANEL = readFileSync(
   'utf8',
 )
 const SCSS = readFileSync(
-  '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/styles/panel-layout.scss',
+  '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/styles/token-panel.scss',
   'utf8',
 )
 const INDEX_SCSS = readFileSync(

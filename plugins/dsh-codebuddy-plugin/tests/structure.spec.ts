@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { readdirSync, readFileSync, statSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 
 /**
@@ -40,6 +40,33 @@ describe('src 目录分层', () => {
     for (const dir of ['host', 'contracts', 'client', 'components', 'styles']) {
       expect(top).toContain(dir)
     }
+  })
+
+  it('client 下的状态管理集中在 store/（按模块拆 store 单元）', () => {
+    // 状态管理不应散在 client 根或堆积在单文件里：token 统计缓存、用量偏好、
+    // 账号代际各自成一个 store 单元。
+    const storeDir = join(ROOT, 'client', 'store')
+    expect(statSync(storeDir).isDirectory()).toBe(true)
+    for (const unit of ['token-stats.ts', 'usage-prefs.ts', 'account-epoch.ts']) {
+      expect(statSync(join(storeDir, unit)).isFile()).toBe(true)
+    }
+  })
+
+  it('文案按语言拆分（locales/ 下 en 与 zh 各一个文件）', () => {
+    // 文案不堆积在单文件：新增文案先写 en 再补 zh，两文件键集合由类型约束。
+    const locDir = join(ROOT, 'client', 'locales')
+    expect(statSync(join(locDir, 'en.ts')).isFile()).toBe(true)
+    expect(statSync(join(locDir, 'zh.ts')).isFile()).toBe(true)
+    expect(statSync(join(locDir, 'index.ts')).isFile()).toBe(true)
+    // 旧的聚合单文件不应再存在
+    expect(existsSync(join(ROOT, 'client', 'locales.ts'))).toBe(false)
+  })
+
+  it('样式按组件拆分（styles/ 下不再有聚合的 panel-layout 大文件）', () => {
+    for (const f of ['panel-shell.scss', 'accounts.scss', 'add-account-modal.scss', 'usage-status.scss', 'token-panel.scss']) {
+      expect(statSync(join(ROOT, 'styles', f)).isFile()).toBe(true)
+    }
+    expect(existsSync(join(ROOT, 'styles', 'panel-layout.scss'))).toBe(false)
   })
 
   it('src 根目录只保留入口文件', () => {

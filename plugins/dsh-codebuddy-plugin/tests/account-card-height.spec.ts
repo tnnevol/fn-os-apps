@@ -25,7 +25,7 @@ const PANEL = readFileSync(
   'utf8',
 )
 const SCSS = readFileSync(
-  '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/styles/panel-layout.scss',
+  '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/styles/accounts.scss',
   'utf8',
 )
 
@@ -100,7 +100,7 @@ describe('账号卡片的套餐行只展示名称与到期日', () => {
     'utf8',
   )
   const INDEX_SCSS = readFileSync(
-    '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/styles/index.scss',
+    '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/styles/accounts.scss',
     'utf8',
   )
   /** 卡片内的套餐行（概览，最多两行）。 */

@@ -9,8 +9,9 @@ import { DEFAULT_TOKEN_RANGE, optionsFor, resolveRange, setCustomRangeDays, getC
  * 自定义窗口进入既有范围模型（custom 档），清空后回到默认档。
  */
 const PANEL = readFileSync(new URL('../src/client/panel.tsx', import.meta.url), 'utf8')
-const SCSS = readFileSync(new URL('../src/styles/panel-layout.scss', import.meta.url), 'utf8')
-const LOCALES = readFileSync(new URL('../src/client/locales.ts', import.meta.url), 'utf8')
+const SCSS = readFileSync(new URL('../src/styles/token-panel.scss', import.meta.url), 'utf8')
+const LOCALES_EN = readFileSync(new URL('../src/client/locales/en.ts', import.meta.url), 'utf8')
+const LOCALES_ZH = readFileSync(new URL('../src/client/locales/zh.ts', import.meta.url), 'utf8')
 
 describe('custom 档', () => {
   it('resolveRange("custom") 使用 setCustomRangeDays 写入的窗口', () => {
@@ -52,18 +53,35 @@ describe('DatePicker 接线', () => {
 
   it('档位切换回填日期到选择器（不发第二次查询）', () => {
     const ctrl = PANEL.slice(PANEL.indexOf('function PanelRangeControls'), PANEL.indexOf('function PanelRangeControls') + 1800)
-    // onRangeChange 里同时 onDatesChange(rangeStart(key), end)
-    // 实际形态：onRangeChange(key) 之后紧跟 if (key !== 'custom') → onDatesChange
-    expect(ctrl).toMatch(/onRangeChange\(key\)/)
-    expect(ctrl).toMatch(/if \(key !== 'custom'\) \{\s*\n\s*const end = new Date\(\)\s*\n\s*onDatesChange\(\[rangeStart\(key\), end\]\)/)
+    // onRangeChange(key) 之后立即 onDatesChange([rangeStart(key), 今天])
+    expect(ctrl).toMatch(/onRangeChange\(key\)\s*\n\s*onDatesChange\(\[rangeStart\(key\), new Date\(\)\]\)/)
   })
 
-  it('选择器修改 → 进入 custom 档，不回写固定档；清空 → 回默认档', () => {
+  it('选择器修改 → 先写窗口天数再进 custom 档，不回写固定档', () => {
     const ctrl = PANEL.slice(PANEL.indexOf('function PanelRangeControls'), PANEL.indexOf('function PanelRangeControls') + 1800)
+    expect(ctrl).toMatch(/setCustomRangeDays\(days\)/)
     expect(ctrl).toMatch(/onRangeChange\('custom'\)/)
-    expect(ctrl).toMatch(/onRangeChange\(DEFAULT_TOKEN_RANGE\)/)
-    // 单向：选择器分支里不得回填某个固定档位名
+    // 单向：选择器分支里不得回写某个固定档位名
     expect(ctrl).not.toMatch(/onRangeChange\('(?:today|7d|30d)'\)/)
+  })
+
+  it('选择器非空（清自定义通过点固定档完成，不留白）', () => {
+    // 日期显示非空与「档位→选择器」的回填一致：两者始终展示同一区间。
+    expect(PANEL).toMatch(/dates: \[Date, Date\]\n/)
+    expect(PANEL).not.toMatch(/dates: \[Date, Date\] \| undefined/)
+  })
+
+  it('禁止选择今天之后的日期', () => {
+    const fn = PANEL.slice(PANEL.indexOf('function CustomRangePicker'), PANEL.indexOf('function PanelRangeControls'))
+    expect(fn).toMatch(/disabledDate/)
+    expect(fn).toMatch(/startOfDay\(new Date\(\)\)\.getTime\(\)/)
+  })
+
+  it('初始 dates 是今天的区间（与默认档一致）', () => {
+    expect(PANEL).toMatch(/function todayRange\(\)/)
+    // 四个面板都以 todayRange 初始化
+    const inits = PANEL.match(/useState<\[Date, Date\]>\(todayRange\)/g) ?? []
+    expect(inits.length).toBe(4)
   })
 
   it('天数换算助手：终点视为今天', () => {
@@ -102,8 +120,9 @@ describe('配色：只改 semi 变量，不覆盖组件样式', () => {
 
   it('文案键齐备（en + zh）', () => {
     for (const key of ['tokenDateStart', 'tokenDateEnd', 'tokenDateRange']) {
-      const count = LOCALES.split('\n').filter(l => l.includes(`${key}:`)).length
-      expect(count).toBe(2)
+      // 按语言文件检查：en 与 zh 各出现一次（locales 已按语言拆分）
+      expect(LOCALES_EN.split('\n').filter(l => l.includes(`${key}:`)).length).toBe(1)
+      expect(LOCALES_ZH.split('\n').filter(l => l.includes(`${key}:`)).length).toBe(1)
     }
   })
 })
@@ -124,5 +143,39 @@ describe('facade 导出', () => {
 describe('默认档', () => {
   it('默认档是今天', () => {
     expect(DEFAULT_TOKEN_RANGE).toBe('today')
+  })
+})
+
+describe('选择自定义区间必须真正生效（回归）', () => {
+  const PANEL_LIVE = readFileSync(new URL('../src/client/panel.tsx', import.meta.url), 'utf8')
+
+  it('选择器的 onChange 里必须写入 custom 窗口天数', () => {
+    /**
+     * 曾有的回归：onChange 只调 `onRangeChange('custom')`，但**没有**先
+     * `setCustomRangeDays(天数)`。于是 `resolveRange('custom')` 恒返回初始值 1，
+     * 选任何区间数据都不变——用户看到「选了日期但面板没反应」。
+     */
+    const ctrl = PANEL_LIVE.slice(PANEL.indexOf('function PanelRangeControls'), PANEL.indexOf('function PanelRangeControls') + 2600)
+    // onChange 分支里必须先写天数再进 custom。
+    // 注意 indexOf 会撞上**注释里的同名字样**（回归说明注释恰好引用了这两个调用），
+    // 因此只认**代码行**：行首缩进 + 无注释前缀（* 或 //）。
+    const codeLine = (token: string): number => {
+      for (const [offset, line] of ctrl.split('\n').entries()) {
+        if (line.includes(token) && !line.trim().startsWith('*') && !line.trim().startsWith('//')) {
+          return offset
+        }
+      }
+      return -1
+    }
+    const setDays = codeLine('setCustomRangeDays(days)')
+    const enterCustom = codeLine("onRangeChange('custom')")
+    expect(setDays).toBeGreaterThan(-1)
+    expect(enterCustom).toBeGreaterThan(setDays)
+  })
+
+  it('写入的天数 = 起点相对今天的天数（至少 1）', () => {
+    const ctrl = PANEL_LIVE.slice(PANEL.indexOf('function PanelRangeControls'), PANEL.indexOf('function PanelRangeControls') + 2600)
+    // 实现形态：const days = Math.max(1, …); setCustomRangeDays(days)
+    expect(ctrl).toMatch(/const days = Math\.max\(1, Math\.ceil\([\s\S]{0,120}setCustomRangeDays\(days\)/)
   })
 })

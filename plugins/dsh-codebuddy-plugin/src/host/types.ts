@@ -1,27 +1,26 @@
 /**
- * Wire shapes this plugin reads, on two unrelated protocols.
+ * 本插件读取的线缆形状，分属两个互不相关的协议。
  *
- * The CodeBuddy control plane (`/v2/plugin/auth/*`, `/v3/config`) wraps every
- * reply in `{code, msg, requestId, data}` and is NOT OpenAI-compatible — which
- * is the reason this plugin exists rather than a plain OpenAI-compatible route.
- * The chat plane (`/v2/chat/completions`) is OpenAI-compatible, so its chunk
- * shape is the familiar one.
+ * CodeBuddy 控制平面（`/v2/plugin/auth/*`、`/v3/config`）把每个响应包在
+ * `{code, msg, requestId, data}` 里，且不与 OpenAI 兼容——这正是本插件存在、
+ * 而不是直接用一条通用 OpenAI 兼容路由的原因。聊天平面（`/v2/chat/completions`）
+ * 与 OpenAI 兼容，因此其块形状是熟悉的那一种。
  *
  * @module dsh-codebuddy/types
  */
 
-/** Envelope every CodeBuddy control-plane reply carries. */
+/** 每个控制平面响应都携带的信封。 */
 export interface ResponseBase {
   code: number
   msg: string
   requestId: string
 }
 
-/** A started browser-login handshake. */
+/** 已发起的浏览器登录握手。 */
 export interface AuthState {
-  /** Opaque handshake id; correlates the browser session with the token poll. */
+  /** 不透明的握手 id；把浏览器会话与 token 轮询关联起来。 */
   state: string
-  /** URL the user opens to sign in. */
+  /** 用户打开以登录的 URL。 */
   authUrl: string
 }
 
@@ -30,7 +29,7 @@ export interface AuthStateResponse extends ResponseBase {
 }
 
 /**
- * Tokens issued once the browser login completes.
+ * 浏览器登录完成后签发的 token。
  *
  * 只有 `accessToken` 是必然存在的：服务端在不同客户端/网关下可能省略其余字段，
  * 或改用 snake_case 命名（`refresh_token` / `expires_in` / …）。字段因此标为可选，
@@ -39,13 +38,13 @@ export interface AuthStateResponse extends ResponseBase {
  */
 export interface AuthToken {
   accessToken: string
-  /** Access-token lifetime in seconds. */
+  /** access token 的有效期（秒）。 */
   expiresIn?: number
   refreshToken?: string
-  /** Refresh-token lifetime in seconds. */
+  /** refresh token 的有效期（秒）。 */
   refreshExpiresIn?: number
   /**
-   * Tenant domain that must be echoed on every later request.
+   * 租户 domain，后续每个请求都必须原样带回。
    * 缺失时归一化为空串，避免把字符串 "undefined" 发进 `X-Domain`。
    */
   domain: string
@@ -55,16 +54,16 @@ export interface AuthTokenResponse extends ResponseBase {
   data?: AuthToken
 }
 
-/** The signed-in identity; its fields become required request headers. */
+/** 已登录身份；其字段会成为必备请求头。 */
 export interface Account {
   uid: string
   nickname: string
-  /** Tencent user identity number (e.g. QQ openid), when the account discloses one. */
+  /** 腾讯用户身份号（例如 QQ openid），当账号披露时存在。 */
   uin?: string
   enterpriseId?: string
-  /** Enterprise display name, when the account is an enterprise tenant. */
+  /** 企业显示名，当账号属于企业租户时存在。 */
   enterpriseName?: string
-  /** Enterprise user name (the account's name within the tenant). */
+  /** 企业用户名（账号在该租户内的名字）。 */
   enterpriseUserName?: string
   departmentFullName?: string
 }
@@ -74,43 +73,41 @@ export interface AccountResponse extends ResponseBase {
 }
 
 /**
- * Reasoning metadata CodeBuddy discloses for one model. The effort ids are the
- * provider's own vocabulary ("low", "high", "xhigh", "max"); they are passed
- * through verbatim rather than mapped, so a level the catalog adds later needs
- * no code change.
+ * CodeBuddy 为某个模型披露的推理元数据。effort id 是提供方自己的词表
+ * （"low"、"high"、"xhigh"、"max"）；它们被原样透传而不是映射，因此目录日后
+ * 新增的档位无需改代码。
  *
- * `supportedEfforts` is genuinely optional: `auto` ships a reasoning block that
- * declares an active `effort` but no selectable list at all.
+ * `supportedEfforts` 是真正可选的：`auto` 会返回一个声明了生效中 `effort` 但
+ * 完全没有可选列表的推理块。
  */
 export interface CodeBuddyReasoning {
-  /** Selectable levels, when this model discloses a choice. */
+  /** 该模型披露可选档位时的可选级别列表。 */
   supportedEfforts?: string[]
-  /** Level applied when the caller picks none. */
+  /** 调用方不选择时应用的档位。 */
   defaultEffort?: string
-  /** Level currently active server-side; a fallback default source. */
+  /** 服务端当前生效的档位；一种兜底默认值来源。 */
   effort?: string
-  /** Whether thinking can be turned off entirely. */
+  /** 思考能否被完全关闭。 */
   canDisableThinking?: boolean
   summary?: string
 }
 
 /**
- * One model as CodeBuddy describes it. This is the non-OpenAI catalog shape:
- * capability flags and sizes are disclosed here, which an OpenAI `GET /models`
- * listing would not report.
+ * CodeBuddy 所描述的单个模型。这是非 OpenAI 的目录形状：能力标志与容量在
+ * 这里披露，而 OpenAI 的 `GET /models` 列表不会上报这些。
  */
 export interface CodeBuddyModel {
   id: string
   name: string
-  /** Credit/quota label CodeBuddy shows beside the model name. */
+  /** CodeBuddy 在模型名旁边显示的积分/额度标签。 */
   credits?: string
-  /** Combined request/response context capacity. */
+  /** 请求/响应合计的上下文容量。 */
   maxAllowedSize?: number
   maxOutputTokens?: number
   supportsImages?: boolean
   supportsToolCall?: boolean
   supportsReasoning?: boolean
-  /** Selectable thinking levels, when disclosed. */
+  /** 披露时的可选思考档位。 */
   reasoning?: CodeBuddyReasoning
 }
 
@@ -119,16 +116,15 @@ export interface CodeBuddyConfig {
 }
 
 /**
- * Whether the catalog disclosed the capacities the harness requires.
+ * 目录是否披露了 harness 所需的容量。
  *
- * The harness needs a positive `contextWindow` and output cap for every model
- * it offers, and CodeBuddy omits both on entries that are not chat models
- * (completion, rewrite/jump, image generation). Inventing numbers for those
- * would put unusable models in the picker sized by guesswork, so callers drop
- * them instead. Kept here, beside the wire type, so the listing and the resolve
- * path cannot disagree about which entries are offerable.
- * @param model - one catalog entry.
- * @returns true when both capacities are present and positive.
+ * harness 对其提供的每个模型都需要正的 `contextWindow` 与输出上限，而
+ * CodeBuddy 在非聊天模型的条目上两者都省略（补全、改写/跳转、图像生成）。
+ * 为这些条目编造数字，会让按猜测定容量的不可用模型混进选择器，因此调用方
+ * 改为直接丢弃它们。此判断放在线缆类型旁边，让列表与解析路径对「哪些条目
+ * 可提供」不可能产生分歧。
+ * @param model - 一个目录条目。
+ * @returns 两项容量都存在且为正时为 true。
  */
 export function hasDisclosedCapacity(model: CodeBuddyModel): boolean {
   return model.maxAllowedSize !== undefined && model.maxAllowedSize > 0
@@ -140,22 +136,21 @@ export interface ConfigResponse extends ResponseBase {
 }
 
 /**
- * One enterprise custom model, from the console models endpoint the official
- * client uses (`/console/enterprises/{enterpriseId}/config/models`).
+ * 单个企业自定义模型，来自官方客户端使用的控制台模型端点
+ * （`/console/enterprises/{enterpriseId}/config/models`）。
  *
- * The field shape differs from the personal `/v3/config` catalog: capacity is
- * disclosed as `maxInputTokens` (not `maxAllowedSize`), and there is no
- * `maxAllowedSize` at all. Models carry an `custom:` id prefix.
+ * 字段形状与个人 `/v3/config` 目录不同：容量披露为 `maxInputTokens`（而非
+ * `maxAllowedSize`），而且根本没有 `maxAllowedSize`。模型带 `custom:` id 前缀。
  */
 export interface CodeBuddyEnterpriseModel {
   id: string
   name: string
-  /** Request context capacity; the console endpoint's spelling of `maxAllowedSize`. */
+  /**请求上下文容量；控制台端点对 `maxAllowedSize` 的拼写。 */
   maxInputTokens?: number
   maxOutputTokens?: number
   supportsToolCall?: boolean
   supportsImages?: boolean
-  /** Whether the model is restricted from the multi-model selector. */
+  /** 该模型是否被限制在多模型选择器之外。 */
   disabledMultiModel?: boolean
 }
 
@@ -164,7 +159,7 @@ export interface CodeBuddyEnterpriseModelsResponse extends ResponseBase {
 }
 
 /**
- * Error body a chat endpoint returns on a non-2xx reply.
+ * 聊天端点在非 2xx 响应时返回的错误体。
  *
  * CodeBuddy 实际用的是**产品自己的信封**，而不是 OpenAI 的 `{error:{message}}`。
  * 实测抓到两种形态（同一服务、不同账号/场景）：
@@ -252,7 +247,7 @@ export function wireErrorDetail(body: WireError | undefined): string {
 }
 
 
-/** Usage block of an OpenAI-compatible stream. */
+/** OpenAI 兼容流的 usage 块。 */
 export interface WireUsage {
   prompt_tokens: number
   completion_tokens: number
@@ -261,7 +256,7 @@ export interface WireUsage {
   completion_tokens_details?: { reasoning_tokens?: number }
 }
 
-/** One streamed tool-call fragment. */
+/** 单个流式工具调用分片。 */
 export interface WireToolCall {
   index: number
   id?: string
@@ -271,7 +266,7 @@ export interface WireToolCall {
   }
 }
 
-/** One OpenAI-compatible stream chunk. */
+/** 单个 OpenAI 兼容流块。 */
 export interface WireChunk {
   choices?: {
     delta?: {
@@ -283,21 +278,21 @@ export interface WireChunk {
     finish_reason?: string | null
   }[] | null
   /**
-   * Present but explicitly `null` on every non-final chunk, so consumers must
-   * test for null rather than only `undefined`.
+   * 每个非最终块上都存在但显式为 `null`，因此消费方必须判 null，而不能只判
+   * `undefined`。
    */
   usage?: WireUsage | null
 }
 
-/** One OpenAI-compatible content part used inside image-bearing messages. */
+/** 含图消息内部使用的单个 OpenAI 兼容内容分片。 */
 export type WirePart =
   | { type: 'text', text: string }
   | { type: 'image_url', image_url: { url: string } }
 
-/** User/system/tool message content: the compact string, or ordered parts. */
+/** user/system/tool 消息内容：紧凑字符串，或有序分片。 */
 export type WireContent = string | WirePart[]
 
-/** One wire message sent to the chat endpoint. */
+/** 发往聊天端点的单条线缆消息。 */
 export interface WireMessage {
   role: 'system' | 'user' | 'assistant' | 'tool'
   content: WireContent
@@ -310,7 +305,7 @@ export interface WireMessage {
   }[]
 }
 
-/** One tool schema sent to the chat endpoint. */
+/** 发往聊天端点的单个 Tool schema。 */
 export interface WireTool {
   type: 'function'
   function: {
@@ -320,7 +315,7 @@ export interface WireTool {
   }
 }
 
-/** The chat-completions request body. */
+/** chat-completions 请求体。 */
 export interface WireRequest {
   model: string
   messages: WireMessage[]
@@ -330,6 +325,6 @@ export interface WireRequest {
   temperature?: number
   max_tokens?: number
   stop?: string[]
-  /** OpenAI-compatible thinking level; CodeBuddy's own effort vocabulary. */
+  /** OpenAI 兼容的思考档位；CodeBuddy 自己的 effort 词表。 */
   reasoning_effort?: string
 }

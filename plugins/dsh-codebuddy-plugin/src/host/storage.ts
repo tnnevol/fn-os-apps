@@ -1,16 +1,14 @@
 /**
- * Durable OAuth token storage, owner-only on disk.
+ * 持久化 OAuth token 存储，磁盘上仅属主可读。
  *
- * The store lives in the harness home (`$DSH_HOME`, resolved via the same
- * `@deepseek-ai/dsh-home-paths` the harness uses) rather than in the plugin
- * package, so a reinstall does not sign the user out. Writes are atomic
- * (write-temp-then-rename): a torn file would strand the user with an
- * unreadable credential and no way to tell that from "never logged in".
+ * 存储放在 harness 主目录（`$DSH_HOME`，经与 harness 相同的
+ * `@deepseek-ai/dsh-home-paths` 解析）而不是插件包里，因此重装不会把用户
+ * 登出。写入是原子的（先写临时文件再改名）：一个损坏的文件会让用户陷入
+ * 凭据不可读的困境，且无法与"从未登录"区分开。
  *
- * The document is multi-account: one entry per signed-in CodeBuddy account
- * plus which one is active. Every reader goes through {@link loadStorage},
- * which also migrates the legacy single-account shape in place, so callers
- * only ever see the current shape.
+ * 文档是多账号的：每个已登录的 CodeBuddy 账号一条条目，外加哪一条是当前
+ * 活动。所有读取都经过 {@link loadStorage}，它还会就地迁移旧的单账号
+ * 结构，因此调用方只会看到当前结构。
  *
  * @module dsh-codebuddy/storage
  */
@@ -31,43 +29,43 @@ import {
 } from '../contracts/constants.ts'
 import type { Account, AuthToken } from './types.ts'
 
-/** One stored account: credential facts plus the account facts they were issued for. */
+/** 一条已存储的账号：凭据事实外加签发这些凭据时对应的账号事实。 */
 export interface CodeBuddyAccountEntry {
-  /** Stable local id for this entry, assigned at login and used for switching. */
+  /** 本条目的稳定本地 id，登录时分配，用于切换。 */
   id: string
   auth: {
     accessToken: string
-    /** Absolute expiry in epoch ms. */
+    /** 绝对过期时间（epoch 毫秒）。 */
     expiresAt: number
     refreshToken: string
-    /** Absolute refresh-token expiry in epoch ms. */
+    /** refresh token 的绝对过期时间（epoch 毫秒）。 */
     refreshExpiresAt: number
     domain: string
   }
   account: {
     uid: string
     nickname: string
-    /** Local display label set at login; falls back to `nickname` when absent. */
+    /** 登录时设置的本地展示备注名；缺省时回落到 `nickname`。 */
     label?: string
-    /** Tencent user identity number (e.g. QQ openid), when the account discloses one. */
+    /** 腾讯用户身份号（如 QQ openid），当账号披露时。 */
     uin?: string
     enterpriseId?: string
-    /** Enterprise display name, when the account is an enterprise tenant. */
+    /** 企业展示名，当账号是企业租户时。 */
     enterpriseName?: string
-    /** Enterprise user name (the account's name within the tenant). */
+    /** 企业用户名（账号在租户内的名字）。 */
     enterpriseUserName?: string
     departmentFullName?: string
   }
   /**
-   * The network environment this credential was issued against
-   * (`CODEBUDDY_INTERNET_ENVIRONMENT`). Absent on entries stored before
-   * environments existed; {@link resolveEntryEndpoint} then treats the entry
-   * as `internal` — the legacy hard-coded endpoint — for compatibility.
+   * 这份凭据签发时所针对的网络环境
+   * （`CODEBUDDY_INTERNET_ENVIRONMENT`）。在环境概念出现之前存储的条目上
+   * 不存在；此时 {@link resolveEntryEndpoint} 出于兼容把该条目视为
+   * `internal`——即旧版硬编码端点。
    */
   environment?: string
   /**
-   * Explicit service root for `cloudhosted`/`selfhosted` accounts (the
-   * enterprise's own address). Absent means "use the environment default".
+   * `cloudhosted`/`selfhosted` 账号的显式服务根地址（企业自己的地址）。
+   * 缺省表示"使用环境默认值"。
    */
   endpoint?: string
   /**
@@ -87,18 +85,17 @@ export interface CodeBuddyAccountEntry {
 }
 
 /**
- * The persisted shape. `activeId` always points at an entry of `accounts`
- * after a successful save; a transient mismatch (a hand-edited file) reads as
- * "first entry active" rather than "no account".
+ * 持久化结构。成功保存之后 `activeId` 总是指向 `accounts` 中的某一条；
+ * 瞬时的不匹配（手工编辑过的文件）读作"第一条为活动"而不是"没有账号"。
  */
 export interface CodeBuddyStorage {
-  /** Id of the entry every request authenticates with. */
+  /** 每个请求都用它认证的那条条目的 id。 */
   activeId: string
   accounts: CodeBuddyAccountEntry[]
 }
 
 /**
- * @deprecated Legacy single-account shape, migrated by {@link loadStorage}.
+ * @deprecated 旧的单账号结构，由 {@link loadStorage} 迁移。
  */
 export interface LegacyCodeBuddyStorage {
   auth: CodeBuddyAccountEntry['auth']
@@ -106,20 +103,17 @@ export interface LegacyCodeBuddyStorage {
 }
 
 /**
- * Build the durable credential from freshly issued tokens and the account
- * facts.
+ * 从新签发的 token 与账号事实构建持久化凭据。
  *
- * Shared by every login path so they cannot drift on the storage shape: the
- * Web auth service writes exactly this object. The entry id is a fresh local
- * uuid; re-logging the same account adds a new entry and the login path
- * dedupes by uid afterwards.
- * @param token - tokens issued once the browser login completed.
- * @param account - the signed-in account the tokens were issued for.
- * @param options - optional login facts: `label` (local display label
- *   overriding `account.nickname`), `environment` (the network the login was
- *   made against) and `endpoint` (explicit service root for
- *   cloudhosted/selfhosted).
- * @returns the credential entry to persist.
+ * 所有登录路径共用它，避免它们在存储结构上各自漂移：Web 认证服务写出的
+ * 正是这个对象。条目 id 是一个新鲜的本地 uuid；重新登录同一账号会新增一
+ * 条条目，登录路径随后按 uid 去重。
+ * @param token - 浏览器登录完成后签发的 token。
+ * @param account - 这些 token 所签发给的已登录账号。
+ * @param options - 可选的登录事实：`label`（覆盖 `account.nickname` 的
+ *   本地展示备注名）、`environment`（登录所针对的网络）和 `endpoint`
+ *   （cloudhosted/selfhosted 的显式服务根地址）。
+ * @returns 待持久化的凭据条目。
  */
 export function buildAccountEntry(
   token: AuthToken,
@@ -185,23 +179,22 @@ export function buildAccountEntry(
 }
 
 /**
- * @deprecated Legacy single-account constructor, kept for callers that still
- * name {@link buildStorage}; delegates to {@link buildAccountEntry}.
+ * @deprecated 旧的单账号构造函数，为仍在引用 {@link buildStorage} 的调用方
+ * 保留；委托给 {@link buildAccountEntry}。
  */
 export function buildStorage(token: AuthToken, account: Account): CodeBuddyAccountEntry {
   return buildAccountEntry(token, account)
 }
 
 /**
- * The effective service root for one account entry.
+ * 一个账号条目的有效服务根地址。
  *
- * Resolution order: the entry's explicit `endpoint` (cloudhosted/selfhosted),
- * then the environment's default endpoint, then the legacy hard-coded
- * endpoint for entries stored before environments existed. Every request —
- * auth handshake, refresh, catalog, metering, chat — must go through this
- * function so a credential is never sent to a foreign host.
- * @param entry - the stored account entry.
- * @returns the service root without a trailing slash.
+ * 解析顺序：条目的显式 `endpoint`（cloudhosted/selfhosted），其次环境的
+ * 默认端点，最后是环境概念出现之前存储条目所用的旧版硬编码端点。每个
+ * 请求——认证握手、刷新、模型目录、计量、聊天——都必须经过这个函数，
+ * 这样凭据才绝不会被发给陌生主机。
+ * @param entry - 已存储的账号条目。
+ * @returns 不带末尾斜杠的服务根地址。
  */
 export function resolveEntryEndpoint(entry: CodeBuddyAccountEntry): string {
   const explicit = entry.endpoint?.trim().replace(/\/+$/, '')
@@ -218,10 +211,10 @@ export function resolveEntryEndpoint(entry: CodeBuddyAccountEntry): string {
 }
 
 /**
- * Normalize one account entry: drop empty optional strings so every
- * consumer's `=== undefined` check holds.
- * @param entry - the raw entry.
- * @returns the entry with empty optional account fields removed.
+ * 规范化一个账号条目：剔除空的可选字符串，让所有消费方的
+ * `=== undefined` 判断都成立。
+ * @param entry - 原始条目。
+ * @returns 移除了空的可选账号字段后的条目。
  */
 function normalizeEntry(entry: CodeBuddyAccountEntry): CodeBuddyAccountEntry {
   const a = entry.account
@@ -259,15 +252,15 @@ function normalizeEntry(entry: CodeBuddyAccountEntry): CodeBuddyAccountEntry {
   }
 }
 
-/** Whether a parsed value looks like the current multi-account document. */
+/** 判断解析出的值看起来是否是当前的多账号文档。 */
 function isMultiAccount(value: object): value is CodeBuddyStorage {
   return 'activeId' in value && 'accounts' in value && Array.isArray((value as CodeBuddyStorage).accounts)
 }
 
 /**
- * Accept the legacy `{auth, account}` document as the initial single entry.
- * @param legacy - the pre-multi-account credential.
- * @returns the migrated multi-account shape with the legacy account active.
+ * 接受旧版 `{auth, account}` 文档，作为初始的唯一条目。
+ * @param legacy - 多账号出现之前的凭据。
+ * @returns 迁移后的多账号结构，旧账号为活动账号。
  */
 function migrateLegacy(legacy: LegacyCodeBuddyStorage): CodeBuddyStorage {
   const entry = normalizeEntry({ id: randomUUID(), auth: legacy.auth, account: legacy.account })
@@ -275,12 +268,11 @@ function migrateLegacy(legacy: LegacyCodeBuddyStorage): CodeBuddyStorage {
 }
 
 /**
- * Absolute path of the credential file.
+ * 凭据文件的绝对路径。
  *
- * Resolved through `@deepseek-ai/dsh-home-paths` so it tracks the harness's
- * own home precedence (configured path > `$DSH_HOME` > `~/.dsh`) and never
- * diverges into a separately-computed home. `DSH_CODEBUDDY_AUTH_FILE`
- * remains as an explicit escape hatch for tests and relocations.
+ * 经 `@deepseek-ai/dsh-home-paths` 解析，因此遵循 harness 自身的主目录
+ * 优先级（配置路径 > `$DSH_HOME` > `~/.dsh`），绝不会分叉到另一个单独
+ * 计算的主目录。`DSH_CODEBUDDY_AUTH_FILE` 保留为测试与搬迁用的显式逃生口。
  */
 export function getStoragePath(): string {
   const override = process.env.DSH_CODEBUDDY_AUTH_FILE
@@ -289,16 +281,15 @@ export function getStoragePath(): string {
 }
 
 /**
- * Whether a path is readable by its owner only.
+ * 路径是否仅属主可读。
  *
- * Mirrors the owner-only check `@deepseek-ai/dsh-credentials-local` makes
- * before loading its own credential document: any group or other read/write
- * bit set means the file is exposed, and the check fails. Windows has no
- * POSIX mode, so the check is skipped there — protection is whatever the
- * create and replace APIs expressed, as on dsh-credentials-local.
- * @param path - the credential file path.
- * @returns true when the file is absent (nothing to protect yet) or exists
- *   with owner-only permission; false when it exists and is exposed.
+ * 与 `@deepseek-ai/dsh-credentials-local` 在加载自己的凭据文档前所做的
+ * 仅属主检查一致：任何 group 或 other 的读/写位被置位即视为文件已暴露，
+ * 检查失败。Windows 没有 POSIX mode，因此在那里跳过检查——保护程度
+ * 取决于创建与替换 API 所表达的内容，与 dsh-credentials-local 相同。
+ * @param path - 凭据文件路径。
+ * @returns 文件不存在（尚无可保护之物）或以仅属主权限存在时为 true；
+ *   文件存在且已暴露时为 false。
  */
 async function isOwnerOnly(path: string): Promise<boolean> {
   if (process.platform === 'win32') return true
@@ -306,33 +297,28 @@ async function isOwnerOnly(path: string): Promise<boolean> {
   try {
     mode = (await fs.stat(path)).mode
   } catch {
-    // Absent is not an exposure; the caller treats it as "no credential".
+    // 不存在不算暴露；调用方把它当作"没有凭据"。
     return true
   }
-  // 0o077 = group + other read/write/execute bits.
+  // 0o077 = group + other 的读/写/执行位。
   return (mode & 0o077) === 0
 }
 
 /**
- * Read the stored credential document, migrating the legacy single-account
- * shape when encountered.
+ * 读取已存储的凭据文档，遇到旧的单账号结构时予以迁移。
  *
- * Before any byte is read, the file's mode is checked: a credential that
- * other users on the host could read is treated as absent rather than used,
- * so a file that lost its owner-only mode (a bad manual chmod, a copy from
- * elsewhere) is never loaded. Treating it as absent also self-heals — the
- * next login rewrites the file with `0o600`.
+ * 在读取任何字节之前，先检查文件的 mode：一个宿主机上其他用户可读的
+ * 凭据按不存在对待而不被使用，因此丢失了仅属主 mode 的文件（一次错误
+ * 的手工 chmod、从别处拷贝而来）绝不会被加载。按不存在对待还能自愈——
+ * 下一次登录会以 `0o600` 重写该文件。
  *
- * The legacy `{auth, account}` document migrates transparently: it becomes a
- * one-entry multi-account store with that entry active, and stays in memory
- * only — the next save rewrites the new shape. A document whose `activeId`
- * does not match any entry keeps its entries but resolves the first one as
- * active, so a hand-edited file degrades to "another account active" rather
- * than "signed out".
- * @returns the credential document, or `undefined` when absent or unusable.
- *   A missing file, a corrupt one, and an insecurely-permissioned one are
- *   deliberately the same answer: all mean "there is nothing safe here to
- *   authenticate with", and the login flow is the fix for each.
+ * 旧版 `{auth, account}` 文档透明迁移：变成一条条目为活动的多账号存储，
+ * 且只存在于内存中——下一次保存会重写为新结构。`activeId` 不匹配任何
+ * 条目的文档保留其条目但把第一条解析为活动，因此手工编辑过的文件退化为
+ * "另一个账号是活动"而不是"已登出"。
+ * @returns 凭据文档；不存在或不可用时为 `undefined`。文件缺失、损坏与
+ *   权限不安全这三种情况刻意是同一个答案：都意味着"这里没有可安全用于
+ *   认证的东西"，而登录流程对每一种都是修复手段。
  */
 export async function loadStorage(): Promise<CodeBuddyStorage | undefined> {
   const path = getStoragePath()
@@ -363,9 +349,9 @@ export async function loadStorage(): Promise<CodeBuddyStorage | undefined> {
 }
 
 /**
- * The active account entry.
- * @param storage - the credential document.
- * @returns the entry `activeId` points at, or the first entry.
+ * 当前活动账号条目。
+ * @param storage - 凭据文档。
+ * @returns `activeId` 指向的条目，或第一条。
  */
 export function activeEntry(storage: CodeBuddyStorage): CodeBuddyAccountEntry {
   const active = storage.accounts.find(entry => entry.id === storage.activeId)
@@ -409,8 +395,8 @@ export async function mutateStorage(
 }
 
 /**
- * Write the credential document atomically with owner-only permissions.
- * @param storage - the credential document to persist.
+ * 以仅属主权限原子地写入凭据文档。
+ * @param storage - 待持久化的凭据文档。
  */
 export async function saveStorage(storage: CodeBuddyStorage): Promise<void> {
   const path = getStoragePath()
@@ -421,17 +407,17 @@ export async function saveStorage(storage: CodeBuddyStorage): Promise<void> {
     await fs.rename(temp, path)
   } catch (error) {
     await fs.unlink(temp).catch(() => {
-      // The write already failed; a missing temp file adds no information.
+      // 写入本身已经失败；临时文件缺失提供不了额外信息。
     })
     throw error
   }
   await fs.chmod(path, 0o600).catch(() => {
-    // Filesystems without POSIX modes (Windows, some network mounts) cannot
-    // narrow permissions; the credential is still written.
+    // 没有 POSIX mode 的文件系统（Windows、部分网络挂载）无法收窄权限；
+    // 凭据仍会被写入。
   })
 }
 
-/** Persisted auto-switch preferences, kept beside the credential file. */
+/** 持久化的自动切号偏好，存放在凭据文件旁边。 */
 export interface AutoSwitchConfig {
   enabled: boolean
   thresholdPct: number
@@ -449,7 +435,7 @@ function getAutoSwitchConfigPath(): string {
   return `${getStoragePath()}.auto-switch.json`
 }
 
-/** Read the auto-switch preferences; defaults on with a 10% threshold. */
+/** 读取自动切号偏好；默认开启，阈值为 10%。 */
 export async function loadAutoSwitchConfig(): Promise<AutoSwitchConfig> {
   try {
     const raw = await fs.readFile(getAutoSwitchConfigPath(), 'utf-8')
@@ -467,7 +453,7 @@ export async function loadAutoSwitchConfig(): Promise<AutoSwitchConfig> {
   }
 }
 
-/** Write the auto-switch preferences atomically. */
+/** 原子地写入自动切号偏好。 */
 export async function saveAutoSwitchConfig(config: Omit<AutoSwitchConfig, 'fromDisk'>): Promise<void> {
   const path = getAutoSwitchConfigPath()
   await fs.mkdir(dirname(path), { recursive: true })
@@ -481,9 +467,8 @@ export async function saveAutoSwitchConfig(config: Omit<AutoSwitchConfig, 'fromD
   }
 }
 
-/** Persisted auto-checkin preference: whether the plugin signs in all
- *  accounts every day without manual action. Defaults on, mirroring the
- *  official workbuddy-switch tray behaviour. */
+/** 持久化的自动签到偏好：插件是否每天自动为所有账号签到而无需手动
+ *  操作。默认开启，与官方 workbuddy-switch 托盘行为一致。 */
 export interface AutoCheckinConfig {
   enabled: boolean
 }
@@ -492,7 +477,7 @@ function getAutoCheckinConfigPath(): string {
   return `${getStoragePath()}.auto-checkin.json`
 }
 
-/** Read the auto-checkin preference; defaults on. */
+/** 读取自动签到偏好；默认开启。 */
 export async function loadAutoCheckinConfig(): Promise<AutoCheckinConfig> {
   try {
     const raw = await fs.readFile(getAutoCheckinConfigPath(), 'utf-8')
@@ -503,7 +488,7 @@ export async function loadAutoCheckinConfig(): Promise<AutoCheckinConfig> {
   }
 }
 
-/** Write the auto-checkin preference atomically. */
+/** 原子地写入自动签到偏好。 */
 export async function saveAutoCheckinConfig(config: AutoCheckinConfig): Promise<void> {
   const path = getAutoCheckinConfigPath()
   await fs.mkdir(dirname(path), { recursive: true })
@@ -517,9 +502,8 @@ export async function saveAutoCheckinConfig(config: AutoCheckinConfig): Promise<
   }
 }
 
-/** Persisted auto-travel preference: whether the plugin dispatches the
- *  growth-centre buddy travel (and claims its reward) without manual action.
- *  Defaults on, mirroring workbuddy-switch. */
+/** 持久化的自动出游偏好：插件是否自动派发成长中心的伙伴出游（并领取
+ *  其奖励）而无需手动操作。默认开启，与 workbuddy-switch 一致。 */
 export interface AutoTravelConfig {
   enabled: boolean
 }
@@ -528,7 +512,7 @@ function getAutoTravelConfigPath(): string {
   return `${getStoragePath()}.auto-travel.json`
 }
 
-/** Read the auto-travel preference; defaults on. */
+/** 读取自动出游偏好；默认开启。 */
 export async function loadAutoTravelConfig(): Promise<AutoTravelConfig> {
   try {
     const raw = await fs.readFile(getAutoTravelConfigPath(), 'utf-8')
@@ -539,7 +523,7 @@ export async function loadAutoTravelConfig(): Promise<AutoTravelConfig> {
   }
 }
 
-/** Write the auto-travel preference atomically. */
+/** 原子地写入自动出游偏好。 */
 export async function saveAutoTravelConfig(config: AutoTravelConfig): Promise<void> {
   const path = getAutoTravelConfigPath()
   await fs.mkdir(dirname(path), { recursive: true })
@@ -553,9 +537,9 @@ export async function saveAutoTravelConfig(config: AutoTravelConfig): Promise<vo
   }
 }
 
-/** Remove the stored credential document, if any. */
+/** 删除已存储的凭据文档（若存在）。 */
 export async function clearStorage(): Promise<void> {
   await fs.unlink(getStoragePath()).catch(() => {
-    // Already absent is the desired end state.
+    // 本就不存在即是期望的终态。
   })
 }

@@ -32,7 +32,7 @@ const SEMI_LAYOUT_CSS = (() => {
 })()
 
 const PANEL_SCSS = readFileSync(
-  '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/styles/panel-layout.scss',
+  '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/styles/panel-shell.scss',
   'utf8',
 )
 
@@ -40,6 +40,16 @@ const INDEX_SCSS = readFileSync(
   '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/styles/index.scss',
   'utf8',
 )
+
+/** Token 页样式（token-updated / 窄屏覆盖等已随拆分迁出 panel-shell.scss）。 */
+const TOKEN_SCSS = readFileSync(
+  '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/styles/token-panel.scss',
+  'utf8',
+)
+
+/** 面板外壳样式：panel-toolbar / panel-views / panel-main 等规则已随拆分
+ *  从 index.scss 迁入 panel-shell.scss（PANEL_SCSS 读取的就是它）。 */
+const SHELL_SCSS = PANEL_SCSS
 
 describe('面板布局使用 Semi Layout 组件', () => {
   const shell = PANEL.slice(PANEL.indexOf('return (\n    <div className="dsh-codebuddy-panel"'))
@@ -60,26 +70,26 @@ describe('面板布局使用 Semi Layout 组件', () => {
   it('不再自建 flex 容器承载滚动：内容区没有 display:flex 手写方向', () => {
     // 旧实现用 .dsh-codebuddy-panel-content { display:flex; flex-direction:column }
     // 自建上下布局，已由内层 Layout 取代。
-    expect(INDEX_SCSS).not.toMatch(/\.dsh-codebuddy-panel-content\s*\{/)
-    expect(INDEX_SCSS).not.toMatch(/dsh-codebuddy-panel-main\s*\{[^}]*flex-direction/)
+    expect(SHELL_SCSS).not.toMatch(/\.dsh-codebuddy-panel-content\s*\{/)
+    expect(SHELL_SCSS).not.toMatch(/dsh-codebuddy-panel-main\s*\{[^}]*flex-direction/)
   })
 })
 
 describe('滚动与固定行为', () => {
   it('只有主体滚动（overflow-y: auto）', () => {
-    expect(INDEX_SCSS).toMatch(/\.dsh-codebuddy-panel-views\s*\{[^}]*overflow-y:\s*auto/)
+    expect(SHELL_SCSS).toMatch(/\.dsh-codebuddy-panel-views\s*\{[^}]*overflow-y:\s*auto/)
   })
 
   it('内层 Layout 自身不滚动（否则 header 会与内容同处一个滚动上下文）', () => {
-    expect(INDEX_SCSS).toMatch(/\.dsh-codebuddy-panel-main\s*\{[^}]*overflow:\s*hidden/)
+    expect(SHELL_SCSS).toMatch(/\.dsh-codebuddy-panel-main\s*\{[^}]*overflow:\s*hidden/)
   })
 
   it('主体设了 min-height: 0（flex 子项默认 min-height:auto，不设则 overflow 不生效）', () => {
-    expect(INDEX_SCSS).toMatch(/\.dsh-codebuddy-panel-views\s*\{[^}]*min-height:\s*0/)
+    expect(SHELL_SCSS).toMatch(/\.dsh-codebuddy-panel-views\s*\{[^}]*min-height:\s*0/)
   })
 
   it('header 不收缩（flex: 0 0 auto 或 none）', () => {
-    expect(INDEX_SCSS).toMatch(/\.dsh-codebuddy-panel-toolbar\s*\{[^}]*flex:\s*(0 0 auto|none)/)
+    expect(SHELL_SCSS).toMatch(/\.dsh-codebuddy-panel-toolbar\s*\{[^}]*flex:\s*(0 0 auto|none)/)
   })
 })
 
@@ -91,9 +101,9 @@ describe('标题与内容的横向对齐', () => {
    * 宽屏下标题比卡片多缩进 32px。现改为 header 通栏 + padding-inline 对齐。
    */
   const toolbarPad = (): string =>
-    /\.dsh-codebuddy-panel-toolbar\s*\{[^}]*padding-inline:\s*([^;]+);/.exec(INDEX_SCSS)?.[1]?.trim() ?? ''
+    /\.dsh-codebuddy-panel-toolbar\s*\{[^}]*padding-inline:\s*([^;]+);/.exec(SHELL_SCSS)?.[1]?.trim() ?? ''
   const viewsPad = (): string =>
-    /\.dsh-codebuddy-panel-views\s*\{[^}]*padding:\s*([^;]+);/.exec(INDEX_SCSS)?.[1]?.trim() ?? ''
+    /\.dsh-codebuddy-panel-views\s*\{[^}]*padding:\s*([^;]+);/.exec(SHELL_SCSS)?.[1]?.trim() ?? ''
 
   /** 复算两处的左边界，覆盖宽屏（走 1480px 列居中）与窄屏（走内边距）两侧。 */
   function leftEdges(containerWidth: number): { header: number, view: number } {
@@ -118,7 +128,7 @@ describe('标题与内容的横向对齐', () => {
   })
 
   it('header 通栏：显式 width: 100%（分隔线才能横跨整个面板）', () => {
-    const block = /\.dsh-codebuddy-panel-toolbar\s*\{([^}]*)\}/.exec(INDEX_SCSS)?.[1] ?? ''
+    const block = /\.dsh-codebuddy-panel-toolbar\s*\{([^}]*)\}/.exec(SHELL_SCSS)?.[1] ?? ''
     expect(block).toMatch(/(^|[^-])width:\s*100%/)
     // 且不得残留宽度上限——那会让分隔线在宽屏下两端悬空。
     expect(block).not.toMatch(/(^|[^-])width:\s*min\(/)
@@ -136,14 +146,14 @@ describe('标题与内容的横向对齐', () => {
   })
 
   it('页面内容列仍受 1480px 上限约束', () => {
-    expect(INDEX_SCSS).toMatch(/\.dsh-codebuddy-panel-view\s*\{\s*width:\s*min\(100%,\s*1480px\)/)
+    expect(SHELL_SCSS).toMatch(/\.dsh-codebuddy-panel-view\s*\{\s*width:\s*min\(100%,\s*1480px\)/)
     void viewsPad
   })
 })
 
 describe('固定 header 的分隔与阴影', () => {
   const toolbarBlock = (): string =>
-    /\.dsh-codebuddy-panel-toolbar\s*\{([^}]*)\}/.exec(INDEX_SCSS)?.[1] ?? ''
+    /\.dsh-codebuddy-panel-toolbar\s*\{([^}]*)\}/.exec(SHELL_SCSS)?.[1] ?? ''
 
   it('有底部阴影', () => {
     expect(toolbarBlock()).toMatch(/box-shadow:\s*var\(--dsw-shadow-lv\d/)
@@ -170,9 +180,9 @@ describe('固定 header 的分隔与阴影', () => {
 
 describe('内容区顶部留白', () => {
   const contentBlock = (): string =>
-    /\.dsh-codebuddy-panel-views\s*\{([^}]*)\}/.exec(INDEX_SCSS)?.[1] ?? ''
+    /\.dsh-codebuddy-panel-views\s*\{([^}]*)\}/.exec(SHELL_SCSS)?.[1] ?? ''
   const updatedBlock = (): string =>
-    /\.dsh-codebuddy-token-updated\s*\{([^}]*)\}/.exec(PANEL_SCSS)?.[1] ?? ''
+    /\.dsh-codebuddy-token-updated\s*\{([^}]*)\}/.exec(TOKEN_SCSS)?.[1] ?? ''
 
   it('由滚动内容容器（Layout.Content）承担 15px 顶部内边距', () => {
     // 放在容器上而不是页面内的某个元素上：三个页面（账号/积分/Token）统一生效，
@@ -191,5 +201,24 @@ describe('内容区顶部留白', () => {
     // 若窄屏用 padding 简写覆盖，会顺带把 padding-top 复位——必须是分项覆盖。
     expect(rule).not.toMatch(/(^|[^-])padding:\s/)
     expect(rule).toMatch(/padding-left/)
+  })
+})
+
+describe('导航分隔：只靠背景分层，不加线', () => {
+  const SHELL = readFileSync(
+    '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/styles/panel-shell.scss',
+    'utf8',
+  )
+
+  it('Semi Navigation 自带的 border-right 被显式移除', () => {
+    // Semi 竖排菜单主规则自带 border-right: 1px solid var(--semi-color-border)；
+    // 菜单与内容区已用背景色分层（layer-1 vs base），无需再加线。
+    expect(SHELL).toMatch(/\.dsh-codebuddy-panel-nav \{[^}]*border-right: none/)
+  })
+
+  it('不再有 .semi-layout-sider 的自定义 border', () => {
+    // 曾经与 Semi 自带 border 叠加成两条线。
+    const sider = /\.semi-layout-sider\s*\{([^}]*)\}/.exec(SHELL)?.[1] ?? ''
+    expect(sider).not.toContain('border')
   })
 })

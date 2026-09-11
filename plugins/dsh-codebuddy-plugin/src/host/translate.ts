@@ -1,11 +1,10 @@
 /**
- * Translate CodeBuddy SSE payloads into the harness `StreamChunk` protocol.
+ * 把 CodeBuddy 的 SSE 载荷翻译成 harness 的 `StreamChunk` 协议。
  *
- * One open block per text, reasoning, and tool-call index, with indexes
- * allocated in first-seen order. `block-end`, `usage`, and `finish` are all
- * deferred to the `[DONE]` sentinel: that is what satisfies the protocol's two
- * hard obligations — usage strictly before finish, and nothing at all after
- * finish — including for providers that send a trailing usage-only chunk.
+ * 每个文本、推理、工具调用索引各对应一个打开的块，索引按首次出现顺序分配。
+ * `block-end`、`usage`、`finish` 全部推迟到 `[DONE]` 哨兵处：正是这一点满足
+ * 协议的两条硬性约束——usage 必须严格早于 finish，finish 之后不得再有任何
+ * 内容——对会补发一个只含 usage 的尾块的提供方同样成立。
  *
  * @module dsh-codebuddy/translate
  */
@@ -15,18 +14,18 @@ import type { ContentBlock, FinishReason, StreamChunk, TokenUsage } from '@deeps
 import { DONE } from './sse.ts'
 import type { WireChunk, WireUsage } from './types.ts'
 
-/** The subset of a harness Tool definition needed to repair wire arguments. */
+/** 修复线缆参数时需要的 harness Tool 定义子集。 */
 interface ToolDefinition {
   name: string
   parameters: Record<string, unknown>
 }
 
-/** JSON Schema object, narrowed only enough for property-level inspection. */
+/** JSON Schema 对象，仅收窄到足以做属性级检查的程度。 */
 interface ObjectSchema {
   properties?: Record<string, unknown>
 }
 
-/** Return whether a property schema intentionally accepts any JSON value. */
+/** 返回某属性 schema 是否有意接受任意 JSON 值。 */
 function acceptsAnyJsonValue(schema: unknown): boolean {
   if (schema === true) return true
   if (schema === null || typeof schema !== 'object' || Array.isArray(schema)) return false
@@ -41,7 +40,7 @@ function acceptsAnyJsonValue(schema: unknown): boolean {
     && !('not' in record)
 }
 
-/** Decode one object/array value that CodeBuddy emitted as a JSON string. */
+/** 解码 CodeBuddy 以 JSON 字符串形式发出的某个对象/数组值。 */
 function decodeNestedComposite(value: unknown): unknown {
   if (typeof value !== 'string') return value
   const text = value.trim()
@@ -56,13 +55,12 @@ function decodeNestedComposite(value: unknown): unknown {
 }
 
 /**
- * Repair CodeBuddy's occasional double encoding of unconstrained Tool fields.
+ * 修复 CodeBuddy 对无约束 Tool 字段偶发的双重编码。
  *
- * A property schema with no `type` is valid JSON Schema and means that its
- * value may have any JSON type. CodeBuddy can nevertheless render an object or
- * array chosen for such a field as a JSON string. Decode exactly that shape;
- * typed and otherwise constrained fields, scalar strings, and malformed JSON
- * remain byte-for-byte untouched.
+ * 没有 `type` 的属性 schema 是合法 JSON Schema，含义是该属性的值可为任意 JSON
+ * 类型。CodeBuddy 仍可能把为这类字段选出的对象或数组渲染成 JSON 字符串。只解码
+ * 恰好这一形态；有类型或以其他方式受约束的字段、标量字符串、以及非法 JSON 都
+ * 保持逐字节不变。
  */
 export function normalizeToolArguments(
   name: string,
@@ -94,7 +92,7 @@ export function normalizeToolArguments(
   return changed ? JSON.stringify(record) : argumentsText
 }
 
-/** One block under assembly. */
+/** 组装过程中的一个已打开块。 */
 interface OpenBlock {
   index: number
   kind: 'text' | 'reasoning' | 'tool-call'
@@ -104,11 +102,11 @@ interface OpenBlock {
 }
 
 /**
- * Map the wire `finish_reason` vocabulary onto the harness one.
- * @param reason - the wire value.
- * @returns the mapped reason; anything unrecognized becomes an error finish
- *   carrying the uppercased wire value as its code, so a new provider reason
- *   surfaces as itself instead of being silently reported as a clean stop.
+ * 把线缆的 `finish_reason` 词表映射到 harness 的词表。
+ * @param reason - 线缆值。
+ * @returns 映射后的原因；任何无法识别的值都变成携带大写线缆值作为 code 的
+ *   error finish，于是提供方新出现的理由会以本来面目浮现，而不是被静默当成
+ *   一次干净的停止上报。
  */
 export function mapFinishReason(reason: string): FinishReason {
   switch (reason) {
@@ -124,12 +122,12 @@ export function mapFinishReason(reason: string): FinishReason {
 }
 
 /**
- * Map wire usage onto the harness's disjoint counts.
+ * 把线缆的 usage 映射到 harness 的互斥计数。
  *
- * OpenAI-compatible `prompt_tokens` includes cache hits, while the harness
- * convention reports uncached input separately, so cache reads are subtracted.
- * @param usage - the wire usage block.
- * @returns disjoint token counts.
+ * OpenAI 兼容的 `prompt_tokens` 包含缓存命中，而 harness 约定把未命中缓存的
+ * 输入单独上报，因此要减去缓存读取量。
+ * @param usage - 线缆的 usage 块。
+ * @returns 互斥的 token 计数。
  */
 export function mapUsage(usage: WireUsage): TokenUsage {
   const cacheRead = usage.prompt_tokens_details?.cached_tokens ?? usage.prompt_cache_hit_tokens
@@ -143,7 +141,7 @@ export function mapUsage(usage: WireUsage): TokenUsage {
   }
 }
 
-/** Assemble the final block for one open block. */
+/** 为一个已打开块组装出最终块。 */
 function closeBlock(block: OpenBlock, tools: readonly ToolDefinition[]): ContentBlock {
   switch (block.kind) {
     case 'text':
@@ -161,12 +159,12 @@ function closeBlock(block: OpenBlock, tools: readonly ToolDefinition[]): Content
 }
 
 /**
- * Consume `[DONE]`-terminated SSE payloads and yield harness chunks.
- * @param payloads - payloads from `parseSse`.
- * @param tools - original Tool schemas used to repair CodeBuddy wire arguments.
- * @returns deltas as they arrive, with block ends, usage, and finish flushed at `[DONE]`.
- * @throws LlmError `MALFORMED_RESPONSE` on unparseable JSON, `STREAM_CLOSED`
- *   when the payload source ends without the sentinel.
+ * 消费以 `[DONE]` 结尾的 SSE 载荷并产出 harness 块。
+ * @param payloads - 来自 `parseSse` 的载荷。
+ * @param tools - 原始 Tool schema，用于修复 CodeBuddy 的线缆参数。
+ * @returns 到达即产出的增量；块结束、usage 与 finish 在 `[DONE]` 处冲刷。
+ * @throws LlmError JSON 无法解析时抛 `MALFORMED_RESPONSE`；载荷源未以哨兵
+ *   结束即终止时抛 `STREAM_CLOSED`。
  */
 export async function* translate(
   payloads: AsyncIterable<string>,
@@ -195,9 +193,8 @@ export async function* translate(
       const reason = pendingFinish ?? { kind: 'stop' as const }
       yield {
         type: 'finish',
-        // A clean stop that produced no content at all is a degenerate
-        // completion, not a valid empty answer: reporting it as success would
-        // hand the loop a turn with nothing in it.
+        // 一次没有产出任何内容的干净停止是退化的补全，不是合法的空回答：
+        // 把它当成功上报，等于递给主循环一个空无一物的回合。
         reason: reason.kind === 'stop' && order.length === 0
           ? {
               kind: 'error',
@@ -224,9 +221,9 @@ export async function* translate(
     for (const choice of chunk.choices ?? []) {
       const delta = choice.delta
 
-      // Reasoning first: thinking models interleave it ahead of visible text.
-      // CodeBuddy models vary in which field they use, so both spellings are
-      // accepted. An empty first delta must not open a block.
+      // 推理放在前面：思考型模型会让推理先于可见文本交错出现。
+      // CodeBuddy 各模型使用的字段不一，因此两种拼写都接受。
+      // 首个空 delta 绝不能开块。
       const reasoning = delta?.reasoning_content ?? delta?.reasoning
       if (typeof reasoning === 'string' && reasoning.length > 0) {
         if (reasoningBlock === undefined) {
@@ -254,11 +251,10 @@ export async function* translate(
           toolBlocks.set(call.index, block)
           yield { type: 'block-start', index: block.index, blockType: 'tool-call' }
         }
-        // Only the opening delta carries the name and id; CodeBuddy repeats
-        // both as `""` on every continuation frame for the same index. Treating
-        // those as values would erase what was already learned and hand the
-        // harness a nameless call, which it rejects as UNKNOWN_TOOL. So a
-        // non-empty value is required to overwrite, not merely a defined one.
+        // 只有首个 delta 携带 name 与 id；CodeBuddy 在同一 index 的每个后续
+        // 帧里把两者重复为 `""`。把它们当值处理会抹掉已学到的内容，并递给
+        // harness 一个无名调用——harness 会以 UNKNOWN_TOOL 拒绝它。因此覆盖
+        // 要求非空值，而不仅仅是「有定义」。
         if (call.id !== undefined && call.id.length > 0) block.callId = call.id
         const name = call.function?.name
         if (name !== undefined && name.length > 0) block.name = name
@@ -278,10 +274,10 @@ export async function* translate(
       }
     }
 
-    // Usage may ride the finish chunk or arrive as a trailing usage-only
-    // chunk; the latest wins. CodeBuddy sends an explicit `usage: null` on
-    // every non-final chunk, so this must be a null-tolerant test: an
-    // `!== undefined` guard passes null straight through and crashes.
+    // usage 可能搭在 finish 块上，也可能作为只含 usage 的尾块到达；以最新
+    // 一次为准。CodeBuddy 在每个非最终块上都发送显式的 `usage: null`，因此
+    // 这里必须是容忍 null 的判断：`!== undefined` 守卫会让 null 直接穿透
+    // 并导致崩溃。
     if (chunk.usage !== undefined && chunk.usage !== null) {
       pendingUsage = mapUsage(chunk.usage)
     }

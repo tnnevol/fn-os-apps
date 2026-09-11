@@ -33,7 +33,7 @@ describe('Host 是自动配置的唯一权威', () => {
   })
 
   it('设置页挂载时先读 Host；向 Host 推本地值只发生在「Host 尚无配置」之后', () => {
-    const mount = SECTION.slice(SECTION.indexOf('Load status once on mount'), SECTION.indexOf('// Poll an in-flight login'))
+    const mount = SECTION.slice(SECTION.indexOf('挂载时加载一次状态'), SECTION.indexOf('// 轮询进行中的登录'))
     // 必须发起 autoPrefs 读取
     expect(mount).toContain("'autoPrefs'")
     // 迁移用的推写在语法上确实存在，但它必须在 adopt 分支的 early return **之后**。
@@ -50,7 +50,7 @@ describe('Host 是自动配置的唯一权威', () => {
   })
 
   it('Host 已有配置时设置页采纳 Host 值；没有时才迁移本地值', () => {
-    const mount = SECTION.slice(SECTION.indexOf('Load status once on mount'), SECTION.indexOf('// Poll an in-flight login'))
+    const mount = SECTION.slice(SECTION.indexOf('挂载时加载一次状态'), SECTION.indexOf('// 轮询进行中的登录'))
     expect(mount).toMatch(/if \(host\.hasStoredPrefs\) \{[\s\S]{0,400}\$autoSwitch\.set\(host\.autoSwitch\)/)
     // 迁移分支必须只出现在 hasStoredPrefs 为假之后
     const adoptAt = mount.indexOf('$autoSwitch.set(host.autoSwitch)')

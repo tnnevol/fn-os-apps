@@ -1,0 +1,141 @@
+/* 添加账号弹框与偏好表单：add-form / add-footer / pref-form / pref-control
+   / form-label / pref-slider / env-select 等表单控件样式。 */
+
+/* 添加账号弹框表单：备注名输入在弹框内占满整行。 */
+.dsh-codebuddy-add-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* 添加账号弹框页脚：复制登录地址靠左，取消/打开登录靠右。
+   （这两条样式在实现复制按钮之前就已存在，注释写明了该意图。） */
+.dsh-codebuddy-add-footer {
+  display: flex;
+  align-items: center;
+  /* gap 兜住「复制按钮 + 右侧按钮组」之间的最小间距；两者的两端对齐由
+     下面 add-footer-main 的 margin-left:auto 完成，因此这里不用 space-between。 */
+  gap: 12px;
+  width: 100%;
+}
+
+.dsh-codebuddy-add-footer-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  /* 靠右。用 margin-left:auto 而不是容器的 space-between：未发起登录时容器里
+     只有这一个子元素，space-between 对单个子元素会靠**左**放置，按钮会跑到
+     左侧；margin-left:auto 在任何子元素数量下都把它推到右端。 */
+  margin-left: auto;
+}
+
+.dsh-codebuddy-pref-control-wide {
+  width: 100%;
+}
+
+/* Usage preference form: follow the showcase plugin's Form demo layout —
+   the row spreads label and control to its two ends. The label takes the
+   text width, the main column fills the rest, and the control inside hugs
+   the right edge. */
+.dsh-codebuddy-pref-form .semi-form-field[x-label-pos='left'] {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.dsh-codebuddy-pref-form .semi-form-field[x-label-pos='left'] .semi-form-field-label {
+  flex: 0 1 auto;
+  min-width: 0;
+  padding-right: 0;
+}
+
+.dsh-codebuddy-pref-form .semi-form-field[x-label-pos='left'] .semi-form-field-main {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.dsh-codebuddy-form-label {
+  display: grid;
+  gap: 4px;
+  line-height: 1.4;
+  min-width: 0;
+}
+
+.dsh-codebuddy-form-label-title {
+  color: var(--dsw-alias-label-primary);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 22px;
+  white-space: nowrap;
+}
+
+.dsh-codebuddy-form-label-description {
+  color: var(--dsw-alias-label-secondary);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 18px;
+}
+
+.dsh-codebuddy-pref-control {
+  width: 120px;
+  max-width: 100%;
+}
+
+/* Preference rows stay on one line: label and control keep to a single row.
+   The label may shrink and its text clips with an ellipsis if it ever gets
+   too long, but the row itself never wraps. */
+.dsh-codebuddy-pref-form .semi-form-field[x-label-pos='left'] {
+  flex-wrap: nowrap;
+}
+
+/* Alert percentage slider: mirrors the showcase Form demo — the slider fills
+   the row width and the current value rides on the right. */
+.dsh-codebuddy-pref-slider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 320px;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.dsh-codebuddy-pref-slider > .semi-slider {
+  display: block;
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+}
+
+.dsh-codebuddy-pref-slider-value {
+  min-width: 38px;
+  color: var(--dsw-alias-label-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 环境选择下拉：与弹框内输入控件同宽。 */
+.dsh-codebuddy-env-select {
+  width: 100%;
+  max-width: 100%;
+  padding: 4px 8px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: var(--semi-border-radius-small, 4px);
+  background: var(--dsw-alias-bg-layer-1, transparent);
+  color: var(--dsw-alias-label-primary);
+  font-size: 14px;
+}
+
+/* 选择框内文本的左间距归零。
+ *
+ * Semi 给 `.semi-select-selection` 设了 `margin-left: 12px`（见
+ * semi-foundation 的 select.css），它假设外层选择框不带横向内边距；而上面这条
+ * 规则给了 `padding: 4px 8px`，两者叠加后文字左侧实际留白 20px，明显偏大。
+ * 这里把 Semi 的那 12px 归零，让留白只由本插件的 padding 决定（8px），与同弹框内
+ * 的输入框左对齐。
+ *
+ * 只在添加账号弹框的表单范围内生效，不波及其它地方的选择器。 */
+.dsh-codebuddy-add-form .semi-select-selection {
+  margin-left: 0;
+}

@@ -145,7 +145,7 @@ describe('最小宽度的单一事实来源', () => {
    */
   it('TS 常量与 CSS 变量取值一致', () => {
     const scss = readFileSync(
-      '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/styles/panel-layout.scss',
+      '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/styles/token-panel.scss',
       'utf8',
     )
     const match = /--dcb-segment-min:\s*(\d+)px/.exec(scss)

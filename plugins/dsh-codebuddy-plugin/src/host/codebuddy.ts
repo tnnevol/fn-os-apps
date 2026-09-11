@@ -1,12 +1,10 @@
 /**
- * CodeBuddy control-plane client: the browser-OAuth handshake, token refresh,
- * and the non-OpenAI model catalog.
+ * CodeBuddy 控制平面客户端：浏览器 OAuth 握手、token 刷新，以及非 OpenAI 的
+ * 模型目录。
  *
- * Every call here speaks the `{code, msg, data}` envelope rather than HTTP
- * status alone, so a 200 carrying a non-zero `code` is a failure and is
- * reported as one. This module is transport-only: it holds no state and makes
- * no policy decisions, which keeps the login flow, the adapter, and the CLI
- * able to share it.
+ * 这里的每个调用都解析 `{code, msg, data}` 信封，而不是只看 HTTP 状态码，因此
+ * 一个携带非零 `code` 的 200 也是失败，并且按失败上报。本模块只负责传输：不持
+ * 有状态、不做策略决策，从而让登录流程、adapter 与 CLI 都能共用它。
  *
  * @module dsh-codebuddy/codebuddy
  */
@@ -35,7 +33,7 @@ import type {
   ConfigResponse,
 } from './types.ts'
 
-/** The identity facts CodeBuddy requires on every authenticated request. */
+/** 每个已认证请求上 CodeBuddy 都要求的身份事实。 */
 export interface CodeBuddyIdentity {
   accessToken: string
   domain: string
@@ -63,18 +61,17 @@ function delay(ms: number, signal?: AbortSignal): Promise<void> {
 }
 
 /**
- * Stamp the client `version` query parameter onto a login URL.
+ * 把客户端 `version` 查询参数盖到登录 URL 上。
  *
- * The auth-state service returns `authUrl` already carrying `platform` and
- * the server-issued `state`; the version is the client's own product version,
- * appended the same way the official client does before opening the page.
+ * auth-state 服务返回的 `authUrl` 已带上 `platform` 与服务端签发的 `state`；
+ * version 是客户端自己的产品版本，按官方客户端打开页面前的方式追加。
  *
  * 版本按客户端取自 {@link CODEBUDDY_CLIENT_VERSIONS}，都是固定发布版本：
  * 例如 WorkBuddy 是 5.5.4。不要写成随机值——服务端以此归因客户端版本。
  *
- * @param authUrl - the server-provided login URL.
- * @param client - which client identity is signing in.
- * @returns the URL with the fixed `version` parameter set.
+ * @param authUrl - 服务端提供的登录 URL。
+ * @param client - 以哪个客户端身份登录。
+ * @returns 已设置固定 `version` 参数的 URL。
  */
 function withLoginVersion(authUrl: string, client: CodeBuddyClientId = CODEBUDDY_DEFAULT_CLIENT): string {
   const url = new URL(authUrl)
@@ -83,19 +80,19 @@ function withLoginVersion(authUrl: string, client: CodeBuddyClientId = CODEBUDDY
 }
 
 /**
- * Start a browser-login handshake.
+ * 发起浏览器登录握手。
  *
  * 服务端按 `platform` 区分客户端并据此生成登录页；实测同一个
  * `/plugin/auth/state` 端点对 `CLI` 与 `workbuddy` 都返回可用的 `state` 与
  * `authUrl`，返回的 URL 会带上调用时所用的 platform，因此两个客户端共用这一
  * 套握手，只是参数不同。
  *
- * @param endpoint - the service root of the environment being signed in to.
- * @param client - which client identity is signing in (`cli` / `workbuddy`).
- * @param signal - optional cancellation.
- * @returns the handshake state and the URL the user must open (with the
- *   client `version` parameter stamped, per the client protocol).
- * @throws Error when the service refuses or answers an unusable body.
+ * @param endpoint - 所登录环境的服务根地址。
+ * @param client - 以哪个客户端身份登录（`cli` / `workbuddy`）。
+ * @param signal - 可选取消。
+ * @returns 握手 state，以及用户必须打开的 URL（按客户端协议盖有客户端
+ *   `version` 参数）。
+ * @throws Error 服务端拒绝或返回不可用响应体时抛出。
  */
 export async function requestAuthState(
   endpoint: string,
@@ -124,15 +121,14 @@ export async function requestAuthState(
 }
 
 /**
- * Poll until the user finishes signing in in the browser.
+ * 轮询直到用户在浏览器中完成登录。
  *
- * The service reports "not finished yet" as code {@link AUTH_PENDING_CODE},
- * which is the one code that continues the loop; anything else is a decided
- * outcome and ends it. A transport error also ends it, because a handshake
- * whose state may already be spent must not be retried silently.
- * @param state - the handshake id from {@link requestAuthState}.
- * @param signal - optional cancellation.
- * @returns the issued tokens, or `undefined` when the login failed or timed out.
+ * 服务端用 code {@link AUTH_PENDING_CODE} 表示「尚未完成」，这是唯一让循环
+ * 继续的 code；其他任何值都是已确定的结局并终止循环。传输错误同样终止循环：
+ * 一个 state 可能已被消费的握手绝不能静默重试。
+ * @param state - 来自 {@link requestAuthState} 的握手 id。
+ * @param signal - 可选取消。
+ * @returns 签发的 token；登录失败或超时为 `undefined`。
  */
 export async function pollAuthToken(endpoint: string, state: string, signal?: AbortSignal): Promise<AuthToken | undefined> {
   const deadline = Date.now() + LOGIN_TIMEOUT_MS
@@ -200,13 +196,12 @@ export function normalizeAuthToken(raw: unknown): AuthToken | undefined {
 }
 
 /**
- * Read the signed-in account, whose uid and enterprise id become required
- * headers on every later request.
- * @param state - the handshake id the tokens were issued for.
- * @param accessToken - the freshly issued access token.
- * @param domain - the tenant domain the tokens were issued for.
- * @returns the account facts.
- * @throws Error when the service refuses or answers an unusable body.
+ * 读取已登录账号，其 uid 与企业 id 会成为后续每个请求的必备请求头。
+ * @param state - 签发这批 token 的握手 id。
+ * @param accessToken - 新签发的 access token。
+ * @param domain - 签发这批 token 的租户 domain。
+ * @returns 账号事实。
+ * @throws Error 服务端拒绝或返回不可用响应体时抛出。
  */
 export async function getLoginAccount(
   endpoint: string,
@@ -238,15 +233,14 @@ export async function getLoginAccount(
 }
 
 /**
- * Normalize an account so an empty-string field reads as absent.
+ * 归一化账号，使空字符串字段读作「不存在」。
  *
- * CodeBuddy's account reply emits empty strings (not omissions) for fields a
- * tenant does not disclose — e.g. an enterprise account carries `uin: ""`. The
- * whole downstream (storage, auth status, the settings UI) treats only
- * `undefined` as "not present", so an empty string would render an empty row.
- * Trimming once here covers every consumer without each re-checking.
- * @param account - the raw account from the wire.
- * @returns the account with empty optional string fields dropped.
+ * CodeBuddy 的账号响应会为租户不披露的字段返回空字符串（而不是省略）——例如
+ * 企业账号会带 `uin: ""`。整条下游链路（storage、auth 状态、设置 UI）都只把
+ * `undefined` 当作「不存在」，空字符串会渲染出一行空内容。在这里统一裁剪一次，
+ * 免得每个消费方各自重复检查。
+ * @param account - 网络返回的原始账号。
+ * @returns 空的可选字符串字段已被剔除的账号。
  */
 function normalizeAccount(account: Account): Account {
   const pick = (value: string | undefined): string | undefined =>
@@ -263,10 +257,10 @@ function normalizeAccount(account: Account): Account {
 }
 
 /**
- * Exchange a refresh token for a new access token.
- * @param identity - the current identity, including the access token being replaced.
- * @param refreshToken - the refresh token to spend.
- * @returns the new tokens, or `undefined` when the refresh was refused.
+ * 用 refresh token 换取新的 access token。
+ * @param identity - 当前身份，包含即将被替换的 access token。
+ * @param refreshToken - 要消耗的 refresh token。
+ * @returns 新 token；刷新被拒绝时为 `undefined`。
  */
 export async function refreshAccessToken(
   endpoint: string,
@@ -297,16 +291,15 @@ export async function refreshAccessToken(
 }
 
 /**
- * Read the CodeBuddy model catalog.
+ * 读取 CodeBuddy 模型目录。
  *
- * This is the non-OpenAI-compatible half of the service and the reason this
- * plugin cannot be replaced by a generic OpenAI-compatible route: the reply
- * discloses per-model capability flags and sizes that a `GET /models` listing
- * does not.
- * @param identity - the signed-in identity.
- * @param signal - optional cancellation.
- * @returns the catalog.
- * @throws Error when the service refuses or answers an unusable body.
+ * 这是该服务非 OpenAI 兼容的那一半，也是本插件无法被通用 OpenAI 兼容路由
+ * 取代的原因：响应披露了每个模型的能力标志与容量，`GET /models` 列表拿不到
+ * 这些。
+ * @param identity - 已登录身份。
+ * @param signal - 可选取消。
+ * @returns 模型目录。
+ * @throws Error 服务端拒绝或返回不可用响应体时抛出。
  */
 export async function getConfig(
   endpoint: string,
@@ -340,19 +333,17 @@ export async function getConfig(
 }
 
 /**
- * Read the enterprise custom models catalog.
+ * 读取企业自定义模型目录。
  *
- * Enterprise custom models are not part of the personal `/v3/config` catalog:
- * the official client fetches them from a separate console endpoint keyed by
- * the account's enterprise id, then smart-merges them into the model list.
- * That is the source of every `custom:*` model an enterprise account may use.
+ * 企业自定义模型不属于个人 `/v3/config` 目录：官方客户端用账号的企业 id 从
+ * 独立的控制台端点拉取它们，再智能合并进模型列表。企业账号能用的每个
+ * `custom:*` 模型都源于此。
  *
- * This is a browsing-adjacent read, so it degrades to an empty list rather
- * than throwing: a personal account (no enterprise id) simply has no custom
- * models, and a transient console failure must not break the whole catalog.
- * @param identity - the signed-in identity.
- * @param signal - optional cancellation.
- * @returns the enterprise custom models, or an empty list.
+ * 这属于浏览性质的读取，因此降级为空列表而不是抛错：个人账号（无企业 id）
+ * 本来就没有自定义模型，而控制台的瞬时故障也不该弄垮整个目录。
+ * @param identity - 已登录身份。
+ * @param signal - 可选取消。
+ * @returns 企业自定义模型；或空列表。
  */
 export async function getEnterpriseModels(
   endpoint: string,

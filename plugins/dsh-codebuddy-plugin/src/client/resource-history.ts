@@ -1,18 +1,15 @@
 /**
- * Per-account resource-package history.
+ * 按账号保存的资源包历史。
  *
- * The CodeBuddy meter only answers packages whose `Status` is active: once a
- * package's cycle ends (or it is fully consumed and retired) the plane stops
- * returning it entirely — verified against the live API, where every
- * `Status` filter except the active one returns zero rows. A dashboard that
- * showed only the live reply could therefore never explain where last month's
- * allowance went.
+ * CodeBuddy 计量平面只返回 `Status` 为 active 的资源包：一个包的周期结束
+ * （或被耗尽下线）后，平面会完全停止返回它——已对真实 API 验证，除 active
+ * 之外的所有 `Status` 过滤值都返回零行。因此只展示实时应答的仪表盘
+ * 永远无法解释上个月的额度去了哪里。
  *
- * This module remembers every package a probe has ever seen, keyed by account
- * and package identity, so the account dialog can present the full ledger in
- * three lifecycle groups. It is presentation-only state: nothing here feeds
- * quota math, and a stale entry can never inflate a live balance because the
- * live reply always wins for packages it still returns.
+ * 本模块记住探测见过的每一个资源包，按账号与包标识建立索引，使账号对话框
+ * 能以三个生命周期分组呈现完整台账。它只承载展示状态：这里没有任何东西
+ * 参与配额计算，陈旧条目也不可能抬高实时余额——对仍在返回的包，
+ * 实时应答永远胜出。
  *
  * 台账用 `@nanostores/persistent` 的 JSON atom 承载，不再手写
  * `localStorage.getItem/setItem` + `JSON.parse`：解析失败、私密模式拒绝写入等
@@ -25,22 +22,22 @@
 
 import { persistentJSON } from '@nanostores/persistent'
 
-/** Keep the ledger small: per account, the most recently seen packages. */
+/** 保持台账精简：每个账号只留最近见过的资源包。 */
 const MAX_PER_ACCOUNT = 60
 
 /** 存储键：与迁移前一致，已有台账不会被读丢。 */
 const STORAGE_KEY = 'dsh-codebuddy:resource-history'
 
-/** One resource package as observed by a probe. */
+/** 探测观测到的单个资源包。 */
 export interface ResourceSnapshot {
-  /** Stable package identity: name + cycle start, since names repeat. */
+  /** 稳定的包标识：名称 + 周期起点，因为名称会重复。 */
   key: string
   name: string
   total: number | null
   remaining: number | null
-  /** Reset/expiry timestamp string as the plane disclosed it. */
+  /** 平面披露的重置/到期时间戳字符串。 */
   resetsAt: string | null
-  /** Epoch ms of the last probe that returned this package. */
+  /** 返回过该包的最近一次探测的 epoch 毫秒。 */
   lastSeenAt: number
 }
 
@@ -94,7 +91,7 @@ function writeDocument(doc: HistoryDocument): void {
   $history.set(doc)
 }
 
-/** One resource row as the panel receives it from the host. */
+/** 面板收到的单个资源行（来自 host）。 */
 export interface LiveResource {
   name: string
   total: number | null
@@ -102,17 +99,17 @@ export interface LiveResource {
   resetsAt: string | null
 }
 
-/** Build the ledger key for one package: name plus its cycle end. */
+/** 为单个资源包构建台账键：名称加周期结束。 */
 function resourceKey(resource: LiveResource): string {
   return `${resource.name}@${resource.resetsAt ?? ''}`
 }
 
 /**
- * Merge one account's live packages into the remembered ledger.
+ * 把一个账号的实时资源包合并进已记忆的台账。
  *
- * @param accountId - local account id the packages belong to.
- * @param live - packages the current probe returned.
- * @returns the updated ledger for this account, newest activity first.
+ * @param accountId - 资源包所属的本地账号 id。
+ * @param live - 当前探测返回的资源包。
+ * @returns 该账号更新后的台账，最新活动在前。
  */
 export function recordResources(accountId: string, live: readonly LiveResource[]): ResourceSnapshot[] {
   const doc = readDocument()
@@ -138,12 +135,12 @@ export function recordResources(accountId: string, live: readonly LiveResource[]
   return merged
 }
 
-/** Read one account's remembered ledger without recording anything. */
+/** 只读取一个账号的已记忆台账，不做任何记录。 */
 export function readResources(accountId: string): ResourceSnapshot[] {
   return readDocument()[accountId] ?? []
 }
 
-/** Drop one account's ledger (account removed). */
+/** 丢弃一个账号的台账（账号被移除）。 */
 export function forgetResources(accountId: string): void {
   const doc = readDocument()
   if (doc[accountId] === undefined) return
@@ -151,33 +148,32 @@ export function forgetResources(accountId: string): void {
   writeDocument(doc)
 }
 
-/** Lifecycle group one package belongs to. */
+/** 资源包所属的生命周期分组。 */
 export type ResourceLifecycle = 'usable' | 'depleted' | 'expired'
 
-/** Whether a reset/expiry string is already in the past. */
+/** 重置/到期字符串是否已过时。 */
 function isPast(resetsAt: string | null, now: number): boolean {
   if (resetsAt === null || resetsAt.length === 0) return false
   const parsed = new Date(resetsAt.replace(' ', 'T')).getTime()
   return Number.isFinite(parsed) && parsed < now
 }
 
-/** One classified package row rendered by the dialog. */
+/** 对话框渲染的单个分类后的资源包行。 */
 export interface ClassifiedResource extends ResourceSnapshot {
   lifecycle: ResourceLifecycle
-  /** True when the live probe still returns this package. */
+  /** 实时探测是否仍返回该包。 */
   live: boolean
 }
 
 /**
- * Classify one account's packages into the three lifecycle groups.
+ * 把一个账号的资源包分类到三个生命周期分组。
  *
- * Live packages win: a package the probe still returns is usable when it has
- * remaining allowance and depleted when it does not. A remembered package the
- * probe no longer returns — or whose cycle end has passed — is expired.
+ * 实时包优先：探测仍返回的包，有剩余额度即为 usable，没有即为 depleted。
+ * 探测不再返回的已记忆包——或周期已结束的包——归为 expired。
  *
- * @param ledger - remembered packages for the account.
- * @param live - packages the current probe returned.
- * @returns classified rows, usable first, then depleted, then expired.
+ * @param ledger - 该账号已记忆的资源包。
+ * @param live - 当前探测返回的资源包。
+ * @returns 分类后的行，usable 在前，其次 depleted，最后 expired。
  */
 export function classifyResources(
   ledger: readonly ResourceSnapshot[],
@@ -208,12 +204,12 @@ export function classifyResources(
 
   for (const row of ledger) {
     if (seen.has(row.key)) continue
-    // No longer returned by the plane: its cycle ended or it was retired.
+    // 平面已不再返回：周期结束或已被下线。
     rows.push({ ...row, live: false, lifecycle: 'expired' })
   }
 
-  // A package the plane still lists but whose cycle end already passed counts
-  // as expired regardless of the remaining figure it reports.
+  // 平面仍在列出、但周期结束已过期的包，无论其报告的剩余数字如何
+  // 都算作 expired。
   for (const row of rows) {
     if (row.live && isPast(row.resetsAt, now)) row.lifecycle = 'expired'
   }

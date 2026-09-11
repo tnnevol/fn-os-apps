@@ -1,9 +1,8 @@
 /**
- * CodeBuddy settings section: in-app OAuth login plus the UI-only usage
- * preferences.
+ * CodeBuddy 设置区块：应用内 OAuth 登录以及纯 UI 的用量偏好。
  *
- * Rendered inside the `settings.section` list slot (same original surface),
- * while the live usage readout now lives in the conversation composer.
+ * 渲染在 `settings.section` 列表插槽中（保持原有界面），
+ * 实时用量读数则移到了会话输入框中。
  */
 
 import { useCallback, useEffect, useState } from 'react'
@@ -31,7 +30,7 @@ import { CODEBUDDY_AUTH_CHANNEL } from '../contracts/constants.ts'
 
 import type { PanelRouteController } from '../client/panel-route.ts'
 
-import type { CodeBuddyLocaleKey } from '../client/locales.ts'
+import type { CodeBuddyLocaleKey } from '../client/locales/index.ts'
 import type { AccountView, AccountsResult, AuthStatus, ConnectionRpc, RpcErr } from '../client/rpc.ts'
 import { describeRpcError } from '../client/rpc.ts'
 import { AddAccountModal, startLoginPolling } from './AddAccountModal.tsx'
@@ -44,14 +43,14 @@ import {
   $autoTravel,
   $showUsage,
   setThreshold,
-} from '../client/usage-prefs.ts'
+} from '../client/store/usage-prefs.ts'
 
 type Translate = (key: CodeBuddyLocaleKey) => string
 
-/** UI phase the page cycles through. */
+/** 页面循环经过的 UI 阶段。 */
 type Phase = 'loading' | 'idle' | 'error'
 
-/** Decode CodeBuddy's base64-encoded UTF-8 `departmentFullName`. */
+/** 解码 CodeBuddy 的 base64 编码 UTF-8 `departmentFullName`。 */
 function decodeDepartment(raw: string): string {
   try {
     const decoded = atob(raw)
@@ -86,7 +85,7 @@ export interface CodeBuddySectionProps {
   t: Translate
   /** 管理面板路由；由 client 注入，点击头部按钮打开全页面。 */
   panelRoute?: PanelRouteController
-  /** Settings shell close callback; open the overlay without leaving the dialog behind. */
+  /** 设置外壳的关闭回调；打开 overlay 时把对话框一并收起，不留残影。 */
   close?: () => void
 }
 
@@ -95,7 +94,7 @@ export function CodeBuddySection({ rpc, t, panelRoute, close }: CodeBuddySection
   const [status, setStatus] = useState<AuthStatus | undefined>(undefined)
   const [error, setError] = useState<string | undefined>(undefined)
   const [loginState, setLoginState] = useState<string | undefined>(undefined)
-  // Multi-account roster from the host `accounts` endpoint.
+  // 来自 host `accounts` 端点的多账号名册。
   const [accounts, setAccounts] = useState<AccountView[]>([])
   const [switchingId, setSwitchingId] = useState<string | undefined>(undefined)
   // 添加账号弹框（共享组件：备注名 + 环境 + 自定义 endpoint + 企业账号开关）。
@@ -158,7 +157,7 @@ export function CodeBuddySection({ rpc, t, panelRoute, close }: CodeBuddySection
     return () => { document.removeEventListener('keydown', onKey, true) }
   }, [editTarget])
 
-  // Load status once on mount, then adopt the **Host** auto-switch configuration.
+  // 挂载时加载一次状态，然后采纳 **Host** 的自动切换配置。
   //
   // 曾经这里是反的：挂载时把 localStorage 的值推给 Host。那会让 Host 上更新的
   // 值被旧 localStorage 静默覆盖（实测：Host 为 false/25 被上推成 true/10）。
@@ -195,7 +194,7 @@ export function CodeBuddySection({ rpc, t, panelRoute, close }: CodeBuddySection
     })
   }, [refresh, rpc])
 
-  // Poll an in-flight login until it completes or the deadline passes.
+  // 轮询进行中的登录，直到完成或超过截止时间。
   useEffect(() => {
     if (loginState === undefined) return
     return startLoginPolling(
@@ -320,10 +319,9 @@ export function CodeBuddySection({ rpc, t, panelRoute, close }: CodeBuddySection
       {!signedIn ? <p className="dsh-codebuddy-desc">{t('intro')}</p> : null}
       {error !== undefined ? <p className="dsh-codebuddy-error">{error}</p> : null}
 
-      {/* Multi-account roster: one collapsible panel per signed-in account.
-          The header shows who it is, whether it is active, and whether it has
-          gone offline (expired refresh token); the expanded body carries the
-          account facts, the switch action, and removal. */}
+      {/* 多账号名册：每个已登录账号一个折叠面板。
+          头部显示它是谁、是否当前、是否已掉线（refresh token 过期）；
+          展开体承载账号资料、切换动作与移除。 */}
       <div className="dsh-codebuddy-accounts">
         <div className="dsh-codebuddy-accounts-head">
           <span className="dsh-codebuddy-accounts-title">{t('accountsTitle')}</span>
@@ -552,9 +550,9 @@ export function CodeBuddySection({ rpc, t, panelRoute, close }: CodeBuddySection
         />
       </DshModal>
 
-      {/* Usage preferences: UI-only, configurable whether or not signed in.
-          The form keeps a tight label / control grid; Semi drives the layout
-          so the rows line up across plugins without per-row styles. */}
+      {/* 用量偏好：纯 UI，登录与否都可配置。
+          表单保持紧凑的标签 / 控件栅格；布局由 Semi 驱动，
+          各插件的行能自然对齐，无需逐行样式。 */}
       <DshForm className="dsh-codebuddy-pref-form" labelPosition="left">
         <DshForm.Slot
           label={<PreferenceLabel title={t('autoSwitch')} />}
