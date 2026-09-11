@@ -1,7 +1,7 @@
 ---
 id: PLAN-FNOS-002
 title: PLAN-FNOS-002 DSH 应用与插件优化
-description: DSH Codex 与 CodeBuddy 插件、NAS 引用与 Tree 同步、Semi UI 总览、fnOS 统一网关、DSH Web 恢复和版本工具的实施计划。
+description: DSH Codex 插件、NAS 引用与 Tree 同步、Semi UI 总览、fnOS 统一网关、DSH Web 恢复和版本工具的实施计划。
 status: validating
 owner: tnnevol
 targetVersion: 5.3.1
@@ -26,7 +26,6 @@ lastVerified: 2026-09-08
 - `FNOS-002-02`：修正 NAS 文件和目录引用的插入规则；TreeSelect 使用独立关系模式支持多个文件/目录（含父子路径）同时选择，并在面板打开期间让本次引用删除状态反向同步到勾选节点，历史引用不参与当前选择。
 - `FNOS-002-03`：新增 DSH Semi UI 总览插件，集中展示 `@tnnevol/dsh-semi-ui` 的公共组件、状态和浅色/深色主题效果。
 - `FNOS-002-05`：从 ChatGPT Codex 账号刷新动态模型目录和思考级别，并写入 DSH OpenAI Codex 路由配置。
-- `FNOS-002-06`：实现 CodeBuddy 多账号、账号切换/自动切换、签到、额度/有效期和独立管理面板；Token 统计图表使用模块化 ECharts，保留 7/30/90 天筛选和本地会话日志聚合。
 - `FNOS-002-04`：使用 `connect` 与 `http-proxy-middleware` 重写 fnOS 统一网关代理；由常驻网关承载 FPK 状态并在 Web 左侧菜单提供 DSH Web 重启入口；由 fnOS 插件管理三方插件 API URL 反代规则，并让已打开的 DSH 页面立即取得最新配置。
 - 跨功能版本约束：DSH 运行时和插件兼容性基线为 `0.1.2-rc.1`，当前项目版本为 `5.3.1`，插件自身发布版本为 `0.1.2-rc.1.3`；未完成的 FPK/NAS 验收转入 FNOS-003。
 
@@ -445,19 +444,14 @@ SSE 路由由网关自身处理，不转发到 DSH。它经过 fnOS 统一网关
 
 | 任务 ID | 对应功能 | 实现内容 | 状态 |
 | --- | --- | --- | --- |
-| PLAN-FNOS-002-T06-01 | FNOS-002-01/05 | 将 Codex Auth 从设置插件列表卡片迁移为 `settings.section` 独立设置页（侧栏入口，同 CodeBuddy），登录与能力控制整页展示 | <Badge type="tip" text="已完成" /> |
+| PLAN-FNOS-002-T06-01 | FNOS-002-01/05 | 将 Codex Auth 从设置插件列表卡片迁移为 `settings.section` 独立设置页（侧栏入口），登录与能力控制整页展示 | <Badge type="tip" text="已完成" /> |
 | PLAN-FNOS-002-T06-02 | FNOS-002-01 | 移除设置页内「通用使用限额」区块；用量状态只保留在对话输入区右侧的紧凑展示 | <Badge type="tip" text="已完成" /> |
 | PLAN-FNOS-002-T06-03 | FNOS-002-05 | 移除对「设置 → 模型」OpenAI Codex 编辑器的 DOM 定制（`model-editor-presentation` 及关联样式），Codex 模型经 DSH 官方消息框模型选择器选择 | <Badge type="tip" text="已完成" /> |
 | PLAN-FNOS-002-T06-04 | FNOS-002-01/05 | 同步更新 client 注册断言与设置页相关单元测试，更新插件与需求文档 | <Badge type="warning" text="本地完成，NAS 验收转 FNOS-003" /> |
 
-### P1：CodeBuddy 多账号与管理面板
+### P1：CodeBuddy 多账号与管理面板（已迁出）
 
-| 任务 ID | 对应功能 | 实现内容 | 状态 |
-| --- | --- | --- | --- |
-| PLAN-FNOS-002-T07-01 | FNOS-002-06 | 将 CodeBuddy 单账号凭据迁移为可持久化的多账号结构，支持添加、重登录、重命名、删除和当前账号切换 | <Badge type="tip" text="本地已完成" /> |
-| PLAN-FNOS-002-T07-02 | FNOS-002-06 | 增加额度不足时的账号故障转移、自动切换阈值、掉线探测和连续失败保护 | <Badge type="tip" text="本地已完成" /> |
-| PLAN-FNOS-002-T07-03 | FNOS-002-06 | 增加 `shell.overlay` 管理面板，提供账号、额度/有效期、签到和 Token 统计菜单；Token 图表使用 ECharts | <Badge type="tip" text="本地已完成" /> |
-| PLAN-FNOS-002-T07-04 | FNOS-002-06 | 补充存储迁移、用量统计和面板交互测试，更新插件文档 | <Badge type="warning" text="本地已完成，待 NAS 验证" /> |
+原 `PLAN-FNOS-002-T07-01`～`T07-04`（多账号结构、额度不足自动切换、`shell.overlay` 管理面板与测试）已整体迁入 [PLAN-FNOS-003](/plans/PLAN-FNOS-003-fpk-runtime-settings) 的 `PLAN-FNOS-003-C01`～`C04`；本计划不再承担该插件的实现与文档职责。
 
 ### Turbo 任务与发布工具
 
@@ -766,15 +760,9 @@ pnpm --filter @tnnevol/dsh-codex-auth run build
 
 测试至少覆盖未登录、登录、退出、鉴权失败，以及五小时窗口位于 primary、位于 secondary、只有每周窗口、缺少时长和接口失败；登录返回授权码时覆盖自动复制成功、剪切板拒绝和手动复制回退。
 
-### CodeBuddy 插件检查
+### CodeBuddy 插件检查（已迁出）
 
-```bash
-pnpm --filter @tnnevol/dsh-codebuddy run typecheck
-pnpm --filter @tnnevol/dsh-codebuddy run test:unit
-pnpm --filter @tnnevol/dsh-codebuddy run build
-```
-
-测试覆盖多账号存储迁移、账号操作、额度与自动切换，以及 Token 统计数据聚合；本地当前 3 个测试文件、25 条测试通过。
+CodeBuddy 插件的检查命令与测试覆盖要求已迁入 [PLAN-FNOS-003](/plans/PLAN-FNOS-003-fpk-runtime-settings) 的「CodeBuddy 插件检查」小节。
 
 ### FPK 与真实 NAS 验证（移交 FNOS-003）
 
@@ -783,7 +771,7 @@ pnpm --filter @tnnevol/dsh-codebuddy run build
 - FPK 构建、内置插件包与 `published-dsh-plugins.json` 版本一致性；
 - 安装、升级、回滚、插件加载和用户配置保留；
 - API URL 反代即时生效、HTTP/SSE/WebSocket、权限、并发和异常恢复；
-- Codex 动态模型与 CodeBuddy 管理面板的真实 NAS 验收。
+- Codex 动态模型的真实 NAS 验收；CodeBuddy 管理面板验收由 PLAN-FNOS-003-C 任务承接。
 
 ## 参考资料
 
@@ -808,13 +796,12 @@ pnpm --filter @tnnevol/dsh-codebuddy run build
 
 | 阶段 | 状态 | 完成条件 |
 | --- | --- | --- |
-| 自动化测试质量门禁 | <Badge type="warning" text="本地相关包已通过" /> | CodeBuddy 当前 3 个测试文件、25 条测试通过，类型检查和 tsdown 构建通过；全仓历史测试快照为 2026-09-01 的 39/157，不替代真实 NAS、FPK 和故障注入验收 |
+| 自动化测试质量门禁 | <Badge type="warning" text="本地相关包已通过" /> | 本计划范围内插件（Codex Auth、fnOS、Semi UI 总览）的类型检查、单元测试和 tsdown 构建通过；全仓历史测试快照为 2026-09-01 的 39/157，不替代真实 NAS、FPK 和故障注入验收 |
 | P1 Codex 登录与用量状态 | <Badge type="tip" text="已实现" /> | 插件测试通过，并在登录、退出、异常及有无五小时窗口场景验证显示结果 |
 | P1 NAS 引用与 Tree 状态 | <Badge type="tip" text="已实现" /> | 插入和删除引用不改动原有文本空格；删除本次引用同步 Tree，历史引用隔离；覆盖多选与生命周期测试 |
 | P1 Semi UI 总览插件 | <Badge type="tip" text="已实现" /> | 设置入口可跳转独立路由，刷新与历史导航有效；插件可安装卸载，公共组件在浅色、深色和系统主题下显示正常 |
 | P1 FPK 网关、进程恢复与插件路径 | <Badge type="warning" text="代码已实现，部分 NAS 验证" /> | 已有刷新、Web 重启、静态资源和 DSH iframe 恢复证据，完整代理、实时连接、权限和升级回滚验收转入 FNOS-003 |
 | P1 Codex 动态模型目录 | <Badge type="warning" text="代码已实现，待 NAS 验证" /> | 动态模型刷新、归一化、路由写入、失败回退和客户端入口已实现并有测试，目标环境验收转入 FNOS-003 |
-| P1 CodeBuddy 多账号与管理面板 | <Badge type="warning" text="代码已实现，待 NAS 验证" /> | 多账号、自动切换、签到、额度/有效期、Token ECharts 面板已实现，本地相关检查通过，目标环境验收转入 FNOS-003 |
 | 版本与发布工具 | <Badge type="tip" text="本地已完成" /> | 项目/FPK 使用一次 `bumpp` 和项目 Tag；插件多选一次提交、不生成 Tag；FPK 内置包及安装升级验收转入 FNOS-003 |
 
 ## 变更记录
@@ -837,5 +824,5 @@ pnpm --filter @tnnevol/dsh-codebuddy run build
 | 2026-09-01 | 补充真实 NAS 浏览器验收 | 7 条用例通过；记录 Codex 用量、TreeSelect、快捷键、主题、刷新/重启和静态资源 Network 证据，T04-10 进入部分 NAS 验证 |
 | 2026-09-01 | 更新自动化测试状态 | 根目录 `pnpm run test:unit` 通过，39 个测试文件、157 条自动化测试全部通过；未将未完成真实环境验收的业务用例标记为通过 |
 | 2026-09-06 | 调整插件版本发布规则 | 插件版本不再调用 `bumpp`，直接更新选中 package.json；若插件存在于 `published-dsh-plugins.json` 则同步清单版本；多选插件统一一条提交覆盖所有相关文件，不创建 Git Tag；增加版本不一致保护和 CLI 回归测试 |
-| 2026-09-08 | 优化 CodeBuddy Token 统计图表 | 引入 ECharts 模块化柱状图，替换手写 div 柱状图；增加 Tooltip、Legend、输入/输出堆叠和 ResizeObserver 清理约束 |
 | 2026-09-08 | 按当前实现重整计划 | 动态模型目录和 CodeBuddy 管理面板纳入已实现范围；旧版本描述改为当前发布基线；未完成的 FPK/NAS 集成验收转入 PLAN-FNOS-003 |
+| 2026-09-09 | 迁出 CodeBuddy 计划 | CodeBuddy 多账号与管理面板的 `T07` 任务、插件检查命令和 Token 图表条款整体迁移到 PLAN-FNOS-003 的 `C` 系列任务，本计划只保留验收交接说明 |
