@@ -17,24 +17,32 @@ const ROOT = '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebu
 const ADAPTER = readFileSync(`${ROOT}/host/adapter.ts`, 'utf8')
 
 describe('内层只负责换账号，不重复外层的等待与重试', () => {
-  it('可切换错误只认 QUOTA，不再包含 RATE_LIMIT', () => {
+  it('可切换错误包含 QUOTA 与 RATE_LIMIT', () => {
+    /**
+     * 曾经只认 QUOTA，理由是「限流是服务端对该账号的节流，换账号不解决」。
+     * 实测否证：CodeBuddy 的 429 是**账号 × 模型**级别的额度耗尽 ——
+     * 同一账号对 deepseek-v4.1-flash 是 429、对 glm-5.3 是 200，且另一个账号
+     * 对同一模型是 200。换账号确实有效，所以 RATE_LIMIT 也必须触发换号。
+     */
     const run = ADAPTER.slice(
       ADAPTER.indexOf('private async * runWithFailover'),
       ADAPTER.indexOf('private async failoverToNextAccount'),
     )
-    expect(run).toMatch(/error\.code !== QUOTA_EXCEEDED_CODE/)
-    /**
-     * 关键：整个方法体里**不得出现** `RATE_LIMIT` 字样。
-     *
-     * 曾经写成 `not.toMatch(/error\.code === 'RATE_LIMIT'/)`，而变异体用的是
-     * `error.code !== 'RATE_LIMIT'` —— 三字符之差即逃过断言。改为直接检查标识符
-     * 是否出现，与比较运算符的写法无关。
-     */
-    expect(run).not.toContain('RATE_LIMIT')
-    // 同时确认判定只由 QUOTA 一个码驱动（单一职责，便于将来审查）
-    const switchPredicate = /if \(!autoSwitchAllowed\(\) \|\| ([^)]*)\) throw error/.exec(run)?.[1] ?? ''
-    expect(switchPredicate).toContain('QUOTA_EXCEEDED_CODE')
-    expect(switchPredicate).not.toContain('RATE_LIMIT')
+    const predicate = /const swappable = ([^\n]+)/.exec(run)?.[1] ?? ''
+    expect(predicate).toContain('QUOTA_EXCEEDED_CODE')
+    expect(predicate).toContain("'RATE_LIMIT'")
+  })
+
+  it('瞬时故障仍交给外层原地重试（换账号无益）', () => {
+    const run = ADAPTER.slice(
+      ADAPTER.indexOf('private async * runWithFailover'),
+      ADAPTER.indexOf('private async failoverToNextAccount'),
+    )
+    // 不应把 SERVER / TRANSPORT / TIMEOUT 也纳入换号条件
+    const predicate = /const swappable = ([^\n]+)/.exec(run)?.[1] ?? ''
+    for (const code of ['SERVER', 'TRANSPORT', 'TIMEOUT', 'EMPTY_RESPONSE']) {
+      expect(predicate).not.toContain(code)
+    }
   })
 
   it('内层不再自己等待 Retry-After（外层已实现且语义更优）', () => {

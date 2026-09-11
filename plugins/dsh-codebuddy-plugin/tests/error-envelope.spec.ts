@@ -71,9 +71,22 @@ describe('httpErrorCode 的分类', () => {
     expect(httpErrorCode(403, undefined)).toBe('AUTH')
   })
 
-  it('429 → RATE_LIMIT', () => {
-    // 频率限制与额度耗尽在 CodeBuddy 都是 429；都归到限流交给上层处理。
-    expect(httpErrorCode(429, FLAT)).toBe('RATE_LIMIT')
+  it('429 + 业务码 6004 → QUOTA（账号×模型额度耗尽，需换账号）', () => {
+    /**
+     * 实测 6004 = 账号 × 模型的额度用尽（同一账号换模型即 200、别的账号同模型也
+     * 200）。必须归 QUOTA 才能触发**换账号**；归 RATE_LIMIT 只会让外层原地重试
+     * 同一账号同一模型——在重置之前不可能成功。
+     */
+    expect(httpErrorCode(429, FLAT)).toBe('QUOTA')
+  })
+
+  it('429 但无业务码 → RATE_LIMIT（保守：不确定是否换号有效）', () => {
+    expect(httpErrorCode(429, { msg: 'too many requests' })).toBe('RATE_LIMIT')
+    expect(httpErrorCode(429, undefined)).toBe('RATE_LIMIT')
+  })
+
+  it('嵌套形态里的 6004 同样识别', () => {
+    expect(httpErrorCode(429, { error: { data: { code: 6004, msg: '超额' } } })).toBe('QUOTA')
   })
 
   it('400 + 上下文超限文案 → CONTEXT_WINDOW_EXCEEDED', () => {

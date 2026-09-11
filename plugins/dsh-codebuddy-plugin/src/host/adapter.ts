@@ -155,6 +155,26 @@ function clientUserAgent(client: CodeBuddyClientId, version: string | undefined)
 }
 
 /**
+ * CodeBuddy 的业务码：**用量/频率额度已用尽**。
+ *
+ * 实测语义（同一账号同一时刻跑三个模型）：
+ *
+ * ```
+ * deepseek-v4.1-flash   18298014993:429  涨涨涨:200  16605655975:200
+ * glm-5.3              18298014993:200  涨涨涨:200  16605655975:200
+ * ```
+ *
+ * 即 `18298014993` 对 `deepseek-v4.1-flash` 是 429、对 `glm-5.3` 是 200 —— 说明
+ * 这是**账号 × 模型**级别的额度耗尽，而不是服务端整体限流。文案也印证：
+ * 「您的使用量已超出频率限制，将在 <时间> 重置，您也可以切换其他模型继续使用。」
+ *
+ * 因此它必须归到 `QUOTA`：上层据此**换账号**（换号能成功，实测另一个账号 200）。
+ * 若归到 `RATE_LIMIT`，DSH 官方重试会原地重试同一个账号、同一个模型——而该组合
+ * 在重置时间之前不可能成功，只会白耗 5 次请求后失败。
+ */
+const CODEBUDDY_QUOTA_EXHAUSTED_CODE = '6004'
+
+/**
  * Map an HTTP status onto a stable harness error code.
  * @param status - the non-2xx status.
  * @param error - the parsed provider error body, when readable.
@@ -165,12 +185,16 @@ export function httpErrorCode(status: number, error?: WireError): string {
   /**
    * 分类文本由 `wireErrorDetail` 生成：把业务 `code` 也拼进去。
    *
-   * 原因是 DSH 的 `isQuotaExceededError` 判定正则只认**英文**，而 CodeBuddy 的
-   * 文案是中文（「您的使用量已超出频率限制」），单靠文案匹配不上；带上业务码
-   * 至少能让分类有据可依。
+   * DSH 的 `isQuotaExceededError` 判定正则只认**英文**，而 CodeBuddy 的文案是
+   * 中文（「您的使用量已超出频率限制」），单靠文案匹配不上；因此下面额外按
+   * **业务码**判定，不让分类退化成「凡是 429 都是限流」。
    */
   const detail = wireErrorDetail(error)
   if (isQuotaExceededError(detail)) return QUOTA_EXCEEDED_CODE
+  // 业务码 6004：账号×模型的额度用尽（见常量注释）。归 QUOTA 才能触发换账号。
+  if (String(error?.code ?? error?.error?.data?.code ?? '') === CODEBUDDY_QUOTA_EXHAUSTED_CODE) {
+    return QUOTA_EXCEEDED_CODE
+  }
   if (status === 429) return 'RATE_LIMIT'
   if (status === 400) {
     if (isContextWindowExceededError(detail)) return CONTEXT_WINDOW_EXCEEDED_CODE
@@ -370,25 +394,35 @@ export class CodeBuddyAdapter extends LlmAdapter {
   /**
    * 一次请求的完整生命周期（含账号故障转移），由 `stream` 包裹。
    *
-   * ## 与外层官方重试的职责划分（重要）
+   * ## 与外层官方重试的职责划分
    *
    * DSH 自带的 `@deepseek-ai/dsh-llm-retry` 已随 `dsh-base` 挂载，工作在整个
-   * **agent 请求**层面（`agent/request-error`），默认 `maxRetries: 5`
-   * （即首次 + 最多 5 次重试），带指数退避与 `Retry-After` 支持，可重试码为
+   * **agent 请求**层面（`agent/request-error`），默认 `maxRetries: 5`，带指数退避
+   * 与 `Retry-After` 支持，可重试码为
    * `EMPTY_RESPONSE / RATE_LIMIT / SERVER / TIMEOUT / TRANSPORT`。
-   *
-   * 因此本层**只做官方不做的那一件事**：
    *
    * | 故障 | 由谁处理 | 为什么 |
    * | --- | --- | --- |
    * | 瞬时故障（网络、5xx、超时） | 外层 | 原地重试即可，换账号无益 |
-   * | `RATE_LIMIT` | 外层 | 限流是**服务端对该账号的节流**，换账号不解决，且官方会按 `Retry-After` 等待 |
+   * | **额度/频率用尽（`QUOTA` 与 `RATE_LIMIT`）** | **本层换账号** | 见下 |
    * | `Retry-After` 等待 | 外层 | 官方已实现（含「超过 maxDelayMs 则放弃」的更优语义） |
-   * | **`QUOTA` 额度耗尽** | **本层** | 官方默认**不重试** `QUOTA`；换账号是唯一有效手段 |
    *
-   * 这个划分是为了避免**两层对同一错误各重试一遍**。若本层也把 `RATE_LIMIT` 当
-   * 可切换错误，最坏情况会变成「内层次数 × 外层 6 次」的远端请求（内层 5 次时
-   * 即 30 次），且外层每次重试都会把内层整个重跑。
+   * ### 为什么 `RATE_LIMIT` 也要换账号
+   *
+   * 曾经把它交给外层原地重试，理由是「限流是服务端对该账号的节流，换账号不解决」。
+   * **实测否证了这个前提**——CodeBuddy 的 429 是**账号 × 模型**级别的额度耗尽：
+   *
+   * ```
+   * deepseek-v4.1-flash   18298014993:429  涨涨涨:200  16605655975:200
+   * glm-5.3              18298014993:200  涨涨涨:200  16605655975:200
+   * ```
+   *
+   * 同一账号对 `deepseek-v4.1-flash` 是 429、对 `glm-5.3` 是 200，且**另一个账号
+   * 对同一模型是 200** —— 换账号确实有效。而且这类 429 **不带 `retry-after`**，
+   * 外层只能盲目退避、原地重试同一个账号同一个模型，在重置时间之前不可能成功。
+   * 用户看到的现象就是「开了自动切换却没切」。
+   *
+   * 内层换号得到成功结果后，外层不会再有失败可重试，因此两层不会叠加。
    */
   private async * runWithFailover(options: GenerateOptions): AsyncIterable<StreamChunk> {
     /**
@@ -459,8 +493,26 @@ export class CodeBuddyAdapter extends LlmAdapter {
         // 已产出内容：不重试、不换号。宁可失败，也不重复生成。
         if (emitted) throw error
         lastError = error
-        // 只有额度耗尽才换账号。限流与瞬时故障交给外层官方重试——理由见方法注释。
-        if (!autoSwitchAllowed() || error.code !== QUOTA_EXCEEDED_CODE) throw error
+        /**
+         * 换账号的两个触发条件：额度耗尽（QUOTA）与被限流（RATE_LIMIT）。
+         *
+         * 曾经只认 QUOTA，理由是「限流是服务端对该账号的节流，换账号不解决」。
+         * **实测否证了这个前提**：CodeBuddy 的 429 是**账号 × 模型**级别的额度
+         * 耗尽，换账号能成功——
+         *
+         * ```
+         * deepseek-v4.1-flash   18298014993:429  涨涨涨:200  16605655975:200
+         * glm-5.3              18298014993:200  涨涨涨:200  16605655975:200
+         * ```
+         *
+         * 且这类 429 **不带 `retry-after`**，外层官方重试只能盲目退避、原地重试
+         * 同一个账号同一个模型，在重置时间之前不可能成功——白耗 5 次请求后失败，
+         * 用户看到的就是「开启了自动切换却没有切换」。
+         *
+         * 瞬时故障（网络、5xx、超时）仍交给外层原地重试：那些换账号确实无益。
+         */
+        const swappable = error.code === QUOTA_EXCEEDED_CODE || error.code === 'RATE_LIMIT'
+        if (!autoSwitchAllowed() || !swappable) throw error
       }
     }
     // 换不动了（没有未尝试过的账号、或尝试次数用尽）：把最后一次的失败如实抛出，
