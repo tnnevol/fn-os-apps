@@ -163,14 +163,94 @@ export interface CodeBuddyEnterpriseModelsResponse extends ResponseBase {
   data?: CodeBuddyEnterpriseModel[]
 }
 
-/** Error body an OpenAI-compatible chat endpoint returns on a non-2xx reply. */
+/**
+ * Error body a chat endpoint returns on a non-2xx reply.
+ *
+ * CodeBuddy 实际用的是**产品自己的信封**，而不是 OpenAI 的 `{error:{message}}`。
+ * 实测抓到两种形态（同一服务、不同账号/场景）：
+ *
+ * ```json
+ * // ① 扁平（额度/频率限制常见）
+ * {"code":6004,"msg":"您的使用量已超出频率限制，将在 … 重置，您也可以切换其他模型继续使用。","requestId":"…"}
+ * // ② 嵌套（业务错误，如「体验版尚未激活」）
+ * {"error":{"data":{"code":14017,"msg":"体验版尚未激活。…","requestId":"…"}}}
+ * ```
+ *
+ * 只声明 OpenAI 形态会让 `msg` 被丢掉，用户只看到兜底的
+ * `CodeBuddy API error (HTTP 429)` —— 而服务端那句「何时重置、可换哪个模型」
+ * 正是排查所需。
+ */
 export interface WireError {
+  /** OpenAI 兼容形态。 */
   error?: {
     message?: string
     type?: string
     code?: string
+    /** CodeBuddy 业务信封：`{"error":{"data":{code,msg,requestId}}}`。 */
+    data?: {
+      message?: string
+      msg?: string
+      type?: string
+      code?: string | number
+      requestId?: string
+    }
   }
+  /** CodeBuddy 扁平形态：文案在顶层 `msg`（注意不是 OpenAI 的 `message`）。 */
+  msg?: string
+  /** 扁平形态的业务码（不是 HTTP 状态码）。 */
+  code?: string | number
+  /** 顶层请求 id，与 `error.data.requestId` 同义。 */
+  requestId?: string
 }
+
+/**
+ * 从任一错误信封里取出**能给人看的那句话**。
+ *
+ * 优先级：OpenAI 的 `error.message` → 嵌套的 `error.data.msg|message` → 顶层的
+ * `msg`。取第一个非空值；都没有时返回 `undefined`，由调用方回退到带 HTTP 状态的
+ * 兜底文案。
+ * @param body - 已解析的错误响应体。
+ * @returns 服务端原文，或 `undefined`。
+ */
+export function wireErrorMessage(body: WireError | undefined): string | undefined {
+  if (body === undefined) return undefined
+  const candidates: Array<string | undefined> = [
+    body.error?.message,
+    body.error?.data?.msg,
+    body.error?.data?.message,
+    body.msg,
+  ]
+  for (const candidate of candidates) {
+    if (typeof candidate === 'string' && candidate.trim().length > 0) return candidate
+  }
+  return undefined
+}
+
+/**
+ * 供**错误分类**使用的文本（业务 code + type + message 拼起来）。
+ *
+ * `httpErrorCode` 用它判断「额度耗尽 / 上下文超限」。注意 CodeBuddy 的文案是
+ * **中文**，而 DSH 的判定正则是英文，因此中文文案本身匹配不上 —— 但业务 `code`
+ * 能帮上忙，所以这里把 code 一并拼进去，让分类至少有据可依。
+ * @param body - 已解析的错误响应体。
+ * @returns 供正则匹配的文本（可能为空串）。
+ */
+export function wireErrorDetail(body: WireError | undefined): string {
+  if (body === undefined) return ''
+  const nested = body.error?.data
+  return [
+    body.code,
+    body.error?.code,
+    nested?.code,
+    body.error?.type,
+    nested?.type,
+    wireErrorMessage(body),
+  ]
+    .filter(value => value !== undefined && value !== '')
+    .map(String)
+    .join(' ')
+}
+
 
 /** Usage block of an OpenAI-compatible stream. */
 export interface WireUsage {

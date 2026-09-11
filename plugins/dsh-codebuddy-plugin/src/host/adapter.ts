@@ -50,7 +50,7 @@ import {
   CODEBUDDY_DEFAULT_CLIENT,
 } from '../contracts/constants.ts'
 import type { CodeBuddyClientId } from '../contracts/constants.ts'
-import { hasDisclosedCapacity } from './types.ts'
+import { hasDisclosedCapacity, wireErrorDetail, wireErrorMessage } from './types.ts'
 import type { CodeBuddyModel, WireError, WireRequest } from './types.ts'
 import type { ImageAttachmentAccess } from '@deepseek-ai/dsh-llm'
 import type { AttachmentStore, ImageAttachmentRef } from '@deepseek-ai/dsh-attachment'
@@ -160,9 +160,16 @@ function clientUserAgent(client: CodeBuddyClientId, version: string | undefined)
  * @param error - the parsed provider error body, when readable.
  * @returns the normalized code.
  */
-export function httpErrorCode(status: number, error?: WireError['error']): string {
+export function httpErrorCode(status: number, error?: WireError): string {
   if (status === 401 || status === 403) return 'AUTH'
-  const detail = [error?.code, error?.type, error?.message].filter(Boolean).join(' ')
+  /**
+   * 分类文本由 `wireErrorDetail` 生成：把业务 `code` 也拼进去。
+   *
+   * 原因是 DSH 的 `isQuotaExceededError` 判定正则只认**英文**，而 CodeBuddy 的
+   * 文案是中文（「您的使用量已超出频率限制」），单靠文案匹配不上；带上业务码
+   * 至少能让分类有据可依。
+   */
+  const detail = wireErrorDetail(error)
   if (isQuotaExceededError(detail)) return QUOTA_EXCEEDED_CODE
   if (status === 429) return 'RATE_LIMIT'
   if (status === 400) {
@@ -622,13 +629,18 @@ export class CodeBuddyAdapter extends LlmAdapter {
 
     if (!response.ok) {
       let message = `CodeBuddy API error (HTTP ${response.status})`
-      let providerError: WireError['error']
+      let providerError: WireError | undefined
       try {
-        const parsed = await response.json() as WireError
-        providerError = parsed.error
-        if (providerError?.message !== undefined && providerError.message.length > 0) {
-          message = providerError.message
-        }
+        providerError = await response.json() as WireError
+        /**
+         * 用 `wireErrorMessage` 而不是只读 `error.message`：CodeBuddy 用的是自己
+         * 的信封，实测两种形态（扁平 `{code,msg}` 与嵌套 `{error:{data:{msg}}}`）
+         * **都没有** OpenAI 的 `error.message`。只读它就等于把服务端原文丢掉，
+         * 用户只看到「CodeBuddy API error (HTTP 429)」——而原文里写着什么时候
+         * 重置、可以换哪个模型，正是排查所需。
+         */
+        const text = wireErrorMessage(providerError)
+        if (text !== undefined) message = text
       } catch {
         // Only error-body parsing is swallowed: the status still identifies the
         // failure, so malformed JSON must not mask it.
