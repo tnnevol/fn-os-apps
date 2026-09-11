@@ -93,9 +93,17 @@ describe('DatePicker 接线', () => {
     expect(PANEL).toMatch(/range === 'today'\) return end/)
   })
 
-  it('包装组件对 Semi 的值形状归一（[Date,Date] 保留、空串→undefined）', () => {
-    const fn = PANEL.slice(PANEL.indexOf('function CustomRangePicker'), PANEL.indexOf('function CustomRangePicker') + 1400)
+  it('包装组件：值形状归一 + 半受控延迟提交（仅完整区间回调）', () => {
+    const fn = PANEL.slice(PANEL.indexOf('function CustomRangePicker'), PANEL.indexOf('function todayRange'))
+    // 1. 值形状归一：[Date, Date] 保留、空串 → undefined
     expect(fn).toMatch(/Array\.isArray\(date\) && date\[0\] instanceof Date/)
+    // 2. 半受控：start === end 时只更草稿、不调用外层 onChange
+    expect(fn).toMatch(/start\.getTime\(\) === end\.getTime\(\)/)
+    expect(fn).toMatch(/setDraft\(\[start, end\]\)/)
+    // 3. 完整区间才提交：start !== end → onChange(range)
+    expect(fn).toMatch(/onChange\(range\)/)
+    // 4. 草稿与外层 value 同步：value 变化时重置 draft
+    expect(fn).toMatch(/setDraft\(null\)\s*\}\s*,\s*\[value\[0\]\.getTime\(\),\s*value\[1\]\.getTime\(\)\]\)/)
   })
 })
 

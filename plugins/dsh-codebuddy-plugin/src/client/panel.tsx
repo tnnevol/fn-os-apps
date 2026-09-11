@@ -1533,12 +1533,30 @@ function DimensionToggle({ dimension, onChange, t }: {
  * styles/panel-layout.scss 中 `.dsh-codebuddy-token-datepicker-scope` 的说明。
  */
 function CustomRangePicker({ value, onChange, startPlaceholder, endPlaceholder, label }: {
-  value: [Date, Date] | undefined
-  onChange: (range: [Date, Date] | undefined) => void
+  value: [Date, Date]
+  onChange: (range: [Date, Date]) => void
   startPlaceholder: string
   endPlaceholder: string
   label: string
 }): ReactNode {
+  /**
+   * 半受控延迟提交：Semi 的 dateRange **每点一次日期就触发一次 onChange**
+   * —— 点起点一次、点终点又触发一次。若直接把 value 透传给外层，点起点时
+   * 就进入了 custom 档、`setCustomRangeDays` 也写入了「起点 = 今天」的窗口，
+   * 触发一次「无完整区间」的查询（结果往往空）。
+   *
+   * 解法：用 `draft` 暂存用户在弹层里选出的临时区间；
+   *  - start === end（同一天 / 仅选了起点）时只更 draft，不通知外层；
+   *  - start !== end（已选完终点）才提交给外层；
+   *  - 外层 value 变化（档位切换）时同步重置 draft，避免下次打开显示半选。
+   */
+  const [draft, setDraft] = useState<[Date, Date] | null>(null)
+  useEffect(() => {
+    setDraft(null)
+  }, [value[0].getTime(), value[1].getTime()])
+
+  const displayValue = draft ?? value
+
   return (
     <div className="dsh-codebuddy-token-datepicker-scope">
       <DshDatePicker
@@ -1553,10 +1571,23 @@ function CustomRangePicker({ value, onChange, startPlaceholder, endPlaceholder, 
             const day = startOfDay(Array.isArray(date) ? (date[0] as Date) : date)
             return day.getTime() > startOfDay(new Date()).getTime()
           },
-          value,
+          value: displayValue,
           onChange: (date: Date | string | [Date, Date] | undefined) => {
-            // Semi dateRange 的值是 [Date, Date]；清空时是空串。
             const range = Array.isArray(date) && date[0] instanceof Date ? date as [Date, Date] : undefined
+            if (range === undefined) {
+              // 清空选择：只清草稿，外层 value 由档位切换负责（用户主动清空不是该组件的契约）。
+              setDraft(null)
+              return
+            }
+            const [start, end] = range
+            if (start.getTime() === end.getTime()) {
+              // 仅选了起点（start === end 是 Semi dateRange 半选的典型状态）：
+              // 只更本地 draft，不通知外层，避免触发无完整区间的查询。
+              setDraft([start, end])
+              return
+            }
+            // 完整区间：先更 draft 再提交给外层，外层进入 custom 档并写入窗口天数。
+            setDraft(range)
             onChange(range)
           },
           'aria-label': label,
@@ -1635,15 +1666,17 @@ function TokenPanel({ title, hint, extra, options, range, dates, onRangeChange, 
           <CustomRangePicker
             value={dates}
             onChange={(picked) => {
-              if (picked !== undefined) {
-                // 先写窗口天数、再进 custom 档——顺序不能反（见 PanelRangeControls 注释）。
-                const days = Math.max(1, Math.ceil((Date.now() - picked[0].getTime()) / 86_400_000) + 1)
-                setCustomRangeDays(days)
-                onDatesChange(picked)
-                onRangeChange('custom')
-              }
-              // picked === undefined 不发生：选择器非受控清空被禁用，清自定义
-              // 一律通过点固定档完成，档位状态与显示一致。
+              /**
+               * 选择器只在选完**完整区间**后才回调（半受控延迟提交，见
+               * CustomRangePicker）。点起点只更新本地草稿，不进入这里——
+               * 避免对「无完整区间」触发查询。
+               *
+               * 顺序：先写窗口天数、再进 custom 档——顺序不能反。
+               */
+              const days = Math.max(1, Math.ceil((Date.now() - picked[0].getTime()) / 86_400_000) + 1)
+              setCustomRangeDays(days)
+              onDatesChange(picked)
+              onRangeChange('custom')
             }}
             startPlaceholder={t('tokenDateStart')}
             endPlaceholder={t('tokenDateEnd')}
