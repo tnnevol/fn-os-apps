@@ -46,7 +46,7 @@ import { serializeRequest } from './serialize.ts'
 import { hasRequestImages, serializeRequestWithImages } from './serialize-image.ts'
 import { translate } from './translate.ts'
 import { hasDisclosedCapacity } from './types.ts'
-import type { CodeBuddyModel, WireError } from './types.ts'
+import type { CodeBuddyModel, WireError, WireRequest } from './types.ts'
 import type { ImageAttachmentAccess } from '@deepseek-ai/dsh-llm'
 import type { AttachmentStore, ImageAttachmentRef } from '@deepseek-ai/dsh-attachment'
 
@@ -504,11 +504,14 @@ export class CodeBuddyAdapter extends LlmAdapter {
       )
     }
 
-    const body = serializeRequest(options, supportsImages)
-    // Images: when the request carries a durable image and the model declares
-    // image input, the plain text serializer would silently drop it. Resolve
-    // request versions through the attachment service and rebuild the wire
-    // messages with OpenAI-compatible inline `image_url` parts.
+    /**
+     * 选择**唯一一条**序列化路径，而不是「先跑一遍无图版本再决定」。
+     *
+     * 旧写法先无脑调 `serializeRequest(options, supportsImages)`，再判断 `wantsImage`：
+     * 有图时白做一次（无图版本会丢图、要后面重建），不支持图时 `serializeRequest →
+     * assertSupportedContent` 会**先抛 UNSUPPORTED_CONTENT**，让下面那条专门的「不
+     * 支持图」分支成为死代码。把判断与分支放到前面更清晰。
+     */
     const wantsImage = hasRequestImages(options.messages)
     if (wantsImage && !supportsImages) {
       throw new LlmError(
@@ -516,19 +519,26 @@ export class CodeBuddyAdapter extends LlmAdapter {
         'UNSUPPORTED_CONTENT',
       )
     }
-    const attachments = wantsImage ? this.config.resolveAttachments?.() : undefined
-    if (wantsImage && attachments === undefined) {
-      throw new LlmError(
-        'CodeBuddy image input requires the durable attachment service',
-        'UNSUPPORTED_CONTENT',
+    let body: WireRequest
+    if (wantsImage) {
+      const attachments = this.config.resolveAttachments?.()
+      if (attachments === undefined) {
+        throw new LlmError(
+          'CodeBuddy image input requires the durable attachment service',
+          'UNSUPPORTED_CONTENT',
+        )
+      }
+      body = await serializeRequestWithImages(
+        options,
+        attachments,
+        (ref) => this.config.resolveImageAccess?.(attachments, ref),
       )
+    } else {
+      body = serializeRequest(options, supportsImages)
     }
-    const wireRequest = wantsImage && attachments !== undefined
-      ? await serializeRequestWithImages(options, attachments, (ref) => this.config.resolveImageAccess?.(attachments, ref))
-      : body
     // Serialized before the try so the transport label below covers only the
     // transport boundary.
-    const payload = JSON.stringify(wireRequest)
+    const payload = JSON.stringify(body)
 
     let response: Response
     try {
