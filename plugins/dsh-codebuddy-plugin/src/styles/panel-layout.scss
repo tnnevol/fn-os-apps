@@ -500,6 +500,8 @@
   .dsh-codebuddy-token-toolbar-actions .dsh-codebuddy-panel-range { justify-content: flex-start; }
   /* 四个选项在窄屏可能换行，让按钮组占满宽度以免被压扁。 */
   .dsh-codebuddy-token-panel-actions .dsh-codebuddy-panel-range { width: 100%; }
+  /* 维度切换（按工作区/按模型）同上：与时间周期按钮组同行时可能挤不下。 */
+  .dsh-codebuddy-token-panel-actions .dsh-codebuddy-panel-dimension { width: 100%; }
   .dsh-codebuddy-token-overview-head { align-items: flex-start; flex-direction: column; }
   .dsh-codebuddy-token-overview-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .dsh-codebuddy-token-overview-stats .dsh-codebuddy-panel-stat:nth-child(odd) { border-left: 0; }

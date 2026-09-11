@@ -1455,6 +1455,45 @@ function ActivityGrid({ activity, callSuffix }: { activity: TokenStats['activity
   )
 }
 
+/** 统计面板的维度：按工作区还是按模型聚合。 */
+type StatsDimension = 'workspace' | 'model'
+
+/** 维度切换的两个档位与文案键，顺序稳定（工作区在前）。 */
+const DIMENSIONS: ReadonlyArray<{ key: StatsDimension, labelKey: 'tokenByWorkspace' | 'tokenByModel' }> = [
+  { key: 'workspace', labelKey: 'tokenByWorkspace' },
+  { key: 'model', labelKey: 'tokenByModel' },
+]
+
+/**
+ * 维度切换（按工作区 / 按模型）。
+ *
+ * 交互复用时间周期的 `RangeToggle`：同一形态的互斥单选、同一种 solid/borderless
+ * 激活表达，读者学一次就两个地方都会用。放在**面板内部**而不是页面级——两个面板
+ * 可以各自停在维度上对比，与时间周期独立面板的理由相同。
+ */
+function DimensionToggle({ dimension, onChange, t }: {
+  dimension: StatsDimension
+  onChange: (value: StatsDimension) => void
+  t: Translate
+}): ReactNode {
+  return (
+    <DshButtonGroup size="small" className="dsh-codebuddy-panel-dimension" aria-label={t('tokenDimension')}>
+      {DIMENSIONS.map(({ key, labelKey }) => (
+        <DshButton
+          key={key}
+          size="small"
+          theme={dimension === key ? 'solid' : 'borderless'}
+          type={dimension === key ? 'primary' : 'tertiary'}
+          aria-pressed={dimension === key}
+          onClick={() => { onChange(key) }}
+        >
+          {t(labelKey)}
+        </DshButton>
+      ))}
+    </DshButtonGroup>
+  )
+}
+
 /**
  * 一个统计面板的外壳：标题 + 该面板**自己的**时间周期选择器 + 局部刷新。
  *
@@ -1462,11 +1501,24 @@ function ActivityGrid({ activity, callSuffix }: { activity: TokenStats['activity
  * 工作区分布、模型分布、会话排行各自回答不同问题，读者经常需要让它们停在
  * 不同窗口上对比——全局选择器会强迫所有面板同时跳变，反而看不出差异。
  *
+ * `hint`（副标题）已随「维度改为面板内切换」一并移除：维度以前就写在副标题里
+ * （「按工作区」「按模型」），现在成了可切换的控件，再用一行小字重复它只会
+ * 占掉一行高度；时间周期信息也一直由选择器自身表达。
+ *
  * 刷新只作用于本面板；遮罩只盖住面板内容，卡片外壳不参与重建。
  */
-function TokenPanel({ title, hint, options, range, onRangeChange, rangeLabel, rangeFormat, refreshLabel, loading, onRefresh, children }: {
+function TokenPanel({ title, hint, extra, options, range, onRangeChange, rangeLabel, rangeFormat, refreshLabel, loading, onRefresh, children }: {
   title: string
-  hint: string
+  /**
+   * 副标题（标题旁的小字）。
+   *
+   * 只保留**数据型**副标题（如「N 个活跃会话」「总计 X Token」——它们随数据变化、
+   * 有信息量）。静态的维度副标题已删：那两处（用量分布/模型排行）的维度改成了
+   * 面板内切换控件，再用小字重复一遍只会占高度。
+   */
+  hint?: string
+  /** 面板内部的附加控件（如维度切换），渲染在标题行右侧、时间周期选择器之前。 */
+  extra?: ReactNode
   options: readonly TokenRangeKey[]
   range: TokenRangeKey
   onRangeChange: (value: TokenRangeKey) => void
@@ -1480,8 +1532,9 @@ function TokenPanel({ title, hint, options, range, onRangeChange, rangeLabel, ra
   return (
     <section className="dsh-codebuddy-token-section">
       <div className="dsh-codebuddy-token-panel-head">
-        <div className="dsh-codebuddy-panel-section-title"><strong>{title}</strong><span>{hint}</span></div>
+        <div className="dsh-codebuddy-panel-section-title"><strong>{title}</strong>{hint !== undefined && hint.length > 0 ? <span>{hint}</span> : null}</div>
         <div className="dsh-codebuddy-token-panel-actions">
+          {extra}
           <RangeToggle options={options} range={range} onChange={onRangeChange} label={rangeLabel} format={rangeFormat} />
           <DshIconButton
             size="small"
@@ -1506,6 +1559,14 @@ function TokenStatsPage({ rpc, t }: { rpc: ConnectionRpc, t: Translate }): React
   const [distributionRange, setDistributionRange] = useState<TokenRangeKey>(DEFAULT_TOKEN_RANGE)
   const [modelsRange, setModelsRange] = useState<TokenRangeKey>(DEFAULT_TOKEN_RANGE)
   const [sessionsRange, setSessionsRange] = useState<TokenRangeKey>(DEFAULT_TOKEN_RANGE)
+  /**
+   * 用量分布与模型排行的维度（按工作区 / 按模型），各面板**独立**。
+   *
+   * 默认档沿用两个面板过去的固定视角（分布=工作区、排行=模型）——老读者打开页面
+   * 看到的内容与之前一致，切换只是新增能力而不改变默认。
+   */
+  const [distributionDimension, setDistributionDimension] = useState<StatsDimension>('workspace')
+  const [modelsDimension, setModelsDimension] = useState<StatsDimension>('model')
   const store = useMemo(() => new TokenStatsStore(rpc), [rpc])
   const overview = useTokenStats(store, overviewRange)
   const trend = useTokenStats(store, trendRange)
@@ -1648,7 +1709,7 @@ function TokenStatsPage({ rpc, t }: { rpc: ConnectionRpc, t: Translate }): React
       <div className="dsh-codebuddy-token-columns">
         <TokenPanel
           title={t('tokenDistribution')}
-          hint={t('tokenByWorkspace')}
+          extra={<DimensionToggle dimension={distributionDimension} onChange={setDistributionDimension} t={t} />}
           options={optionsFor('other')}
           range={distributionRange}
           onRangeChange={setDistributionRange}
@@ -1661,12 +1722,14 @@ function TokenStatsPage({ rpc, t }: { rpc: ConnectionRpc, t: Translate }): React
           <DshCard className="dsh-codebuddy-token-list-card">
             {distribution.data === undefined
               ? <div className="dsh-codebuddy-token-empty" />
-              : <WorkspaceList items={distribution.data.workspaces} empty={t('tokenNoWorkspace')} />}
+              : distributionDimension === 'workspace'
+                ? <WorkspaceList items={distribution.data.workspaces} empty={t('tokenNoWorkspace')} />
+                : <BreakdownList items={distribution.data.models} empty={t('tokenNoModel')} />}
           </DshCard>
         </TokenPanel>
         <TokenPanel
           title={t('tokenModels')}
-          hint={t('tokenByModel')}
+          extra={<DimensionToggle dimension={modelsDimension} onChange={setModelsDimension} t={t} />}
           options={optionsFor('other')}
           range={modelsRange}
           onRangeChange={setModelsRange}
@@ -1679,7 +1742,9 @@ function TokenStatsPage({ rpc, t }: { rpc: ConnectionRpc, t: Translate }): React
           <DshCard className="dsh-codebuddy-token-list-card">
             {models.data === undefined
               ? <div className="dsh-codebuddy-token-empty" />
-              : <BreakdownList items={models.data.models} empty={t('tokenNoModel')} />}
+              : modelsDimension === 'model'
+                ? <BreakdownList items={models.data.models} empty={t('tokenNoModel')} />
+                : <WorkspaceList items={models.data.workspaces} empty={t('tokenNoWorkspace')} />}
           </DshCard>
         </TokenPanel>
       </div>
