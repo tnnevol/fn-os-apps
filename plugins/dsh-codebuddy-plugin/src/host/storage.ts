@@ -126,7 +126,22 @@ export function buildAccountEntry(
   account: Account,
   options: { label?: string, environment?: string, endpoint?: string, client?: CodeBuddyClientId } = {},
 ): CodeBuddyAccountEntry {
+  /**
+   * 备注名缺省时**回落到昵称**，而不是留空。
+   *
+   * 过去只在展示层做 `label ?? nickname` 回落，存储里始终没有 label。后果是
+   * 「备注名」这一项在导出的凭据文件、日志、以及任何直接读文档的消费者眼里都是
+   * **缺失**的——想知道这个账号叫什么只能自己去拼回落逻辑，而回落规则一旦分散就
+   * 会各写各的。
+   *
+   * 落盘为昵称之后，「备注名」成为一份**自解释**的数据：读文档就能看到每个账号
+   * 叫什么；用户之后通过重命名覆盖它即可。
+   *
+   * 注意 trim 后为空串也按缺省处理：表单清空或不填都会得到昵称。
+   */
+  const nickname = account.nickname.trim()
   const trimmed = options.label?.trim()
+  const label = trimmed === undefined || trimmed.length === 0 ? nickname : trimmed
   const environment = options.environment?.trim()
   const endpoint = options.endpoint?.trim().replace(/\/+$/, '')
   // 客户端身份与版本都是账号的稳定属性：版本取自固定映射，不随机生成。
@@ -150,7 +165,10 @@ export function buildAccountEntry(
     account: {
       uid: account.uid,
       nickname: account.nickname,
-      ...trimmed === undefined || trimmed.length === 0 ? {} : { label: trimmed },
+      // 始终写入：缺省时上面已回落为昵称（理由见函数开头）。
+      // 昵称也为空（服务端未返回）时省略，让「没有名字」这一事实保持可见，
+      // 而不是落一个空串进文档。
+      ...label.length === 0 ? {} : { label },
       ...account.uin === undefined ? {} : { uin: account.uin },
       ...account.enterpriseId === undefined ? {} : { enterpriseId: account.enterpriseId },
       ...account.enterpriseName === undefined ? {} : { enterpriseName: account.enterpriseName },

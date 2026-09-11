@@ -1358,6 +1358,14 @@ export class CodeBuddyAuthService {
        * 之后请求发往错误的服务平面、凭据不被承认。
        */
       const clientSpecified = options.client !== undefined
+      /**
+       * 本次登录是否**显式**指定了备注名。
+       *
+       * 与 `clientSpecified` 同理：`buildAccountEntry` 会在未指定时把 label 回落成
+       * 昵称，因此不能靠 `fresh.account.label` 是否为空来判断「用户有没有填」。
+       * 重新登录不带 label，若按结果判断就会把用户设的备注名覆盖成昵称。
+       */
+      const labelSpecified = options.label !== undefined && options.label.trim().length > 0
       const stored = await loadStorage()
       // The existing entry for the same uid (if any) keeps its local id and
       // position; its credential is replaced by the fresh one. A brand-new
@@ -1372,14 +1380,30 @@ export class CodeBuddyAuthService {
       if (stored === undefined) {
         next = { activeId: fresh.id, accounts: [fresh] }
       } else if (existing !== undefined) {
+        /**
+         * 保留用户自定义的备注名。
+         *
+         * 判据必须是「**本次登录是否显式指定了 label**」，不能看
+         * `fresh.account.label` 是否为空 —— `buildAccountEntry` 现在会在未指定时把
+         * label 回落成昵称，于是它恒有值，「重新登录」会把用户设的备注名覆盖成昵称
+         * （实测：`公司账号` 被 `m6440216j102` 覆盖）。
+         *
+         * 与下面的 `clientSpecified` 同一模式：用「调用方有没有给」判断，而不是用
+         * 「结果里有没有」判断。
+         *
+         * 四种组合：本次给了 → 用新值（首次设定或用户改写）；
+         * 本次没给 + 旧条目有 → 保留用户备注名；本次没给 + 旧条目也没有 → 沿用
+         * `fresh` 里回落好的昵称。
+         */
+        const effectiveLabel = labelSpecified
+          ? fresh.account.label
+          : existing.account.label ?? fresh.account.label
         const replaced: CodeBuddyAccountEntry = {
           ...fresh,
           id: existing.id,
           account: {
             ...fresh.account,
-            ...(fresh.account.label === undefined && existing.account.label !== undefined
-              ? { label: existing.account.label }
-              : {}),
+            ...effectiveLabel === undefined ? {} : { label: effectiveLabel },
           },
           // 客户端标识：**仅当本次登录显式指定时**才以此为准（同一 uid 先用 CLI
           // 登录、后用 WorkBuddy 登录，端点与版本必须跟着换）；未指定时保留原值，
