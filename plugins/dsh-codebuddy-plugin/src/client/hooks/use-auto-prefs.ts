@@ -73,7 +73,7 @@ export function useAutoPrefs(rpc: ConnectionRpc): {
       void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoTravel', { enabled: $autoTravel.get() })
       void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoSwitch', { enabled: $autoSwitch.get() })
     })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react/exhaustive-deps -- deps 有意收窄，见上方注释
   }, [rpc])
 
   return { autoCheckin: autoCheckinOn, autoSwitch: autoSwitchOn, autoTravel: autoTravelOn }

@@ -45,7 +45,7 @@ export function usePanelData<T>(
       setLoading(false)
     }).catch(() => { if (active) setLoading(false) })
     return () => { active = false }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react/exhaustive-deps -- deps 有意收窄，见上方注释
   }, [rpc, endpoint, tick, ...deps])
   return { data, loading, reload }
 }

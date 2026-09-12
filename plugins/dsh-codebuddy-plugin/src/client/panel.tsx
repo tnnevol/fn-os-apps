@@ -115,7 +115,7 @@ function AccountsPage({
       recordResources(row.id, liveResourcesOf(row))
     }
     setLedgerTick(v => v + 1)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react/exhaustive-deps -- deps 有意收窄，见上方注释
   }, [data])
 
   // 每个账号的分类资源包（可使用 → 已用完 → 已过期），卡片与弹框共用。
@@ -125,7 +125,7 @@ function AccountsPage({
       map.set(row.id, row.creditOk ? classifyResources(readResources(row.id), liveResourcesOf(row)) : [])
     }
     return map
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react/exhaustive-deps -- deps 有意收窄，见上方注释
   }, [rows, ledgerTick])
 
   const checkinOne = async (id: string): Promise<void> => {
@@ -583,7 +583,7 @@ export function CodeBuddyPanelPage({ rpc, route, t }: PanelPageProps): ReactNode
       () => { setLoginState(undefined); notify(false, t('timeout')) },
       (reason: string) => { setLoginState(undefined); notify(false, `${t('loginFailed')} ${reason}`) },
     )
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react/exhaustive-deps -- deps 有意收窄，见上方注释
   }, [loginState, rpc])
 
   if (!snapshot.active) return null
