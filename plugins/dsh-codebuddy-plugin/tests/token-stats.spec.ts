@@ -129,6 +129,34 @@ describe('CodeBuddy token analytics', () => {
     expect(result.totals.total).toBe(120)
     expect(result.sessions.map(row => row.id)).toEqual(['healthy'])
   })
+
+  it('聚合中途抛错时仍然释放已取得的 observation（不泄漏会话句柄）', async () => {
+    /**
+     * `observeSession` 返回带 `[Symbol.dispose]` 的观察对象——它持有会话的重放
+     * 游标/文件句柄。正常路径的释放由上面那条 `disposed === 2` 守住，但**异常
+     * 路径**同样要释放：聚合中途某个会话的事件读取炸了，不能把那批已经打开的
+     * 观察对象留在那里。
+     *
+     * 实现形态：整段聚合包在 `try { ... } finally { 逐个 disposeObservation }`。
+     * 这条用例用一个「迭代 events 就抛错」的观察对象触发异常，断言：
+     *  1. 错误照常向上抛（不吞掉）；
+     *  2. `[Symbol.dispose]` 已被调用。
+     */
+    let disposed = 0
+    const query: SessionQueryService = {
+      async listSessions() { return [{ header: { id: 'boom' }, live: false, persisted: true }] },
+      async observeSession(id) {
+        return {
+          header: { id },
+          // events 用 getter：一旦被迭代就抛错，模拟损坏日志在聚合中途炸开。
+          get events(): never { throw new Error('corrupt event stream') },
+          [Symbol.dispose]: () => { disposed += 1 },
+        }
+      },
+    }
+    await expect(collectCodeBuddyTokenStats(query, windowOfDays(1))).rejects.toThrow('corrupt event stream')
+    expect(disposed).toBe(1)
+  })
 })
 
 describe('会话标题取自真实用户输入', () => {
