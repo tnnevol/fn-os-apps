@@ -86,7 +86,7 @@ describe('RunGuard', () => {
 
 describe('mapWithConcurrency', () => {
   it('按索引回填可保持原始顺序，即使完成顺序相反', async () => {
-    const slots: Array<string | undefined> = new Array(4).fill(undefined)
+    const slots: Array<string | undefined> = Array.from<string | undefined>({ length: 4 }).fill(undefined)
     await mapWithConcurrency([30, 20, 10, 1], 4, async (delay, index) => {
       await new Promise(resolve => setTimeout(resolve, delay))
       slots[index] = `item-${index}`

@@ -105,7 +105,8 @@ describe('分层依赖方向', () => {
     const offenders: string[] = []
     for (const f of clientFiles) {
       const s = readFileSync(f, 'utf8')
-      if (/from '[^']*\/host\/|from '[^']*\.\.\/host\//.test(s)) offenders.push(f.replace(ROOT, 'src'))
+      // `[^']*` 已能覆盖 `../host/`，不必单列第二个分支。
+      if (/from '[^']*\/host\//.test(s)) offenders.push(f.replace(ROOT, 'src'))
     }
     expect(offenders).toEqual([])
   })

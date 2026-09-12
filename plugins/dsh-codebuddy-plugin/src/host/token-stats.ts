@@ -141,7 +141,7 @@ export async function collectCodeBuddyTokenStats(
     // 端点缺失或非法：抛错而不是猜默认值。
     // 旧版本里服务端会在 `startTime`/`endTime` 缺一时退化到「以请求时刻为终点
     // 向前推 30 天」——同一接口对不同请求会得到不同窗口，无法稳定。
-    throw new Error('CodeBuddy tokenStats: startTime and endTime are required')
+    throw new TypeError('CodeBuddy tokenStats: startTime and endTime are required')
   }
   if (request.endTime < request.startTime) {
     // 端点顺序写反：抛错而不是把负窗口夹到 1 天。

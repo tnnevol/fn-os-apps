@@ -62,7 +62,8 @@ describe('CodeBuddy panel hash route', () => {
 
   it('canonicalizes a bare panel route without pushing a history entry', () => {
     const browser = browserWithHash('#/codebuddy')
-    new PanelRouteController(browser)
+    // 构造器本身即以副作用规范 URL（replace 而非 push），这里刻意不接收返回值。
+    void new PanelRouteController(browser)
 
     expect(browser.replaced).toEqual(['#/codebuddy/accounts'])
     expect(browser.location.hash).toBe('#/codebuddy/accounts')

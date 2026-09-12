@@ -19,14 +19,17 @@ import { useEffect, useRef } from 'react'
 import type { ReactNode } from 'react'
 import { BarChart, LineChart } from 'echarts/charts'
 import { AriaComponent, GridComponent, LegendComponent, TooltipComponent } from 'echarts/components'
-import { init as initChart, use as useECharts } from 'echarts/core'
+// echarts 的 `use` 是**同步注册函数**（与 registerXxx 同族），不是 React Hook。
+// 这里刻意不改名成 `useECharts`——那会让 react/rules-of-hooks 误判「在顶层调
+// Hook」；`registerECharts` 如实表达它的语义。
+import { init as initChart, use as registerECharts } from 'echarts/core'
 import type { ECharts } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
 
 import { compact } from './loading-shared.tsx'
 
-// 模块级注册 echarts 组件：每个 import 都注册一次，最终只起一次 effect。
-useECharts([BarChart, LineChart, AriaComponent, GridComponent, LegendComponent, TooltipComponent, CanvasRenderer])
+// 模块级注册 echarts 组件：每个 import 都注册一次。
+registerECharts([BarChart, LineChart, AriaComponent, GridComponent, LegendComponent, TooltipComponent, CanvasRenderer])
 
 /** 读取 CSS 变量；空值回退到 fallback。 */
 export function cssVariableFromElement(element: HTMLElement, name: string, fallback: string): string {

@@ -21,7 +21,7 @@ const SRC = join(HERE, '..', 'src')
 const ADAPTER_SRC = readFileSync(join(SRC, 'host/adapter.ts'), 'utf8')
 const AUTH_SRC = readFileSync(join(SRC, 'host/auth-service.ts'), 'utf8')
 
-const PNG8 = Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
+const PNG8 = Uint8Array.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A])
 
 function requestWithImage(): GenerateOptions {
   return {

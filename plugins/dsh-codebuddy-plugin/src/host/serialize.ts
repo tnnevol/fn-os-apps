@@ -39,10 +39,10 @@ export function boundToolCallId(id: string): string {
   if (id.length <= 64) return id
   // 对原 id 做 FNV-1a 64 位散列，十六进制编码。`call_` + 16 个十六进制字符是
   // 一个稳定、抗碰撞的短形式，远低于上限。
-  let hash = 0xcbf29ce484222325n
+  let hash = 0xCBF29CE484222325n
   for (let i = 0; i < id.length; i++) {
     hash ^= BigInt(id.charCodeAt(i))
-    hash = (hash * 0x100000001b3n) & 0xFFFFFFFFFFFFFFFFn
+    hash = (hash * 0x100000001B3n) & 0xFFFFFFFFFFFFFFFFn
   }
   return `call_${hash.toString(16).padStart(16, '0')}`
 }

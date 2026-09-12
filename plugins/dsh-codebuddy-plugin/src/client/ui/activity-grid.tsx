@@ -31,7 +31,7 @@ export function ActivityGridImpl({ activity, callSuffix }: {
   const max = Math.max(1, ...activity.map(item => item.tokens))
   const leading = activity[0] === undefined ? 0 : activityWeekdayImpl(activity[0].day)
   const cells: Array<TokenStats['activity'][number] | undefined> = [
-    ...Array.from({ length: leading }, () => undefined),
+    ...Array.from<TokenStats['activity'][number] | undefined>({ length: leading }).fill(undefined),
     ...activity,
   ]
   while (cells.length % 7 !== 0) cells.push(undefined)

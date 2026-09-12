@@ -42,10 +42,16 @@ describe('① 开关关闭后被动换号也不生效', () => {
     )
     // 曾在循环开头直接调用 failoverToNextAccount，安全性靠「上一轮 catch 检查过」
     // 这个隐式前提保证；那是脆的——挪动切换位置就会静默绕过开关。
-    const guardAt = run.indexOf('if (!autoSwitchAllowed()) throw lastError')
+    //
+    // 断言的是**意图**（先判开关、且要抛出那个错误），不是某一种写法：
+    // 实现里先 `if (!autoSwitchAllowed())` 再有 `throw lastError`（并显式判空，
+    // 不再依赖 `as LlmError` 断言）。按「守卫在切换之前」定位即可。
+    const guardAt = run.indexOf('if (!autoSwitchAllowed())')
+    const throwAt = run.indexOf('throw lastError')
     const switchAt = run.indexOf('await this.failoverToNextAccount')
     expect(guardAt).toBeGreaterThan(-1)
-    expect(switchAt).toBeGreaterThan(guardAt)
+    expect(throwAt).toBeGreaterThan(guardAt)
+    expect(switchAt).toBeGreaterThan(throwAt)
   })
 
   it('两处共用同一个判定函数（避免一处改了另一处漏改）', () => {

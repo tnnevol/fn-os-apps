@@ -408,7 +408,13 @@ export class CodeBuddyAdapter extends LlmAdapter {
     for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
       // 首次尝试前不切换；之后的每一轮都已经由上一轮末尾切好了账号。
       if (attempt > 0) {
-        if (!autoSwitchAllowed()) throw lastError as LlmError
+        // 走到这里说明上一轮的 catch 已经记下了错误（否则第 0 轮就抛出去了），
+        // 但保持显式判空：不依赖「另一个分支的副作用」，将来挪动循环结构也不会
+        // 变成抛一个 undefined。
+        if (!autoSwitchAllowed()) {
+          if (lastError === undefined) break
+          throw lastError
+        }
         const switched = await this.failoverToNextAccount(attempted)
         if (switched === undefined) break
         attempted.add(switched.id)

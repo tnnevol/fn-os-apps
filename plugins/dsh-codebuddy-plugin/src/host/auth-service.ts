@@ -1363,7 +1363,7 @@ export class CodeBuddyAuthService {
   }) => Promise<T>, signal?: AbortSignal): Promise<T[]> {
     const storage = await loadStorage()
     if (storage === undefined) return []
-    const slots: Array<T | undefined> = new Array<T | undefined>(storage.accounts.length).fill(undefined)
+    const slots: Array<T | undefined> = Array.from<T | undefined>({ length: storage.accounts.length }).fill(undefined)
     // 每个账号的探测是 2–3 个并发请求，账号数较多时全量铺开会给 meter 平面
     // 造成瞬时压力；限制同时在跑的账号数即可兼顾延迟与礼貌。
     await mapWithConcurrency(storage.accounts, CONCURRENCY, async (entry, index) => {

@@ -115,7 +115,7 @@ describe('副标题移除（仅限这两个模块）', () => {
 
   it('其余面板的数据型副标题保留（信息量不同，不在此需求范围）', () => {
     // 总览的「N 个活跃会话」、趋势的「总计 X Token」是随数据变化的，删掉会丢信息
-    expect(PANEL).toMatch(/hint=\{\`\$\{data\.totals\.sessions\}/)
+    expect(PANEL).toMatch(/hint=\{`\$\{data\.totals\.sessions\}/)
     expect(PANEL).toMatch(/hint=\{trend\.data === undefined/)
   })
 
