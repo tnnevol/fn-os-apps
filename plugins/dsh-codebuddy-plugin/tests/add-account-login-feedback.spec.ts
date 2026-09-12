@@ -329,6 +329,35 @@ describe('轮询 effect 的依赖是干净的', () => {
   })
 })
 
+describe('添加账号不抢占当前账号', () => {
+  /**
+   * host 的 `activate` 默认为 `true`，不传就会让新账号成为当前账号：用户只是想
+   * 多存一个备用账号，正在用的账号却被静默换掉，后续请求全部改走新账号。
+   *
+   * 这里只锁「弹框确实请求了不切换」。规则本身的正确性由 storage.spec.ts 的
+   * `nextActiveId` 逐情形钉住——两处合起来才构成完整保护：规则对但没传参，
+   * 或者传了参但规则反了，都会让需求失效。
+   */
+  const optionsBlock = COMPONENT.slice(
+    COMPONENT.indexOf('const options = {'),
+    COMPONENT.indexOf('rpc.call<LoginStart>'),
+  )
+
+  it('startLogin 显式传 activate: false', () => {
+    expect(optionsBlock.length).toBeGreaterThan(0)
+    expect(optionsBlock).toMatch(/activate: false/)
+  })
+
+  it('options 块确实作为 startLogin 的入参（而不是算了没用）', () => {
+    expect(COMPONENT).toMatch(/rpc\.call<LoginStart>\(CODEBUDDY_AUTH_CHANNEL, 'startLogin', options\)/)
+  })
+
+  it('activate 在 options 块内，不会因可选字段展开而被漏掉', () => {
+    // 若被塞进某个条件展开里，默认场景下就不会生效。
+    expect(optionsBlock).toMatch(/^\s*activate: false,\s*$/m)
+  })
+})
+
 describe('关闭弹框即结束本次登录等待', () => {
   /**
    * 关框必须同时收掉三样东西，否则会留下用户看不见却仍在动的状态：

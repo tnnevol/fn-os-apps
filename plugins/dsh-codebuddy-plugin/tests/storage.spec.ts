@@ -261,3 +261,78 @@ describe('重新登录不应改变账号的客户端身份', () => {
     expect(src).toMatch(/existing\.client === undefined \? \{\} : \{ client: existing\.client \}/)
   })
 })
+
+/**
+ * `nextActiveId` 决定一次登录之后谁是当前账号。
+ *
+ * 这条规则此前**零覆盖**，而「添加账号不抢占当前账号」的正确性全压在它身上：
+ * `activate` 传错或规则写反，用户只是多存一个备用账号，正在用的账号却会被
+ * 静默换掉，后续所有请求改走新账号。因此这里逐情形钉住。
+ */
+describe('nextActiveId：登录后谁是当前账号', () => {
+  async function load() {
+    const { nextActiveId } = await import('../src/host/storage.ts')
+    return nextActiveId
+  }
+
+  it('首账号：无论 activate 与否都必须成为当前账号', async () => {
+    // 否则会留下「有账号却没有当前账号」的空悬状态。
+    const nextActiveId = await load()
+    expect(nextActiveId(undefined, 'new', false)).toBe('new')
+    expect(nextActiveId(undefined, 'new', true)).toBe('new')
+  })
+
+  it('新增账号 + activate=false：保持原当前账号（本次需求）', async () => {
+    const nextActiveId = await load()
+    expect(nextActiveId('old', 'new', false)).toBe('old')
+  })
+
+  it('新增账号 + activate=true：切换过去', async () => {
+    const nextActiveId = await load()
+    expect(nextActiveId('old', 'new', true)).toBe('new')
+  })
+
+  it('重复登录当前账号：即使 activate=false 也不能把自己挤下去', async () => {
+    // wasActive 兜底：刷新当前账号的凭据仍属于当前账号。
+    const nextActiveId = await load()
+    expect(nextActiveId('me', 'me', false, true)).toBe('me')
+  })
+
+  it('重复登录非当前账号 + activate=false：保持原当前账号', async () => {
+    const nextActiveId = await load()
+    expect(nextActiveId('current', 'other', false, false)).toBe('current')
+  })
+
+  it('重复登录非当前账号 + activate=true：切换过去', async () => {
+    const nextActiveId = await load()
+    expect(nextActiveId('current', 'other', true, false)).toBe('other')
+  })
+
+  it('wasActive 默认 false', async () => {
+    const nextActiveId = await load()
+    expect(nextActiveId('current', 'other', false)).toBe('current')
+  })
+
+  it('current 与 freshId 相同时，wasActive 不影响结果', async () => {
+    // 这条记录一个**等价性**事实，而不是在测行为差异：当两者相同，两个分支
+    // 返回同一个值，因此 wasActive 在该情形下是冗余的。
+    //
+    // 之所以冗余却仍保留：它让规则自我表达「重复登录当前账号不能把自己挤下去」
+    // 这一意图，且属于防御性写法。它成立的前提是调用点满足
+    // `replaced.id === existing.id`（见下一条不变量），一旦该前提被破坏，
+    // wasActive 就不再冗余——那时这条等价性断言与下一条会一起失效并提醒。
+    const nextActiveId = await load()
+    expect(nextActiveId('same', 'same', false, true)).toBe(nextActiveId('same', 'same', false, false))
+  })
+
+  it('调用点不变量：被复用的条目沿用原 id（wasActive 冗余的前提）', () => {
+    const src = readFileSync(new URL('../src/host/auth-service.ts', import.meta.url), 'utf8')
+    // 复用分支必须保留 existing.id，并据此算 wasActive。若有人改成新 id，
+    // `activate || wasActive` 的保护语义就变了，需要重新审视。
+    const start = src.indexOf('const wasActive =')
+    expect(start).toBeGreaterThan(-1)
+    const block = src.slice(src.indexOf('const existing = stored?.accounts.find'), start)
+    expect(block).toMatch(/id: existing\.id/)
+    expect(src.slice(start, start + 200)).toMatch(/stored\.activeId === existing\.id/)
+  })
+})

@@ -36,6 +36,7 @@ import {
   mutateStorage,
   buildAccountEntry,
   activeEntry,
+  nextActiveId,
   resolveEntryEndpoint,
   loadAutoSwitchConfig,
   saveAutoSwitchConfig,
@@ -1257,7 +1258,9 @@ export class CodeBuddyAuthService {
       const activate = options.activate !== false
       let next: CodeBuddyStorage
       if (stored === undefined) {
-        next = { activeId: fresh.id, accounts: [fresh] }
+        // 首个账号必须成为当前账号（`nextActiveId` 在 current 为空时无视 activate），
+        // 否则会留下「有账号却没有当前账号」的空悬状态。
+        next = { activeId: nextActiveId(undefined, fresh.id, activate), accounts: [fresh] }
       } else if (existing !== undefined) {
         /**
          * 保留用户自定义的备注名。
@@ -1299,13 +1302,14 @@ export class CodeBuddyAuthService {
         }
         const wasActive = stored.activeId === existing.id
         next = {
-          activeId: activate || wasActive ? replaced.id : stored.activeId,
+          activeId: nextActiveId(stored.activeId, replaced.id, activate, wasActive),
           accounts: stored.accounts.map(entry => entry.id === existing.id ? replaced : entry),
         }
       } else {
-        next = activate
-          ? { activeId: fresh.id, accounts: [...stored.accounts, fresh] }
-          : { activeId: stored.activeId, accounts: [...stored.accounts, fresh] }
+        next = {
+          activeId: nextActiveId(stored.activeId, fresh.id, activate),
+          accounts: [...stored.accounts, fresh],
+        }
       }
       await saveStorage(next)
       this.notifyModels()

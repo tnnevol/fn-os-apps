@@ -278,6 +278,35 @@ export async function loadStorage(): Promise<CodeBuddyStorage | undefined> {
 }
 
 /**
+ * 一次登录之后，`activeId` 应该指向谁。
+ *
+ * 从 `runLogin` 里提出来的纯规则，便于在不发真实网络请求的前提下验证——
+ * 「添加账号不抢占当前账号」这条行为的正确性全压在它身上。
+ *
+ * 三种情形：
+ *  - **首个账号**（`current` 为 undefined）：无视 `activate`，新条目必须成为
+ *    当前账号，否则会出现「有账号却没有当前账号」的空悬状态；
+ *  - **重复登录已存在账号**：`activate || wasActive`——刷新当前账号的凭据不能
+ *    把它自己挤下去；
+ *  - **新增账号**：`activate` 为真才切过去，否则保持原样。
+ *
+ * @param current - 本次登录前的 `activeId`；一个账号都没有时为 undefined。
+ * @param freshId - 本次登录产生（或复用）的条目 id。
+ * @param activate - 调用方是否要求切换为当前账号。
+ * @param wasActive - 被复用的已存在条目此前是否就是当前账号。
+ * @returns 落库时应写入的 `activeId`。
+ */
+export function nextActiveId(
+  current: string | undefined,
+  freshId: string,
+  activate: boolean,
+  wasActive = false,
+): string {
+  if (current === undefined) return freshId
+  return activate || wasActive ? freshId : current
+}
+
+/**
  * 当前活动账号条目。
  * @param storage - 凭据文档。
  * @returns `activeId` 指向的条目，或第一条。

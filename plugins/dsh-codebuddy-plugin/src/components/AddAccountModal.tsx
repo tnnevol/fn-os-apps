@@ -146,6 +146,20 @@ export function AddAccountModal({
       ...cliOnly && (environment === 'cloudhosted' || environment === 'selfhosted')
         ? { endpoint: endpoint.trim() }
         : {},
+      /**
+       * 添加账号**不抢占当前账号**。
+       *
+       * host 的 `activate` 默认为 `true`，不传就会让新账号成为当前账号：用户只是
+       * 想多存一个备用账号，结果正在用的账号被换掉，后续请求全部改走新账号。
+       * 切换当前账号有专门的入口（账号卡片里的手动切换与自动切换策略），登录
+       * 不应顺带替他做这个决定。
+       *
+       * 两个已由 host 兜住的边界：① 一个账号都没有时（`stored === undefined`）
+       * 该分支无视 `activate`，仍把首个账号设为当前，不会出现「有账号却没有
+       * 当前账号」；② 重复登录已存在的账号时用 `activate || wasActive` 判断，
+       * 因此刷新当前账号的凭据不会把它挤下去。
+       */
+      activate: false,
     }
     const result = await rpc.call<LoginStart>(CODEBUDDY_AUTH_CHANNEL, 'startLogin', options)
     setHandshaking(false)
