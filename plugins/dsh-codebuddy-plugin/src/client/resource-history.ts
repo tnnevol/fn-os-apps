@@ -119,6 +119,34 @@ export function readResources(accountId: string): ResourceSnapshot[] {
   return readDocument()[accountId] ?? []
 }
 
+/**
+ * 从一份台账快照里取某账号的行（**纯函数**，不读全局 atom）。
+ *
+ * 与 {@link readResources} 的区别：后者每次调用都去 `$history.get()` 取当前
+ * 值，是 React 看不见的外部状态——组件里 `useMemo(() => readResources(id), [rows])`
+ * 在台账更新后不重算，是因为依赖里根本没有台账。用 `useStore` 订阅快照、
+ * 再把快照交给这个纯函数，依赖就变得完整且可校验。
+ *
+ * @param ledger - 已订阅的台账快照（`useStore(resourceHistoryStore)` 的返回值）。
+ * @param accountId - 资源包所属的本地账号 id。
+ */
+export function resourcesFrom(ledger: unknown, accountId: string): ResourceSnapshot[] {
+  return sanitizeDocument(ledger)[accountId] ?? []
+}
+
+/**
+ * 台账 atom，供 React `useStore` 订阅。
+ *
+ * 为什么需要它：`readResources` 读的是这个 atom，那是 React **看不见的外部
+ * 可变状态**。组件里 `useMemo(() => readResources(id), [rows])` 在台账更新后
+ * 仍会拿到旧值——`rows` 没变、memo 就不重算。
+ *
+ * 旧写法靠手工 state（`ledgerTick`）在写完台账后自增来触发重算，并为「lint
+ * 认为该依赖多余」挂一条 eslint-disable。订阅 atom 才是根治：台账一变就重
+ * 渲染，依赖变得真实可校验，手工信号与豁免都可删除。
+ */
+export const resourceHistoryStore = $history
+
 /** 丢弃一个账号的台账（账号被移除）。 */
 export function forgetResources(accountId: string): void {
   const doc = readDocument()

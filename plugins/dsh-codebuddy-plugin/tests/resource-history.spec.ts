@@ -103,3 +103,60 @@ describe('台账持久化（迁移到 nanostores 后）', () => {
     expect(readResources('b')).toHaveLength(1)
   })
 })
+
+/**
+ * 台账的**订阅语义**：这是 `panel.tsx` 里「台账更新后卡片要重新分类」的依据。
+ *
+ * 背景：`readResources(id)` 每次调用都去 `$history.get()` 取当前值，那是 React
+ * 看不见的外部可变状态——组件里 `useMemo(() => readResources(id), [rows])` 在
+ * 台账更新后不会重算（`rows` 没变），分类会一直停在旧值。
+ *
+ * 旧实现靠一个手工 state（`ledgerTick`）在写完台账后自增来触发重算，并为
+ * 「lint 认为该依赖多余」挂 eslint-disable。现在改为 `useStore` 订阅 atom +
+ * 纯函数 `resourcesFrom(snapshot, id)` 读取，依赖变成真实可校验的。
+ * 这组测试把「订阅确实会被通知、快照引用确实会变」固定下来——否则那次重构的
+ * 前提（atom 可订阅、且写操作改变引用）只是口耳相传。
+ */
+describe('台账 atom 的订阅语义（订阅式依赖的前提）', () => {
+  it('recordResources 通知订阅者，且快照引用发生变化', async () => {
+    const { useTestStorageEngine } = await import('@nanostores/persistent')
+    useTestStorageEngine()
+    const { resourceHistoryStore, recordResources } = await import('../src/client/resource-history.ts')
+
+    let notified = 0
+    const unsubscribe = resourceHistoryStore.subscribe(() => { notified += 1 })
+    const before = resourceHistoryStore.get()
+    recordResources('sub-acct', [{ name: 'P', total: 10, remaining: 5, resetsAt: null }])
+    const after = resourceHistoryStore.get()
+    unsubscribe()
+
+    // useStore 依赖「有通知」才会重渲染；useMemo 依赖「引用变化」才会重算。
+    expect(notified).toBeGreaterThan(0)
+    expect(before).not.toBe(after)
+  })
+
+  it('resourcesFrom 从给定快照读取：旧快照读不到新写入的行', async () => {
+    const { useTestStorageEngine } = await import('@nanostores/persistent')
+    useTestStorageEngine()
+    const { resourceHistoryStore, recordResources, resourcesFrom } = await import('../src/client/resource-history.ts')
+
+    const before = resourceHistoryStore.get()
+    recordResources('snap-acct', [{ name: 'P', total: 10, remaining: 5, resetsAt: null }])
+    const after = resourceHistoryStore.get()
+
+    // 纯函数的语义：结果只取决于传入的快照 —— 这正是依赖可校验的原因。
+    expect(resourcesFrom(before, 'snap-acct')).toEqual([])
+    expect(resourcesFrom(after, 'snap-acct')).toHaveLength(1)
+  })
+
+  it('未知账号、或快照形状不对时退回空数组（不抛错）', async () => {
+    const { useTestStorageEngine } = await import('@nanostores/persistent')
+    useTestStorageEngine()
+    const { resourcesFrom } = await import('../src/client/resource-history.ts')
+    expect(resourcesFrom({}, 'nobody')).toEqual([])
+    // 历史版本或手工改动过的数据可能形状不对，必须逐行过滤而不是交给渲染层。
+    expect(resourcesFrom(null, 'x')).toEqual([])
+    expect(resourcesFrom({ x: 'not-an-array' }, 'x')).toEqual([])
+    expect(resourcesFrom({ x: [null, 42, { key: 'k', name: 'n', total: 1, remaining: 1, resetsAt: null }] }, 'x')).toHaveLength(1)
+  })
+})

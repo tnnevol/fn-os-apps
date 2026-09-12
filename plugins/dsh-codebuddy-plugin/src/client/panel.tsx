@@ -21,6 +21,7 @@ import type { StatsDimension, PanelPageProps } from '../types/client/panel'
 export type { PanelPageProps } from '../types/client/panel'
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import type { ReactNode } from 'react'
+import { useStore } from '@nanostores/react'
 import {
   DshButton, DshCard, DshEmpty, DshIconButton,
   DshIconArrowLeft, DshIconCommand, DshIconElementStroked, DshIconRefresh,
@@ -32,7 +33,7 @@ import { CODEBUDDY_AUTH_CHANNEL } from '../contracts/constants.ts'
 import type { ConnectionRpc, AccountsResult } from './rpc.ts'
 import { describeRpcError } from './rpc.ts'
 import type { PanelRoute } from './panel-route.ts'
-import { classifyResources, forgetResources, readResources, recordResources } from './resource-history.ts'
+import { classifyResources, forgetResources, recordResources, resourceHistoryStore, resourcesFrom } from './resource-history.ts'
 import type { ClassifiedResource } from './resource-history.ts'
 import { TokenStatsStore } from './store/token-stats.ts'
 import {
@@ -95,38 +96,42 @@ function AccountsPage({
   // 面板不会重挂载（keep-alive），只有代际变化才能让它重取 —— 否则「当前账号」
   // 徽标与「设为当前账号」的可用状态会停留旧值，直到手动刷新。
   const accountVersion = useSyncExternalStore(subscribeAccountEpoch, accountEpoch, accountEpoch)
+  // 依赖序列化成字符串：`[rosterTick, accountVersion]` 每次渲染都是新数组，
+  // 直接当依赖会让 effect 反复重取。字符串只有值真变时才变。
   const { data, loading, reload } = usePanelData<{ accounts: PanelAccountRow[], currentId?: string }>(
-    rpc, 'panelStatus', {}, [rosterTick, accountVersion],
+    rpc, 'panelStatus', `${rosterTick}|${accountVersion}`,
   )
   const [busyId, setBusyId] = useState<string | undefined>(undefined)
   const [resourceTarget, setResourceTarget] = useState<PanelAccountRow | undefined>(undefined)
   // 三个 auto* 偏好的展示 / 同步 host 都封装在 hook 里——这样本页与设置页同源。
   const { autoCheckin: autoCheckinOn, autoSwitch: autoSwitchOn, autoTravel: autoTravelOn } = useAutoPrefs(rpc)
 
-  // 资源台账版本：每次探测都把实时资源包并入本地台账（写持久化 store 是副作用，放 effect）。
-  const [ledgerTick, setLedgerTick] = useState(0)
+  // 台账是持久化 nanostores atom，用 useStore 订阅它：
+  // 台账一变就重渲染，`resourcesByAccount` 也随之重算——不再需要手工 tick。
+  // （旧写法靠 `ledgerTick` state 当信号，并为「lint 认为该依赖多余」挂
+  // eslint-disable；订阅 atom 把外部可变状态变成 React 看得见的依赖。）
+  const ledger = useStore(resourceHistoryStore)
   const rows = data?.accounts ?? []
 
-  // 每次探测都把实时资源包并入本地台账。
+  // 每次探测都把实时资源包并入本地台账（写持久化 store 是副作用，放 effect）。
   useEffect(() => {
     if (rows.length === 0) return
     for (const row of rows) {
       if (!row.creditOk) continue   // 查询失败的账号不写台账：实时列表为空时会把已有记录挤成「已过期」。
       recordResources(row.id, liveResourcesOf(row))
     }
-    setLedgerTick(v => v + 1)
-    // eslint-disable-next-line react/exhaustive-deps -- deps 有意收窄，见上方注释
-  }, [data])
+  }, [rows])
 
   // 每个账号的分类资源包（可使用 → 已用完 → 已过期），卡片与弹框共用。
+  // 从 `ledger` 快照读取（纯函数），因此依赖完整：台账变更既触发重渲染、
+  // 也让这份 useMemo 重算。lint 能校验，无需任何豁免。
   const resourcesByAccount = useMemo(() => {
     const map = new Map<string, ClassifiedResource[]>()
     for (const row of rows) {
-      map.set(row.id, row.creditOk ? classifyResources(readResources(row.id), liveResourcesOf(row)) : [])
+      map.set(row.id, row.creditOk ? classifyResources(resourcesFrom(ledger, row.id), liveResourcesOf(row)) : [])
     }
     return map
-    // eslint-disable-next-line react/exhaustive-deps -- deps 有意收窄，见上方注释
-  }, [rows, ledgerTick])
+  }, [rows, ledger])
 
   const checkinOne = async (id: string): Promise<void> => {
     setBusyId(id)
@@ -534,7 +539,9 @@ export function CodeBuddyPanelPage({ rpc, route, t }: PanelPageProps): ReactNode
   const [loginState, setLoginState] = useState<string | undefined>(undefined)
   const [loginLink, setLoginLink] = useState<string | undefined>(undefined)
   const [rosterTick, setRosterTick] = useState(0)
-  const bumpRoster = (): void => { setRosterTick(v => v + 1) }
+  /** 让账号列表重取。useCallback 使引用稳定——它被 login 轮询的 effect 依赖，
+   *  每次渲染换新函数会让那个 effect 反复重启轮询。 */
+  const bumpRoster = useCallback((): void => { setRosterTick(v => v + 1) }, [])
   // keep-alive：首次进入某页才挂载；之后一直保留，破坏性页面变更才会重置。
   const [visited, setVisited] = useState<ReadonlySet<PanelRoute>>(() => new Set([snapshot.page]))
   useEffect(() => {
@@ -583,8 +590,7 @@ export function CodeBuddyPanelPage({ rpc, route, t }: PanelPageProps): ReactNode
       () => { setLoginState(undefined); notify(false, t('timeout')) },
       (reason: string) => { setLoginState(undefined); notify(false, `${t('loginFailed')} ${reason}`) },
     )
-    // eslint-disable-next-line react/exhaustive-deps -- deps 有意收窄，见上方注释
-  }, [loginState, rpc])
+  }, [loginState, rpc, notify, t, bumpRoster])
 
   if (!snapshot.active) return null
 

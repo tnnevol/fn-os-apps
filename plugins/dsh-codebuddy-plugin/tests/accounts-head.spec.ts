@@ -263,8 +263,10 @@ describe('管理面板订阅账号代际', () => {
     // account-epoch.ts 的模块注释明确要求「管理面板各页」订阅本模块。
     expect(PANEL).toContain('subscribeAccountEpoch')
     expect(PANEL).toMatch(/useSyncExternalStore\(subscribeAccountEpoch, accountEpoch, accountEpoch\)/)
-    // 必须真的进入 usePanelData 的 deps —— 只订阅不使用不会触发重取。
-    expect(PANEL).toMatch(/'panelStatus', \{\}, \[rosterTick, accountVersion\]/)
+    // 必须真的进入 usePanelData 的重取依赖 —— 只订阅不使用不会触发重取。
+    // 依赖是序列化字符串（`${rosterTick}|${accountVersion}`），因此断言
+    // accountVersion 出现在 depsKey 里，而不是钉死某个数组字面量。
+    expect(PANEL).toMatch(/'panelStatus',[^)]*accountVersion/)
   })
 
   it('代际由宿主广播驱动（三条切换路径都广播）', () => {

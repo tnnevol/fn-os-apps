@@ -19,18 +19,29 @@ import type { TokenStatsStore } from '../store/token-stats.ts'
 /**
  * 通用面板数据 hook。
  *
- * - `rpc` / `endpoint` / `payload` 三者决定请求本身；
- * - `deps` 数组变化时自动重取，便于 `rosterTick` 之类的计数器参与；
+ * - `rpc` / `endpoint` 决定请求目标；请求体固定为空对象（本插件的只读端点
+ *   都不读 payload，`panelStatus` / `autoPrefs` 的 host 实现签名即无参数）；
+ * - `deps` 数组变化时自动重取，便于 `rosterTick` / `accountEpoch` 之类参与；
  * - `reload()` 返回一个 setter，调用时立即触发新一轮请求。
+ *
+ * **关于 effect 依赖**：这里刻意不把 `deps` 展开成一个 spread 依赖数组。
+ * `useEffect(() => {...}, [rpc, endpoint, tick, ...deps])` 有两个问题：
+ *  1. React 无法静态校验 spread 依赖是否完整，lint 只能报「无法验证」；
+ *  2. 调用方在渲染期新建数组（`[rosterTick, accountVersion]`）时，依赖项
+ *     本身每次渲染都是新引用，容易诱发多余重取。
+ * 改为调用方传**已序列化**的 key（见 `depsKey` 参数），effect 只依赖这个
+ * 字符串——依赖既完整可校验，又不会因数组重建而变化。
  *
  * `active` 状态防止组件在 `await` 拿到响应前卸载仍写入状态——`active` 在
  * cleanup 时被改 false，旧响应忽略，避免 setState-on-unmounted-component。
+ *
+ * @param depsKey 变化即重取。调用方负责把依赖**序列化成稳定字符串**，
+ *   例如 `[rosterTick, accountVersion].join('|')`。
  */
 export function usePanelData<T>(
   rpc: ConnectionRpc,
   endpoint: string,
-  payload: unknown,
-  deps: unknown[],
+  depsKey: string,
 ): { data: T | undefined, loading: boolean, reload: () => void } {
   const [data, setData] = useState<T | undefined>(undefined)
   const [loading, setLoading] = useState(true)
@@ -39,14 +50,14 @@ export function usePanelData<T>(
   useEffect(() => {
     let active = true
     setLoading(true)
-    void rpc.call<T>(CODEBUDDY_AUTH_CHANNEL, endpoint, payload).then(result => {
+    // 只读端点不带请求体；`rpc.call` 的第三个参数省略即发 `{}`。
+    void rpc.call<T>(CODEBUDDY_AUTH_CHANNEL, endpoint).then((result) => {
       if (!active) return
       setData(result.ok ? result.value : undefined)
       setLoading(false)
     }).catch(() => { if (active) setLoading(false) })
     return () => { active = false }
-    // eslint-disable-next-line react/exhaustive-deps -- deps 有意收窄，见上方注释
-  }, [rpc, endpoint, tick, ...deps])
+  }, [rpc, endpoint, tick, depsKey])
   return { data, loading, reload }
 }
 

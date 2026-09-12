@@ -102,10 +102,10 @@ describe('标题与内容的横向对齐', () => {
 
   /** 复算两处的左边界，覆盖宽屏（走 1480px 列居中）与窄屏（走内边距）两侧。 */
   function leftEdges(containerWidth: number): { header: number, view: number } {
-    // 与 index.scss / panel-shell.scss 的两个常量保持一致。写在一行是因为它们
-    // 是同一组布局参数（内边距 + 内容列上限），拆开反而看不出成对关系。
-    // eslint-disable-next-line one-var -- 同一组布局参数，成对阅读
-    const PAD = 32, CAP = 1480
+    /** 窄屏横向内边距，与 index.scss / panel-shell.scss 的 padding 一致。 */
+    const PAD = 32
+    /** 宽屏内容列上限（超过此宽度后内容居中、两侧留白）。 */
+    const CAP = 1480
     // header 通栏：内容盒 = 自身宽度，横向内边距取 max(pad, (w-cap)/2)
     const header = Math.max(PAD, (containerWidth - CAP) / 2)
     // view：在 views 的内容盒内居中的 1480 列

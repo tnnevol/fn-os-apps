@@ -37,14 +37,14 @@ describe('CodeBuddy buddy travel', () => {
   it('sends the growth-centre browser context headers the plane requires', async () => {
     const { calls } = stub(() => envelope({ state: 'idle', buddy_id: 0, record_id: 0, daily_limit_reached: false }))
     await fetchTravelStatus(ENDPOINT, IDENTITY)
-    // 统一用字符串索引读 HTTP 头：头名是**协议字面量**（`x-client-platform`
-    // 带连字符只能用索引，`origin`/`referer` 用点号则会让本组断言读起来像在
-    // 访问对象属性而非头名），统一写法比混用更清楚。
-    /* eslint-disable dot-notation -- 读的是 HTTP 头名，不是普通对象属性 */
-    expect(calls[0]!.headers['x-client-platform']).toBe('web')
-    expect(calls[0]!.headers['origin']).toBe(ENDPOINT)
-    expect(calls[0]!.headers['referer']).toBe(`${ENDPOINT}/profile/growth-center`)
-    /* eslint-enable dot-notation */
+    // 用 `header(name)` 读取：被测对象是**头名到值的映射**，而非普通对象属性。
+    // 写成 `headers.origin` 会把「这是 HTTP 头」读成「这是字段访问」，而且
+    // `x-client-platform` 带连字符只能走索引——同一组断言两种写法很别扭。
+    const headers = calls[0]!.headers
+    const header = (name: string): string | undefined => headers[name]
+    expect(header('x-client-platform')).toBe('web')
+    expect(header('origin')).toBe(ENDPOINT)
+    expect(header('referer')).toBe(`${ENDPOINT}/profile/growth-center`)
   })
 
   it('reads the travel state machine fields from a status reply', async () => {

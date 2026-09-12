@@ -50,10 +50,13 @@ describe('管理面板的 keep-alive 结构', () => {
     const nextFn = rest.indexOf('\nfunction ')
     const body = nextFn === -1 ? rest : rest.slice(0, nextFn)
     expect(body).toContain("'panelStatus'")
-    // deps 里必须含 rosterTick（面板内操作触发的重取）。
-    // 不写死整个数组：账号页同时还依赖 accountEpoch（设置页/自动切换触发的
-    // 重取），把它钉成 [rosterTick] 会在加第二个依赖时误报。
-    expect(body).toMatch(/usePanelData<[^>]*>\(\s*rpc, 'panelStatus', \{\}, \[rosterTick[^\]]*\]/)
+    // rosterTick 必须进入重取依赖（面板内操作触发）。
+    //
+    // 依赖现在是**序列化后的字符串**（`${rosterTick}|${accountVersion}`）而非数组：
+    // 数组每次渲染都是新引用会诱发多余重取，也是 lint 无法静态校验的写法。
+    // 断言只看「rosterTick 出现在 depsKey 里」，不钉死整串——账号页同时还依赖
+    // accountEpoch，钉死会在加第三个依赖时误报。
+    expect(body).toMatch(/usePanelData<[^>]*>\(\s*rpc, 'panelStatus', [^)]*rosterTick/)
   })
 
   it('积分总览随账号页一起刷新（数据由 AccountsPage 以 props 传入）', () => {
