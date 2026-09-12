@@ -7,7 +7,8 @@
  *
  * 状态机以服务端 `data.state` 为准：
  * `idle --depart--> traveling --到点--> arrived --claim--> idle`。
- * `idle` 且 `daily_limit_reached` 是官网的「累了，明天再来吧」，当日已结束。
+ * `idle` 且 `daily_limit_reached` 是官网的「累了，明天再来吧」，即猫猫今日已旅行、
+ * 当日不再派发。
  *
  * 两个来自参考项目的坑，这里都保留了处理：
  * - 企业账号不可用（`403 growth system is only available for personal users`），

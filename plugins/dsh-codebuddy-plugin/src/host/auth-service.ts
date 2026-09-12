@@ -327,7 +327,7 @@ export class CodeBuddyAuthService {
    *
    * - `arrived` → 领取奖励；
    * - `traveling` → 等待（记录到达时间供 UI 倒计时）；
-   * - `idle` + `daily_limit_reached` → 今日已结束；
+   * - `idle` + `daily_limit_reached` → 今日已旅行（不再派发）；
    * - `idle` → 派发（依次尝试地点列表）。
    *
    * 企业账号成长中心不可用（403），无 Buddy 的账号派发会被拒——
@@ -560,7 +560,7 @@ export class CodeBuddyAuthService {
             continue
           }
           if (status.state !== 'arrived') {
-            // traveling / idle / 今日已结束都不属于领取轮次的职责。
+            // traveling / idle / 今日已旅行都不属于领取轮次的职责。
             push({
               result: status.state === 'traveling' ? 'traveling' : 'idle',
               ...status.state === undefined ? {} : { state: status.state },

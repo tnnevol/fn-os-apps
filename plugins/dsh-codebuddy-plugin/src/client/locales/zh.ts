@@ -104,7 +104,14 @@ export const zh: { [Key in CodeBuddyLocaleKey]: string } = {
   travelArrivesIn: '还有',
   travelArrived: '已到达',
   travelClaimed: '已领取奖励',
-  travelDailyLimit: '今日已结束',
+  /**
+   * 猫猫今日已旅行（服务端 `daily_limit_reached`）。
+   *
+   * 旧文案是「今日已结束」——主语不明（读起来像"这一天结束了"，而不是"猫今天
+   * 已经玩过了"），且带终止/否定语气，容易被当成出错或没派成功。改为与同族状态
+   * 词同构的完成态：「未旅行 / 旅行中 / 今日已旅行」。
+   */
+  travelDailyLimit: '今日已旅行',
   travelUnsupported: '仅个人账号可用',
   travelReward: '奖励',
   tokenInput: '输入',

@@ -105,7 +105,14 @@ export const en = {
   travelArrivesIn: 'Arrives in',
   travelArrived: 'Arrived',
   travelClaimed: 'Reward claimed',
-  travelDailyLimit: 'Done for today',
+  /**
+   * The buddy has already travelled today (server `daily_limit_reached`).
+   *
+   * Was "Done for today", which leaves the subject unclear (what is done?) and
+   * reads like a stopped/blocked state rather than a completed one. Aligned with
+   * the sibling state labels: "Not traveling / Traveling / Travelled today".
+   */
+  travelDailyLimit: 'Travelled today',
   travelUnsupported: 'Personal accounts only',
   travelReward: 'Reward',
   tokenInput: 'Input',
