@@ -196,7 +196,10 @@ export function CodeBuddySection({ rpc, t, panelRoute, close }: CodeBuddySection
    * 对 `pollLogin` 发双份请求，并各自判定落定导致提示出现两次。本组件的轮询
    * 仍然保留，服务它自己发起的「重新登录」（`startRelogin`）。
    */
-  const onAddLoginStart = useCallback(() => {
+  const onAddLoginStart = useCallback((start: { authUrl: string, state: string }) => {
+    // 开窗必须留在宿主：弹框只管握手与反馈，自己不碰 window。漏掉这一句的后果
+    // 是登录页永远不出现，而按钮一直 loading 到十分钟超时，用户看不出原因。
+    window.open(start.authUrl, '_blank', 'noopener')
     setAddWaiting(true)
   }, [])
   /** 弹框侧登录落定：成功则刷新名册；提示已由弹框给出，这里不重复。 */

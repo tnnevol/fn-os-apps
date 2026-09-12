@@ -139,6 +139,56 @@ describe('复制登录链接按钮已去除（需求 1/2）', () => {
   })
 })
 
+describe('两个宿主都必须真的打开登录页', () => {
+  /**
+   * 这是一条真实缺陷的回归守卫。
+   *
+   * 把轮询收归弹框时，`CodeBuddySection` 的 `onAddLoginStart` 被连同参数一起
+   * 简化成了 `() => { setAddWaiting(true) }`——`window.open` 丢了。后果是设置页
+   * 点「添加账号」后**登录页根本不出现**，而按钮会一直 loading 到十分钟超时，
+   * 用户看不出任何原因。
+   *
+   * 为什么既有的检查全都抓不到它：
+   *  - tsc 不报错，因为回调声明的入参可以比 prop 类型少（函数逆变是合法的）；
+   *  - `--noUnusedParameters` 也不报，因为参数是**整个省略**而不是留着不用；
+   *  - 该文件里还有另一处 `window.open`（属于「重新登录」流程），所以按文件
+   *    整体 grep `window.open` 依然命中。
+   *
+   * 因此这里必须**按回调各自的函数体**断言，而不是按整个文件。
+   */
+
+  /** 截取 `onAddLoginStart` 的函数体（到紧随其后的 onAddFinished 为止）。 */
+  function addLoginStartBody(src: string): string {
+    const from = src.indexOf('const onAddLoginStart = useCallback(')
+    expect(from).toBeGreaterThan(-1)
+    const to = src.indexOf('const onAddFinished', from)
+    expect(to).toBeGreaterThan(from)
+    return src.slice(from, to)
+  }
+
+  it('设置区块的 onAddLoginStart 打开 authUrl', () => {
+    const body = addLoginStartBody(SECTION)
+    expect(body).toContain('window.open(start.authUrl')
+  })
+
+  it('后台面板的 onAddLoginStart 打开 authUrl', () => {
+    const body = addLoginStartBody(PANEL)
+    expect(body).toContain('window.open(start.authUrl')
+  })
+
+  it('两处都接收 start 参数（省略参数就拿不到 authUrl）', () => {
+    for (const src of [SECTION, PANEL]) {
+      expect(addLoginStartBody(src)).toMatch(/useCallback\(\(start: \{ authUrl: string, state: string \}\)/)
+    }
+  })
+
+  it('设置区块的「重新登录」也仍然开窗（另一条独立流程）', () => {
+    const from = SECTION.indexOf('const startRelogin')
+    expect(from).toBeGreaterThan(-1)
+    expect(SECTION.slice(from)).toContain('window.open(result.value.authUrl')
+  })
+})
+
 describe('登录期间按钮持续 loading（需求 3）', () => {
   it('loading 覆盖「握手在途」与「等待授权」两个阶段', () => {
     // 只看握手会让按钮在用户还没授权时就恢复可点，进而起第二个握手。
