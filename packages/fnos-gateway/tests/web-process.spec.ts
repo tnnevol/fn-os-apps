@@ -1,5 +1,5 @@
 import { createServer } from 'node:http'
-import { readFile, mkdtemp, rm } from 'node:fs/promises'
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { once } from 'node:events'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -61,6 +61,61 @@ describe('DSH web process lifecycle', () => {
       })
       await expect(restored.start()).resolves.toMatchObject({ state: 'running' })
       expect(restored.getLaunchToken()).toBe(token)
+    } finally {
+      await controller.stop()
+      await rm(directory, { recursive: true, force: true })
+      await new Promise<void>(resolve => probe.close(() => resolve()))
+    }
+  })
+
+  it('replaces the persisted token after an internal restart', async () => {
+    const probe = createServer((req, res) => {
+      if (new URL(req.url ?? '/', 'http://localhost').searchParams.has('token')) {
+        res.writeHead(303, { location: '/' })
+      } else {
+        res.writeHead(401)
+      }
+      res.end()
+    })
+    probe.listen(0, '127.0.0.1')
+    await once(probe, 'listening')
+    const address = probe.address()
+    if (address === null || typeof address === 'string') throw new Error('probe did not bind to a TCP port')
+
+    const directory = await mkdtemp(join(tmpdir(), 'fnos-web-process-'))
+    const counter = join(directory, 'counter')
+    await writeFile(counter, '0')
+    const script = [
+      `const fs = require('node:fs')`,
+      `const file = ${JSON.stringify(counter)}`,
+      `const count = Number(fs.readFileSync(file, 'utf8') || '0') + 1`,
+      `fs.writeFileSync(file, String(count))`,
+      `console.log('dsh web: http://127.0.0.1:${address.port}/?token=restart-' + count)`,
+      `setInterval(() => {}, 1000)`,
+    ].join(';')
+    const options = {
+      command: process.execPath,
+      args: ['-e', script, 'web'],
+      cwd: directory,
+      pidFile: join(directory, 'web.pid'),
+      startingPidFile: join(directory, 'web.starting.pid'),
+      lockFile: join(directory, 'web.lock'),
+      launchTokenFile: join(directory, 'web.token'),
+      healthUrl: `http://127.0.0.1:${address.port}/`,
+      healthTimeoutMs: 1_000,
+      terminationTimeoutMs: 50,
+    } satisfies ConstructorParameters<typeof WebProcessController>[0]
+    const controller = new WebProcessController(options)
+
+    try {
+      await expect(controller.start()).resolves.toMatchObject({ state: 'running' })
+      await expect(controller.waitForLaunchToken()).resolves.toBe('restart-1')
+      expect(await readFile(options.launchTokenFile, 'utf8')).toBe('restart-1')
+
+      await expect(controller.restart()).resolves.toMatchObject({ state: 'running' })
+      await expect(controller.waitForLaunchToken()).resolves.toBe('restart-2')
+      expect(controller.getLaunchToken()).toBe('restart-2')
+      expect(await readFile(options.launchTokenFile, 'utf8')).toBe('restart-2')
     } finally {
       await controller.stop()
       await rm(directory, { recursive: true, force: true })

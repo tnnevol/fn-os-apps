@@ -96,6 +96,9 @@ export class WebProcessController {
   private child: ChildProcess | undefined
   private lastError: string | undefined
   private launchToken: string | undefined
+  private launchGeneration = 0
+  private tokenWriteSequence = 0
+  private launchTokenPersistence: Promise<void> | undefined
   private outputBuffer = ''
   private stopping = false
   constructor(readonly options: WebProcessOptions) {}
@@ -132,9 +135,11 @@ export class WebProcessController {
     if (this.stopping) return { state: 'error', error: 'DSH Web stop is in progress' }
     if (this.starting !== undefined) return await this.starting
     this.starting = (async () => {
-      await this.restoreLaunchToken()
       const current = await this.currentSnapshot()
-      if (current.state === 'running') return current
+      if (current.state === 'running') {
+        await this.restoreLaunchToken()
+        return current
+      }
       return await this.startLocked()
     })().finally(() => { this.starting = undefined })
     return await this.starting
@@ -176,7 +181,13 @@ export class WebProcessController {
       // Keep DSH Web in its own process group so shutdown also terminates
       // children started by the CLI instead of leaving a port-owning process
       // behind after the fnOS app has been stopped.
+      // Finish any token write from the previous generation before removing
+      // the file. Otherwise an old async rename could recreate a stale token
+      // after the fresh generation has started.
+      await this.launchTokenPersistence
+      const generation = ++this.launchGeneration
       this.launchToken = undefined
+      this.launchTokenPersistence = undefined
       this.outputBuffer = ''
       await rm(this.options.launchTokenFile ?? '', { force: true }).catch(() => undefined)
       const spawned = spawn(this.options.command, this.options.args, { cwd: this.options.cwd, env: process.env, stdio: ['ignore', 'pipe', 'pipe'], detached: true })
@@ -184,9 +195,9 @@ export class WebProcessController {
       this.child = spawned
       if (spawned.pid === undefined) throw new Error('DSH Web did not return a PID')
       spawned.stdout?.setEncoding('utf8')
-      spawned.stdout?.on('data', chunk => this.forwardOutput('stdout', chunk))
+      spawned.stdout?.on('data', chunk => this.forwardOutput('stdout', chunk, generation))
       spawned.stderr?.setEncoding('utf8')
-      spawned.stderr?.on('data', chunk => this.forwardOutput('stderr', chunk))
+      spawned.stderr?.on('data', chunk => this.forwardOutput('stderr', chunk, generation))
       await writeFile(this.options.startingPidFile, String(spawned.pid), { mode: 0o600 })
       spawned.once('exit', () => {
         if (this.child === spawned) this.child = undefined
@@ -199,6 +210,7 @@ export class WebProcessController {
         try {
           const response = await fetch(this.healthCheckUrl(), { redirect: 'manual', signal: AbortSignal.timeout(1_000) })
           if (response.ok || (response.status >= 300 && response.status < 400)) {
+            await this.launchTokenPersistence
             await rename(this.options.startingPidFile, this.options.pidFile)
             this.lastError = undefined
             return { state: 'running', pid: spawned.pid }
@@ -215,6 +227,10 @@ export class WebProcessController {
       }
       await rm(this.options.startingPidFile, { force: true })
       this.launchToken = undefined
+      this.launchGeneration++
+      await this.launchTokenPersistence
+      this.launchTokenPersistence = undefined
+      await rm(this.options.launchTokenFile ?? '', { force: true }).catch(() => undefined)
       return { state: 'error', error: this.lastError }
     } finally {
       await lock.close()
@@ -237,6 +253,9 @@ export class WebProcessController {
       }
       await Promise.all([rm(this.options.pidFile, { force: true }), rm(this.options.startingPidFile, { force: true }), rm(this.options.lockFile, { force: true })])
       this.launchToken = undefined
+      this.launchGeneration++
+      await this.launchTokenPersistence
+      this.launchTokenPersistence = undefined
       this.outputBuffer = ''
       await rm(this.options.launchTokenFile ?? '', { force: true }).catch(() => undefined)
     } finally {
@@ -259,12 +278,30 @@ export class WebProcessController {
     } catch {}
   }
 
-  private persistLaunchToken(token: string): void {
-    if (this.options.launchTokenFile === undefined) return
-    void writeFile(this.options.launchTokenFile, token, { mode: 0o600 }).catch(() => undefined)
+  private persistLaunchToken(token: string, generation: number): void {
+    const tokenFile = this.options.launchTokenFile
+    if (tokenFile === undefined) return
+    const temporaryFile = `${tokenFile}.tmp-${process.pid}-${++this.tokenWriteSequence}`
+    // Serialize writes so a delayed rename for an older startup line cannot
+    // overwrite the token emitted by a newer line.
+    const persistence = (this.launchTokenPersistence ?? Promise.resolve()).then(async () => {
+      if (generation !== this.launchGeneration) return
+      try {
+        // Write and rename in the same directory so readers see either the
+        // previous complete token or the new complete token, never a partial
+        // value. The in-memory token changes only after the atomic replace.
+        await writeFile(temporaryFile, token, { mode: 0o600 })
+        await rename(temporaryFile, tokenFile)
+        if (generation === this.launchGeneration) this.launchToken = token
+      } catch {
+        await rm(temporaryFile, { force: true }).catch(() => undefined)
+      }
+    })
+    this.launchTokenPersistence = persistence
+    void persistence
   }
 
-  private forwardOutput(channel: 'stdout' | 'stderr', chunk: string): void {
+  private forwardOutput(channel: 'stdout' | 'stderr', chunk: string, generation: number): void {
     process[channel].write(chunk)
     this.outputBuffer = (this.outputBuffer + chunk).slice(-8_192)
     for (const line of this.outputBuffer.split(/\r?\n/u)) {
@@ -274,8 +311,7 @@ export class WebProcessController {
         try {
           const token = new URL(candidate).searchParams.get('token')
           if (token !== null && token !== '') {
-            this.launchToken = token
-            this.persistLaunchToken(token)
+            this.persistLaunchToken(token, generation)
             break
           }
         } catch {}
