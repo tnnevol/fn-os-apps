@@ -23,13 +23,13 @@
 
 ## 二、仓库与命令
 
-- 仓库根：`/Users/tnnevol/workspace/fn-packages/fn-os-apps`
+- 仓库根：`~/workspace/fn-packages/fn-os-apps`
 - workspace：`apps/*`、`docs`、`packages/*`、`plugins/*`、`tooling/*`
 
 **每条命令都要带 PATH 前缀**（否则 `pnpm exec` 会报 `spawn sandbox-exec ENOENT`）：
 
 ```bash
-PATH=/Users/tnnevol/.nvm/versions/node/v24.17.0/bin:$PATH pnpm exec <cmd>
+PATH=~/.nvm/versions/node/v24.17.0/bin:$PATH pnpm exec <cmd>
 ```
 
 提交时需绕过 hooks（否则 lefthook 会跑全仓库 check）：
@@ -70,7 +70,7 @@ fn-os-apps-cli 1 file  /   5 tests
 跑法：
 
 ```bash
-cd <workspace> && PATH=/Users/tnnevol/.nvm/versions/node/v24.17.0/bin:$PATH \
+cd <workspace> && PATH=~/.nvm/versions/node/v24.17.0/bin:$PATH \
   pnpm exec tsc -p tsconfig.json --noUnusedLocals --noUnusedParameters
 ```
 
@@ -123,7 +123,7 @@ cd <workspace> && PATH=/Users/tnnevol/.nvm/versions/node/v24.17.0/bin:$PATH \
 **先 `--fix` 一遍**（21 条可自动修），再人工处理剩余：
 
 ```bash
-PATH=/Users/tnnevol/.nvm/versions/node/v24.17.0/bin:$PATH \
+PATH=~/.nvm/versions/node/v24.17.0/bin:$PATH \
   npx eslint plugins packages tooling --fix
 ```
 
