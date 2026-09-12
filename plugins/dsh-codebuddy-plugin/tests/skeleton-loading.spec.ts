@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createRequire } from 'node:module'
+import { dirname } from 'node:path'
 import { createElement } from 'react'
 import { readFileSync } from 'node:fs'
 
@@ -22,12 +23,14 @@ import { readFileSync } from 'node:fs'
  * 这里**真实渲染**组件（而非断言源码文本）——文本断言正是当初让缺陷溜过去的
  * 那类弱测试；渲染结果才能反映组件实际行为，其内部实现变化时也会立刻暴露。
  */
-const SEMI_ROOT = '/Users/tnnevol/workspace/fn-packages/fn-os-apps/node_modules/.pnpm'
-  + '/@douyinfe+semi-ui@2.90.2_@floating-ui+dom@1.8.0_@tiptap+suggestion@3.30.2_@floating-ui+'
-  + '_e4eb616e4215e63708063641d3b2c82b/node_modules/@douyinfe/semi-ui'
-const require = createRequire(`${SEMI_ROOT}/package.json`)
+const require = createRequire(import.meta.url)
+const SEMI_ENTRY = require.resolve('@douyinfe/semi-ui')
+// pnpm 的 peer-suffix 会随 lockfile/安装上下文变化；从解析结果反推包根目录，
+// 不要把某一次安装生成的 `.pnpm/...` 路径硬编码进测试。
+const SEMI_ROOT = dirname(dirname(dirname(SEMI_ENTRY)))
+const semiRequire = createRequire(`${SEMI_ROOT}/package.json`)
 // react-dom 是本包的 peer（运行时由宿主提供），测试里从 semi-ui 的解析上下文取。
-const { renderToStaticMarkup } = require('react-dom/server') as {
+const { renderToStaticMarkup } = semiRequire('react-dom/server') as {
   renderToStaticMarkup: (element: unknown) => string
 }
 const Skeleton = ((await import(`${SEMI_ROOT}/lib/es/skeleton/index.js`)) as { default: unknown }).default
