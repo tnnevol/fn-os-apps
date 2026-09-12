@@ -39,6 +39,7 @@ import {
   $autoSwitchThreshold,
   $autoTravel,
   $showUsage,
+  adoptHostPrefs,
   setThreshold,
 } from '../client/store/usage-prefs.ts'
 
@@ -151,11 +152,19 @@ export function CodeBuddySection({ rpc, t, panelRoute, close }: CodeBuddySection
       if (!result.ok) return
       const host = result.value
       if (host.hasStoredPrefs) {
-        // Host 是权威：采纳它的值（可能来自另一个窗口的修改）。
-        $autoSwitch.set(host.autoSwitch)
-        setThreshold(host.autoSwitchThresholdPct)
-        $autoCheckin.set(host.autoCheckin)
-        $autoTravel.set(host.autoTravel)
+        /**
+         * Host 是权威：整组原子采纳它的值（可能来自另一个窗口的修改）。
+         *
+         * 与面板 hook 共用 `adoptHostPrefs`：这段逻辑原先两边各写一份，于是悄悄
+         * 漂移了（这里采纳 4 项含阈值，hook 只采纳 3 个开关）。同一件事写两遍就
+         * 会出现这种分歧，因此收敛到 store 模块里的单一实现。
+         *
+         * 它还负责整组抑制回推：这些是**共享的持久化 atom**，逐个裸 `set` 会同步
+         * 触发别处的回推订阅（`useAutoPrefs` 挂在常驻的管理面板上），而回推读的是
+         * 「当前全部偏好」——第一个 `set` 触发时其余尚未采纳，会把本地旧值推给
+         * Host，把刚采纳的值又覆盖回去。
+         */
+        adoptHostPrefs(host)
         return
       }
       // 老用户升级路径：Host 尚无配置，把本地既有值迁移上去，只此一次。

@@ -121,3 +121,91 @@ export function subscribeUsagePref(listener: () => void): () => void {
   const disposers = USAGE_PREF_STORES.map(store => store.listen(listener))
   return () => { for (const dispose of disposers) dispose() }
 }
+
+/* ---------------------------------------------------------------------------
+   采纳 Host 期间抑制回推
+   --------------------------------------------------------------------------- */
+
+/**
+ * 正在「从 Host 采纳偏好」的嵌套深度。
+ *
+ * 为什么必须抑制：`subscribeUsagePref` 的回调会把**当前全部**偏好推给 Host，
+ * 而采纳是逐个 `set` 的。第一个 `set` 就同步触发回调时，**其余偏好尚未采纳**，
+ * 于是回调把它们的**本地旧值**推了上去，把 Host 上更新的值覆盖掉——正是这个
+ * 模块顶部注释里已经修过一次的问题（「曾经把三个开关的持久化值推给主机，会让
+ * Host 上更新的值被旧 localStorage 静默覆盖」），只是换了个入口借道回推。
+ *
+ * 实测（persistentAtom 的 `listen`）：host 给 `a=true,b=false`、本地为
+ * `a=false,b=true` 时，`a.set(true)` 触发的第一次回调读到的组合是
+ * `{a:true, b:true}` —— b 仍是本地旧值，随即被推给 Host。
+ *
+ * 用深度计数而不是布尔：采纳可能嵌套（设置页与面板的 hook 同时挂载），
+ * 布尔会被内层提前复位。
+ */
+let adopting = 0
+
+/**
+ * 在「从 Host 采纳」期间执行 `apply`，其间不触发任何回推。
+ *
+ * 用法：把连续的若干个 `set` 包起来，让它们对外表现为一次原子采纳。
+ *
+ * 注意 `listen` 的回调是**同步**调用的，因此这里的抑制对同一次 `set` 立即生效，
+ * 不存在「回调稍后才跑、错过抑制窗口」的情况。
+ *
+ * @param apply - 执行采纳动作（通常是若干次 store.set）。
+ * @returns `apply` 的返回值。
+ */
+export function whileAdoptingPrefs<T>(apply: () => T): T {
+  adopting += 1
+  try {
+    return apply()
+  } finally {
+    adopting -= 1
+  }
+}
+
+/**
+ * 当前是否处于采纳期间。
+ *
+ * 供回推方（`useAutoPrefs` 的订阅回调）判断：采纳引起的 store 变化不应回推给
+ * Host——那是 Host 自己的值绕一圈回来，没有任何新信息，还会覆盖别的窗口刚做的
+ * 修改。
+ *
+ * @returns 采纳中返回 true。
+ */
+export function isAdoptingPrefs(): boolean {
+  return adopting > 0
+}
+
+/**
+ * Host 侧 `autoPrefs` 端点的返回形状（本模块只用到这四项）。
+ */
+export interface HostAutoPrefs {
+  autoSwitch: boolean
+  autoSwitchThresholdPct: number
+  autoCheckin: boolean
+  autoTravel: boolean
+}
+
+/**
+ * 把 Host 的偏好**整组原子采纳**到本地 store。
+ *
+ * 抽成单一函数的原因：这段逻辑原先在设置页（`CodeBuddySection` 的 mount effect）
+ * 与面板 hook（`useAutoPrefs`）各写了一份，于是两份**默默漂移**了——设置页采纳
+ * 四项（三个开关 + 阈值），hook 只采纳三个开关，导致同一份 Host 配置在两端得到
+ * 不同的本地副本。同一件事写两遍就会出现这种分歧，因此收敛到这里，让「采纳哪些
+ * 字段」只有一个定义。
+ *
+ * 整体包在 {@link whileAdoptingPrefs} 里：逐个 `set` 会同步触发回推订阅，而回推
+ * 读的是「当前全部偏好」，第一个 `set` 触发时其余尚未采纳，会把本地旧值推给 Host。
+ *
+ * @param host - 已从 Host 读到的偏好（调用方负责判断 `hasStoredPrefs`）。
+ */
+export function adoptHostPrefs(host: HostAutoPrefs): void {
+  whileAdoptingPrefs(() => {
+    $autoSwitch.set(host.autoSwitch)
+    setThreshold(host.autoSwitchThresholdPct)
+    $autoCheckin.set(host.autoCheckin)
+    $autoTravel.set(host.autoTravel)
+  })
+}

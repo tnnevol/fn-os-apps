@@ -622,7 +622,23 @@ export class CodeBuddyAuthService {
     }
   }
 
-  /** 主动账号切换后广播：通知 harness 模型目录与客户端用量刷新（adapter replace → llm/adapters-updated）。 */
+  /**
+   * 广播「账号可见数据已变」，让两端视图重新拉取。
+   *
+   * 机制是 adapter replace → harness 的 `llm/adapters-updated` → 浏览器端
+   * `accountEpoch` +1 → 面板与用量指示器重取。名字里的 "models" 来自它最初
+   * 唯一的用途（账号切换后模型目录要换），但它在客户端承担的语义更宽：这是本
+   * 插件**唯一**的跨视图同步通道，凡是改了「面板/指示器会展示的账号数据」都要
+   * 走它。
+   *
+   * 为什么不能只在返回体里带上新数据就够了：RPC 的响应只回到**发起调用的那个
+   * 组件**，另一个已挂载的视图（设置页 ↔ 管理面板都是常驻、不卸载）不会收到
+   * 任何通知，会一直显示旧值。改名曾因此不同步——设置页改名后自己 `setAccounts`
+   * 立即正确，面板却停留在旧备注名，直到用户手动刷新或碰巧发生别的广播。
+   *
+   * 因此调用时机是：**改了别处也会展示的账号数据就要调**，而不是「模型目录变了
+   * 才调」。改名与模型目录无关，仍需要它。
+   */
   private notifyModels(): void {
     // 先让 session 失效（调用方已做或这里再做一次无妨），再触发 harness 目录刷新。
     this.session?.invalidate()
@@ -1030,22 +1046,44 @@ export class CodeBuddyAuthService {
    */
   async renameLabel(id: string, label: string | undefined): Promise<CodeBuddyAccountsChanged> {
     const trimmed = label?.trim()
+    /**
+     * 本次是否真的改动了什么。
+     *
+     * 只有真改了才广播：备注名没变时（例如用户打开编辑框又原样确认）广播一次会让
+     * 面板与用量指示器白跑一轮 `panelStatus`（含各账号的额度/签到/旅行探测），
+     * 而结果是完全一样的。
+     */
+    let changed = false
     // 在锁内基于**最新**文档改动：锁外读到的快照可能已被并发写入替换，
     // 直接回写会整体覆盖那次改动（例如同时发生的账号切换）。
     await mutateStorage((storage) => {
       if (storage === undefined) return undefined
-      if (!storage.accounts.some(entry => entry.id === id)) return undefined
+      const target = storage.accounts.find(entry => entry.id === id)
+      if (target === undefined) return undefined
+      // 清除（空串/无值）与目标已有 label 为空、或新值与现值相同：都无需写入。
+      const next = trimmed === undefined || trimmed.length === 0 ? undefined : trimmed
+      if (target.account.label === next) return undefined
+      changed = true
       return {
         ...storage,
         accounts: storage.accounts.map(entry => {
           if (entry.id !== id) return entry
           const account = { ...entry.account }
-          if (trimmed === undefined || trimmed.length === 0) delete account.label
-          else account.label = trimmed
+          if (next === undefined) delete account.label
+          else account.label = next
           return { ...entry, account }
         }),
       }
     })
+    /**
+     * 广播给**其它已挂载的视图**（改名后必须做）。
+     *
+     * 返回体只回到发起调用的那个组件：设置页改名后自己会用响应刷新，但管理面板
+     * 是常驻不卸载的（`shell.overlay` 常驻，仅 `snapshot.active` 为 false 时
+     * return null），它只认 `accountEpoch` 变化，否则会一直显示旧备注名。
+     * 这条广播此前漏了，是设置页改名与面板不一致的根因。
+     */
+    if (changed) this.notifyModels()
     this.session?.invalidate()
     return this.projectAccounts()
   }

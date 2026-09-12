@@ -41,7 +41,9 @@ describe('Host 是自动配置的唯一权威', () => {
     // 迁移用的推写在语法上确实存在，但它必须在 adopt 分支的 early return **之后**。
     // 只断言「不存在该调用」是错的——那会把老用户升级路径一并禁掉（本节用例 4
     // 要求该分支存在）。真正的不变量是「顺序 + 守卫」。
-    const adoptReturn = mount.indexOf('$autoTravel.set(host.autoTravel)')
+    // 锚点用「采纳调用」而不是某个具体字段的 set：采纳已收敛进 adoptHostPrefs()，
+    // 绑字段字面量会在无害重构时误报（本文件三条断言曾因此集体失败）。
+    const adoptReturn = mount.indexOf('adoptHostPrefs(host)')
     const migratePush = mount.indexOf("'autoSwitch', {")
     expect(adoptReturn).toBeGreaterThan(-1)
     expect(migratePush).toBeGreaterThan(adoptReturn)
@@ -53,9 +55,20 @@ describe('Host 是自动配置的唯一权威', () => {
 
   it('Host 已有配置时设置页采纳 Host 值；没有时才迁移本地值', () => {
     const mount = SECTION.slice(SECTION.indexOf('挂载时加载一次状态'), SECTION.indexOf('// 轮询进行中的登录'))
-    expect(mount).toMatch(/if \(host\.hasStoredPrefs\) \{[\s\S]{0,400}\$autoSwitch\.set\(host\.autoSwitch\)/)
+    // 断言「受 hasStoredPrefs 保护地采纳」这一意图；采纳内容由 adoptHostPrefs
+    // 统一决定（其字段覆盖由 pref-adoption-atomic.spec.ts 的行为用例保证）。
+    //
+    // 不用 `{0,400}` 这类字符窗口：那是脆弱的代理指标——注释一加长就误报（已发生，
+    // 实际距离 466 字符）。改为在括号配对上判断调用确实落在 if 块内。
+    const guardAt = mount.indexOf('if (host.hasStoredPrefs) {')
+    expect(guardAt).toBeGreaterThan(-1)
+    const inner = mount.slice(guardAt)
+    const adoptAt = inner.indexOf('adoptHostPrefs(host)')
+    expect(adoptAt).toBeGreaterThan(-1)
+    // if 块在其前结束（`)` 或 `}`）则说明调用其实在守卫之外。
+    const blockEnd = inner.indexOf('\n      }')
+    expect(blockEnd === -1 || adoptAt < blockEnd).toBe(true)
     // 迁移分支必须只出现在 hasStoredPrefs 为假之后
-    const adoptAt = mount.indexOf('$autoSwitch.set(host.autoSwitch)')
     const migrateAt = mount.indexOf("'autoSwitch', {")
     expect(adoptAt).toBeGreaterThan(-1)
     expect(migrateAt).toBeGreaterThan(adoptAt)
@@ -65,7 +78,7 @@ describe('Host 是自动配置的唯一权威', () => {
     // 切片：useAutoPrefs 函数体中，'autoPrefs' 读取之后到 subscribeUsagePref 之前。
     const block = AUTO_HOOK.slice(AUTO_HOOK.indexOf("'autoPrefs'"), AUTO_HOOK.indexOf('subscribeUsagePref(() => {'))
     expect(AUTO_HOOK).toContain("'autoPrefs'")
-    expect(block).toMatch(/\$autoSwitch\.set\(host\.autoSwitch\)/)
+    expect(block).toMatch(/adoptHostPrefs\(host\)/)
     // 挂载路径里不得再把本地值推给 Host
     expect(block).not.toMatch(/'autoCheckin', \{ enabled: autoCheckinOn \}/)
   })
