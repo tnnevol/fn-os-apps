@@ -2,11 +2,11 @@
 id: PLAN-FNOS-003
 title: PLAN-FNOS-003 FPK 应用运行设置统一
 description: 审计并为需要运行参数的 fnOS FPK 应用补齐 wizard/config，同时完成 FNOS-002 遗留的 DSH FPK、网关和插件管理面板目标环境验收。
-status: planning
+status: completed
 owner: tnnevol
 planDate: 2026-08-31
 targetVersion: 5.3.1
-lastVerified: 2026-09-08
+lastVerified: 2026-09-12
 ---
 
 # PLAN-FNOS-003 FPK 应用运行设置统一
@@ -16,7 +16,7 @@ lastVerified: 2026-09-08
 | 计划编号 | PLAN-FNOS-003 |
 | 计划日期 | 2026-08-31 |
 | 对应需求 | [FNOS-003 FPK 应用运行设置统一](/requirements/FNOS-003-fpk-runtime-settings) |
-| 计划状态 | <Badge type="warning" text="进行中，含 FNOS-002 遗留验收与 CodeBuddy 迁移" /> |
+| 计划状态 | <Badge type="tip" text="已完成" /> |
 
 ## 计划目标
 
@@ -99,7 +99,7 @@ v5.3.1 之后落地的实现一并纳入本计划：应用设置本体（`FNOS-0
 
 ### P1：运行设置与脚本接入
 
-状态：<Badge type="warning" text="部分实现，待 NAS 验证" />
+状态：<Badge type="tip" text="已完成" />
 
 | 任务 ID | 实现内容 | 验收 |
 | --- | --- | --- |
@@ -111,7 +111,7 @@ v5.3.1 之后落地的实现一并纳入本计划：应用设置本体（`FNOS-0
 
 ### P1：构建与目标环境验证
 
-状态：<Badge type="info" text="规划中" />
+状态：<Badge type="tip" text="已完成" />
 
 | 任务 ID | 实现内容 | 验收 |
 | --- | --- | --- |
@@ -121,11 +121,11 @@ v5.3.1 之后落地的实现一并纳入本计划：应用设置本体（`FNOS-0
 
 ### P1：FNOS-002 遗留 DSH 集成验收
 
-状态：<Badge type="info" text="规划中" />
+状态：<Badge type="tip" text="已完成" />
 
 | 任务 ID | 实现内容 | 验收 |
 | --- | --- | --- |
-| PLAN-FNOS-003-D01 | 使用当前项目版本 `5.3.1` 构建 DSH FPK，确认 DSH `0.1.2-rc.1`、插件兼容基线和插件发布版本 `0.1.2-rc.1.3` 对齐；重新生成 `app/bundled-dsh-plugins` | FPK 内置插件包与 `published-dsh-plugins.json` 精确一致 |
+| PLAN-FNOS-003-D01 | 使用当前项目版本 `5.3.1` 构建 DSH FPK，确认 DSH `0.1.2-rc.1`、插件兼容基线和插件发布版本 `0.1.2-rc.1.4` 对齐；重新生成 `app/bundled-dsh-plugins` | FPK 内置插件包与 `published-dsh-plugins.json` 精确一致 |
 | PLAN-FNOS-003-D02 | 在真实 NAS 验证 DSH FPK 安装、升级、回滚、插件加载和用户数据/凭据/profile/工作区保留 | 安装生命周期不重复安装、不丢失配置，版本检查结果正确 |
 | PLAN-FNOS-003-D03 | 验证网关 API URL 反代即时生效、HTTP/SSE/WebSocket、权限、并发、异常注入和 DSH Web 恢复 | 全部场景通过，失败时不破坏网关和 DSH Web 状态 |
 | PLAN-FNOS-003-D04 | 在目标环境验证 Codex 动态模型目录刷新、失败回退、模型选择器同步；CodeBuddy 面板改在 DSH 客户端验证（与 fnOS 无关） | 页面可操作，数据和图表显示正确，刷新/重启后状态保留 |
@@ -133,7 +133,7 @@ v5.3.1 之后落地的实现一并纳入本计划：应用设置本体（`FNOS-0
 
 ### P1：CodeBuddy 多账号与管理面板（自 PLAN-FNOS-002 迁入）
 
-状态：<Badge type="tip" text="代码已实现，本地已验证" />
+状态：<Badge type="tip" text="已完成" />
 
 对应需求：`FNOS-003-08`、`FNOS-003-09`
 
@@ -244,11 +244,11 @@ pnpm --filter @tnnevol/dsh-codebuddy run build
 
 | 阶段 | 状态 | 完成条件 |
 | --- | --- | --- |
-| P0 应用配置审计 | <Badge type="info" text="规划中" /> | 所有应用完成运行字段与一次性字段分类 |
-| P1 运行设置与脚本接入 | <Badge type="info" text="规划中" /> | 目标应用设置可展示、保存并由回调生效 |
-| P1 FPK 与 NAS 验证 | <Badge type="info" text="规划中" /> | FPK 安装、升级和真实 NAS 验收通过 |
-| FNOS-002 遗留 DSH 集成验收 | <Badge type="info" text="规划中" /> | FPK、网关与 Codex 遗留场景完成目标环境验收并回写 FNOS-002（CodeBuddy 与 fnOS 无关，改在 DSH 客户端验收） |
-| P1 CodeBuddy 多账号与管理面板 | <Badge type="tip" text="代码已实现，需求 002/003 已验收" /> | 多账号、自动切换、签到、额度/有效期和 Token ECharts 面板本地检查通过；需求 002/003 已完成 DSH 客户端验收 |
+| P0 应用配置审计 | <Badge type="tip" text="已完成" /> | 所有应用完成运行字段与一次性字段分类 |
+| P1 运行设置与脚本接入 | <Badge type="tip" text="已完成" /> | 目标应用设置可展示、保存并由回调生效 |
+| P1 FPK 与 NAS 验证 | <Badge type="tip" text="已完成" /> | FPK 安装、升级和真实 NAS 验收通过 |
+| FNOS-002 遗留 DSH 集成验收 | <Badge type="tip" text="已完成" /> | FPK、网关与 Codex 遗留场景完成目标环境验收并回写 FNOS-002（CodeBuddy 与 fnOS 无关，改在 DSH 客户端验收） |
+| P1 CodeBuddy 多账号与管理面板 | <Badge type="tip" text="已完成" /> | 多账号、自动切换、签到、额度/有效期和 Token ECharts 面板及需求 002/003 全部验收通过 |
 | CodeBuddy 需求 002/003 | <Badge type="tip" text="已完成" /> | 自动切换开启时隐藏所有手动切换入口；添加账号登录在途时禁用整表单并在指定结局解除 |
 
 ## 变更记录
@@ -268,3 +268,4 @@ pnpm --filter @tnnevol/dsh-codebuddy run build
 | 2026-09-11 | 任务编号去重 | 上述 9/11 会话新增的任务改编号为 `C13`～`C17`：原编号与同批 `41bae96` 的 `C09`～`C12` 冲突（双方各自追加撞号）。后续新增任务请从 `C18` 起排 |
 | 2026-09-12 | 验收 CodeBuddy 需求 002/003 | 新增 `PLAN-FNOS-003-C18`～`C19`：自动切换开启时隐藏所有手动切换入口；添加账号登录在途时禁用整表单并在指定结局解除；两项已在 DSH 客户端验收通过 |
 | 2026-09-11 | 修正 CodeBuddy 的验收环境 | CodeBuddy 插件与 fnOS 无关，原文把其验收绑在「真实 NAS」上是错误描述：计划状态与验收表述改为在 DSH 客户端完成，仅 FPK/网关/Codex 保留目标环境验收 |
+| 2026-09-12 | FNOS-003 全量验收完成 | FPK 运行设置、FPK/NAS 集成、网关、Codex 与 CodeBuddy 全部验收通过，计划总状态更新为“已完成” |

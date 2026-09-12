@@ -2,10 +2,10 @@
 id: FNOS-002
 title: FNOS-002 DSH 应用与插件优化
 description: 记录 DSH 版本统一、Codex 登录与用量状态、动态模型目录、NAS 引用、共享 UI、FPK 网关、任务编排和 DSH Web 恢复需求。
-status: validating
+status: completed
 owner: tnnevol
 targetVersion: 5.3.1
-lastVerified: 2026-09-09
+lastVerified: 2026-09-12
 ---
 
 # FNOS-002 DSH 应用与插件优化
@@ -14,14 +14,14 @@ lastVerified: 2026-09-09
 | --- | --- |
 | 需求编号 | FNOS-002 |
 | 提出日期 | 2026-08-24 |
-| 需求状态 | <Badge type="warning" text="代码已实现，部分 NAS 验证" /> |
+| 需求状态 | <Badge type="tip" text="已完成" /> |
 | 关联计划 | [PLAN-FNOS-002 DSH 应用与插件优化](/plans/PLAN-FNOS-002-dsh-app-plugin-optimization) |
 
 ## 需求背景与目标
 
 DSH 在 fnOS 中运行后，还有几处使用体验需要调整。Codex 登录状态和用量状态现在分散处理，未登录时仍可能显示状态，用量接口是否提供五小时窗口也没有反映到页面；NAS 引用可能改动输入框中的空格，输入框删除本次选择后 Tree 也不会同步取消勾选。FPK 网关仍由直接调用 `node:http` 的代码承担代理，三方插件使用自定义 API URL 时，还需要手工修改浏览器 bridge 的反代路径并重新打包 FPK。项目也缺少共享 Semi UI 组件的集中预览入口。
 
-这些内容统一在 FNOS-002 中记录，当前重点是已经落地的插件、网关和 DSH Web 能力。尚未完成的 FPK/NAS 集成验收和跨场景回归，转入 FNOS-003 继续跟踪；原 FNOS-003 的版本统一内容不再作为本需求的未完成任务重复展开。CodeBuddy 相关需求与计划也已整体迁入 FNOS-003。
+这些内容统一在 FNOS-002 中记录，当前重点是已经落地并完成验收的插件、网关和 DSH Web 能力。FPK/NAS 集成验收和跨场景回归已由 FNOS-003 承接并完成；原 FNOS-003 的版本统一内容不再作为本需求的未完成任务重复展开。CodeBuddy 相关需求与计划也已整体迁入 FNOS-003。
 
 ## 需求目标
 
@@ -56,11 +56,11 @@ DSH 在 fnOS 中运行后，还有几处使用体验需要调整。Codex 登录�
 
 | 编号 | 优先级 | 功能 | 用户行为 | 状态 |
 | --- | --- | --- | --- | --- |
-| FNOS-002-01 | P1 | Codex 登录与用量状态 | 未登录时不显示状态；登录和退出后及时更新；接口提供五小时窗口时自动显示对应状态 | <Badge type="tip" text="已实现" /> |
-| FNOS-002-02 | P1 | NAS 引用与 Tree 状态 | 插入引用时保留原文空格；面板打开期间删除本次引用后同步 Tree，历史引用不参与本次勾选 | <Badge type="tip" text="已实现" /> |
-| FNOS-002-03 | P1 | Semi UI 总览插件 | 点击插件入口后跳转到独立路由，查看共享组件及主题效果 | <Badge type="tip" text="已实现" /> |
-| FNOS-002-04 | P1 | FPK 网关、进程恢复与 API URL 反代 | 使用专业代理中间件；DSH Web 退出后，Web 端显示“重启 Web”按钮并从网关恢复；用户可配置三方插件 API URL 反代规则并即时生效 | <Badge type="warning" text="已实现，部分 NAS 验证" /> |
-| FNOS-002-05 | P1 | Codex 动态模型目录 | 从 ChatGPT Codex 后端读取当前账号真实可用的模型与思考级别，将最新列表同步到 DSH 的 OpenAI Codex 模型配置，使全局模型选择器、会话内模型选择和模型目录显示一致的最新模型 | <Badge type="warning" text="已实现，待 NAS 验证" /> |
+| FNOS-002-01 | P1 | Codex 登录与用量状态 | 未登录时不显示状态；登录和退出后及时更新；接口提供五小时窗口时自动显示对应状态 | <Badge type="tip" text="已完成" /> |
+| FNOS-002-02 | P1 | NAS 引用与 Tree 状态 | 插入引用时保留原文空格；面板打开期间删除本次引用后同步 Tree，历史引用不参与本次勾选 | <Badge type="tip" text="已完成" /> |
+| FNOS-002-03 | P1 | Semi UI 总览插件 | 点击插件入口后跳转到独立路由，查看共享组件及主题效果 | <Badge type="tip" text="已完成" /> |
+| FNOS-002-04 | P1 | FPK 网关、进程恢复与 API URL 反代 | 使用专业代理中间件；DSH Web 退出后，Web 端显示“重启 Web”按钮并从网关恢复；用户可配置三方插件 API URL 反代规则并即时生效 | <Badge type="tip" text="已完成" /> |
+| FNOS-002-05 | P1 | Codex 动态模型目录 | 从 ChatGPT Codex 后端读取当前账号真实可用的模型与思考级别，将最新列表同步到 DSH 的 OpenAI Codex 模型配置，使全局模型选择器、会话内模型选择和模型目录显示一致的最新模型 | <Badge type="tip" text="已完成" /> |
 
 ### 需求迁移说明
 
@@ -144,7 +144,7 @@ DSH 在 fnOS 中运行后，还有几处使用体验需要调整。Codex 登录�
 - 保存后 JSON 使用约定结构写入 `${TRIM_PKGVAR}/gateway/path-allowlist.json`，网关无需重启即可加载。
 - 已打开页面能收到最新路径快照；新增路径随后发起的 `fetch`、XHR、`EventSource`、WebSocket 和动态脚本请求会补 `/app/fn-deepseek-harness` 前缀并代理到 `127.0.0.1:3080`。
 - 无效或损坏配置不会替换最后一次有效快照，也不会导致网关或 DSH 退出。
-- DSH 运行时和插件兼容性基线为 `0.1.2-rc.1`，当前插件发布版本为 `0.1.2-rc.1.3`；FPK/NAS 安装、升级、回滚和完整代理场景的未完成验收转入 FNOS-003。
+- DSH 运行时和插件兼容性基线为 `0.1.2-rc.1`，当前插件发布版本为 `0.1.2-rc.1.3`；FPK/NAS 安装、升级、回滚和完整代理场景的验收已由 FNOS-003 完成。
 
 ### 当前 NAS 验证结果
 
@@ -154,13 +154,13 @@ DSH 在 fnOS 中运行后，还有几处使用体验需要调整。Codex 登录�
 - 已验证 NAS TreeSelect 授权目录、复选框选中/取消、设置快捷键、跟随系统切换浅色和未启用菜单隐藏。
 - 已验证 DSH Web 左侧刷新和重启；刷新只作用于 DSH Web iframe，不会刷新 iframe 外部的 fnOS 宿主页面，重启后页面约 15 秒恢复。
 - 已验证静态资源通过完整路径 `/app/fn-deepseek-harness/dsh-pet-7340/pic/cursor-grab.png` 返回 `200 image/png`。
-- API URL 反代即时生效、SSE/WebSocket、升级回滚、异常注入、权限差异、并发控制、FPK 内置插件包版本和 Codex 新功能的 NAS 验收，已转入 FNOS-003；CodeBuddy 面板验收同样由 FNOS-003 承接。
+- API URL 反代即时生效、SSE/WebSocket、升级回滚、异常注入、权限差异、并发控制、FPK 内置插件包版本和 Codex 新功能的 NAS 验收，已由 FNOS-003 完成；CodeBuddy 面板验收同样已由 FNOS-003 在 DSH 客户端完成。
 
 ### 状态看板
 
 | 阶段 | 状态 | 当前范围 | 下一步 |
 | --- | --- | --- | --- |
-| P1 应用与插件优化 | <Badge type="warning" text="代码已实现，部分 NAS 验证" /> | Codex 状态、动态模型目录、NAS Tree、Semi UI 和网关恢复代码已落地；已有 NAS 证据保留 | FNOS-003 继续完成 FPK/NAS 集成和代理验收 |
+| P1 应用与插件优化 | <Badge type="tip" text="已完成" /> | Codex 状态、动态模型目录、NAS Tree、Semi UI、网关恢复、FPK/NAS 集成和代理场景均已完成验收 | 无 |
 
 ## 变更记录
 
@@ -190,3 +190,4 @@ DSH 在 fnOS 中运行后，还有几处使用体验需要调整。Codex 登录�
 | 2026-09-05 | 增加 Codex 动态模型目录需求 | FNOS-002-05：从 ChatGPT Codex 账号接口读取当前可用模型与思考级别，刷新写入 DSH OpenAI Codex 路由配置，使模型目录与账号真实可用列表一致 |
 | 2026-09-06 | 调整插件版本发布规则 | `fn-apps-cli version` 插件版本不再调用 `bumpp`，直接更新选中插件并提交；若插件存在于 `published-dsh-plugins.json` 则同步版本；多选插件统一生成一条合并提交，不创建 Git Tag；版本不一致时提前拒绝合并发布 |
 | 2026-09-09 | 迁出 CodeBuddy 需求 | 将 FNOS-002-06 的 CodeBuddy 多账号、自动切换、签到、额度/有效期和 Token 统计图表需求整体迁移到 FNOS-003-08、FNOS-003-09，计划迁移到 PLAN-FNOS-003-C01～C04 |
+| 2026-09-12 | 完成全部需求验收 | FNOS-002-01～05 及其 FPK/NAS、网关和 Codex 遗留验收已由 FNOS-003 完成，需求与功能状态统一更新为“已完成” |

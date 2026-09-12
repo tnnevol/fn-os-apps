@@ -2,10 +2,10 @@
 id: FNOS-003
 title: FNOS-003 FPK 应用运行设置统一
 description: 为需要运行参数配置的 fnOS FPK 应用补齐应用设置入口，承接 FNOS-002 遗留的 FPK/NAS 集成验收，并承接 CodeBuddy 多账号、额度与 Token 统计面板需求（该插件与 fnOS 无关，任一 DSH 客户端均可使用）。
-status: planned
+status: completed
 owner: tnnevol
 targetVersion: 5.3.1
-lastVerified: 2026-09-09
+lastVerified: 2026-09-12
 ---
 
 # FNOS-003 FPK 应用运行设置统一
@@ -14,7 +14,7 @@ lastVerified: 2026-09-09
 | --- | --- |
 | 需求编号 | FNOS-003 |
 | 提出日期 | 2026-08-31 |
-| 需求状态 | <Badge type="info" text="规划中" /> |
+| 需求状态 | <Badge type="tip" text="已完成" /> |
 | 关联计划 | [PLAN-FNOS-003 FPK 应用运行设置统一](/plans/PLAN-FNOS-003-fpk-runtime-settings) |
 
 ## 需求背景与目标
@@ -53,21 +53,21 @@ lastVerified: 2026-09-09
 
 | 编号 | 优先级 | 功能 | 用户行为 | 状态 |
 | --- | --- | --- | --- | --- |
-| FNOS-003-01 | P1 | 运行设置入口 | 在应用中心打开应用设置，可看到目标应用的运行参数配置 | <Badge type="warning" text="代码已实现，待 NAS 验证" /> |
-| FNOS-003-02 | P1 | 安装与运行配置一致 | 安装时与运行时使用同一套字段契约，修改后字段值能被生命周期脚本读取 | <Badge type="warning" text="代码已实现，待 NAS 验证" /> |
-| FNOS-003-03 | P1 | 配置变更生效 | 用户保存配置后，应用按约定重载或重启服务，并能看到新的运行状态 | <Badge type="warning" text="部分实现，待 NAS 验证" /> |
-| FNOS-003-04 | P1 | 一次性配置边界 | 仅安装阶段使用的路径、初始化选项和迁移参数不出现在运行设置中 | <Badge type="warning" text="代码已实现，待 NAS 验证" /> |
-| FNOS-003-05 | P1 | DSH FPK 与版本验收 | FPK 内置插件包与发布清单、插件兼容版本保持一致，安装/升级/回滚保留用户配置 | <Badge type="info" text="规划中" /> |
-| FNOS-003-06 | P1 | DSH 网关完整场景验收 | 完成 API 反代即时生效、SSE/WebSocket、权限、并发、异常和恢复场景验证 | <Badge type="info" text="规划中" /> |
-| FNOS-003-07 | P1 | DSH 插件管理面板验收 | 验证 Codex 动态模型目录（含上下文窗口写入）的目标环境表现 | <Badge type="info" text="规划中" /> |
-| FNOS-003-11 | P1 | DSH 应用运行参数约束 | 监听地址只能选 `127.0.0.1`，`0.0.0.0` 置灰并说明未适配；可信访问地址必填且不得填 DSH 自身端口 | <Badge type="warning" text="代码已实现，待 NAS 验证" /> |
-| FNOS-003-12 | P1 | CodeBuddy 多客户端登录 | 添加账号时可选择 CodeBuddy CLI 或 WorkBuddy 客户端，卡片展示客户端与固定版本标识 | <Badge type="tip" text="代码已实现，本地已验证" /> |
-| FNOS-003-13 | P1 | CodeBuddy 账号运营自动化 | 自动签到、派猫猫旅行自动派发与奖励领取、资源包台账按可使用/已用完/已过期分组 | <Badge type="tip" text="代码已实现，本地已验证" /> |
-| FNOS-003-14 | P1 | CodeBuddy 面板体验与状态持久化 | 面板 keep-alive、首次加载骨架、刷新局部更新、偏好与台账走统一状态库 | <Badge type="tip" text="代码已实现，本地已验证" /> |
-| FNOS-003-15 | P1 | CodeBuddy 模型图片输入 | 支持图片的模型以原生 `image_url` 发送图片，不支持时仍由 DSH 读图工具兜底 | <Badge type="tip" text="代码已实现，本地已验证" /> |
-| FNOS-003-08 | P1 | CodeBuddy 多账号与管理面板 | 管理多个 CodeBuddy 账号，支持切换、签到、额度/有效期查看、自动切换和 Token 统计 | <Badge type="tip" text="代码已实现，本地已验证" /> |
-| FNOS-003-09 | P1 | CodeBuddy Token 统计图表 | 面板按日展示输入/输出堆叠柱状图，支持 7/30/90 天范围、悬浮明细、图例和容器自适应 | <Badge type="tip" text="代码已实现，本地已验证" /> |
-| FNOS-003-10 | P1 | CodeBuddy 状态源与切换策略收敛 | 自动开关配置以 Host 为唯一权威，凭据写入串行化且切换带期望当前账号，主动/被动切换由纯决策模块判定并遵守 `Retry-After` | <Badge type="tip" text="代码已实现，本地已验证" /> |
+| FNOS-003-01 | P1 | 运行设置入口 | 在应用中心打开应用设置，可看到目标应用的运行参数配置 | <Badge type="tip" text="已完成" /> |
+| FNOS-003-02 | P1 | 安装与运行配置一致 | 安装时与运行时使用同一套字段契约，修改后字段值能被生命周期脚本读取 | <Badge type="tip" text="已完成" /> |
+| FNOS-003-03 | P1 | 配置变更生效 | 用户保存配置后，应用按约定重载或重启服务，并能看到新的运行状态 | <Badge type="tip" text="已完成" /> |
+| FNOS-003-04 | P1 | 一次性配置边界 | 仅安装阶段使用的路径、初始化选项和迁移参数不出现在运行设置中 | <Badge type="tip" text="已完成" /> |
+| FNOS-003-05 | P1 | DSH FPK 与版本验收 | FPK 内置插件包与发布清单、插件兼容版本保持一致，安装/升级/回滚保留用户配置 | <Badge type="tip" text="已完成" /> |
+| FNOS-003-06 | P1 | DSH 网关完整场景验收 | 完成 API 反代即时生效、SSE/WebSocket、权限、并发、异常和恢复场景验证 | <Badge type="tip" text="已完成" /> |
+| FNOS-003-07 | P1 | DSH 插件管理面板验收 | 验证 Codex 动态模型目录（含上下文窗口写入）的目标环境表现 | <Badge type="tip" text="已完成" /> |
+| FNOS-003-11 | P1 | DSH 应用运行参数约束 | 监听地址只能选 `127.0.0.1`，`0.0.0.0` 置灰并说明未适配；可信访问地址必填且不得填 DSH 自身端口 | <Badge type="tip" text="已完成" /> |
+| FNOS-003-12 | P1 | CodeBuddy 多客户端登录 | 添加账号时可选择 CodeBuddy CLI 或 WorkBuddy 客户端，卡片展示客户端与固定版本标识 | <Badge type="tip" text="已完成" /> |
+| FNOS-003-13 | P1 | CodeBuddy 账号运营自动化 | 自动签到、派猫猫旅行自动派发与奖励领取、资源包台账按可使用/已用完/已过期分组 | <Badge type="tip" text="已完成" /> |
+| FNOS-003-14 | P1 | CodeBuddy 面板体验与状态持久化 | 面板 keep-alive、首次加载骨架、刷新局部更新、偏好与台账走统一状态库 | <Badge type="tip" text="已完成" /> |
+| FNOS-003-15 | P1 | CodeBuddy 模型图片输入 | 支持图片的模型以原生 `image_url` 发送图片，不支持时仍由 DSH 读图工具兜底 | <Badge type="tip" text="已完成" /> |
+| FNOS-003-08 | P1 | CodeBuddy 多账号与管理面板 | 管理多个 CodeBuddy 账号，支持切换、签到、额度/有效期查看、自动切换和 Token 统计 | <Badge type="tip" text="已完成" /> |
+| FNOS-003-09 | P1 | CodeBuddy Token 统计图表 | 面板按日展示输入/输出堆叠柱状图，支持 7/30/90 天范围、悬浮明细、图例和容器自适应 | <Badge type="tip" text="已完成" /> |
+| FNOS-003-10 | P1 | CodeBuddy 状态源与切换策略收敛 | 自动开关配置以 Host 为唯一权威，凭据写入串行化且切换带期望当前账号，主动/被动切换由纯决策模块判定并遵守 `Retry-After` | <Badge type="tip" text="已完成" /> |
 
 ## 交互和行为约束
 
@@ -126,9 +126,9 @@ lastVerified: 2026-09-09
 
 | 阶段 | 状态 | 当前范围 | 下一步 |
 | --- | --- | --- | --- |
-| P1 运行设置统一 | <Badge type="warning" text="代码已实现，待 NAS 验证" /> | 11 个应用已提供 `wizard/config`；4 个无运行参数的应用已确认不纳入 | 补齐 `cmd/config_callback` 真实生效逻辑，并在 NAS 逐个验证展示与保存 |
-| FNOS-002 遗留 DSH 验收 | <Badge type="info" text="规划中" /> | 承接 FPK/网关/插件管理面板的目标环境验收 | 完成 FPK 构建、安装升级回滚、网关完整场景和插件面板验收 |
-| P1 CodeBuddy 多账号与管理面板 | <Badge type="tip" text="代码已实现，需求 002/003 已验收" /> | 多账号、双客户端登录、自动切换、签到、旅行、资源包台账、Token ECharts 面板代码已落地；需求 002/003 已完成 DSH 客户端验收 | 继续完成其余账号操作、运营周期与统计图表验收（不依赖 fnOS） |
+| P1 运行设置统一 | <Badge type="tip" text="已完成" /> | 11 个应用已提供 `wizard/config`；4 个无运行参数的应用已确认不纳入；展示、保存、回调和目标环境验证全部通过 | 无 |
+| FNOS-002 遗留 DSH 验收 | <Badge type="tip" text="已完成" /> | FPK、网关、插件管理面板和 Codex 遗留场景全部完成目标环境验收 | 无 |
+| P1 CodeBuddy 多账号与管理面板 | <Badge type="tip" text="已完成" /> | 多账号、双客户端登录、自动切换、签到、旅行、资源包台账、Token ECharts 面板及需求 002/003 全部验收通过 | 无 |
 | CodeBuddy 需求 002/003 | <Badge type="tip" text="已完成" /> | 自动切换开启时隐藏所有手动切换入口；添加账号登录在途时禁用整表单并在指定结局解除 | 无 |
 
 ## 变更记录
@@ -144,3 +144,4 @@ lastVerified: 2026-09-09
 | 2026-09-11 | 依据 v5.3.1 后实现刷新范围 | FNOS-003-01～04 从规划中改为已实现待验证；新增 FNOS-003-11～15（DSH 运行参数约束、多客户端登录、账号运营自动化、面板体验、模型图片输入） |
 | 2026-09-11 | 明确字段命名与回调边界 | `wizard/config` 字段名按 Native（`wizard_*`）与 Docker（compose 裸名）分类；`cmd/config_callback` 不得占位，须按形态实现重载/重启或记录容器重建路径 |
 | 2026-09-12 | 验收 CodeBuddy 需求 002/003 | 需求 002（自动切换开启时隐藏所有手动切换入口）与需求 003（登录在途时禁用添加账号整表单，并在指定结局解除）已在 DSH 客户端验收通过；补充关闭时作废在途握手的边界说明 |
+| 2026-09-12 | FNOS-003 全量验收完成 | FPK 运行设置、FPK/NAS 集成、网关、Codex 与 CodeBuddy 全部验收通过，需求与计划总状态更新为“已完成” |
