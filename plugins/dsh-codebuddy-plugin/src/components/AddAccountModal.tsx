@@ -69,6 +69,17 @@ export function AddAccountModal({
    * 一返回就停——握手成功只代表「链接已签发」，用户还没在浏览器里授权完。
    */
   const [pendingState, setPendingState] = useState<string | undefined>(undefined)
+  /**
+   * 登录进行中：**表单整体禁用** + 主按钮持续 loading。
+   *
+   * 两种在途阶段都算：`handshaking`（点按钮 → 握手返回）与 `pendingState`（等待
+   * 浏览器里授权）。字段此刻已随握手发给 host（客户端/环境决定登录端点），再改
+   * 它们只会让界面显示的与这次登录实际用的不一致；用户若想改，应当先取消重来。
+   *
+   * 解除时机是需求明确的四种：点击后进入禁用，重新打开弹框 / 登录成功 / 轮询
+   * 超时（或失败）都会解除——后三种都归结为 `waiting` 变回 false（见 `close()` 与
+   * 轮询 effect 的 `settle`）。
+   */
   const waiting = handshaking || pendingState !== undefined
 
   /**
@@ -89,6 +100,21 @@ export function AddAccountModal({
   onCancelRef.current = onCancel
   const onFinishedRef = useRef(onFinished)
   onFinishedRef.current = onFinished
+  /**
+   * 本次打开弹框的「代」（每次关闭/重开递增）。
+   *
+   * 用途是丢弃**过期的在途握手**：点「打开登录」后立刻关框时，`startLogin` 的
+   * RPC 还在途，它返回后会继续走 `submit()` 的后半段——不但把 `waiting` 又置回
+   * true（重开弹框后表单仍禁用），还会 `setPendingState` + `onLoginStart` 去
+   * **弹开浏览器登录页**。用户明明已经取消了这次登录。
+   *
+   * 因此 `submit` 在 `await` 前后各读一次代；不一致就说明这次握手已属于上一次
+   * 打开，直接丢弃、不产生任何副作用。
+   *
+   * 用 ref 而非 state：它只在 async 流程里比较，不参与渲染，做成 state 反而会
+   * 引入一轮多余渲染。
+   */
+  const generationRef = useRef(0)
 
   // 弹框每次打开都重置字段，避免上一次的编辑泄漏到下一次添加账号流程。
   const open = visible
@@ -125,6 +151,16 @@ export function AddAccountModal({
    * 刷新/打开面板即可看到。这是有意保留的：真正掐断它需要 host 新增取消端点。
    */
   const close = (): void => {
+    /**
+     * 推进代：作废任何在途握手。
+     *
+     * 必须在清 state 之前做——`handshaking` 也要一起清，否则「点『打开登录』后
+     * 立刻关框」会让它停在 true：那时 `pendingState` 还是 undefined（它要等握手
+     * 返回才被 set），所以下面那个 if 不会执行，`waiting` 于是保持 true，重开弹框
+     * 时表单仍是禁用态。这正是需求「重新打开弹框即解除禁用」要求的行为。
+     */
+    generationRef.current += 1
+    setHandshaking(false)
     if (pendingState !== undefined) {
       setPendingState(undefined)
       onFinished?.(false)
@@ -135,6 +171,9 @@ export function AddAccountModal({
 
   const submit = async (): Promise<void> => {
     if (waiting) return
+    // 记下发起时的代：await 之后用它判断这次握手是否已被关框/重开作废。
+    const issuedIn = generationRef.current
+    const stale = (): boolean => generationRef.current !== issuedIn
     setHandshaking(true)
     // 只把对当前客户端有意义的字段发出去：WorkBuddy 的端点由客户端身份决定，
     // 若仍带上 environment，会被原样存进账号条目，日后误导排查。
@@ -162,6 +201,18 @@ export function AddAccountModal({
       activate: false,
     }
     const result = await rpc.call<LoginStart>(CODEBUDDY_AUTH_CHANNEL, 'startLogin', options)
+    /**
+     * 这次握手是否已被「关框/重开」作废。
+     *
+     * 关框会推进代（见 `close()`），因此这里不一致就说明用户在握手在途时关掉了
+     * 弹框。此时**什么都不做**：不置 `handshaking`（否则重开的弹框仍是禁用态）、
+     * 不 `setPendingState`、不 `onLoginStart`（否则会替一次已取消的登录弹开浏览器
+     * 登录页）、也不调用 `close()`（弹框可能已经是关着的，或用户正开着一个新的）。
+     *
+     * 注意此时**不能**回报 `onFinished`：宿主的「登录中」标记从未因这次握手置起
+     * （它由 `onLoginStart` 置起），回报会让宿主误以为有一次失败的登录。
+     */
+    if (stale()) return
     setHandshaking(false)
     if (!result.ok) {
       // 握手就失败：没有可等待的登录，直接提示并关框（表单内容已无意义）。
@@ -281,6 +332,9 @@ export function AddAccountModal({
               placeholder={t('accountExpand')}
               showClear
               maxLength={30}
+              /* 登录在途时整表单只读：字段已随握手发给 host，再改会让界面与这次
+                 登录实际用的不一致（见 `waiting` 的说明）。 */
+              disabled={waiting}
             />
           </DshForm.Slot>
           {/* 客户端选择放在环境之前：它决定登录页与请求所用的服务地址
@@ -293,6 +347,7 @@ export function AddAccountModal({
               value={client}
               onChange={(value: string | number | string[]) => { setClient(normalizeClientId(value)) }}
               aria-label={t('clientLabel')}
+              disabled={waiting}
               optionList={CODEBUDDY_CLIENT_IDS.map(id => ({
                 value: id,
                 label: `${CODEBUDDY_CLIENT_LABELS[id]} · v${CODEBUDDY_CLIENT_VERSIONS[id]}`,
@@ -310,6 +365,7 @@ export function AddAccountModal({
                 value={environment}
                 onChange={(value: string | number | string[]) => { setEnvironment(String(value)) }}
                 aria-label={t('environmentLabel')}
+                disabled={waiting}
                 optionList={CODEBUDDY_ENVIRONMENTS.map(env => ({ value: env, label: CODEBUDDY_ENVIRONMENT_LABELS[env] }))}
               />
             </DshForm.Slot>
@@ -323,6 +379,7 @@ export function AddAccountModal({
                 value={endpoint}
                 onChange={setEndpoint}
                 placeholder="https://your-company.copilot.qq.com"
+                disabled={waiting}
               />
             </DshForm.Slot>
           ) : null}
@@ -333,6 +390,7 @@ export function AddAccountModal({
               checked={enterprise}
               onChange={(checked: boolean) => { setEnterprise(checked) }}
               aria-label={t('enterpriseSwitch')}
+              disabled={waiting}
             />
           </DshForm.Slot>
         </DshForm>

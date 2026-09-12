@@ -425,3 +425,123 @@ describe('轮询 disposer 与 pendingState 的联动', () => {
     expect(COMPONENT).toMatch(/if \(state === undefined\) return/)
   })
 })
+
+/**
+ * 点「打开登录」后**整表单禁用**，三种情形解除。
+ *
+ * 需求：点击后所有字段禁用；重新打开弹框、登录成功、授权轮询超时（或失败）后解除。
+ *
+ * 四种情形都归结到同一个开关 `waiting = handshaking || pendingState !== undefined`：
+ * 进入禁用是握手开始（`handshaking`），解除是它或 `pendingState` 被清干净。
+ * 这里既断言接线（每个控件都吃了 `disabled={waiting}`），也断言**四项的因果**。
+ */
+describe('登录在途时整表单禁用', () => {
+  /** 表单区域的源码（只含控件渲染，不含 footer 与弹框外壳）。 */
+  const FORM = COMPONENT.slice(
+    COMPONENT.indexOf('<div className="dsh-codebuddy-add-form">'),
+    COMPONENT.indexOf('</DshModal>'),
+  )
+
+  it('表单里的每个控件都受 waiting 控制', () => {
+    // 逐个统计，避免「只给前几个加了 disabled」这种漏改。
+    const total = (FORM.match(/<(DshInput|DshSelect|DshSwitch)\b/g) ?? []).length
+    const guarded = (FORM.match(/disabled=\{waiting\}/g) ?? []).length
+    expect(total).toBe(5)          // 备注名 / 客户端 / 环境 / 端点 / 企业
+    expect(guarded).toBe(total)
+  })
+
+  it('禁用标志覆盖握手中与等待授权两个阶段', () => {
+    // 只覆盖其中一个阶段会出现「握手返回后可改字段」或反之的中间态。
+    expect(COMPONENT).toMatch(/const waiting = handshaking \|\| pendingState !== undefined/)
+  })
+
+  it('点击「打开登录」即进入禁用（setHandshaking(true) 在 await 之前）', () => {
+    const submit = COMPONENT.slice(COMPONENT.indexOf('const submit ='), COMPONENT.indexOf('const state = pendingState'))
+    const setAt = submit.indexOf('setHandshaking(true)')
+    const awaitAt = submit.indexOf('await rpc.call<LoginStart>')
+    expect(setAt).toBeGreaterThan(-1)
+    expect(awaitAt).toBeGreaterThan(setAt)
+  })
+})
+
+describe('禁用状态在三种情形下解除', () => {
+  it('登录成功：settle(true) 清 pendingState（waiting 随之变 false）', () => {
+    const settle = COMPONENT.slice(COMPONENT.indexOf('const settle ='), COMPONENT.indexOf('const footer ='))
+    expect(settle).toContain('setPendingState(undefined)')
+    // 成功分支走 settle(true)
+    expect(COMPONENT).toMatch(/settle\(true\)/)
+  })
+
+  it('授权轮询超时：走 settle(false, ...) 同样清 pendingState', () => {
+    expect(COMPONENT).toMatch(/settle\(false, t\('timeout'\)\)/)
+  })
+
+  it('授权失败：走 settle(false, reason) 同样清 pendingState', () => {
+    expect(COMPONENT).toMatch(/settle\(false, reason\)/)
+  })
+
+  it('重新打开弹框：close() 清 handshaking 与 pendingState', () => {
+    /**
+     * 这条防的是一处真实漏洞：`close()` 原先把 `setPendingState` 放在
+     * `if (pendingState !== undefined)` 里，而**握手在途时 `pendingState` 还是
+     * undefined**（它要等握手返回才被 set）。于是「点『打开登录』后立刻关框」
+     * 什么都不清，`handshaking` 停在 true，重开弹框后 `waiting` 仍为 true——表单
+     * 依旧禁用、主按钮一直转，直到那次握手返回。与需求「重新打开即解除」不符。
+     */
+    const close = COMPONENT.slice(COMPONENT.indexOf('const close = ()'), COMPONENT.indexOf('const submit ='))
+    // handshaking 必须在 if 之外无条件清掉。
+    const guardAt = close.indexOf('if (pendingState !== undefined)')
+    const clearHandshakeAt = close.indexOf('setHandshaking(false)')
+    expect(clearHandshakeAt).toBeGreaterThan(-1)
+    expect(clearHandshakeAt).toBeLessThan(guardAt)
+  })
+})
+
+/**
+ * 握手在途时关框：这次握手必须彻底作废。
+ *
+ * `startLogin` 的 RPC 在途时用户关掉弹框（或关掉又重开），它返回后原本会继续走
+ * `submit()` 的后半段，产生两个恶果：
+ *   1. 把 `handshaking` 又置回 true —— 重开弹框后表单仍禁用、主按钮一直转；
+ *   2. `setPendingState` + `onLoginStart` —— 替一次**已被取消**的登录弹开浏览器
+ *      登录页。
+ * 因此用「代」作废：`close()` 推进代，`submit` 在 await 后比对，不一致即丢弃。
+ */
+describe('握手在途时关框会作废该次握手', () => {
+  it('close() 推进代（作废在途握手）', () => {
+    const close = COMPONENT.slice(COMPONENT.indexOf('const close = ()'), COMPONENT.indexOf('const submit ='))
+    expect(close).toMatch(/generationRef\.current \+= 1/)
+  })
+
+  it('submit 在发起时记录代，并在 await 之后比对', () => {
+    const submit = COMPONENT.slice(COMPONENT.indexOf('const submit ='), COMPONENT.indexOf('const state = pendingState'))
+    const issuedAt = submit.indexOf('const issuedIn = generationRef.current')
+    const awaitAt = submit.indexOf('await rpc.call<LoginStart>')
+    const staleAt = submit.indexOf('if (stale()) return')
+    expect(issuedAt).toBeGreaterThan(-1)
+    expect(awaitAt).toBeGreaterThan(issuedAt)
+    // 作废判定必须在 await 之后——否则等于没判。
+    expect(staleAt).toBeGreaterThan(awaitAt)
+  })
+
+  it('代在推进时必须早于清 state（handshaking 也要一起清）', () => {
+    const close = COMPONENT.slice(COMPONENT.indexOf('const close = ()'), COMPONENT.indexOf('const submit ='))
+    expect(close.indexOf('generationRef.current += 1')).toBeLessThan(close.indexOf('setHandshaking(false)'))
+  })
+
+  it('作废时不得回报 onFinished（宿主从未置起「登录中」）', () => {
+    // 宿主的标记由 onLoginStart 置起；这次握手被作废时它从未置起，回报会让宿主
+    // 误以为发生过一次失败的登录。
+    const submit = COMPONENT.slice(COMPONENT.indexOf('await rpc.call<LoginStart>'), COMPONENT.indexOf('const state = pendingState'))
+    const staleBranch = submit.slice(submit.indexOf('if (stale()) return'), submit.indexOf('if (stale()) return') + 40)
+    expect(staleBranch).toMatch(/if \(stale\(\)\) return/)
+    expect(staleBranch).not.toContain('onFinished')
+  })
+
+  it('作废时不得开窗（不替已取消的登录打开登录页）', () => {
+    const submit = COMPONENT.slice(COMPONENT.indexOf('await rpc.call<LoginStart>'), COMPONENT.indexOf('const state = pendingState'))
+    const staleAt = submit.indexOf('if (stale()) return')
+    // onLoginStart 只能出现在 stale 判定**之后**的路径上。
+    expect(submit.indexOf('onLoginStart?.(')).toBeGreaterThan(staleAt)
+  })
+})
