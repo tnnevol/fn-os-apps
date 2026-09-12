@@ -37,6 +37,3 @@ export function RangeToggle({ options, range, onChange, label, format }: {
     </DshButtonGroup>
   )
 }
-
-/** 与 panel.tsx 共用：导入时希望统一 `*Impl` 后缀命名。 */
-export const RangeToggleImpl = RangeToggle

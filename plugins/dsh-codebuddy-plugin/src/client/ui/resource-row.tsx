@@ -24,9 +24,6 @@ export const RESOURCE_LIFECYCLE_META_IMPL: Record<ResourceLifecycle, { labelKey:
   expired: { labelKey: 'resourcesExpired', emptyKey: 'resourcesEmptyExpired', color: 'var(--dsw-alias-label-tertiary)' },
 }
 
-/** 卡片行优先展示的套餐数：卡片是概览，全量台账在弹框里。 */
-export const CARD_RESOURCE_LIMIT_IMPL = 2
-
 /** 把一个账号的实时资源包转成台账输入（卡片与弹框共用同一映射）。 */
 export function liveResourcesOfImpl(row: PanelAccountRow): LiveResource[] {
   return row.resources.map(r => ({

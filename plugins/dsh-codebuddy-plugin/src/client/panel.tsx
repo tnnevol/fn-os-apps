@@ -6,9 +6,7 @@
  *    hook 里，按 hook 关联业务，而不再让单文件 mega-component 把这一切都包下来。
  *  - 视觉 / 纯渲染组件（`StatMetric`、`ActivityGrid`、`AccountCard` 等）拆到
  *    {@link ui/}，仅接 props，不再触碰 RPC 与 store。
- *  - 本文件只做组装：保留三个顶层页面（AccountsPage / TokenStatsPage /
- *    CodeBuddyPanelPage）和一些必须**保持函数签名兼容**的占位函数（用于静态文
- *    本扫描的测试——见 `function compact` 等是 *re-export* 形式的占位）。
+ *  - 本文件组装页面状态与布局，直接使用 ui/ 导出的组件。
  *  - 共享类型放 {@link ../types/client/panel-types.d.ts}；DatePicker / echarts / 资源条等大块组件
  *    各自独立文件。
  *
@@ -20,7 +18,6 @@
  */
 
 import type { StatsDimension, PanelPageProps } from '../types/client/panel'
-import type { TokenUsageChartProps } from '../types/client/ui/token-usage-chart'
 export type { PanelPageProps } from '../types/client/panel'
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import type { ReactNode } from 'react'
@@ -34,13 +31,11 @@ import {
 import {
   CODEBUDDY_AUTH_CHANNEL, CODEBUDDY_ENVIRONMENT_LABELS,
 } from '../contracts/constants.ts'
-import type { CodeBuddyLocaleKey } from './locales/index.ts'
 import type { ConnectionRpc, AccountsResult } from './rpc.ts'
 import { describeRpcError } from './rpc.ts'
-import { PanelRouteController } from './panel-route.ts'
 import type { PanelRoute } from './panel-route.ts'
 import { classifyResources, forgetResources, readResources, recordResources } from './resource-history.ts'
-import type { ClassifiedResource, LiveResource, ResourceLifecycle } from './resource-history.ts'
+import type { ClassifiedResource } from './resource-history.ts'
 import { TokenStatsStore } from './store/token-stats.ts'
 import {
   $autoCheckin, $autoSwitch, $autoTravel,
@@ -55,147 +50,32 @@ import { AddAccountModal, startLoginPolling } from '../components/AddAccountModa
 import { usePanelData, useTokenStats } from './hooks/use-panel-data.ts'
 import { useAutoPrefs } from './hooks/use-auto-prefs.ts'
 
-import { AccountCardImpl } from './ui/account-card.tsx'
-import { AccountResourcesModalImpl } from './ui/account-resources-modal.tsx'
-import { ActivityGridImpl } from './ui/activity-grid.tsx'
+import { AccountCardImpl as AccountCard } from './ui/account-card.tsx'
+import { AccountResourcesModalImpl as AccountResourcesModal } from './ui/account-resources-modal.tsx'
+import { ActivityGridImpl as ActivityGrid } from './ui/activity-grid.tsx'
 import {
-  AutoCheckinToggleImpl, AutoSwitchToggleImpl, AutoTravelToggleImpl,
+  AutoCheckinToggleImpl as AutoCheckinToggle,
+  AutoSwitchToggleImpl as AutoSwitchToggle,
+  AutoTravelToggleImpl as AutoTravelToggle,
 } from './ui/auto-toggles.tsx'
 import {
-  BreakdownListImpl, SessionRankingImpl, WorkspaceListImpl,
+  BreakdownListImpl as BreakdownList,
+  SessionRankingImpl as SessionRanking,
+  WorkspaceListImpl as WorkspaceList,
 } from './ui/token-lists.tsx'
-import { DimensionToggleImpl, type StatsDimension as StatsDimensionFromUi } from './ui/dimension-toggle.tsx'
-import { RangeToggleImpl } from './ui/range-toggle.tsx'
-import { TokenUsageChartImpl } from './ui/token-usage-chart.tsx'
-import { ResourceRowImpl } from './ui/resource-row.tsx'
+import { DimensionToggle } from './ui/dimension-toggle.tsx'
+import { RangeToggle } from './ui/range-toggle.tsx'
+import { TokenUsageChartImpl as TokenUsageChart } from './ui/token-usage-chart.tsx'
+import { liveResourcesOfImpl as liveResourcesOf } from './ui/resource-row.tsx'
 import {
   compact, formatCredit, PageLoading, PanelBody, PanelRefreshOverlay,
-  SkeletonBlock, StatMetric,
+  StatMetric,
 } from './ui/loading-shared.tsx'
 import { DshIconLabAvatar, DshIconLabChart } from '@tnnevol/dsh-semi-ui'
 
 import type { AccountCardLabels, PanelAccountRow, TokenStats, Translate } from '../types/client/panel-types'
 
 export type { AccountCardLabels, PanelAccountRow, TokenStats, Translate }
-
-/** RangeToggle 委派：保留函数名供 slice 搜索使用。 */
-function RangeToggle(props: { options: readonly TokenRangeKey[], range: TokenRangeKey, onChange: (value: TokenRangeKey) => void, label: string, format: (key: TokenRangeKey) => string }): ReactNode {
-  return <RangeToggleImpl {...props} />
-}
-
-/**
- * `BreakdownList` / `WorkspaceList` / `SessionRanking` 委派：实际渲染由
- * ui/token-lists.tsx 提供。保留函数名用于：
- *  - `tests/range-toggle.spec.ts`：用 `function RangeToggle` ~ `function BreakdownList`
- *    区间切片；
- *  - `tests/segment-bar.spec.ts`：用 `function SegmentBar` ~ `function BreakdownList`
- *    切片；
- *  - 不需要被直接 import（外部 import 走 ui 子文件 re-export）。
- */
-function BreakdownList(props: { items: TokenStats['models'], empty: string }): ReactNode {
-  return <BreakdownListImpl {...props} />
-}
-function WorkspaceList(props: { items: TokenStats['workspaces'], empty: string }): ReactNode {
-  return <WorkspaceListImpl {...props} />
-}
-function SessionRanking(props: { items: TokenStats['sessions'], empty: string, untitled: string, noWorkspace: string, callSuffix: string }): ReactNode {
-  return <SessionRankingImpl {...props} />
-}
-
-/** 维度切换的常量 + 组件委派——`tests/dimension-toggle.spec.ts` 用 `const
- * DIMENSIONS` 与 `function DimensionToggle` 索引。 */
-const DIMENSIONS: ReadonlyArray<{ key: StatsDimension, labelKey: 'tokenByWorkspace' | 'tokenByModel' }> = [
-  { key: 'workspace', labelKey: 'tokenByWorkspace' },
-  { key: 'model', labelKey: 'tokenByModel' },
-]
-function DimensionToggle({ dimension, onChange, t }: {
-  dimension: StatsDimension
-  onChange: (value: StatsDimension) => void
-  t: (key: 'tokenByWorkspace' | 'tokenByModel' | 'tokenDimension') => string
-}): ReactNode {
-  return <DimensionToggleImpl dimension={dimension} onChange={onChange} t={t} />
-}
-function cssVariable(element: HTMLElement, name: string, fallback: string): string {
-  return getComputedStyle(element).getPropertyValue(name).trim() || fallback
-}
-function TokenUsageChart(props: TokenUsageChartProps): ReactNode {
-  return <TokenUsageChartImpl {...props} />
-}
-
-/** 活动热力图（保留函数名供 `tests/legend-height.spec.ts` 切片）。 */
-function activityWeekday(day: string): number {
-  const [year = 1970, month = 1, date = 1] = day.split('-').map(Number)
-  return new Date(year, month - 1, date).getDay()
-}
-function ActivityGrid(props: { activity: TokenStats['activity'], callSuffix: string }): ReactNode {
-  return <ActivityGridImpl {...props} />
-}
-
-/** 账号卡片与资源弹框（保留函数名供 `tests/account-card-height.spec.ts`
- * `tests/identity.spec.ts` 切片）。 */
-function AccountCard(props: {
-  row: PanelAccountRow
-  labels: AccountCardLabels
-  autoCheckin: boolean
-  autoSwitch: boolean
-  resources: ClassifiedResource[]
-  busy: boolean
-  onCheckin: (id: string) => void
-  onSwitch: (id: string) => void
-  onDelete: (row: PanelAccountRow) => void
-  onRename: (row: PanelAccountRow) => void
-  onOpenResources: (row: PanelAccountRow) => void
-}): ReactNode {
-  return <AccountCardImpl {...props} />
-}
-function AccountResourcesModal(props: { row: PanelAccountRow | undefined, items: ClassifiedResource[], t: Translate, onClose: () => void }): ReactNode {
-  return <AccountResourcesModalImpl {...props} />
-}
-
-/** 资源包行 / 分组（保留函数名供 `tests/resource-history.spec.ts` 等切片）。 */
-const RESOURCE_LIFECYCLE_META: Record<ResourceLifecycle, { labelKey: CodeBuddyLocaleKey, emptyKey: CodeBuddyLocaleKey, color: string }> = {
-  usable: { labelKey: 'resourcesUsable', emptyKey: 'resourcesEmptyUsable', color: 'var(--dsw-alias-state-success-primary)' },
-  depleted: { labelKey: 'resourcesDepleted', emptyKey: 'resourcesEmptyDepleted', color: 'var(--dsw-alias-state-warn-primary)' },
-  expired: { labelKey: 'resourcesExpired', emptyKey: 'resourcesEmptyExpired', color: 'var(--dsw-alias-label-tertiary)' },
-}
-const CARD_RESOURCE_LIMIT = 2
-function liveResourcesOf(row: PanelAccountRow): LiveResource[] {
-  return row.resources.map(r => ({ name: r.name, total: r.total, remaining: r.remaining, resetsAt: r.resetsAt }))
-}
-function ResourceRow({ item, t }: { item: ClassifiedResource, t: Translate }): ReactNode {
-  // 委派到 ui 子文件：占位仅用于 slice 检索，运行时不应当从这里调用。
-  // 真正的 AccountResourcesModal 走 AccountResourcesModalImpl → ResourceGroupImpl → ResourceRowImpl。
-  return <ResourceRowImpl item={item} t={t} />
-}
-function ResourceGroup({ items, lifecycle, t }: { items: ClassifiedResource[], lifecycle: ResourceLifecycle, t: Translate }): ReactNode {
-  // 委派到 ui 子文件：占位仅用于 slice 检索，运行时不应当从这里调用。
-  // 真正的 AccountResourcesModal 走 AccountResourcesModalImpl → ResourceGroupImpl。
-  const meta = RESOURCE_LIFECYCLE_META[lifecycle]
-  if (items.length === 0) return <p className="dsh-codebuddy-resource-empty">{t(meta.emptyKey)}</p>
-  return <div className="dsh-codebuddy-resource-list">{items.map(item => <ResourceRowImpl key={item.key} item={item} t={t} />)}</div>
-}
-
-/** Auto* 三个开关委派（保留函数名供 `tests/auto-switch-toggle.spec.ts` 等）。 */
-function AutoSwitchToggle({ checked, t, onChange }: { checked: boolean, t: Translate, onChange: (checked: boolean) => void }): ReactNode {
-  return <AutoSwitchToggleImpl checked={checked} t={t} onChange={onChange} />
-}
-function AutoCheckinToggle({ checked, t, onChange }: { checked: boolean, t: Translate, onChange: (checked: boolean) => void }): ReactNode {
-  return <AutoCheckinToggleImpl checked={checked} t={t} onChange={onChange} />
-}
-function AutoTravelToggle({ checked, t, onChange }: { checked: boolean, t: Translate, onChange: (checked: boolean) => void }): ReactNode {
-  return <AutoTravelToggleImpl checked={checked} t={t} onChange={onChange} />
-}
-
-/* ============================================================================
- * 真正干活的页面组件
- *
- * 这一层把 hooks（usePanelData / useTokenStats / useAutoPrefs / useStore）与
- * ui/* 视觉组件**关联**起来。函数体内不再保留 inline JSX —— 把视觉扔给 ui/*，
- * 本文件集中表达「按哪些 hook 拉数据、按什么状态切哪些组件」。
- *
- * 测试文本扫描要能命中 AccountsPage 与 TokenStatsPage 这两个函数名——它们在
- * panel.tsx 中保持同名真实现，视觉仍由 ui/* 提供。
- * ========================================================================== */
 
 function AccountsPage({
   rpc, t, notify, rosterTick, loginWaiting, loginLink, onCopyLoginLink,
@@ -315,7 +195,7 @@ function AccountsPage({
               busy={busyId === row.id}
               autoCheckin={autoCheckinOn}
               resources={resourcesByAccount.get(row.id) ?? []}
-              labels={buildAccountLabels(row, t)}
+              labels={buildAccountLabels(t)}
               onCheckin={(id) => { void checkinOne(id) }}
               autoSwitch={autoSwitchOn}
               onSwitch={(id) => { void switchOne(id) }}
@@ -336,8 +216,8 @@ function AccountsPage({
   )
 }
 
-/** 按当前行 + 翻译函数构造卡片标签集合。 */
-function buildAccountLabels(_row: PanelAccountRow, t: Translate): AccountCardLabels {
+/** 由翻译函数构造卡片标签集合（与具体账号无关，各卡片共用同一份文案）。 */
+function buildAccountLabels(t: Translate): AccountCardLabels {
   return {
     active: t('accountActive'),
     offline: t('accountOffline'),

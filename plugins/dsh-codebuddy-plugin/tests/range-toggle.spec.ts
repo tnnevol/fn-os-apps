@@ -27,7 +27,9 @@ const INDEX_SCSS = readFileSync(
 )
 
 describe('RangeToggle 结构（Semi 原生主题）', () => {
-  const toggle = TOGGLE.slice(TOGGLE.indexOf('export function RangeToggle'), TOGGLE.indexOf('RangeToggleImpl = RangeToggle'))
+  // RangeToggle 是该文件唯一的导出函数——切片取「函数定义 → 文件末尾」，
+  // 覆盖完整的 JSX 体（imports 在其上方，不受影响）。
+  const toggle = TOGGLE.slice(TOGGLE.indexOf('export function RangeToggle'))
 
   it('激活项用 Semi 的 solid + primary，其余用 borderless', () => {
     expect(toggle).toContain("theme={range === key ? 'solid' : 'borderless'}")

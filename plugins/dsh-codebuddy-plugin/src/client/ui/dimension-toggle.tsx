@@ -18,9 +18,6 @@ export const DIMENSIONS: ReadonlyArray<{ key: StatsDimension, labelKey: 'tokenBy
   { key: 'model', labelKey: 'tokenByModel' },
 ]
 
-/** Impl 别名：让 panel.tsx 与外部引入统一走 `*Impl` 后缀。 */
-export const DimensionToggleImpl = DimensionToggle
-
 export function DimensionToggle({ dimension, onChange, t }: {
   dimension: StatsDimension
   onChange: (value: StatsDimension) => void
