@@ -36,11 +36,6 @@ const PANEL_SCSS = readFileSync(
   'utf8',
 )
 
-const INDEX_SCSS = readFileSync(
-  '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/styles/index.scss',
-  'utf8',
-)
-
 /** Token 页样式（token-updated / 窄屏覆盖等已随拆分迁出 panel-shell.scss）。 */
 const TOKEN_SCSS = readFileSync(
   '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/styles/token-panel.scss',

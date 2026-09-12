@@ -20,10 +20,6 @@ import { readFileSync } from 'node:fs'
  * - `Card.defaultProps.loading = false`，而 Skeleton 在 loading 为假时**直接返回
  *   children**、不额外包一层 div，所以卡片内容确实是 `.semi-card-body` 的直接子元素。
  */
-const PANEL = readFileSync(
-  '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/client/panel.tsx',
-  'utf8',
-)
 const SCSS = readFileSync(
   '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/styles/accounts.scss',
   'utf8',

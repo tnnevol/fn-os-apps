@@ -149,14 +149,12 @@ export function classifyResources(
   live: readonly LiveResource[],
 ): ClassifiedResource[] {
   const now = Date.now()
-  const liveByKey = new Map(live.map(resource => [resourceKey(resource), resource]))
   const seen = new Set<string>()
   const rows: ClassifiedResource[] = []
 
   for (const resource of live) {
     const key = resourceKey(resource)
     seen.add(key)
-    const remembered = ledger.find(row => row.key === key)
     const remaining = resource.remaining
     rows.push({
       key,
@@ -164,11 +162,11 @@ export function classifyResources(
       total: resource.total,
       remaining,
       resetsAt: resource.resetsAt,
+      // 本次探测就是该包「最近一次被看到」，台账里的旧 lastSeenAt 不再有意义。
       lastSeenAt: now,
       live: true,
       lifecycle: remaining !== null && remaining > 0 ? 'usable' : 'depleted',
     })
-    void remembered
   }
 
   for (const row of ledger) {

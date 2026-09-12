@@ -409,7 +409,7 @@ export class CodeBuddyAdapter extends LlmAdapter {
       // 首次尝试前不切换；之后的每一轮都已经由上一轮末尾切好了账号。
       if (attempt > 0) {
         if (!autoSwitchAllowed()) throw lastError as LlmError
-        const switched = await this.failoverToNextAccount(lastError as LlmError, attempted)
+        const switched = await this.failoverToNextAccount(attempted)
         if (switched === undefined) break
         attempted.add(switched.id)
         // 在重试的流开始前，把接管以可见的助手文本呈现出来：StreamChunk
@@ -473,12 +473,15 @@ export class CodeBuddyAdapter extends LlmAdapter {
 
   /**
    * 在额度失败后，把当前活动账号切换到下一个可用的账号。
-   * @param error - 触发切换的失败。
+   *
+   * 不接收触发失败本身：换号只关心「还有哪些账号没试过」（`attempted`），
+   * 失败原因由调用方负责呈现。
+   *
+   * @param attempted 本轮已试过的账号 id（避免在两个账号之间来回切）。
    * @returns from/to 展示名；当没有其他账号能接管时为 `undefined`
    *   （只有一个账号，或其余凭据全部过期）。
    */
   private async failoverToNextAccount(
-    error: LlmError,
     attempted: ReadonlySet<string>,
   ): Promise<{ from: string, to: string, id: string } | undefined> {
     const current = await this.config.session.activeAccountSummary()

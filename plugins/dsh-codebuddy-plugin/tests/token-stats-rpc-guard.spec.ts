@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { CodeBuddyAuthService } from '../src/host/auth-service.ts'
 import { CodeBuddySession } from '../src/host/session.ts'
-import { CODEBUDDY_AUTH_CHANNEL } from '../src/contracts/constants.ts'
 
 /**
  * `tokenStats` RPC 的**分发层**守卫（auth-service 的 `dispatch`）。

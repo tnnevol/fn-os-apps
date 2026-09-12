@@ -18,7 +18,6 @@ import {
   DshIconAlertCircle,
   DshIconCopy,
   DshIconEdit,
-  DshIconList,
   DshInput,
   DshModal,
   DshSlider,
@@ -64,15 +63,6 @@ function formatBalance(n: number): string {
   if (n >= 1e8) return `${(n / 1e8).toFixed(1)}亿`
   if (n >= 1e4) return `${(n / 1e4).toFixed(1)}万`
   return String(Math.round(n))
-}
-
-function StatusRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="dsh-codebuddy-row">
-      <span className="dsh-codebuddy-row-label">{label}</span>
-      <span className="dsh-codebuddy-row-value">{value}</span>
-    </div>
-  )
 }
 
 export function CodeBuddySection({ rpc, t, panelRoute, close }: CodeBuddySectionProps) {
@@ -440,16 +430,29 @@ export function CodeBuddySection({ rpc, t, panelRoute, close }: CodeBuddySection
                                       不可靠（且与 Tooltip 组件不一致）：用 Tooltip 包裹
                                       说明禁用原因；有余额时直接渲染按钮，不挂 Tooltip。 */}
                                   {(() => {
+                                    /**
+                                     * 该账号正在切换中：显示转圈 + 「切换中…」并禁用。
+                                     * 既解释这次请求为何短暂停顿，也避免重复点击——重复
+                                     * 点击会让 host 连续换号，最终停在哪个账号取决于网络
+                                     * 返回顺序。
+                                     *
+                                     * Semi 的 `loading` 只在「图标位」渲染转圈、文案照常
+                                     * 显示，且**不会**自动禁用按钮（源码：`isLoading &&
+                                     * !isDisabled` 才走 IconButton 分支），所以 disabled
+                                     * 必须显式传。
+                                     */
+                                    const switching = switchingId === account.id
                                     const button = (
                                       <DshButton
                                         htmlType="button"
                                         size="small"
                                         type="secondary"
                                         theme="borderless"
-                                        disabled={(autoSwitch || (balance !== undefined && !balance.usable)) && account.id !== accounts.find(item => item.active)?.id}
+                                        loading={switching}
+                                        disabled={switching || ((autoSwitch || (balance !== undefined && !balance.usable)) && account.id !== accounts.find(item => item.active)?.id)}
                                         onClick={() => { void switchAccount(account.id) }}
                                       >
-                                        {t('selectAccount')}
+                                        {switching ? t('accountSwitching') : t('selectAccount')}
                                       </DshButton>
                                     )
                                     return balance !== undefined && !balance.usable

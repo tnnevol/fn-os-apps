@@ -16,7 +16,7 @@
 import type { UsageWindow, UsageSnapshot, MeterErrorResponse } from '../types/host/usage'
 export type { UsageWindow, UsageSnapshot } from '../types/host/usage'
 import { join } from 'node:path'
-import { CODEBUDDY_ENDPOINT, CODEBUDDY_IDE_VERSION } from '../contracts/constants.ts'
+import { CODEBUDDY_IDE_VERSION } from '../contracts/constants.ts'
 import type { CodeBuddyIdentity } from './codebuddy.ts'
 
 /**

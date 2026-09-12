@@ -38,12 +38,6 @@ function localDay(timestamp: number): string {
   return `${year}-${month}-${day}`
 }
 
-function startOfLocalDay(timestamp: number): number {
-  const date = new Date(timestamp)
-  date.setHours(0, 0, 0, 0)
-  return date.getTime()
-}
-
 function addBucket(target: CodeBuddyTokenBucket, usage: TokenUsageProjection): void {
   target.input += usage.uncachedInputTokens
   target.output += usage.outputTokens
@@ -235,7 +229,7 @@ export async function collectCodeBuddyTokenStats(
   const observations = (await Promise.all(selected.map(async item => {
     try {
       return { item, observation: await query.observeSession(item.header.id, observeOptions) }
-    } catch (error) {
+    } catch {
       // 之前「要么全成要么全败」的失败，曾因为单个会话日志无法重放，就把整个
       // 面板变成「用量暂时不可用」。
       return { item, observation: undefined }

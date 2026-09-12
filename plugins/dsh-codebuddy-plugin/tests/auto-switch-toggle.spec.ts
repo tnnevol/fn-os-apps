@@ -61,23 +61,23 @@ describe('② 关闭开关时轮询真的停', () => {
   })
 
   /** 取某个方法定义体（用定义签名定位，避免匹配到调用点）。 */
-  const method = (name: string, next: string): string =>
+  const method = (name: string): string =>
     SERVICE.slice(SERVICE.indexOf(`${name}(): void {`), SERVICE.indexOf(`${name}(): void {`) + 420)
 
   it('stopAutoSwitchCycle 清除定时器并置空句柄', () => {
-    const stop = method('stopAutoSwitchCycle', 'startAutoSwitchCycle')
+    const stop = method('stopAutoSwitchCycle')
     expect(stop).toMatch(/clearInterval\(this\.autoSwitchTimer\)/)
     expect(stop).toMatch(/this\.autoSwitchTimer = undefined/)
   })
 
   it('startAutoSwitchCycle 幂等（重复开启不会叠加多个定时器）', () => {
     // 若不做幂等，反复开关会累积定时器 —— 而关闭一次只清掉一个。
-    expect(method('startAutoSwitchCycle', 'stopAutoSwitchCycle'))
+    expect(method('startAutoSwitchCycle'))
       .toMatch(/if \(this\.autoSwitchTimer !== undefined\) return/)
   })
 
   it('停机（disposed）后不再启动', () => {
-    expect(method('startAutoSwitchCycle', 'stopAutoSwitchCycle')).toMatch(/if \(this\.disposed\) return/)
+    expect(method('startAutoSwitchCycle')).toMatch(/if \(this\.disposed\) return/)
   })
 
   it('启动时按持久化配置决定是否开启周期', () => {

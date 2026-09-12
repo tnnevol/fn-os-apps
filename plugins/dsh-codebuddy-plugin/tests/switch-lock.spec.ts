@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { chmodSync, mkdtempSync, readFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { SerialQueue, mapWithConcurrency } from '../src/host/concurrency.ts'
+import { SerialQueue } from '../src/host/concurrency.ts'
 
 /**
  * 切换路径此前**零单元测试**（339 个用例中无一覆盖 switchTo/switchAccount）。

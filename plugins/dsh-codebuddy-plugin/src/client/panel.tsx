@@ -28,9 +28,7 @@ import {
   DshTooltip,
 } from '@tnnevol/dsh-semi-ui'
 
-import {
-  CODEBUDDY_AUTH_CHANNEL, CODEBUDDY_ENVIRONMENT_LABELS,
-} from '../contracts/constants.ts'
+import { CODEBUDDY_AUTH_CHANNEL } from '../contracts/constants.ts'
 import type { ConnectionRpc, AccountsResult } from './rpc.ts'
 import { describeRpcError } from './rpc.ts'
 import type { PanelRoute } from './panel-route.ts'
