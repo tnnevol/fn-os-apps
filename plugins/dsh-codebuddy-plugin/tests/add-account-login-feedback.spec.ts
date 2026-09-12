@@ -321,9 +321,78 @@ describe('轮询 effect 的依赖是干净的', () => {
     expect(COMPONENT).toMatch(/\}, \[pendingState, rpc, t\]\)/)
   })
 
-  it('重开弹框不会清掉在途登录的 state', () => {
-    // 清掉会让轮询失去 state、按钮 loading 也会错误地停下。
+  it('重开弹框无需再清 state（关框时已收尾）', () => {
+    // 在途标记由 close() 清除，因此打开分支只重置表单字段。若这里也去清，
+    // 等于把同一件事写两遍，日后改动容易只改一处。
     const reset = COMPONENT.slice(COMPONENT.indexOf('if (open !== lastOpen)'), COMPONENT.indexOf('const close ='))
     expect(reset).not.toContain('setPendingState')
+  })
+})
+
+describe('关闭弹框即结束本次登录等待', () => {
+  /**
+   * 关框必须同时收掉三样东西，否则会留下用户看不见却仍在动的状态：
+   *  1. 客户端轮询（否则关框后仍在打 pollLogin，且可能对已卸载的组件 setState）；
+   *  2. 弹框主按钮的 loading（否则重开弹框时按钮仍在转，且点不下去）；
+   *  3. 宿主的「登录中」标记（否则宿主的「添加账号」按钮永久禁用）。
+   *
+   * 三者都挂在同一个开关上：清掉 `pendingState`。它既是轮询 effect 的依赖
+   * （变化即触发 cleanup → disposer），也是 `waiting` 的组成部分。
+   */
+  const closeBody = COMPONENT.slice(
+    COMPONENT.indexOf('const close = ()'),
+    COMPONENT.indexOf('const submit ='),
+  )
+
+  it('close() 清掉在途 state：连带停轮询与停 loading', () => {
+    expect(closeBody.length).toBeGreaterThan(0)
+    expect(closeBody).toContain('setPendingState(undefined)')
+  })
+
+  it('close() 回报宿主，让它把「登录中」标记落回', () => {
+    expect(closeBody).toMatch(/onFinished\?\.\(false\)/)
+  })
+
+  it('仅在确有在途登录时才回报（没提交就取消不算一次失败登录）', () => {
+    // 无条件回报会让宿主误以为发生过一次失败的登录。
+    expect(closeBody).toMatch(/if \(pendingState !== undefined\)[\s\S]{0,120}onFinished\?\.\(false\)/)
+  })
+
+  it('close() 复位关框标记，避免旧登录落定时又关一次新开的弹框', () => {
+    expect(closeBody).toContain('closeOnDone.current = false')
+  })
+
+  it('三个关闭入口都走 close()：footer 取消、右上角 X、ESC', () => {
+    // 遮罩点击已禁用（maskClosable={false}），否则误触会中断登录等待。
+    expect(COMPONENT).toContain('onClick={close}')
+    expect(COMPONENT).toMatch(/onCancel=\{close\}/)
+    expect(COMPONENT).toContain('closeOnEsc')
+    expect(COMPONENT).toContain('maskClosable={false}')
+  })
+
+  it('成功关框不走 close()，避免重复回报宿主', () => {
+    // 成功分支的 settle(true) 已经清了 state 并回报过一次；再走 close() 会让
+    // 宿主先收到 ok=true 再收到 ok=false，把刚成功的登录记成失败。
+    const doneBranch = COMPONENT.slice(
+      COMPONENT.indexOf('return startLoginPolling('),
+      COMPONENT.indexOf('DshToast.warning'),
+    )
+    expect(doneBranch).toContain('onCancelRef.current()')
+    expect(doneBranch).not.toMatch(/\bclose\(\)/)
+  })
+})
+
+describe('轮询 disposer 与 pendingState 的联动', () => {
+  it('effect 依赖含 pendingState，清掉它即触发 cleanup', () => {
+    // 这是「关框停轮询」的实现机理：依赖变化 → React 调 cleanup → disposer。
+    expect(COMPONENT).toMatch(/\}, \[pendingState, rpc, t\]\)/)
+  })
+
+  it('effect 返回 startLoginPolling 的 disposer（而不是丢掉它）', () => {
+    expect(COMPONENT).toMatch(/return startLoginPolling\(/)
+  })
+
+  it('state 为空时 effect 直接返回，不起轮询', () => {
+    expect(COMPONENT).toMatch(/if \(state === undefined\) return/)
   })
 })

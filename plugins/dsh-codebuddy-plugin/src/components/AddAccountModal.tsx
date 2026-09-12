@@ -106,7 +106,32 @@ export function AddAccountModal({
     }
   }
 
-  const close = (): void => { onCancel() }
+  /**
+   * 关闭弹框：**放弃**这次登录等待。
+   *
+   * 清 `pendingState` 会连带做三件事：
+   *  1. 轮询 effect 的依赖变化 → cleanup 触发 disposer → 客户端停止轮询；
+   *  2. `waiting` 变 false → 主按钮不再 loading，重开弹框是干净的初始态；
+   *  3. 通过 `onFinished(false)` 让宿主把自己的「登录中」标记落回，
+   *     否则宿主的添加按钮会永久停在禁用态。
+   *
+   * 只在**确有在途登录**时才回报 `onFinished`：用户没提交就直接取消时，宿主从
+   * 未进入「登录中」，多发一次落定回报会让它误以为有一次失败的登录。
+   *
+   * 注意能做到与做不到的边界：这里停的是**客户端轮询**。host 侧
+   * `pollAuthToken` 那条长轮询没有取消端点，它会自行在 `LOGIN_TIMEOUT_MS`
+   * （10 分钟）后到期并回收 `pending` 条目。因此关框后用户若仍在浏览器里完成
+   * 授权，账号依然会被 host 落库——只是本次不再由弹框提示与关框，用户下次
+   * 刷新/打开面板即可看到。这是有意保留的：真正掐断它需要 host 新增取消端点。
+   */
+  const close = (): void => {
+    if (pendingState !== undefined) {
+      setPendingState(undefined)
+      onFinished?.(false)
+    }
+    closeOnDone.current = false
+    onCancel()
+  }
 
   const submit = async (): Promise<void> => {
     if (waiting) return
