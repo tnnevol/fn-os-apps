@@ -50,8 +50,23 @@ export function usePanelData<T>(
   useEffect(() => {
     let active = true
     setLoading(true)
-    // 只读端点不带请求体；`rpc.call` 的第三个参数省略即发 `{}`。
-    void rpc.call<T>(CODEBUDDY_AUTH_CHANNEL, endpoint).then((result) => {
+    /**
+     * 必须显式传一个 payload（空对象），**不能省略这个参数**。
+     *
+     * 省略会让 `payload` 变成 `undefined`，而 Connection 的客户端封装用
+     * `JSON.stringify({ type, rpcId, method, payload })` 构造信封——
+     * `JSON.stringify` 会**丢掉值为 undefined 的键**，于是线上发出的是一个没有
+     * `payload` 字段的 `client-request`。host 侧用 zod 校验信封
+     * （`payload: z.unknown()`，键必须存在），缺键直接判为
+     * `invalid client-request message`，整个端点的数据都取不回来
+     * （表现为账号管理页空白）。
+     *
+     * 本插件的本地类型把 payload 声明成可选（`payload?: unknown`），所以 tsc
+     * 不会拦住这种写法；DSH 真实契约是必填（`payload: unknown`）。这也是那类
+     * 「本地类型比真实契约宽松」导致静默故障的例子——传 `{}` 才是与线上一致
+     * 的做法，而且 host 的只读端点本来就不读它。
+     */
+    void rpc.call<T>(CODEBUDDY_AUTH_CHANNEL, endpoint, {}).then((result) => {
       if (!active) return
       setData(result.ok ? result.value : undefined)
       setLoading(false)
