@@ -111,9 +111,9 @@ describe('台账持久化（迁移到 nanostores 后）', () => {
  * 看不见的外部可变状态——组件里 `useMemo(() => readResources(id), [rows])` 在
  * 台账更新后不会重算（`rows` 没变），分类会一直停在旧值。
  *
- * 旧实现靠一个手工 state（`ledgerTick`）在写完台账后自增来触发重算，并为
- * 「lint 认为该依赖多余」挂 eslint-disable。现在改为 `useStore` 订阅 atom +
- * 纯函数 `resourcesFrom(snapshot, id)` 读取，依赖变成真实可校验的。
+ * 旧实现靠一个手工 state（`ledgerTick`）在写完台账后自增来触发重算，还要压制
+ * 「lint 认为该依赖多余」的告警。现在改为 `useStore` 订阅 atom + 纯函数
+ * `resourcesFrom(snapshot, id)` 读取，依赖变成真实可校验的。
  * 这组测试把「订阅确实会被通知、快照引用确实会变」固定下来——否则那次重构的
  * 前提（atom 可订阅、且写操作改变引用）只是口耳相传。
  */

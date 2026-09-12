@@ -108,8 +108,8 @@ function AccountsPage({
 
   // 台账是持久化 nanostores atom，用 useStore 订阅它：
   // 台账一变就重渲染，`resourcesByAccount` 也随之重算——不再需要手工 tick。
-  // （旧写法靠 `ledgerTick` state 当信号，并为「lint 认为该依赖多余」挂
-  // eslint-disable；订阅 atom 把外部可变状态变成 React 看得见的依赖。）
+  // （旧写法靠 `ledgerTick` state 当信号，还得为「lint 认为该依赖多余」压制
+  // 告警；订阅 atom 把外部可变状态变成了 React 看得见的依赖。）
   const ledger = useStore(resourceHistoryStore)
   const rows = data?.accounts ?? []
 

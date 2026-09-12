@@ -141,9 +141,9 @@ export function resourcesFrom(ledger: unknown, accountId: string): ResourceSnaps
  * 可变状态**。组件里 `useMemo(() => readResources(id), [rows])` 在台账更新后
  * 仍会拿到旧值——`rows` 没变、memo 就不重算。
  *
- * 旧写法靠手工 state（`ledgerTick`）在写完台账后自增来触发重算，并为「lint
- * 认为该依赖多余」挂一条 eslint-disable。订阅 atom 才是根治：台账一变就重
- * 渲染，依赖变得真实可校验，手工信号与豁免都可删除。
+ * 旧写法靠手工 state（`ledgerTick`）在写完台账后自增来触发重算，还要压制
+ * 「lint 认为该依赖多余」的告警。订阅 atom 才是根治：台账一变就重渲染，依赖
+ * 变得真实可校验，手工信号与告警压制都可删除。
  */
 export const resourceHistoryStore = $history
 
