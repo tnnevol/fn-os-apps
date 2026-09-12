@@ -266,7 +266,7 @@ describe('dsh-fnos package contract', () => {
     const compatibility = JSON.parse(await readFile(new URL('../../compatibility.json', import.meta.url), 'utf8')) as {
       dshPluginApi: { version: string, packages: string[] }
     }
-    expect(compatibility.dshPluginApi.version).toBe('0.1.2-rc.1')
+    expect(compatibility.dshPluginApi.version).toBe('0.1.5-rc.2')
     expect(compatibility.dshPluginApi.packages).toEqual([
       '@deepseek-ai/dsh-api-remotes',
       '@deepseek-ai/dsh-session',

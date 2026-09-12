@@ -312,7 +312,7 @@ export class CodeBuddyAdapter extends LlmAdapter {
 
   /**
    * 绑定模型元数据并派发到一代适配器调用。保持显式实现而不是继承，这样
-   * 调用路径不依赖 host 解析到哪个 dsh-llm 副本：支持区间（>=0.1.2-rc.1）
+   * 调用路径不依赖 host 解析到哪个 dsh-llm 副本：支持区间（>=0.1.5-rc.2）
    * 内的每个副本都带有这个默认实现，此覆写与其等价。
    */
   override async prepareCall(
@@ -610,7 +610,7 @@ export class CodeBuddyAdapter extends LlmAdapter {
           // harness 归因（`deepseek-harness/x.y.z (+url)`），但那与本服务的要求
           // 直接冲突——实测（真实凭据）：
           //   UA = CLI/2.148.0 CodeBuddy/2.148.0        → HTTP 200
-          //   UA = deepseek-harness/0.1.2-rc.1 (+url)   → HTTP 400 code=11128
+          //   UA = deepseek-harness/0.1.5-rc.2 (+url)   → HTTP 400 code=11128
           //   UA = harness/... CLI/...（拼接）          → HTTP 400
           //   UA = CLI/... harness/...（追加）          → HTTP 400
           // 即：UA 里只要出现 harness 标识就被安全策略拦截。该字段在这里是**服务端

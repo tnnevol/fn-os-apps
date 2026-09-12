@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { createFnosCommandContribution, createFnosDirectorySource, listFnosCommandEntries, parseFnosCommandQuery } from '../../src/client/input-references/fnos-command-source.ts'
 import type { AuthorizedEntriesResult } from '../../src/client/services/authorized-directories-client.ts'
+import type { PopupSelectSpec } from '@deepseek-ai/dsh-client-ui-commands/client'
 
 const rootResult: AuthorizedEntriesResult = {
   entries: [
@@ -49,13 +50,14 @@ describe('fnOS /fn input trigger source', () => {
       list,
     )
     expect(command.name).toBe('fn')
-    expect(command.description).toBe('选择授权路径')
-    const options = await command.ui.options({ sessionId: 'session' as never }, new AbortController().signal)
+    expect(await command.description()).toBe('选择授权路径')
+    const popup = command.ui as PopupSelectSpec
+    const options = await popup.options({ sessionId: 'session' as never }, new AbortController().signal)
     expect(options[0]).toMatchObject({ label: 'apps/', detail: '存储空间1/apps' })
     expect(options).toHaveLength(4)
     expect(options[2]).toMatchObject({ label: 'src/', detail: '存储空间1/apps/src' })
     expect(list).toHaveBeenCalledWith('/vol1/apps')
-    await command.ui.onSelect(options[0]!, { sessionId: 'session' as never })
+    await popup.onSelect(options[0]!, { sessionId: 'session' as never })
     expect(insert).toHaveBeenCalledWith('session', expect.objectContaining({ path: '/vol1/apps', kind: 'directory' }))
   })
 

@@ -8,7 +8,7 @@ DSH_PACKAGE="@deepseek-ai/dsh"
 NPM_REGISTRY="${NPM_REGISTRY:-https://registry.npmjs.org/}"
 NODE_BIN="${NODE_BIN:-node}"
 NPM_BIN="${NPM_BIN:-npm}"
-NATIVE_CONFIG_FILE="${NATIVE_CONFIG_FILE:-${REPO_DIR}/.github/config/dsh-native-0.1.2-rc.1.env}"
+NATIVE_CONFIG_FILE="${NATIVE_CONFIG_FILE:-${REPO_DIR}/.github/config/dsh-native-0.1.5-rc.2.env}"
 NPM_COMMAND_TIMEOUT_SECONDS="${NPM_COMMAND_TIMEOUT_SECONDS:-900}"
 NODE_GYP_TIMEOUT_SECONDS="${NODE_GYP_TIMEOUT_SECONDS:-900}"
 NPM_FETCH_TIMEOUT_MS="${NPM_FETCH_TIMEOUT_MS:-120000}"
@@ -93,8 +93,11 @@ NATIVE_DEPENDENCY_DIR="${WORK_DIR}/native-build"
 mkdir -p "${NATIVE_DEPENDENCY_DIR}"
 (
     cd "${NATIVE_DEPENDENCY_DIR}"
+    export NPM_CONFIG_USERCONFIG="${NATIVE_DEPENDENCY_DIR}/.npmrc"
     run_command "initialize native build directory" "${NPM_COMMAND_TIMEOUT_SECONDS}" \
         "${NPM_BIN}" init --yes || exit $?
+    run_command "persist npm registry configuration" "${NPM_COMMAND_TIMEOUT_SECONDS}" \
+        "${NPM_BIN}" config set registry "${NPM_REGISTRY}" --location=user || exit $?
     run_command "install node-pty@${NODE_PTY_VERSION} and node-gyp@${NODE_GYP_VERSION}" "${NPM_COMMAND_TIMEOUT_SECONDS}" \
         "${NPM_BIN}" install \
         --ignore-scripts \
@@ -107,7 +110,6 @@ mkdir -p "${NATIVE_DEPENDENCY_DIR}"
         --fetch-retries="${NPM_FETCH_RETRIES}" \
         --fetch-retry-mintimeout=1000 \
         --fetch-retry-maxtimeout=10000 \
-        --registry="${NPM_REGISTRY}" \
         "node-pty@${NODE_PTY_VERSION}" \
         "node-gyp@${NODE_GYP_VERSION}" || exit $?
 ) || fail "unable to install fixed native build dependencies"

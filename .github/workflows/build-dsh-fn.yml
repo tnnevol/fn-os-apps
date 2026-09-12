@@ -53,12 +53,12 @@ jobs:
           sudo mv fnpack /usr/local/bin/fnpack
           fnpack --help
 
-      - name: Prepare DSH 0.1.2-rc.1 native dependency
+      - name: Prepare DSH 0.1.5-rc.2 native dependency
         id: prepare_dsh
         working-directory: apps/fn-deepseek-harness
         timeout-minutes: 20
         env:
-          NATIVE_CONFIG_FILE: ${{ github.workspace }}/.github/config/dsh-native-0.1.2-rc.1.env
+          NATIVE_CONFIG_FILE: ${{ github.workspace }}/.github/config/dsh-native-0.1.5-rc.2.env
           NPM_REGISTRY: https://registry.npmjs.org/
           NPM_COMMAND_TIMEOUT_SECONDS: 900
           NODE_GYP_TIMEOUT_SECONDS: 900
@@ -66,8 +66,8 @@ jobs:
           NPM_FETCH_RETRIES: 2
         run: bash ../../.github/scripts/prepare-dsh-native.sh
 
-      - name: Build FPK
-        run: pnpm exec fn-apps-cli build --fpk --app fn-deepseek-harness --skip-bundle-dsh-plugins
+      - name: Build FPK with the fixed DSH plugin bundle
+        run: pnpm exec fn-apps-cli build --fpk --app fn-deepseek-harness --bundle-dsh-plugins
 
       - name: Rename FPK with DSH version
         id: rename

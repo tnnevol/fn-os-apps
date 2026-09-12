@@ -154,7 +154,7 @@ export class CodeBuddyAuthService {
         }
       }
       connectionCtx.effect(() => {
-        // dsh 0.1.2-rc.1 移除了按通道的 `{ authority: 'loopback' }`
+        // dsh 0.1.5-rc.2 移除了按通道的 `{ authority: 'loopback' }`
         // 信任选项：现在，每个注册的通道都依托连接自身的浏览器
         // 鉴权与 Host/Origin 围栏，而 Web 设置页已经满足
         // 这些要求。

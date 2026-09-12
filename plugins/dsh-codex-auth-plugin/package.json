@@ -2,7 +2,7 @@
   "name": "@tnnevol/dsh-codex-auth",
   "displayName": "Codex Auth",
   "description": "Standalone ChatGPT OAuth account management for DeepSeek Harness.",
-  "version": "0.1.2-rc.1.4",
+  "version": "0.1.5-rc.2.4",
   "author": "tnnevol",
   "repository": {
     "type": "git",
@@ -76,7 +76,7 @@
     }
   },
   "peerDependencies": {
-    "@earendil-works/pi-ai": "^0.84.2",
+    "@earendil-works/pi-ai": "^0.85.1",
     "@deepseek-ai/cordis": "catalog:",
     "@deepseek-ai/dsh-api-remotes": "catalog:dsh",
     "@deepseek-ai/dsh-api-session-controller": "catalog:dsh",
@@ -104,7 +104,7 @@
   },
   "devDependencies": {
     "@tnnevol/dsh-semi-ui": "workspace:*",
-    "@earendil-works/pi-ai": "^0.84.2",
+    "@earendil-works/pi-ai": "catalog:",
     "@deepseek-ai/cordis": "catalog:",
     "@deepseek-ai/dsh-api-remotes": "catalog:dsh",
     "@deepseek-ai/dsh-api-session-controller": "catalog:dsh",

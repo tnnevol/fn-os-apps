@@ -61,6 +61,7 @@ export function createCodexAdapter(
     retryPolicy: resolveRetryPolicy(undefined, 'dsh-codex-auth-plugin retryPolicy'),
     configuredMaxTokens: new Map(),
     piProvider: requestProvider(provider),
+    modelErrors: new Map(),
   }]])
   const models: MutableModels = createModels({ credentials })
   models.setProvider(provider)

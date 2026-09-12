@@ -243,7 +243,7 @@ export function createFnosCommandContribution(
 ): CommandContribution {
   return {
     name: FN_COMMAND,
-    description: t('fnDirectoryCommandDescription'),
+    description: () => t('fnDirectoryCommandDescription'),
     available: () => true,
     ui: {
       kind: 'popupSelect',
