@@ -514,3 +514,82 @@ describe('缓存写已移出统计口径', () => {
     for (const day of result.days) expect(day).not.toHaveProperty('write')
   })
 })
+
+describe('超长窗口的截断方向：保住最新数据（回归）', () => {
+  /**
+   * 上游缺陷：逐日行曾「从 `clientStart` 往后铺 `dayCount` 行」，超长窗口被
+   * 截掉的是**尾部**——最靠近今天的那几十天没有对应日行槽位，
+   * `dayRows.get(eventDay)` 返回 undefined，这些事件一天都进不去；而 `totals`
+   * 照常累加（它用的是独立下界）。结果是「总量对、逐日图少一截最新数据」，
+   * 且两者来自同一次请求、界面上看不出任何异常。
+   *
+   * 修复后逐日行从 `clientEnd` 往回铺（丢弃最早），并且 totals 的下界与逐日行
+   * 覆盖范围对齐，两个口径永远一致。
+   *
+   * 虽然客户端范围键最长只有 90d（该分支不可达），但 host 接受任意时间戳，
+   * 直接调 RPC 就能触发——这组测试锁住行为。
+   */
+  const DAY = 86_400_000
+  const MAX_RANGE_DAYS = 365
+
+  /** 一个含「很旧」与「今天」两条事件、窗口远超上限的会话。 */
+  function overlongQuery(): { query: SessionQueryService, now: number } {
+    const now = Date.now()
+    const header = { id: 's-overlong', cwd: '/w/demo' }
+    return {
+      now,
+      query: {
+        async listSessions() { return [{ header, live: false, persisted: true }] },
+        async observeSession(id: string) {
+          return {
+            header: { id, cwd: '/w/demo' },
+            events: [
+              // 500 天前：超出 365 行上限，且是最早的一端 —— 应当被丢弃。
+              event(now - 500 * DAY, 'codebuddy', 'm', 1, 0),
+              // 60 天前：在「最新 365 天」里，必须被逐日行接住。
+              event(now - 60 * DAY, 'codebuddy', 'm', 10, 0),
+              // 今天：最近的数据，**绝不能**因为截断而丢失。
+              event(now, 'codebuddy', 'm', 100, 0),
+            ],
+          } as never
+        },
+      },
+    }
+  }
+
+  /** 逐日行数固定为上限，且覆盖到「今天」。 */
+  it('逐日行数夹到 365，而不是按请求天数铺满数万行', async () => {
+    const { query } = overlongQuery()
+    const result = await collectCodeBuddyTokenStats(query, windowOfDays(1000))
+    expect(result.days).toHaveLength(MAX_RANGE_DAYS)
+    expect(result.rangeDays).toBe(MAX_RANGE_DAYS)
+  })
+
+  it('截断后仍覆盖「今天」（丢弃最早的天，而不是砍掉最近的）', async () => {
+    const { query } = overlongQuery()
+    const result = await collectCodeBuddyTokenStats(query, windowOfDays(1000))
+    const today = new Date().toLocaleDateString('en-CA') // YYYY-MM-DD（本地）
+    const last = result.days[result.days.length - 1]
+    expect(last?.day).toBe(today)
+    // 60 天前那条也必须落在逐日行里（它距终点 60 天 ≤ 365）。
+    const sixtyAgo = new Date(Date.now() - 60 * DAY).toLocaleDateString('en-CA')
+    expect(result.days.some(row => row.day === sixtyAgo)).toBe(true)
+  })
+
+  it('逐日行之和与 totals 口径一致（截断不再让两者分叉）', async () => {
+    const { query } = overlongQuery()
+    const result = await collectCodeBuddyTokenStats(query, windowOfDays(1000))
+    const daySum = result.days.reduce((sum, row) => sum + row.total, 0)
+    // 500 天前那条被逐日行丢弃，totals 也必须丢弃它 —— 两者同为 110。
+    expect(daySum).toBe(110)
+    expect(result.totals.total).toBe(110)
+  })
+
+  it('窗口不超过上限时不发生任何截断（正常路径行为不变）', async () => {
+    const { query } = overlongQuery()
+    const result = await collectCodeBuddyTokenStats(query, windowOfDays(90))
+    expect(result.days).toHaveLength(90)
+    // 90 天窗口里只有「今天」那条（60 天前也在窗口内 → 两条）。
+    expect(result.totals.total).toBe(110)
+  })
+})

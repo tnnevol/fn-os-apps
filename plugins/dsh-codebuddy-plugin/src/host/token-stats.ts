@@ -157,19 +157,31 @@ export async function collectCodeBuddyTokenStats(
   const clientStart = request.startTime
   const clientEnd = request.endTime
   /**
-   * 逐日行数 = 窗口跨过的本地日数（含两端）。
+   * 逐日行数 = 窗口跨过的本地日数（含两端），上限 `MAX_RANGE_DAYS`。
    *
-   * 上限仍是 `MAX_RANGE_DAYS`——「窗口」由客户端范围键决定（最长 365），
-   * 服务端不再用 `days` 概念，但行为要保持「请求一年窗口就返回 365 行」的
-   * 兼容。夹到 `[1, MAX_RANGE_DAYS]`：超一年不撑爆响应、超短也不返回 0 行。
+   * **截断方向很关键：从 `clientEnd`（最新）往回铺，丢弃最早的天。**
+   *
+   * 曾经是「从 `clientStart` 往后铺 dayCount 行」，于是超长窗口被截掉的是
+   * **尾部**——最靠近今天的那几十天没有对应日行，`dayRows.get(eventDay)` 返回
+   * undefined，这些事件不进任何一天，而 `totals` 却照常累加（它用的是独立的
+   * `rangeCompareStart`）。结果就是「总量对、逐日图少一截最新数据」，且因为
+   * 两者都来自同一次请求，界面上看不出任何异常迹象。
+   *
+   * 现在逐日行的下界随 dayCount 收紧（`dayWindowStart`），totals 也用同一个
+   * 下界，两个口径永远一致。
+   *
+   * 上限存在的意义只是「不让超长窗口撑爆响应」：客户端范围键最长 90d，正常
+   * 路径不会触及；万一有人直接调 RPC 传一年以上，返回 365 行而不是数万行。
+   *
+   * 天数用 `floor(diff / DAY) + 1`（含两端）：端点由客户端按**本地 0 点**算出
+   * （见 client/token-range.ts 的 resolveRange），差必然是整天，此时与之前的
+   * `round` 写法结果完全一致；非整天端点（直接调 RPC 的调用方）下 `floor` 单调
+   * 无跳变，不会出现「差 12 小时算 2 天、差 1 天也算 2 天」这类抖动。
    */
-  const dayCount = Math.max(
-    1,
-    Math.min(
-      MAX_RANGE_DAYS,
-      Math.round((clientEnd - clientStart) / DAY_MS) + 1,
-    ),
-  )
+  const requestedDays = Math.floor((clientEnd - clientStart) / DAY_MS) + 1
+  const dayCount = Math.max(1, Math.min(MAX_RANGE_DAYS, requestedDays))
+  /** 逐日行覆盖的起点：以 `clientEnd` 为终点、向前 `dayCount` 天。 */
+  const dayWindowStart = clientEnd - (dayCount - 1) * DAY_MS
   /**
    * 活动热力图窗口：[clientEnd - 364 天, clientEnd]。
    *
@@ -180,15 +192,21 @@ export async function collectCodeBuddyTokenStats(
   const heatmapEnd = clientEnd
   const heatmapStart = heatmapEnd - (ACTIVITY_RANGE_DAYS - 1) * DAY_MS
   /**
-   * 比较用的下界：allTime 时放宽到 -Infinity，让 3 年前的事件也能进 totals；
-   * 逐日行的起点仍用真实端点（**不能**用 -Infinity 当起点 + i*DAY_MS，否则
-   * 日期键会变成 'NaN-NaN-NaN'，这是 NaN 系列 bug 的来源）。
+   * 比较用的下界：与**逐日行覆盖范围**对齐（不是原始 `clientStart`）。
+   *
+   * 对齐的理由：totals 与逐日行是同一份数据的两种呈现，读者会把「逐日图各天
+   * 之和」与「总量」对照。截断发生时若 totals 仍按 `clientStart` 统计，两者
+   * 就对不上——而且对不上的部分是「总量更大」，看起来像图表漏画了数据。
+   *
+   * allTime 时放宽到 -Infinity，让 3 年前的事件也能进 totals；逐日行的起点
+   * 仍用真实时间戳（**不能**用 -Infinity 当起点 + i*DAY_MS，否则日期键会变成
+   * 'NaN-NaN-NaN'，那是另一类历史缺陷）。
    */
-  const rangeCompareStart = allTime ? Number.NEGATIVE_INFINITY : clientStart
+  const rangeCompareStart = allTime ? Number.NEGATIVE_INFINITY : dayWindowStart
   const activityCompareStart = allTime ? Number.NEGATIVE_INFINITY : heatmapStart
   const dayRows = new Map<string, CodeBuddyTokenDay>()
   for (let index = 0; index < dayCount; index += 1) {
-    const day = localDay(clientStart + index * DAY_MS)
+    const day = localDay(dayWindowStart + index * DAY_MS)
     dayRows.set(day, { day, ...emptyBucket(), activeSessions: 0 })
   }
   const activityRows = new Map<string, CodeBuddyTokenActivity>()
