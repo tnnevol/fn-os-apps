@@ -68,9 +68,13 @@ describe('DimensionToggle：结构与交互', () => {
   })
 })
 
-describe('两个面板都接上了切换', () => {
-  it('用量分布：extra 传 DimensionToggle，内容按维度分支', () => {
-    const block = PANEL.slice(PANEL.indexOf("title={t('tokenDistribution')}"), PANEL.indexOf("title={t('tokenModels')}"))
+describe('分布面板接上了切换', () => {
+  /** 分布面板的代码段：从它的 title 到下一个面板（会话排名）为止。 */
+  const DISTRIBUTION_BLOCK = (): string =>
+    PANEL.slice(PANEL.indexOf("title={t('tokenDistribution')}"), PANEL.indexOf("title={t('tokenTopSessions')}"))
+
+  it('用量分布：卡片内 toolbar 传 DimensionToggle，内容按维度分支', () => {
+    const block = DISTRIBUTION_BLOCK()
     expect(block).toContain('<DimensionToggle dimension={distributionDimension}')
     // 两个维度各渲染一种列表
     expect(block).toMatch(/distributionDimension === 'workspace'/)
@@ -87,9 +91,19 @@ describe('两个面板都接上了切换', () => {
   })
 
   it('分布面板独占一行（不再包在双栏容器里）', () => {
-    const block = PANEL.slice(PANEL.indexOf("title={t('tokenDistribution')}"), PANEL.indexOf("title={t('tokenTopSessions')}"))
+    const block = DISTRIBUTION_BLOCK()
     expect(block).toContain('<DimensionToggle')
     expect(block).not.toContain('dsh-codebuddy-token-columns')
+  })
+
+  it('切片边界落在下一个面板上（不依赖已删除的 tokenModels）', () => {
+    // 曾经用 `PANEL.indexOf("title={t('tokenModels')}")` 当右边界；该面板删除后
+    // indexOf 返回 -1，slice(start, -1) 会**静默**切到「除最后一行外的全部内容」——
+    // 断言看似通过，实际覆盖面已经漂移。这条守住边界本身有效。
+    expect(PANEL.indexOf("title={t('tokenTopSessions')}")).toBeGreaterThan(-1)
+    expect(PANEL.indexOf("title={t('tokenDistribution')}")).toBeGreaterThan(-1)
+    expect(PANEL.indexOf("title={t('tokenDistribution')}"))
+      .toBeLessThan(PANEL.indexOf("title={t('tokenTopSessions')}"))
   })
 })
 
@@ -111,15 +125,39 @@ describe('副标题移除（仅限这两个模块）', () => {
 })
 
 describe('样式与位置：按钮组放在排行卡片内部', () => {
-  it('维度切换渲染在面板头部（extra 插槽）', () => {
-    // 与日期范围控件同一行：两面板的能力重合后，维度切换属于面板级视角。
-    const block = PANEL.slice(
-      PANEL.indexOf("title={t('tokenDistribution')}"),
-      PANEL.indexOf("title={t('tokenTopSessions')}"),
-    )
-    expect(block).toMatch(/extra=\{<DimensionToggle/)
-    // 卡片内部不再有维度 toolbar
-    expect(block).not.toContain('dsh-codebuddy-token-card-toolbar')
+  const DISTRIBUTION_BLOCK = (): string =>
+    PANEL.slice(PANEL.indexOf("title={t('tokenDistribution')}"), PANEL.indexOf("title={t('tokenTopSessions')}"))
+
+  it('维度切换渲染在排行卡片内部的 toolbar，而不是面板头部', () => {
+    // 用户要求：按钮组切换的是**这份列表**的统计口径，与列表是同一个整体；
+    // 放在面板头部（与固定时间档同排）会让人以为它控制整个面板（含时间档）。
+    const block = DISTRIBUTION_BLOCK()
+    const toolbarAt = block.indexOf('dsh-codebuddy-token-card-toolbar')
+    const toggleAt = block.indexOf('<DimensionToggle')
+    expect(toolbarAt).toBeGreaterThan(-1)
+    expect(toggleAt).toBeGreaterThan(toolbarAt)   // toggle 在 toolbar 容器**内部**
+    // 面板头部不再传 extra（该插槽已随本次改动移除）
+    expect(block).not.toContain('extra=')
+  })
+
+  it('面板头部不再有 dimension 按钮组（与时间档不同排）', () => {
+    // 头部区段 = TokenPanel 定义里的 token-panel-head 到 PanelBody；里面只应有
+    // 标题、时间档与刷新。DimensionToggle 只出现在分布面板的卡片内容里。
+    const panelDef = PANEL.slice(PANEL.indexOf('dsh-codebuddy-token-panel-head'), PANEL.indexOf('<PanelBody loading={loading}>'))
+    expect(panelDef).not.toBe('')
+    expect(panelDef).not.toContain('<DimensionToggle')
+    expect(panelDef).toContain('<RangeToggle')
+    // 分布面板代码段里 DimensionToggle 出现在卡片容器之后（即卡片内部）
+    const block = DISTRIBUTION_BLOCK()
+    expect(block.indexOf('dsh-codebuddy-token-card-toolbar')).toBeLessThan(block.indexOf('<DimensionToggle'))
+  })
+
+  it('dimension 按钮组在窄屏占满宽度（卡片内部规则）', () => {
+    expect(SCSS).toMatch(/\.dsh-codebuddy-token-card-toolbar \.dsh-codebuddy-panel-dimension \{ width: 100%; \}/)
+  })
+
+  it('toolbar 与列表之间有间距（不贴着排行首行）', () => {
+    expect(SCSS).toMatch(/\.dsh-codebuddy-token-card-toolbar\s*\{[^}]*margin-bottom:\s*14px/)
   })
 
   it('使用独立的 class，不与时间周期按钮组混用', () => {

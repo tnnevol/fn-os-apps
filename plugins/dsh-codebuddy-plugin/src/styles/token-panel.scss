@@ -324,6 +324,13 @@
 .dsh-codebuddy-token-activity-scale i { width: 10px; height: 10px; border-radius: 3px; background: var(--dsw-alias-bg-layer-2); }
 
 .dsh-codebuddy-token-list-card { padding: 15px 20px; }
+/* 排行卡片内部的维度切换（按工作区/按模型）。
+   与列表之间留出间距；靠左与序号列对齐（列表首列就是序号）。 */
+.dsh-codebuddy-token-card-toolbar {
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 14px;
+}
 .dsh-codebuddy-token-breakdown-list { display: flex; flex-direction: column; gap: 16px; }
 .dsh-codebuddy-token-breakdown-row { display: grid; grid-template-columns: minmax(120px, 1.1fr) minmax(70px, 1fr) auto; align-items: center; gap: 12px; min-width: 0; }
 .dsh-codebuddy-token-breakdown-label { display: flex; align-items: center; gap: 8px; min-width: 0; }
@@ -354,6 +361,8 @@
   .dsh-codebuddy-token-toolbar-actions .dsh-codebuddy-panel-range { justify-content: flex-start; }
   /* 三个选项在窄屏可能换行，让按钮组占满宽度以免被压扁。 */
   .dsh-codebuddy-token-panel-actions .dsh-codebuddy-panel-range { width: 100%; }
+  /* 维度切换在排行卡片内部，窄屏同样占满宽度。 */
+  .dsh-codebuddy-token-card-toolbar .dsh-codebuddy-panel-dimension { width: 100%; }
   .dsh-codebuddy-token-overview-head { align-items: flex-start; flex-direction: column; }
   .dsh-codebuddy-token-overview-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .dsh-codebuddy-token-overview-stats .dsh-codebuddy-panel-stat:nth-child(odd) { border-left: 0; }

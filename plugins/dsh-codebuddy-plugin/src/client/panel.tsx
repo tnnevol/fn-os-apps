@@ -269,13 +269,13 @@ function CreditsOverview({ rows, t }: { rows: readonly PanelAccountRow[], t: Tra
 
 /** 一个 TokenPanel 容器：档位按钮 + 刷新 + content。
  *
- * 历史版本头部还包含日期范围选择器；该业务已下线——面板只保留固定档位
- * (today / 7d / 30d)，不再让用户选区间，所以 `dates` / `onDatesChange` prop
- * 也被一并移除。 */
-function TokenPanel({ title, hint, extra, options, range, onRangeChange, refreshLabel, loading, onRefresh, children, t }: {
+ * 历史版本头部还包含日期范围选择器与 `extra` 插槽；两者都已下线——
+ *  - 日期范围：面板只保留固定档位 (today / 7d / 30d)，不再让用户选区间；
+ *  - `extra`：唯一使用者（维度切换）已移入排行卡片内部，见 TokenStatsPage。
+ * 概览/趋势/分布/会话四个面板头部现在结构一致：标题 + 档位 + 刷新。 */
+function TokenPanel({ title, hint, options, range, onRangeChange, refreshLabel, loading, onRefresh, children, t }: {
   title: string
   hint?: string
-  extra?: ReactNode
   options: readonly TokenRangeKey[]
   range: TokenRangeKey
   onRangeChange: (value: TokenRangeKey) => void
@@ -292,7 +292,6 @@ function TokenPanel({ title, hint, extra, options, range, onRangeChange, refresh
           <div className="dsh-codebuddy-panel-section-title"><strong>{title}</strong>{hint !== undefined && hint.length > 0 ? <span>{hint}</span> : null}</div>
         </div>
         <div className="dsh-codebuddy-token-panel-actions">
-          {extra}
           <RangeToggle
             options={options}
             range={range}
@@ -444,7 +443,6 @@ function TokenStatsPage({ rpc, t }: { rpc: ConnectionRpc, t: Translate }): React
       </TokenPanel>
       <TokenPanel
         title={t('tokenDistribution')}
-        extra={<DimensionToggle dimension={distributionDimension} onChange={setDistributionDimension} t={t} />}
         options={optionsFor('other')}
         range={distributionRange}
         onRangeChange={setDistributionRange}
@@ -454,6 +452,11 @@ function TokenStatsPage({ rpc, t }: { rpc: ConnectionRpc, t: Translate }): React
         onRefresh={distribution.reload}
       >
         <DshCard className="dsh-codebuddy-token-list-card">
+          {/* 维度切换放在**排行卡片内部**：它切换的是这份列表的统计口径，与列表
+              是同一个整体；放在面板头部（与时间档同排）会显得像在控制整个面板。 */}
+          <div className="dsh-codebuddy-token-card-toolbar">
+            <DimensionToggle dimension={distributionDimension} onChange={setDistributionDimension} t={t} />
+          </div>
           {distribution.data === undefined
             ? <div className="dsh-codebuddy-token-empty" />
             : distributionDimension === 'workspace'
