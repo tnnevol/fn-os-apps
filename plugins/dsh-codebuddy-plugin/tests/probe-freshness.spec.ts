@@ -58,30 +58,32 @@ describe('formatProbeAge：分档文案', () => {
 })
 
 describe('面板接线', () => {
-  const PANEL = readFileSync(
-    '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/client/panel.tsx',
+  const CARD = readFileSync(
+    '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/client/ui/account-card.tsx',
+    'utf8',
+  )
+  const TYPES = readFileSync(
+    '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/client/panel-types.ts',
     'utf8',
   )
 
   it('卡片使用 formatProbeAge 且为 null 时不渲染', () => {
-    expect(PANEL).toMatch(/const probeAge = formatProbeAge\(row\.probedAt\)/)
-    expect(PANEL).toMatch(/\{probeAge !== null && \(/)
+    expect(CARD).toMatch(/const probeAge = formatProbeAge\(row\.probedAt\)/)
+    expect(CARD).toMatch(/\{probeAge !== null && \(/)
   })
 
   it('区分「来自缓存」与「一直没刷新」两种陈旧', () => {
-    // 前者是「刷新了但拿的是缓存快照」，后者是「面板开着没动过」。
-    expect(PANEL).toMatch(/row\.probedFromCache === true \? `缓存于 \$\{probeAge\}` : probeAge/)
+    expect(CARD).toMatch(/row\.probedFromCache === true \? `缓存于 \$\{probeAge\}` : probeAge/)
   })
 
   it('查询失败与额度为 0 是两种状态', () => {
-    // 失败：状态块 + 失败原因 tooltip；额度 0：正常卡片显示 0。
-    expect(PANEL).toMatch(/!row\.creditOk/)
-    expect(PANEL).toMatch(/DshTooltip content=\{row\.probeError\}/)
+    expect(CARD).toMatch(/!row\.creditOk/)
+    expect(CARD).toMatch(/DshTooltip content=\{row\.probeError\}/)
   })
 
   it('行类型透出 host 的三个新字段', () => {
     for (const f of ['probedAt?: number', 'probedFromCache?: boolean', 'probeError?: string | null']) {
-      expect(PANEL).toContain(f)
+      expect(TYPES).toContain(f)
     }
   })
 })

@@ -57,14 +57,19 @@ describe('Skeleton 的 loading 分支语义', () => {
 })
 
 describe('面板骨架的实现方式', () => {
-  const panel = readFileSync(
-    '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/client/panel.tsx',
+  // 骨架实现已迁到 ui/loading-shared.tsx（AccountsSkeleton / TokensSkeleton
+  // 由 `<DshSkeleton ... placeholder={(...) }>` 组成；占位内容各自与真实结构对齐）。
+  const shared = readFileSync(
+    '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/client/ui/loading-shared.tsx',
     'utf8',
   )
 
   it('两个骨架都把内容放进 placeholder，而不是 children', () => {
-    // 必须以 `<DshSkeleton` 开头（import 行里的 `DshSkeleton,` 不算）。
-    const tags = panel.match(/<DshSkeleton\s[\s\S]*?\/>/g) ?? []
+    // 必须以 `<DshSkeleton` 作为 JSX 元素的开始（import 行里的 `DshSkeleton,` 不算）；
+    // 也排除 JSDoc 注释里的小写反引号引用（如 `\` <DshSkeleton active>\``）——
+    // 真正的 JSX 元素紧跟其后是换行 + `active`（典型 props 在独立行），而注释里的
+    // `active>` 后面是反引号 + 句子，没有「换行 + 多行 props」。
+    const tags = shared.match(/<DshSkeleton\n\s+active\b[\s\S]*?\/>/g) ?? []
     expect(tags).toHaveLength(2)
     for (const tag of tags) {
       expect(tag).toContain('placeholder={(')

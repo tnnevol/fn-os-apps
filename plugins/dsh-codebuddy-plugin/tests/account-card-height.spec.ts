@@ -30,19 +30,26 @@ const SCSS = readFileSync(
 )
 
 describe('两个「拉取不到数据」的分支都走等高状态块', () => {
+  // 卡片实现已迁到 ui/account-card.tsx（`AccountCardImpl`）。本组断言的状态
+  // 块、tooltip 包裹、expired 标签都从该文件读。
+  const CARD = readFileSync(
+    '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/client/ui/account-card.tsx',
+    'utf8',
+  )
+
   it('积分查询失败用状态块，而不是裸的一行文字', () => {
     // 窗口不能太窄：曾用 200，加了 tooltip 包裹层后距离变成 321 就误报。
     // 要断言的是「该分支用了状态块」这一不变量，与包裹层数无关。
-    expect(PANEL).toMatch(/!row\.creditOk[\s\S]{0,400}dsh-codebuddy-account-body-state/)
+    expect(CARD).toMatch(/!row\.creditOk[\s\S]{0,400}dsh-codebuddy-account-body-state/)
   })
 
   it('查询失败时可看到失败原因（与「额度为 0」区分）', () => {
     // 失败：状态块 + 原因 tooltip；额度 0：正常卡片显示 0 —— 两者是不同状态。
-    expect(PANEL).toMatch(/DshTooltip content=\{row\.probeError\}/)
+    expect(CARD).toMatch(/DshTooltip content=\{row\.probeError\}/)
   })
 
   it('已离线也用状态块', () => {
-    expect(PANEL).toMatch(/dsh-codebuddy-account-body-state dsh-codebuddy-account-expired-pad/)
+    expect(CARD).toMatch(/dsh-codebuddy-account-body-state dsh-codebuddy-account-expired-pad/)
   })
 
   it('状态块给最小高度（否则文字挤在顶部、卡片显得空）', () => {
@@ -95,8 +102,12 @@ describe('改动不外溢到其它卡片网格', () => {
 })
 
 describe('账号卡片的套餐行只展示名称与到期日', () => {
-  const PANEL = readFileSync(
-    '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/client/panel.tsx',
+  const CARD = readFileSync(
+    '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/client/ui/account-card.tsx',
+    'utf8',
+  )
+  const RESOURCE_ROW = readFileSync(
+    '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/client/ui/resource-row.tsx',
     'utf8',
   )
   const INDEX_SCSS = readFileSync(
@@ -105,8 +116,8 @@ describe('账号卡片的套餐行只展示名称与到期日', () => {
   )
   /** 卡片内的套餐行（概览，最多两行）。 */
   const cardRow = (): string => {
-    const start = PANEL.indexOf('dsh-codebuddy-account-card-resources')
-    return PANEL.slice(start, PANEL.indexOf('</div>', PANEL.indexOf('credit-resource-meta', start)))
+    const start = CARD.indexOf('dsh-codebuddy-account-card-resources')
+    return CARD.slice(start, CARD.indexOf('</div>', CARD.indexOf('credit-resource-meta', start)))
   }
 
   it('不再出现「剩余 / 总值」', () => {
@@ -136,7 +147,8 @@ describe('账号卡片的套餐行只展示名称与到期日', () => {
   })
 
   it('详情弹框仍保留用量与进度条（只有卡片被简化）', () => {
-    const dialogRow = PANEL.slice(PANEL.indexOf('function ResourceRow'))
+    // 详情弹框的套餐行实现已迁到 ui/resource-row.tsx（`ResourceRowImpl`）。
+    const dialogRow = RESOURCE_ROW.slice(RESOURCE_ROW.indexOf('export function ResourceRowImpl'))
     expect(dialogRow).toContain('formatCredit(item.remaining)')
     expect(dialogRow).toContain('<DshProgress')
   })

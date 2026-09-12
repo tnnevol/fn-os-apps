@@ -13,8 +13,8 @@ import { readFileSync } from 'node:fs'
  * 同理，ButtonGroup 自动插入的 `<span class="semi-button-group-line-*">` 是组件
  * 正常产物，原生样式下渲染正常，不该强制 display:none。
  */
-const PANEL = readFileSync(
-  '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/client/panel.tsx',
+const TOGGLE = readFileSync(
+  '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/client/ui/range-toggle.tsx',
   'utf8',
 )
 const SCSS = readFileSync(
@@ -27,7 +27,7 @@ const INDEX_SCSS = readFileSync(
 )
 
 describe('RangeToggle 结构（Semi 原生主题）', () => {
-  const toggle = PANEL.slice(PANEL.indexOf('function RangeToggle'), PANEL.indexOf('function BreakdownList'))
+  const toggle = TOGGLE.slice(TOGGLE.indexOf('export function RangeToggle'), TOGGLE.indexOf('RangeToggleImpl = RangeToggle'))
 
   it('激活项用 Semi 的 solid + primary，其余用 borderless', () => {
     expect(toggle).toContain("theme={range === key ? 'solid' : 'borderless'}")
@@ -35,8 +35,6 @@ describe('RangeToggle 结构（Semi 原生主题）', () => {
   })
 
   it('ButtonGroup 上不传 theme / type（否则会覆盖子按钮，激活态失效）', () => {
-    // ButtonGroup 合并子 props 的顺序是 {disabled,size,type} → itm.props → rest，
-    // theme 不在其解构出的键里，会落进 rest 并覆盖子按钮。
     const groupTag = /<DshButtonGroup[\s\S]*?>/.exec(toggle)?.[0] ?? ''
     expect(groupTag).not.toContain('theme=')
     expect(groupTag).not.toContain('type=')
@@ -49,8 +47,7 @@ describe('RangeToggle 结构（Semi 原生主题）', () => {
 
   it('不使用 SplitButtonGroup（组件来自 facade 的 DshButtonGroup）', () => {
     expect(toggle).toContain('<DshButtonGroup')
-    // 只看 JSX 用法，不看注释（注释里会提到 SplitButtonGroup 作为对照说明）。
-    const code = PANEL.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '')
+    const code = TOGGLE.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '')
     expect(code).not.toContain('SplitButton')
   })
 })

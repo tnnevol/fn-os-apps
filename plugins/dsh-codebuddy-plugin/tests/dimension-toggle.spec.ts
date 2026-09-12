@@ -15,6 +15,9 @@ import { readFileSync } from 'node:fs'
 const PANEL = readFileSync(
   '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/client/panel.tsx', 'utf8',
 )
+const DIM_TOGGLE = readFileSync(
+  '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/client/ui/dimension-toggle.tsx', 'utf8',
+)
 const SCSS = readFileSync(
   '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/styles/token-panel.scss', 'utf8',
 )
@@ -26,9 +29,11 @@ const LOCALES_ZH = readFileSync(
 )
 
 describe('DimensionToggle：结构与交互', () => {
-  const toggle = PANEL.slice(
-    PANEL.indexOf('function DimensionToggle'),
-    PANEL.indexOf('一个统计面板的外壳'),
+  // 维度切换的实现迁到 ui/dimension-toggle.tsx。切片从 `export function
+  // DimensionToggle` 到文件末尾（实现是文件中最后一段，前面是 DIMENSIONS 常量
+  // 与类型定义，互不干扰）。
+  const toggle = DIM_TOGGLE.slice(
+    DIM_TOGGLE.indexOf('export function DimensionToggle'),
   )
 
   it('用 DshButtonGroup（互斥单选一组的语义）', () => {
@@ -44,9 +49,9 @@ describe('DimensionToggle：结构与交互', () => {
   })
 
   it('两个档位：workspace 与 model，顺序稳定（工作区在前）', () => {
-    const dims = PANEL.slice(
-      PANEL.indexOf('const DIMENSIONS'),
-      PANEL.indexOf('const DIMENSIONS') + 220,
+    const dims = DIM_TOGGLE.slice(
+      DIM_TOGGLE.indexOf('export const DIMENSIONS'),
+      DIM_TOGGLE.indexOf('export const DIMENSIONS') + 220,
     )
     expect(dims).toMatch(/key: 'workspace', labelKey: 'tokenByWorkspace'/)
     expect(dims).toMatch(/key: 'model', labelKey: 'tokenByModel'/)
@@ -117,24 +122,22 @@ describe('样式与位置：按钮组放在排行卡片内部', () => {
     expect(block).not.toContain('dsh-codebuddy-token-card-toolbar')
   })
 
-  it('日期选择器在窄屏占满宽度（头部 actions 规则）', () => {
-    expect(SCSS).toMatch(/\.dsh-codebuddy-token-panel-actions \.dsh-codebuddy-token-datepicker-scope \{ width: 100%; \}/)
-  })
-
-  it('配色作用域同时覆盖头部与弹层', () => {
-    expect(SCSS).toMatch(/\.dsh-codebuddy-token-panel-actions,\s*\n\.semi-popover \.semi-datepicker \{[^}]*--semi-color-primary:/)
-  })
-
   it('使用独立的 class，不与时间周期按钮组混用', () => {
-    // 混用会让「时间周期」的样式改动波及维度切换，反之亦然
-    expect(PANEL).toContain('dsh-codebuddy-panel-dimension')
+    // 混用会让「时间周期」的样式改动波及维度切换，反之亦然。
+    // 该 class 现在由 ui/dimension-toggle.tsx 提供：
+    expect(DIM_TOGGLE).toContain('dsh-codebuddy-panel-dimension')
     expect(PANEL).not.toMatch(/className="dsh-codebuddy-panel-range"[^>]*aria-label=\{t\('tokenDimension'\)\}/)
   })
 })
 
 describe('数据源：不需要动 host', () => {
   it('TokenStats 同时聚合 workspaces 与 models（两维度数据早已就绪）', () => {
-    expect(PANEL).toMatch(/workspaces: Array<\{ name: string, path\?: string, total: number/)
-    expect(PANEL).toMatch(/models: Array<\{ name: string, total: number/)
+    // 类型定义现在在 client/panel-types.ts。
+    const TYPES = readFileSync(
+      '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/client/panel-types.ts',
+      'utf8',
+    )
+    expect(TYPES).toMatch(/workspaces: Array<\{ name: string, path\?: string, total: number/)
+    expect(TYPES).toMatch(/models: Array<\{ name: string, total: number/)
   })
 })

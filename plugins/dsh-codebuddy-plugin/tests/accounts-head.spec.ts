@@ -32,6 +32,17 @@ const accountsBody = ((): string => {
   return nextFn === -1 ? rest : rest.slice(0, nextFn)
 })()
 
+/** hooks/use-auto-prefs.ts 中的 useAutoPrefs 函数体（包含三个 auto* 偏好的同步）。 */
+const HOOK = readFileSync(
+  '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/client/hooks/use-auto-prefs.ts',
+  'utf8',
+)
+/** components/CodeBuddySection.tsx（设置页组件，store 来源之一）。 */
+const SECTION = readFileSync(
+  '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/components/CodeBuddySection.tsx',
+  'utf8',
+)
+
 describe('添加账号入口', () => {
   it('操作卡已移除', () => {
     expect(PANEL).not.toContain('dsh-codebuddy-panel-action-card')
@@ -94,10 +105,16 @@ describe('动作区可容纳多个控件', () => {
 
 describe('骨架与真实结构对齐', () => {
   it('骨架不再画已移除的操作卡', () => {
-    const start = PANEL.indexOf('function AccountsSkeleton')
-    const rest = PANEL.slice(start + 1)
-    const nextFn = rest.indexOf('\nfunction ')
-    const body = nextFn === -1 ? rest : rest.slice(0, nextFn)
+    // 实现迁到 ui/loading-shared.tsx（`AccountsSkeleton`）。从该文件取整段函数体：
+    // 起点 `export function AccountsSkeleton`，到下一个 `\nexport ` 或文件末尾。
+    const shared = readFileSync(
+      '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/client/ui/loading-shared.tsx',
+      'utf8',
+    )
+    const start = shared.indexOf('export function AccountsSkeleton')
+    const rest = shared.slice(start + 1)
+    const nextExport = rest.indexOf('\nexport ')
+    const body = nextExport === -1 ? rest : rest.slice(0, nextExport)
     expect(body).not.toContain('panel-action-card')
     // 应与真实页面一致：先积分总览卡，再区块头。
     expect(body).toContain('dsh-codebuddy-panel-stat-card')
@@ -107,26 +124,31 @@ describe('骨架与真实结构对齐', () => {
 
 describe('自动切换账号开关', () => {
   it('账号页标题行有该开关', () => {
+    // AccountsPage 通过 `useAutoPrefs` 拿到三个开关值（hook 在另一文件）。
+    // 该断言改验：hook 返回的 `autoSwitch` 通过 prop 传给 `<AutoSwitchToggle>`。
+    expect(accountsBody).toContain('autoSwitchOn')
     expect(accountsBody).toContain('<AutoSwitchToggle')
   })
 
   it('开关状态与设置页共用同一个 store（底层同一存储键）', () => {
-    // 两处开关互为镜像：都读写 usage-prefs 里的同一个持久化 atom。
-    expect(PANEL).toContain('useStore($autoSwitch)')
-    expect(PANEL).toContain('$autoSwitch.set(checked)')
+    // store 是 hook 的来源；hook 与设置页都 useStore($autoSwitch)。
+    // （早期设置页还会就地写 `$autoSwitch.set(checked)`，那是另一回事——
+    // store 是同一份，不论写入发生在哪一处。）
+    expect(HOOK).toContain('useStore($autoSwitch)')
+    expect(SECTION).toMatch(/useStore\(\$autoSwitch\)/)
   })
 
   it('切换开关时同步到 host', () => {
-    // 用户在面板里拨动开关 → 推给 host。
+    // 用户在面板里拨动开关 → 推给 host（在 AccountsPage 的 onChange 内联里）。
     expect(accountsBody).toMatch(/rpc\.call\(CODEBUDDY_AUTH_CHANNEL, 'autoSwitch', \{ enabled: checked \}\)/)
   })
 
   it('挂载时**读** host 配置，而不是把本地值推上去', () => {
     // 曾经挂载时会推 { enabled: autoSwitchOn }，那会让 host 上更新的值被旧
     // localStorage 静默覆盖（实测：host false/25 被上推成 true/10）。
-    // 现在挂载走 autoPrefs 读通道，方向改为「host 为准」。
-    expect(accountsBody).toContain("'autoPrefs'")
-    expect(accountsBody).not.toMatch(/rpc\.call\(CODEBUDDY_AUTH_CHANNEL, 'autoSwitch', \{ enabled: autoSwitchOn \}\)/)
+    // 现在挂载走 autoPrefs 读通道，方向改为「host 为准」。读通道在 hook 里：
+    expect(HOOK).toContain("'autoPrefs'")
+    expect(HOOK).not.toMatch(/rpc\.call\(CODEBUDDY_AUTH_CHANNEL, 'autoSwitch', \{ enabled: autoSwitchOn \}\)/)
   })
 
   it('只传 enabled，不覆盖设置页维护的阈值', () => {
@@ -140,8 +162,15 @@ describe('自动切换账号开关', () => {
 })
 
 describe('自动切换开启时隐藏「设为当前账号」', () => {
+  // 卡片渲染已迁到 ui/account-card.tsx（`AccountCardImpl`）。条件 / 菜单由
+  // 该文件持有；AccountsPage 仅通过 prop `autoSwitch` 传入开关状态。
+  const CARD = readFileSync(
+    '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/client/ui/account-card.tsx',
+    'utf8',
+  )
+
   it('条件包含 autoSwitch 判断', () => {
-    expect(PANEL).toMatch(/if \(!row\.active && !autoSwitch\)/)
+    expect(CARD).toMatch(/if \(!row\.active && !autoSwitch\)/)
   })
 
   it('该标记由账号页传入，取自开关状态', () => {
@@ -150,24 +179,40 @@ describe('自动切换开启时隐藏「设为当前账号」', () => {
   })
 
   it('开启时菜单项确实不追加（判断作用于 push 之前）', () => {
-    const at = PANEL.indexOf('if (!row.active && !autoSwitch)')
+    const at = CARD.indexOf('if (!row.active && !autoSwitch)')
     expect(at).toBeGreaterThan(-1)
-    const body = PANEL.slice(at, at + 420)
-    expect(body).toContain("key=\"switch\"")
+    const body = CARD.slice(at, at + 420)
+    expect(body).toContain('key="switch"')
   })
 })
 
 describe('面板与设置页的开关保持同步', () => {
-  it('订阅偏好变化（面板关闭时组件仍挂载，否则会显示旧状态）', () => {
-    // 面板关闭只是 `return null`，组件不卸载 → useState 不会重读 localStorage。
-    // 若设置页改了自动切换，账号页会一直显示旧值，且卡片菜单的「设为当前账号」
-    // 按旧值隐藏/显示。
-    expect(accountsBody).toContain('subscribeUsagePref')
+  // 三个 auto* 偏好的同步封装在 hooks/use-auto-prefs.ts 的 `useAutoPrefs` 里。
+  // hookBody = useAutoPrefs 函数体（slice 到下一个 `\nfunction ` 或文件末尾），
+  // 保留三个开关的订阅 / host 同步形态。AccountsPage 本体通过 `useAutoPrefs`
+  // 读取展示值（`autoCheckin: autoCheckinOn` 等），不再自行订阅。
+  const HOOK = readFileSync(
+    '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/client/hooks/use-auto-prefs.ts',
+    'utf8',
+  )
+  const hookBody = ((): string => {
+    const start = HOOK.indexOf('export function useAutoPrefs')
+    const rest = HOOK.slice(start + 1)
+    const nextFn = rest.indexOf('\nfunction ')
+    return nextFn === -1 ? rest : rest.slice(0, nextFn)
+  })()
+
+  it('账号页通过 useAutoPrefs 取得三个开关（不再自行订阅）', () => {
+    // hook 体里订阅偏好变化；AccountsPage 仅消费返回值。
+    expect(hookBody).toContain('subscribeUsagePref')
+    expect(accountsBody).toContain('useAutoPrefs(rpc)')
+    expect(accountsBody).not.toMatch(/subscribeUsagePref\(/)
   })
 
   it('订阅回调里把三个开关同步到 host', () => {
-    const at = accountsBody.indexOf('subscribeUsagePref(')
-    const body = accountsBody.slice(at, at + 700)
+    expect(hookBody).toContain('subscribeUsagePref(')
+    const at = hookBody.indexOf('subscribeUsagePref(')
+    const body = hookBody.slice(at, at + 800)
     for (const store of ['$autoCheckin', '$autoTravel', '$autoSwitch']) {
       expect(body).toContain(`${store}.get()`)
     }
@@ -176,9 +221,9 @@ describe('面板与设置页的开关保持同步', () => {
   })
 
   it('订阅可取消（effect 返回 disposer）', () => {
-    const at = accountsBody.indexOf('subscribeUsagePref(')
+    const at = hookBody.indexOf('subscribeUsagePref(')
     // `return subscribeUsagePref(` 才会在卸载时注销监听；漏掉 return 会泄漏监听。
-    expect(accountsBody.slice(Math.max(0, at - 60), at)).toMatch(/return\s+$/)
+    expect(hookBody.slice(Math.max(0, at - 60), at)).toMatch(/return\s+$/)
   })
 })
 

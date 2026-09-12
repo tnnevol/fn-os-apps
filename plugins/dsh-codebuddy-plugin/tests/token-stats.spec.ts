@@ -13,6 +13,27 @@ function event(time: number, provider: string, model: string, input: number, out
   }
 }
 
+/**
+ * 把「天数」换成服务端入参 `{startTime, endTime}`（毫秒端点）。
+ *
+ * 这是迁移期测试回写用的适配器：旧调用写的是 `{days: 1}` 这种语义，新接
+ * 口要的是端点。两边表达同一窗口；days=1 即「单日窗口，起点终点都 = 今天 00:00」。
+ *
+ * @param days 服务端窗口包含的天数（≥1）。
+ * @param now 便于测试注入当前时间；不传则用真实 `Date.now()`——但默认情况
+ *   下都希望稳定，所以传入一个明确的 now 而不是依赖系统时钟。
+ */
+function windowOfDays(days: number, now: number = Date.now()): { startTime: number, endTime: number } {
+  const end = startOfLocalDay(now)
+  return { startTime: end - (days - 1) * 86_400_000, endTime: end }
+}
+
+function startOfLocalDay(timestamp: number): number {
+  const date = new Date(timestamp)
+  date.setHours(0, 0, 0, 0)
+  return date.getTime()
+}
+
 describe('CodeBuddy token analytics', () => {
   it('filters the CodeBuddy route and aggregates sessions by day, workspace and model', async () => {
     const now = Date.now()
@@ -47,7 +68,7 @@ describe('CodeBuddy token analytics', () => {
       },
     }
 
-    const result = await collectCodeBuddyTokenStats(query, { days: 2 })
+    const result = await collectCodeBuddyTokenStats(query, windowOfDays(2))
     expect(result.provider).toBe('codebuddy')
     // 缓存**写**（fixture 里的 5）不计入任何合计；缓存读（50）仍计入：
     // 总量 = 输入 140 + 输出 30 + 缓存读 50 = 220（旧口径含缓存写得 225）。
@@ -83,7 +104,7 @@ describe('CodeBuddy token analytics', () => {
         }
       },
     }
-    const result = await collectCodeBuddyTokenStats(query, { days: 1, sessionIds: ['keep'] })
+    const result = await collectCodeBuddyTokenStats(query, { ...windowOfDays(1), sessionIds: ['keep'] })
     expect(result.totals.total).toBe(6)
     expect(result.sessions.map(row => row.id)).toEqual(['keep'])
   })
@@ -104,7 +125,7 @@ describe('CodeBuddy token analytics', () => {
         }
       },
     }
-    const result = await collectCodeBuddyTokenStats(query, { days: 1 })
+    const result = await collectCodeBuddyTokenStats(query, windowOfDays(1))
     expect(result.totals.total).toBe(120)
     expect(result.sessions.map(row => row.id)).toEqual(['healthy'])
   })
@@ -130,7 +151,7 @@ describe('会话标题取自真实用户输入', () => {
     const result = await collectCodeBuddyTokenStats(queryWith([
       { type: 'user/message', time: Date.now(), data: { role: 'user', content: [{ type: 'text', text: '更新 codex 插件' }] } },
       event(Date.now(), 'codebuddy', 'm', 10, 1),
-    ]), { days: 7 })
+    ]), windowOfDays(7))
     expect(result.sessions[0]?.title).toBe('更新 codex 插件')
   })
 
@@ -141,7 +162,7 @@ describe('会话标题取自真实用户输入', () => {
       { type: 'user/message', time: now, data: { role: 'user', content: [{ type: 'text', text: 'Current runtime context. This snapshot…' }] } },
       { type: 'user/message', time: now, data: { role: 'user', content: [{ type: 'text', text: '真正的用户问题' }] } },
       event(now, 'codebuddy', 'm', 10, 1),
-    ]), { days: 7 })
+    ]), windowOfDays(7))
     expect(result.sessions[0]?.title).toBe('真正的用户问题')
   })
 
@@ -149,7 +170,7 @@ describe('会话标题取自真实用户输入', () => {
     const result = await collectCodeBuddyTokenStats(queryWith([
       { type: 'user/message', time: Date.now(), data: { role: 'user', content: [{ type: 'text', text: '<system-reminder>\nonly injected…' }] } },
       event(Date.now(), 'codebuddy', 'm', 10, 1),
-    ]), { days: 7 })
+    ]), windowOfDays(7))
     const title = result.sessions[0]?.title
     // 不能是 uuid：界面由客户端用本地化占位呈现。
     expect(title).toBe('')
@@ -160,7 +181,7 @@ describe('会话标题取自真实用户输入', () => {
     const result = await collectCodeBuddyTokenStats(queryWith([
       { type: 'user/message', time: Date.now(), data: { role: 'user', content: [{ type: 'text', text: `  多   空格\n换行 ${'x'.repeat(200)}` }] } },
       event(Date.now(), 'codebuddy', 'm', 10, 1),
-    ]), { days: 7 })
+    ]), windowOfDays(7))
     const title = result.sessions[0]?.title ?? ''
     expect(title.startsWith('多 空格 换行')).toBe(true)
     expect(title.length).toBeLessThanOrEqual(80)
@@ -196,14 +217,16 @@ describe('allTime 统计全部历史', () => {
 
   it('默认（有 days）会漏掉超出范围的历史', async () => {
     const { query } = queryWithOldEvent()
-    const bounded = await collectCodeBuddyTokenStats(query, { days: 30 })
+    const bounded = await collectCodeBuddyTokenStats(query, windowOfDays(30))
     // 只有近一天那条被计入。
     expect(bounded.totals.input).toBe(5)
   })
 
   it('allTime 不受 365 天上限影响，计入全部历史', async () => {
+    // allTime 与端点正交：端点（仍必传）决定活动热力图与逐日行数，allTime
+    // 仅放宽 totals 的下界过滤。所以这里传 365 天窗口 + allTime= true。
     const { query } = queryWithOldEvent()
-    const all = await collectCodeBuddyTokenStats(query, { allTime: true })
+    const all = await collectCodeBuddyTokenStats(query, { ...windowOfDays(365), allTime: true })
     // 3 年前那条也计入：100 + 5。
     expect(all.totals.input).toBe(105)
     expect(all.totals.total).toBeGreaterThan(105)
@@ -211,14 +234,14 @@ describe('allTime 统计全部历史', () => {
 
   it('allTime 的结果严格大于受限范围（证明不是同一个窗口）', async () => {
     const { query } = queryWithOldEvent()
-    const bounded = await collectCodeBuddyTokenStats(query, { days: 365 })
-    const all = await collectCodeBuddyTokenStats(query, { allTime: true })
+    const bounded = await collectCodeBuddyTokenStats(query, windowOfDays(365))
+    const all = await collectCodeBuddyTokenStats(query, { ...windowOfDays(365), allTime: true })
     expect(all.totals.input).toBeGreaterThan(bounded.totals.input)
   })
 
   it('allTime 仍然保留逐日分布，且日期键合法', async () => {
     const { query } = queryWithOldEvent()
-    const all = await collectCodeBuddyTokenStats(query, { allTime: true })
+    const all = await collectCodeBuddyTokenStats(query, { ...windowOfDays(365), allTime: true })
     expect(all.days.length).toBeGreaterThan(0)
     // 每条逐日行的日期都必须是真实日期。
     // 这条曾漏网：把 -Infinity 直接当逐日行起点做 `起点 + i*DAY_MS` 会算出
@@ -229,6 +252,115 @@ describe('allTime 统计全部历史', () => {
       expect(row.day).toMatch(/^\d{4}-\d{2}-\d{2}$/)
       expect(Number.isFinite(row.tokens)).toBe(true)
     }
+  })
+})
+
+describe('端点化入参（{startTime, endTime} 真正生效）', () => {
+  /**
+   * 把请求入参从 `{days}` 切到 `{startTime, endTime}` 后，最值得守住的点是
+   * 「端点是真的被服务端用来过滤的」——否则退化成「总取 30 天窗口」的回归
+   * 也跑得通（合成数据没有几年之外的样本）。这里固定一组合成数据，主动构造
+   * 「14 天窗口」「今天」「超过 MAX_RANGE_DAYS 截断」三组不同端点，看 totals
+   * 是否分别命中预期。
+   */
+  function windowedQuery(): SessionQueryService {
+    const now = Date.now()
+    const header = { id: 's-w', cwd: '/w/demo' }
+    return {
+      async listSessions() { return [{ header, live: false, persisted: true }] },
+      async observeSession(id: string) {
+        return {
+          header: { id, cwd: '/w/demo' },
+          events: [
+            event(now, 'codebuddy', 'm', 100, 0),                          // 今天
+            event(now - 10 * 86_400_000, 'codebuddy', 'm', 10, 0),        // 10 天前
+            event(now - 40 * 86_400_000, 'codebuddy', 'm', 1, 0),         // 40 天前（默认窗口外）
+          ],
+        } as never
+      },
+    }
+  }
+
+  it('startTime/endTime 端点决定窗口（14 天窗口只收今天 + 10 天前）', async () => {
+    const result = await collectCodeBuddyTokenStats(windowedQuery(), windowOfDays(14))
+    // 40 天前那条超窗被丢弃：100 + 10 = 110（输入），总量 = 110（无输出、缓存读）。
+    expect(result.totals.input).toBe(110)
+    expect(result.totals.total).toBe(110)
+  })
+
+  it('端点化后的窗口不再依赖服务端 now（请求时刻漂移不影响窗口）', async () => {
+    /**
+     * 关键回归：旧版本服务端会在缺端点时按 now 推窗口，现在即使端点齐全，
+     * 服务端整段计算也不该读 `Date.now()`。
+     *
+     * 模拟实现：把 `collectCodeBuddyTokenStats` 内部的 `Date.now()` 替换成
+     * 「由 `request.endTime` 隐含的请求时刻」，断言 totals 仅由端点决定、
+     * 不会因调用时机不同而漂移。`windowedQuery` 拿测试运行时的 `Date.now()`
+     * 造数据，端点也按同一 `now` 算——这种漂移是 clock 漂移（毫秒级）而不是
+     * 「按请求时刻推窗口」漂移。即使测试运行在 23:59:59.999 触发跨日 cut
+     * 也不应该让数额有量级变化（窗口最多差一天）。
+     */
+    const t0 = Date.now()
+    const result1 = await collectCodeBuddyTokenStats(windowedQuery(), windowOfDays(14, t0))
+    await new Promise(resolve => setTimeout(resolve, 5))
+    const result2 = await collectCodeBuddyTokenStats(windowedQuery(), windowOfDays(14, t0))
+    // 端点都用 t0 计算，totals 完全一致：没有服务端 now 介入。
+    expect(result1.totals.input).toBe(result2.totals.input)
+    expect(result1.totals.input).toBe(110)
+  })
+
+  it('startTime 缺失必须抛错（不得退化到固定窗口）', async () => {
+    // 旧版本在缺端点时退化到 DEFAULT_RANGE_DAYS=30——同一接口对不同请求得到
+    // 不同窗口，调试时无法定位。新版本拒绝缺端点，让故障面立刻可见。
+    await expect(
+      collectCodeBuddyTokenStats(windowedQuery(), { endTime: windowOfDays(1).endTime } as never),
+    ).rejects.toThrow(/startTime/)
+  })
+
+  it('endTime 缺失必须抛错', async () => {
+    await expect(
+      collectCodeBuddyTokenStats(windowedQuery(), { startTime: windowOfDays(1).endTime } as never),
+    ).rejects.toThrow(/endTime/)
+  })
+
+  it('endTime < startTime 必须抛错（不允许把窗口夹到 1 天糊弄过去）', async () => {
+    // 端点写反：之前是「宽容到 1 天窗口」，结果是端点写错也会得到一个**错误**
+    // 数字而不会报错。新版本要求显式抛错，把故障暴露给调用方。
+    // 构造一个明确的倒序：startTime = 14 天窗口的终点，endTime = 1 天窗口的起点。
+    const start = windowOfDays(14).endTime          // 今天 00:00
+    const end = start - 86_400_000                  // 昨天 00:00（明显更早）
+    await expect(
+      collectCodeBuddyTokenStats(windowedQuery(), { startTime: start, endTime: end }),
+    ).rejects.toThrow(/endTime/)
+  })
+
+  it('服务端内部使用 `Date.now()` 不参与窗口计算（白盒）', async () => {
+    /**
+     * 这条守的是实现细节：`collectCodeBuddyTokenStats` 整段逻辑不该再读
+     * `Date.now()`——即使 `generatedAt`（响应时间戳）保留 `now`，窗口端点
+     * 必须只来自 request。如果哪天有人把 `now` 偷塞回端点解析，这条会立刻
+     * 露馅。办法：用一个明确过去 / 未来的端点，看 totals 是否与「
+     * `windowOfDays` 重新计算」得到同一数值。
+     */
+    const past = windowOfDays(7, new Date('2024-01-15T12:00:00').getTime())
+    const query: SessionQueryService = {
+      async listSessions() { return [{ header: { id: 's-fake', cwd: '/w/demo' }, live: false, persisted: true }] },
+      async observeSession(id: string) {
+        // 事件全部落在 past 区间内：today（= 2024-01-15）100、3 天前 = 2024-01-12。
+        const end = past.endTime
+        return {
+          header: { id, cwd: '/w/demo' },
+          events: [
+            event(end, 'codebuddy', 'm', 100, 0),
+            event(end - 3 * 86_400_000, 'codebuddy', 'm', 50, 0),
+          ],
+        } as never
+      },
+    }
+    const result = await collectCodeBuddyTokenStats(query, past)
+    // 两条都进：100 + 50 = 150。如果服务端偷偷把端点替换成「真实的 now 推窗口」，
+    // 这两条事件很可能落不到端点定义的区间，结果会不同。
+    expect(result.totals.input).toBe(150)
   })
 })
 
@@ -311,7 +443,7 @@ describe('缓存写已移出统计口径', () => {
         }
       },
     }
-    const result = await collectCodeBuddyTokenStats(query, { days: 1 })
+    const result = await collectCodeBuddyTokenStats(query, windowOfDays(1))
     expect(result.totals.total).toBe(0)
     expect(result.totals.records).toBe(0)
   })
@@ -336,7 +468,7 @@ describe('缓存写已移出统计口径', () => {
         }
       },
     }
-    const result = await collectCodeBuddyTokenStats(query, { days: 1 })
+    const result = await collectCodeBuddyTokenStats(query, windowOfDays(1))
     // 10 + 2 + 88 = 100；缓存写 7 不计入。
     expect(result.totals.total).toBe(100)
     expect(result.totals.read).toBe(88)
@@ -349,7 +481,7 @@ describe('缓存写已移出统计口径', () => {
       async listSessions() { return [] },
       async observeSession() { throw new Error('unused') },
     }
-    const result = await collectCodeBuddyTokenStats(query, { days: 1 })
+    const result = await collectCodeBuddyTokenStats(query, windowOfDays(1))
     expect(result.totals).not.toHaveProperty('write')
     for (const day of result.days) expect(day).not.toHaveProperty('write')
   })

@@ -1,14 +1,17 @@
 /**
  * Token 统计的按范围缓存。
  *
- * 背景：Token 页有多个面板，每个面板都要有**自己的**时间周期选择器。若每个
- * 面板各自裸调 RPC，同一范围会被重复请求，而服务端每次都要重放全部会话
- * （实测 200 会话约 50ms），面板一多就成了 N 倍开销。
+ * 背景：Token 页有多个面板，每个面板都要有**自己的**时间档位。若每个面板各自
+ * 裸调 RPC，同一范围会被重复请求——服务端每次都要重放全部会话（实测 200 会话约
+ * 50ms），面板一多就成了 N 倍开销。
  *
- * 因此这里按 `days` 缓存：范围相同的面板共享同一份结果与同一个在途请求
- * （in-flight 去重）。范围不同才真正多取一次——这是功能本身要求的，
- * 因为服务端对 workspaces/models/sessions 的累积带范围过滤，无法从大范围
- * 的响应里推导出小范围的结果。
+ * 因此这里按范围键缓存：同一范围的面板共享同一份结果与同一个在途请求（in-flight
+ * 去重）。不同范围才真正多取一次——这是功能本身要求的，因为服务端对 workspaces
+ * /models/sessions 的累积带范围过滤，无法从大范围的响应里推导出小范围的结果。
+ *
+ * **范围键**仅含固定档 today/7d/30d。历史版本支持 `custom`（用户可选任意区间），
+ * 该业务已下线：`custom` 不再是合法键，缓存键直接等于范围键，不存在「同一键对
+ * 应多窗口」的复合需求。
  *
  * 做成不依赖 React 的普通类，便于单测；面板通过 `useSyncExternalStore` 订阅。
  *
@@ -26,13 +29,7 @@ export interface TokenStatsPayload {
 }
 
 export class TokenStatsStore {
-  /**
-   * 缓存以**范围键**（而非 days）为键。
-   *
-   * 用 days 会错：'本月' 在 30 号时 days 恰好也是 30，与 '30d' 撞键，但两者是
-   * 不同的请求（前者随日期变化、后者固定窗口），共用缓存会互相污染。'总计' 更是
-   * 没有 days 可言（走 allTime）。
-   */
+  /** 缓存与 in-flight 状态都用范围键（TokenRangeKey 自身）做键，简单清晰。 */
   private readonly cache = new Map<TokenRangeKey, TokenStatsPayload>()
   private readonly pending = new Map<TokenRangeKey, Promise<void>>()
   private readonly failures = new Map<TokenRangeKey, string>()
@@ -40,7 +37,7 @@ export class TokenStatsStore {
    * 这次加载由哪个面板发起，key 是范围键。
    *
    * 数据按范围共享是对的（同范围只该取一次），但**加载指示不能按范围共享**：
-   * 面板默认可能停在同一个范围上，若 loading 只用范围做键，刷新总览会让其他
+   * 面板默认可能停在同一个范围上，若 loading 也只用范围做键，刷新总览会让其他
    * 同范围的面板一起转圈，看起来仍像全局刷新。因此记下发起者，只有它能观察到
    * 这次加载。
    */
@@ -82,33 +79,23 @@ export class TokenStatsStore {
     return this.failures.get(key)
   }
 
-  /**
-   * 确保该范围有数据在取；已有缓存或在途时直接复用。
-   *
-   * **`'custom'` 不复用缓存**：custom 档的窗口由模块级 `customDays` 动态决定
-   * （用户在日期选择器里选出的窗口），同一个键 `'custom'` 实际可能对应不同的
-   * `days`——继续走 `cache.has(key)` 会让 `start` 永远不触发，后续选择再
-   * 改窗口也无数据更新（用户报过的回归）。所以 custom 总是拉，pending 节流
-   * 避免同一窗口并发；其它固定档（today/7d/30d）仍然命中复用。
-   */
+  /** 确保该范围有数据在取；已有缓存或在途时直接复用。 */
   ensure(key: TokenRangeKey): void {
     if (this.pending.has(key)) return
-    if (key !== 'custom' && this.cache.has(key)) return
+    if (this.cache.has(key)) return
     this.start(key)
   }
 
   /**
    * 强制重新拉取某一范围（该面板的刷新按钮）。
    *
-   * **不清缓存**：清掉会让 `get(days)` 返回 undefined，面板据此认为「还没数据」
+   * **不清缓存**：清掉会让 `get(key)` 返回 undefined，面板据此认为「还没数据」
    * 而回到初次加载占位——这正是「刷新总览变全局刷新」的原因。保留上一份数据，
    * 仅在 isLoading 上体现刷新中，面板就能留着内容只叠遮罩。
    *
    * @param owner 发起刷新的面板令牌，用于只让该面板显示加载态。
    */
   reload(key: TokenRangeKey, owner?: symbol): void {
-    // 已有在途请求就让它跑完，避免同一范围出现两个并发请求。
-    // custom 档同 ensure：不能因有缓存就跳过——窗口变了数据要重拉。
     if (this.pending.has(key)) return
     this.start(key, owner)
   }
@@ -116,13 +103,17 @@ export class TokenStatsStore {
   /** 重新拉取所有已知范围（页头刷新）。语义同 `reload`：保留旧数据。 */
   reloadAll(): void {
     const known = new Set([...this.cache.keys(), ...this.pending.keys()])
-    for (const days of known) if (!this.pending.has(days)) this.start(days)
+    for (const key of known) {
+      if (this.pending.has(key)) continue
+      this.start(key)
+    }
     this.bump()
   }
 
   private start(key: TokenRangeKey, owner?: symbol): void {
     if (owner !== undefined) this.loader.set(key, owner)
-    // 请求参数由范围键解析：'总计' 走 allTime，'本月' 走 days=今天几号。
+    // 请求参数由范围键解析：固定档返回 `{ startTime, endTime }` 毫秒端点区间。
+    // 服务端闭环于这两个端点，不再做任何以 now 推窗口的退化；详见 token-range.ts。
     const task = this.rpc.call<TokenStatsPayload>(CODEBUDDY_AUTH_CHANNEL, 'tokenStats', resolveRange(key))
       .then((result) => {
         if (result.ok) {

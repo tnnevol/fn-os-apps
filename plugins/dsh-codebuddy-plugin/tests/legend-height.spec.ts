@@ -17,8 +17,8 @@ import { readFileSync } from 'node:fs'
  * 不能靠它补救。
  */
 const NAMES = ['输入', '输出', '缓存读', '缓存写']
-const PANEL = readFileSync(
-  '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/client/panel.tsx',
+const CHART = readFileSync(
+  '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/client/ui/token-usage-chart.tsx',
   'utf8',
 )
 
@@ -62,10 +62,10 @@ function probe(width: number, legend: Record<string, unknown>, gridTop = 32, nam
   return { itemHeight: itemH, legendHeight: rect === undefined ? NaN : rect.height, marker }
 }
 
-/** 从 panel.tsx 解析真实的 legend 配置，避免测试与实现各写一份数字。 */
+/** 从 ui/token-usage-chart.tsx 解析真实的 legend 配置，避免测试与实现各写一份数字。 */
 const LEGEND = (() => {
-  const m = /legend: \{ top: 0, itemWidth: (\d+), itemHeight: (\d+), itemGap: (\d+)/.exec(PANEL)
-  if (m === null) throw new Error('未能在 panel.tsx 中解析出 legend 配置')
+  const m = /legend: \{ top: 0, itemWidth: (\d+), itemHeight: (\d+), itemGap: (\d+)/.exec(CHART)
+  if (m === null) throw new Error('未能在 ui/token-usage-chart.tsx 中解析出 legend 配置')
   return { itemWidth: Number(m[1]), itemHeight: Number(m[2]), itemGap: Number(m[3]) }
 })()
 
@@ -121,6 +121,6 @@ describe('图例变高后不与绘图区重叠', () => {
 
   it('面板用 media 在窄屏抬高 grid.top 让出空间', () => {
     // 阈值 420px：覆盖英文约 340px 的折行点并留余量（其他语言/字体更宽时仍生效）。
-    expect(PANEL).toMatch(/media: \[\s*\{ query: \{ maxWidth: 420 \}, option: \{ grid: \{ top: 68 \} \} \}/)
+    expect(CHART).toMatch(/media: \[\s*\{ query: \{ maxWidth: 420 \}, option: \{ grid: \{ top: 68 \} \} \}/)
   })
 })

@@ -11,13 +11,15 @@ import { readFileSync } from 'node:fs'
  *
  * 这里同时核对选项名与 ECharts 类型定义——写错名字不会报错，只会被静默忽略。
  */
-const PANEL = readFileSync(
-  '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/client/panel.tsx',
+const CHART = readFileSync(
+  '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/client/ui/token-usage-chart.tsx',
   'utf8',
 )
 
 describe('趋势图柱体最小高度', () => {
-  const chart = PANEL.slice(PANEL.indexOf('function TokenUsageChart'))
+  // TokenUsageChart 实现已迁到 ui/token-usage-chart.tsx（`TokenUsageChartImpl`）。
+  // 切片取 `export function TokenUsageChartImpl` 到文件末尾，覆盖完整的 series 配置。
+  const chart = CHART.slice(CHART.indexOf('export function TokenUsageChartImpl'))
 
   it('三个堆叠系列都设置了 barMinHeight: 30', () => {
     const series = chart.slice(chart.indexOf('series: ['), chart.indexOf("type: 'line'"))

@@ -67,30 +67,27 @@ describe('identityRows', () => {
 
 describe('面板弹框展示完整账户信息', () => {
   const PANEL = readFileSync(
-    '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/client/panel.tsx',
+    '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/client/ui/account-resources-modal.tsx',
     'utf8',
   )
 
   it('弹框标题为「账户信息」而非「资源包」', () => {
-    const modal = PANEL.slice(PANEL.indexOf('function AccountResourcesModal'))
+    const modal = PANEL.slice(PANEL.indexOf('export function AccountResourcesModalImpl'))
     expect(modal).toContain("title={t('accountInfoTitle')}")
     expect(modal).not.toContain("title={t('resourcesTitle')}")
   })
 
   it('渲染身份信息表与登录来源', () => {
-    const modal = PANEL.slice(PANEL.indexOf('function AccountResourcesModal'), PANEL.indexOf('function AccountsPage'))
+    const modal = PANEL.slice(PANEL.indexOf('export function AccountResourcesModalImpl'))
     expect(modal).toContain('identityRows(')
     expect(modal).toContain("t('accountIdentity')")
-    // 客户端与环境决定账号连的是哪个服务平面，排查时必须能看到。
     expect(modal).toContain("t('clientLabel')")
     expect(modal).toContain("t('environmentLabel')")
   })
 
-  const modal = (): string =>
-    PANEL.slice(PANEL.indexOf('function AccountResourcesModal'), PANEL.indexOf('function AccountsPage'))
+  const modal = (): string => PANEL.slice(PANEL.indexOf('export function AccountResourcesModalImpl'))
 
   it('顶层两个大类：身份信息 / 用量信息', () => {
-    // 顶层按「账号是什么」与「账号用了多少」划分，两者语义互斥。
     expect(modal()).toMatch(/itemKey="identity"/)
     expect(modal()).toMatch(/itemKey="usage"/)
     expect(modal()).toContain("t('accountIdentity')")
@@ -98,8 +95,6 @@ describe('面板弹框展示完整账户信息', () => {
   })
 
   it('套餐状态是**用量之下**的二级 Tab，不与身份信息平级', () => {
-    // 若把三个生命周期提到顶层，读者会以为「可使用/已用完」与「身份信息」
-    // 是同一层级的概念。
     const m = modal()
     const usageAt = m.indexOf('itemKey="usage"')
     const statusAt = m.indexOf("t('accountResourceStatus')")
@@ -111,7 +106,6 @@ describe('面板弹框展示完整账户信息', () => {
 
   it('两层 Tab 用不同 type（line vs button）区分层级', () => {
     const m = modal()
-    // 同类型会让两层看起来平级。
     expect(m).toMatch(/<DshTabs\s+type="line"/)
     expect(m).toMatch(/<DshTabs\s+type="button"/)
   })
@@ -120,22 +114,16 @@ describe('面板弹框展示完整账户信息', () => {
     const m = modal()
     expect(m).toMatch(/const \[topKey, setTopKey\] = useState<TopTab>\('identity'\)/)
     expect(m).toMatch(/const \[statusKey, setStatusKey\] = useState<ResourceLifecycle>\('usable'\)/)
-    // 换账号时两级都要复位，否则会停在上一个账号的查看位置。
     expect(m).toMatch(/setTopKey\('identity'\); setStatusKey\('usable'\)/)
   })
 
   it('身份表单列，且显式用 horizontal（默认 vertical 每项占两行）', () => {
-    // 单列：key 左、value 右、一行一项。多列会让列宽被最长项（企业全名）撑开、
-    // 短项留出大片空白。
     expect(modal()).toMatch(/column=\{1\}/)
     expect(modal()).not.toMatch(/column=\{2\}/)
-    // layout 仍要显式写：Semi 的 defaultProps 是 vertical（key/value 上下排），
-    // 漏写会让每项占两行、高度翻倍。
     expect(modal()).toMatch(/layout="horizontal"/)
   })
 
   it('身份信息合并为**一张**表，不拆成多段', () => {
-    // 分多张表会读成几个割裂的片段，而它们是同一个账号的一组事实。
     expect(modal().match(/<DshDescriptions/g)?.length).toBe(1)
   })
 
@@ -171,34 +159,27 @@ describe('主机侧 payload 带上身份明细', () => {
 })
 
 describe('企业账号的账户信息字段', () => {
-  // PANEL 是上一个 describe 内的常量，作用域不跨块；这里各自读一次。
   const PANEL = readFileSync(
-    '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/client/panel.tsx',
+    '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/client/ui/account-resources-modal.tsx',
     'utf8',
   )
-  const modal = (): string =>
-    PANEL.slice(PANEL.indexOf('function AccountResourcesModal'), PANEL.indexOf('function AccountsPage'))
+  const modal = (): string => PANEL.slice(PANEL.indexOf('export function AccountResourcesModalImpl'))
 
   it('展示账号类型（企业 / 个人）', () => {
-    // 企业与个人在签到、成长中心、额度平面上行为不同；这一行解释了
-    // 为什么下面有些字段不出现。
     expect(modal()).toMatch(/row\.enterprise \? t\('accountTypeEnterprise'\) : t\('accountTypePersonal'\)/)
   })
 
   it('展示服务端点（企业账号常为专享/自建地址）', () => {
     expect(modal()).toContain("t('serviceEndpoint')")
-    // 缺失时不渲染该行（个人账号走默认端点，列出无增量信息）。
     expect(modal()).toMatch(/row\.endpoint === undefined \? \[\] : \[\{ key: t\('serviceEndpoint'\)/)
   })
 
   it('展示额度上限，且仅在额度查询成功时列出', () => {
     expect(modal()).toContain("t('quotaCapacity')")
-    // 查询失败时 totalCapacity 为 0，展示「上限 0」会误导。
     expect(modal()).toMatch(/row\.creditOk && row\.totalCapacity > 0/)
   })
 
   it('签到状态按能力条件渲染，不给企业账号显示否定信息', () => {
-    // 企业账号不支持签到（checkinOk 为 false），此时整行不出现。
     expect(modal()).toMatch(/row\.checkinOk\s*\?\s*\[\{ key: t\('checkinStatus'\)/)
   })
 

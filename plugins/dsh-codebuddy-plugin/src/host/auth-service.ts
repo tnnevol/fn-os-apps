@@ -935,16 +935,34 @@ export class CodeBuddyAuthService {
       case 'creditExpiry': return ok(await this.creditExpiryAll(signal))
       case 'tokenStats': {
         const raw = typeof payload === 'object' && payload !== null
-          ? payload as { days?: unknown, allTime?: unknown, sessionIds?: unknown }
+          ? payload as { startTime?: unknown, endTime?: unknown, allTime?: unknown, sessionIds?: unknown }
           : undefined
-        const days = typeof raw?.days === 'number' ? raw.days : undefined
-        // allTime 由客户端范围键 'all' 解析而来：统计全部历史、不做时间下界过滤。
+        /**
+         * 入参说明：原 `{days, allTime}` 改为 `{startTime, endTime, allTime}`。
+         *
+         * **端点必传**：服务端不再持有「现在」的概念——之前版本在缺端点时会退化
+         * 到「以请求时刻为终点向前推 30 天」的兜底窗口，但这等于让同一个接口对
+         * 不同请求得到不同窗口、且对客户端调试不透明。契约现在要求客户端负责
+         * 「按钮的固定范围从当前时间倒退」的换算（`resolveRange` 完成），服务端
+         * 只负责按端点过滤与按日聚合。缺端点直接拒收，让故障面立刻可见，而不是
+         * 静默给一个错得没痕的数字。
+         */
+        if (typeof raw?.startTime !== 'number' || !Number.isFinite(raw.startTime)) {
+          return err('invalid-request', 'tokenStats requires startTime (number)')
+        }
+        if (typeof raw?.endTime !== 'number' || !Number.isFinite(raw.endTime)) {
+          return err('invalid-request', 'tokenStats requires endTime (number)')
+        }
+        if (raw.endTime < raw.startTime) {
+          return err('invalid-request', 'tokenStats endTime must be >= startTime')
+        }
         const allTime = raw?.allTime === true ? true : undefined
         const sessionIds = Array.isArray(raw?.sessionIds)
           ? raw.sessionIds.filter((id): id is string => typeof id === 'string' && id.length > 0)
           : undefined
         return ok(await this.tokenStats({
-          ...(days === undefined ? {} : { days }),
+          startTime: raw.startTime,
+          endTime: raw.endTime,
           ...(allTime === undefined ? {} : { allTime }),
           ...(sessionIds === undefined ? {} : { sessionIds }),
         }, signal))
@@ -1692,7 +1710,7 @@ export class CodeBuddyAuthService {
   }
 
   /** 面板：基于 DSH logical session/query/projection 的 CodeBuddy 专属 Token 统计。 */
-  async tokenStats(request: CodeBuddyTokenStatsRequest = {}, signal?: AbortSignal): Promise<unknown> {
+  async tokenStats(request: CodeBuddyTokenStatsRequest, signal?: AbortSignal): Promise<unknown> {
     return collectCodeBuddyTokenStats(this.analytics?.sessionQuery, request, signal)
   }
 

@@ -14,7 +14,9 @@ import { readFileSync } from 'node:fs'
  */
 const ROOT = '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src'
 const SECTION = readFileSync(`${ROOT}/components/CodeBuddySection.tsx`, 'utf8')
-const PANEL = readFileSync(`${ROOT}/client/panel.tsx`, 'utf8')
+// 三个 auto* 偏好的同步封装已迁到 hooks/use-auto-prefs.ts（`useAutoPrefs`）。
+// 读取原文件以验证「挂载时读 Host」+「subscribeUsagePref 中只同步 host」两个不变量。
+const AUTO_HOOK = readFileSync(`${ROOT}/client/hooks/use-auto-prefs.ts`, 'utf8')
 const SERVICE = readFileSync(`${ROOT}/host/auth-service.ts`, 'utf8')
 const STORAGE = readFileSync(`${ROOT}/host/storage.ts`, 'utf8')
 
@@ -60,8 +62,9 @@ describe('Host 是自动配置的唯一权威', () => {
   })
 
   it('管理面板同样读 Host，不再上推三个开关', () => {
-    const block = PANEL.slice(PANEL.indexOf("'autoPrefs'"), PANEL.indexOf('subscribeUsagePref(() => {'))
-    expect(PANEL).toContain("'autoPrefs'")
+    // 切片：useAutoPrefs 函数体中，'autoPrefs' 读取之后到 subscribeUsagePref 之前。
+    const block = AUTO_HOOK.slice(AUTO_HOOK.indexOf("'autoPrefs'"), AUTO_HOOK.indexOf('subscribeUsagePref(() => {'))
+    expect(AUTO_HOOK).toContain("'autoPrefs'")
     expect(block).toMatch(/\$autoSwitch\.set\(host\.autoSwitch\)/)
     // 挂载路径里不得再把本地值推给 Host
     expect(block).not.toMatch(/'autoCheckin', \{ enabled: autoCheckinOn \}/)

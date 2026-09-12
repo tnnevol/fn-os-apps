@@ -158,7 +158,13 @@ describe('最小宽度的单一事实来源', () => {
       '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/client/panel.tsx',
       'utf8',
     )
-    const bar = panel.slice(panel.indexOf('function SegmentBar'), panel.indexOf('function BreakdownList'))
+    // `function SegmentBar` 也在注释里出现（Line 89: 「tests/segment-bar.spec.ts：
+    // 用 `function SegmentBar` ~ `function BreakdownList` 切片」），所以用真正
+    // 的签名 `function SegmentBar(` 定位到实现（line 707）；从该位置取到下一个
+    // `\n}` 即覆盖整段函数体（含 bar + legend 两块）。
+    const start = panel.indexOf('function SegmentBar({')
+    const end = panel.indexOf('\n}', start) + 2
+    const bar = panel.slice(start, end)
     // 条形与图例都必须遍历 ordered，而不是其中一个用原始 segments。
     expect(bar).toMatch(/dsh-codebuddy-panel-segment-bar[\s\S]*?\{ordered\.map/)
     expect(bar).toMatch(/dsh-codebuddy-panel-segment-legend[\s\S]*?\{ordered\.map/)

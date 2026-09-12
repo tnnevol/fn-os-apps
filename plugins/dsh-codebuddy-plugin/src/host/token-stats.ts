@@ -10,7 +10,6 @@
 import { CODEBUDDY_PROVIDER } from '../contracts/constants.ts'
 
 const DAY_MS = 86_400_000
-const DEFAULT_RANGE_DAYS = 30
 const MAX_RANGE_DAYS = 365
 const ACTIVITY_RANGE_DAYS = 365
 
@@ -68,13 +67,32 @@ export interface SessionQueryService {
 }
 
 export interface CodeBuddyTokenStatsRequest {
-  days?: number
+  /**
+   * 窗口下界（毫秒时间戳，含）。事件 `time < startTime` 不计入 totals/days/
+   * workspaces/models/sessions；仅在 `allTime !== true` 时生效。
+   *
+   * 入参从「天数」改为「端点」：天数隐含了「以请求时刻为终点」的语义，
+   * 「按钮的固定时间范围应该从当前时间计算倒退」也由客户端在传端点前完成，
+   * 服务端不持有「现在」概念——所有计算都基于这两个端点。
+   *
+   * **必填**：缺一会被服务端拒收（不能让服务端猜一个会随请求时刻漂移的窗口）。
+   */
+  startTime: number
+  /**
+   * 窗口上界（毫秒时间戳，含）。通常为今天 00:00（即客户端按下当前时间
+   * 倒退 0 天），固定档/自定义档都要求客户端用「请求时刻所在本地零点」
+   * ——把「起点」「终点」的切日责任放在客户端，服务端按端点过滤，不重新
+   * 切日。
+   *
+   * **必填**：理由同上。
+   */
+  endTime: number
   /**
    * 不做时间下界过滤：统计全部历史。
    *
-   * 「总计」不能用一个大 `days` 近似——`days` 有上限（MAX_RANGE_DAYS），超过一年
-   * 的历史会被悄悄截断，而「总计」的语义恰恰是「全部」，被截断后显示的数字是错的
-   * 却没有迹象。因此单列一个开关，走 `Number.NEGATIVE_INFINITY` 作为下界。
+   * 「总计」不能用超大 `endTime - startTime` 近似——`days` 概念已淘汰；
+   * `allTime: true` 时 `startTime`/`endTime` **仍要传**（用于面板的活动
+   * 热力图范围），但 `event.time < startTime` 不再被过滤。
    */
   allTime?: boolean
   sessionIds?: string[]
@@ -263,33 +281,66 @@ function disposeObservation(observation: SessionObservation): void {
 /** 为所选逻辑会话集合聚合 CodeBuddy 用量。 */
 export async function collectCodeBuddyTokenStats(
   query: SessionQueryService | undefined,
-  request: CodeBuddyTokenStatsRequest = {},
+  request: CodeBuddyTokenStatsRequest,
   signal?: AbortSignal,
 ): Promise<CodeBuddyTokenStats> {
+  if (!Number.isFinite(request.startTime) || !Number.isFinite(request.endTime)) {
+    // 端点缺失或非法：抛错而不是猜默认值。
+    // 旧版本里服务端会在 `startTime`/`endTime` 缺一时退化到「以请求时刻为终点
+    // 向前推 30 天」——同一接口对不同请求会得到不同窗口，无法稳定。
+    throw new Error('CodeBuddy tokenStats: startTime and endTime are required')
+  }
+  if (request.endTime < request.startTime) {
+    // 端点顺序写反：抛错而不是把负窗口夹到 1 天。
+    throw new Error('CodeBuddy tokenStats: endTime must be >= startTime')
+  }
   const allTime = request.allTime === true
-  const days = Math.max(1, Math.min(MAX_RANGE_DAYS, Math.round(request.days ?? DEFAULT_RANGE_DAYS)))
   const now = Date.now()
-  // allTime 时下界取 -Infinity：任何事件时间都 >= 它，等价于不过滤。
-  // 两个独立下界：rangeStart 决定计入 totals/模型/工作区，activityStart 决定
-  // 计入每日活跃度热力图。allTime 必须同时放开两者——只放开前者的话，旧事件仍会
-  // 在后者的比较处被丢弃（实测漏计 3 年前的那条）。
-  //
-  // 注意「比较用的下界」与「逐日行的起点」是两件事，不能共用一个值：
-  // 用 -Infinity 当起点做 `起点 + i*DAY_MS` 会算出 NaN，日期键变成
-  // 'NaN-NaN-NaN'。因此 allTime 下比较用 -Infinity，而逐日行仍以各自的固定
-  // 窗口（总数 days 天 / 热力图 365 天）构造，结构与普通范围完全一致。
-  const boundedRangeStart = startOfLocalDay(now - (days - 1) * DAY_MS)
-  const boundedActivityStart = startOfLocalDay(now - (ACTIVITY_RANGE_DAYS - 1) * DAY_MS)
-  const rangeStart = allTime ? Number.NEGATIVE_INFINITY : boundedRangeStart
-  const activityStart = allTime ? Number.NEGATIVE_INFINITY : boundedActivityStart
+  /**
+   * 客户端端点（毫秒）= 整个计算的输入。**任何天数推算都不在这层出现**——
+   * 「按钮的固定时间范围从当前时间倒退」由客户端按请求时刻算出后再传进来；
+   * 服务端把这个窗口当作不透明的时间区间处理，包括逐日行数与活动热力图。
+   */
+  const clientStart = request.startTime
+  const clientEnd = request.endTime
+  /**
+   * 逐日行数 = 窗口跨过的本地日数（含两端）。
+   *
+   * 上限仍是 `MAX_RANGE_DAYS`——「窗口」由客户端范围键决定（最长 365），
+   * 服务端不再用 `days` 概念，但行为要保持「请求一年窗口就返回 365 行」的
+   * 兼容。夹到 `[1, MAX_RANGE_DAYS]`：超一年不撑爆响应、超短也不返回 0 行。
+   */
+  const dayCount = Math.max(
+    1,
+    Math.min(
+      MAX_RANGE_DAYS,
+      Math.round((clientEnd - clientStart) / DAY_MS) + 1,
+    ),
+  )
+  /**
+   * 活动热力图窗口：[clientEnd - 364 天, clientEnd]。
+   *
+   * 不再使用任何服务器侧 `now`——「按钮的固定时间范围由当前时间计算倒退」
+   * 这件事由客户端按请求时刻算出 `endTime` 后传进来；服务端只是把客户端给的
+   * 终点当作「热力图的终点」使用，start 同样按端点等差向前推 364 天。
+   */
+  const heatmapEnd = clientEnd
+  const heatmapStart = heatmapEnd - (ACTIVITY_RANGE_DAYS - 1) * DAY_MS
+  /**
+   * 比较用的下界：allTime 时放宽到 -Infinity，让 3 年前的事件也能进 totals；
+   * 逐日行的起点仍用真实端点（**不能**用 -Infinity 当起点 + i*DAY_MS，否则
+   * 日期键会变成 'NaN-NaN-NaN'，这是 NaN 系列 bug 的来源）。
+   */
+  const rangeCompareStart = allTime ? Number.NEGATIVE_INFINITY : clientStart
+  const activityCompareStart = allTime ? Number.NEGATIVE_INFINITY : heatmapStart
   const dayRows = new Map<string, CodeBuddyTokenDay>()
-  for (let index = 0; index < days; index += 1) {
-    const day = localDay(boundedRangeStart + index * DAY_MS)
+  for (let index = 0; index < dayCount; index += 1) {
+    const day = localDay(clientStart + index * DAY_MS)
     dayRows.set(day, { day, ...emptyBucket(), activeSessions: 0 })
   }
   const activityRows = new Map<string, CodeBuddyTokenActivity>()
   for (let index = 0; index < ACTIVITY_RANGE_DAYS; index += 1) {
-    const day = localDay(boundedActivityStart + index * DAY_MS)
+    const day = localDay(heatmapStart + index * DAY_MS)
     activityRows.set(day, { day, calls: 0, tokens: 0, activeSessions: 0 })
   }
 
@@ -302,7 +353,7 @@ export async function collectCodeBuddyTokenStats(
   if (query === undefined) {
     return {
       provider: CODEBUDDY_PROVIDER,
-      rangeDays: days,
+      rangeDays: dayCount,
       generatedAt: now,
       totals,
       days: [...dayRows.values()],
@@ -351,7 +402,7 @@ export async function collectCodeBuddyTokenStats(
 
       let hasUsage = false
       for (const event of observation.events) {
-        if (!Number.isFinite(event.time) || event.time < activityStart) continue
+        if (!Number.isFinite(event.time) || event.time < activityCompareStart) continue
         const usage = usageFromEvent(event)
         if (usage === undefined) continue
         const eventDay = localDay(event.time)
@@ -363,7 +414,7 @@ export async function collectCodeBuddyTokenStats(
           active.add(sessionId)
           activitySessions.set(eventDay, active)
         }
-        if (event.time < rangeStart) continue
+        if (event.time < rangeCompareStart) continue
         hasUsage = true
         addBucket(totals, usage)
         const day = dayRows.get(eventDay)
@@ -411,7 +462,7 @@ export async function collectCodeBuddyTokenStats(
 
   return {
     provider: CODEBUDDY_PROVIDER,
-    rangeDays: days,
+    rangeDays: dayCount,
     generatedAt: now,
     totals,
     days: [...dayRows.values()],
