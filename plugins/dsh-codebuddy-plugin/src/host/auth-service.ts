@@ -67,6 +67,15 @@ function isNoBuddyError(message: string): boolean {
  */
 const CONCURRENCY = 4
 
+type ConnectionService = {
+  rpc: {
+    handle: (
+      channel: string,
+      handler: (endpoint: string, payload: unknown, signal: AbortSignal) => Promise<unknown>,
+    ) => () => Promise<void> | void
+  }
+}
+
 /**
  * 主动切换周期的间隔。
  *
@@ -144,14 +153,10 @@ export class CodeBuddyAuthService {
       this.stopAutoCheckinCycle()
       this.stopTravelCycle()
     }, 'dsh-codebuddy: background cycles')
-    ctx.inject(['connection'], (connectionCtx) => {
-      const connection = connectionCtx.get('connection') as {
-        rpc: {
-          handle: (
-            channel: string,
-            handler: (endpoint: string, payload: unknown, signal: AbortSignal) => Promise<unknown>,
-          ) => () => Promise<void> | void
-        }
+    const registerRpc = (connectionCtx: Context): void => {
+      const connection = connectionCtx.get('connection') as ConnectionService | undefined
+      if (connection === undefined) {
+        throw new Error('dsh-codebuddy: connection service is unavailable')
       }
       connectionCtx.effect(() => {
         // dsh 0.1.5-rc.2 移除了按通道的 `{ authority: 'loopback' }`
@@ -172,7 +177,18 @@ export class CodeBuddyAuthService {
         // 实例注册同名 channel 冲突。
         return dispose
       }, 'dsh-codebuddy: auth RPC channel')
-    })
+    }
+
+    // `ctx.inject()` starts a child Fiber and does not make the parent wait for
+    // its first load. The Web client can issue its initial usage request during
+    // that gap; without a mounted route it reaches frontend-static and receives
+    // 405. The plugin declares `connection` as a required dependency, so the
+    // normal path can register synchronously. Keep the injected fallback for
+    // lightweight callers/tests that construct the service without a full DSH
+    // Context.
+    const currentConnection = (ctx as unknown as { get?: (key: string) => unknown }).get?.('connection') as ConnectionService | undefined
+    if (currentConnection !== undefined) registerRpc(ctx)
+    else ctx.inject(['connection'], registerRpc)
     void loadAutoSwitchConfig().then((config) => {
       this.autoSwitch = config.enabled
       this.autoSwitchThresholdPct = config.thresholdPct

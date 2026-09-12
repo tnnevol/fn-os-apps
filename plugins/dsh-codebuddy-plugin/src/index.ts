@@ -62,8 +62,8 @@ export type * from './host/types.ts'
 /** Cordis 插件名。 */
 export const name = 'dsh-codebuddy'
 
-/** 路由需要 llm；用量统计需要逻辑 DSH 会话查询接缝。 */
-export const inject = ['llm', 'sessionQuery']
+/** 路由需要 llm、连接 RPC；用量统计需要逻辑 DSH 会话查询接缝。 */
+export const inject = ['llm', 'sessionQuery', 'connection']
 
 /**
  * 校验并补全原始配置。
