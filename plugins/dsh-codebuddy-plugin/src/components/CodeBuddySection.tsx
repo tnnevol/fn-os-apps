@@ -446,24 +446,27 @@ export function CodeBuddySection({ rpc, t, panelRoute, close }: CodeBuddySection
                                      */
                                     const switching = switchingId === account.id
                                     /**
+                                      * 开启自动切换时，**所有**账号都不渲染「选择账号」。
+                                      *
+                                      * 那时账号由策略按剩余额度接管，手动指定会被下一次自动
+                                      * 切换覆盖，留一个按不动的按钮只会让人以为设置没生效。
+                                      * 管理面板的「设为当前」菜单项本来就是这个语义
+                                      * （`!row.active && !autoSwitch`），这里对齐。
+                                      */
+                                    const hideForAutoSwitch = autoSwitch && !switching
+                                    /**
                                       * 已选中账号不渲染「选择账号」。
                                       *
                                       * 对当前账号来说这个按钮点了是自己切自己，没有任何
                                       * 效果；而它此前在非切换状态下是**可点**的（disabled
                                       * 里的 `account.id !== activeId` 分支对当前账号恒为
                                       * false，只剩 switching），于是卡片上摆着一个点了
-                                      * 没反应的按钮。面板卡片的同名菜单项早已按
-                                      * `!row.active && !autoSwitch` 隐藏，这里与之对齐。
+                                      * 没反应的按钮。
                                       *
-                                      * `switching` 要一起保留：切换在途时该账号尚未成为当前
-                                      * 账号（`setAccounts` 在响应回来后才更新），此时仍要渲染
-                                      * 转圈与「切换中…」，否则用户点了按钮它就直接消失，看不出
-                                      * 请求是否发出去了。
-                                      *
-                                      * 取舍上与 `autoSwitch` 不同：菜单项在开启自动切换时对
-                                      * **所有**账号隐藏（那时账号由策略接管，手动指定会被下一次
-                                      * 自动切换覆盖）；这里只隐藏当前账号，其它账号的手动切换
-                                      * 仍保留。
+                                      * `switching` 要一起保留（上面两处都有它）：切换在途
+                                      * 时该账号尚未成为当前账号（`setAccounts` 在响应回来
+                                      * 后才更新），此时仍要渲染转圈与「切换中…」，否则用户
+                                      * 点了按钮它就直接消失，看不出请求是否发出去了。
                                       */
                                     const isActive = account.id === accounts.find(item => item.active)?.id
                                     const button = (
@@ -474,25 +477,29 @@ export function CodeBuddySection({ rpc, t, panelRoute, close }: CodeBuddySection
                                         theme="borderless"
                                         loading={switching}
                                         /**
-                                         * 禁用原因：切换中、开启自动切换时不手动指定
-                                         * （下一次自动切换会覆盖掉）、该账号无可用余额。
+                                         * 禁用原因只剩「切换中」与「该账号无可用余额」。
                                          *
-                                         * `&& !isActive` 这一项现在**是冗余的**，如实记下
-                                         * 以免后人误以为它在起作用：当前账号已在下方直接
-                                         * 返回 null，非当前账号上 `!isActive` 恒为 true，
-                                         * 而当前账号仅 `switching` 时渲染、那时 disabled
-                                         * 本就为真。保留它是因为它让「当前账号不需要手动
-                                         * 切换」这条规则自身完整，不依赖渲染层的隐藏；
-                                         * 若日后有人改回渲染该按钮，禁用行为依然正确。
+                                         * 原先这里还含 `autoSwitch`——自动切换开启时禁用而非
+                                         * 隐藏。现在该情形整体不渲染（见上），故从禁用条件里
+                                         * 去掉，避免两处表达同一件事、日后改动只改一处。
+                                         *
+                                         * `&& !isActive` 这一项**是冗余的**，如实记下以免后人
+                                         * 误以为它在起作用：当前账号已在下方直接返回 null，
+                                         * 非当前账号上 `!isActive` 恒为 true，而当前账号仅
+                                         * `switching` 时渲染、那时 disabled 本就为真。保留
+                                         * 它是因为它让「当前账号不需要手动切换」这条规则自身
+                                         * 完整，不依赖渲染层的隐藏；若日后有人改回渲染该按钮，
+                                         * 禁用行为依然正确。
                                          */
-                                        disabled={switching || ((autoSwitch || (balance !== undefined && !balance.usable)) && !isActive)}
+                                        disabled={switching || ((balance !== undefined && !balance.usable) && !isActive)}
                                         onClick={() => { void switchAccount(account.id) }}
                                       >
                                         {switching ? t('accountSwitching') : t('selectAccount')}
                                       </DshButton>
                                     )
-                                    // 已选中的账号不渲染此按钮（`switching` 期间除外，见上）。
-                                    if (isActive && !switching) return null
+                                    // 自动切换接管时全隐藏；已选中的账号也隐藏（`switching`
+                                    // 期间除外，见上——那两处都为此放行了 switching）。
+                                    if (hideForAutoSwitch || (isActive && !switching)) return null
                                     return balance !== undefined && !balance.usable
                                       ? <DshTooltip content={t('noBalanceHint')}>{button}</DshTooltip>
                                       : button
