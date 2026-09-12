@@ -7,11 +7,10 @@
  * @module dsh-codebuddy/ui/dimension-toggle
  */
 
+import type { StatsDimension } from '../../types/client/ui/dimension-toggle'
+export type { StatsDimension } from '../../types/client/ui/dimension-toggle'
 import type { ReactNode } from 'react'
 import { DshButton, DshButtonGroup } from '@tnnevol/dsh-semi-ui'
-
-/** Token 分布面板的两种聚合维度。 */
-export type StatsDimension = 'workspace' | 'model'
 
 /** 维度切换的两个档位与文案键，顺序稳定（工作区在前）。 */
 export const DIMENSIONS: ReadonlyArray<{ key: StatsDimension, labelKey: 'tokenByWorkspace' | 'tokenByModel' }> = [

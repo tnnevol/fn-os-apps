@@ -20,6 +20,8 @@
  * @module dsh-codebuddy/resource-history
  */
 
+import type { ResourceSnapshot, HistoryDocument, LiveResource, ResourceLifecycle, ClassifiedResource } from '../types/client/resource-history'
+export type { ResourceSnapshot, LiveResource, ResourceLifecycle, ClassifiedResource } from '../types/client/resource-history'
 import { persistentJSON } from '@nanostores/persistent'
 
 /** 保持台账精简：每个账号只留最近见过的资源包。 */
@@ -27,21 +29,6 @@ const MAX_PER_ACCOUNT = 60
 
 /** 存储键：与迁移前一致，已有台账不会被读丢。 */
 const STORAGE_KEY = 'dsh-codebuddy:resource-history'
-
-/** 探测观测到的单个资源包。 */
-export interface ResourceSnapshot {
-  /** 稳定的包标识：名称 + 周期起点，因为名称会重复。 */
-  key: string
-  name: string
-  total: number | null
-  remaining: number | null
-  /** 平面披露的重置/到期时间戳字符串。 */
-  resetsAt: string | null
-  /** 返回过该包的最近一次探测的 epoch 毫秒。 */
-  lastSeenAt: number
-}
-
-type HistoryDocument = Record<string, ResourceSnapshot[]>
 
 /**
  * 台账 atom。存储键与迁移前一致，值是可序列化的 `Record<accountId, 快照[]>`。
@@ -89,14 +76,6 @@ function readDocument(): HistoryDocument {
 
 function writeDocument(doc: HistoryDocument): void {
   $history.set(doc)
-}
-
-/** 面板收到的单个资源行（来自 host）。 */
-export interface LiveResource {
-  name: string
-  total: number | null
-  remaining: number | null
-  resetsAt: string | null
 }
 
 /** 为单个资源包构建台账键：名称加周期结束。 */
@@ -148,21 +127,11 @@ export function forgetResources(accountId: string): void {
   writeDocument(doc)
 }
 
-/** 资源包所属的生命周期分组。 */
-export type ResourceLifecycle = 'usable' | 'depleted' | 'expired'
-
 /** 重置/到期字符串是否已过时。 */
 function isPast(resetsAt: string | null, now: number): boolean {
   if (resetsAt === null || resetsAt.length === 0) return false
   const parsed = new Date(resetsAt.replace(' ', 'T')).getTime()
   return Number.isFinite(parsed) && parsed < now
-}
-
-/** 对话框渲染的单个分类后的资源包行。 */
-export interface ClassifiedResource extends ResourceSnapshot {
-  lifecycle: ResourceLifecycle
-  /** 实时探测是否仍返回该包。 */
-  live: boolean
 }
 
 /**

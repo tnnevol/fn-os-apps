@@ -7,6 +7,8 @@
  * @module dsh-codebuddy/add-account-modal
  */
 
+import type { AddAccountModalProps } from '../types/components/AddAccountModal'
+export type { AddAccountOptions, AddAccountModalProps } from '../types/components/AddAccountModal'
 import { useState } from 'react'
 import {
   DshButton,
@@ -30,7 +32,7 @@ import {
   normalizeClientId,
   type CodeBuddyClientId,
 } from '../contracts/constants.ts'
-import type { CodeBuddyLocaleKey } from '../client/locales/index.ts'
+
 import type { ConnectionRpc, LoginPoll, LoginStart, RpcResult } from '../client/rpc.ts'
 import { describeRpcError } from '../client/rpc.ts'
 import {
@@ -40,39 +42,10 @@ import {
 } from '../contracts/constants.ts'
 import { PreferenceLabel } from './PreferenceLabel.tsx'
 
-type Translate = (key: CodeBuddyLocaleKey) => string
-
 /** 调用方轮询已发起登录的间隔（ms）。 */
 const POLL_INTERVAL_MS = 1500
 /** 调用方放弃前的最长轮询时长（ms）。 */
 const POLL_DEADLINE_MS = 10 * 60 * 1000
-
-export interface AddAccountOptions {
-  /** 本地展示备注名；省略 → 回落到昵称。 */
-  label?: string
-  /** 客户端身份：决定登录页与后续请求所用的服务地址。 */
-  client?: CodeBuddyClientId
-  /** 网络环境 id；缺省为插件默认值。 */
-  environment: string
-  /** 显式服务根，cloudhosted/selfhosted 时必填。 */
-  endpoint: string
-  /** 企业账号开关（保留以与设置表单对齐）。 */
-  enterprise: boolean
-}
-
-export interface AddAccountModalProps {
-  rpc: ConnectionRpc
-  t: Translate
-  visible: boolean
-  initial?: AddAccountOptions
-  /** 调用方在下方展示等待卡时，已发起登录的文案。 */
-  onLoginStart?: (start: { authUrl: string, state: string }) => void
-  onCancel: () => void
-  /** 已发起的登录结束（或出错）后调用一次，供调用方刷新。 */
-  onFinished?: (ok: boolean, text?: string) => void
-  /** 主操作按钮文案；缺省为共享的「打开登录」文案。 */
-  submitLabel?: string
-}
 
 export function AddAccountModal({
   rpc,

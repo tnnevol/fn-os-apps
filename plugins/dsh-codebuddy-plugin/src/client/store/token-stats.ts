@@ -18,15 +18,11 @@
  * @module dsh-codebuddy/token-stats-store
  */
 
+import type { TokenStatsPayload } from '../../types/client/store/token-stats'
+export type { TokenStatsPayload } from '../../types/client/store/token-stats'
 import { CODEBUDDY_AUTH_CHANNEL } from '../../contracts/constants.ts'
 import type { ConnectionRpc } from '../rpc.ts'
 import { resolveRange, type TokenRangeKey } from '../token-range.ts'
-
-/** 与 panel.tsx 的 TokenStats 同形；这里只要求可缓存即可。 */
-export interface TokenStatsPayload {
-  rangeDays: number
-  [key: string]: unknown
-}
 
 export class TokenStatsStore {
   /** 缓存与 in-flight 状态都用范围键（TokenRangeKey 自身）做键，简单清晰。 */

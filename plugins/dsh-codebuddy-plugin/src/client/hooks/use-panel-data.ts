@@ -12,7 +12,7 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { CODEBUDDY_AUTH_CHANNEL } from '../../contracts/constants.ts'
 import type { ConnectionRpc } from '../rpc.ts'
-import type { TokenStats } from '../panel-types.ts'
+import type { TokenStats } from '../../types/client/panel-types'
 import type { TokenRangeKey } from '../token-range.ts'
 import type { TokenStatsStore } from '../store/token-stats.ts'
 

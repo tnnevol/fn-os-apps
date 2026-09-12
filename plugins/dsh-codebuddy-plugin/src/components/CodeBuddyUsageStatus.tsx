@@ -1,5 +1,7 @@
 /** 会话输入框 dock 的紧凑 CodeBuddy 额度读数。 */
 
+import type { Translate, CodeBuddyUsageStatusProps } from '../types/components/CodeBuddyUsageStatus'
+export type { CodeBuddyUsageStatusProps } from '../types/components/CodeBuddyUsageStatus'
 import { useEffect, useState, useSyncExternalStore } from 'react'
 import type { KeyboardEvent } from 'react'
 import { DshPopover, DshProgress, DshScrollList, DshTooltip } from '@tnnevol/dsh-semi-ui'
@@ -7,17 +9,11 @@ import { CODEBUDDY_USAGE_REFRESH_MS } from '../client/constants.ts'
 import { CODEBUDDY_AUTH_CHANNEL } from '../contracts/constants.ts'
 
 import { accountEpoch, subscribeAccountEpoch } from '../client/store/account-epoch.ts'
-import type { CodeBuddyLocaleKey } from '../client/locales/index.ts'
-import type { ConnectionRpc, UsageResult, UsageWindow } from '../client/rpc.ts'
+
+import type { UsageResult, UsageWindow } from '../client/rpc.ts'
 import { useStore } from '@nanostores/react'
 import { $showUsage } from '../client/store/usage-prefs.ts'
 import { CodeBuddyLogo } from './CodeBuddyLogo.tsx'
-
-type Translate = (key: CodeBuddyLocaleKey) => string
-
-type TimerService = {
-  interval(callback: () => void, delay: number): () => void
-}
 
 function percent(value: number | undefined): string | undefined {
   if (value === undefined || !Number.isFinite(value)) return undefined
@@ -111,13 +107,6 @@ function UsagePopover({ windows, fallback, t }: { windows: UsageWindow[]; fallba
       ))}
     </DshScrollList>
   )
-}
-
-
-export interface CodeBuddyUsageStatusProps {
-  t: Translate
-  timer: TimerService
-  rpc: ConnectionRpc
 }
 
 export function CodeBuddyUsageStatus({ t, timer, rpc }: CodeBuddyUsageStatusProps) {

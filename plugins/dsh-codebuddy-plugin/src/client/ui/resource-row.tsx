@@ -14,7 +14,7 @@ import type { CSSProperties, ReactNode } from 'react'
 import { DshProgress, DshTypography } from '@tnnevol/dsh-semi-ui'
 import type { CodeBuddyLocaleKey } from '../locales/index.ts'
 import type { ClassifiedResource, LiveResource, ResourceLifecycle } from '../resource-history.ts'
-import type { PanelAccountRow, Translate } from '../panel-types.ts'
+import type { PanelAccountRow, Translate } from '../../types/client/panel-types'
 import { formatCredit } from './loading-shared.tsx'
 
 /** 资源包生命周期元数据：标签、空态文案、主题色。 */

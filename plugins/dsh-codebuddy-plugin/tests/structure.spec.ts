@@ -11,6 +11,7 @@ import { join } from 'node:path'
  *   host/           仅宿主侧模块
  *   contracts/      host 与 client 共享的协议常量
  *   client/         浏览器入口与面板
+ *   types/          Host、Client 与共享类型声明（仅 .d.ts）
  *   components/     两个挂载点的 UI
  *   styles/
  * ```
@@ -35,11 +36,17 @@ function filesUnder(dir: string): string[] {
 }
 
 describe('src 目录分层', () => {
-  it('存在 host / contracts / client / components / styles', () => {
+  it('存在 host / contracts / client / components / styles / types', () => {
     const top = readdirSync(ROOT).filter(n => statSync(join(ROOT, n)).isDirectory())
-    for (const dir of ['host', 'contracts', 'client', 'components', 'styles']) {
+    for (const dir of ['host', 'contracts', 'client', 'components', 'styles', 'types']) {
       expect(top).toContain(dir)
     }
+  })
+
+  it('类型声明统一放在 types/，文件使用 .d.ts 后缀', () => {
+    const declarations = filesUnder(join(ROOT, 'types'))
+    expect(declarations.length).toBeGreaterThan(0)
+    expect(declarations.every(file => file.endsWith('.d.ts'))).toBe(true)
   })
 
   it('client 下的状态管理集中在 store/（按模块拆 store 单元）', () => {
@@ -79,13 +86,13 @@ describe('src 目录分层', () => {
     expect(stray).toEqual(['index.ts'])
   })
 
-  it('host 入口的全部本地引用都指向 host/ 或 contracts/', () => {
+  it('host 入口的全部本地引用都指向 host/、contracts/ 或类型声明', () => {
     // 用 toContain("from './host/") 太弱：只改其中一行仍会通过（实测漏网）。
     // 改为逐条检查 index.ts 的每一个相对 import。
     const src = readFileSync(join(ROOT, 'index.ts'), 'utf8')
     const localImports = [...src.matchAll(/from '(\.\/[^']+)'/g)].map(m => m[1]!)
     expect(localImports.length).toBeGreaterThan(10)
-    const stray = localImports.filter(p => !p.startsWith('./host/') && !p.startsWith('./contracts/'))
+    const stray = localImports.filter(p => !p.startsWith('./host/') && !p.startsWith('./contracts/') && !p.startsWith('./types/'))
     expect(stray).toEqual([])
     expect(statSync(join(ROOT, 'client', 'index.tsx')).isFile()).toBe(true)
   })

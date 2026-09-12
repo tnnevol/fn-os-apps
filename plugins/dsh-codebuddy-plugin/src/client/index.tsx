@@ -1,10 +1,11 @@
 /** CodeBuddy 插件的浏览器端部分。 */
 
+import type { TimerService } from '../types/client/index'
 import '../styles/index.scss'
 import type { Context as ClientContext } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-client-connection/client'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
-import type { SlotRegistry } from '@deepseek-ai/dsh-client-ui-renderer/client'
+
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import type {} from '@deepseek-ai/dsh-client-ui-slots'
@@ -17,29 +18,11 @@ import { CodeBuddyPanelPage } from './panel.tsx'
 import { PanelRouteController } from './panel-route.ts'
 import { bumpAccountEpoch } from './store/account-epoch.ts'
 import { en, zh } from './locales/index.ts'
-import type { CodeBuddyLocaleKey } from './locales/index.ts'
+
 import type { ConnectionRpc } from './rpc.ts'
 
 /** 本插件文案的设置命名空间。 */
 const NS = 'settings.codebuddy'
-
-// 让 renderer 提供的 slot service 对经由不同 peer dependency 路径解析
-// renderer 包的消费者保持可见。
-declare module '@deepseek-ai/cordis' {
-  interface Context {
-    slots: SlotRegistry
-  }
-}
-
-declare module '@deepseek-ai/dsh-client-ui-slots' {
-  interface LocaleNamespaceMap {
-    'settings.codebuddy': CodeBuddyLocaleKey
-  }
-}
-
-type TimerService = {
-  interval(callback: () => void, delay: number): () => void
-}
 
 export const name = 'dsh-codebuddy-plugin-client'
 export const inject = ['slots', 'locale', 'connection', 'remote']

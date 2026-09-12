@@ -10,6 +10,8 @@
  * @module dsh-codebuddy/session
  */
 
+import type { SessionLogger } from '../types/host/session'
+export type { SessionLogger } from '../types/host/session'
 import { getConfig, getEnterpriseModels, refreshAccessToken } from './codebuddy.ts'
 import type { CodeBuddyIdentity } from './codebuddy.ts'
 import { decideProactiveTarget, type SwitchCandidate } from './switch-policy.ts'
@@ -48,12 +50,6 @@ export class NotLoggedInError extends Error {
     super(detail)
     this.name = 'NotLoggedInError'
   }
-}
-
-/** 与 cordis 兼容的 logger 接口，使 session 可以脱离宿主直接使用。 */
-export interface SessionLogger {
-  warn: (message: unknown) => void
-  error: (message: unknown) => void
 }
 
 /**

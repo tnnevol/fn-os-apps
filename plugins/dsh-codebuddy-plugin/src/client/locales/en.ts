@@ -1,3 +1,5 @@
+
+export type { CodeBuddyLocaleKey } from '../../types/client/locales/en'
 /**
  * 英文文案（CodeBuddy 插件的全部界面 copy）。
  *
@@ -174,6 +176,3 @@ export const en = {
   enterpriseSwitchDesc: 'Enterprise accounts additionally show the enterprise name and department after signing in.',
   createUserHint: 'In this demo, "Open sign-in" adds the account directly; the real plugin opens browser OAuth here.',
 }
-
-/** 全部文案键的联合类型；zh 文件以此约束键集合。 */
-export type CodeBuddyLocaleKey = keyof typeof en

@@ -14,7 +14,7 @@
 import { useEffect, useRef } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
 import { DshTooltip } from '@tnnevol/dsh-semi-ui'
-import type { TokenStats } from '../panel-types.ts'
+import type { TokenStats } from '../../types/client/panel-types'
 import { activityCellSize } from '../activity-grid.ts'
 import { compact } from './loading-shared.tsx'
 

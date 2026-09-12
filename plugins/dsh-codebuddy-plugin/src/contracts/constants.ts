@@ -1,3 +1,5 @@
+import type { CodeBuddyEnvironment, CodeBuddyClientId } from '../types/contracts/constants'
+export type { CodeBuddyEnvironment, CodeBuddyClientId } from '../types/contracts/constants'
 /**
  * CodeBuddy 服务的固定事实。
  *
@@ -37,9 +39,6 @@ export const CODEBUDDY_DISPLAY_NAME = 'CodeBuddy'
  * `X-Domain` 请求头取值。
  */
 export const CODEBUDDY_ENVIRONMENTS = ['external', 'internal', 'ioa', 'cloudhosted', 'selfhosted'] as const
-
-/** 一个网络环境 id。 */
-export type CodeBuddyEnvironment = (typeof CODEBUDDY_ENVIRONMENTS)[number]
 
 /** external 环境的默认服务根（`product.json`）。 */
 export const CODEBUDDY_ENDPOINT_EXTERNAL = 'https://www.codebuddy.ai'
@@ -121,22 +120,6 @@ export const CODEBUDDY_IDE_VERSION = '4.9.8'
  * 的版本，属另一条产品线，不随本包变化。
  */
 export const CODEBUDDY_CLI_VERSION = '2.148.0'
-
-/**
- * 登录/请求时声明的客户端身份。
- *
- * 服务端用 `platform` 参数（`/plugin/auth/state?platform=<id>`）区分客户端类型，
- * 并把该值原样回填进 `authUrl`；不同客户端的登录页与用量平面都可能不同：
- *
- * - `cli`：CodeBuddy CLI（`platform=CLI`），走 `CODEBUDDY_ENVIRONMENT_ENDPOINTS`
- *   定义的服务地址。
- * - `workbuddy`：WorkBuddy 客户端（`platform=WorkBuddy`），登录与计费都在
- *   `www.workbuddy.cn`。
- *
- * 两者的**版本号都是产品发布版本、固定不变**（不是随机值也不是每次会话新生成）：
- * 服务端以此把请求归因到具体客户端版本，随机化会让归因失真。
- */
-export type CodeBuddyClientId = 'cli' | 'workbuddy'
 
 /**
  * 客户端字典：id → 客户端**标识**（登录 `platform` 参数 + 请求的 `X-IDE-Type`/`X-IDE-Name`）。

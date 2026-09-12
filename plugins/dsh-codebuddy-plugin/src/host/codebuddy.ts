@@ -9,6 +9,8 @@
  * @module dsh-codebuddy/codebuddy
  */
 
+import type { CodeBuddyIdentity } from '../types/host/codebuddy'
+export type { CodeBuddyIdentity } from '../types/host/codebuddy'
 import {
   AUTH_PENDING_CODE,
   CODEBUDDY_CLIENT_PLATFORMS,
@@ -20,27 +22,7 @@ import {
   LOGIN_TIMEOUT_MS,
 } from '../contracts/constants.ts'
 import type { CodeBuddyClientId } from '../contracts/constants.ts'
-import type {
-  Account,
-  AccountResponse,
-  AuthState,
-  AuthStateResponse,
-  AuthToken,
-  AuthTokenResponse,
-  CodeBuddyConfig,
-  CodeBuddyEnterpriseModel,
-  CodeBuddyEnterpriseModelsResponse,
-  ConfigResponse,
-} from './types.ts'
-
-/** 每个已认证请求上 CodeBuddy 都要求的身份事实。 */
-export interface CodeBuddyIdentity {
-  accessToken: string
-  domain: string
-  uid: string
-  enterpriseId?: string
-  departmentFullName?: string
-}
+import type { Account, AccountResponse, AuthState, AuthStateResponse, AuthToken, AuthTokenResponse, CodeBuddyConfig, CodeBuddyEnterpriseModel, CodeBuddyEnterpriseModelsResponse, ConfigResponse } from './types.ts'
 
 function delay(ms: number, signal?: AbortSignal): Promise<void> {
   return new Promise((resolve, reject) => {

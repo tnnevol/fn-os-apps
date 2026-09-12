@@ -5,6 +5,8 @@
  * 实时用量读数则移到了会话输入框中。
  */
 
+import type { Phase, CodeBuddySectionProps } from '../types/components/CodeBuddySection'
+export type { CodeBuddySectionProps } from '../types/components/CodeBuddySection'
 import { useCallback, useEffect, useState } from 'react'
 import { useStore } from '@nanostores/react'
 import {
@@ -28,10 +30,8 @@ import {
 } from '@tnnevol/dsh-semi-ui'
 import { CODEBUDDY_AUTH_CHANNEL } from '../contracts/constants.ts'
 
-import type { PanelRouteController } from '../client/panel-route.ts'
 
-import type { CodeBuddyLocaleKey } from '../client/locales/index.ts'
-import type { AccountView, AccountsResult, AuthStatus, ConnectionRpc, RpcErr } from '../client/rpc.ts'
+import type { AccountView, AccountsResult, AuthStatus, RpcErr } from '../client/rpc.ts'
 import { describeRpcError } from '../client/rpc.ts'
 import { AddAccountModal, startLoginPolling } from './AddAccountModal.tsx'
 import { CodeBuddyLogo } from './CodeBuddyLogo.tsx'
@@ -44,11 +44,6 @@ import {
   $showUsage,
   setThreshold,
 } from '../client/store/usage-prefs.ts'
-
-type Translate = (key: CodeBuddyLocaleKey) => string
-
-/** 页面循环经过的 UI 阶段。 */
-type Phase = 'loading' | 'idle' | 'error'
 
 /** 解码 CodeBuddy 的 base64 编码 UTF-8 `departmentFullName`。 */
 function decodeDepartment(raw: string): string {
@@ -78,15 +73,6 @@ function StatusRow({ label, value }: { label: string; value: string }) {
       <span className="dsh-codebuddy-row-value">{value}</span>
     </div>
   )
-}
-
-export interface CodeBuddySectionProps {
-  rpc: ConnectionRpc
-  t: Translate
-  /** 管理面板路由；由 client 注入，点击头部按钮打开全页面。 */
-  panelRoute?: PanelRouteController
-  /** 设置外壳的关闭回调；打开 overlay 时把对话框一并收起，不留残影。 */
-  close?: () => void
 }
 
 export function CodeBuddySection({ rpc, t, panelRoute, close }: CodeBuddySectionProps) {

@@ -13,6 +13,8 @@
  * @module dsh-codebuddy/ui/token-usage-chart
  */
 
+import type { TokenUsageChartProps } from '../../types/client/ui/token-usage-chart'
+export type { TokenUsageChartProps } from '../../types/client/ui/token-usage-chart'
 import { useEffect, useRef } from 'react'
 import type { ReactNode } from 'react'
 import { BarChart, LineChart } from 'echarts/charts'
@@ -20,20 +22,11 @@ import { AriaComponent, GridComponent, LegendComponent, TooltipComponent } from 
 import { init as initChart, use as useECharts } from 'echarts/core'
 import type { ECharts } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
-import type { TokenStats } from '../panel-types.ts'
+
 import { compact } from './loading-shared.tsx'
 
 // 模块级注册 echarts 组件：每个 import 都注册一次，最终只起一次 effect。
 useECharts([BarChart, LineChart, AriaComponent, GridComponent, LegendComponent, TooltipComponent, CanvasRenderer])
-
-/** props 形态（panel.tsx 中同名 type 仅作为导入源）。 */
-export interface TokenUsageChartProps {
-  days: TokenStats['days']
-  inputLabel: string
-  outputLabel: string
-  cacheReadLabel: string
-  recordsLabel: string
-}
 
 /** 读取 CSS 变量；空值回退到 fallback。 */
 export function cssVariableFromElement(element: HTMLElement, name: string, fallback: string): string {

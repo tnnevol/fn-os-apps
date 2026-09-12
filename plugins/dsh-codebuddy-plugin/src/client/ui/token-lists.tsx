@@ -7,7 +7,7 @@
 
 import type { ReactNode } from 'react'
 import { DshTypography } from '@tnnevol/dsh-semi-ui'
-import type { TokenStats } from '../panel-types.ts'
+import type { TokenStats } from '../../types/client/panel-types'
 import { compact } from './loading-shared.tsx'
 
 /** 通用排行（name + 调用次数 + 占比条 + 数值）。items 已按数值降序。 */

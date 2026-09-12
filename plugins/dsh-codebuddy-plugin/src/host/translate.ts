@@ -9,21 +9,11 @@
  * @module dsh-codebuddy/translate
  */
 
+import type { ToolDefinition, ObjectSchema, OpenBlock } from '../types/host/translate'
 import { EMPTY_RESPONSE_CODE, LlmError, ToolCallId } from '@deepseek-ai/dsh-llm'
 import type { ContentBlock, FinishReason, StreamChunk, TokenUsage } from '@deepseek-ai/dsh-llm'
 import { DONE } from './sse.ts'
 import type { WireChunk, WireUsage } from './types.ts'
-
-/** 修复线缆参数时需要的 harness Tool 定义子集。 */
-interface ToolDefinition {
-  name: string
-  parameters: Record<string, unknown>
-}
-
-/** JSON Schema 对象，仅收窄到足以做属性级检查的程度。 */
-interface ObjectSchema {
-  properties?: Record<string, unknown>
-}
 
 /** 返回某属性 schema 是否有意接受任意 JSON 值。 */
 function acceptsAnyJsonValue(schema: unknown): boolean {
@@ -90,15 +80,6 @@ export function normalizeToolArguments(
     }
   }
   return changed ? JSON.stringify(record) : argumentsText
-}
-
-/** 组装过程中的一个已打开块。 */
-interface OpenBlock {
-  index: number
-  kind: 'text' | 'reasoning' | 'tool-call'
-  text: string
-  callId?: string
-  name?: string
 }
 
 /**

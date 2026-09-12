@@ -9,7 +9,7 @@
  *  - 本文件只做组装：保留三个顶层页面（AccountsPage / TokenStatsPage /
  *    CodeBuddyPanelPage）和一些必须**保持函数签名兼容**的占位函数（用于静态文
  *    本扫描的测试——见 `function compact` 等是 *re-export* 形式的占位）。
- *  - 共享类型放 {@link panel-types.ts}；DatePicker / echarts / 资源条等大块组件
+ *  - 共享类型放 {@link ../types/client/panel-types.d.ts}；DatePicker / echarts / 资源条等大块组件
  *    各自独立文件。
  *
  * 页面：账号管理、Token 统计。布局参考 workbuddy-switch：左上返回按钮 + 侧边导
@@ -19,8 +19,11 @@
  * @module dsh-codebuddy/panel
  */
 
+import type { StatsDimension, PanelPageProps } from '../types/client/panel'
+import type { TokenUsageChartProps } from '../types/client/ui/token-usage-chart'
+export type { PanelPageProps } from '../types/client/panel'
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
-import type { CSSProperties, ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import {
   DshButton, DshCard, DshEmpty, DshIconButton,
   DshIconArrowLeft, DshIconCommand, DshIconElementStroked, DshIconRefresh,
@@ -62,7 +65,6 @@ import {
   BreakdownListImpl, SessionRankingImpl, WorkspaceListImpl,
 } from './ui/token-lists.tsx'
 import { DimensionToggleImpl, type StatsDimension as StatsDimensionFromUi } from './ui/dimension-toggle.tsx'
-type StatsDimension = StatsDimensionFromUi
 import { RangeToggleImpl } from './ui/range-toggle.tsx'
 import { TokenUsageChartImpl } from './ui/token-usage-chart.tsx'
 import { ResourceRowImpl } from './ui/resource-row.tsx'
@@ -72,7 +74,7 @@ import {
 } from './ui/loading-shared.tsx'
 import { DshIconLabAvatar, DshIconLabChart } from '@tnnevol/dsh-semi-ui'
 
-import type { AccountCardLabels, PanelAccountRow, TokenStats, Translate } from './panel-types.ts'
+import type { AccountCardLabels, PanelAccountRow, TokenStats, Translate } from '../types/client/panel-types'
 
 export type { AccountCardLabels, PanelAccountRow, TokenStats, Translate }
 
@@ -112,16 +114,6 @@ function DimensionToggle({ dimension, onChange, t }: {
   t: (key: 'tokenByWorkspace' | 'tokenByModel' | 'tokenDimension') => string
 }): ReactNode {
   return <DimensionToggleImpl dimension={dimension} onChange={onChange} t={t} />
-}
-
-/** Token 用量柱状图（echarts）——保留同名词函数给 `tests/legend-height.spec.ts`
- * 用 `function TokenUsageChart` 切片。 */
-interface TokenUsageChartProps {
-  days: TokenStats['days']
-  inputLabel: string
-  outputLabel: string
-  cacheReadLabel: string
-  recordsLabel: string
 }
 function cssVariable(element: HTMLElement, name: string, fallback: string): string {
   return getComputedStyle(element).getPropertyValue(name).trim() || fallback
@@ -645,16 +637,6 @@ function SegmentBar({ segments }: { segments: Array<{ label: string, value: numb
       </div>
     </div>
   )
-}
-
-/* ============================================================================
- * 顶层页面：CodeBuddyPanelPage
- * ========================================================================== */
-
-export interface PanelPageProps {
-  rpc: ConnectionRpc
-  route: PanelRouteController
-  t: Translate
 }
 
 /** 面板壳：左上返回 + 侧边导航 + 各页面（hash 路由隔离）。 */

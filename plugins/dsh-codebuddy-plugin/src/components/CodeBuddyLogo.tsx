@@ -1,3 +1,5 @@
+import type { CodeBuddyLogoProps } from '../types/components/CodeBuddyLogo'
+export type { CodeBuddyLogoProps } from '../types/components/CodeBuddyLogo'
 /**
  * CodeBuddy 官方标志图形，提供两种配色变体。
  *
@@ -16,12 +18,6 @@ const GLYPH = 'M30.5918 3.12856C30.984 2.77679 31.0078 2.7632 31.2955 2.74593C31
 
 /** 从源 `40x40` 图形归一化到 `0 0 24 24`。 */
 const NORMALIZE = 'scale(0.6)'
-
-export interface CodeBuddyLogoProps {
-  size?: number
-  /** `brand` 保持官方配色；`mono` 跟随 DSH 主题。 */
-  variant?: 'brand' | 'mono'
-}
 
 export function CodeBuddyLogo({ size = 12, variant = 'brand' }: CodeBuddyLogoProps) {
   // `brand-primary-invert` 与 DSH 自有调色板中 `brand-primary` 的取值相同

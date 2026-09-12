@@ -10,6 +10,8 @@
  * @module dsh-codebuddy/adapter
  */
 
+import type { CodeBuddyAdapterOptions } from '../types/host/adapter'
+export type { CodeBuddyConnectionOptions, CodeBuddyAdapterOptions } from '../types/host/adapter'
 import {
   CONTEXT_WINDOW_EXCEEDED_CODE,
   isContextWindowExceededError,
@@ -20,23 +22,14 @@ import {
   QUOTA_EXCEEDED_CODE,
   ReasoningEffortId,
 } from '@deepseek-ai/dsh-llm'
-import type {
-  GenerateOptions,
-  LlmModelInfo,
-  LlmModelReasoningInfo,
-  LlmProviderInfo,
-  LlmReasoningEffortInfo,
-  LlmResolvedModelInfo,
-  PreparedAdapterCall,
-  StreamChunk,
-} from '@deepseek-ai/dsh-llm'
+import type { GenerateOptions, LlmModelInfo, LlmModelReasoningInfo, LlmProviderInfo, LlmReasoningEffortInfo, LlmResolvedModelInfo, PreparedAdapterCall, StreamChunk } from '@deepseek-ai/dsh-llm'
 import {
   CODEBUDDY_DISPLAY_NAME,
   DEFAULT_CONTEXT_WINDOW,
   DEFAULT_MAX_TOKENS,
 } from '../contracts/constants.ts'
 import { NotLoggedInError } from './session.ts'
-import type { CodeBuddySession } from './session.ts'
+
 import { decideReactiveTarget } from './switch-policy.ts'
 import type { SwitchCandidate } from './switch-policy.ts'
 import { parseSse } from './sse.ts'
@@ -51,34 +44,7 @@ import {
 import type { CodeBuddyClientId } from '../contracts/constants.ts'
 import { hasDisclosedCapacity, wireErrorDetail, wireErrorMessage } from './types.ts'
 import type { CodeBuddyModel, WireError, WireRequest } from './types.ts'
-import type { ImageAttachmentAccess } from '@deepseek-ai/dsh-llm'
-import type { AttachmentStore, ImageAttachmentRef } from '@deepseek-ai/dsh-attachment'
 
-/** 注册插件解析、适配器信任的连接事实。 */
-export interface CodeBuddyConnectionOptions {
-  /** 聊天端点基址；后接 `/chat/completions`。 */
-  baseURL: string
-  /** 模型目录未给出模型大小时使用的上下文容量。 */
-  defaultContextWindow: number
-  /** 模型目录未给模型设上限时使用的单次请求输出上限。 */
-  defaultMaxTokens: number
-  /** 一次流读取未完成时允许的最大 provider 空闲时间。 */
-  streamIdleTimeoutMs: number
-}
-
-/** 构造参数：会话加上每次操作取连接配置的 thunk。 */
-export interface CodeBuddyAdapterOptions {
-  session: CodeBuddySession
-  options: () => CodeBuddyConnectionOptions
-  /** 额度失败时是否允许自动切换当前活动账号。 */
-  autoSwitch?: () => boolean
-  /** 自动接管切号成功后回调（触发 harness 模型目录/用量即时刷新）。 */
-  onAccountSwitched?: () => void
-  /** 持久化附件服务（`ctx.attachments`）；仅图像输入时必需。 */
-  resolveAttachments?: () => AttachmentStore | undefined
-  /** 在可用时解析某个持久化图像句柄的当前工具访问权。 */
-  resolveImageAccess?: (attachments: AttachmentStore, ref: ImageAttachmentRef) => ImageAttachmentAccess | undefined
-}
 
 /**
  * 「等待与退避」为什么**不在本模块**里。

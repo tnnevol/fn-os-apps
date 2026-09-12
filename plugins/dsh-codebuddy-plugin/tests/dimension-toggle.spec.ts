@@ -132,9 +132,9 @@ describe('样式与位置：按钮组放在排行卡片内部', () => {
 
 describe('数据源：不需要动 host', () => {
   it('TokenStats 同时聚合 workspaces 与 models（两维度数据早已就绪）', () => {
-    // 类型定义现在在 client/panel-types.ts。
+    // 面板共享类型集中在 types/client/panel-types.d.ts。
     const TYPES = readFileSync(
-      '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/client/panel-types.ts',
+      '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/types/client/panel-types.d.ts',
       'utf8',
     )
     expect(TYPES).toMatch(/workspaces: Array<\{ name: string, path\?: string, total: number/)

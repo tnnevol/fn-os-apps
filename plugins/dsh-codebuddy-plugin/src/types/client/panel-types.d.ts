@@ -1,18 +1,9 @@
-/**
- * CodeBuddy 面板共享类型：账号行、Credit 行、Token 统计聚合。
- *
- * 独立成文件是因为 hooks / ui / pages 三层都会用到这些形状，import 单一
- * 入口比从 panel.tsx 互相 import 友好得多。同时它也是文档锚点——新人看
- * 共享形状往这里来。
- *
- * @module dsh-codebuddy/panel-types
- */
 
-import type { CodeBuddyLocaleKey } from './locales/index.ts'
+/** CodeBuddy 类型声明；由原模块抽取，运行时实现保留在 src 下。 */
+import type { CodeBuddyLocaleKey } from '../../client/locales/index.ts'
 
 /** 翻译函数（i18n 接口）。所有组件 props 都直接接 `Translate`。 */
 export type Translate = (key: CodeBuddyLocaleKey) => string
-
 /**
  * 一个账号的完整卡片数据（host panelStatus 聚合返回）。
  *
@@ -85,14 +76,12 @@ export interface PanelAccountRow {
   result?: string
   skipped?: boolean
 }
-
 /** 积分到期资源（CreditStatsPage 复用账号卡片的 resources）。 */
 export interface PanelCreditRow {
   name: string
   remaining: number
   total: number
 }
-
 /** CodeBuddy 专属 Token 统计聚合（host tokenStats 返回）。 */
 export interface TokenStats {
   provider: string
@@ -105,7 +94,6 @@ export interface TokenStats {
   models: Array<{ name: string, total: number, calls: number, percent: number }>
   sessions: Array<{ id: string, title: string, workspace?: string, total: number, input: number, output: number, calls: number, percent: number, lastActiveAt: number }>
 }
-
 /**
  * 账号卡片展示用的翻译标签集合。
  *

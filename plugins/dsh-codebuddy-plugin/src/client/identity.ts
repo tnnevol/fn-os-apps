@@ -1,3 +1,5 @@
+import type { AccountIdentityDetail, IdentityRow } from '../types/client/identity'
+export type { AccountIdentityDetail, IdentityRow } from '../types/client/identity'
 /**
  * 账户身份信息的展示辅助。
  *
@@ -22,25 +24,6 @@ export function decodeDepartment(raw: string): string {
   } catch {
     return raw
   }
-}
-
-/** 账户身份明细（host 的 `panelStatus` 与 `accounts` 同一份数据）。 */
-export interface AccountIdentityDetail {
-  uid: string
-  nickname: string
-  /** 本地备注名；仅当与昵称不同才有展示价值。 */
-  label?: string
-  uin?: string
-  enterpriseId?: string
-  enterpriseName?: string
-  enterpriseUserName?: string
-  departmentFullName?: string
-}
-
-/** 弹框里一行「标签 / 值」。 */
-export interface IdentityRow {
-  key: string
-  value: string
 }
 
 /**

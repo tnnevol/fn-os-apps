@@ -12,6 +12,7 @@
  * @module dsh-codebuddy/ui/account-resources-modal
  */
 
+import type { TopTab } from '../../types/client/ui/account-resources-modal'
 import { useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { DshDescriptions, DshModal, DshTabs, DshTag, DshTypography } from '@tnnevol/dsh-semi-ui'
@@ -21,11 +22,9 @@ import {
 } from '../../contracts/constants.ts'
 import type { ClassifiedResource, ResourceLifecycle } from '../resource-history.ts'
 import { identityRows } from '../identity.ts'
-import type { PanelAccountRow, Translate } from '../panel-types.ts'
+import type { PanelAccountRow, Translate } from '../../types/client/panel-types'
 import { formatCredit } from './loading-shared.tsx'
 import { RESOURCE_LIFECYCLE_META_IMPL, ResourceGroupImpl } from './resource-row.tsx'
-
-type TopTab = 'identity' | 'usage'
 
 export function AccountResourcesModalImpl({ row, items, t, onClose }: {
   row: PanelAccountRow | undefined

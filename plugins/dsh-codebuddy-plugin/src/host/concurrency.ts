@@ -1,3 +1,5 @@
+import type { RunHandle } from '../types/host/concurrency'
+export type { RunHandle } from '../types/host/concurrency'
 /**
  * 周期任务与账号批量探测共用的并发原语。
  *
@@ -55,11 +57,6 @@ export class RunGuard {
   get skipReason(): string | undefined {
     return this.lastSkipReason
   }
-}
-
-export interface RunHandle {
-  /** 幂等释放。 */
-  release: () => void
 }
 
 /**

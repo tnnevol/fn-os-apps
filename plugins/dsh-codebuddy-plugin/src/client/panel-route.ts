@@ -1,3 +1,5 @@
+import type { PanelRoute, PanelBrowser } from '../types/client/panel-route'
+export type { PanelRoute } from '../types/client/panel-route'
 /**
  * Hash 路由：CodeBuddy 管理面板的多页面隔离（#/codebuddy/<page>）。
  * 与 showcase 的路由控制器同构；每个页面是独立的 hash 路由，不做动态组件切换。
@@ -9,8 +11,6 @@ export const PANEL_HASHES = {
   accounts: '#/codebuddy/accounts',
   tokens: '#/codebuddy/tokens',
 } as const
-
-export type PanelRoute = keyof typeof PANEL_HASHES
 
 const entries = Object.entries(PANEL_HASHES) as Array<[PanelRoute, string]>
 
@@ -41,14 +41,6 @@ function isPanelHash(hash: string): boolean {
  */
 function pageFromHash(hash: string): PanelRoute {
   return entries.find(([, h]) => h === hash)?.[0] ?? DEFAULT_PAGE
-}
-
-type PanelBrowser = {
-  location: { hash: string }
-  /** 可选：规范化使用 `replaceState`，刷新不会新增历史条目。 */
-  history?: { replaceState: (data: unknown, unused: string, url?: string | URL | null) => void }
-  addEventListener: (type: string, listener: () => void) => void
-  removeEventListener: (type: string, listener: () => void) => void
 }
 
 export class PanelRouteController {

@@ -12,7 +12,7 @@
 
 import type { ReactNode } from 'react'
 import { DshSwitch, DshTooltip } from '@tnnevol/dsh-semi-ui'
-import type { Translate } from '../panel-types.ts'
+import type { Translate } from '../../types/client/panel-types'
 
 /** 自动切换账号开关（账号页标题行）。 */
 export function AutoSwitchToggleImpl({ checked, t, onChange }: {

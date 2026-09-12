@@ -63,7 +63,7 @@ describe('面板接线', () => {
     'utf8',
   )
   const TYPES = readFileSync(
-    '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/client/panel-types.ts',
+    '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/types/client/panel-types.d.ts',
     'utf8',
   )
 
