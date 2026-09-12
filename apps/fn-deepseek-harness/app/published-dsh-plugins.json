@@ -3,12 +3,14 @@
   "registry": "https://registry.npmjs.org/",
   "plugins": [
     {
-      "name": "@tnnevol/dsh-codex-auth",
-      "version": "0.1.2-rc.1.4"
-    },
-    {
       "name": "@tnnevol/dsh-fnos",
-      "version": "0.1.2-rc.1.4"
+      "version": "0.1.5-rc.2.4"
+    }
+  ],
+  "bundled": [
+    {
+      "name": "dshmarket",
+      "version": "1.45.1"
     }
   ]
 }

@@ -1,4 +1,9 @@
 {
+    "usr-local-linker": {
+        "bin": [
+            "app/bin/dsh"
+        ]
+    },
     "api-scope": [
         "trim.file.sharedAccess",
         "trim.file.userAcl",

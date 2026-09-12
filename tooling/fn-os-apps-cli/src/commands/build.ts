@@ -1,6 +1,7 @@
-import { cp, mkdir, readFile, rm } from 'node:fs/promises'
+import { access, cp, mkdtemp, mkdir, readFile, rm } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
-import { dirname, join } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
+import { tmpdir } from 'node:os'
 import { type OptionValues } from 'commander'
 import { program } from '../program.js'
 import { repositoryRoot } from '../config/paths.js'
@@ -15,9 +16,14 @@ import { askBuildSelection, askBundleDshPlugins, askFpkApps, askPlugins } from '
 
 const DSH_PUBLISHED_PLUGIN_MANIFEST = 'app/published-dsh-plugins.json'
 const DSH_BUNDLED_PLUGIN_DIRECTORY = 'app/bundled-dsh-plugins'
+const DSH_VERSION = '0.1.5-rc.2'
+const PNPM_VERSION = '11.7.0'
+const DSHMARKET_VERSION = '1.45.1'
+const DSH_NATIVE_CONFIG = '.github/config/dsh-native-0.1.5-rc.2.env'
 
 type PublishedDshPluginManifest = {
-  plugins?: Array<{ name?: unknown }>
+  plugins?: Array<{ name?: unknown, version?: unknown }>
+  bundled?: Array<{ name?: unknown, version?: unknown }>
 }
 
 function dshPublishedPluginManifestPath(app: FpkApp): string {
@@ -45,15 +51,43 @@ async function readPublishedDshPluginNames(app: FpkApp): Promise<string[]> {
   })
 }
 
+async function readDshPluginManifest(app: FpkApp): Promise<PublishedDshPluginManifest> {
+  const manifestPath = dshPublishedPluginManifestPath(app)
+  if (!existsSync(manifestPath)) return {}
+  return JSON.parse(await readFile(manifestPath, 'utf8')) as PublishedDshPluginManifest
+}
+
+async function readBundledDshPlugins(app: FpkApp): Promise<Array<{ name: string, version: string }>> {
+  const manifestPath = dshPublishedPluginManifestPath(app)
+  const manifest = await readDshPluginManifest(app)
+  if (manifest.bundled === undefined) return []
+  if (!Array.isArray(manifest.bundled)) {
+    throw new TypeError(`Invalid bundled DSH plugin list: ${manifestPath}`)
+  }
+  return manifest.bundled.map((plugin, index) => {
+    if (typeof plugin?.name !== 'string' || plugin.name.length === 0 ||
+        typeof plugin.version !== 'string' || plugin.version.length === 0 ||
+        !/^[0-9A-Za-z][0-9A-Za-z.+-]*$/u.test(plugin.version)) {
+      throw new Error(`Invalid bundled DSH plugin at ${manifestPath} (index ${index})`)
+    }
+    return { name: plugin.name, version: plugin.version }
+  })
+}
+
 function validatePackageFile(relativePath: string): void {
   if (relativePath.startsWith('/') || relativePath.split('/').includes('..')) {
     throw new Error(`Invalid plugin package file path: ${relativePath}`)
   }
 }
 
-async function copyPluginPackage(sourceDirectory: string, targetDirectory: string): Promise<void> {
+async function copyPluginPackage(sourceDirectory: string, targetDirectory: string, expected?: { name: string, version: string }): Promise<void> {
   const packageManifest = JSON.parse(await readFile(join(sourceDirectory, 'package.json'), 'utf8')) as {
+    name?: unknown
+    version?: unknown
     files?: unknown
+  }
+  if (expected !== undefined && (packageManifest.name !== expected.name || packageManifest.version !== expected.version)) {
+    throw new Error(`Plugin package metadata mismatch for ${expected.name}@${expected.version}`)
   }
   const files = new Set(['package.json'])
   if (Array.isArray(packageManifest.files)) {
@@ -70,13 +104,74 @@ async function copyPluginPackage(sourceDirectory: string, targetDirectory: strin
   }
 }
 
+async function packRegistryDshPlugin(
+  plugin: { name: string, version: string },
+  targetDirectory: string,
+): Promise<void> {
+  const workDirectory = await mkdtemp(join(tmpdir(), 'fnos-dsh-plugin-'))
+  const extractDirectory = join(workDirectory, 'extract')
+  await mkdir(extractDirectory, { recursive: true })
+  try {
+    await runCommand('npm', [
+      'pack', `${plugin.name}@${plugin.version}`,
+      '--ignore-scripts',
+      '--pack-destination', workDirectory,
+    ], repositoryRoot)
+    const packageArchive = join(workDirectory, `${plugin.name.replaceAll('/', '-')}-${plugin.version}.tgz`)
+    await runCommand('tar', ['-xzf', packageArchive, '-C', extractDirectory], repositoryRoot)
+    const sourceDirectory = resolve(extractDirectory, 'package')
+    const packageManifest = JSON.parse(await readFile(join(sourceDirectory, 'package.json'), 'utf8')) as {
+      name?: unknown
+      version?: unknown
+    }
+    if (packageManifest.name !== plugin.name || packageManifest.version !== plugin.version) {
+      throw new Error(`Registry package metadata mismatch for ${plugin.name}@${plugin.version}`)
+    }
+    await copyPluginPackage(sourceDirectory, targetDirectory)
+  } finally {
+    await rm(workDirectory, { recursive: true, force: true })
+  }
+}
+
+async function validateDshReleaseInputs(app: FpkApp): Promise<void> {
+  if (app.name !== 'fn-deepseek-harness') return
+  const manifestPath = dshPublishedPluginManifestPath(app)
+  const manifest = await readDshPluginManifest(app)
+  if (!Array.isArray(manifest.plugins) || manifest.plugins.length === 0) {
+    throw new Error(`Published DSH plugin manifest is empty: ${manifestPath}`)
+  }
+  for (const [index, plugin] of manifest.plugins.entries()) {
+    if (typeof plugin?.name !== 'string' || typeof plugin.version !== 'string' ||
+        plugin.version.length === 0 || !/^[0-9A-Za-z][0-9A-Za-z.+-]*$/u.test(plugin.version)) {
+      throw new Error(`Published DSH plugin must use an exact version at ${manifestPath} (index ${index})`)
+    }
+    if (plugin.name.includes('codex')) throw new Error(`Codex plugin is not allowed in the new FPK: ${plugin.name}`)
+  }
+  const dshmarket = manifest.bundled?.find(plugin => plugin?.name === 'dshmarket')
+  if (dshmarket?.version !== DSHMARKET_VERSION) {
+    throw new Error(`The FPK must bundle dshmarket@${DSHMARKET_VERSION}`)
+  }
+  const callback = await readFile(join(repositoryRoot, 'apps', app.name, 'cmd/install_callback'), 'utf8')
+  if (!callback.includes(`DSH_VERSION="${DSH_VERSION}"`) || !callback.includes(`PNPM_VERSION="${PNPM_VERSION}"`)) {
+    throw new Error(`install_callback is not aligned with DSH ${DSH_VERSION} and pnpm ${PNPM_VERSION}`)
+  }
+  const nativeConfig = await readFile(join(repositoryRoot, DSH_NATIVE_CONFIG), 'utf8')
+  if (!nativeConfig.includes(`DSH_VERSION="${DSH_VERSION}"`)) {
+    throw new Error(`Native build config is not aligned with DSH ${DSH_VERSION}`)
+  }
+  await access(join(repositoryRoot, 'apps', app.name, 'app/bin/dsh'))
+}
+
 async function prepareDshPluginBundle(app: FpkApp, include: boolean): Promise<void> {
   const manifestPath = dshPublishedPluginManifestPath(app)
   const targetDirectory = join(repositoryRoot, 'apps', app.name, DSH_BUNDLED_PLUGIN_DIRECTORY)
   await rm(targetDirectory, { recursive: true, force: true })
   if (!existsSync(manifestPath) || !include) return
 
+  const manifest = await readDshPluginManifest(app)
   const pluginNames = await readPublishedDshPluginNames(app)
+  const pluginVersions = new Map((manifest.plugins ?? []).flatMap(plugin =>
+    typeof plugin.name === 'string' && typeof plugin.version === 'string' ? [[plugin.name, plugin.version] as const] : []))
   const pluginTargets = pluginNames.map(name => {
     const target = findPluginTarget(name)
     if (target === undefined) {
@@ -90,7 +185,12 @@ async function prepareDshPluginBundle(app: FpkApp, include: boolean): Promise<vo
   for (const target of pluginTargets) {
     const sourceDirectory = dirname(join(repositoryRoot, target.path))
     const pluginDirectory = join(targetDirectory, ...target.name.split('/'))
-    await copyPluginPackage(sourceDirectory, pluginDirectory)
+    const version = pluginVersions.get(target.name)
+    if (version === undefined) throw new Error(`Missing exact version for published DSH plugin ${target.name}`)
+    await copyPluginPackage(sourceDirectory, pluginDirectory, { name: target.name, version })
+  }
+  for (const plugin of await readBundledDshPlugins(app)) {
+    await packRegistryDshPlugin(plugin, join(targetDirectory, plugin.name))
   }
 }
 
@@ -120,6 +220,7 @@ async function buildFpkApps(apps: FpkApp[], options: { bundleDshPlugins?: boolea
     await runTurbo('build:app', [gatewayName])
   }
   for (const app of apps) {
+    await validateDshReleaseInputs(app)
     await prepareDshPluginBundle(app, options.bundleDshPlugins === true)
     console.log(`\nBuilding FPK: ${app.name}`)
     await runCommand('fnpack', ['build'], join(repositoryRoot, 'apps', app.name))

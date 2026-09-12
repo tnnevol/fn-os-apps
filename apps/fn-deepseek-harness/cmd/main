@@ -8,12 +8,14 @@ DSH_HOME="${TRIM_PKGHOME}"
 APP_HOME="${TRIM_APPDEST_VOL}/@appshare/fn-deepseek-harness"
 SOCKET_PATH="${TRIM_APPDEST}/app.sock"
 PROXY_SCRIPT="${TRIM_APPDEST}/gateway-proxy.mjs"
+DSH_WRAPPER="${TRIM_APPDEST}/app/bin/dsh"
 GATEWAY_PREFIX="/app/fn-deepseek-harness"
 NODE_BIN="/var/apps/nodejs_v24/target/bin"
 REQUESTED_HOST="${wizard_host:-127.0.0.1}"
 PORT="${wizard_port:-3080}"
 TRUSTED_HOSTS="${wizard_trusted_hosts:-}"
-DSH_BIN="${DSH_HOME}/.npm-global/bin/dsh"
+DSH_BIN="${DSH_WRAPPER}"
+DSH_REAL_BIN="${DSH_HOME}/.npm-global/bin/dsh"
 HOST="${REQUESTED_HOST}"
 
 export PATH="${NODE_BIN}:${PATH}"
@@ -22,6 +24,11 @@ export HOME="${APP_HOME}"
 export NPM_CONFIG_CACHE="${DSH_HOME}/.npm-cache"
 export NPM_CONFIG_PREFIX="${DSH_HOME}/.npm-global"
 export PATH="${NPM_CONFIG_PREFIX}/bin:${PATH}"
+
+[ -x "${DSH_BIN}" ] || {
+    printf '[%s] [main] [ERROR] dsh wrapper is unavailable: %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "${DSH_BIN}" >&2
+    exit 1
+}
 
 log_message() {
     local level="$1"
@@ -82,7 +89,7 @@ is_runtime_process() {
         ;;
     dsh)
         case "${command_line}" in
-        *"${DSH_BIN}"*" web "*"--port ${PORT}"*) return 0 ;;
+        *"${DSH_BIN}"*" web "*"--port ${PORT}"* | *"${DSH_REAL_BIN}"*" web "*"--port ${PORT}"*) return 0 ;;
         esac
         ;;
     esac
