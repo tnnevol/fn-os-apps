@@ -65,10 +65,59 @@ describe('切换账号按钮有进行中反馈', () => {
     expect(block).toMatch(/disabled=\{switching \|\|/)
   })
 
-  it('原有的余额不足禁用规则仍然保留（本次只新增，不替换）', () => {
+  it('原有的余额不足 / 自动切换禁用规则仍然保留（只新增，不替换）', () => {
     // 改动前的规则：自动切换开启时禁用、无可用余额时禁用（当前账号除外）。
-    // 新条件必须与它取并集而不是覆盖。
-    expect(switchButtonBlock()).toMatch(/autoSwitch \|\| \(balance !== undefined && !balance\.usable\)/)
-    expect(switchButtonBlock()).toMatch(/account\.id !== accounts\.find\(item => item\.active\)\?\.id/)
+    // 断言的是**规则本身**而不是某个变量名：这段后来被重构成
+    // `const isActive = account.id === ...active?.id` + `!isActive`，
+    // 语义等价但字面量变了，绑字面量的断言会在无害重构时误报（已发生过）。
+    const block = switchButtonBlock()
+    expect(block).toMatch(/autoSwitch \|\| \(balance !== undefined && !balance\.usable\)/)
+    // 「当前账号除外」这一条件可以是原字面量，也可以是等价的 isActive 取反。
+    const literalForm = /account\.id !== accounts\.find\(item => item\.active\)\?\.id/
+    const isActiveForm = /!isActive/
+    expect(literalForm.test(block) || isActiveForm.test(block)).toBe(true)
+  })
+
+  it('当前账号若要被排除，必须先算出它是不是当前账号', () => {
+    // 上面两种写法都以后者为准，这里锁住它的定义，避免有人写了 `!isActive`
+    // 却把 isActive 定义反了或定义成别的字段。
+    expect(switchButtonBlock()).toMatch(/const isActive = account\.id === accounts\.find\(item => item\.active\)\?\.id/)
+  })
+})
+
+/**
+ * 已选中的账号不再出现「选择账号」按钮。
+ *
+ * 真实缺陷：该按钮原先无条件渲染，而它的 `disabled` 里含
+ * `... && account.id !== activeId` —— 对当前账号这一项恒为 false，于是
+ * `disabled` 只剩 `switching`，非切换状态下按钮**可点**且文案为「选择账号」，
+ * 点了是自己切自己（host 侧也无意义）。面板卡片的同名菜单项早已按
+ * `!row.active && !autoSwitch` 隐藏，设置区块此前漏了。
+ */
+describe('当前账号隐藏「选择账号」按钮', () => {
+  it('已选中且非切换中时返回 null，不渲染按钮', () => {
+    expect(switchButtonBlock()).toMatch(/if \(isActive && !switching\) return null/)
+  })
+
+  it('切换在途时仍渲染，保留「切换中…」与转圈', () => {
+    // 切换成功前该账号尚未成为当前账号（setAccounts 在响应回来后才更新），
+    // 若此刻就隐藏，用户点了按钮它会直接消失，看不出请求是否发出。
+    const block = switchButtonBlock()
+    expect(block).toMatch(/if \(isActive && !switching\) return null/)
+    // 隐藏发生在构造 button 之后，因此 switching 分支的文案仍在同一片段里。
+    expect(block).toMatch(/\{switching \? t\('accountSwitching'\) : t\('selectAccount'\)\}/)
+  })
+
+  it('隐藏位置在 button 构造之后，不会连切换中的转圈一起砍掉', () => {
+    const block = switchButtonBlock()
+    expect(block.indexOf('const button = (')).toBeLessThan(block.indexOf('if (isActive && !switching) return null'))
+  })
+
+  it('隐藏的是「当前账号」这一项，其它账号的手动切换仍保留', () => {
+    // 与面板菜单 `!row.active && !autoSwitch`（自动切换开启时对所有账号隐藏）
+    // 不同：这里不把 autoSwitch 作为隐藏条件，只隐藏当前账号。
+    const hideLine = switchButtonBlock().match(/if \(isActive && !switching\) return null/)
+    expect(hideLine).not.toBeNull()
+    expect(hideLine![0]).not.toContain('autoSwitch')
   })
 })
