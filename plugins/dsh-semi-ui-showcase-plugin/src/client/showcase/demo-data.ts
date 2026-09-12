@@ -62,7 +62,7 @@ export const listUsersData: Array<{ key: string, color: 'blue' | 'green' | 'ambe
 
 export const scrollAmPmItems = [{ value: '上午' }, { value: '下午' }]
 
-export const scrollHourItems = new Array(12).fill(0).map((_item, index) => ({ value: index + 1 }))
+export const scrollHourItems = Array.from({length: 12}).fill(0).map((_item, index) => ({ value: index + 1 }))
 
 export const navHorizontalItems = [
   { itemKey: 'overview', text: '总览' },

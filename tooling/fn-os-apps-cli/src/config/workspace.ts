@@ -22,10 +22,6 @@ export type GatewayPackage = {
   targetApp?: string
 }
 
-type GatewayAppConfig = {
-  outDir?: string
-}
-
 // 解析 tsdown 配置中的 outDir: resolve(__dirname, '../../apps/<app>/app')，
 // 提取其中的应用目录名。
 function appDirectoryFromOutDir(outDir: string): string | undefined {

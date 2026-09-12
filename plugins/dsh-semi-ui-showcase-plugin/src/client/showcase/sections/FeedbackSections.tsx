@@ -38,6 +38,7 @@ export function ProgressSection(): ReactNode {
       <h2 id="progress-circle" className={sectionTitle}>圆形进度条</h2>
       <DemoCard source={'<DshProgress type="circle" percent={50} />'}><div className={demo}><DshProgress type="circle" percent={25} aria-label="25%" /><DshProgress type="circle" percent={50} aria-label="50%" /><DshProgress type="circle" percent={75} size="large" aria-label="75%" /></div></DemoCard>
       <h2 id="progress-format" className={sectionTitle}>自定义文本</h2>
+      {/* eslint-disable-next-line no-template-curly-in-string -- source is intentionally displayed JSX text. */}
       <DemoCard source={'<DshProgress percent={80} format={percent => `${percent} / 100`} />'}><DshProgress percent={80} showInfo format={(percent: number) => `${percent} / 100`} aria-label="80 / 100" /></DemoCard>
     </>
   )

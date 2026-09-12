@@ -246,7 +246,7 @@ export async function runVersion(args: string[]): Promise<void> {
 
 async function versionPlugin(
   target: NonNullable<ReturnType<typeof findPluginTarget>>,
-  versionArgs: string[],
+  _versionArgs: string[],
   options: ReturnType<typeof parseVersionOptions>,
 ): Promise<void> {
   const current = await readPackageInfo(target.path)
@@ -289,7 +289,7 @@ async function versionPlugins(
 }
 
 async function versionProject(
-  versionArgs: string[],
+  _versionArgs: string[],
   options: ReturnType<typeof parseVersionOptions>,
 ): Promise<void> {
   const current = await readPackageInfo('package.json')

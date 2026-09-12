@@ -89,7 +89,7 @@ function accessToken(auth: { apiKey?: string } | undefined): string | undefined 
 }
 
 function accountId(credential: unknown): string | undefined {
-  const value = record(credential)?.['accountId']
+  const value = record(credential)?.accountId
   return typeof value === 'string' && value.length > 0 ? value : undefined
 }
 
@@ -244,10 +244,10 @@ export async function fetchCodexModelCatalog(
     }
     const payload: unknown = await response.json()
     const parsed = record(payload)
-    if (parsed === undefined || !Array.isArray(parsed['models'])) {
+    if (parsed === undefined || !Array.isArray(parsed.models)) {
       throw new Error('Codex model catalog response was not an object with a models array')
     }
-    return { models: parsed['models'] as readonly UpstreamCodexModel[] }
+    return { models: parsed.models as readonly UpstreamCodexModel[] }
   } finally {
     clearTimeout(timer)
   }

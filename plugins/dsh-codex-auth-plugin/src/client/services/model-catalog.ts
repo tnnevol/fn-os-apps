@@ -62,7 +62,7 @@ export async function loadCodexModelCatalog(
 
   const legacy = (connection as unknown as LegacyConnection).api?.llm?.models
   if (typeof legacy !== 'function') {
-    throw new Error('DSH model catalog API is unavailable')
+    throw new TypeError('DSH model catalog API is unavailable')
   }
   const response = await legacy({})
   if (!response.result.ok) throw new Error(errorMessage(response.result.error, 'DSH model catalog request failed'))

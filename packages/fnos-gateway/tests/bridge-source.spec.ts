@@ -25,6 +25,7 @@ describe('browser bridge artifact', () => {
         requests.push(String(input))
         return Promise.resolve()
       },
+      // eslint-disable-next-line object-shorthand -- vm fixture needs a constructible function.
       EventSource: function (this: { addEventListener(event: string, listener: (value: { data: string }) => void): void }, _url: string) {
         const listeners = new Map<string, (value: { data: string }) => void>()
         this.addEventListener = (event, listener) => { listeners.set(event, listener) }
@@ -124,6 +125,7 @@ describe('browser bridge artifact', () => {
     const window: Record<string, unknown> = {
       location: { href: 'https://nas.example/', origin: 'https://nas.example' },
       fetch(input: unknown) { return Promise.resolve(input) },
+      // eslint-disable-next-line object-shorthand -- vm fixture needs a constructible function.
       WebSocket: function (this: unknown, url: string): void { websocketUrls.push(url) },
     }
     function Xhr(): void {}

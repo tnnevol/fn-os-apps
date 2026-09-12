@@ -1,3 +1,4 @@
+/* eslint-disable no-new-func -- bundle tests intentionally evaluate generated browser artifacts in a sandbox. */
 import { readFileSync } from 'node:fs'
 import * as React from 'react'
 import * as ReactDom from 'react-dom'

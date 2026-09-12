@@ -7,9 +7,7 @@ import { DshButton, DshDropdown, DshIconDownload as IconDownload, DshIconFolder,
 import { requestAuthorizedEntries, type AuthorizedEntriesResult } from '../client/services/authorized-directories-client.ts'
 import { exportSessionLogToNas } from '../client/services/session-log-export-client.ts'
 import type { AuthorizedEntry } from '../contracts/authorized-directories-contract.ts'
-import type { FnosLocaleKey } from '../client/locales.ts'
 
-type Translate = (key: FnosLocaleKey) => string
 
 interface SessionLogDownloadEntry {
   open: boolean

@@ -8,7 +8,7 @@ import type {} from '@deepseek-ai/dsh-agent-default-model'
 import type {} from '@deepseek-ai/dsh-settings'
 import { registerCodexAuthRoutes, registerCodexGlobalModelRoute, registerCodexModelRefreshRoute } from './host/auth-routes.ts'
 import { CodexCredentialMirror } from './host/credential-mirror.ts'
-import { CodexCredentialStore, CODEX_AUTH_FILENAME, CODEX_PROVIDER, codexAuthPath } from './host/store.ts'
+import { CodexCredentialStore } from './host/store.ts'
 
 /** Stable Host bundle name. */
 export const name = 'dsh-codex-auth-plugin'
@@ -33,12 +33,7 @@ export function apply(ctx: Context): void {
   registerCodexGlobalModelRoute(ctx, ctx.agentDefaultModel, ctx.llm)
 }
 
-export {
-  CODEX_AUTH_FILENAME,
-  CODEX_PROVIDER,
-  CodexCredentialStore,
-  codexAuthPath,
-} from './host/store.ts'
+export { CodexCredentialStore } from './host/store.ts'
 export { CODEX_API_KEY_ENV, CODEX_API_KEY_REF, CodexCredentialMirror } from './host/credential-mirror.ts'
 export { createCodexAdapter, CODEX_STREAM_IDLE_TIMEOUT_MS } from './host/adapter.ts'
 export { CodexUsageService, normalizeCodexUsagePayload } from './host/usage.ts'

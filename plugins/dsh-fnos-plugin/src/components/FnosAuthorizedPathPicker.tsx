@@ -11,9 +11,7 @@ import { decodeFnosReference, FNOS_REFERENCE_SOURCE, type FnosInputReference, cr
 import { draftWithoutFnosOccurrence } from '../client/input-references/input-reference-actions.ts'
 import { reconcileFnosOperationOccurrences, type PendingFnosOccurrence, type TrackedFnosOccurrence } from '../client/input-references/input-reference-operation.ts'
 import type { AuthorizedEntry } from '../contracts/authorized-directories-contract.ts'
-import type { FnosLocaleKey } from '../client/locales.ts'
 
-type Translate = (key: FnosLocaleKey) => string
 type InputSelector = <S>(
   selector: (state: InputState) => S,
   equality?: (left: S, right: S) => boolean,

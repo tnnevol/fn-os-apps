@@ -77,3 +77,15 @@ git diff --check
 ```
 
 应用和插件说明应统一维护在文档站中。配置较多时优先增加现有文档章节，只有在内容确实独立且篇幅较大时才拆分页面。
+
+## Workspace 目录与测试布局
+
+仓库中的六个可发布 TypeScript workspace（`plugins/*` 四个插件、`packages/*` 两个包）采用一致的约定：源码放在 workspace 自己的 `src/`，单元测试集中放在同级 `tests/`，并通过 `test:unit` 调用该 workspace 的 `vitest.config.ts`。新增测试应优先放入对应 workspace 的 `tests/`，按被测模块组织文件；不要把跨 workspace 的测试复制到根目录，也不要把测试混入 `apps/` 下的 fnOS 应用目录。
+
+`tooling/fn-os-apps-cli` 也遵循同一 `tests/` + Vitest 布局，但它是仓库工具 workspace，不计入上述六个可发布包。`docs` 是 VitePress 文档 workspace，不承担 TypeScript 单元测试；应用目录是 fnOS 打包输入，主要通过 `pnpm run check -- --all`、脚本语法检查、JSON 校验和设备上的 `install-local` 验证，而不是强行引入 Vitest。
+
+各 workspace 保留 `test` 作为 `test:unit` 的兼容别名，根目录通过 Turbo 执行 `pnpm test`/`pnpm test:unit`。只有确实需要构建前置产物的 workspace（例如 `packages/fnos-gateway`）才在 `pretest:unit` 中生成测试所需 bridge；新增前置步骤应说明原因并保持可重复执行。
+
+## 类型定义集中策略
+
+类型依赖采用 pnpm catalog 统一版本（根 `package.json` 的 `catalog`），而非在每个 workspace 随意锁定版本。各 workspace 的 `tsconfig.json` 只声明运行时确实需要的全局类型：Node workspace 使用 `node`，含 React/Client 代码的插件和包使用 `node`、`react`。新增类型包时先确认是否已在 catalog 中；优先复用根目录版本，并在对应 workspace 的 `tsconfig.json` 最小化 `compilerOptions.types`。共享业务类型应放在实际拥有它的 package 并通过公开入口导出，避免复制声明或依赖另一个 workspace 的内部路径。类型策略变更（新增全局类型、改变共享类型归属或 catalog 版本）须在 PR 描述中说明影响，并至少运行受影响 workspace 的 `typecheck` 和 `test:unit`。

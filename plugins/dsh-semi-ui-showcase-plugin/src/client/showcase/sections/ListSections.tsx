@@ -134,7 +134,7 @@ export function ScrollListSection(): ReactNode {
       <p className={sectionText}>去掉滚轮外观后，ScrollList 的 body 是一个普通的纵向滚动容器，适合承载超出固定高度的内容（同 CodeBuddy 额度气泡的用法）。</p>
       <DemoCard source={'<DshScrollList className="my-scroll">\n  {packages.map(pkg => (\n    <div key={pkg.name}>…套餐内容…</div>\n  ))}\n</DshScrollList>\n/* .my-scroll .semi-scrolllist-body { max-height: 200px; overflow-y: auto } */'}>
         <DshScrollList className="dsh-semi-showcase-scrolllist-plain">
-          {[...Array(8).keys()].map(index => (
+          {[...Array.from({length: 8}).keys()].map(index => (
             <div className="dsh-semi-showcase-scrolllist-row" key={index}>
               <span>{`演示套餐 ${index + 1}`}</span>
               <span className="dsh-semi-showcase-secondary-text">{`已用 ${index * 7} / 100`}</span>

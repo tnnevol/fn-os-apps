@@ -1,6 +1,7 @@
 /** Settings card for the fnOS shared-directory authorization list. */
 
 import { useCallback, useEffect, useState } from 'react'
+import { DshModal } from '@tnnevol/dsh-semi-ui'
 import type { PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type { FnosLocaleKey } from '../client/locales.ts'
 import { diagnosePickerResult, isPickerCancellation, isPickerNoSelection, logPickerSdkEvent, logPickerSdkValue } from '../client/input-references/picker-result.ts'
@@ -11,7 +12,6 @@ import {
 } from '../client/services/authorized-directories-client.ts'
 import {
   FNOS_AUTHORIZED_DIRECTORIES_DELETE_PATH,
-  FNOS_AUTHORIZED_DIRECTORIES_PATH,
   type AuthorizedDirectory,
 } from '../contracts/authorized-directories-contract.ts'
 import { FNOS_GATEWAY_PROXY_PATHS_ROUTE } from '../contracts/gateway-proxy-contract.ts'
@@ -95,6 +95,7 @@ export function AuthorizedDirectoriesCard({ t }: AuthorizedDirectoriesCardProps)
   const [savedProxyPaths, setSavedProxyPaths] = useState('')
   const [proxyPathsDraft, setProxyPathsDraft] = useState('')
   const [proxyMessage, setProxyMessage] = useState<string>()
+  const [pendingDeletePath, setPendingDeletePath] = useState<string>()
 
   const loadProxyPaths = useCallback(async (): Promise<void> => {
     try {
@@ -210,7 +211,6 @@ export function AuthorizedDirectoriesCard({ t }: AuthorizedDirectoriesCardProps)
   }, [refresh, t])
 
   const removeDirectory = useCallback(async (path: string): Promise<void> => {
-    if (!window.confirm(t('deleteConfirm'))) return
     setBusy(true)
     try {
       await jsonRequest(FNOS_AUTHORIZED_DIRECTORIES_DELETE_PATH, 'POST', { path })
@@ -237,6 +237,18 @@ export function AuthorizedDirectoriesCard({ t }: AuthorizedDirectoriesCardProps)
         </span>
         <Chevron open={open} />
       </button>
+      <DshModal
+        visible={pendingDeletePath !== undefined}
+        title={t('delete')}
+        content={t('deleteConfirm')}
+        okText={t('confirm')}
+        cancelText={t('discard')}
+        onOk={() => {
+          if (pendingDeletePath !== undefined) void removeDirectory(pendingDeletePath)
+          setPendingDeletePath(undefined)
+        }}
+        onCancel={() => { setPendingDeletePath(undefined) }}
+      />
       {open ? (
         <div id="dsh-fnos-authorized-directories-body" className="dsh-fnos-authorized-card-body">
           <div className="dsh-fnos-authorized-row">
@@ -256,7 +268,7 @@ export function AuthorizedDirectoriesCard({ t }: AuthorizedDirectoriesCardProps)
                 <li key={directory.path} className="dsh-fnos-authorized-path-row">
                   <span title={directory.semanticPath} className="dsh-fnos-authorized-path">{directory.semanticPath}</span>
                   {directory.removable ? (
-                    <button type="button" className="dsh-fnos-authorized-button dsh-fnos-authorized-button--danger" disabled={busy} onClick={() => { void removeDirectory(directory.path) }}>
+                    <button type="button" className="dsh-fnos-authorized-button dsh-fnos-authorized-button--danger" disabled={busy} onClick={() => { setPendingDeletePath(directory.path) }}>
                       {t('delete')}
                     </button>
                   ) : <span className="dsh-fnos-authorized-read-only">{t('sharedDirectory')}</span>}

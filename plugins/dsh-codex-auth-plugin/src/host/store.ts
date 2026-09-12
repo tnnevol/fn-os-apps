@@ -50,13 +50,13 @@ function parseDocument(text: string, filename: string): AuthDocument {
     throw new Error(`codex-auth: ${filename} must contain an object`)
   }
   const document = value as Record<string, unknown>
-  if (document['version'] !== AUTH_FORMAT_VERSION) {
-    throw new Error(`codex-auth: ${filename} has unsupported auth format version ${String(document['version'])}`)
+  if (document.version !== AUTH_FORMAT_VERSION) {
+    throw new Error(`codex-auth: ${filename} has unsupported auth format version ${String(document.version)}`)
   }
   if (Object.keys(document).some(key => key !== 'version' && key !== 'credential')) {
     throw new Error(`codex-auth: ${filename} contains an unknown top-level field`)
   }
-  const raw = document['credential']
+  const raw = document.credential
   if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
     throw new Error(`codex-auth: ${filename} credential must be an object`)
   }
@@ -64,13 +64,13 @@ function parseDocument(text: string, filename: string): AuthDocument {
   if (Object.keys(credential).some(key => !['type', 'access', 'refresh', 'expires', 'accountId'].includes(key))) {
     throw new Error(`codex-auth: ${filename} credential contains an unknown field`)
   }
-  if (credential['type'] !== 'oauth') throw new Error(`codex-auth: ${filename} credential type must be oauth`)
+  if (credential.type !== 'oauth') throw new Error(`codex-auth: ${filename} credential type must be oauth`)
   for (const key of ['access', 'refresh', 'accountId'] as const) {
     if (typeof credential[key] !== 'string' || credential[key].length === 0) {
       throw new Error(`codex-auth: ${filename} credential ${key} must be a non-empty string`)
     }
   }
-  if (typeof credential['expires'] !== 'number' || !Number.isFinite(credential['expires']) || credential['expires'] <= 0) {
+  if (typeof credential.expires !== 'number' || !Number.isFinite(credential.expires) || credential.expires <= 0) {
     throw new Error(`codex-auth: ${filename} credential expires must be a positive finite number`)
   }
   return { version: AUTH_FORMAT_VERSION, credential: credential as unknown as OAuthCredential }

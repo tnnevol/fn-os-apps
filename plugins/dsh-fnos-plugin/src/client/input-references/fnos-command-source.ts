@@ -163,7 +163,7 @@ function crumbsFor(
   if (normalized === ROOT_PATH) return crumbs
 
   const segments = normalized.split('/').filter(Boolean)
-  for (const [index, segment] of segments.entries()) {
+  for (const [index] of segments.entries()) {
     const prefix = `/${segments.slice(0, index + 1).join('/')}`
     const semanticPath = knownPaths.get(prefix) ?? prefix
     crumbs.push({

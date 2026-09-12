@@ -289,6 +289,38 @@ describe('gateway server', () => {
     expect(response.body).toEqual(body)
   })
 
+  it('returns JSON errors when web control operations reject', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'fnos-gateway-'))
+    const gatewaySocket = join(directory, 'gateway.sock')
+    const gateway = createGateway({
+      socketPath: gatewaySocket,
+      gatewayPrefix: GATEWAY_PREFIX,
+      upstreamHost: '127.0.0.1',
+      upstreamPort: 1,
+      webProcess: {
+        snapshot: async () => { throw new Error('boom') },
+        start: async () => { throw new Error('boom') },
+        restart: async () => { throw new Error('boom') },
+        stop: async () => undefined,
+      } as never,
+    })
+    await once(gateway.server, 'listening')
+    resources.push(async () => gateway.close())
+    resources.push(async () => rm(directory, { recursive: true, force: true }))
+    const request = (path: string, method: string) => new Promise<{ statusCode: number | undefined, body: string }>((resolve, reject) => {
+      const req = httpRequest({ socketPath: gatewaySocket, path, method, headers: { 'x-requested-with': 'fetch', 'x-trim-isadmin': 'true' } }, res => {
+        const chunks: Buffer[] = []
+        res.on('data', chunk => chunks.push(Buffer.from(chunk)))
+        res.on('end', () => resolve({ statusCode: res.statusCode, body: Buffer.concat(chunks).toString() }))
+        res.on('error', reject)
+      })
+      req.on('error', reject)
+      req.end()
+    })
+    await expect(request('/__fnos-gateway/control/web/status', 'GET')).resolves.toEqual({ statusCode: 503, body: '{"error":"web-control-failed"}' })
+    await expect(request('/__fnos-gateway/control/web/start', 'POST')).resolves.toEqual({ statusCode: 503, body: '{"error":"web-control-failed"}' })
+  })
+
   it('returns one HTML recovery response when the upstream connection fails', async () => {
     const upstream = createServer((_req, res) => {
       res.socket?.destroy()

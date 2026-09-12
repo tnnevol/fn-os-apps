@@ -27,7 +27,7 @@ export function rewriteCss(body: Buffer, gatewayPrefix: string): string {
   const css = body.toString('utf8')
   return css.replace(
     /url\(\s*(["']?)(\/(?!\/)[^)"']+)\1\s*\)/gi,
-    (match, quote, path) => 'url(' + quote + addGatewayPrefix(path, gatewayPrefix) + quote + ')',
+    (_match, quote, path) => 'url(' + quote + addGatewayPrefix(path, gatewayPrefix) + quote + ')',
   )
 }
 

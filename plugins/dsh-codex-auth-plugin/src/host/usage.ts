@@ -59,6 +59,7 @@ function percentage(value: number): number {
   return Math.max(0, Math.min(100, value))
 }
 
+/* eslint-disable dot-notation -- Bracket keys below are server wire fields, not local camelCase properties. */
 function window(value: unknown): CodexUsageWindow | undefined {
   const source = record(value)
   if (source === undefined) return undefined
@@ -112,6 +113,8 @@ export function normalizeCodexUsagePayload(value: unknown): CodexUsage {
   if (quota !== undefined) result.credits = quota
   return result
 }
+
+/* eslint-enable dot-notation */
 
 function accessToken(auth: { apiKey?: string } | undefined): string | undefined {
   return typeof auth?.apiKey === 'string' && auth.apiKey.length > 0 ? auth.apiKey : undefined

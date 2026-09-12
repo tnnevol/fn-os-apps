@@ -15,12 +15,23 @@ function webControl(options: GatewayOptions): connect.NextHandleFunction {
     if (path !== WEB_CONTROL_STATUS_PATH && path !== WEB_CONTROL_START_PATH && path !== WEB_CONTROL_RESTART_PATH) return next()
     res.setHeader('content-type', 'application/json; charset=utf-8')
     if (options.webProcess === undefined) { res.statusCode = 404; res.end(JSON.stringify({ error: 'web-control-unavailable' })); return }
-    if (path === WEB_CONTROL_STATUS_PATH && req.method === 'GET') { void options.webProcess.snapshot().then(value => res.end(JSON.stringify(value))); return }
+    if (path === WEB_CONTROL_STATUS_PATH && req.method === 'GET') {
+      void options.webProcess.snapshot().then(value => res.end(JSON.stringify(value))).catch(() => {
+        if (res.writableEnded) return
+        res.statusCode = 503
+        res.end(JSON.stringify({ error: 'web-control-failed' }))
+      })
+      return
+    }
     if ((path === WEB_CONTROL_START_PATH || path === WEB_CONTROL_RESTART_PATH) && req.method === 'POST') {
       const administrator = req.headers['x-requested-with'] === 'fetch' && String(req.headers['x-trim-isadmin'] ?? '').toLowerCase() === 'true'
       if (!administrator) { res.statusCode = 403; res.end(JSON.stringify({ error: 'administrator-required' })); return }
       const operation = path === WEB_CONTROL_RESTART_PATH ? options.webProcess.restart() : options.webProcess.start()
-      void operation.then(value => { res.statusCode = value.state === 'error' ? 503 : 200; res.end(JSON.stringify(value)) })
+      void operation.then(value => { res.statusCode = value.state === 'error' ? 503 : 200; res.end(JSON.stringify(value)) }).catch(() => {
+        if (res.writableEnded) return
+        res.statusCode = 503
+        res.end(JSON.stringify({ error: 'web-control-failed' }))
+      })
       return
     }
     res.statusCode = 405; res.end(JSON.stringify({ error: 'method-not-allowed' }))

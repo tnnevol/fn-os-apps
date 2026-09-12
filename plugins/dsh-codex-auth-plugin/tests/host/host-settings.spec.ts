@@ -4,7 +4,6 @@ import { describe, expect, it } from 'vitest'
 describe('dsh-codex-auth-plugin host registration', () => {
   it('keeps the auth card and delegates the model page to pi-ai', async () => {
     const host = await readFile(new URL('../../src/index.ts', import.meta.url), 'utf8')
-    const client = await readFile(new URL('../../src/client/index.tsx', import.meta.url), 'utf8')
     const paths = await readFile(new URL('../../src/contracts/auth-paths.ts', import.meta.url), 'utf8')
     const routes = await readFile(new URL('../../src/host/auth-routes.ts', import.meta.url), 'utf8')
     const patch = await readFile(new URL('../../cordis.patch.yml', import.meta.url), 'utf8')
@@ -24,11 +23,11 @@ describe('dsh-codex-auth-plugin host registration', () => {
 
   it('does not register the removed image capability module', async () => {
     const host = await readFile(new URL('../../src/index.ts', import.meta.url), 'utf8')
-    const client = await readFile(new URL('../../src/client/index.tsx', import.meta.url), 'utf8')
     const routes = await readFile(new URL('../../src/host/auth-routes.ts', import.meta.url), 'utf8')
     const locales = await readFile(new URL('../../src/client/locales.ts', import.meta.url), 'utf8')
     expect(host).not.toContain('viewImageTool')
     expect(host).not.toContain('scheduleImageTool')
+    const client = await readFile(new URL('../../src/client/index.tsx', import.meta.url), 'utf8')
     expect(client).not.toContain('CodexCapabilities')
     expect(routes).not.toContain('CODEX_AUTH_SETTINGS_PATH')
     expect(routes).not.toContain('withDshVersion')
