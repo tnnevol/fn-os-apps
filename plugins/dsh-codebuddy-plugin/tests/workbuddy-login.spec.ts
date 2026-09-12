@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { readFileSync } from 'node:fs'
 import {
   CODEBUDDY_CLI_VERSION,
@@ -213,11 +213,25 @@ describe('登录失败会反馈给用户', () => {
     expect(src).toMatch(/pending\.failure === undefined \? \{\} : \{ error: pending\.failure \}/)
   })
 
-  it('客户端轮询遇到 error 立即停止并上报，不等到超时', () => {
-    const src = readFileSync(
-      '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/components/AddAccountModal.tsx',
-      'utf8',
-    )
-    expect(src).toMatch(/result\.value\.error !== undefined[\s\S]{0,220}onFailed/)
+  it('客户端轮询遇到 error 立即停止并上报，不等到超时', async () => {
+    // 这条原先是对 AddAccountModal.tsx 的文本扫描。轮询实现已拆到
+    // src/client/login-polling.ts（组件文件会引入 Semi 的 CJS 图标包，node
+    // 环境无法解析，当初只能间接验证），现在直接驱动真实函数断言行为。
+    const { startLoginPolling } = await import('../src/client/login-polling.ts')
+    vi.stubGlobal('window', { setTimeout: () => 0 })
+    try {
+      const rpc = { call: vi.fn().mockResolvedValue({ ok: true, value: { done: false, error: '被拒' } }) }
+      const onFailed = vi.fn()
+      const onTimeout = vi.fn()
+
+      startLoginPolling(rpc as never, 's', vi.fn(), onTimeout, onFailed)
+      await vi.waitFor(() => { expect(onFailed).toHaveBeenCalledWith('被拒') })
+
+      // 立即停止：不再继续轮询，也不误报超时。
+      expect(rpc.call).toHaveBeenCalledTimes(1)
+      expect(onTimeout).not.toHaveBeenCalled()
+    } finally {
+      vi.unstubAllGlobals()
+    }
   })
 })

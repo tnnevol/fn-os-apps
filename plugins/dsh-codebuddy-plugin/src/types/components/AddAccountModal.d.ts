@@ -21,10 +21,19 @@ export interface AddAccountModalProps {
   t: Translate
   visible: boolean
   initial?: AddAccountOptions
-  /** 调用方在下方展示等待卡时，已发起登录的文案。 */
+  /**
+   * 握手成功、登录已发起。宿主据此打开浏览器并标记「登录中」。
+   *
+   * 轮询与结果提示由弹框自己负责，宿主不要再对同一个 state 起第二个轮询——
+   * 那会对 `pollLogin` 发双份请求，并让提示出现两次。
+   */
   onLoginStart?: (start: { authUrl: string, state: string }) => void
   onCancel: () => void
-  /** 已发起的登录结束（或出错）后调用一次，供调用方刷新。 */
+  /**
+   * 登录彻底落定后调用一次：成功、失败或超时。
+   *
+   * `ok` 为真时宿主应刷新名册；提示文案已由弹框给出，宿主不必重复提示。
+   */
   onFinished?: (ok: boolean, text?: string) => void
   /** 主操作按钮文案；缺省为共享的「打开登录」文案。 */
   submitLabel?: string

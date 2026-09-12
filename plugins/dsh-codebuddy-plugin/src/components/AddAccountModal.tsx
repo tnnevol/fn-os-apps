@@ -1,21 +1,22 @@
 /**
  * 设置区块与管理面板共享的「添加账号」弹框。它持有表单状态
- * （备注名 + 网络环境 + 企业服务地址 + 企业开关）与 start-login 握手，
- * 并把进行中的状态与结果回报给调用方，让两处界面都能展示等待/完成状态，
- * 在登录完成后各自刷新名册。
+ * （备注名 + 客户端 + 网络环境 + 企业服务地址 + 企业开关）、发起 start-login
+ * 握手，并**自己盯到登录落定**。
+ *
+ * 反馈闭环：主按钮从点击起持续 loading（握手在途 → 等待浏览器授权），落定后用
+ * 通知提示结果，成功时主动关闭自己；失败/超时保留表单以便直接重试。轮询归它
+ * 所有，因为只有它知道「这次登录是从我发起的」，也只有它能决定关闭自己；宿主
+ * 通过 `onLoginStart`/`onFinished` 开窗与刷新名册。
  *
  * @module dsh-codebuddy/add-account-modal
  */
 
 import type { AddAccountModalProps } from '../types/components/AddAccountModal'
 export type { AddAccountOptions, AddAccountModalProps } from '../types/components/AddAccountModal'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   DshButton,
-  DshCopyable,
   DshForm,
-  DshIconCopy,
-  DshIconExternalOpen,
   DshInput,
   DshModal,
   DshSelect,
@@ -33,19 +34,16 @@ import {
   type CodeBuddyClientId,
 } from '../contracts/constants.ts'
 
-import type { ConnectionRpc, LoginPoll, LoginStart, RpcResult } from '../client/rpc.ts'
+import type { LoginStart } from '../client/rpc.ts'
 import { describeRpcError } from '../client/rpc.ts'
+import { startLoginPolling } from '../client/login-polling.ts'
+export { POLL_DEADLINE_MS, POLL_INTERVAL_MS, startLoginPolling } from '../client/login-polling.ts'
 import {
   CODEBUDDY_DEFAULT_ENVIRONMENT,
   CODEBUDDY_ENVIRONMENTS,
   CODEBUDDY_ENVIRONMENT_LABELS,
 } from '../contracts/constants.ts'
 import { PreferenceLabel } from './PreferenceLabel.tsx'
-
-/** 调用方轮询已发起登录的间隔（ms）。 */
-const POLL_INTERVAL_MS = 1500
-/** 调用方放弃前的最长轮询时长（ms）。 */
-const POLL_DEADLINE_MS = 10 * 60 * 1000
 
 export function AddAccountModal({
   rpc,
@@ -62,16 +60,35 @@ export function AddAccountModal({
   const [environment, setEnvironment] = useState<string>(initial?.environment ?? CODEBUDDY_DEFAULT_ENVIRONMENT)
   const [endpoint, setEndpoint] = useState(initial?.endpoint ?? '')
   const [enterprise, setEnterprise] = useState(initial?.enterprise ?? false)
-  const [submitting, setSubmitting] = useState(false)
+  /** 握手请求本身在途（点按钮 → startLogin 返回）。 */
+  const [handshaking, setHandshaking] = useState(false)
   /**
-   * 握手成功后停留在弹框里展示链接。`null` = 尚未发起（第一阶段）。
+   * 已发起并仍在等待用户授权的握手 state。`undefined` = 没有在途登录。
    *
-   * 为什么不在成功后立即关闭（原行为）：复制按钮要放在 footer，而 auth 地址由
-   * host 的 startLogin 握手**签发于提交之后** —— 提交前没有任何内容可复制，
-   * footer 里放一个永远禁用的按钮没有意义。留在原地让「点登录 → 取链接」
-   * 在一个地方完成，跨设备登录也不必再去页面上找等待卡。
+   * 主按钮据此**持续** loading 直到登录彻底落定（成功/失败/超时），而不是握手
+   * 一返回就停——握手成功只代表「链接已签发」，用户还没在浏览器里授权完。
    */
-  const [started, setStarted] = useState<{ authUrl: string, state: string } | null>(null)
+  const [pendingState, setPendingState] = useState<string | undefined>(undefined)
+  const waiting = handshaking || pendingState !== undefined
+
+  /**
+   * 登录落定时是否要主动关闭弹框。
+   *
+   * 用 ref 而非 state：它只在 effect 的回调里读取，不参与渲染；若做成 state
+   * 会让轮询 effect 多一个依赖、进而在登录途中重启轮询。
+   */
+  const closeOnDone = useRef(false)
+  /**
+   * 始终指向最新的关闭回调。
+   *
+   * 轮询 effect 只在回调里「调用」它，不因它变化而需要重建轮询；把它收进 ref
+   * 让 effect 的依赖表如实只列出真正的数据依赖（state/rpc/t），既不撕掉进行中
+   * 的轮询，也不需要抑制依赖检查。
+   */
+  const onCancelRef = useRef(onCancel)
+  onCancelRef.current = onCancel
+  const onFinishedRef = useRef(onFinished)
+  onFinishedRef.current = onFinished
 
   // 弹框每次打开都重置字段，避免上一次的编辑泄漏到下一次添加账号流程。
   const open = visible
@@ -84,15 +101,16 @@ export function AddAccountModal({
       setEnvironment(initial?.environment ?? CODEBUDDY_DEFAULT_ENVIRONMENT)
       setEndpoint(initial?.endpoint ?? '')
       setEnterprise(initial?.enterprise ?? false)
-      setStarted(null)
+      // 不清 pendingState：登录可能仍在途（用户关掉弹框又重开），
+      // 清掉会让轮询失去 state、按钮 loading 也会错误地停下。
     }
   }
 
   const close = (): void => { onCancel() }
 
   const submit = async (): Promise<void> => {
-    if (submitting) return
-    setSubmitting(true)
+    if (waiting) return
+    setHandshaking(true)
     // 只把对当前客户端有意义的字段发出去：WorkBuddy 的端点由客户端身份决定，
     // 若仍带上 environment，会被原样存进账号条目，日后误导排查。
     const cliOnly = client === 'cli'
@@ -105,73 +123,99 @@ export function AddAccountModal({
         : {},
     }
     const result = await rpc.call<LoginStart>(CODEBUDDY_AUTH_CHANNEL, 'startLogin', options)
-    setSubmitting(false)
+    setHandshaking(false)
     if (!result.ok) {
+      // 握手就失败：没有可等待的登录，直接提示并关框（表单内容已无意义）。
+      DshToast.error({ content: `${t('loginFailed')} ${describeRpcError(result)}` })
       onFinished?.(false, describeRpcError(result))
       close()
       return
     }
-    // 拿到链接后**留在弹框里**：footer 的复制按钮据此启用，同时把握手交给
-    // 调用方（打开浏览器、开始轮询、登录完成后刷新名单）。
-    setStarted({ authUrl: result.value.authUrl, state: result.value.state })
+    /**
+     * 进入「等待授权」阶段：按钮继续 loading，并由本组件的轮询 effect 盯到落定。
+     *
+     * 关框时机是登录**成功之后**（见轮询 effect），不是现在——用户此刻还没授权，
+     * 提前关框会让他失去「正在登录」的唯一反馈。
+     */
+    closeOnDone.current = true
+    setPendingState(result.value.state)
     onLoginStart?.({ authUrl: result.value.authUrl, state: result.value.state })
   }
 
-  const start = started
+  /**
+   * 盯住本弹框发起的登录，直到成功/失败/超时，然后用通知告知结果。
+   *
+   * 为什么轮询放在弹框里而不是只靠父组件：只有弹框知道「这次登录是从我这里
+   * 发起的」，因而只有它能在落定时决定要不要关闭自己。父组件的轮询仍然保留，
+   * 服务它自己发起的流程（例如设置页掉线账号的「重新登录」）。
+   */
+  useEffect(() => {
+    const state = pendingState
+    if (state === undefined) return
+    /**
+     * 收尾：清掉在途标记，并把结果回报宿主（刷新名册 / 清「登录中」）。
+     *
+     * `onFinished` 必须在**每个**结局上调用，不能只在成功时——宿主用它把
+     * 「登录中」标记落回 false，漏掉任一分支都会让添加按钮永久停在禁用态。
+     */
+    const settle = (ok: boolean, text?: string): void => {
+      setPendingState(undefined)
+      onFinishedRef.current?.(ok, text)
+    }
+    const shouldClose = (): boolean => {
+      const yes = closeOnDone.current
+      closeOnDone.current = false
+      return yes
+    }
+    return startLoginPolling(
+      rpc,
+      state,
+      () => {
+        settle(true)
+        DshToast.success({ content: t('loginSucceeded') })
+        // 成功才主动关框：账号已入册，表单没有留存价值。
+        if (shouldClose()) onCancelRef.current()
+      },
+      () => {
+        // 超时/失败**不关框**：字段原样保留，用户可直接再点一次重试，
+        // 不必重新填一遍备注、客户端与环境。
+        settle(false, t('timeout'))
+        shouldClose()
+        DshToast.warning({ content: t('timeout') })
+      },
+      (reason: string) => {
+        settle(false, reason)
+        shouldClose()
+        DshToast.error({ content: `${t('loginFailed')} ${reason}` })
+      },
+    )
+  }, [pendingState, rpc, t])
 
   /**
-   * footer 的按钮组。两阶段：
+   * footer 的按钮组：[取消] [打开登录]。
    *
-   *   提交前：                     [取消] [打开登录]
-   *   提交后：  [复制登录地址]      [取消] [打开登录]
+   * 主按钮在**整个登录期间**保持 loading（`waiting` = 握手在途 或 等待授权），
+   * 直到轮询判定成功/失败/超时。Semi 的 loading 不会自动禁用按钮，因此另外
+   * 显式 disabled，避免重复点击起第二个握手（每个握手都会在 host 侧挂一条
+   * 等待中的登录）。
    *
-   * 布局沿用 .dsh-codebuddy-add-footer 的既有约定（复制靠左、主操作靠右）——
-   * 那两条样式原本就在样式表里，注释写明了这个意图，只是当时没实现复制按钮。
-   *
-   * 为什么提交后才出现复制：auth 地址由 host 的 startLogin 握手**签发于提交之后**，
-   * 提交前没有任何内容可复制，放一个永远禁用的按钮没有意义。因此握手成功后弹框
-   * **不关闭**，就地展示链接——「点登录 → 取链接」在同一处完成，跨设备登录也不必
-   * 再去页面上的等待卡里找。
+   * 这里曾有一个「复制登录地址」按钮，现已去除：auth 链接由 host 向官方接口
+   * 握手后签发（含服务端一次性 state），客户端无法在提交前算出它，做不到
+   * 「一直可用且随客户端/环境变化」；跨设备授权改由浏览器自身的分享能力承担。
    */
   const footer = (
     <div className="dsh-codebuddy-add-footer">
-      {start === null ? null : (
-        /* 复制交给 Semi 的 Copyable：它内置 copy-text-to-clipboard（含 execCommand
-           回退）与「已复制」成功态计时，无需手写 navigator.clipboard 与失败分支。
-           render prop 让我们用自己的按钮承载它，且不产生额外包裹元素。 */
-        <DshCopyable
-          content={start.authUrl}
-          onCopy={(_event: React.MouseEvent, _content: string, ok: boolean) => {
-            if (ok) DshToast.success({ content: t('copyLoginLinkDone') })
-            else DshToast.warning({ content: t('copyLoginLinkDoneFail') })
-          }}
-          render={(copied: boolean, doCopy: (event: React.MouseEvent) => void) => (
-            <DshButton
-              type="tertiary"
-              icon={copied ? undefined : <DshIconCopy />}
-              onClick={doCopy}
-            >
-              {copied ? t('copyLoginLinkCopied') : t('copyLoginLink')}
-            </DshButton>
-          )}
-        />
-      )}
       <div className="dsh-codebuddy-add-footer-main">
         <DshButton type="tertiary" onClick={close}>{t('cancel')}</DshButton>
-        {start === null ? (
-          <DshButton type="primary" theme="solid" loading={submitting} onClick={() => { void submit() }}>
-            {submitLabel ?? t('createUserGo')}
-          </DshButton>
-        ) : (
-          <DshButton
-            type="primary"
-            theme="solid"
-            icon={<DshIconExternalOpen />}
-            onClick={() => { window.open(start.authUrl, '_blank', 'noopener') }}
-          >
-            {t('createUserGo')}
-          </DshButton>
-        )}
+        <DshButton
+          type="primary"
+          theme="solid"
+          loading={waiting}
+          disabled={waiting}
+          onClick={() => { void submit() }}
+        >
+          {pendingState === undefined ? submitLabel ?? t('createUserGo') : t('signingIn')}
+        </DshButton>
       </div>
     </div>
   )
@@ -185,7 +229,7 @@ export function AddAccountModal({
       onCancel={close}
       /* 自定义 footer：Semi 的 `footer` prop 会**完全取代**默认按钮
          （ModalContent 里是 `props.footer ? … : null`），因此取消/确定都由 footer
-         自己渲染。这样才能把「复制 auth 地址」与确定按钮并排放在一起。 */
+         自己渲染——这里需要主按钮在登录期间持续 loading，默认按钮做不到。 */
       footer={footer}
     >
       <div className="dsh-codebuddy-add-form">
@@ -257,39 +301,3 @@ export function AddAccountModal({
     </DshModal>
   )
 }
-
-/** 轮询一次已发起的登录直至完成；供等待卡界面使用。 */
-export function startLoginPolling(
-  rpc: ConnectionRpc,
-  state: string,
-  onDone: () => void,
-  onTimeout: () => void,
-  onFailed?: (reason: string) => void,
-): () => void {
-  const startedAt = Date.now()
-  let stopped = false
-  const tick = async (): Promise<void> => {
-    if (stopped) return
-    const result: RpcResult<LoginPoll> = await rpc.call<LoginPoll>(CODEBUDDY_AUTH_CHANNEL, 'pollLogin', { state })
-    if (stopped) return
-    if (result.ok && result.value.done) {
-      onDone()
-      return
-    }
-    // 宿主已判定失败：立即停止轮询并上报原因，不必等到超时——继续等待不会有结果。
-    if (result.ok && result.value.error !== undefined && result.value.error.length > 0) {
-      if (onFailed === undefined) onTimeout()
-      else onFailed(result.value.error)
-      return
-    }
-    if (Date.now() - startedAt >= POLL_DEADLINE_MS) {
-      onTimeout()
-      return
-    }
-    window.setTimeout(tick, POLL_INTERVAL_MS)
-  }
-  void tick()
-  return () => { stopped = true }
-}
-
-export { POLL_DEADLINE_MS, POLL_INTERVAL_MS }

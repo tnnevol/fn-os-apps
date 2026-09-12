@@ -16,14 +16,12 @@ import {
   DshIconButton,
   DshForm,
   DshIconAlertCircle,
-  DshIconCopy,
   DshIconEdit,
   DshInput,
   DshModal,
   DshSlider,
   DshSwitch,
   DshTag,
-  DshToast,
   DshTooltip,
   DshTypography,
 } from '@tnnevol/dsh-semi-ui'
@@ -70,6 +68,8 @@ export function CodeBuddySection({ rpc, t, panelRoute, close }: CodeBuddySection
   const [status, setStatus] = useState<AuthStatus | undefined>(undefined)
   const [error, setError] = useState<string | undefined>(undefined)
   const [loginState, setLoginState] = useState<string | undefined>(undefined)
+  /** 弹框发起的登录是否在途（该流程由弹框自己轮询与提示）。 */
+  const [addWaiting, setAddWaiting] = useState(false)
   // 来自 host `accounts` 端点的多账号名册。
   const [accounts, setAccounts] = useState<AccountView[]>([])
   const [switchingId, setSwitchingId] = useState<string | undefined>(undefined)
@@ -77,8 +77,6 @@ export function CodeBuddySection({ rpc, t, panelRoute, close }: CodeBuddySection
   const [addOpen, setAddOpen] = useState(false)
   // 删除确认目标账号 id。
   const [removeTarget, setRemoveTarget] = useState<string | undefined>(undefined)
-  // 登录中握手返回的真实 authUrl——复制按钮与「打开登录页」共用同一链接。
-  const [loginLink, setLoginLink] = useState<string | undefined>(undefined)
   // 五个偏好多直接来自持久化 store。useStore 内部是 useSyncExternalStore，
   // 因此设置页与后台面板里任一处的写入（含跨标签）都会自动反映过来，
   // 原先「手写订阅 effect + setState 镜像」的整套逻辑可以去掉。
@@ -191,20 +189,21 @@ export function CodeBuddySection({ rpc, t, panelRoute, close }: CodeBuddySection
     )
   }, [loginState, rpc, refresh, t])
 
-  // 接收共享添加账号弹框发起的登录：打开浏览器，展示等待卡片并轮询完成。
-  const onAddLoginStart = useCallback((start: { authUrl: string, state: string }) => {
-    window.open(start.authUrl, '_blank', 'noopener')
-    setLoginLink(start.authUrl)
-    setLoginState(start.state)
+  /**
+   * 接收共享添加账号弹框发起的登录：打开浏览器，并把「登录中」反映到本区块。
+   *
+   * 不把 state 交给本组件的轮询 effect：弹框自己已经在轮询它，两处同时轮询会
+   * 对 `pollLogin` 发双份请求，并各自判定落定导致提示出现两次。本组件的轮询
+   * 仍然保留，服务它自己发起的「重新登录」（`startRelogin`）。
+   */
+  const onAddLoginStart = useCallback(() => {
+    setAddWaiting(true)
   }, [])
-
-  // 复制登录链接：写入当前握手返回的真实 authUrl（与「打开登录页」打开的
-  // 链接完全一致，同一 state），供其他设备打开完成同一份授权。
-  const cbCopyLoginLink = (link: string): void => {
-    void navigator.clipboard?.writeText(link)
-      .then(() => { DshToast.success({ content: t('copyLoginLinkDone') }) })
-      .catch(() => { DshToast.warning({ content: t('copyLoginLinkDoneFail') }) })
-  }
+  /** 弹框侧登录落定：成功则刷新名册；提示已由弹框给出，这里不重复。 */
+  const onAddFinished = useCallback((ok: boolean) => {
+    setAddWaiting(false)
+    if (ok) void refresh()
+  }, [refresh])
 
   // 掉线账号重新登录：保留其环境信息，直接发起握手（不激活为新当前账号）。
   const startRelogin = useCallback(async (account: AccountView) => {
@@ -219,7 +218,6 @@ export function CodeBuddySection({ rpc, t, panelRoute, close }: CodeBuddySection
       return
     }
     window.open(result.value.authUrl, '_blank', 'noopener')
-    setLoginLink(result.value.authUrl)
     setLoginState(result.value.state)
   }, [rpc])
 
@@ -285,6 +283,11 @@ export function CodeBuddySection({ rpc, t, panelRoute, close }: CodeBuddySection
 
   const signedIn = status?.loggedIn === true
   const hasAccounts = accounts.length > 0
+  /**
+   * 是否有任一登录流程在途：本区块的「重新登录」（`loginState`）或弹框的
+   * 「添加账号」（`addWaiting`）。两者都应禁用添加按钮并显示「登录中」。
+   */
+  const busyLogin = loginState !== undefined || addWaiting
 
   return (
     <div className="dsh-codebuddy-section">
@@ -318,29 +321,17 @@ export function CodeBuddySection({ rpc, t, panelRoute, close }: CodeBuddySection
               size="small"
               theme="solid"
               type="primary"
-              disabled={loginState !== undefined}
+              disabled={busyLogin}
               onClick={() => { setAddOpen(true) }}
             >
-              {loginState !== undefined ? t('signingIn') : t('createUser')}
+              {busyLogin ? t('signingIn') : t('createUser')}
             </DshButton>
           </span>
         </div>
-        <p className="dsh-codebuddy-accounts-desc">{loginState !== undefined ? t('waiting') : t('accountsDesc')}</p>
-        {loginState !== undefined && loginLink !== undefined ? (
-          <div className="dsh-codebuddy-login-waiting">
-            <span className="dsh-codebuddy-muted">{t('loginWaitingCopy')}</span>
-            <DshButton
-              htmlType="button"
-              size="small"
-              theme="light"
-              type="tertiary"
-              icon={<DshIconCopy />}
-              onClick={() => { cbCopyLoginLink(loginLink) }}
-            >
-              {t('copyLoginLink')}
-            </DshButton>
-          </div>
-        ) : null}
+        <p className="dsh-codebuddy-accounts-desc">{busyLogin ? t('waiting') : t('accountsDesc')}</p>
+        {/* 「重新登录」流程的等待提示。添加账号流程的反馈在弹框内（按钮 loading
+            + 落定通知），不需要这条。 */}
+        {loginState !== undefined ? <p className="dsh-codebuddy-muted">{t('waiting')}</p> : null}
         {hasAccounts
           ? (
               <>
@@ -487,6 +478,7 @@ export function CodeBuddySection({ rpc, t, panelRoute, close }: CodeBuddySection
         t={t}
         visible={addOpen}
         onLoginStart={onAddLoginStart}
+        onFinished={onAddFinished}
         onCancel={() => { setAddOpen(false) }}
       />
 

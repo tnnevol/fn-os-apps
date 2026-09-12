@@ -10,13 +10,12 @@
   max-width: 100%;
 }
 
-/* 添加账号弹框页脚：复制登录地址靠左，取消/打开登录靠右。
-   （这两条样式在实现复制按钮之前就已存在，注释写明了该意图。） */
+/* 添加账号弹框页脚：取消/打开登录靠右。
+   （曾经左侧还有一个「复制登录地址」按钮，现已去除——auth 链接由 host 握手后
+   才签发，做不到「提交前就可用且随客户端/环境更新」。） */
 .dsh-codebuddy-add-footer {
   display: flex;
   align-items: center;
-  /* gap 兜住「复制按钮 + 右侧按钮组」之间的最小间距；两者的两端对齐由
-     下面 add-footer-main 的 margin-left:auto 完成，因此这里不用 space-between。 */
   gap: 12px;
   width: 100%;
 }
@@ -25,9 +24,9 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  /* 靠右。用 margin-left:auto 而不是容器的 space-between：未发起登录时容器里
-     只有这一个子元素，space-between 对单个子元素会靠**左**放置，按钮会跑到
-     左侧；margin-left:auto 在任何子元素数量下都把它推到右端。 */
+  /* 靠右。用 margin-left:auto 而不是容器的 space-between：容器里只有这一个
+     子元素，space-between 对单个子元素会靠**左**放置，按钮会跑到左侧；
+     margin-left:auto 在任何子元素数量下都把它推到右端。 */
   margin-left: auto;
 }
 

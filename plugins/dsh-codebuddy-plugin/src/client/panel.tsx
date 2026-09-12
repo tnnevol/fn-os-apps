@@ -44,7 +44,7 @@ import { formatUpdatedAt } from './format-time.ts'
 import { accountEpoch, subscribeAccountEpoch } from './store/account-epoch.ts'
 import { DEFAULT_TOKEN_RANGE, DEFAULT_TREND_RANGE, optionsFor, rangeLabel as rangeLabelOf, type TokenRangeKey } from './token-range.ts'
 import { CodeBuddyLogo } from '../components/CodeBuddyLogo.tsx'
-import { AddAccountModal, startLoginPolling } from '../components/AddAccountModal.tsx'
+import { AddAccountModal } from '../components/AddAccountModal.tsx'
 
 import { usePanelData, useTokenStats } from './hooks/use-panel-data.ts'
 import { useAutoPrefs } from './hooks/use-auto-prefs.ts'
@@ -77,7 +77,7 @@ import type { AccountCardLabels, PanelAccountRow, TokenStats, Translate } from '
 export type { AccountCardLabels, PanelAccountRow, TokenStats, Translate }
 
 function AccountsPage({
-  rpc, t, notify, rosterTick, loginWaiting, loginLink, onCopyLoginLink,
+  rpc, t, notify, rosterTick, loginWaiting,
   onRename, onDelete, onAddAccount, onCheckinChange,
 }: {
   rpc: ConnectionRpc
@@ -85,8 +85,6 @@ function AccountsPage({
   notify: (ok: boolean, text: string) => void
   rosterTick: number
   loginWaiting: boolean
-  loginLink?: string
-  onCopyLoginLink: () => void
   onRename: (row: PanelAccountRow) => void
   onDelete: (row: PanelAccountRow) => void
   onAddAccount: () => void
@@ -155,14 +153,7 @@ function AccountsPage({
   return (
     <div className="dsh-codebuddy-panel-page">
       <PanelRefreshOverlay visible={loading} />
-      {loginWaiting ? (
-        <div className="dsh-codebuddy-login-waiting">
-          <span className="dsh-codebuddy-muted">{t('loginWaitingCopy')}</span>
-          <DshButton size="small" theme="light" type="tertiary" disabled={loginLink === undefined} onClick={onCopyLoginLink}>
-            {t('copyLoginLink')}
-          </DshButton>
-        </div>
-      ) : null}
+      {loginWaiting ? <p className="dsh-codebuddy-muted">{t('waiting')}</p> : null}
       <CreditsOverview rows={rows} t={t} />
       <div className="dsh-codebuddy-panel-section-head">
         <div className="dsh-codebuddy-accounts-head-lead">
@@ -536,8 +527,7 @@ export function CodeBuddyPanelPage({ rpc, route, t }: PanelPageProps): ReactNode
   const [renaming, setRenaming] = useState<PanelAccountRow | undefined>(undefined)
   const [renameNote, setRenameNote] = useState('')
   const [addOpen, setAddOpen] = useState(false)
-  const [loginState, setLoginState] = useState<string | undefined>(undefined)
-  const [loginLink, setLoginLink] = useState<string | undefined>(undefined)
+  const [loginWaiting, setLoginWaiting] = useState(false)
   const [rosterTick, setRosterTick] = useState(0)
   /** 让账号列表重取。useCallback 使引用稳定——它被 login 轮询的 effect 依赖，
    *  每次渲染换新函数会让那个 effect 反复重启轮询。 */
@@ -570,27 +560,22 @@ export function CodeBuddyPanelPage({ rpc, route, t }: PanelPageProps): ReactNode
     } else { notify(false, describeRpcError(result)) }
   }
 
+  /**
+   * 弹框已发起登录：打开浏览器，并把「登录中」反映到本页（禁用添加按钮）。
+   *
+   * 轮询与结果提示都归弹框所有——它才知道这次登录是从它发起的，也只有它能在
+   * 成功后关闭自己。这里不再重复轮询同一个 state：两处同时轮询会对
+   * `pollLogin` 发双份请求，且两边各自判定落定、提示会出现两次。
+   */
   const onAddLoginStart = useCallback((start: { authUrl: string, state: string }) => {
     window.open(start.authUrl, '_blank', 'noopener')
-    setLoginLink(start.authUrl)
-    setLoginState(start.state)
+    setLoginWaiting(true)
   }, [])
-  const cbCopyLoginLink = (): void => {
-    if (loginLink === undefined) return
-    void navigator.clipboard?.writeText(loginLink)
-      .then(() => { notify(true, t('copyLoginLinkDone')) })
-      .catch(() => { notify(false, t('copyLoginLinkDoneFail')) })
-  }
-  useEffect(() => {
-    if (loginState === undefined) return
-    return startLoginPolling(
-      rpc,
-      loginState,
-      () => { setLoginState(undefined); bumpRoster() },
-      () => { setLoginState(undefined); notify(false, t('timeout')) },
-      (reason: string) => { setLoginState(undefined); notify(false, `${t('loginFailed')} ${reason}`) },
-    )
-  }, [loginState, rpc, notify, t, bumpRoster])
+  /** 弹框侧登录落定：成功则刷新名册；提示已由弹框给出，这里不再重复。 */
+  const onAddFinished = useCallback((ok: boolean) => {
+    setLoginWaiting(false)
+    if (ok) bumpRoster()
+  }, [bumpRoster])
 
   if (!snapshot.active) return null
 
@@ -639,9 +624,7 @@ export function CodeBuddyPanelPage({ rpc, route, t }: PanelPageProps): ReactNode
                   t={t}
                   notify={notify}
                   rosterTick={rosterTick}
-                  loginWaiting={loginState !== undefined}
-                  {...loginLink === undefined ? {} : { loginLink }}
-                  onCopyLoginLink={cbCopyLoginLink}
+                  loginWaiting={loginWaiting}
                   onRename={openRename}
                   onDelete={openDelete}
                   onAddAccount={() => { setAddOpen(true) }}
@@ -663,6 +646,7 @@ export function CodeBuddyPanelPage({ rpc, route, t }: PanelPageProps): ReactNode
         t={t}
         visible={addOpen}
         onLoginStart={onAddLoginStart}
+        onFinished={onAddFinished}
         onCancel={() => { setAddOpen(false) }}
       />
 
