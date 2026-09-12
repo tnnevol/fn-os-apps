@@ -10,9 +10,11 @@
 
 ## 启动方式
 
-发布的 FPK 固定适配 `@deepseek-ai/dsh@0.1.2-rc.1`，并固定预编译 `node-pty@1.2.0-beta.15`。安装回调只接受本地精确版本 `0.1.2-rc.1`；本地没有该版本时才从安装向导选择的 npm 源使用 npm 安装固定版本。安装完成后，回调会从已安装 DSH 依赖树读取 `@deepseek-ai/dsh-attachment-local` 的实际版本，再应用 fnOS 持久化补丁，不假设它与 DSH 使用相同版本号。`app/scripts/install-node-pty.sh` 会暂时跳过 node-pty 的 native 生命周期脚本，执行 DSH 依赖树中其他包的生命周期脚本，再写入构建机生成的 native 文件，因此 NAS 不需要安装 g++ 或重新编译。
+发布的 FPK 固定适配 `@deepseek-ai/dsh@0.1.5-rc.2`，并固定预编译 `node-pty@1.2.0-beta.15`。安装回调只接受本地精确版本 `0.1.5-rc.2`；本地没有该版本时才从安装向导选择的 npm 源使用 npm 安装固定版本。安装完成后，回调会从已安装 DSH 依赖树读取 `@deepseek-ai/dsh-attachment-local` 的实际版本，再应用 fnOS 持久化补丁，不假设它与 DSH 使用相同版本号。`app/scripts/install-node-pty.sh` 会暂时跳过 node-pty 的 native 生命周期脚本，执行 DSH 依赖树中其他包的生命周期脚本，再写入构建机生成的 native 文件，因此 NAS 不需要安装 g++ 或重新编译。
 
-FPK 只处理 [`app/published-dsh-plugins.json`](app/published-dsh-plugins.json) 中声明的已发布插件。安装和升级阶段使用安装向导选择的 npm 源：脚本会比较 `profile web` 中插件 `package.json` 的版本与清单版本，缺少插件或版本不一致时，才会通过 npm 按清单中的精确版本重新安装；版本一致的本地插件会被保留，不会重复安装。若 FPK 包含 `app/bundled-dsh-plugins`，安装回调会优先用其中的插件包替换 profile 中已有的 npm 插件，并同步 profile 依赖版本；随后统一补齐 `dsh.profile.bundles`。应用启动只校验已安装版本，不会每次启动联网。当前清单固定安装 `@tnnevol/dsh-codex-auth@0.1.2-rc.1.3` 与 `@tnnevol/dsh-fnos@0.1.2-rc.1.3`，与内置 DSH `0.1.2-rc.1` 保持兼容基线；后续发布新版本时需同步更新该清单和 FPK 内置插件包。未发布插件不会在 FPK 构建阶段编译、打包或复制到 Web profile，发布后需要先加入该清单才会随应用安装。
+FPK 只处理 [`app/published-dsh-plugins.json`](app/published-dsh-plugins.json) 中声明的插件。安装顺序固定为 Node.js → DSH → `pnpm@11.7.0` → `dsh plugin --profile web`；缺失 profile 由官方 CLI 首次执行插件命令时自动初始化。插件安装、更新和移除统一使用 `dsh plugin --profile web add/update/remove`，不再调用自定义插件安装脚本。当前清单只安装 `@tnnevol/dsh-fnos@0.1.5-rc.2.4`，并捆绑 `dshmarket@1.45.1`；已安装 dshmarket 时跳过，不覆盖、降级或删除用户版本。FPK 不再携带 Codex 插件；老用户升级不会删除已有 Codex 插件、配置或凭据。
+
+应用还通过 `usr-local-linker` 注册 `app/bin/dsh`。wrapper 固定运行环境，并根据应用 home 的安全属主切换到应用包用户执行；root、应用用户或其他用户调用时都不会以调用者权限运行 DSH，权限切换失败会直接返回非零状态。
 
 最终固定使用应用全局路径中的 `dsh` 并执行 `dsh --help` 验证：
 
@@ -20,7 +22,16 @@ FPK 只处理 [`app/published-dsh-plugins.json`](app/published-dsh-plugins.json)
 ${DSH_HOME}/.npm-global/bin/dsh --help
 ```
 
-安装默认使用 npm 官方源 `https://registry.npmjs.org/`。安装引导中的 npm 镜像源字段为可选项，只有选择其他源时才会覆盖默认源。应用只使用所选源安装，不会在安装失败后自动切换其他源：
+profile 插件命令示例：
+
+```bash
+dsh --profile web --dump-config
+dsh plugin --profile web add <plugin>@<version>
+dsh plugin --profile web update <plugin>@<version>
+dsh plugin --profile web remove <plugin>
+```
+
+安装默认使用 npm 官方源 `https://registry.npmjs.org/`。安装引导中的 npm 镜像源字段为可选项，选择后会持久化写入 `${DSH_HOME}/.npmrc`，供 npm、pnpm 和 DSH CLI 后续统一读取；应用只使用该配置源安装，不会在安装失败后自动切换其他源：
 
 | 可选镜像 | 地址 |
 | --- | --- |
@@ -39,6 +50,8 @@ dsh web --no-open --host <host> --port <port> --trusted-host <authority...>
 
 应用由 fnOS 网关托管 Web 页面，因此启动时使用 `--no-open` 禁止 DSH 在 NAS 服务进程中尝试打开本机浏览器。
 
+DSH Web 每次启动都会生成新的 launch Token。网关先写入临时文件再原子替换 Token 文件，Token 写入完成后才更新内存中的代理凭据；内部重启会清除旧 Token，避免页面请求、SSE 和 WebSocket 继续使用旧凭据。
+
 向导默认监听 `127.0.0.1`，端口默认 `3080`。选择 `127.0.0.1` 时，应用通过 fnOS 统一网关访问；“可信访问地址”应填写浏览器打开 NAS Web 时地址栏中的 `host` 或 `host:port`，例如：
 
 ```text
@@ -50,7 +63,7 @@ dsh web --no-open --host <host> --port <port> --trusted-host <authority...>
 
 ## DSH native 依赖构建
 
-GitHub Actions 在构建 `fn-deepseek-harness` 时会执行 [`.github/scripts/prepare-dsh-native.sh`](../../.github/scripts/prepare-dsh-native.sh)，构建参数维护在 [`.github/config/dsh-native-0.1.2-rc.1.env`](../../.github/config/dsh-native-0.1.2-rc.1.env)：
+GitHub Actions 在构建 `fn-deepseek-harness` 时会执行 [`.github/scripts/prepare-dsh-native.sh`](../../.github/scripts/prepare-dsh-native.sh)，构建参数维护在 [`.github/config/dsh-native-0.1.5-rc.2.env`](../../.github/config/dsh-native-0.1.5-rc.2.env)：
 
 1. 读取固定的 DSH、Node.js、node-pty 和 node-gyp 版本参数，不再在 workflow 中解析完整 DSH 依赖树；
 2. 在 Node.js v24、带有 g++/make/python3 的 Linux runner 中直接安装并编译 `node-pty@1.2.0-beta.15`；
@@ -59,10 +72,10 @@ GitHub Actions 在构建 `fn-deepseek-harness` 时会执行 [`.github/scripts/pr
 发布包名称会追加 DSH 版本，例如：
 
 ```text
-fn-deepseek-harness-v<app-version>-dsh-0.1.2-rc.1.fpk
+fn-deepseek-harness-v<app-version>-dsh-0.1.5-rc.2.fpk
 ```
 
-其中 `-dsh-` 后的版本就是 FPK 内置并在 NAS 上安装的 DSH 版本。构建产物中的 `pty.node` 不提交到源码仓库，由 workflow 在打包前按 `.github/config/dsh-native-0.1.2-rc.1.env` 生成。
+其中 `-dsh-` 后的版本就是 FPK 内置并在 NAS 上安装的 DSH 版本。构建产物中的 `pty.node` 不提交到源码仓库，由 workflow 在打包前按 `.github/config/dsh-native-0.1.5-rc.2.env` 生成。
 
 ## 环境变量与数据目录
 
@@ -72,6 +85,7 @@ fn-deepseek-harness-v<app-version>-dsh-0.1.2-rc.1.fpk
 | `DSH_HOME` | `${TRIM_PKGHOME}` |
 | `NPM_CONFIG_CACHE` | `${DSH_HOME}/.npm-cache` |
 | `NPM_CONFIG_PREFIX` | `${DSH_HOME}/.npm-global` |
+| `NPM_CONFIG_USERCONFIG` | `${DSH_HOME}/.npmrc` |
 | npm 全局目录 | `${DSH_HOME}/.npm-global/lib/node_modules` |
 | npm 全局可执行目录 | `${DSH_HOME}/.npm-global/bin` |
 
@@ -101,6 +115,6 @@ fn-deepseek-harness-v<app-version>-dsh-0.1.2-rc.1.fpk
 fnpack build
 ```
 
-通过仓库 CLI 构建时，选择 `fn-deepseek-harness` 后会询问是否将清单中的插件编译到 FPK，默认选择“是”。GitHub Actions 使用 `--skip-bundle-dsh-plugins` 跳过询问，因此发布的 FPK 不包含内置插件包，安装时会从 npm 源按清单版本安装。
+通过仓库 CLI 构建正式 FPK 时使用 `--bundle-dsh-plugins`，FPK 中包含本地 fnOS 插件和精确版本的 dshmarket 包。安装回调优先执行固定版本的 DSH CLI 安装，网络失败时才使用同版本的 FPK 包作为 dshmarket 回退。
 
 带内置 native 依赖的正式包仅由 tag workflow 生成。本地执行 `fnpack build` 不会调用 native 依赖准备脚本；该脚本位于 `.github/scripts/`，仅供 GitHub Actions 在 Linux runner 上构建正式包使用。

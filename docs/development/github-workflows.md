@@ -230,7 +230,7 @@ tools: {
   fnpack: "fnpack 1.2.1（CI）"
   d2: "D2 0.7.1"
   native: ".github/scripts/prepare-dsh-native.sh"
-  nativeConfig: ".github/config/dsh-native-0.1.2-rc.1.env"
+  nativeConfig: ".github/config/dsh-native-0.1.5-rc.2.env"
   github: "GitHub Release / Pages API"
 }
 
@@ -306,8 +306,8 @@ pnpm exec fn-apps-cli build --fpk --app <app-name>
 
 1. 安装 Gateway 构建依赖。
 2. 执行 `pnpm exec fn-apps-cli build:gateway`。
-3. 根据 `.github/config/dsh-native-0.1.2-rc.1.env` 准备 native 依赖。
-4. 执行 `pnpm exec fn-apps-cli build --fpk --app fn-deepseek-harness`。
+3. 根据 `.github/config/dsh-native-0.1.5-rc.2.env` 准备 native 依赖。
+4. 执行 `pnpm exec fn-apps-cli build --fpk --app fn-deepseek-harness --bundle-dsh-plugins`。
 5. 按 Release Tag 和 DSH 版本重命名并上传 FPK。
 
 ### 4. 发布 Release

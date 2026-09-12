@@ -1,13 +1,13 @@
 # Codex Auth
 
-`@tnnevol/dsh-codex-auth` 为 DSH 提供 ChatGPT/Codex 登录、模型目录和账号用量。当前插件版本为 `0.1.2-rc.1.3`，适配 DSH `0.1.2-rc.1`。
+`@tnnevol/dsh-codex-auth` 为 DSH 提供 ChatGPT/Codex 登录、模型目录和账号用量。当前插件版本为 `0.1.5-rc.2.4`，适配 DSH `0.1.5-rc.2`。
 
 ## 安装
 
 `fn-deepseek-harness` 会在安装和升级时自动安装 npm `rc` 标签对应的版本。其他 DSH 环境可以执行：
 
 ```sh
-dsh plugin --profile web add @tnnevol/dsh-codex-auth@rc
+dsh plugin --profile web add @tnnevol/dsh-codex-auth@0.1.5-rc.2.4
 dsh --profile web --dump-config
 ```
 
@@ -53,7 +53,7 @@ Codex Auth 页面提供「刷新模型目录」按钮。点击后插件读取当
 | 图片识别 | 注册 `view_image` 工具，让支持图片输入的 Codex 模型读取本地 PNG、JPEG、WebP 或 GIF |
 | 图片上传 | 允许支持图片输入的 Codex 模型接收粘贴或上传到对话的图片 |
 
-当前版本（DSH `0.1.2-rc.1`）不提供图像生成或图像输出，仅支持图片识别和图片上传。模型本身未声明图片输入能力时，即使打开开关也不能处理图片。
+当前版本（DSH `0.1.5-rc.2`）不提供图像生成或图像输出，仅支持图片识别和图片上传。模型本身未声明图片输入能力时，即使打开开关也不能处理图片。
 
 ## 凭据与请求
 
@@ -71,7 +71,7 @@ Web 设置通过同源插件路由访问 Host。使用 `fn-deepseek-harness` 时
 dsh --profile web --dump-config | grep -n -C 3 'dsh-codex-auth'
 ```
 
-如果出现 `cannot resolve profile bundle`，请重新执行 `dsh plugin --profile web add @tnnevol/dsh-codex-auth@rc`，不要只在 `package.json` 中手动补 bundle。插件安装后，「设置」侧栏会出现 Codex Auth 入口。
+如果出现 `cannot resolve profile bundle`，请重新执行 `dsh plugin --profile web add @tnnevol/dsh-codex-auth@0.1.5-rc.2.4`，不要只在 `package.json` 中手动补 bundle。插件安装后，「设置」侧栏会出现 Codex Auth 入口。
 
 ### 刷新模型目录后模型没有变化
 

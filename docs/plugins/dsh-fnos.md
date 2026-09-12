@@ -1,13 +1,13 @@
 # fnOS
 
-`@tnnevol/dsh-fnos` 补齐 DSH 在 fnOS 应用中的系统集成。当前插件版本为 `0.1.2-rc.1.3`，适配 DSH `0.1.2-rc.1`。
+`@tnnevol/dsh-fnos` 补齐 DSH 在 fnOS 应用中的系统集成。当前插件版本为 `0.1.5-rc.2.4`，适配 DSH `0.1.5-rc.2`。
 
 ## 安装
 
-`fn-deepseek-harness` 会在安装和升级时自动安装 npm `rc` 标签对应的版本。手动安装可执行：
+`fn-deepseek-harness` 会在安装和升级时通过 DSH CLI 安装精确版本。手动安装可执行：
 
 ```sh
-dsh plugin --profile web add @tnnevol/dsh-fnos@rc
+dsh plugin --profile web add @tnnevol/dsh-fnos@0.1.5-rc.2.4
 dsh --profile web --dump-config
 ```
 

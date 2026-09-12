@@ -1,6 +1,6 @@
 # CodeBuddy
 
-`@tnnevol/dsh-codebuddy` 为 DSH 接入腾讯 CodeBuddy 模型目录，通过浏览器 OAuth 登录，无需 API Key。当前插件版本为 `0.1.2-rc.1.4`，适配 DSH `0.1.2-rc.1`。
+`@tnnevol/dsh-codebuddy` 为 DSH 接入腾讯 CodeBuddy 模型目录，通过浏览器 OAuth 登录，无需 API Key。当前插件版本为 `0.1.5-rc.2.4`，适配 DSH `0.1.5-rc.2`。
 
 ## 账户信息弹框
 
@@ -124,7 +124,7 @@ src/
 `fn-deepseek-harness` 会在安装和升级时自动安装 npm `rc` 标签对应的版本。其他 DSH 环境可以执行：
 
 ```sh
-dsh plugin --profile web add @tnnevol/dsh-codebuddy@rc
+dsh plugin --profile web add @tnnevol/dsh-codebuddy@0.1.5-rc.2.4
 dsh --profile web --dump-config
 ```
 
