@@ -8,14 +8,13 @@ DSH_HOME="${TRIM_PKGHOME}"
 APP_HOME="${TRIM_APPDEST_VOL}/@appshare/fn-deepseek-harness"
 SOCKET_PATH="${TRIM_APPDEST}/app.sock"
 PROXY_SCRIPT="${TRIM_APPDEST}/gateway-proxy.mjs"
-DSH_WRAPPER="${TRIM_APPDEST}/app/bin/dsh"
 GATEWAY_PREFIX="/app/fn-deepseek-harness"
 NODE_BIN="/var/apps/nodejs_v24/target/bin"
 REQUESTED_HOST="${wizard_host:-127.0.0.1}"
 PORT="${wizard_port:-3080}"
 TRUSTED_HOSTS="${wizard_trusted_hosts:-}"
-DSH_BIN="${DSH_WRAPPER}"
 DSH_REAL_BIN="${DSH_HOME}/.npm-global/bin/dsh"
+DSH_WRAPPER="${TRIM_APPDEST}/app/bin/dsh"
 HOST="${REQUESTED_HOST}"
 
 export PATH="${NODE_BIN}:${PATH}"
@@ -24,11 +23,6 @@ export HOME="${APP_HOME}"
 export NPM_CONFIG_CACHE="${DSH_HOME}/.npm-cache"
 export NPM_CONFIG_PREFIX="${DSH_HOME}/.npm-global"
 export PATH="${NPM_CONFIG_PREFIX}/bin:${PATH}"
-
-[ -x "${DSH_BIN}" ] || {
-    printf '[%s] [main] [ERROR] dsh wrapper is unavailable: %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "${DSH_BIN}" >&2
-    exit 1
-}
 
 log_message() {
     local level="$1"
@@ -87,11 +81,6 @@ is_runtime_process() {
         *"/fn-deepseek-harness/gateway-proxy.mjs"*) return 0 ;;
         esac
         ;;
-    dsh)
-        case "${command_line}" in
-        *"${DSH_BIN}"*" web "*"--port ${PORT}"* | *"${DSH_REAL_BIN}"*" web "*"--port ${PORT}"*) return 0 ;;
-        esac
-        ;;
     esac
     return 1
 }
@@ -133,11 +122,6 @@ cleanup_orphaned_runtime_processes() {
         if is_runtime_process "${pid}" gateway; then
             log_info "Stopping orphaned fnOS gateway process ${pid}."
             stop_runtime_pid "${pid}"
-            continue
-        fi
-        if is_runtime_process "${pid}" dsh; then
-            log_info "Stopping orphaned DSH Web process ${pid}."
-            stop_runtime_pid "${pid}"
         fi
     done
 }
@@ -169,20 +153,9 @@ gateway_running() {
     check_process "${gateway_pid}" && is_runtime_process "${gateway_pid}" gateway
 }
 
-dsh_running() {
-    local dsh_pid
-    dsh_pid=$(pid_from_file "${PID_FILE}")
-    check_process "${dsh_pid}" && is_runtime_process "${dsh_pid}" dsh
-}
-
 start_process() {
-    if gateway_running && dsh_running; then
-        return 0
-    fi
-
     if gateway_running; then
-        log_info "Stopping stale fnOS gateway process before restarting DSH Web."
-        stop_pid "${GATEWAY_PID_FILE}"
+        return 0
     fi
     cleanup_orphaned_runtime_processes
     rm -f "${SOCKET_PATH}"
@@ -196,7 +169,8 @@ start_process() {
             GATEWAY_PATH_ALLOWLIST="${TRIM_PKGVAR}/gateway/path-allowlist.json" \
             DSH_UPSTREAM_HOST="127.0.0.1" \
             DSH_UPSTREAM_PORT="${PORT}" \
-            DSH_BIN="${DSH_BIN}" \
+            DSH_BIN="${DSH_WRAPPER}" \
+            DSH_PROCESS_BIN="${DSH_REAL_BIN}" \
             DSH_CWD="${TRIM_APPDEST}" \
             DSH_PID_FILE="${PID_FILE}" \
             DSH_START_LOCK_FILE="${TRIM_PKGVAR}/web-start.lock" \
@@ -231,9 +205,6 @@ stop_process() {
         rm -f "${RESTART_MARKER}"
     fi
     stop_pid "${GATEWAY_PID_FILE}"
-    # The gateway normally terminates its DSH child. Keep this fallback for a
-    # gateway crash during uninstall or package shutdown.
-    stop_pid "${PID_FILE}"
     cleanup_orphaned_runtime_processes
     rm -f "${SOCKET_PATH}"
     return 0

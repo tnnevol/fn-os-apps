@@ -21,7 +21,7 @@ lastVerified: 2026-09-12
 
 当前 DSH 运行时、插件兼容性基线和 FPK 构建链以 `0.1.2-rc.1` 为主。DSH 上游已发布 `0.1.5-rc.2`，本仓库需要同步适配客户端输入、命令贡献、附件、LLM 流式 API 和 `pi-ai` 等接缝。
 
-这次适配还要处理 FPK 的插件来源和运行方式：Codex 插件不再作为新安装的默认捆绑项；三方市场插件 `dshmarket` 固定版本随 FPK 提供，但不能覆盖已安装用户的版本；应用需要提供可直接调用的 `dsh` CLI；DSH Web 内部重启后，代理必须立即使用新 Token。
+这次适配还要处理 FPK 的插件来源和运行方式：Codex 插件不再作为新安装的默认捆绑项；三方市场插件 `dshmarket` 固定版本写入发布清单，但不进入 FPK，安装阶段通过 DSH CLI 单独安装且不能覆盖已安装用户的版本；应用需要提供可直接调用的 `dsh` CLI；DSH Web 内部重启后，代理必须立即使用新 Token。
 
 ### 适配依据
 
@@ -39,7 +39,7 @@ lastVerified: 2026-09-12
 
 - DSH 应用和仓库内插件适配 `0.1.5-rc.2`，相关依赖、兼容性声明、FPK 构建配置和文档保持一致。
 - 新用户的 FPK 不捆绑、不安装 Codex 插件；老用户已有的 Codex 包、配置、profile bundle 和凭据保持不变，不执行卸载或清理。
-- 随 FPK 捆绑 `dshmarket@1.45.1`。新用户安装固定版本；检测到用户已经安装 `dshmarket` 时跳过安装，不覆盖、降级或强制替换用户现有版本。
+- 在发布清单中固定 `dshmarket@1.45.1`，但不将其复制到 FPK；新用户安装时通过 DSH CLI 安装固定版本，检测到用户已经安装 `dshmarket` 时跳过安装，不覆盖、降级或强制替换用户现有版本。
 - 在 FPK 的应用 bin 注册目录提供 `dsh` CLI wrapper。wrapper 内置 DSH_HOME、HOME、PATH、npm/pnpm 前缀等运行环境，并通过 fnOS 支持的用户切换机制强制以 DSH 应用包用户执行真实 CLI；无论由哪个用户调用，都不能让真实 dsh 进程继承调用者身份或配置目录。
 - DSH Web 内部重启捕获新 Token 后，网关代理、页面跳转和后续请求立即使用新 Token；旧 Token 不能继续把页面导向未授权状态。
 - 保留 FNOS-001～FNOS-003 已验收的网关、授权目录、NAS 引用、插件加载和用户数据行为。
@@ -54,7 +54,7 @@ lastVerified: 2026-09-12
 | CodeBuddy 插件 | `plugins/dsh-codebuddy-plugin`、`compatibility.json` | 适配 LLM 流式、附件和多模态序列化接缝 |
 | Semi UI 插件 | `packages/dsh-semi-ui`、`plugins/dsh-semi-ui-showcase-plugin` | 适配共享 UI 组件和客户端插槽 |
 | FPK 应用 | `apps/fn-deepseek-harness/{manifest,cmd,app,config}` | DSH 版本、插件清单、安装/升级回调、bin 中的 CLI wrapper 和权限 |
-| 市场插件 | FPK 内置包、`published-dsh-plugins.json` | 固定 `dshmarket` 版本并按已安装状态决定是否安装 |
+| 市场插件 | `published-dsh-plugins.json` | 固定 `dshmarket` 版本，构建不内置，按已安装状态决定是否通过 DSH CLI 安装 |
 | 网关代理 | `packages/fnos-gateway`、DSH Web 启停流程 | 刷新、持久化和使用 Web Token |
 | 构建与发布 | `.github/config/`、`.github/workflows/`、`tooling/fn-os-apps-cli` | 生成包含正确插件和版本信息的 FPK |
 
@@ -73,17 +73,22 @@ lastVerified: 2026-09-12
 ## 交互和行为约束
 
 - `0.1.5-rc.2` 是本需求的唯一 DSH 运行时基线。catalog、`compatibility.json`、`DSH_VERSION`、native 配置、FPK 安装回调和发布文档不得继续引用旧基线作为当前值。
+- 安装回调必须先检查应用私有全局目录中的 `pnpm@11.7.0` 和 `@deepseek-ai/dsh@0.1.5-rc.2`；可执行文件和实际 CLI 版本均精确匹配时跳过对应安装，仅对缺失、不可执行或版本不匹配的依赖执行安装。
 - 插件自身发布版本与 DSH 运行时版本分开管理；插件 `peerDependencies` 使用统一 catalog，不在各插件中重复硬编码 DSH 版本。
 - FPK 清单中的所有自动安装插件必须填写精确的 `version`，捆绑包的 `package.json` 版本必须与清单一致；禁止使用 `latest`、`next` 或其他浮动 `distTag`。
+- `--bundle-dsh-plugins` 只将仓库中可解析的本地插件打入 FPK；清单中的三方插件不得因为出现在 `plugins` 或 `bundled` 中而被复制到内置目录，安装回调仍须通过 DSH CLI 单独安装。`bundled` 中的 dshmarket 仅用于固定安装版本，不提供 FPK 回退包。
+- FPK 内置本地插件时，安装回调使用 DSH CLI 指向内置包路径完成 profile 管理；不内置的三方插件继续使用精确版本包名安装，不因本地内置逻辑被跳过。
+- 安装/升级前从 Web profile 的 pnpm 模块元数据读取既有 `storeDir`，并持久化到 `${DSH_HOME}/.pnpm-store-dir`，通过 `PNPM_CONFIG_STORE_DIR` 提供给 pnpm；不得让 pnpm 因 `@apphome` 与 `@appshare` 的默认路径变化拒绝复用既有依赖，也不得把 pnpm 专用 `store-dir` 写入 npm 的 `.npmrc`。
 - 新 FPK 的 `published-dsh-plugins.json` 和内置插件目录不得包含 Codex 插件。安装/升级逻辑不能因为 manifest 不再列出 Codex 就删除用户 profile 中已有的 Codex 包、bundle、配置或凭据。
 - Codex 插件仍需完成 `0.1.5-rc.2` 兼容性适配，以便老用户继续使用；“完成适配”不等于“继续默认捆绑”。
 - `dshmarket` 的包名为 `dshmarket`，版本固定为 `1.45.1`。固定版本来自需求建立时的上游包信息，后续升级必须显式修改本需求和发布清单，不得随 registry 最新版本漂移。[上游项目](https://github.com/dsh-market/dsh-market)
-- 新用户安装时，只有在目标 profile 中未发现 `dshmarket` 时才安装 FPK 提供的固定版本。已安装判断至少覆盖 profile 的包清单和实际包目录；已存在但版本不同也视为已安装，不得自动覆盖、降级或删除。
+- 新用户安装时，只有在目标 profile 中未发现 `dshmarket` 时才通过 registry 安装清单指定的固定版本。已安装判断至少覆盖 profile 的包清单和实际包目录；已存在但版本不同也视为已安装，不得自动覆盖、降级或删除。
 - 市场插件的安装结果要加入 DSH Web profile 的 bundle 配置；如果用户已有该插件，保持其现有 bundle 配置，不因跳过安装而重置用户选择。
 - `dsh` wrapper 必须注册到 FPK 的应用 bin 入口，转发参数、退出码、标准输入/输出和中断信号，并设置固定的 `DSH_HOME`、`HOME`、`PATH`、`NPM_CONFIG_CACHE`、`NPM_CONFIG_PREFIX` 和 `XDG_CONFIG_HOME`。它必须清理或覆盖调用者传入的同名环境变量，不能让调用者把 DSH 配置指向其他目录。
-- wrapper 执行真实 CLI 前必须将身份固定为 `TRIM_USERNAME`/`TRIM_GROUPNAME` 对应的应用包用户；已是应用用户时直接执行，其他用户通过设备支持的安全用户切换机制执行。禁止依赖可被普通用户修改的 wrapper、shell setuid 或不受控的 `sudo` 配置；无法安全切换身份时直接失败，不降级为调用者身份执行。
+- `cmd/main` 只启动 fnOS 网关；网关负责通过安装回调生成的 dsh wrapper 启动 `dsh web --no-open`、捕获本轮启动 URL 中的 Token，并在 Token 原子持久化后将当前 Token 用于页面、HTTP、SSE 和 WebSocket 代理。网关另接收真实 CLI 路径用于识别和管理 wrapper `exec` 后的 Web 进程。wrapper 固定应用用户、环境和真实 CLI 路径，不能写死 `/var/packages` 别名或信任调用者环境。
+- wrapper 执行真实 CLI 时统一使用 `TRIM_UID` 对应的用户 ID，并结合 `TRIM_GROUPNAME` 设置执行组。已是应用用户时直接执行，其他用户通过设备支持的安全用户切换机制执行。禁止依赖可被普通用户修改的 wrapper、shell setuid 或不受控的 `sudo` 配置；无法安全切换身份时直接失败，不降级为调用者身份执行。
 - wrapper、真实 CLI、Node/pnpm 运行文件和 profile 数据的所有权与权限必须阻止非应用用户修改；wrapper 可被授权用户调用，但不能借此修改 DSH 配置、插件依赖或 profile 文件的所有权。
-- 插件管理生命周期顺序固定为：准备 Node.js → 安装精确版本 DSH → 准备 `pnpm@11.7.0` → 执行 `dsh plugin --profile web` 的 add/update 操作。缺失 profile 由官方 CLI 首次执行时自动初始化，应用不重复初始化或覆盖 profile；Web 进程仍由 `cmd/main` 启动。
+- 插件管理生命周期顺序固定为：准备 Node.js → 检查/按需安装精确版本 DSH → 检查/按需准备 `pnpm@11.7.0` → 执行 `dsh plugin --profile web` 的 add/update 操作。缺失 profile 由官方 CLI 首次执行时自动初始化，应用不重复初始化或覆盖 profile；`cmd/main` 只启动网关，Web 进程由网关启动。
 - npm 源配置统一持久化到 `${DSH_HOME}/.npmrc`，并通过 `NPM_CONFIG_USERCONFIG` 供 npm、pnpm 和 DSH CLI 读取；安装、更新和插件管理命令不再临时覆盖该配置。
 - FPK 不再调用 `app/scripts/install-dsh-plugins.mjs`，也不再自行复制插件、执行 npm 直装或手工重建 `dsh.profile.bundles`；依赖和 bundle 列表由目标 tag 提供的 DSH CLI/`pnpm` 维护。
 - `dsh plugin --profile web add <package>@<version>` 用于安装清单中的缺失插件，版本变更使用带精确版本的 update/add 流程；`remove <package>` 只允许由明确的用户移除操作触发，不能因为新清单缺少旧插件而自动执行。
@@ -136,7 +141,7 @@ lastVerified: 2026-09-12
 ### FNOS-004-04 验收条件
 
 - `FNOS-004-04-AC-01`：FPK 安装后，应用 bin 注册目录中存在可调用的 `dsh` wrapper，并能找到目标版本的真实 DSH CLI。
-- `FNOS-004-04-AC-02`：wrapper 无论由 root、应用包用户或其他有权限的调用入口触发，真实 dsh 进程都以 `TRIM_USERNAME`/`TRIM_GROUPNAME` 对应的应用包用户运行；无法切换时返回非零且不执行真实 CLI。
+- `FNOS-004-04-AC-02`：wrapper 无论由 root、应用包用户或其他有权限的调用入口触发，真实 dsh 进程都以 `TRIM_UID` 对应的用户 ID 运行，并使用 `TRIM_GROUPNAME` 对应的执行组；无法切换时返回非零且不执行真实 CLI。
 - `FNOS-004-04-AC-03`：wrapper 固定注入 DSH_HOME、HOME、PATH、npm/pnpm 前缀和配置目录，覆盖调用者环境；`dsh --version`、`dsh --help`、`dsh plugin --profile web ...` 的输入输出、退出码和信号行为与真实 CLI 一致。
 - `FNOS-004-04-AC-04`：wrapper、真实 CLI、profile、插件依赖和配置文件的权限可通过 `id`、`stat` 和实际写入验证，非应用用户不能修改 DSH 配置或改变其所有权。
 
@@ -156,7 +161,7 @@ lastVerified: 2026-09-12
 
 ### FNOS-004-07 验收条件
 
-- `FNOS-004-07-AC-01`：执行官方 CLI 插件命令前，应用用户可以执行精确版本的 `@deepseek-ai/dsh@0.1.5-rc.2` 和 `pnpm@11.7.0`，不依赖 NAS 全局 pnpm。
+- `FNOS-004-07-AC-01`：执行官方 CLI 插件命令前，安装回调先检查应用私有全局目录中的 `@deepseek-ai/dsh@0.1.5-rc.2` 和 `pnpm@11.7.0`；两者均已安装且实际 CLI 版本精确匹配时不重复安装，仅在缺失、不可执行或版本不匹配时安装，且不依赖 NAS 全局 pnpm。
 - `FNOS-004-07-AC-02`：缺失 Web profile 时首次执行 `dsh plugin --profile web add/update` 能由官方 CLI 自动初始化且不启动 Web；已有 profile 不被覆盖。
 - `FNOS-004-07-AC-03`：安装/升级使用 `dsh plugin --profile web` 管理插件，FPK 不再调用 `install-dsh-plugins.mjs`、npm 直装或手工维护 bundle。
 - `FNOS-004-07-AC-04`：自动命令只使用 `<package>@<fixed-version>`，清单拒绝 `latest`、`next` 和其他浮动 dist-tag，捆绑包版本与清单一致。
@@ -167,7 +172,7 @@ lastVerified: 2026-09-12
 ### P1 验收条件
 
 - FPK 升级与回滚后，`DSH_HOME`、profile、凭据、工作区、授权目录和插件设置保留，应用能正常启动；安装/升级重复执行不会重装已存在的市场插件或重置 bundle。
-- `dshmarket` 的 FPK 内置包、发布清单、版本锁定信息和来源文档互相一致；构建产物包含可离线完成的必要运行文件，NAS 不依赖未声明的网络下载。
+- `dshmarket` 不得出现在 FPK 内置目录中；发布清单、版本锁定信息和来源文档互相一致，安装阶段通过精确版本 registry 包完成安装。
 - fnOS 应用安装、升级、重启、网关 HTTP/SSE/WebSocket 以及 `dsh-fnos` 插件加载在真实 NAS 上完成验收；Codex Auth、CodeBuddy、Semi UI 和共享包在当前 DSH 客户端完成组合入口验证。两类证据分开记录。
 - `pnpm run check -- --all`、`pnpm run build -- --docs` 和 `git diff --check` 通过，适配差异、回滚步骤和验证证据写入开发/验证文档后，需求状态才可改为“已完成”。
 

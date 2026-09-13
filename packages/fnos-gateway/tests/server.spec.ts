@@ -24,7 +24,7 @@ describe('gateway server', () => {
     while (resources.length > 0) await resources.pop()?.()
   })
 
-  it('redirects the first Web root request to the captured launch token', async () => {
+  it('keeps the browser URL token-free while proxying the captured launch token upstream', async () => {
     let upstreamPath: string | undefined
     const upstream = createServer((req, res) => {
       upstreamPath = req.url
@@ -64,18 +64,7 @@ describe('gateway server', () => {
       request.end()
     })
 
-    expect(response.statusCode).toBe(303)
-    expect(response.location).toBe(`${GATEWAY_PREFIX}/?token=launch-token`)
-
-    await new Promise<void>((resolve, reject) => {
-      const request = httpRequest({ socketPath: gatewaySocket, path: `${GATEWAY_PREFIX}/?token=launch-token`, method: 'GET' }, res => {
-        res.resume()
-        res.on('end', resolve)
-        res.on('error', reject)
-      })
-      request.on('error', reject)
-      request.end()
-    })
+    expect(response).toEqual({ statusCode: 200, location: undefined })
     expect(upstreamPath).toBe('/?token=launch-token')
 
     await new Promise<void>((resolve, reject) => {
@@ -92,7 +81,7 @@ describe('gateway server', () => {
       request.on('error', reject)
       request.end()
     })
-    expect(upstreamPath).toBe('/')
+    expect(upstreamPath).toBe('/?token=launch-token')
   })
 
   it('waits for a startup token before forwarding the first Web root request', async () => {
@@ -131,15 +120,13 @@ describe('gateway server', () => {
     await new Promise(resolve => setTimeout(resolve, 10))
     releaseToken('delayed-launch-token')
 
-    await expect(responsePromise).resolves.toEqual({
-      statusCode: 303,
-      location: `${GATEWAY_PREFIX}/?token=delayed-launch-token`,
-    })
+    await expect(responsePromise).resolves.toEqual({ statusCode: 502, location: undefined })
   })
 
-  it('recovers from an invalid browser cookie with the current launch token', async () => {
+  it('replaces an invalid browser cookie with the current launch token upstream', async () => {
     const upstream = createServer((req, res) => {
-      if (req.url === '/') {
+      const requestUrl = new URL(req.url ?? '/', 'http://upstream.invalid')
+      if (requestUrl.pathname === '/' && !requestUrl.searchParams.has('token')) {
         res.writeHead(401, { 'content-type': 'text/plain; charset=utf-8' })
         res.end('dsh web authentication required')
         return
@@ -185,10 +172,7 @@ describe('gateway server', () => {
       request.end()
     })
 
-    expect(response).toEqual({
-      statusCode: 303,
-      location: `${GATEWAY_PREFIX}/?token=current-launch-token`,
-    })
+    expect(response).toEqual({ statusCode: 200, location: undefined })
   })
 
   it('rewrites and proxies the first websocket upgrade', async () => {

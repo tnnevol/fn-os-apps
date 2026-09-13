@@ -26,14 +26,17 @@ describe('CodeBuddy auth RPC registration', () => {
     }
     const ctx = {
       logger: { warn: () => {}, info: () => {} },
-      get: (key: string): unknown => key === 'connection' ? connection : undefined,
+      connection,
       effect: (fn: () => () => void): void => { fn() },
-      inject: (): void => { injectCalls += 1 },
+      inject: (_services: string[], callback: (ctx: unknown) => void): void => {
+        injectCalls += 1
+        callback(ctx)
+      },
     }
 
     void new CodeBuddyAuthService(ctx as never, new CodeBuddySession())
 
     expect(registeredChannel).toBe('/codebuddy')
-    expect(injectCalls).toBe(0)
+    expect(injectCalls).toBe(1)
   })
 })

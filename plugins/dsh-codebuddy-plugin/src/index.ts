@@ -63,7 +63,9 @@ export type * from './host/types.ts'
 export const name = 'dsh-codebuddy'
 
 /** 路由需要 llm、连接 RPC；用量统计需要逻辑 DSH 会话查询接缝。 */
-export const inject = ['llm', 'sessionQuery', 'connection']
+// `connection.rpc.handle()` registers an HTTP route through the owner context,
+// so the plugin must also wait for the Web server that owns that route.
+export const inject = ['llm', 'sessionQuery', 'connection', 'webServer']
 
 /**
  * 校验并补全原始配置。
@@ -103,7 +105,7 @@ export function resolveConnectionOptions(config: Config = {}): CodeBuddyConnecti
 }
 
 /** 挂载插件：解析配置，然后注册路由。 */
-export function apply(ctx: Context, config: Config = {}): void {
+export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   // 在加载时解析一次，让坏的入口配置在这里响亮地失败；thunk 让 adapter
   // 在每次操作时读取它。
   const resolved = resolveConnectionOptions(config)
@@ -127,6 +129,7 @@ export function apply(ctx: Context, config: Config = {}): void {
     sessionQuery: runtimeServices.get('sessionQuery') as SessionAnalyticsServices['sessionQuery'],
   }
   const auth = new CodeBuddyAuthService(ctx, session, notifyModels, analytics)
+  await auth.ready()
   const attachmentStore = (): AttachmentStore | undefined => runtimeServices.get('attachments') as AttachmentStore | undefined
   const adapter = new CodeBuddyAdapter({
     session,

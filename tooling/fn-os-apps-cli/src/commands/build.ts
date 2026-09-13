@@ -1,7 +1,6 @@
-import { access, cp, mkdtemp, mkdir, readFile, rm } from 'node:fs/promises'
+import { cp, mkdir, readFile, rm } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
-import { dirname, join, resolve } from 'node:path'
-import { tmpdir } from 'node:os'
+import { dirname, join } from 'node:path'
 import { type OptionValues } from 'commander'
 import { program } from '../program.js'
 import { repositoryRoot } from '../config/paths.js'
@@ -57,23 +56,6 @@ async function readDshPluginManifest(app: FpkApp): Promise<PublishedDshPluginMan
   return JSON.parse(await readFile(manifestPath, 'utf8')) as PublishedDshPluginManifest
 }
 
-async function readBundledDshPlugins(app: FpkApp): Promise<Array<{ name: string, version: string }>> {
-  const manifestPath = dshPublishedPluginManifestPath(app)
-  const manifest = await readDshPluginManifest(app)
-  if (manifest.bundled === undefined) return []
-  if (!Array.isArray(manifest.bundled)) {
-    throw new TypeError(`Invalid bundled DSH plugin list: ${manifestPath}`)
-  }
-  return manifest.bundled.map((plugin, index) => {
-    if (typeof plugin?.name !== 'string' || plugin.name.length === 0 ||
-        typeof plugin.version !== 'string' || plugin.version.length === 0 ||
-        !/^[0-9A-Za-z][0-9A-Za-z.+-]*$/u.test(plugin.version)) {
-      throw new Error(`Invalid bundled DSH plugin at ${manifestPath} (index ${index})`)
-    }
-    return { name: plugin.name, version: plugin.version }
-  })
-}
-
 function validatePackageFile(relativePath: string): void {
   if (relativePath.startsWith('/') || relativePath.split('/').includes('..')) {
     throw new Error(`Invalid plugin package file path: ${relativePath}`)
@@ -104,35 +86,6 @@ async function copyPluginPackage(sourceDirectory: string, targetDirectory: strin
   }
 }
 
-async function packRegistryDshPlugin(
-  plugin: { name: string, version: string },
-  targetDirectory: string,
-): Promise<void> {
-  const workDirectory = await mkdtemp(join(tmpdir(), 'fnos-dsh-plugin-'))
-  const extractDirectory = join(workDirectory, 'extract')
-  await mkdir(extractDirectory, { recursive: true })
-  try {
-    await runCommand('npm', [
-      'pack', `${plugin.name}@${plugin.version}`,
-      '--ignore-scripts',
-      '--pack-destination', workDirectory,
-    ], repositoryRoot)
-    const packageArchive = join(workDirectory, `${plugin.name.replaceAll('/', '-')}-${plugin.version}.tgz`)
-    await runCommand('tar', ['-xzf', packageArchive, '-C', extractDirectory], repositoryRoot)
-    const sourceDirectory = resolve(extractDirectory, 'package')
-    const packageManifest = JSON.parse(await readFile(join(sourceDirectory, 'package.json'), 'utf8')) as {
-      name?: unknown
-      version?: unknown
-    }
-    if (packageManifest.name !== plugin.name || packageManifest.version !== plugin.version) {
-      throw new Error(`Registry package metadata mismatch for ${plugin.name}@${plugin.version}`)
-    }
-    await copyPluginPackage(sourceDirectory, targetDirectory)
-  } finally {
-    await rm(workDirectory, { recursive: true, force: true })
-  }
-}
-
 async function validateDshReleaseInputs(app: FpkApp): Promise<void> {
   if (app.name !== 'fn-deepseek-harness') return
   const manifestPath = dshPublishedPluginManifestPath(app)
@@ -149,17 +102,34 @@ async function validateDshReleaseInputs(app: FpkApp): Promise<void> {
   }
   const dshmarket = manifest.bundled?.find(plugin => plugin?.name === 'dshmarket')
   if (dshmarket?.version !== DSHMARKET_VERSION) {
-    throw new Error(`The FPK must bundle dshmarket@${DSHMARKET_VERSION}`)
+    throw new Error(`The published DSH plugin manifest must pin dshmarket@${DSHMARKET_VERSION}`)
   }
   const callback = await readFile(join(repositoryRoot, 'apps', app.name, 'cmd/install_callback'), 'utf8')
   if (!callback.includes(`DSH_VERSION="${DSH_VERSION}"`) || !callback.includes(`PNPM_VERSION="${PNPM_VERSION}"`)) {
     throw new Error(`install_callback is not aligned with DSH ${DSH_VERSION} and pnpm ${PNPM_VERSION}`)
   }
+  const shellVariable = (name: string) => '$' + '{' + name + '}'
+  const main = await readFile(join(repositoryRoot, 'apps', app.name, 'cmd/main'), 'utf8')
+  if (!main.includes(`DSH_REAL_BIN="${shellVariable('DSH_HOME')}/.npm-global/bin/dsh"`) ||
+      !main.includes(`DSH_WRAPPER="${shellVariable('TRIM_APPDEST')}/app/bin/dsh"`) ||
+      !main.includes(`DSH_BIN="${shellVariable('DSH_WRAPPER')}"`) ||
+      !main.includes(`DSH_PROCESS_BIN="${shellVariable('DSH_REAL_BIN')}"`)) {
+    throw new Error('cmd/main must start DSH Web through the generated wrapper and pass the real path for process detection')
+  }
+  if (main.includes('dsh_running()') || main.includes(`is_runtime_process "${shellVariable('pid')}" dsh`)) {
+    throw new Error('cmd/main must not manage DSH Web processes; the gateway owns the Web lifecycle')
+  }
+  if (!callback.includes(`CLI_WRAPPER="${shellVariable('TRIM_APPDEST')}/app/bin/dsh"`) || !callback.includes('setup_cli_wrapper')) {
+    throw new Error(`install_callback must create the dsh CLI wrapper at ${shellVariable('TRIM_APPDEST')}/app/bin/dsh`)
+  }
   const nativeConfig = await readFile(join(repositoryRoot, DSH_NATIVE_CONFIG), 'utf8')
   if (!nativeConfig.includes(`DSH_VERSION="${DSH_VERSION}"`)) {
     throw new Error(`Native build config is not aligned with DSH ${DSH_VERSION}`)
   }
-  await access(join(repositoryRoot, 'apps', app.name, 'app/bin/dsh'))
+  const resource = await readFile(join(repositoryRoot, 'apps', app.name, 'config/resource'), 'utf8')
+  if (!resource.includes('app/bin/dsh')) {
+    throw new Error('config/resource must register the generated dsh CLI wrapper')
+  }
 }
 
 async function prepareDshPluginBundle(app: FpkApp, include: boolean): Promise<void> {
@@ -172,15 +142,16 @@ async function prepareDshPluginBundle(app: FpkApp, include: boolean): Promise<vo
   const pluginNames = await readPublishedDshPluginNames(app)
   const pluginVersions = new Map((manifest.plugins ?? []).flatMap(plugin =>
     typeof plugin.name === 'string' && typeof plugin.version === 'string' ? [[plugin.name, plugin.version] as const] : []))
-  const pluginTargets = pluginNames.map(name => {
+  const pluginTargets = pluginNames.flatMap(name => {
     const target = findPluginTarget(name)
     if (target === undefined) {
-      throw new Error(`Unable to find local source for published DSH plugin ${name}`)
+      console.log(`Skipping third-party DSH plugin ${name}; it remains a separate install.`)
+      return []
     }
-    return target
+    return [target]
   })
 
-  await runTurbo('build', pluginTargets.map(target => target.filter))
+  if (pluginTargets.length > 0) await runTurbo('build', pluginTargets.map(target => target.filter))
   await mkdir(targetDirectory, { recursive: true })
   for (const target of pluginTargets) {
     const sourceDirectory = dirname(join(repositoryRoot, target.path))
@@ -188,9 +159,6 @@ async function prepareDshPluginBundle(app: FpkApp, include: boolean): Promise<vo
     const version = pluginVersions.get(target.name)
     if (version === undefined) throw new Error(`Missing exact version for published DSH plugin ${target.name}`)
     await copyPluginPackage(sourceDirectory, pluginDirectory, { name: target.name, version })
-  }
-  for (const plugin of await readBundledDshPlugins(app)) {
-    await packRegistryDshPlugin(plugin, join(targetDirectory, plugin.name))
   }
 }
 

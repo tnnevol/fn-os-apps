@@ -134,6 +134,9 @@ export class CodeBuddyAuthService {
    */
   private disposed = false
 
+  /** RPC route registration must finish before the host starts serving the Web UI. */
+  private readonly rpcReady: Promise<unknown>
+
   constructor(
     ctx: Context,
     private readonly session?: CodeBuddySession,
@@ -154,41 +157,28 @@ export class CodeBuddyAuthService {
       this.stopTravelCycle()
     }, 'dsh-codebuddy: background cycles')
     const registerRpc = (connectionCtx: Context): void => {
-      const connection = connectionCtx.get('connection') as ConnectionService | undefined
-      if (connection === undefined) {
+      // Read and call the service through the injected Context property. `ctx.get()`
+      // returns the raw service and loses the caller Context; `connection.rpc.handle()`
+      // needs that Context to own the Web-server route registration.
+      const injected = connectionCtx as unknown as { connection?: ConnectionService }
+      if (injected.connection === undefined) {
         throw new Error('dsh-codebuddy: connection service is unavailable')
       }
-      connectionCtx.effect(() => {
-        // dsh 0.1.5-rc.2 移除了按通道的 `{ authority: 'loopback' }`
-        // 信任选项：现在，每个注册的通道都依托连接自身的浏览器
-        // 鉴权与 Host/Origin 围栏，而 Web 设置页已经满足
-        // 这些要求。
-        const dispose = connection.rpc.handle(
-          CODEBUDDY_AUTH_CHANNEL,
-          (endpoint, payload, signal) => this.dispatch(endpoint, payload, signal),
-        )
-        // 直接返回（可能返回 Promise 的）disposer，让 Cordis 等待它完成。
-        //
-        // 曾经的写法是 `return () => { void dispose() }`，注释说「通道 disposer
-        // 是异步的，交给 fiber 一个同步的」—— 那个前提不成立：Cordis 对每个
-        // disposable 的结果做 `if (isObject(result) && "then" in result) task = result`
-        // （cordis/lib/index.js:1181），**会 await thenable**。用 void 包一层反而
-        // 丢掉这个能力：注销未完成就返回，旧 handler 仍挂着，热重载后可能与新
-        // 实例注册同名 channel 冲突。
-        return dispose
-      }, 'dsh-codebuddy: auth RPC channel')
+      // dsh 0.1.5-rc.2 移除了按通道的 `{ authority: 'loopback' }` 信任选项。
+      // `handle()` 自身已经把 disposer 绑定到当前调用 Context 的生命周期，
+      // 不再额外包一层 effect，避免把路由所有权退回 Connection 服务 Context。
+      injected.connection.rpc.handle(
+        CODEBUDDY_AUTH_CHANNEL,
+        (endpoint, payload, signal) => this.dispatch(endpoint, payload, signal),
+      )
     }
 
-    // `ctx.inject()` starts a child Fiber and does not make the parent wait for
-    // its first load. The Web client can issue its initial usage request during
-    // that gap; without a mounted route it reaches frontend-static and receives
-    // 405. The plugin declares `connection` as a required dependency, so the
-    // normal path can register synchronously. Keep the injected fallback for
-    // lightweight callers/tests that construct the service without a full DSH
-    // Context.
-    const currentConnection = (ctx as unknown as { get?: (key: string) => unknown }).get?.('connection') as ConnectionService | undefined
-    if (currentConnection !== undefined) registerRpc(ctx)
-    else ctx.inject(['connection'], registerRpc)
+    // `connection.rpc.handle()` resolves the HTTP route owner from the Context
+    // used to read `connection`. Use a child Context that explicitly injects both
+    // services, then let the plugin await it before the Web UI can issue its first
+    // RPC request. This also keeps lightweight test contexts working: their
+    // no-op `inject` implementation simply produces an already-resolved value.
+    this.rpcReady = Promise.resolve(ctx.inject(['connection', 'webServer'], registerRpc))
     void loadAutoSwitchConfig().then((config) => {
       this.autoSwitch = config.enabled
       this.autoSwitchThresholdPct = config.thresholdPct
@@ -209,6 +199,11 @@ export class CodeBuddyAuthService {
     }).catch(() => {
       // 读取偏好只是建议性的；代码内默认值已经生效。
     })
+  }
+
+  /** Wait until the authenticated CodeBuddy RPC route has been mounted. */
+  async ready(): Promise<void> {
+    await this.rpcReady
   }
 
   /** 自动每日签到开关（全部账号）。默认开启。 */

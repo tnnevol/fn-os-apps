@@ -31,25 +31,27 @@ function isImageResourceRequest(req: IncomingMessage): boolean {
   return /\.(?:avif|bmp|gif|ico|jpe?g|png|svg|webp)$/iu.test(pathname)
 }
 
-function isUnauthenticatedWebRoot(req: IncomingMessage, proxyRes: IncomingMessage): boolean {
-  if (req.method !== 'GET' || proxyRes.statusCode !== 401) return false
+function withLaunchToken(path: string | undefined, token: string | undefined): string | undefined {
+  if (path === undefined || token === undefined || token === '') return path
   try {
-    const url = new URL(req.url ?? '/', 'http://fnos-gateway.invalid')
-    return url.pathname === '/' && !url.searchParams.has('token')
+    const url = new URL(path, 'http://fnos-gateway.invalid')
+    url.searchParams.delete('token')
+    url.searchParams.set('token', token)
+    return `${url.pathname || '/'}${url.search}`
   } catch {
-    return false
+    return path
   }
 }
 
-function redirectToLaunchToken(res: ServerResponse, options: GatewayOptions, token: string): void {
-  if (res.headersSent || res.writableEnded || res.destroyed) return
-  const prefix = options.gatewayPrefix || ''
-  res.writeHead(303, {
-    location: `${prefix}/?token=${encodeURIComponent(token)}`,
-    'cache-control': 'no-store',
-    'referrer-policy': 'no-referrer',
-  })
-  res.end()
+function stripLaunchTokenFromLocation(value: string): string {
+  try {
+    const url = new URL(value, 'http://fnos-gateway.invalid')
+    if (!url.searchParams.has('token')) return value
+    url.searchParams.delete('token')
+    return `${url.pathname || '/'}${url.search}${url.hash}`
+  } catch {
+    return value
+  }
 }
 
 export function createProxyHandler(options: GatewayOptions): RequestHandler {
@@ -61,17 +63,15 @@ export function createProxyHandler(options: GatewayOptions): RequestHandler {
     changeOrigin: false,
     selfHandleResponse: true,
     on: {
-      proxyReq: (proxyReq, req) => applyProxyRequestHeaders(proxyReq, req, { host: upstreamHost, port: upstreamPort }),
-      proxyReqWs: (proxyReq, req) => applyProxyRequestHeaders(proxyReq, req, { host: upstreamHost, port: upstreamPort }),
+      proxyReq: (proxyReq, req) => {
+        applyProxyRequestHeaders(proxyReq, req, { host: upstreamHost, port: upstreamPort })
+        proxyReq.path = withLaunchToken(proxyReq.path, options.webProcess?.getLaunchToken?.()) ?? proxyReq.path
+      },
+      proxyReqWs: (proxyReq, req) => {
+        applyProxyRequestHeaders(proxyReq, req, { host: upstreamHost, port: upstreamPort })
+        proxyReq.path = withLaunchToken(proxyReq.path, options.webProcess?.getLaunchToken?.()) ?? proxyReq.path
+      },
       proxyRes: (proxyRes, req, res) => {
-        if (isUnauthenticatedWebRoot(req, proxyRes)) {
-          const token = options.webProcess?.getLaunchToken?.()
-          if (token !== undefined) {
-            proxyRes.resume()
-            redirectToLaunchToken(res, options, token)
-            return
-          }
-        }
         const contentType = String(proxyRes.headers['content-type'] || '').toLowerCase()
         const eventStream = contentType.startsWith('text/event-stream')
         // A plugin may return a fallback HTML document for a missing asset.
@@ -90,6 +90,7 @@ export function createProxyHandler(options: GatewayOptions): RequestHandler {
           eventStream,
           gatewayPrefix,
         })
+        if (typeof headers.location === 'string') headers.location = stripLaunchTokenFromLocation(headers.location)
 
         if (!rewriteBody) {
           res.writeHead(proxyRes.statusCode || 502, proxyRes.statusMessage, headers)

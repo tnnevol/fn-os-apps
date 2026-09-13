@@ -50,6 +50,9 @@
     "prepublishOnly": "pnpm run check",
     "publish:rc": "pnpm publish --tag rc --access public"
   },
+  "dependencies": {
+    "@deepseek-ai/schemastery": "3.18.2"
+  },
   "dsh": {
     "bundle": {
       "patch": "./cordis.patch.yml"
@@ -90,7 +93,6 @@
     "@deepseek-ai/dsh-client-ui-workspace": "catalog:dsh",
     "@deepseek-ai/dsh-host-webserver": "catalog:dsh",
     "@deepseek-ai/dsh-settings": "catalog:dsh",
-    "@deepseek-ai/schemastery": "catalog:",
     "react": "catalog:"
   },
   "devDependencies": {

@@ -70,24 +70,13 @@ function webIndexAuthentication(options: GatewayOptions): connect.NextHandleFunc
     if (req.method !== 'GET' || req.url?.split('?', 1)[0] !== '/') return next()
 
     void (async () => {
-      const requestUrl = new URL(req.url ?? '/', 'http://fnos-gateway.invalid')
-      if (requestUrl.searchParams.has('token')) { next(); return }
-
-      const cookie = String(req.headers.cookie ?? '')
-      if (/(?:^|;\s*)dsh-auth-[^=;]+=/u.test(cookie)) { next(); return }
-
       const webProcess = options.webProcess
       let token = webProcess?.getLaunchToken?.()
       if (token === undefined) token = await webProcess?.waitForLaunchToken?.()
+      // Keep the browser URL token-free. The proxy appends the current token
+      // only to the loopback request sent to DSH Web.
       if (token === undefined || res.destroyed || res.writableEnded) { next(); return }
-
-      const prefix = options.gatewayPrefix || ''
-      res.writeHead(303, {
-        location: `${prefix}/?token=${encodeURIComponent(token)}`,
-        'cache-control': 'no-store',
-        'referrer-policy': 'no-referrer',
-      })
-      res.end()
+      next()
     })().catch(next)
   }
 }

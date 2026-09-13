@@ -1,4 +1,4 @@
-import { open, readFile, readdir, rename, rm, writeFile } from 'node:fs/promises'
+import { open, readFile, readdir, realpath, rename, rm, writeFile } from 'node:fs/promises'
 import { spawn, type ChildProcess } from 'node:child_process'
 
 export const WEB_CONTROL_STATUS_PATH = '/__fnos-gateway/control/web/status'
@@ -7,6 +7,8 @@ export const WEB_CONTROL_RESTART_PATH = '/__fnos-gateway/control/web/restart'
 
 export interface WebProcessOptions {
   command: string
+  /** Executable name/path visible after a wrapper replaces itself with DSH. */
+  processCommand?: string
   args: string[]
   cwd: string
   pidFile: string
@@ -32,7 +34,9 @@ export async function isDshWebProcess(pid: number, command: string, port?: numbe
   try {
     const cmdline = await readFile(`/proc/${pid}/cmdline`, 'utf8')
     const args = cmdline.split('\0')
-    if (!cmdline.includes(command) || !args.includes('web')) return false
+    const commandCandidates = new Set([command])
+    try { commandCandidates.add(await realpath(command)) } catch {}
+    if (![...commandCandidates].some(candidate => cmdline.includes(candidate)) || !args.includes('web')) return false
     if (port === undefined) return true
     const portIndex = args.indexOf('--port')
     return portIndex >= 0 && args[portIndex + 1] === String(port)
@@ -82,12 +86,29 @@ async function terminatePid(pid: number, command: string, timeoutMs = 10_000): P
   }
 }
 
-async function terminateChild(child: ChildProcess, command: string, timeoutMs = 10_000): Promise<void> {
-  if (child.pid !== undefined) await terminatePid(child.pid, command, timeoutMs)
-  else { try { child.kill('SIGTERM') } catch {} }
+async function signalChildProcessGroup(child: ChildProcess, signal: NodeJS.Signals): Promise<void> {
+  if (child.pid === undefined) {
+    try { child.kill(signal) } catch {}
+    return
+  }
+  // This child was created by this controller, so its detached process group
+  // is safe to terminate even while a wrapper is still replacing itself with
+  // the real DSH process. Do not gate cleanup on command-line identity: the
+  // short-lived wrapper/runuser process may not contain the DSH path yet.
+  try { process.kill(-child.pid, signal) } catch {
+    try { process.kill(child.pid, signal) } catch { try { child.kill(signal) } catch {} }
+  }
+}
+
+async function terminateChild(child: ChildProcess, timeoutMs = 10_000): Promise<void> {
+  await signalChildProcessGroup(child, 'SIGTERM')
   // Reap the child-process handle as well as terminating the OS process. This
   // prevents a failed health check from leaving a detached child around.
-  await waitForChildExit(child, 1_000)
+  await waitForChildExit(child, Math.min(timeoutMs, 1_000))
+  if (child.exitCode === null && child.signalCode === null) {
+    await signalChildProcessGroup(child, 'SIGKILL')
+    await waitForChildExit(child, 1_000)
+  }
 }
 
 export class WebProcessController {
@@ -119,6 +140,10 @@ export class WebProcessController {
     return this.launchToken
   }
 
+  private processIdentityCommand(): string {
+    return this.options.processCommand ?? this.options.command
+  }
+
   async snapshot(): Promise<WebProcessSnapshot> {
     await this.restoreLaunchToken()
     if (this.starting !== undefined) return { state: 'starting' }
@@ -127,7 +152,7 @@ export class WebProcessController {
 
   private async currentSnapshot(): Promise<WebProcessSnapshot> {
     const pid = await readPid(this.options.pidFile)
-    if (pid !== undefined && await isDshWebProcess(pid, this.options.command)) return { state: 'running', pid }
+    if (pid !== undefined && await isDshWebProcess(pid, this.processIdentityCommand())) return { state: 'running', pid }
     return this.lastError === undefined ? { state: 'stopped' } : { state: 'error', error: this.lastError }
   }
 
@@ -161,7 +186,11 @@ export class WebProcessController {
     catch (error) {
       if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error
       const candidate = await readPid(this.options.startingPidFile)
-      if (candidate !== undefined && await isDshWebProcess(candidate, this.options.command)) return { state: 'starting', pid: candidate }
+      if (candidate !== undefined) {
+        const matchesWrapper = await isDshWebProcess(candidate, this.options.command)
+        const matchesDsh = await isDshWebProcess(candidate, this.processIdentityCommand())
+        if (matchesWrapper || matchesDsh) return { state: 'starting', pid: candidate }
+      }
       if (!retry) return { state: 'error', error: 'stale DSH Web start lock' }
       await rm(this.options.lockFile, { force: true })
       return await this.startLocked(false)
@@ -173,10 +202,15 @@ export class WebProcessController {
       // its pid files have been removed. In that case an orphaned DSH Web
       // process may still own the configured port. Reconcile only processes
       // matching this executable, `web`, and this controller's port.
+      const processCommand = this.processIdentityCommand()
       const port = new URL(this.options.healthUrl).port
       const configuredPort = port === '' ? (new URL(this.options.healthUrl).protocol === 'https:' ? 443 : 80) : Number.parseInt(port, 10)
-      for (const pid of await findDshWebProcesses(this.options.command, configuredPort)) {
-        await terminatePid(pid, this.options.command, this.options.terminationTimeoutMs)
+      const orphanProcesses = new Map<number, string>()
+      for (const command of new Set([this.options.command, processCommand])) {
+        for (const pid of await findDshWebProcesses(command, configuredPort)) orphanProcesses.set(pid, command)
+      }
+      for (const [pid, command] of orphanProcesses) {
+        await terminatePid(pid, command, this.options.terminationTimeoutMs)
       }
       // Keep DSH Web in its own process group so shutdown also terminates
       // children started by the CLI instead of leaving a port-owning process
@@ -222,7 +256,7 @@ export class WebProcessController {
     } catch (error) {
       this.lastError = error instanceof Error ? error.message : String(error)
       if (child !== undefined && this.child === child) {
-        await terminateChild(child, this.options.command, this.options.terminationTimeoutMs)
+        await terminateChild(child, this.options.terminationTimeoutMs)
         this.child = undefined
       }
       await rm(this.options.startingPidFile, { force: true })
@@ -245,11 +279,11 @@ export class WebProcessController {
       if (starting !== undefined) await starting.catch(() => undefined)
       const child = this.child
       if (child !== undefined) {
-        await terminateChild(child, this.options.command, this.options.terminationTimeoutMs)
+        await terminateChild(child, this.options.terminationTimeoutMs)
         this.child = undefined
       } else {
         const pid = await readPid(this.options.pidFile) ?? await readPid(this.options.startingPidFile)
-        if (pid !== undefined) await terminatePid(pid, this.options.command, this.options.terminationTimeoutMs)
+        if (pid !== undefined) await terminatePid(pid, this.processIdentityCommand(), this.options.terminationTimeoutMs)
       }
       await Promise.all([rm(this.options.pidFile, { force: true }), rm(this.options.startingPidFile, { force: true }), rm(this.options.lockFile, { force: true })])
       this.launchToken = undefined

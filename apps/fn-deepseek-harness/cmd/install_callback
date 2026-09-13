@@ -4,7 +4,10 @@ NODE_BIN="/var/apps/nodejs_v24/target/bin"
 DSH_HOME="${TRIM_PKGHOME}"
 APP_HOME="${TRIM_APPDEST_VOL}/@appshare/fn-deepseek-harness"
 APP_DEST="${TRIM_APPDEST}"
+CLI_WRAPPER="${TRIM_APPDEST}/app/bin/dsh"
 NPM_CONFIG_PREFIX="${DSH_HOME}/.npm-global"
+PNPM_STORE_DIR="${APP_HOME}/.local/share/pnpm/store"
+PNPM_STORE_FILE="${DSH_HOME}/.pnpm-store-dir"
 NPM_BIN="${NODE_BIN}/npm"
 DSH_BIN="${NPM_CONFIG_PREFIX}/bin/dsh"
 DSH_PACKAGE="@deepseek-ai/dsh"
@@ -20,7 +23,7 @@ DSH_PROFILE_DIRECTORY="${DSH_HOME}/profiles/web"
 PROXY_SCRIPT="${APP_DEST}/gateway-proxy.mjs"
 NPM_USER_CONFIG_FILE="${DSH_HOME}/.npmrc"
 LEGACY_NPM_REGISTRY_FILE="${APP_HOME}/.fn-deepseek-harness/npm-registry"
-APP_USER="${TRIM_USERNAME:-}"
+APP_UID="${TRIM_UID:-}"
 APP_GROUP="${TRIM_GROUPNAME:-}"
 ID_BIN="/usr/bin/id"
 ENV_BIN="/usr/bin/env"
@@ -55,6 +58,15 @@ select_npm() {
     log_info "Using npm ${NPM_VERSION:-unknown} for DSH and plugin installation."
 }
 
+installed_pnpm_version() {
+    [ -x "${PNPM_BIN}" ] || return 0
+    run_as_app_user "${PNPM_BIN}" --version 2>/dev/null || true
+}
+
+has_required_pnpm() {
+    [ "$(installed_pnpm_version)" = "${PNPM_VERSION}" ]
+}
+
 global_package_root() {
     run_as_app_user "${NPM_BIN}" root -g 2>/dev/null || true
 }
@@ -75,10 +87,17 @@ fail_install() {
 }
 
 prepare_app_user() {
-    [ -n "${APP_USER}" ] || fail_install "TRIM_USERNAME is not available; cannot protect DSH profile ownership"
     [ -x "${ID_BIN}" ] && [ -x "${ENV_BIN}" ] && [ -x "${STAT_BIN}" ] && [ -x "${CHOWN_BIN}" ] ||
         fail_install "Required user and ownership utilities are unavailable"
-    [ -n "${APP_GROUP}" ] || APP_GROUP="$(${ID_BIN} -gn "${APP_USER}" 2>/dev/null || true)"
+    if [ -n "${APP_UID}" ]; then
+        case "${APP_UID}" in
+        *[!0-9]* | 0) fail_install "TRIM_UID is invalid; cannot select the DSH application user" ;;
+        esac
+    fi
+    [ -n "${APP_UID}" ] || fail_install "TRIM_UID is not available; cannot select the DSH application user"
+    if [ -z "${APP_GROUP}" ]; then
+        APP_GROUP="$(${ID_BIN} -gn "${APP_UID}" 2>/dev/null || true)"
+    fi
     [ -n "${APP_GROUP}" ] || fail_install "TRIM_GROUPNAME is not available; cannot protect DSH profile ownership"
     for candidate in /usr/sbin/runuser /usr/bin/runuser; do
         if [ -x "${candidate}" ]; then
@@ -90,29 +109,121 @@ prepare_app_user() {
 
     if [ "$(${ID_BIN} -u)" = "0" ]; then
         mkdir -p "${DSH_HOME}" || fail_install "Unable to create the DSH application home"
-        "${CHOWN_BIN}" -R "${APP_USER}:${APP_GROUP}" "${DSH_HOME}" ||
-            fail_install "Unable to assign DSH application home to ${APP_USER}:${APP_GROUP}"
+        "${CHOWN_BIN}" -R "${APP_UID}:${APP_GROUP}" "${DSH_HOME}" ||
+            fail_install "Unable to assign DSH application home to ${APP_UID}:${APP_GROUP}"
     else
-        [ "$(${ID_BIN} -un)" = "${APP_USER}" ] ||
-            fail_install "Install callback must run as ${APP_USER} or root"
+        [ "$(${ID_BIN} -u)" = "${APP_UID}" ] ||
+            fail_install "Install callback must run as UID ${APP_UID} or root"
     fi
 }
 
+setup_cli_wrapper() {
+    mkdir -p "$(dirname -- "${CLI_WRAPPER}")" ||
+        fail_install "Unable to create the dsh CLI wrapper directory"
+    if [ -e "${CLI_WRAPPER}" ]; then
+        chmod 755 "${CLI_WRAPPER}" || fail_install "Unable to prepare the existing dsh CLI wrapper"
+    fi
+
+    # usr-local-linker resolves this app-relative path after installation.
+    # Generate the wrapper only after the application user and fixed runtime
+    # have been resolved, so the public command never needs to trust caller
+    # supplied paths or environment variables.
+    cat >"${CLI_WRAPPER}" <<WRAPPER_EOF
+#!/bin/bash
+set -euo pipefail
+
+APP_UID="${APP_UID}"
+APP_GROUP="${APP_GROUP}"
+DSH_HOME="${DSH_HOME}"
+NPM_PREFIX="${NPM_CONFIG_PREFIX}"
+NODE_BIN="${NODE_BIN}"
+REAL_DSH="${DSH_BIN}"
+PNPM_STORE_FILE="${PNPM_STORE_FILE}"
+PNPM_STORE_DIR="\$(/usr/bin/sed -n '1p' "\${PNPM_STORE_FILE}" 2>/dev/null || true)"
+
+exec_dsh() {
+    /usr/bin/env -i \\
+        HOME="\${DSH_HOME}" \\
+        DSH_HOME="\${DSH_HOME}" \\
+        NPM_CONFIG_CACHE="\${DSH_HOME}/.npm-cache" \\
+        NPM_CONFIG_PREFIX="\${NPM_PREFIX}" \\
+        NPM_CONFIG_USERCONFIG="\${DSH_HOME}/.npmrc" \\
+        PNPM_CONFIG_STORE_DIR="\${PNPM_STORE_DIR}" \\
+        XDG_CONFIG_HOME="\${DSH_HOME}/.config" \\
+        PATH="\${NODE_BIN}:\${NPM_PREFIX}/bin:/usr/bin:/bin" \\
+        "\${REAL_DSH}" "\$@"
+}
+
+TARGET_USER="\${APP_UID}"
+if [ "\$(/usr/bin/id -u)" = "\${APP_UID}" ]; then
+    exec_dsh "\$@"
+fi
+
+RUNUSER_BIN=""
+for candidate in /usr/sbin/runuser /usr/bin/runuser; do
+    if [ -x "\${candidate}" ]; then RUNUSER_BIN="\${candidate}"; break; fi
+done
+[ -n "\${RUNUSER_BIN}" ] || {
+    printf '%s\\n' 'dsh: secure application-user switch is unavailable' >&2
+    exit 1
+}
+
+exec "\${RUNUSER_BIN}" --user "\${TARGET_USER}" --group "\${APP_GROUP}" -- \\
+    /usr/bin/env -i \\
+    HOME="\${DSH_HOME}" \\
+    DSH_HOME="\${DSH_HOME}" \\
+    NPM_CONFIG_CACHE="\${DSH_HOME}/.npm-cache" \\
+    NPM_CONFIG_PREFIX="\${NPM_PREFIX}" \\
+    NPM_CONFIG_USERCONFIG="\${DSH_HOME}/.npmrc" \\
+    PNPM_CONFIG_STORE_DIR="\${PNPM_STORE_DIR}" \\
+    XDG_CONFIG_HOME="\${DSH_HOME}/.config" \\
+    PATH="\${NODE_BIN}:\${NPM_PREFIX}/bin:/usr/bin:/bin" \\
+    "\${REAL_DSH}" "\$@"
+WRAPPER_EOF
+
+    chmod 755 "${CLI_WRAPPER}" || fail_install "Unable to make the dsh CLI wrapper executable"
+    log_info "Created dsh CLI wrapper at ${CLI_WRAPPER}."
+}
+
 run_as_app_user() {
-    if [ "$(${ID_BIN} -un)" = "${APP_USER}" ]; then
+    if [ "$(${ID_BIN} -u)" = "${APP_UID}" ]; then
         HOME="${DSH_HOME}" DSH_HOME="${DSH_HOME}" \
             NPM_CONFIG_CACHE="${DSH_HOME}/.npm-cache" \
             NPM_CONFIG_PREFIX="${NPM_CONFIG_PREFIX}" \
             NPM_CONFIG_USERCONFIG="${NPM_USER_CONFIG_FILE}" \
+            PNPM_CONFIG_STORE_DIR="${PNPM_STORE_DIR}" \
             PATH="${NODE_BIN}:${NPM_CONFIG_PREFIX}/bin:/usr/bin:/bin" "$@"
         return
     fi
-    "${RUNUSER_BIN}" --user "${APP_USER}" --group "${APP_GROUP}" -- \
+    "${RUNUSER_BIN}" --user "${APP_UID}" --group "${APP_GROUP}" -- \
         "${ENV_BIN}" HOME="${DSH_HOME}" DSH_HOME="${DSH_HOME}" \
         NPM_CONFIG_CACHE="${DSH_HOME}/.npm-cache" \
         NPM_CONFIG_PREFIX="${NPM_CONFIG_PREFIX}" \
         NPM_CONFIG_USERCONFIG="${NPM_USER_CONFIG_FILE}" \
+        PNPM_CONFIG_STORE_DIR="${PNPM_STORE_DIR}" \
         PATH="${NODE_BIN}:${NPM_CONFIG_PREFIX}/bin:/usr/bin:/bin" "$@"
+}
+
+remove_legacy_pnpm_store_config() {
+    [ -f "${NPM_USER_CONFIG_FILE}" ] || return 0
+    run_as_app_user "${ENV_BIN}" \
+        PNPM_USER_CONFIG_FILE="${NPM_USER_CONFIG_FILE}" \
+        "${NODE_BIN}/node" -e '
+const fs = require("node:fs")
+const path = require("node:path")
+const configPath = process.env.PNPM_USER_CONFIG_FILE
+if (!configPath) process.exit(2)
+const source = fs.readFileSync(configPath, "utf8")
+const lines = source.split(/\r?\n/)
+const filtered = lines.filter(line => !/^\s*store-dir\s*=/.test(line))
+if (filtered.length === lines.length) process.exit(0)
+while (filtered.at(-1) === "") filtered.pop()
+const mode = fs.statSync(configPath).mode & 0o777
+const temporaryPath = `${configPath}.tmp-${process.pid}`
+fs.writeFileSync(temporaryPath, `${filtered.join("\n")}\n`, { mode })
+fs.chmodSync(temporaryPath, mode)
+fs.renameSync(temporaryPath, configPath)
+' || fail_install "Unable to remove legacy pnpm store-dir from ${NPM_USER_CONFIG_FILE}"
 }
 
 read_persisted_npm_registry() {
@@ -145,6 +256,67 @@ try {
 ' "${DSH_PROFILE_DIRECTORY}/package.json" 2>/dev/null || true
 }
 
+profile_store_dir() {
+    local modules_file="${DSH_PROFILE_DIRECTORY}/node_modules/.modules.yaml"
+    [ -f "${modules_file}" ] || return 0
+    "${NODE_BIN}/node" -e '
+const fs = require("node:fs")
+try {
+    const text = fs.readFileSync(process.argv[1], "utf8")
+    const value = text.match(/^storeDir:\s*(.+?)\s*$/m)?.[1]
+    if (value) process.stdout.write(value.replace(/\/v\d+\/?$/, ""))
+} catch {}
+' "${modules_file}" 2>/dev/null || true
+}
+
+persist_pnpm_store_dir() {
+    run_as_app_user "${ENV_BIN}" \
+        PNPM_STORE_DIR="${PNPM_STORE_DIR}" \
+        PNPM_USER_CONFIG_FILE="${NPM_USER_CONFIG_FILE}" \
+        PNPM_STORE_FILE="${PNPM_STORE_FILE}" \
+        "${NODE_BIN}/node" -e '
+const fs = require("node:fs")
+const path = require("node:path")
+const configPath = process.env.PNPM_USER_CONFIG_FILE
+const storeDir = process.env.PNPM_STORE_DIR
+const storeFile = process.env.PNPM_STORE_FILE
+if (!configPath || !storeDir || !storeFile) process.exit(2)
+fs.mkdirSync(path.dirname(storeFile), { recursive: true })
+let storeMode = 0o600
+try { storeMode = fs.statSync(storeFile).mode & 0o777 } catch {}
+const storeTemporaryPath = `${storeFile}.tmp-${process.pid}`
+fs.writeFileSync(storeTemporaryPath, `${storeDir}\n`, { mode: storeMode })
+fs.chmodSync(storeTemporaryPath, storeMode)
+fs.renameSync(storeTemporaryPath, storeFile)
+
+let source = ""
+try { source = fs.readFileSync(configPath, "utf8") } catch (error) { if (error?.code !== "ENOENT") throw error }
+const lines = source.split(/\r?\n/).filter(line => !/^\s*store-dir\s*=/.test(line))
+if (lines.length !== source.split(/\r?\n/).length) {
+    while (lines.at(-1) === "") lines.pop()
+    let configMode = 0o600
+    try { configMode = fs.statSync(configPath).mode & 0o777 } catch {}
+    fs.mkdirSync(path.dirname(configPath), { recursive: true })
+    const configTemporaryPath = `${configPath}.tmp-${process.pid}`
+    fs.writeFileSync(configTemporaryPath, `${lines.join("\n")}\n`, { mode: configMode })
+    fs.chmodSync(configTemporaryPath, configMode)
+    fs.renameSync(configTemporaryPath, configPath)
+}
+' || fail_install "Unable to persist pnpm store directory outside npm config"
+}
+
+configure_pnpm_store() {
+    local profile_store
+    profile_store="$(profile_store_dir)"
+    if [ -n "${profile_store}" ]; then
+        PNPM_STORE_DIR="${profile_store}"
+        log_info "Reusing the existing pnpm store ${PNPM_STORE_DIR} referenced by the Web profile."
+    else
+        log_info "Using the persistent pnpm store ${PNPM_STORE_DIR}."
+    fi
+    persist_pnpm_store_dir
+}
+
 installed_plugin_version() {
     local package_name="$1"
     local package_json="${DSH_PROFILE_DIRECTORY}/node_modules/${package_name}/package.json"
@@ -169,12 +341,35 @@ run_dsh_plugin() {
 }
 
 install_published_dsh_plugins() {
-    local plugin_name plugin_version current_version
+    local plugin_name plugin_version current_version bundled_plugin bundled_name bundled_version
     while IFS=$'\t' read -r plugin_name plugin_version; do
         [ -n "${plugin_name}" ] || continue
         validate_plugin_spec "${plugin_name}"
         validate_plugin_spec "${plugin_version}"
         current_version="$(installed_plugin_version "${plugin_name}")"
+
+        # A local plugin copied into the FPK is already an installation source.
+        # Hand it to the DSH CLI directly instead of resolving the same package
+        # from the registry. Third-party manifest entries are not copied by the
+        # build command, so they continue through the registry branch below.
+        bundled_plugin="${DSH_BUNDLED_PLUGIN_DIRECTORY}/${plugin_name}"
+        if [ -f "${bundled_plugin}/package.json" ]; then
+            bundled_name="$(read_package_name "${bundled_plugin}/package.json")"
+            bundled_version="$(read_package_version "${bundled_plugin}/package.json")"
+            [ "${bundled_name}" = "${plugin_name}" ] ||
+                fail_install "Bundled plugin metadata name ${bundled_name:-unknown} does not match ${plugin_name}"
+            [ -n "${bundled_version}" ] ||
+                fail_install "Bundled plugin ${plugin_name} does not declare a version"
+            if [ "${current_version}" = "${bundled_version}" ]; then
+                log_info "Keeping bundled ${plugin_name}@${bundled_version}; exact local version already matches."
+            else
+                log_info "Installing bundled ${plugin_name}@${bundled_version} from the FPK with the dsh CLI."
+                run_dsh_plugin add "${bundled_plugin}" ||
+                    fail_install "Unable to install bundled ${plugin_name}@${bundled_version} with the dsh CLI"
+            fi
+            continue
+        fi
+
         if [ -z "${current_version}" ]; then
             run_dsh_plugin add "${plugin_name}@${plugin_version}" ||
                 fail_install "Unable to install ${plugin_name}@${plugin_version} with the dsh CLI"
@@ -196,7 +391,7 @@ for (const plugin of manifest.plugins || []) {
     local dshmarket_version
     dshmarket_version="$(installed_plugin_version dshmarket)"
     if [ -n "${dshmarket_version}" ]; then
-        log_info "Keeping installed dshmarket@${dshmarket_version}; the bundled plugin is install-once and non-destructive."
+        log_info "Keeping installed dshmarket@${dshmarket_version}; the third-party plugin is install-once and non-destructive."
     else
         dshmarket_version="$("${NODE_BIN}/node" -e '
 const fs = require("node:fs")
@@ -204,15 +399,9 @@ const manifest = JSON.parse(fs.readFileSync(process.argv[1], "utf8"))
 const plugin = (manifest.bundled || []).find(value => value?.name === "dshmarket")
 if (typeof plugin?.version === "string") process.stdout.write(plugin.version)
 ' "${DSH_PUBLISHED_PLUGIN_MANIFEST}")"
-        [ -n "${dshmarket_version}" ] || fail_install "dshmarket is missing from the bundled plugin manifest"
-        if ! run_dsh_plugin add "dshmarket@${dshmarket_version}"; then
-            local bundled_dshmarket="${DSH_BUNDLED_PLUGIN_DIRECTORY}/dshmarket"
-            [ -f "${bundled_dshmarket}/package.json" ] ||
-                fail_install "Unable to install dshmarket@${dshmarket_version} and no bundled fallback is available"
-            log_info "Registry installation failed; installing the bundled dshmarket@${dshmarket_version} package with the dsh CLI."
-            run_dsh_plugin add "${bundled_dshmarket}" ||
-                fail_install "Unable to install bundled dshmarket@${dshmarket_version} with the dsh CLI"
-        fi
+        [ -n "${dshmarket_version}" ] || fail_install "dshmarket is missing from the plugin manifest"
+        run_dsh_plugin add "dshmarket@${dshmarket_version}" ||
+            fail_install "Unable to install dshmarket@${dshmarket_version} with the dsh CLI"
     fi
 }
 
@@ -245,6 +434,18 @@ read_package_version() {
 const fs = require("node:fs")
 try {
     const value = JSON.parse(fs.readFileSync(process.argv[1], "utf8")).version
+    if (typeof value === "string") process.stdout.write(value)
+} catch {}
+' "${package_json}" 2>/dev/null || true
+}
+
+read_package_name() {
+    local package_json="$1"
+    [ -f "${package_json}" ] || return 0
+    "${NODE_BIN}/node" -e '
+const fs = require("node:fs")
+try {
+    const value = JSON.parse(fs.readFileSync(process.argv[1], "utf8")).name
     if (typeof value === "string") process.stdout.write(value)
 } catch {}
 ' "${package_json}" 2>/dev/null || true
@@ -289,6 +490,12 @@ run_node_pty_script() {
         fail_install "Unable to prepare the bundled node-pty dependencies"
 }
 
+has_required_dsh() {
+    [ -x "${DSH_BIN}" ] || return 1
+    [ "$(read_package_version "${DSH_PACKAGE_DIR}/package.json")" = "${DSH_VERSION}" ] || return 1
+    [ "$(run_as_app_user "${DSH_BIN}" --version 2>/dev/null || true)" = "${DSH_VERSION}" ]
+}
+
 has_bundled_node_pty() {
     [ "$(read_trimmed_file "${DSH_VERSION_FILE}")" = "${DSH_VERSION}" ] &&
         [ -s "${APP_DEST}/node-pty-versions" ] &&
@@ -301,6 +508,7 @@ main() {
     fi
 
     prepare_app_user
+    remove_legacy_pnpm_store_config
     select_npm
 
     run_as_app_user /bin/mkdir -p "${DSH_HOME}/.npm-cache" "${NPM_CONFIG_PREFIX}" "${HOME}" ||
@@ -310,12 +518,14 @@ main() {
     NPM_REGISTRY="${NPM_REGISTRY:-https://registry.npmjs.org/}"
     persist_npm_registry
 
-    if [ ! -x "${PNPM_BIN}" ] || [ "$(run_as_app_user "${PNPM_BIN}" --version 2>/dev/null || true)" != "${PNPM_VERSION}" ]; then
+    if has_required_pnpm; then
+        log_info "Using locally installed pnpm@${PNPM_VERSION}; installation skipped."
+    else
         log_info "Installing pnpm@${PNPM_VERSION} globally for DSH plugin management."
         run_as_app_user "${NPM_BIN}" install "pnpm@${PNPM_VERSION}" -g --ignore-scripts ||
             fail_install "Unable to install pnpm@${PNPM_VERSION}"
     fi
-    [ "$(run_as_app_user "${PNPM_BIN}" --version 2>/dev/null || true)" = "${PNPM_VERSION}" ] ||
+    [ "$(installed_pnpm_version)" = "${PNPM_VERSION}" ] ||
         fail_install "Installed pnpm version does not match ${PNPM_VERSION}"
 
     validate_install_configuration
@@ -328,8 +538,8 @@ main() {
 
     LOCAL_VERSION="$(read_package_version "${DSH_PACKAGE_DIR}/package.json")"
     RUN_NODE_PTY_DEPENDENCY_SCRIPTS=0
-    if [ -x "${DSH_BIN}" ] && [ "${LOCAL_VERSION}" = "${DSH_VERSION}" ]; then
-        log_info "Using locally installed ${DSH_PACKAGE}@${DSH_VERSION}."
+    if has_required_dsh; then
+        log_info "Using locally installed ${DSH_PACKAGE}@${DSH_VERSION}; installation skipped."
     else
         if [ -n "${LOCAL_VERSION}" ]; then
             log_info "Local ${DSH_PACKAGE}@${LOCAL_VERSION} does not match required ${DSH_VERSION}; reinstalling the required version."
@@ -361,6 +571,7 @@ main() {
 
     run_node_pty_script "${RUN_NODE_PTY_DEPENDENCY_SCRIPTS}"
     patch_dsh_attachment_local
+    configure_pnpm_store
     if [ ! -x "${DSH_BIN}" ] || ! run_as_app_user "${DSH_BIN}" --help >/dev/null 2>&1; then
         fail_install "dsh installation verification failed: dsh --help"
     fi
@@ -369,6 +580,7 @@ main() {
         fail_install "dsh --version reported ${DSH_REPORTED_VERSION:-unknown}; expected ${DSH_VERSION}"
 
     log_info "dsh ${DSH_PACKAGE}@${DSH_VERSION} installation verified at ${DSH_BIN}."
+    setup_cli_wrapper
     install_published_dsh_plugins
 }
 

@@ -10,6 +10,7 @@ const UPSTREAM_PORT = Number.parseInt(process.env.DSH_UPSTREAM_PORT || '3080', 1
 const GATEWAY_PREFIX = normalizePrefix(process.env.GATEWAY_PREFIX || '/app/fn-deepseek-harness')
 const PATH_ALLOWLIST_FILE = process.env.GATEWAY_PATH_ALLOWLIST || '/var/apps/fn-deepseek-harness/var/gateway/path-allowlist.json'
 const DSH_BIN = process.env.DSH_BIN
+const DSH_PROCESS_BIN = process.env.DSH_PROCESS_BIN
 const DSH_CWD = process.env.DSH_CWD || process.cwd()
 const DSH_PID_FILE = process.env.DSH_PID_FILE
 
@@ -21,6 +22,7 @@ const dshArgs = buildDshWebArgs({
 })
 const webProcess = DSH_BIN && DSH_PID_FILE ? new WebProcessController({
   command: DSH_BIN,
+  ...(DSH_PROCESS_BIN === undefined ? {} : { processCommand: DSH_PROCESS_BIN }),
   args: dshArgs,
   cwd: DSH_CWD,
   pidFile: DSH_PID_FILE,
@@ -45,7 +47,9 @@ const { close, server } = createGateway({
 })
 
 if (webProcess !== undefined) server.once('listening', () => {
-  void webProcess.start().then(snapshot => console.log(`[fnos-gateway] DSH Web state: ${snapshot.state}`))
+  void webProcess.start().then(snapshot => console.log(
+    `[fnos-gateway] DSH Web state: ${snapshot.state}${snapshot.error === undefined ? '' : `: ${snapshot.error}`}`,
+  ))
 })
 
 let shuttingDown = false
