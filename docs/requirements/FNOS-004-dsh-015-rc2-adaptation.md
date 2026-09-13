@@ -21,7 +21,7 @@ lastVerified: 2026-09-12
 
 当前 DSH 运行时、插件兼容性基线和 FPK 构建链以 `0.1.2-rc.1` 为主。DSH 上游已发布 `0.1.5-rc.2`，本仓库需要同步适配客户端输入、命令贡献、附件、LLM 流式 API 和 `pi-ai` 等接缝。
 
-这次适配还要处理 FPK 的插件来源和运行方式：Codex 插件不再作为新安装的默认捆绑项；三方市场插件 `dshmarket` 固定版本写入发布清单，但不进入 FPK，安装阶段通过 DSH CLI 单独安装且不能覆盖已安装用户的版本；应用需要提供可直接调用的 `dsh` CLI；DSH Web 内部重启后，代理必须立即使用新 Token。
+这次适配还要处理 FPK 的插件来源和运行方式：Codex 插件作为新安装的默认捆绑项，由 FPK 内置归档安装，不依赖 registry 上的浮动版本；三方市场插件 `dshmarket` 固定版本写入发布清单，但不进入 FPK，安装阶段通过 DSH CLI 单独安装且不能覆盖已安装用户的版本；应用需要提供可直接调用的 `dsh` CLI；DSH Web 内部重启后，代理必须立即使用新 Token。
 
 ### 适配依据
 
@@ -38,8 +38,8 @@ lastVerified: 2026-09-12
 ## 需求目标
 
 - DSH 应用和仓库内插件适配 `0.1.5-rc.2`，相关依赖、兼容性声明、FPK 构建配置和文档保持一致。
-- 新用户的 FPK 不捆绑、不安装 Codex 插件；老用户已有的 Codex 包、配置、profile bundle 和凭据保持不变，不执行卸载或清理。
-- 在发布清单中固定 `dshmarket@1.45.1`，但不将其复制到 FPK；新用户安装时通过 DSH CLI 安装固定版本，检测到用户已经安装 `dshmarket` 时跳过安装，不覆盖、降级或强制替换用户现有版本。
+- 新用户的 FPK 内置并安装与 `0.1.5-rc.2` 兼容的 Codex 插件；老用户已有的 Codex 凭据、模型配置、workspace 和授权目录保持不变，不执行卸载或清理。不内置的方案已被证伪：registry 上的 Codex 版本基线过旧，安装后会让 DSH Web 启动失败。
+- 在发布清单中固定 `dshmarket@1.46.1`，但不将其复制到 FPK；新用户安装时通过 DSH CLI 安装固定版本，检测到用户已经安装 `dshmarket` 时跳过安装，不覆盖、降级或强制替换用户现有版本。
 - FPK 不注册公开的 `dsh` 系统命令：安装回调不生成 `app/bin/dsh` wrapper，`config/resource` 不声明 `usr-local-linker` 的 `dsh` 入口。飞牛 fnOS 未向非 root 调用者提供可用的身份切换机制（`runuser` 以非 root 执行时报 `may not be used by non-root users`，指定 `--group` 时报 `only root can specify alternative groups`，`su` 需要密码，`setpriv` 返回 `Operation not permitted`），而本需求禁止依赖 setuid 或不受控的 sudo，因此由普通用户调用的 wrapper 无法保证以应用包用户身份执行。真实 CLI 仍固定安装在 `${TRIM_PKGHOME}/.npm-global/bin/dsh`，由管理员在应用包用户下直接调用。
 - DSH Web 内部重启捕获新 Token 后，网关代理、页面跳转和后续请求立即使用新 Token；旧 Token 不能继续把页面导向未授权状态。
 - 保留 FNOS-001～FNOS-003 已验收的网关、授权目录、NAS 引用、插件加载和用户数据行为。
@@ -50,7 +50,7 @@ lastVerified: 2026-09-12
 | --- | --- | --- |
 | 依赖基线 | `pnpm-workspace.yaml`、根 `pnpm-lock.yaml` | 声明并锁定 DSH 0.1.5-rc.2 依赖 |
 | fnOS 插件 | `plugins/dsh-fnos-plugin`、`compatibility.json` | 适配输入、命令、插槽、主题和 NAS 接缝 |
-| Codex Auth 插件 | `plugins/dsh-codex-auth-plugin`、`compatibility.json` | 适配 `dsh-llm-pi-ai`、模型和附件接缝；继续支持老用户已有安装 |
+| Codex Auth 插件 | `plugins/dsh-codex-auth-plugin`、`compatibility.json` | 适配 `dsh-llm-pi-ai`、模型和附件接缝；作为内置插件随 FPK 分发，同时保留老用户已有数据 |
 | CodeBuddy 插件 | `plugins/dsh-codebuddy-plugin`、`compatibility.json` | 适配 LLM 流式、附件和多模态序列化接缝 |
 | Semi UI 插件 | `packages/dsh-semi-ui`、`plugins/dsh-semi-ui-showcase-plugin` | 适配共享 UI 组件和客户端插槽 |
 | FPK 应用 | `apps/fn-deepseek-harness/{manifest,cmd,app,config}` | DSH 版本、插件清单、安装/升级回调、bin 中的 CLI wrapper 和权限 |
@@ -63,26 +63,30 @@ lastVerified: 2026-09-12
 | 编号 | 优先级 | 功能 | 用户行为 | 状态 |
 | --- | --- | --- | --- | --- |
 | FNOS-004-01 | P0 | DSH 与插件适配 0.1.5-rc.2 | FPK 安装后应用私有 `dsh --version` 为 `0.1.5-rc.2`；DSH Web 和仓库内插件正常加载 | <Badge type="info" text="规划中" /> |
-| FNOS-004-02 | P0 | 移除 Codex 默认捆绑 | 新用户不会安装 Codex 插件；升级老用户时不卸载、不删除、不覆盖已有 Codex 包和配置 | <Badge type="info" text="规划中" /> |
-| FNOS-004-03 | P0 | 固定并兼容安装 dshmarket | 新用户获得 `dshmarket@1.45.1`；已安装用户跳过安装并保留现有版本和配置 | <Badge type="info" text="规划中" /> |
+| FNOS-004-02 | P0 | 恢复 Codex 默认捆绑 | 新用户安装 FPK 后即从内置归档安装与 `0.1.5-rc.2` 兼容的 Codex 包；升级老用户时按精确版本校准，不删除用户凭据和配置 | <Badge type="info" text="规划中" /> |
+| FNOS-004-03 | P0 | 固定并兼容安装 dshmarket | 新用户获得 `dshmarket@1.46.1`；已安装用户跳过安装并保留现有版本和配置 | <Badge type="info" text="规划中" /> |
 | FNOS-004-04 | P0 | 安装私有 dsh CLI 且不暴露系统命令 | 真实 CLI 固定在应用私有目录并由应用包用户运行；FPK 不注册公开 `dsh` 入口，平台无 root 时 wrapper 无法保证应用用户身份 | <Badge type="info" text="规划中" /> |
 | FNOS-004-05 | P0 | 内部重启后刷新代理 Token | DSH Web 重启并生成新 Token 后，页面跳转和代理请求不再使用旧 Token，不出现未授权页面 | <Badge type="info" text="规划中" /> |
 | FNOS-004-06 | P1 | 升级、回滚与发布清单一致 | FPK 升级/回滚不丢失用户数据，构建产物、插件包和发布清单可追溯 | <Badge type="info" text="规划中" /> |
 | FNOS-004-07 | P0 | 使用 DSH CLI 管理 FPK 插件 | 安装、更新和显式移除统一通过 `dsh plugin --profile web`，不再调用应用自定义插件脚本 | <Badge type="info" text="规划中" /> |
+| FNOS-004-08 | P0 | 按所选模型供应商显隐用量图标 | 选中 Codex 模型时输入框只显示 Codex 用量图标，选中 CodeBuddy 模型时只显示 CodeBuddy 图标；切换模型即时变化 | <Badge type="info" text="规划中" /> |
 
 ## 交互和行为约束
 
 - `0.1.5-rc.2` 是本需求的唯一 DSH 运行时基线。catalog、`compatibility.json`、`DSH_VERSION`、native 配置、FPK 安装回调和发布文档不得继续引用旧基线作为当前值。
 - 安装回调必须先检查应用私有全局目录中的 `pnpm@11.7.0` 和 `@deepseek-ai/dsh@0.1.5-rc.2`；可执行文件和实际 CLI 版本均精确匹配时跳过对应安装，仅对缺失、不可执行或版本不匹配的依赖执行安装。
-- 插件自身发布版本与 DSH 运行时版本分开管理；插件 `peerDependencies` 使用统一 catalog，不在各插件中重复硬编码 DSH 版本。
+- 四个运行时插件（`@tnnevol/dsh-codex-auth`、`@tnnevol/dsh-codebuddy`、`@tnnevol/dsh-fnos`、`@tnnevol/dsh-semi-ui-showcase`）的发布版本统一为 `0.1.5-rc.2`，与 DSH 运行时基线保持同一版本号，便于用户和安装器对照；`dshPluginApi.version` 仍单独声明运行时兼容基线，二者分别由 `compatibility.json` 和 `package.json` 承载。此前的 `0.1.5-rc.2.4` 未发布到 registry，改版不涉及撤回或重发。
+- 插件版本号与 DSH 运行时版本号相同不代表插件可以独立于 `compatibility.json` 演进：后续任一插件升级都必须同时更新 `package.json`、`compatibility.json`、发布清单和本节版本约束。
+- 插件 `peerDependencies` 使用统一 catalog，不在各插件中重复硬编码 DSH 版本。
 - FPK 清单中的所有自动安装插件必须填写精确的 `version`，捆绑包的 `package.json` 版本必须与清单一致；禁止使用 `latest`、`next` 或其他浮动 `distTag`。
 - `--bundle-dsh-plugins` 只将仓库中可解析的本地插件制成带精确版本的 npm 包归档并打入 FPK；安装时通过 DSH CLI 的 `file:` 包 spec 安装，确保插件运行依赖能由 pnpm 安装和解析，不得以 `link:` 直接引用 FPK 插件目录。升级时须修复已经按旧方式安装的同版本 `link:` 插件。清单中的三方插件不得因为出现在 `plugins` 或 `bundled` 中而被内置，安装回调仍须通过 DSH CLI 单独安装。`bundled` 中的 dshmarket 仅用于固定安装版本，不提供 FPK 回退包。
 - FPK 内置本地插件时，安装回调使用 DSH CLI 指向内置包路径完成 profile 管理；不内置的三方插件继续使用精确版本包名安装，不因本地内置逻辑被跳过。
 - 安装/升级前从 Web profile 的 pnpm 模块元数据读取既有 `storeDir`，并持久化到 `${DSH_HOME}/.pnpm-store-dir`，通过 `PNPM_CONFIG_STORE_DIR` 提供给 pnpm；不得让 pnpm 因 `@apphome` 与 `@appshare` 的默认路径变化拒绝复用既有依赖，也不得把 pnpm 专用 `store-dir` 写入 npm 的 `.npmrc`。
 - `PNPM_CONFIG_STORE_DIR` 必须在**运行期**同样生效，而不只是安装期。DSH Web 会在 profile 目录中调用 pnpm 完成插件安装与三方市场更新；pnpm 把建库时的 store 固定进 `node_modules/.modules.yaml`，一旦解析出的 store 变化就以 `ERR_PNPM_UNEXPECTED_STORE` 拒绝所有安装与卸载，三方应用商店报「更新失败，且更新前的构建未能验证恢复」。网关启动 Web 时必须从 `${DSH_HOME}/.pnpm-store-dir` 读取该路径并注入子进程环境；值缺失、为空或非绝对路径时不得猜测，且必须清除继承来的同名变量。npm 的 `.npmrc` 仍不得写入 `store-dir`。
-- 新 FPK 的 `published-dsh-plugins.json` 和内置插件目录不得包含 Codex 插件。安装/升级逻辑不能因为 manifest 不再列出 Codex 就删除用户 profile 中已有的 Codex 包、bundle、配置或凭据。
-- Codex 插件仍需完成 `0.1.5-rc.2` 兼容性适配，以便老用户继续使用；“完成适配”不等于“继续默认捆绑”。
-- `dshmarket` 的包名为 `dshmarket`，版本固定为 `1.45.1`。固定版本来自需求建立时的上游包信息，后续升级必须显式修改本需求和发布清单，不得随 registry 最新版本漂移。[上游项目](https://github.com/dsh-market/dsh-market)
+- 新 FPK 的 `published-dsh-plugins.json` 和内置插件目录必须包含与 `0.1.5-rc.2` 适配的 Codex 插件，安装阶段通过 DSH CLI 以内置 `file:` 归档安装。不再采用“移除 Codex 默认捆绑”的方案：上游 registry 提供的 `latest`/`rc` 版本分别基于 `0.1.0-rc.7` 和 `0.1.2-rc.1`，在 `0.1.5-rc.2` 上会因 `@deepseek-ai/dsh-settings` 不再导出 `settingsNamespace` 而让 DSH Web 启动失败，因此不内置会把不兼容版本直接暴露给用户。
+- Codex 插件完成 `0.1.5-rc.2` 兼容性适配，并作为内置插件随 FPK 分发；安装/升级使用清单中的精确版本，不通过 registry 浮动版本获取。
+- 安装/升级不得删除或覆盖用户已有的 Codex 凭据、模型配置、工作区、授权目录或插件配置；已安装版本与清单不一致时按内置归档校准到清单版本。
+- `dshmarket` 的包名为 `dshmarket`，版本固定为 `1.46.1`。固定版本来自需求建立时的上游包信息，后续升级必须显式修改本需求和发布清单，不得随 registry 最新版本漂移。[上游项目](https://github.com/dsh-market/dsh-market)
 - 新用户安装时，只有在目标 profile 中未发现 `dshmarket` 时才通过 registry 安装清单指定的固定版本。已安装判断至少覆盖 profile 的包清单和实际包目录；已存在但版本不同也视为已安装，不得自动覆盖、降级或删除。
 - 市场插件的安装结果要加入 DSH Web profile 的 bundle 配置；如果用户已有该插件，保持其现有 bundle 配置，不因跳过安装而重置用户选择。
 - FPK 不注册公开的 `dsh` 系统命令，也不生成 `app/bin/dsh` wrapper。此前设计依赖“安装时生成的 wrapper 通过平台用户切换机制以应用包用户执行真实 CLI”，但飞牛 fnOS 未向非 root 调用者提供可用的切换机制，而本需求又禁止 setuid 与不受控 sudo，该前提不成立：普通用户调用时真实 CLI 只能以调用者身份运行，违背“不能让真实 dsh 进程继承调用者身份”的约束。因此按“无法安全切换即不暴露入口”处理，真实 CLI 保留在应用私有目录。
@@ -106,6 +110,9 @@ lastVerified: 2026-09-12
   - `dsh-llm-pi-ai` 的可选 `piProvider`、`catalogError`/`modelErrors` 和 `pi-ai` 0.85.1 适配。
   - `dsh-attachment` 的 `admitEncodedFile`、文件保存/读取接口和错误类型，以及 primitives/layout/session 的移除与替换导出。
 - 上游适配只修改本仓库插件和构建链，不提交上游源码补丁。若某个接缝无法等价迁移，必须先记录用户可见影响和回滚方式。
+- 会话输入框右侧 dock 的用量进度图标只在当前选中模型的供应商属于对应插件时才显示：选中 Codex 模型只显示 Codex 图标，选中 CodeBuddy 模型只显示 CodeBuddy 图标，两家图标不会在同一轮对话里同时出现。选中其它供应商模型或选中模型未知时不显示任何供应商图标。显隐以会话快照里的选中模型及其供应商为准，不是按插件是否登录或是否取到用量数据判断。
+- 切换选中模型要即时生效：从 Codex 模型切到 CodeBuddy 模型时 Codex 图标消失、CodeBuddy 图标出现，不刷新页面、不丢失已输入草稿。CodeBuddy 原有的 `showUsage` 偏好仍是更前置的开关，供应商判断是在该偏好之上的额外条件，两者取与。
+- 图标隐藏时对应插件不应为看不见的图标继续后台轮询用量；显隐状态变化后已在跑的刷新任务按现有生命周期正常收尾即可。图标样式、tooltip 和点击展开行为不变，只在「是否挂出」这一层加条件。
 
 ## 不在本次范围内
 
@@ -121,24 +128,25 @@ lastVerified: 2026-09-12
 
 - DSH catalog、锁文件、插件 `compatibility.json`、FPK `DSH_VERSION` 和 native 配置统一为 `0.1.5-rc.2`；插件类型检查、单元测试和构建通过。
 - `pnpm run build -- --plugin <name>` 和 `pnpm run build -- --fpk --app fn-deepseek-harness` 成功；FPK 安装后应用私有 `${TRIM_PKGHOME}/.npm-global/bin/dsh --version` 输出 `0.1.5-rc.2`，DSH Web 可经 fnOS 网关打开。
-- 新用户的 FPK 清单和内置目录不存在 Codex 包，安装后的新 profile 不出现 Codex；老用户预置 Codex 包、配置和 bundle 后执行升级，内容保持不变且没有卸载日志。
-- 新用户安装后 profile 中存在 `dshmarket@1.45.1` 并能加载市场入口；预置任意已安装版本后执行安装/升级，安装器明确记录跳过，版本、文件和配置均未被覆盖。
+- 新用户的 FPK 清单和内置目录包含与 `0.1.5-rc.2` 适配的 Codex 包，干净 profile 安装后 Codex 能被 DSH Web 正常加载；老用户预置 Codex 凭据、模型配置和 bundle 后执行升级，用户数据保持不变且没有卸载日志。
+- 新用户安装后 profile 中存在 `dshmarket@1.46.1` 并能加载市场入口；预置任意已安装版本后执行安装/升级，安装器明确记录跳过，版本、文件和配置均未被覆盖。
 - FPK 不注册 `/usr/local/bin/dsh`：`config/resource` 无 `usr-local-linker`，安装回调不生成 `app/bin/dsh`。构建校验必须拒绝重新引入 wrapper 的产物。应用私有 CLI 的依赖和 profile 目录所有权可由 `id`、`stat` 和实际命令结果验证。
 - 从 iframe 打开应用首页时不出现 303 循环：浏览器地址始终无 Token，DSH 只对首次无 Cookie 的首页请求收到 Token，随后按 Cookie 认证并返回 200；旧 Cookie 失效时网关能用当前 Token 重新换取一次。
 - 触发 DSH Web 内部重启并确认 Token 变化：新请求和页面跳转使用新 Token，旧 Token 不再生效；重启期间并发请求不会落到未授权页面。首次启动、异常退出恢复和连续重启也通过回归测试。
 
 ### FNOS-004-02 验收条件
 
-- `FNOS-004-02-AC-01`：新 FPK 的 `published-dsh-plugins.json` 和 `app/bundled-dsh-plugins` 不包含 Codex 插件，干净 profile 安装后没有 Codex 包、依赖和 bundle。
-- `FNOS-004-02-AC-02`：老用户已有 Codex 包、配置、凭据或 `dsh.profile.bundles` 时执行升级，相关文件、版本、配置和 bundle 保持不变，不执行卸载、删除或覆盖。
-- `FNOS-004-02-AC-03`：安装回调对 manifest 中缺失的 Codex 不执行清理；重复安装/升级不会因为 Codex 不在新清单中而失败，也不会输出卸载动作。
+- `FNOS-004-02-AC-01`：新 FPK 的 `published-dsh-plugins.json` 和 `app/bundled-dsh-plugins` 包含 Codex 插件的内置归档，归档 `package.json` 版本与清单精确版本一致；干净 profile 安装后 Codex 依赖和 bundle 齐备，DSH Web 能正常启动。
+- `FNOS-004-02-AC-02`：老用户已有 Codex 凭据、模型配置、workspace 或 `dsh.profile.bundles` 时执行升级，用户数据保持不变，不执行卸载、删除或覆盖；包本体按内置归档校准到清单版本。
+- `FNOS-004-02-AC-03`：安装回调对 Codex 只执行清单驱动的安装或校准，不写入卸载动作；重复安装/升级不会因为版本已匹配而重复安装，也不会输出删除用户数据的日志。
+- `FNOS-004-02-AC-04`：不内置 Codex 的替代路径被明确否决——registry 上 `latest`/`rc` 的 Codex 版本基线低于 `0.1.5-rc.2`，安装后 DSH Web 以 `settingsNamespace` 缺失报错退出；构建清单不得再声明 Codex 排除规则。
 - `FNOS-004-02-AC-04`：FPK 产物检查、安装脚本回归测试和真实 NAS 升级验证均能证明上述新用户/老用户差异。
 
 ### FNOS-004-03 验收条件
 
-- `FNOS-004-03-AC-01`：新用户 Web profile 中不存在 `dshmarket` 时，执行 `dsh plugin --profile web add dshmarket@1.45.1`，安装成功后 bundle 能在 Web 重启后加载。
+- `FNOS-004-03-AC-01`：新用户 Web profile 中不存在 `dshmarket` 时，执行 `dsh plugin --profile web add dshmarket@1.46.1`，安装成功后 bundle 能在 Web 重启后加载。
 - `FNOS-004-03-AC-02`：检测到 profile 包清单或实际包目录中已有 `dshmarket` 时跳过 DSH CLI 安装，不覆盖、降级、删除现有版本、文件或配置。
-- `FNOS-004-03-AC-03`：dshmarket 的自动安装命令始终使用精确版本 `1.45.1`，不使用 `latest`、`next` 或其他浮动 dist-tag。
+- `FNOS-004-03-AC-03`：dshmarket 的自动安装命令始终使用精确版本 `1.46.1`，不使用 `latest`、`next` 或其他浮动 dist-tag。
 - `FNOS-004-03-AC-04`：dshmarket 安装和跳过逻辑在当前 DSH 客户端完成验证；真实 NAS 只验证 FPK 安装链和 `dsh-fnos`，不把其他插件作为 NAS 前置条件。
 
 ### FNOS-004-04 验收条件
@@ -173,6 +181,14 @@ lastVerified: 2026-09-12
 - `FNOS-004-07-AC-08`：运行期插件安装与三方市场更新使用与 profile 一致的 pnpm store：网关启动 Web 时注入 `${DSH_HOME}/.pnpm-store-dir` 记录的 `PNPM_CONFIG_STORE_DIR`，`pnpm store path` 解析结果与该 profile `node_modules/.modules.yaml` 的 `storeDir` 相同，不出现 `ERR_PNPM_UNEXPECTED_STORE`；记录缺失或非法时清除继承值而不是猜测。
 - `FNOS-004-07-AC-07`：当前 DSH 客户端完成 Codex Auth、CodeBuddy、Semi UI 和共享包的 CLI 管理、Bundle 生效和重启验证；真实 NAS 只验收 FPK、网关和 `dsh-fnos`。
 
+### FNOS-004-08 验收条件
+
+- `FNOS-004-08-AC-01`：选中 Codex 模型时，会话输入框右侧出现 Codex 用量图标，CodeBuddy 图标不出现；选中 CodeBuddy 模型时相反。
+- `FNOS-004-08-AC-02`：在两家供应商模型之间切换，图标随选中模型即时切换，不刷新页面、不丢失草稿；同一轮对话里不出现两家图标并存。
+- `FNOS-004-08-AC-03`：未选模型，或选中模型供应商读不到时，两家用量图标都不出现。
+- `FNOS-004-08-AC-04`：CodeBuddy 模型被选中但用户关闭 `showUsage` 偏好时，CodeBuddy 图标仍不显示（供应商条件与偏好取与）。
+- `FNOS-004-08-AC-05`：图标隐藏后没有为它继续后台轮询用量的明显多余请求；Codex Auth、CodeBuddy 与共享包的单元测试与构建保持通过。
+
 ### P1 验收条件
 
 - FPK 升级与回滚后，`DSH_HOME`、profile、凭据、工作区、授权目录和插件设置保留，应用能正常启动；安装/升级重复执行不会重装已存在的市场插件或重置 bundle。
@@ -185,16 +201,21 @@ lastVerified: 2026-09-12
 | 阶段 | 状态 | 当前范围 | 下一步 |
 | --- | --- | --- | --- |
 | P0 DSH 与插件兼容性升级 | <Badge type="info" text="规划中" /> | 运行时、catalog、插件接缝和 FPK 基线 | 建立 0.1.5-rc.2 依赖并完成逐包适配 |
-| P0 FPK 插件安装策略 | <Badge type="info" text="规划中" /> | 移除 Codex 默认捆绑，固定 dshmarket 并兼容已安装状态 | 更新包清单、内置包和安装/升级回调 |
+| P0 FPK 插件安装策略 | <Badge type="info" text="规划中" /> | 内置 Codex 并随 FPK 安装，固定 dshmarket 且兼容已安装状态 | 更新包清单、内置包和安装/升级回调 |
 | P0 CLI 与 Token 运行修复 | <Badge type="info" text="规划中" /> | 应用用户权限、CLI wrapper、重启后的 Token 原子刷新 | 补命令、权限、重启和并发回归测试 |
 | P0 DSH CLI 插件管理 | <Badge type="info" text="规划中" /> | 固定 DSH/pnpm、使用官方 CLI 自动初始化 profile、插件 CLI 操作和 bundle 写回 | 移除旧插件脚本和重复初始化逻辑，并完成客户端/NAS 分层验收 |
+| P0 用量图标按模型供应商显隐 | <Badge type="info" text="规划中" /> | Codex / CodeBuddy 客户端 dock 注册与显隐条件 | 进入计划后补交互、实现、测试与发布方式 |
 | P1 发布、升级回滚与 NAS 验收 | <Badge type="info" text="规划中" /> | FPK 产物、用户数据、网关和目标环境证据 | 建立实施计划并记录验证结果 |
 
 ## 变更记录
 
 | 日期 | 变更 | 说明 |
 | --- | --- | --- |
-| 2026-09-12 | 新增 FNOS-004 | 记录 DSH 0.1.5-rc.2 适配、Codex 默认捆绑移除、固定版本 dshmarket、dsh CLI 权限包装和重启 Token 刷新需求 |
+| 2026-09-12 | 新增 FNOS-004 | 记录 DSH 0.1.5-rc.2 适配、Codex 默认捆绑策略、固定版本 dshmarket、dsh CLI 权限包装和重启 Token 刷新需求 |
 | 2026-09-12 | FNOS-004-01 进入计划 | 建立 PLAN-FNOS-004，首轮只实施 DSH 与插件适配 0.1.5-rc.2；其余功能暂不进入本轮计划 |
-| 2026-09-12 | FNOS-004-02 进入计划 | 将 Codex 默认捆绑移除、新用户/老用户安装差异和非破坏性升级验收纳入 PLAN-FNOS-004 |
+| 2026-09-12 | FNOS-004-02 进入计划 | 将 Codex 默认捆绑策略、新用户/老用户安装差异和非破坏性升级验收纳入 PLAN-FNOS-004 |
 | 2026-09-12 | FNOS-004-07 进入计划 | 将 FPK 插件管理统一到目标 tag 提供的 DSH CLI，固定 DSH/pnpm/插件版本并移除自定义安装脚本 |
+| 2026-09-13 | 上移 dshmarket 固定版本 | 发布清单更新为 `dshmarket@1.46.1`，同步构建校验常量与本需求、计划、插件文档中的固定版本，避免清单与校验常量不一致导致 FPK 构建失败 |
+| 2026-09-13 | 恢复 Codex 默认捆绑 | 原「移除 Codex 默认捆绑」方案被证伪：registry 上 Codex 的 `latest`/`rc` 基线分别为 `0.1.0-rc.7` 和 `0.1.2-rc.1`，在 `0.1.5-rc.2` 上因 `settingsNamespace` 缺失导致 DSH Web 启动失败；改为由 FPK 内置与 `0.1.5-rc.2` 适配的 Codex 归档并按清单精确版本安装，同时保留非破坏性升级约束 |
+| 2026-09-13 | 统一插件发布版本 | 四个运行时插件发布版本由 `0.1.5-rc.2.4` 改为 `0.1.5-rc.2`，与 DSH 运行时基线同号；改版前该版本未发布到 registry，不涉及撤回或重发；`dshPluginApi.version` 仍单独声明运行时兼容基线 |
+| 2026-09-13 | 新增 FNOS-004-08 | 记录会话输入框用量进度图标按所选模型供应商显隐的需求：选中对应供应商模型才显示其图标，切换模型即时变化 |
