@@ -43,6 +43,7 @@ function makeRpcCtx(): {
   }
   /** `inject` 的回调拿到的是 connectionCtx，其 `get('connection')` 返回上面那坨。 */
   const connectionCtx = {
+    connection,
     get: (key: string): unknown => (key === 'connection' ? connection : undefined),
     effect: (fn: () => () => void): void => { fn() },
   }
