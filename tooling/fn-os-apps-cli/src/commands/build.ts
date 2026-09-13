@@ -89,7 +89,14 @@ async function validateDshReleaseInputs(app: FpkApp): Promise<void> {
         plugin.version.length === 0 || !/^[0-9A-Za-z][0-9A-Za-z.+-]*$/u.test(plugin.version)) {
       throw new Error(`Published DSH plugin must use an exact version at ${manifestPath} (index ${index})`)
     }
-    if (plugin.name.includes('codex')) throw new Error(`Codex plugin is not allowed in the new FPK: ${plugin.name}`)
+  }
+  // Codex must stay bundled: the registry only carries builds whose DSH
+  // baseline predates 0.1.5-rc.2, and installing one of those breaks Web
+  // startup on the missing `settingsNamespace` export. Keep the removal
+  // guard inverted so a manifest edit cannot silently drop it again.
+  const codex = manifest.plugins.find(plugin => typeof plugin?.name === 'string' && plugin.name.includes('codex'))
+  if (codex === undefined) {
+    throw new Error(`The published DSH plugin manifest must bundle the Codex plugin: ${manifestPath}`)
   }
   const dshmarket = manifest.bundled?.find(plugin => plugin?.name === 'dshmarket')
   if (dshmarket?.version !== DSHMARKET_VERSION) {

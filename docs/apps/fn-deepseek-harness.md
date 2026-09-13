@@ -10,17 +10,18 @@ DeepSeek Harness 是 DeepSeek AI 开源的插件化智能代理工具。本应�
 
 - 提供 DeepSeek Harness Web 操作界面。
 - 通过 fnOS 应用入口访问，不需要单独暴露 Web 服务端口。
-- 安装并启用固定版本的 [fnOS](/plugins/dsh-fnos) 插件和 dshmarket；Codex 仅对已安装的老用户保留。
+- 安装并启用固定版本的 [Codex Auth](/plugins/dsh-codex-auth)、[fnOS](/plugins/dsh-fnos) 插件和 dshmarket。
 - 提供 fnOS 插件所需的文件权限、应用网关和数据目录。
 
 ## Harness 插件
 
 FPK 安装和升级时会根据发布清单按精确版本安装插件：
 
-- `@tnnevol/dsh-fnos@0.1.5-rc.2.4`：fnOS 主题、授权目录、NAS 文件访问和会话日志导出；
-- `dshmarket@1.45.1`：三方插件，不进入 FPK；安装阶段通过 DSH CLI 单独安装，已安装时不会覆盖用户版本。
+- `@tnnevol/dsh-codex-auth@0.1.5-rc.2`：ChatGPT 账号登录 Codex、模型目录、用量和图片输入；内置归档随 FPK 分发；
+- `@tnnevol/dsh-fnos@0.1.5-rc.2`：fnOS 主题、授权目录、NAS 文件访问和会话日志导出；
+- `dshmarket@1.46.1`：三方插件，不进入 FPK；安装阶段通过 DSH CLI 单独安装，已安装时不会覆盖用户版本。
 
-新用户不会自动安装 Codex Auth；老用户升级时不卸载已有 Codex 插件、配置或凭据。
+Codex 必须随 FPK 内置：registry 上 `latest`/`rc` 的 Codex 版本基线分别为 `0.1.0-rc.7` 和 `0.1.2-rc.1`，在 DSH `0.1.5-rc.2` 上会因 `@deepseek-ai/dsh-settings` 不再导出 `settingsNamespace` 而使 DSH Web 启动失败。升级老用户时不卸载、不删除、不覆盖已有 Codex 凭据、模型配置和 profile bundle。
 
 插件功能、兼容版本和排查命令统一维护在[插件总览](/plugins/)中，应用文档不再重复记录插件内部实现。
 

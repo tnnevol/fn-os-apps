@@ -22,7 +22,7 @@ lastVerified: 2026-09-12
 
 ## 计划目标
 
-将 DSH 应用和仓库内四个插件的兼容性基线从 `0.1.2-rc.1` 升级到本地官方 Harness checkout 的 `dsh-v0.1.5-rc.2`，并让新 FPK 不再默认捆绑 Codex 插件。当前计划包含 DSH catalog、锁文件、插件 `compatibility.json`、上游破坏性 API 迁移、FPK native 构建配置、Codex 安装策略、DSH CLI 插件管理、应用私有 CLI 权限、内部重启 Token 刷新和运行时验证。
+将 DSH 应用和仓库内四个插件的兼容性基线从 `0.1.2-rc.1` 升级到本地官方 Harness checkout 的 `dsh-v0.1.5-rc.2`，并让新 FPK 继续默认捆绑与 `0.1.5-rc.2` 适配的 Codex 插件。当前计划包含 DSH catalog、锁文件、插件 `compatibility.json`、上游破坏性 API 迁移、FPK native 构建配置、Codex 内置与安装策略、DSH CLI 插件管理、应用私有 CLI 权限、内部重启 Token 刷新和运行时验证。
 
 本轮处理 `FNOS-004-01` 至 `FNOS-004-07`。其中 `FNOS-004-06`作为发布、升级和回滚的一致性门禁，不新增独立运行时能力。计划不修改 DeepSeek Harness 上游源码，只在本仓库插件和 FPK 构建链内完成适配。
 
@@ -32,15 +32,15 @@ lastVerified: 2026-09-12
 | --- | --- | --- |
 | DSH 依赖基线 | `pnpm-workspace.yaml`、`pnpm-lock.yaml` | 统一 `@deepseek-ai/dsh-*` catalog 和允许提前安装的版本列表 |
 | fnOS 插件 | `plugins/dsh-fnos-plugin` | 迁移客户端输入、命令、附件、会话和 UI 接缝 |
-| Codex Auth 插件 | `plugins/dsh-codex-auth-plugin` | 迁移 attachment、LLM、`pi-ai` 和模型目录接缝；保持老用户可用 |
+| Codex Auth 插件 | `plugins/dsh-codex-auth-plugin` | 迁移 attachment、LLM、`pi-ai` 和模型目录接缝；作为内置插件随 FPK 分发并保持老用户数据可用 |
 | CodeBuddy 插件 | `plugins/dsh-codebuddy-plugin` | 迁移 LLM 流式、文件块和附件接缝 |
 | Semi UI 插件 | `packages/dsh-semi-ui`、`plugins/dsh-semi-ui-showcase-plugin` | 迁移共享 UI、layout、slots 和 renderer 接缝 |
 | FPK 应用 | `apps/fn-deepseek-harness/cmd/install_callback`、`config/resource`、`config/privilege`、`manifest` | 安装并校验 `0.1.5-rc.2` DSH 运行时，真实 CLI 保留在应用私有目录且不注册系统命令，不清理 `DSH_HOME` |
-| FPK 插件策略 | `apps/fn-deepseek-harness/app/published-dsh-plugins.json`、`app/bundled-dsh-plugins`、`app/scripts/install-dsh-plugins.mjs` | 从新 FPK 清单和内置目录移除 Codex，改由 DSH CLI 管理插件，同时保护老用户已有安装 |
+| FPK 插件策略 | `apps/fn-deepseek-harness/app/published-dsh-plugins.json`、`app/bundled-dsh-plugins` | 在 FPK 清单和内置目录中包含 Codex，改由 DSH CLI 管理插件，同时保护老用户已有数据 |
 | Native 构建 | `.github/config/`、`.github/scripts/prepare-dsh-native.sh`、`.github/workflows/build-dsh-fn.yml` | 使用新 DSH 依赖树准备 native 产物并生成版本化 FPK |
 | 文档与测试 | `docs/development/`、`docs/apps/`、插件测试目录 | 记录迁移差异、测试命令和本地/NAS 证据 |
 
-`FNOS-004-03` 只通过 `FNOS-004-07` 规定的 DSH CLI 安装固定版本 dshmarket，并处理已安装时跳过，不另建插件安装实现。`FNOS-004-04` 负责把真实 CLI 固定在应用私有目录并以应用包用户身份运行，且不注册公开 `dsh` 命令（平台未提供非 root 可用的身份切换机制）；它不修改 DSH CLI 上游实现。CLI 管理仍由 `FNOS-004-07` 的 `dsh plugin --profile web` 边界承担。`FNOS-004-05` 负责网关代理和 DSH Web 重启之间的 Token 状态同步、原子持久化和并发请求处理。Codex 清单和内置目录属于 `FNOS-004-02`，本轮会修改，但只允许移除新 FPK 的默认来源，不清理老用户 profile。
+`FNOS-004-03` 只通过 `FNOS-004-07` 规定的 DSH CLI 安装固定版本 dshmarket，并处理已安装时跳过，不另建插件安装实现。`FNOS-004-04` 负责把真实 CLI 固定在应用私有目录并以应用包用户身份运行，且不注册公开 `dsh` 命令（平台未提供非 root 可用的身份切换机制）；它不修改 DSH CLI 上游实现。CLI 管理仍由 `FNOS-004-07` 的 `dsh plugin --profile web` 边界承担。`FNOS-004-05` 负责网关代理和 DSH Web 重启之间的 Token 状态同步、原子持久化和并发请求处理。Codex 清单和内置目录属于 `FNOS-004-02`，本轮会修改：把 Codex 恢复为 FPK 默认内置插件并按清单精确版本安装，同时不清理老用户 profile 中的凭据和配置。
 
 ## 目标架构和数据流
 
@@ -78,22 +78,22 @@ DSH 0.1.5-rc.2 发布包
 
 | 任务 ID | 对应验收 | 实现内容 | 验收 |
 | --- | --- | --- | --- |
-| PLAN-FNOS-004-T02-01 | FNOS-004-01-AC-04 | 更新四个插件的 `compatibility.json`，保持插件自身发布版本与 DSH 运行时版本分开管理 | `dshPluginApi.version` 为 `0.1.5-rc.2`，声明的包集合覆盖实际 import，不引入无关包 |
+| PLAN-FNOS-004-T02-01 | FNOS-004-01-AC-04 | 更新四个插件的 `compatibility.json`，声明 `dshPluginApi.version` 为 `0.1.5-rc.2`；四个插件发布版本统一为 `0.1.5-rc.2` 并同步 `package.json`、发布清单和文档 | `dshPluginApi.version` 为 `0.1.5-rc.2`，声明的包集合覆盖实际 import，不引入无关包；插件版本与发布清单、文档一致 |
 | PLAN-FNOS-004-T02-02 | FNOS-004-01-AC-05 | fnOS 插件迁移 `InputActions`、`SessionInput`、附件字段、`CommandContribution.description` 及 primitives/layout/slots 的替换导出 | 主题、`/fn` 指令、授权目录、NAS 引用和会话导出相关测试通过；不存在旧图片 API 引用 |
 | PLAN-FNOS-004-T02-03 | FNOS-004-01-AC-06 | Codex Auth 迁移 attachment 与 `dsh-llm-pi-ai` 接缝，适配 `pi-ai` `0.85.1` 的 provider、模型目录和图片输入类型 | Codex Auth 类型检查、单元测试和构建通过；无凭据测试不泄漏密钥，老配置结构仍可读取 |
 | PLAN-FNOS-004-T02-04 | FNOS-004-01-AC-07 | CodeBuddy 迁移 `dsh-llm` 流式、文件块和附件序列化接缝，保留现有多账号、切换、签到和用量面板行为 | CodeBuddy 类型检查、单元测试和构建通过；文本、图片和错误流仍能被 UI 正确消费 |
 | PLAN-FNOS-004-T02-05 | FNOS-004-01-AC-08 | Semi UI 共享包和总览插件迁移 layout、renderer、slots、theme 与 primitives 接缝 | 共享组件和总览路由在新客户端下能构建、渲染、刷新和卸载 |
 
-### P0：移除 Codex 默认捆绑
+### P0：恢复 Codex 默认捆绑
 
 状态：<Badge type="info" text="规划中" />
 
 | 任务 ID | 对应验收 | 实现内容 | 验收 |
 | --- | --- | --- | --- |
-| PLAN-FNOS-004-T05-01 | FNOS-004-02-AC-01 | 从新 FPK 清单和内置目录移除 Codex；仓库内插件使用 `pnpm pack` 生成精确版本归档，核验包名、版本和运行依赖，安装回调用 DSH CLI `file:` spec 安装；发现旧 `link:` 同版本安装时重新安装归档 | 清单和 FPK 不包含 Codex；内置归档元数据与清单一致，干净及旧 `link:` profile 均能解析 `dsh-fnos` 的 `@deepseek-ai/schemastery` 并启动 Web |
-| PLAN-FNOS-004-T05-02 | FNOS-004-02-AC-02 | 审计 `install-dsh-plugins.mjs` 的缺失 manifest 行为，确保不因 Codex 不在新清单中执行删除、卸载、覆盖或 profile bundle 清理 | 老用户已有 Codex 包、配置、凭据和 bundle 在升级后逐项保持不变 |
-| PLAN-FNOS-004-T05-03 | FNOS-004-02-AC-03 | 为安装回调增加新用户、老用户和重复升级场景的隔离回归夹具，记录安装、升级和跳过清理的日志 | 新用户无 Codex；老用户无卸载日志；重复执行幂等且不因缺失 Codex 条目失败 |
-| PLAN-FNOS-004-T05-04 | FNOS-004-02-AC-04 | 检查 FPK 构建 CLI 只按当前发布清单复制仓库中的本地插件；清单中的三方插件不进入内置目录，安装回调仍通过 DSH CLI 单独安装；补充精确版本、产物目录和 profile manifest 检查 | 构建产物不重新带入 Codex 或未解析的三方插件；不存在浮动版本安装；本地 FPK 检查和真实 NAS 升级验证结果一致 |
+| PLAN-FNOS-004-T05-01 | FNOS-004-02-AC-01 | 在 `published-dsh-plugins.json` 的 `plugins` 中恢复 `@tnnevol/dsh-codex-auth` 的精确版本；仓库内插件使用 `pnpm pack` 生成精确版本归档，核验包名、版本和运行依赖，安装回调用 DSH CLI `file:` spec 安装；发现旧 `link:` 同版本安装时重新安装归档 | 清单包含 Codex 且与内置归档元数据一致，干净及旧 `link:` profile 均能解析 Codex 依赖并启动 Web |
+| PLAN-FNOS-004-T05-02 | FNOS-004-02-AC-02 | 确认安装/升级只按清单对 Codex 执行安装或精确版本校准，不删除用户凭据、模型配置、workspace、授权目录和 profile bundle | 老用户已有 Codex 凭据、配置和 bundle 在升级后逐项保持不变 |
+| PLAN-FNOS-004-T05-03 | FNOS-004-02-AC-03 | 为安装回调增加新用户、老用户和重复升级场景的隔离回归夹具，记录安装、升级和跳过的日志 | 新用户装到清单精确版本；老用户保留用户数据；重复执行幂等 |
+| PLAN-FNOS-004-T05-04 | FNOS-004-02-AC-04 | 移除构建 CLI 与文档中的 Codex 排除规则，改为校验清单包含 Codex 且归档版本与清单一致；三方插件（dshmarket）仍不进入内置目录，安装回调通过 DSH CLI 单独安装 | 构建产物内置 Codex 归档且无浮动版本安装；本地 FPK 检查和真实 NAS 升级验证结果一致 |
 
 ### P0：使用 DSH CLI 管理 FPK 插件
 
@@ -116,9 +116,9 @@ DSH 0.1.5-rc.2 发布包
 
 | 任务 ID | 对应验收 | 实现内容 | 验收 |
 | --- | --- | --- | --- |
-| PLAN-FNOS-004-T07-01 | FNOS-004-03-AC-01 | 将 dshmarket 纳入 FPK 插件清单但不复制到 FPK，固定版本为 `dshmarket@1.45.1`；profile 中不存在该插件时生成 `dsh plugin --profile web add dshmarket@1.45.1` | 新用户安装日志包含精确 CLI 命令，profile 依赖和 bundle 写回成功，Web 重启后市场入口加载 |
+| PLAN-FNOS-004-T07-01 | FNOS-004-03-AC-01 | 将 dshmarket 纳入 FPK 插件清单但不复制到 FPK，固定版本为 `dshmarket@1.46.1`；profile 中不存在该插件时生成 `dsh plugin --profile web add dshmarket@1.46.1` | 新用户安装日志包含精确 CLI 命令，profile 依赖和 bundle 写回成功，Web 重启后市场入口加载 |
 | PLAN-FNOS-004-T07-02 | FNOS-004-03-AC-02 | 安装前检查 profile 包清单和实际包目录；任一位置已存在 dshmarket 即记录跳过，不执行 add/update/remove | 已安装任意版本的用户文件、版本、配置和 bundle 保持不变，重复升级幂等 |
-| PLAN-FNOS-004-T07-03 | FNOS-004-03-AC-03 | 清单校验只允许精确版本 `1.45.1`，禁止 dshmarket 使用 `latest`、`next` 或其他浮动 dist-tag | 构建和 fake CLI 测试能证明命令参数始终带固定版本 |
+| PLAN-FNOS-004-T07-03 | FNOS-004-03-AC-03 | 清单校验只允许精确版本 `1.46.1`，禁止 dshmarket 使用 `latest`、`next` 或其他浮动 dist-tag | 构建和 fake CLI 测试能证明命令参数始终带固定版本 |
 | PLAN-FNOS-004-T07-04 | FNOS-004-03-AC-04 | 在当前 DSH 客户端验证 dshmarket 的 CLI 安装、跳过已安装和 Web 重启生效；NAS 只验证 FPK 安装链及 `dsh-fnos` | 客户端和 NAS 证据分开保存，不要求其他插件安装到 NAS |
 
 ### P0：应用私有 dsh CLI 与网关 Token 收敛
@@ -154,7 +154,7 @@ DSH 0.1.5-rc.2 发布包
 
 | 任务 ID | 对应验收 | 实现内容 | 验收 |
 | --- | --- | --- | --- |
-| PLAN-FNOS-004-T10-01 | FNOS-004-06-AC-01 | 增加构建前清单校验，统一核对 DSH 版本、native 配置、锁文件、`published-dsh-plugins.json`、捆绑包元数据、Codex 排除规则和 FPK 文件名 | 版本或清单不一致时构建失败；成功产物的版本信息可从清单、文件和 FPK 元数据复核 |
+| PLAN-FNOS-004-T10-01 | FNOS-004-06-AC-01 | 增加构建前清单校验，统一核对 DSH 版本、native 配置、锁文件、`published-dsh-plugins.json`、捆绑包元数据、Codex 内置规则和 FPK 文件名 | 版本或清单不一致时构建失败；成功产物的版本信息可从清单、文件和 FPK 元数据复核 |
 | PLAN-FNOS-004-T10-02 | FNOS-004-06-AC-02 | 审计 install/upgrade callback 的幂等性，确保只处理当前精确清单，不清空 `DSH_HOME`，不自动移除旧插件，并保留升级前运行状态记录 | 新装、升级和重复升级结果一致；用户 profile、凭据、工作区、会话和旧插件保持可读 |
 | PLAN-FNOS-004-T10-03 | FNOS-004-06-AC-03 | 在升级变更前保存可恢复的 runtime/profile 元数据；失败时返回非零并恢复旧指针或旧配置，成功后写入完成标记 | 模拟 DSH、pnpm、插件、native 和启动失败后，上一份 FPK 或受支持回滚流程可恢复启动，用户数据不变 |
 | PLAN-FNOS-004-T10-04 | FNOS-004-06-AC-04 | 生成发布证据索引，关联 FPK、DSH/native/plugin 版本、安装升级日志、回滚结果及当前客户端/NAS 验收记录 | 任一发布包都能追溯到构建输入和目标环境证据；本地结果不冒充 NAS 验收 |
@@ -193,16 +193,16 @@ DSH 0.1.5-rc.2 发布包
 
 ### P0：Codex 默认捆绑兼容流程
 
-1. 在构建产物检查中确认新 FPK 的发布清单和内置插件目录均不含 Codex。
-2. 在隔离的干净 profile 中执行安装，确认 manifest 未列出的 Codex 不会被安装，`dsh-fnos` 仍按当前清单处理。
-3. 在隔离的老用户 profile 中预置 Codex 包、配置、凭据和 bundle，执行升级与重复升级。
-4. 重新读取 profile 文件、包目录和日志，确认 Codex 数据保持原状，没有卸载、删除、覆盖或因缺失清单导致的失败。
+1. 在构建产物检查中确认新 FPK 的发布清单和内置插件目录都包含 Codex，且归档 `package.json` 版本与清单精确版本一致。
+2. 在隔离的干净 profile 中执行安装，确认 Codex 按内置 `file:` 归档安装，DSH Web 能正常启动且不出现 `settingsNamespace` 一类接缝错误。
+3. 在隔离的老用户 profile 中预置 Codex 凭据、模型配置、workspace 和 bundle，执行升级与重复升级。
+4. 重新读取 profile 文件、包目录和日志，确认 Codex 用户数据保持原状，没有卸载、删除或覆盖；包本体校准到清单版本。
 
 ### P0：DSH CLI 插件管理流程
 
 1. `install_callback` 先确认 Node.js、应用包用户和运行目录，再将向导选择的 npm 源持久化到 `${DSH_HOME}/.npmrc`，将 pnpm store 路径持久化到 `${DSH_HOME}/.pnpm-store-dir`，随后准备精确版本 DSH 与 `pnpm@11.7.0`。
 2. 按 `published-dsh-plugins.json` 读取插件名称和精确版本，对缺失插件执行 `dsh plugin --profile web add <package>@<version>`，对版本变化执行精确 update；缺失 profile 由官方 CLI 自动初始化。
-3. 对 dshmarket 先检查 profile 包清单和实际包目录；缺失时执行 `dsh plugin --profile web add dshmarket@1.45.1`，已存在时跳过，不因为版本不同而覆盖。构建阶段不复制 dshmarket，registry 安装失败直接报告错误，不使用 FPK 内置回退包。
+3. 对 dshmarket 先检查 profile 包清单和实际包目录；缺失时执行 `dsh plugin --profile web add dshmarket@1.46.1`，已存在时跳过，不因为版本不同而覆盖。构建阶段不复制 dshmarket，registry 安装失败直接报告错误，不使用 FPK 内置回退包。
 4. DSH CLI 在 profile 目录中调用 pnpm，并负责写入依赖和 reconcile `dsh.profile.bundles`；应用不再复制插件、手工初始化 profile 或手工修改 bundle 列表。
 5. 新 bundle 只在 Web profile 下次启动时生效；安装/更新完成后按既有流程重启 Web。清单未列出的老插件不执行自动 remove。
 6. `upgrade_callback` 复用同一流程，禁止回退到旧脚本；任一命令失败都停止回调并保留 profile 数据。
@@ -225,7 +225,7 @@ DSH 0.1.5-rc.2 发布包
 
 ### P1：发布与升级回滚流程
 
-1. 构建 FPK 前运行清单校验，确认 DSH/native/plugin 版本、Codex 排除规则、dshmarket 固定版本、未注册公开 dsh 入口和 FPK 元数据一致；校验失败不进入发布。
+1. 构建 FPK 前运行清单校验，确认 DSH/native/plugin 版本、Codex 内置规则、dshmarket 固定版本、未注册公开 dsh 入口和 FPK 元数据一致；校验失败不进入发布。
 2. 安装或升级前记录当前 runtime 指针、profile 关键元数据和应用版本；不复制或记录 Token、API Key 等敏感内容。
 3. 安装/升级只执行当前计划规定的幂等操作；完成 DSH CLI、插件、native 和 Web 启动验证后再写入成功标记。
 4. 任一阶段失败时返回非零，保留旧 profile 和用户数据，并按可用的旧 runtime/旧 FPK 回滚入口恢复；不能用清空 profile 的方式“回滚”。
@@ -341,9 +341,9 @@ git diff --check
 | --- | --- | --- |
 | P0 DSH 依赖基线 | <Badge type="info" text="规划中" /> | catalog、锁文件、版本常量和 native 配置统一到 `0.1.5-rc.2` |
 | P0 插件兼容性迁移 | <Badge type="info" text="规划中" /> | 四个插件及共享包完成类型检查、单元测试、构建和组合入口验证 |
-| P0 Codex 默认捆绑移除 | <Badge type="info" text="规划中" /> | 新 FPK 不含 Codex；老用户升级不卸载、不删除、不覆盖已有 Codex 安装 |
+| P0 Codex 默认捆绑恢复 | <Badge type="info" text="规划中" /> | 新 FPK 内置并安装与 `0.1.5-rc.2` 适配的 Codex；老用户升级不卸载、不删除、不覆盖已有用户数据 |
 | P0 DSH CLI 插件管理 | <Badge type="info" text="规划中" /> | 固定 DSH/pnpm、使用官方 CLI 自动初始化 profile、add/update 和 bundle 写回；移除旧插件脚本及重复初始化逻辑 |
-| P0 dshmarket 固定安装 | <Badge type="info" text="规划中" /> | 缺失时通过 DSH CLI 安装 `dshmarket@1.45.1`，已存在时跳过并保留原版本 |
+| P0 dshmarket 固定安装 | <Badge type="info" text="规划中" /> | 缺失时通过 DSH CLI 安装 `dshmarket@1.46.1`，已存在时跳过并保留原版本 |
 | P0 应用私有 dsh CLI | <Badge type="info" text="规划中" /> | 不注册公开入口，固定应用包用户环境并保护真实 CLI 与配置权限 |
 | P0 内部重启 Token 刷新 | <Badge type="info" text="规划中" /> | 重启期间失效旧 Token，捕获并原子持久化新 Token，代理请求等待新状态 |
 | P1 发布升级回滚一致性 | <Badge type="info" text="规划中" /> | 构建前版本门禁、升级幂等、失败恢复和发布证据可追溯 |
@@ -359,10 +359,12 @@ git diff --check
 | --- | --- |
 | 2026-09-12 | 建立 PLAN-FNOS-004 | 仅将 `FNOS-004-01` DSH 与插件适配 0.1.5-rc.2 纳入当前实施计划，明确依赖基线、插件迁移、FPK 构建和 NAS 验收边界 |
 | 2026-09-12 | 固定上游适配依据 | 确认本地官方 Harness checkout 已切到 `dsh-v0.1.5-rc.2`，后续以 commit `fb2c4b9e698e30edb738bca4cf0618587db7d203` 的源码和生成类型为准 |
-| 2026-09-12 | 纳入 FNOS-004-02 | 增加 Codex 默认捆绑移除、新用户/老用户升级差异、非破坏性安装回归和 FPK/NAS 验收任务 |
+| 2026-09-12 | 纳入 FNOS-004-02 | 增加 Codex 默认捆绑策略、新用户/老用户升级差异、非破坏性安装回归和 FPK/NAS 验收任务 |
+| 2026-09-13 | 改为恢复 Codex 默认捆绑 | 原「移除 Codex 默认捆绑」被证伪：registry 上 Codex 的 `latest`/`rc` 基线过旧，安装后 DSH Web 因 `settingsNamespace` 缺失启动失败；改为 FPK 内置 Codex 归档并按清单精确版本安装，保留非破坏性升级约束 |
 | 2026-09-12 | 纳入 FNOS-004-07 | 将 FPK 插件管理迁移到目标 tag 提供的 DSH CLI，固定 DSH/pnpm/插件版本并移除自定义安装脚本 |
-| 2026-09-12 | 纳入 FNOS-004-03 | 通过 DSH CLI 安装固定版本 `dshmarket@1.45.1`，已安装时跳过且不覆盖用户插件 |
+| 2026-09-12 | 纳入 FNOS-004-03 | 通过 DSH CLI 安装固定版本 `dshmarket@1.46.1`，已安装时跳过且不覆盖用户插件 |
 | 2026-09-12 | 纳入 FNOS-004-04 | 增加应用 bin 中的 dsh CLI wrapper，固定运行环境并强制真实 CLI 使用应用包用户权限 |
 | 2026-09-13 | 修订 FNOS-004-04 | NAS 复现 `runuser: only root can specify alternative groups`；平台无非 root 身份切换机制，改为不注册公开 `dsh` 入口，并在构建校验中拒绝重新引入 wrapper |
 | 2026-09-12 | 纳入 FNOS-004-05 | 增加内部重启 Token 的失效、捕获、原子持久化、代理等待和 NAS 并发回归任务 |
 | 2026-09-12 | 纳入 FNOS-004-06 | 增加构建版本门禁、升级幂等、失败恢复、回滚入口和发布证据追踪任务 |
+| 2026-09-13 | 统一插件发布版本 | 四个运行时插件发布版本由 `0.1.5-rc.2.4` 改为 `0.1.5-rc.2`，与 DSH 运行时基线同号；同步 `package.json`、发布清单和文档，`dshPluginApi.version` 仍单独承载兼容基线 |
