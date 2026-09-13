@@ -69,7 +69,7 @@ lastVerified: 2026-09-12
 | FNOS-004-05 | P0 | 内部重启后刷新代理 Token | DSH Web 重启并生成新 Token 后，页面跳转和代理请求不再使用旧 Token，不出现未授权页面 | <Badge type="info" text="规划中" /> |
 | FNOS-004-06 | P1 | 升级、回滚与发布清单一致 | FPK 升级/回滚不丢失用户数据，构建产物、插件包和发布清单可追溯 | <Badge type="info" text="规划中" /> |
 | FNOS-004-07 | P0 | 使用 DSH CLI 管理 FPK 插件 | 安装、更新和显式移除统一通过 `dsh plugin --profile web`，不再调用应用自定义插件脚本 | <Badge type="info" text="规划中" /> |
-| FNOS-004-08 | P0 | 按所选模型供应商显隐用量图标 | 选中 Codex 模型时输入框只显示 Codex 用量图标，选中 CodeBuddy 模型时只显示 CodeBuddy 图标；切换模型即时变化 | <Badge type="info" text="规划中" /> |
+| FNOS-004-08 | P0 | 按所选模型供应商显隐用量图标 | 选中 Codex 模型时输入框只显示 Codex 用量图标，选中 CodeBuddy 模型时只显示 CodeBuddy 图标；切换模型即时变化 | <Badge type="tip" text="已完成" /> |
 
 ## 交互和行为约束
 
@@ -204,7 +204,7 @@ lastVerified: 2026-09-12
 | P0 FPK 插件安装策略 | <Badge type="info" text="规划中" /> | 内置 Codex 并随 FPK 安装，固定 dshmarket 且兼容已安装状态 | 更新包清单、内置包和安装/升级回调 |
 | P0 CLI 与 Token 运行修复 | <Badge type="info" text="规划中" /> | 应用用户权限、CLI wrapper、重启后的 Token 原子刷新 | 补命令、权限、重启和并发回归测试 |
 | P0 DSH CLI 插件管理 | <Badge type="info" text="规划中" /> | 固定 DSH/pnpm、使用官方 CLI 自动初始化 profile、插件 CLI 操作和 bundle 写回 | 移除旧插件脚本和重复初始化逻辑，并完成客户端/NAS 分层验收 |
-| P0 用量图标按模型供应商显隐 | <Badge type="info" text="规划中" /> | Codex / CodeBuddy 客户端 dock 注册与显隐条件 | 进入计划后补交互、实现、测试与发布方式 |
+| P0 用量图标按模型供应商显隐 | <Badge type="tip" text="已完成" /> | Codex / CodeBuddy 客户端 dock 注册、显隐条件、真值表单测与接线断言 | 无；AC-02/03/04 待补人工复现，见[客户端验收记录](/validation/FNOS-004-08-dsh-client-2026-09-13) |
 | P1 发布、升级回滚与 NAS 验收 | <Badge type="info" text="规划中" /> | FPK 产物、用户数据、网关和目标环境证据 | 建立实施计划并记录验证结果 |
 
 ## 变更记录
@@ -219,3 +219,4 @@ lastVerified: 2026-09-12
 | 2026-09-13 | 恢复 Codex 默认捆绑 | 原「移除 Codex 默认捆绑」方案被证伪：registry 上 Codex 的 `latest`/`rc` 基线分别为 `0.1.0-rc.7` 和 `0.1.2-rc.1`，在 `0.1.5-rc.2` 上因 `settingsNamespace` 缺失导致 DSH Web 启动失败；改为由 FPK 内置与 `0.1.5-rc.2` 适配的 Codex 归档并按清单精确版本安装，同时保留非破坏性升级约束 |
 | 2026-09-13 | 统一插件发布版本 | 四个运行时插件发布版本由 `0.1.5-rc.2.4` 改为 `0.1.5-rc.2`，与 DSH 运行时基线同号；改版前该版本未发布到 registry，不涉及撤回或重发；`dshPluginApi.version` 仍单独声明运行时兼容基线 |
 | 2026-09-13 | 新增 FNOS-004-08 | 记录会话输入框用量进度图标按所选模型供应商显隐的需求：选中对应供应商模型才显示其图标，切换模型即时变化 |
+| 2026-09-13 | FNOS-004-08 完成验收 | 实现按 `modelSelection` 投影的供应商显隐（`35f0e70`），`AC-01` 经用户在 DSH 客户端浏览器实测通过；`AC-02`/`AC-03`/`AC-04` 目前只有单元测试与接线断言证据，待补人工复现，见[客户端验收记录](/validation/FNOS-004-08-dsh-client-2026-09-13) |

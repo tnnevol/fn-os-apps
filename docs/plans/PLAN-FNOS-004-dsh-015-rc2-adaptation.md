@@ -161,7 +161,9 @@ DSH 0.1.5-rc.2 发布包
 
 ### P0：用量图标按模型供应商显隐
 
-状态：<Badge type="info" text="规划中" />
+状态：<Badge type="tip" text="已完成" />
+
+实施提交：`35f0e70 feat(plugin): gate usage icons on the selected model provider`。`AC-01` 经用户在 DSH 客户端浏览器实测通过；`AC-02`/`AC-03`/`AC-04` 只有单元测试与接线断言证据，待补人工复现，见[客户端验收记录](/validation/FNOS-004-08-dsh-client-2026-09-13)。
 
 `FNOS-004-08` 只收敛两个用量图标在 `conversation.input.right` 的挂出条件。两个插件都注册在这个插槽（Codex `id: codex-usage` `order: 1`，CodeBuddy `id: codebuddy-usage` `order: 2`），各自只按自身登录态或偏好判断，选中某一家模型时另一家的图标照样显示。判断依据来自会话投影 `modelSelection` 的 `provider`，和选中模型同源。
 
@@ -377,7 +379,7 @@ git diff --check
 | P0 内部重启 Token 刷新 | <Badge type="info" text="规划中" /> | 重启期间失效旧 Token，捕获并原子持久化新 Token，代理请求等待新状态 |
 | P1 发布升级回滚一致性 | <Badge type="info" text="规划中" /> | 构建前版本门禁、升级幂等、失败恢复和发布证据可追溯 |
 | P0 FPK 构建 | <Badge type="info" text="规划中" /> | FPK 构建成功，安装后 DSH 版本和启动入口正确 |
-| P0 用量图标按模型供应商显隐 | <Badge type="info" text="规划中" /> | 两个用量图标只在选中对应供应商模型时挂出，切换即时生效且隐藏时不轮询 |
+| P0 用量图标按模型供应商显隐 | <Badge type="tip" text="已完成" /> | 两个用量图标只在选中对应供应商模型时挂出，切换即时生效且隐藏时不轮询 |
 | P1 当前 DSH 客户端验证 | <Badge type="info" text="规划中" /> | Codex Auth、CodeBuddy、Semi UI 和共享包完成组合入口与关键行为验证 |
 | P1 fnOS NAS 验收 | <Badge type="info" text="规划中" /> | Web、网关、`dsh-fnos`、Codex 老用户保留、升级数据保留和失败路径均有 NAS 证据 |
 
@@ -399,3 +401,4 @@ git diff --check
 | 2026-09-12 | 纳入 FNOS-004-06 | 增加构建版本门禁、升级幂等、失败恢复、回滚入口和发布证据追踪任务 |
 | 2026-09-13 | 统一插件发布版本 | 四个运行时插件发布版本由 `0.1.5-rc.2.4` 改为 `0.1.5-rc.2`，与 DSH 运行时基线同号；同步 `package.json`、发布清单和文档，`dshPluginApi.version` 仍单独承载兼容基线 |
 | 2026-09-13 | 纳入 FNOS-004-08 | 增加用量图标按选中模型供应商显隐计划：读取 `modelSelection` 投影的 `provider`，Codex 与 CodeBuddy 各自只在选中本家模型时挂出，切换即时生效，隐藏时不建立用量轮询 |
+| 2026-09-13 | 完成 FNOS-004-08 | `T11-01` 至 `T11-06` 落地（`35f0e70`）：新增 `@deepseek-ai/dsh-client-ui-session` 类型依赖与座位标准套件导入，`CODEX_PROVIDER` 移至 `contracts/`，显隐合取收敛为纯函数；`AC-01` 经 DSH 客户端浏览器实测通过，`AC-02`/`AC-03`/`AC-04` 待补人工复现 |

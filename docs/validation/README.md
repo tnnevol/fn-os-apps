@@ -37,3 +37,4 @@ status: passed|failed|blocked
 ## 当前记录
 
 - [FNOS-002 NAS 浏览器验收记录（2026-09-01）](/validation/FNOS-002-nas-2026-09-01)
+- [FNOS-004-08 DSH 客户端验收记录（2026-09-13）](/validation/FNOS-004-08-dsh-client-2026-09-13)
