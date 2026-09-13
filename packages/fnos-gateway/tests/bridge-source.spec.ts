@@ -56,6 +56,70 @@ describe('browser bridge artifact', () => {
 
     expect(requests).toEqual(['http://nas.example/app/fn-deepseek-harness/dsh-market/registry'])
   })
+  it('maps the built-in open-in-app routes without any configured path', async () => {
+    const requests: string[] = []
+    const window: Record<string, unknown> = {
+      location: { href: 'http://nas.example/app/fn-deepseek-harness/', origin: 'http://nas.example' },
+      fetch(input: unknown) {
+        requests.push(String(input))
+        return Promise.resolve()
+      },
+    }
+    function Xhr(): void {}
+    Xhr.prototype.open = function (): void {}
+    function Node(): void {}
+    Node.prototype.appendChild = function (node: unknown): unknown { return node }
+    Node.prototype.insertBefore = function (node: unknown): unknown { return node }
+    function Element(): void {}
+    Element.prototype.append = function (): void {}
+
+    runInNewContext(`window.__FNOS_GATEWAY_CONFIG__ = ${JSON.stringify({ prefix: '/app/fn-deepseek-harness', customPaths: [], eventsPath: '/__fnos-gateway/path-allowlist/events' })};${source}`, {
+      window,
+      XMLHttpRequest: Xhr,
+      Node,
+      Element,
+      URL,
+    })
+
+    await (window.fetch as (input: unknown) => Promise<void>)('/open-in-app/apps')
+    await (window.fetch as (input: unknown) => Promise<void>)('/open-in-app/icon/zed')
+    await (window.fetch as (input: unknown) => Promise<void>)('/open-in-app/open')
+
+    expect(requests).toEqual([
+      'http://nas.example/app/fn-deepseek-harness/open-in-app/apps',
+      'http://nas.example/app/fn-deepseek-harness/open-in-app/icon/zed',
+      'http://nas.example/app/fn-deepseek-harness/open-in-app/open',
+    ])
+  })
+  it('leaves an unrelated top-level path to the fnOS host', async () => {
+    const requests: string[] = []
+    const window: Record<string, unknown> = {
+      location: { href: 'http://nas.example/app/fn-deepseek-harness/', origin: 'http://nas.example' },
+      fetch(input: unknown) {
+        requests.push(String(input))
+        return Promise.resolve()
+      },
+    }
+    function Xhr(): void {}
+    Xhr.prototype.open = function (): void {}
+    function Node(): void {}
+    Node.prototype.appendChild = function (node: unknown): unknown { return node }
+    Node.prototype.insertBefore = function (node: unknown): unknown { return node }
+    function Element(): void {}
+    Element.prototype.append = function (): void {}
+
+    runInNewContext(`window.__FNOS_GATEWAY_CONFIG__ = ${JSON.stringify({ prefix: '/app/fn-deepseek-harness', customPaths: [], eventsPath: '/__fnos-gateway/path-allowlist/events' })};${source}`, {
+      window,
+      XMLHttpRequest: Xhr,
+      Node,
+      Element,
+      URL,
+    })
+
+    await (window.fetch as (input: unknown) => Promise<void>)('/trim-app/assets/app.js')
+
+    expect(requests).toEqual(['/trim-app/assets/app.js'])
+  })
   it('maps configured plugin paths used by static resource attributes', () => {
     const window: Record<string, unknown> = {
       location: { href: 'http://nas.example/app/fn-deepseek-harness/', origin: 'http://nas.example' },

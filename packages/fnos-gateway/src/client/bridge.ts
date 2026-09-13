@@ -6,10 +6,20 @@
   "use strict";
   var prefix = config.prefix || "";
   var customPaths = new Set(config.customPaths || []);
+  // Routes DSH serves to the browser outside its `/api` and `/plugins`
+  // carriers. They are same-origin absolute URLs, so the fnOS host gateway
+  // cannot know they belong to this app until the browser bridge adds the
+  // app prefix; without it the host answers its own 404 and the owning DSH
+  // control silently disappears (the session-header "open in app" split
+  // button fetches its availability list and renders nothing on failure).
+  // Users cannot register or remove these: they are part of the app's own
+  // surface, not third-party plugin API URLs.
+  var builtinPaths = ["/api", "/plugins", "/open-in-app"];
   function boundary(pathname, candidate) { return pathname === candidate || pathname.indexOf(candidate + "/") === 0; }
   function isImageResource(pathname) { return /\.(?:avif|bmp|gif|ico|jpe?g|png|svg|webp)$/i.test(pathname); }
   function gatewayPath(pathname) {
-    if (boundary(pathname, "/api") || boundary(pathname, "/plugins") || isImageResource(pathname)) return true;
+    if (isImageResource(pathname)) return true;
+    for (var candidate of builtinPaths) if (boundary(pathname, candidate)) return true;
     for (var candidate of customPaths) if (boundary(pathname, candidate)) return true;
     return false;
   }

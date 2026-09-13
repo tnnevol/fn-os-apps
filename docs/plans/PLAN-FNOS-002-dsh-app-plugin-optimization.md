@@ -429,6 +429,7 @@ SSE 路由由网关自身处理，不转发到 DSH。它经过 fnOS 统一网关
 | PLAN-FNOS-002-T04-14 | FNOS-002-04 | 使用启动锁、`app.pid.starting`、超时健康检查和原子 rename 管理 Web PID | <Badge type="tip" text="已完成" /> |
 | PLAN-FNOS-002-T04-15 | FNOS-002-04 | 验证 Web 被终止、重复点击、启动失败、PID 复用、网关退出和 FPK stop/config_callback 场景 | <Badge type="tip" text="已完成（由 FNOS-003 验收）" /> |
 | PLAN-FNOS-002-T04-16 | FNOS-002-04 | 将 `BRIDGE_SCRIPT_BODY` 拆到 `src/client/bridge.js`；两个 tsdown 构建复用虚拟模块插件，在构建期读取并内联 Bridge | <Badge type="tip" text="已完成" /> |
+| PLAN-FNOS-002-T04-17 | FNOS-002-04 | 将 DSH 内置浏览器同级路由（`/open-in-app`）纳入 Bridge 内置反代前缀：`gatewayPath` 改为内置前缀与用户规则两段判断，图片资源判断保持独立；补充 `/open-in-app` 三条路由补前缀、自定义规则不受影响和非内置顶层路径不补前缀的回归测试 | <Badge type="tip" text="已完成" /> |
 
 ### P1：Codex 动态模型目录
 
