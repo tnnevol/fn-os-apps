@@ -280,9 +280,28 @@ describe('dsh-fnos package contract', () => {
     // 用的是 fnOS 原生的文件管理器，而不是对目录无意义的 openFile。
     expect(action).toContain('openFileManager')
     expect(action).not.toContain('sdk.openFile(')
-    // 外观沿用共享 Semi UI 组件。
-    expect(action).toContain('DshDropdown')
-    expect(action).toContain('DshButton')
+
+    // 分体按钮：左半执行当前操作、右半展开菜单，两半各自可点。这是官方
+    // `OpenInAppAction` 的交互，样式数值也按它对齐（见下一条用例）。
+    expect(action).toContain('dsh-fnos-open-in-split')
+    expect(action).toContain('dsh-fnos-open-in-main')
+    expect(action).toContain('dsh-fnos-open-in-chevron')
+    expect(action).toContain('selection="fill"')
+    expect(action).toContain('aria-haspopup="menu"')
+    expect(action).toContain('aria-expanded={open}')
+    expect(action).toContain('IconChevronDownOutline14')
+  })
+
+  it('分体按钮的样式数值与官方入口一致', async () => {
+    const style = await readFile(new URL('../../src/styles/index.scss', import.meta.url), 'utf8')
+    // 头部控件行高与胶囊圆角：官方是 28px / 14px，两半之间用 l4 发丝线分隔。
+    expect(style).toContain('.dsh-fnos-open-in-split {')
+    expect(style).toMatch(/\.dsh-fnos-open-in-split \{[^}]*height: 28px;/u)
+    expect(style).toMatch(/\.dsh-fnos-open-in-split \{[^}]*border-radius: 14px;/u)
+    expect(style).toMatch(/\.dsh-fnos-open-in-chevron \{[^}]*border-left: 0\.5px solid var\(--dsw-alias-border-l4\);/u)
+    // 两半各自的 hover 反馈与失败态。
+    expect(style).toContain('.dsh-fnos-open-in-main:hover:not(:disabled)')
+    expect(style).toContain(".dsh-fnos-open-in-main[data-state='error']")
   })
 
   it('declares the DSH API version used by the client bridge', async () => {

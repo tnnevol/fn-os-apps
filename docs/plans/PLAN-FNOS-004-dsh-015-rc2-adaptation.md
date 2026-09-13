@@ -185,7 +185,7 @@ DSH 0.1.5-rc.2 发布包
 | 任务 ID | 对应验收 | 实现内容 | 验收 |
 | --- | --- | --- | --- |
 | PLAN-FNOS-004-T12-01 | FNOS-004-09-AC-01 | 在 `isEmbeddedFnosFrame()` 为真时注册 `conversation.session.header.utilities`，使用与官方相同的 `id: 'open-in-app'` 和更低的 `priority`（不得同优先级，否则注册抛错） | fnOS iframe 内官方按钮不再渲染；独立浏览器不受影响 |
-| PLAN-FNOS-004-T12-02 | FNOS-004-09-AC-02 | 新增 fnOS 文件入口组件：锚点用 `@tnnevol/dsh-semi-ui` 的 `DshButton` + `DshIconMore`，菜单用 `DshDropdown`，保持与官方入口一致的头部位置和尺寸；菜单项由数据驱动，便于追加 | 外观与官方入口一致，展开为下拉菜单而非直接触发 |
+| PLAN-FNOS-004-T12-02 | FNOS-004-09-AC-02 | 新增 fnOS 文件入口组件，结构与交互对齐官方 `OpenInAppAction`：28px 高的分体按钮，左半执行当前操作（仅图标，15px）、右半 chevron（11px）展开菜单，两半之间有 l4 发丝分隔线并各有 hover；用 `ui-primitives` 的 `Menu`/`Tooltip`，样式数值与官方 CSS 对齐；操作项由数组驱动，便于追加 | 外观、尺寸和交互与官方入口一致；左半点击执行、右半点击展开 |
 | PLAN-FNOS-004-T12-03 | FNOS-004-09-AC-03 | 菜单项「打开文件管理器」调用 fnOS SDK 的 `openFileManager(cwd)`，目标路径取当前会话工作目录；复用既有 `createTrimApp()` 与 web carrier 校验 | 选择后 NAS 文件管理器打开并定位到会话工作目录 |
 | PLAN-FNOS-004-T12-04 | FNOS-004-09-AC-04 | 工作目录未知或为空时不渲染入口；SDK 未就绪、非 web carrier 或调用失败时给出可见失败提示，不回退到 DSH 原生打开逻辑，不预检插件自己的授权目录列表 | 无工作目录时不出现入口；调用失败有可见提示且不产生未处理异常 |
 | PLAN-FNOS-004-T12-05 | FNOS-004-09-AC-06 | 补单元测试：iframe 框架判定、遮蔽注册的 id 与 priority、工作目录判定、SDK 调用与失败分支；更新插件文档 | fnOS 插件 typecheck、测试和构建通过；文档记录入口位置、可用能力和边界 |

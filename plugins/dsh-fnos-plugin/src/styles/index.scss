@@ -34,8 +34,64 @@
   gap: 7px;
 }
 
-.dsh-fnos-open-in-button { border-radius: var(--semi-border-radius-large); }
-.dsh-fnos-open-in-button-icon { display: inline-flex; align-items: center; margin-left: 6px; }
+/* fnOS 文件入口的分体按钮。数值对齐 DSH 官方
+   `ui-open-in-app/OpenInAppAction.module.css`：28px 高、14px 胶囊圆角、l4 发丝
+   边框、两半之间有同色分隔线。左右各自 hover，左半在忙碌时禁用、失败时红字。 */
+.dsh-fnos-open-in-split {
+  display: inline-flex;
+  align-items: stretch;
+  box-sizing: border-box;
+  height: 28px;
+  border: 0.5px solid var(--dsw-alias-border-l4);
+  border-radius: 14px;
+  overflow: hidden;
+  font-family: var(--dsw-font-family);
+}
+
+.dsh-fnos-open-in-main,
+.dsh-fnos-open-in-chevron {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 0;
+  background: none;
+  color: var(--dsw-alias-label-primary);
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 16px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.dsh-fnos-open-in-main { padding: 5px 6px 5px 7px; }
+
+.dsh-fnos-open-in-main:hover:not(:disabled),
+.dsh-fnos-open-in-main:focus-visible,
+.dsh-fnos-open-in-chevron:hover,
+.dsh-fnos-open-in-chevron:focus-visible { background: var(--dsw-alias-interactive-bg-hover); }
+
+.dsh-fnos-open-in-main:disabled {
+  color: var(--dsw-alias-label-dimmed);
+  cursor: wait;
+}
+
+.dsh-fnos-open-in-main[data-state='error'] {
+  color: var(--dsw-alias-state-error-primary);
+  box-shadow: inset 0 0 0 1px var(--dsw-alias-state-error-primary);
+}
+
+.dsh-fnos-open-in-chevron {
+  padding: 5px 6px 5px 4px;
+  border-left: 0.5px solid var(--dsw-alias-border-l4);
+  color: var(--dsw-alias-label-secondary);
+}
+
+.dsh-fnos-open-in-icon {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+}
+
 .dsh-fnos-session-log-button { border-radius: var(--semi-border-radius-large); }
 .dsh-fnos-session-log-button-icon { display: inline-flex; align-items: center; margin-left: 6px; }
 .dsh-fnos-session-log-dialog-body { min-height: 260px; }
