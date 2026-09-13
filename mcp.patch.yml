@@ -1,0 +1,25 @@
+# DSH (DeepSeek Harness) 版 MCP 配置——与 .mcp.json 同级。
+#
+# 重要：DSH 客户端不读取 .mcp.json（那是 Claude Code / Codex 的格式）。
+# DSH 只通过 @deepseek-ai/dsh-mcp-client 插件桥接 MCP 服务器，每条服务器
+# 对应下面这样一个 insert 条目。本文件把 .mcp.json 里的 semi-mcp 服务器
+# 转成 DSH 可识别的 Cordis patch 形式，作为仓库内版本化的「真源」。
+#
+# serverName 是工具命名空间，DSH 暴露给模型的工具名为 mcp__semi__<tool>，
+# 与 Claude Code / Codex 的命名形态一致。
+#
+# 让本文件被 DSH 客户端实际加载（二选一）：
+#   1) 启动 web 时叠加本文件：  dsh web --patch /Users/tnnevol/workspace/fn-packages/fn-os-apps/mcp.patch.yml
+#   2) 把下面这条 insert 直接加进本机 profile 的 cordis.patch.yml
+#      （当前 web 会话的 user 层：$DSH_HOME/profiles/web/cordis.patch.yml）
+- insert:
+    - id: mcp-semi
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: semi
+        transport: stdio
+        command: npx
+        args:
+          - '-y'
+          - '@douyinfe/semi-mcp'
+        env: {}
