@@ -557,6 +557,9 @@ importers:
       '@deepseek-ai/dsh-client-ui-renderer':
         specifier: catalog:dsh
         version: 0.1.5-rc.2(@deepseek-ai/cordis@4.0.2)
+      '@deepseek-ai/dsh-client-ui-session':
+        specifier: catalog:dsh
+        version: 0.1.5-rc.2(@deepseek-ai/cordis@4.0.2)
       '@deepseek-ai/dsh-client-ui-settings':
         specifier: catalog:dsh
         version: 0.1.5-rc.2(@deepseek-ai/cordis@4.0.2)

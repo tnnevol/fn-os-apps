@@ -15,10 +15,14 @@ import type {} from '@deepseek-ai/dsh-client-ui-settings-plugins/client'
 import type {} from '@deepseek-ai/dsh-client-ui-sidebar/client'
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import type {} from '@deepseek-ai/dsh-client-ui-slots'
+// Type-only: 拉入 ui-session 对 GlobalStandardProps/SessionStandardProps 的合并
+// （useSessions、sessionId、useProjection），会话作用域座位的标准套件才有类型。
+import type {} from '@deepseek-ai/dsh-client-ui-session/client'
 import type {} from '@deepseek-ai/dsh-client-ui-theme/client'
 import type {} from '@deepseek-ai/dsh-client-ui-workspace/client'
 import { AuthorizedDirectoriesCard } from '../components/AuthorizedDirectoriesCard.tsx'
 import { FnosInputPickerButton } from '../components/FnosInputPickerButton.tsx'
+import { FnosOpenInHeaderAction } from '../components/FnosOpenInHeaderAction.tsx'
 import { FnosSessionLogHeaderAction } from '../components/FnosSessionLogHeaderAction.tsx'
 import { insertFnosReferences } from './input-references/input-reference-actions.ts'
 import { createFnosCommandContribution, createFnosDirectorySource } from './input-references/fnos-command-source.ts'
@@ -152,6 +156,20 @@ export function apply(ctx: ClientContext): void {
         }),
       }, FnosSessionLogHeaderAction)
     })
+    // 遮蔽 DSH 官方的「打开应用」按钮（同 id、更低 priority，低者生效）。
+    //
+    // 官方按钮按编译期常量表探测本机应用，在 fnOS 上会把系统的 ZFS Event
+    // Daemon（`/usr/sbin/zed`）误判为 Zed 编辑器，且取不到对应图标，菜单里
+    // 因此出现一个点了也打不开编辑器的条目。该常量表不可配置，所以在这里用
+    // fnOS 自己的文件能力替代它。只改 fnOS iframe 内的表现。
+    ctx.slots.inject('conversation.session.header.utilities', () => ctx.slots.register({
+      name: 'conversation.session.header.utilities',
+      id: 'open-in-app',
+      // 官方条目用默认 priority 0；必须更低才能遮蔽，同优先级会直接抛错。
+      priority: -1,
+      locale: namespace,
+      inject: () => ({ t }),
+    }, FnosOpenInHeaderAction))
     ctx.slots.inject('settings.action', () => ctx.slots.register({
       name: 'settings.action',
       id: 'open-document',

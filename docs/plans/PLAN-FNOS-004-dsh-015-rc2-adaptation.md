@@ -1,7 +1,7 @@
 ---
 id: PLAN-FNOS-004
 title: PLAN-FNOS-004 DSH 0.1.5-rc.2 适配与 FPK 运行修复
-description: 实施 FNOS-004-01 至 FNOS-004-08：完成 DSH 适配、插件策略、应用私有 CLI 与网关 Token 刷新、发布回滚门禁、CLI 插件管理，以及用量图标按模型供应商显隐。
+description: 实施 FNOS-004-01 至 FNOS-004-09：完成 DSH 适配、插件策略、应用私有 CLI 与网关 Token 刷新、发布回滚门禁、CLI 插件管理、用量图标按模型供应商显隐，以及 fnOS 原生文件入口。
 status: planned
 owner: tnnevol
 planDate: 2026-09-12
@@ -16,7 +16,7 @@ lastVerified: 2026-09-12
 | 计划编号 | PLAN-FNOS-004 |
 | 计划日期 | 2026-09-12 |
 | 对应需求 | [FNOS-004 DSH 0.1.5-rc.2 适配与 FPK 运行修复](/requirements/FNOS-004-dsh-015-rc2-adaptation) |
-| 本轮功能 | `FNOS-004-01` 至 `FNOS-004-08`：DSH 适配、Codex/dshmarket 插件策略、应用私有 dsh CLI、Token 刷新、发布升级回滚门禁、CLI 插件管理和用量图标按供应商显隐 |
+| 本轮功能 | `FNOS-004-01` 至 `FNOS-004-09`：DSH 适配、Codex/dshmarket 插件策略、应用私有 dsh CLI、Token 刷新、发布升级回滚门禁、CLI 插件管理、用量图标按供应商显隐和 fnOS 原生文件入口 |
 | 上游依据 | 本地 Harness checkout 的 `dsh-v0.1.5-rc.2`（`fb2c4b9e698e30edb738bca4cf0618587db7d203`） |
 | 计划状态 | <Badge type="info" text="规划中" /> |
 
@@ -24,14 +24,14 @@ lastVerified: 2026-09-12
 
 将 DSH 应用和仓库内四个插件的兼容性基线从 `0.1.2-rc.1` 升级到本地官方 Harness checkout 的 `dsh-v0.1.5-rc.2`，并让新 FPK 继续默认捆绑与 `0.1.5-rc.2` 适配的 Codex 插件。当前计划包含 DSH catalog、锁文件、插件 `compatibility.json`、上游破坏性 API 迁移、FPK native 构建配置、Codex 内置与安装策略、DSH CLI 插件管理、应用私有 CLI 权限、内部重启 Token 刷新和运行时验证。
 
-本轮处理 `FNOS-004-01` 至 `FNOS-004-08`。其中 `FNOS-004-06`作为发布、升级和回滚的一致性门禁，不新增独立运行时能力。计划不修改 DeepSeek Harness 上游源码，只在本仓库插件和 FPK 构建链内完成适配。
+本轮处理 `FNOS-004-01` 至 `FNOS-004-09`。其中 `FNOS-004-06`作为发布、升级和回滚的一致性门禁，不新增独立运行时能力。计划不修改 DeepSeek Harness 上游源码，只在本仓库插件和 FPK 构建链内完成适配。
 
 ## 实现范围和边界
 
 | 模块 | 计划入口 | 实现责任 |
 | --- | --- | --- |
 | DSH 依赖基线 | `pnpm-workspace.yaml`、`pnpm-lock.yaml` | 统一 `@deepseek-ai/dsh-*` catalog 和允许提前安装的版本列表 |
-| fnOS 插件 | `plugins/dsh-fnos-plugin` | 迁移客户端输入、命令、附件、会话和 UI 接缝 |
+| fnOS 插件 | `plugins/dsh-fnos-plugin` | 迁移客户端输入、命令、附件、会话和 UI 接缝；在 fnOS iframe 内遮蔽官方「打开应用」并提供 fnOS 原生文件入口 |
 | Codex Auth 插件 | `plugins/dsh-codex-auth-plugin` | 迁移 attachment、LLM、`pi-ai` 和模型目录接缝；作为内置插件随 FPK 分发并保持老用户数据可用；`conversation.input.right` 的用量图标按选中模型供应商显隐 |
 | CodeBuddy 插件 | `plugins/dsh-codebuddy-plugin` | 迁移 LLM 流式、文件块和附件接缝；`conversation.input.right` 的用量图标在 `showUsage` 之上叠加选中模型供应商条件 |
 | Semi UI 插件 | `packages/dsh-semi-ui`、`plugins/dsh-semi-ui-showcase-plugin` | 迁移共享 UI、layout、slots 和 renderer 接缝 |
@@ -40,7 +40,7 @@ lastVerified: 2026-09-12
 | Native 构建 | `.github/config/`、`.github/scripts/prepare-dsh-native.sh`、`.github/workflows/build-dsh-fn.yml` | 使用新 DSH 依赖树准备 native 产物并生成版本化 FPK |
 | 文档与测试 | `docs/development/`、`docs/apps/`、插件测试目录 | 记录迁移差异、测试命令和本地/NAS 证据 |
 
-`FNOS-004-03` 只通过 `FNOS-004-07` 规定的 DSH CLI 安装固定版本 dshmarket，并处理已安装时跳过，不另建插件安装实现。`FNOS-004-04` 负责把真实 CLI 固定在应用私有目录并以应用包用户身份运行，且不注册公开 `dsh` 命令（平台未提供非 root 可用的身份切换机制）；它不修改 DSH CLI 上游实现。CLI 管理仍由 `FNOS-004-07` 的 `dsh plugin --profile web` 边界承担。`FNOS-004-05` 负责网关代理和 DSH Web 重启之间的 Token 状态同步、原子持久化和并发请求处理。Codex 清单和内置目录属于 `FNOS-004-02`，本轮会修改：把 Codex 恢复为 FPK 默认内置插件并按清单精确版本安装，同时不清理老用户 profile 中的凭据和配置。`FNOS-004-08` 只改两个插件在 `conversation.input.right` 的挂出条件，不新增图标样式、交互，也不动 CodeBuddy 的 `showUsage` 偏好语义和两家插件的用量轮询实现。
+`FNOS-004-03` 只通过 `FNOS-004-07` 规定的 DSH CLI 安装固定版本 dshmarket，并处理已安装时跳过，不另建插件安装实现。`FNOS-004-04` 负责把真实 CLI 固定在应用私有目录并以应用包用户身份运行，且不注册公开 `dsh` 命令（平台未提供非 root 可用的身份切换机制）；它不修改 DSH CLI 上游实现。CLI 管理仍由 `FNOS-004-07` 的 `dsh plugin --profile web` 边界承担。`FNOS-004-05` 负责网关代理和 DSH Web 重启之间的 Token 状态同步、原子持久化和并发请求处理。Codex 清单和内置目录属于 `FNOS-004-02`，本轮会修改：把 Codex 恢复为 FPK 默认内置插件并按清单精确版本安装，同时不清理老用户 profile 中的凭据和配置。`FNOS-004-08` 只改两个插件在 `conversation.input.right` 的挂出条件，不新增图标样式、交互，也不动 CodeBuddy 的 `showUsage` 偏好语义和两家插件的用量轮询实现。`FNOS-004-09` 只在 fnOS iframe 内遮蔽 DSH 官方「打开应用」按钮并改用 fnOS JS SDK 提供文件入口，不修改上游源码、不代理 `/open-in-app` 路由，也不动官方按钮在独立浏览器和桌面端的行为。
 
 ## 目标架构和数据流
 
@@ -176,6 +176,20 @@ DSH 0.1.5-rc.2 发布包
 | PLAN-FNOS-004-T11-05 | FNOS-004-08-AC-05 | 图标不挂出时不建立用量轮询（把供应商判断放在挂起轮询的 effect 之前，或让 effect 依赖该条件）；条件变化时已在跑的刷新按现有 cleanup 正常收尾，不额外补一轮请求 | 隐藏状态下无对应插件的后台用量请求；隐藏/显示切换不产生重复定时器 |
 | PLAN-FNOS-004-T11-06 | FNOS-004-08-AC-05 | 为两个组件补单元测试：供应商匹配显示、不匹配隐藏、无投影隐藏、CodeBuddy 偏好取与、切换即时生效和不建立轮询 | Codex Auth 与 CodeBuddy 的类型检查、单元测试和构建通过；测试覆盖上述分支 |
 
+### P1：fnOS 原生文件入口
+
+状态：<Badge type="info" text="规划中" />
+
+`FNOS-004-09` 在 fnOS iframe 内遮蔽 DSH 官方「打开应用」按钮（`@deepseek-ai/dsh-client-ui-open-in-app`，插槽 `conversation.session.header.utilities`，`id: open-in-app`，`order: -10`，`priority` 默认 0），改用 fnOS JS SDK 提供文件入口。遮蔽沿用插件已有手法：同 `id`、更低 `priority`（插件现有的 session log 入口即以 `priority: -1` 遮蔽 `dsh-session-log-export`）。上游按钮按编译期常量表 `OPEN_IN_APP_CATALOG` 探测本机应用，Linux 上 `zed` 条目只认 PATH 同名可执行文件，而 fnOS 自带 `/usr/sbin/zed`（ZFS Event Daemon），因此被误判且图标 404；该表不可配置、插件无注册接口、本仓库不提交上游补丁，故在插件侧遮蔽。
+
+| 任务 ID | 对应验收 | 实现内容 | 验收 |
+| --- | --- | --- | --- |
+| PLAN-FNOS-004-T12-01 | FNOS-004-09-AC-01 | 在 `isEmbeddedFnosFrame()` 为真时注册 `conversation.session.header.utilities`，使用与官方相同的 `id: 'open-in-app'` 和更低的 `priority`（不得同优先级，否则注册抛错） | fnOS iframe 内官方按钮不再渲染；独立浏览器不受影响 |
+| PLAN-FNOS-004-T12-02 | FNOS-004-09-AC-02 | 新增 fnOS 文件入口组件：锚点用 `@tnnevol/dsh-semi-ui` 的 `DshButton` + `DshIconMore`，菜单用 `DshDropdown`，保持与官方入口一致的头部位置和尺寸；菜单项由数据驱动，便于追加 | 外观与官方入口一致，展开为下拉菜单而非直接触发 |
+| PLAN-FNOS-004-T12-03 | FNOS-004-09-AC-03 | 菜单项「打开文件管理器」调用 fnOS SDK 的 `openFileManager(cwd)`，目标路径取当前会话工作目录；复用既有 `createTrimApp()` 与 web carrier 校验 | 选择后 NAS 文件管理器打开并定位到会话工作目录 |
+| PLAN-FNOS-004-T12-04 | FNOS-004-09-AC-04 | 工作目录未知或为空时不渲染入口；SDK 未就绪、非 web carrier 或调用失败时给出可见失败提示，不回退到 DSH 原生打开逻辑，不预检插件自己的授权目录列表 | 无工作目录时不出现入口；调用失败有可见提示且不产生未处理异常 |
+| PLAN-FNOS-004-T12-05 | FNOS-004-09-AC-06 | 补单元测试：iframe 框架判定、遮蔽注册的 id 与 priority、工作目录判定、SDK 调用与失败分支；更新插件文档 | fnOS 插件 typecheck、测试和构建通过；文档记录入口位置、可用能力和边界 |
+
 ### P0：同步 FPK 运行时与构建入口
 
 状态：<Badge type="info" text="规划中" />
@@ -263,6 +277,14 @@ DSH 0.1.5-rc.2 发布包
 4. CodeBuddy 额外保留 `showUsage` 作为更前置开关，供应商条件与该偏好取与；Codex 保留现有的登录态前置条件。这些条件只决定图标挂不挂出，不改动图标样式、tooltip 和点击展开行为。
 5. 选中模型变化时投影推送新值，React 订阅触发重算，图标随切换即时增减；已在跑的刷新由现有 cleanup 收尾，不因条件翻转补发请求。
 
+### P1：fnOS 原生文件入口流程
+
+1. 插件只在 `isEmbeddedFnosFrame()` 为真时注册会话头部入口，使用与官方相同的 `id: 'open-in-app'` 和更低的 `priority`。列表插槽的遮蔽按「同 id、不同 priority、低者生效」判定，因此官方条目不再渲染，且不会出现两个入口。
+2. 入口读取当前会话的工作目录；工作目录未知或为空时返回 `null`，不渲染锚点。
+3. 锚点用 Semi UI 的按钮加图标，外观与官方入口在头部的位置和尺寸一致；点击展开下拉菜单，菜单项由数据驱动，当前只有「打开文件管理器」。
+4. 选择菜单项后调用 fnOS JS SDK 的 `openFileManager(cwd)`：复用既有的 `createTrimApp()`，等待 `ready()`，校验 `isWeb` 且非 `isStandaloneWeb` 再调用。目标路径直接交给 fnOS，不做本地授权预检。
+5. 调用失败时设置可见错误提示并复位忙碌状态；不抛出未处理异常，不阻塞 DSH，也不回退到 NAS 上不存在的 `xdg-open`。
+
 ## 数据、权限和错误处理
 
 - 所有应用路径使用 `${TRIM_*}` 环境变量；安装、升级和验证不得写死 NAS 安装目录。
@@ -278,6 +300,8 @@ DSH 0.1.5-rc.2 发布包
 - Native 依赖准备失败、补丁锚点不唯一、Node ABI 不匹配和插件 API 不匹配分别记录错误，不以跳过检查的方式生成 FPK。
 - Host 与 Client 仍遵守 DSH Remote、附件持久化、会话可回放和插件生命周期约束；测试覆盖重复加载、卸载和异常退出清理。
 - 用量图标的显隐只读会话投影，不改写会话数据，也不新增会话事件；投影缺失就当作不显示，不去猜供应商，也不拿登录态或用量请求结果顶替供应商判断。
+- fnOS 文件入口的目标路径来自会话工作目录，只读会话状态，不改写会话数据、不新增会话事件；工作目录缺失时按「不渲染」处理。
+- 文件入口不预检插件展示的授权目录列表：该列表用于浏览和选择，可能滞后于 fnOS ACL 状态，预检会误拒合法路径；是否允许由 fnOS 判断。调用失败只影响本次操作，不写入持久化状态，也不移除入口。
 - 供应商标识以各插件已有的常量或 provider 注册名为准，不在 dock 组件里硬编码第二份字符串；未匹配任何已注册供应商时不显示任何图标。
 
 ## 依赖、风险和决策
@@ -298,6 +322,9 @@ DSH 0.1.5-rc.2 发布包
 | 投影可用性 | `modelSelection` 投影缺失或尚未送达时读不到选中模型，可能导致图标该显示时不显示 | 缺失一律按不显示处理并保留其余前置条件；不缓存首次结果，投影到达后随即重算 |
 | 供应商标识漂移 | dock 组件里再写一份 provider 字符串，后续改名会出现两边不一致 | 复用各插件已有的 provider 常量或注册名，测试断言显隐与常量同源 |
 | 轮询残留 | 图标隐藏后仍保留定时器，会在看不见的情况下继续请求用量接口 | 供应商判断置于挂起轮询之前或纳入 effect 依赖，隐藏状态不建立定时器并用测试断言 |
+| 遮蔽失效 | 与官方条目同 `priority` 会让注册直接抛错，插件整体加载失败 | 使用更低 `priority` 并写断言固定该值；只影响 fnOS iframe，独立浏览器不注册 |
+| 上游变更 | 官方 `id`、`order` 或插槽名变化会让遮蔽目标失配 | 断言固定被遮蔽的 `id` 与插槽名，上游变更时测试先失败而不是静默出现两个入口 |
+| SDK 差异 | `openFileManager` 在非 web carrier 或旧宿主上不存在 | 沿用既有 `createTrimApp()` 与 `isWeb`/`isStandaloneWeb` 校验，失败给出可见提示而不回退到 NAS 上不存在的 `xdg-open` |
 
 ## 测试、打包和发布
 
@@ -339,6 +366,7 @@ git diff --check
 - 使用本地官方 Harness checkout 的 `dsh-v0.1.5-rc.2` 组合入口，验证 Codex Auth、CodeBuddy、Semi UI 及共享包的插件加载、关键 UI、Remote/Host 和错误路径。
 - 在同一入口验证用量图标的供应商显隐：分别选中 Codex 与 CodeBuddy 模型，确认只有对应图标出现；关闭 CodeBuddy `showUsage` 后选中其模型仍不显示；两处切换过程不刷新页面、不丢草稿。
 - 保存客户端版本、启动命令、插件加载日志、测试结果和失败场景证据；需要外部服务时使用测试凭据或 mock，不写入真实密钥。
+- fnOS 原生文件入口的遮蔽与外观在独立浏览器中无法验证：`isEmbeddedFnosFrame()` 为真才会注册，且 `openFileManager` 需要 fnOS 宿主桥接。该功能的验收在真实 fnOS NAS 的 iframe 内完成，本地只覆盖 iframe 判定、注册参数、工作目录判定和 SDK 调用分支的单元测试，不把本地结果当 NAS 结论。
 
 ### 真实 NAS 验证
 
@@ -380,10 +408,11 @@ git diff --check
 | P1 发布升级回滚一致性 | <Badge type="info" text="规划中" /> | 构建前版本门禁、升级幂等、失败恢复和发布证据可追溯 |
 | P0 FPK 构建 | <Badge type="info" text="规划中" /> | FPK 构建成功，安装后 DSH 版本和启动入口正确 |
 | P0 用量图标按模型供应商显隐 | <Badge type="tip" text="已完成" /> | 两个用量图标只在选中对应供应商模型时挂出，切换即时生效且隐藏时不轮询 |
+| P1 fnOS 原生文件入口 | <Badge type="info" text="规划中" /> | fnOS iframe 内遮蔽官方「打开应用」，用 fnOS JS SDK 提供文件管理器入口 |
 | P1 当前 DSH 客户端验证 | <Badge type="info" text="规划中" /> | Codex Auth、CodeBuddy、Semi UI 和共享包完成组合入口与关键行为验证 |
 | P1 fnOS NAS 验收 | <Badge type="info" text="规划中" /> | Web、网关、`dsh-fnos`、Codex 老用户保留、升级数据保留和失败路径均有 NAS 证据 |
 
-本计划汇总 `FNOS-004-01` 至 `FNOS-004-08`。其中 `FNOS-004-06`以发布、升级和回滚一致性门禁形式实施，不新增独立运行时能力；`FNOS-004-08` 只收敛两个用量图标在输入框 dock 的挂出条件。
+本计划汇总 `FNOS-004-01` 至 `FNOS-004-09`。其中 `FNOS-004-06`以发布、升级和回滚一致性门禁形式实施，不新增独立运行时能力；`FNOS-004-08` 只收敛两个用量图标在输入框 dock 的挂出条件。
 
 ## 变更记录
 
@@ -402,3 +431,4 @@ git diff --check
 | 2026-09-13 | 统一插件发布版本 | 四个运行时插件发布版本由 `0.1.5-rc.2.4` 改为 `0.1.5-rc.2`，与 DSH 运行时基线同号；同步 `package.json`、发布清单和文档，`dshPluginApi.version` 仍单独承载兼容基线 |
 | 2026-09-13 | 纳入 FNOS-004-08 | 增加用量图标按选中模型供应商显隐计划：读取 `modelSelection` 投影的 `provider`，Codex 与 CodeBuddy 各自只在选中本家模型时挂出，切换即时生效，隐藏时不建立用量轮询 |
 | 2026-09-13 | 完成 FNOS-004-08 | `T11-01` 至 `T11-06` 落地（`35f0e70`）：新增 `@deepseek-ai/dsh-client-ui-session` 类型依赖与座位标准套件导入，`CODEX_PROVIDER` 移至 `contracts/`，显隐合取收敛为纯函数；`AC-01` 经 DSH 客户端浏览器实测通过，`AC-02`/`AC-03`/`AC-04` 待补人工复现 |
+| 2026-09-13 | 纳入 FNOS-004-09 | 增加 fnOS 原生文件入口计划（`T12-01` 至 `T12-05`）：在 fnOS iframe 内以同 `id`、更低 `priority` 遮蔽官方「打开应用」，用 Semi UI 还原锚点与下拉菜单，并以 fnOS JS SDK 的 `openFileManager` 打开会话工作目录；预览与编辑器因只支持文件路径而不在本轮范围 |

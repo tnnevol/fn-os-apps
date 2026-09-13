@@ -68,7 +68,8 @@
         "@deepseek-ai/dsh-client-ui-input-trigger",
         "@deepseek-ai/dsh-client-ui-commands",
         "@deepseek-ai/dsh-client-ui-primitives",
-        "@deepseek-ai/dsh-client-ui-workspace"
+        "@deepseek-ai/dsh-client-ui-workspace",
+        "@deepseek-ai/dsh-client-ui-session"
       ],
       "platform": "web",
       "immediately": true
@@ -78,6 +79,7 @@
     "@deepseek-ai/cordis": "catalog:",
     "@deepseek-ai/dsh-api-remotes": "catalog:dsh",
     "@deepseek-ai/dsh-client-locale": "catalog:dsh",
+    "@deepseek-ai/dsh-client-ui-session": "catalog:dsh",
     "@deepseek-ai/dsh-session": "catalog:dsh",
     "@deepseek-ai/dsh-session-log-export": "catalog:dsh",
     "@deepseek-ai/dsh-client-ui-conversation": "catalog:dsh",
@@ -96,6 +98,7 @@
     "react": "catalog:"
   },
   "devDependencies": {
+    "@deepseek-ai/dsh-client-ui-session": "catalog:dsh",
     "@tnnevol/dsh-semi-ui": "workspace:*",
     "@deepseek-ai/cordis": "catalog:",
     "@deepseek-ai/dsh-api-remotes": "catalog:dsh",

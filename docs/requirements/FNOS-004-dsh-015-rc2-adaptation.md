@@ -43,13 +43,14 @@ lastVerified: 2026-09-12
 - FPK 不注册公开的 `dsh` 系统命令：安装回调不生成 `app/bin/dsh` wrapper，`config/resource` 不声明 `usr-local-linker` 的 `dsh` 入口。飞牛 fnOS 未向非 root 调用者提供可用的身份切换机制（`runuser` 以非 root 执行时报 `may not be used by non-root users`，指定 `--group` 时报 `only root can specify alternative groups`，`su` 需要密码，`setpriv` 返回 `Operation not permitted`），而本需求禁止依赖 setuid 或不受控的 sudo，因此由普通用户调用的 wrapper 无法保证以应用包用户身份执行。真实 CLI 仍固定安装在 `${TRIM_PKGHOME}/.npm-global/bin/dsh`，由管理员在应用包用户下直接调用。
 - DSH Web 内部重启捕获新 Token 后，网关代理、页面跳转和后续请求立即使用新 Token；旧 Token 不能继续把页面导向未授权状态。
 - 保留 FNOS-001～FNOS-003 已验收的网关、授权目录、NAS 引用、插件加载和用户数据行为。
+- fnOS iframe 内的会话头部由插件提供文件入口，替代 DSH 官方「打开应用」按钮；该按钮按编译期常量表探测本机应用，在 fnOS 上会把系统的 ZFS Event Daemon（`/usr/sbin/zed`）误判为 Zed 编辑器，且取不到对应图标，菜单里因此出现一个点了也打不开编辑器的条目。替代入口用 fnOS JS SDK 打开 NAS 文件管理器并定位到当前会话工作目录。
 
 ## 涉及范围
 
 | 模块 | 目录或入口 | 职责 |
 | --- | --- | --- |
 | 依赖基线 | `pnpm-workspace.yaml`、根 `pnpm-lock.yaml` | 声明并锁定 DSH 0.1.5-rc.2 依赖 |
-| fnOS 插件 | `plugins/dsh-fnos-plugin`、`compatibility.json` | 适配输入、命令、插槽、主题和 NAS 接缝 |
+| fnOS 插件 | `plugins/dsh-fnos-plugin`、`compatibility.json` | 适配输入、命令、插槽、主题和 NAS 接缝；在 fnOS iframe 内遮蔽 DSH 官方「打开应用」并提供 fnOS 原生文件入口 |
 | Codex Auth 插件 | `plugins/dsh-codex-auth-plugin`、`compatibility.json` | 适配 `dsh-llm-pi-ai`、模型和附件接缝；作为内置插件随 FPK 分发，同时保留老用户已有数据 |
 | CodeBuddy 插件 | `plugins/dsh-codebuddy-plugin`、`compatibility.json` | 适配 LLM 流式、附件和多模态序列化接缝 |
 | Semi UI 插件 | `packages/dsh-semi-ui`、`plugins/dsh-semi-ui-showcase-plugin` | 适配共享 UI 组件和客户端插槽 |
@@ -70,6 +71,7 @@ lastVerified: 2026-09-12
 | FNOS-004-06 | P1 | 升级、回滚与发布清单一致 | FPK 升级/回滚不丢失用户数据，构建产物、插件包和发布清单可追溯 | <Badge type="info" text="规划中" /> |
 | FNOS-004-07 | P0 | 使用 DSH CLI 管理 FPK 插件 | 安装、更新和显式移除统一通过 `dsh plugin --profile web`，不再调用应用自定义插件脚本 | <Badge type="info" text="规划中" /> |
 | FNOS-004-08 | P0 | 按所选模型供应商显隐用量图标 | 选中 Codex 模型时输入框只显示 Codex 用量图标，选中 CodeBuddy 模型时只显示 CodeBuddy 图标；切换模型即时变化 | <Badge type="tip" text="已完成" /> |
+| FNOS-004-09 | P1 | fnOS 原生文件入口 | 在 fnOS iframe 内遮蔽 DSH 官方「打开应用」按钮，改由插件用 fnOS JS SDK 提供文件入口，可打开 NAS 文件管理器并定位到当前会话工作目录 | <Badge type="info" text="规划中" /> |
 
 ## 交互和行为约束
 
@@ -113,6 +115,10 @@ lastVerified: 2026-09-12
 - 会话输入框右侧 dock 的用量进度图标只在当前选中模型的供应商属于对应插件时才显示：选中 Codex 模型只显示 Codex 图标，选中 CodeBuddy 模型只显示 CodeBuddy 图标，两家图标不会在同一轮对话里同时出现。选中其它供应商模型或选中模型未知时不显示任何供应商图标。显隐以会话快照里的选中模型及其供应商为准，不是按插件是否登录或是否取到用量数据判断。
 - 切换选中模型要即时生效：从 Codex 模型切到 CodeBuddy 模型时 Codex 图标消失、CodeBuddy 图标出现，不刷新页面、不丢失已输入草稿。CodeBuddy 原有的 `showUsage` 偏好仍是更前置的开关，供应商判断是在该偏好之上的额外条件，两者取与。
 - 图标隐藏时对应插件不应为看不见的图标继续后台轮询用量；显隐状态变化后已在跑的刷新任务按现有生命周期正常收尾即可。图标样式、tooltip 和点击展开行为不变，只在「是否挂出」这一层加条件。
+- fnOS iframe 内的会话头部不再使用 DSH 官方「打开应用」按钮。该按钮按编译期常量表 `OPEN_IN_APP_CATALOG` 探测本机应用，其 `zed` 条目在 Linux 上只以「PATH 里存在名为 `zed` 的可执行文件」为判定依据，而 fnOS 基于 Debian 且启用 ZFS，系统自带 `/usr/sbin/zed`（ZFS Event Daemon，`zfs-zed.service`），因此被误判为 Zed 编辑器；同时图标提取要求同名 desktop 条目 `dev.zed.Zed.desktop`，该文件不存在，图标路由返回 404，菜单里因此出现一个只有通用字形、点了也打不开编辑器的条目。catalog 是编译期常量、`Config` 只暴露超时参数、插件没有注册接口，且本仓库纪律不允许提交上游补丁，所以在上游修正前由插件在 fnOS 环境内遮蔽该条目。
+- 遮蔽使用插槽同 `id`、更低 `priority` 的方式（与插件现有 session log 遮蔽同一机制）；不得与官方条目同优先级，否则注册直接失败。只在 `isEmbeddedFnosFrame()` 为真时注册，独立浏览器和桌面端官方入口行为不变。
+- 替代入口沿用 `@tnnevol/dsh-semi-ui` 的组件，外观与官方入口在头部的位置和尺寸保持一致，展开为下拉菜单而非直接触发操作；菜单项由数据驱动，后续追加 fnOS 文件能力条目时不改动锚点、注册方式、遮蔽关系和已交付条目的行为。
+- 目标路径取当前会话的工作目录；工作目录未知或为空时不渲染入口。SDK 未就绪、非 web carrier 或调用失败时给出可见失败提示，不静默吞掉，也不回退到 DSH 原生打开逻辑（NAS 服务容器内没有 `xdg-open`）。不预检插件自己展示的授权目录列表：该列表用于浏览和选择，可能滞后于 fnOS ACL 状态，预检会误拒合法路径，是否允许由 fnOS 判断。
 
 ## 不在本次范围内
 
@@ -121,6 +127,10 @@ lastVerified: 2026-09-12
 - 不新增与 DSH 适配无关的插件功能，不重构 CodeBuddy 多账号、签到和统计策略。
 - 不修改 fnOS 平台权限模型、网关路径、授权目录规则或上游市场插件源码。
 - 不追踪 `0.1.5-alpha.*`、`0.1.5-rc.1` 或后续 rc/正式版；它们另开需求。
+- 不修改 DSH 官方源码，不向上游提交补丁，也不在本仓库内代理 `/open-in-app` 路由；`zed` 误判的根因在上游，本需求只让 fnOS 用户不再看到该条目。
+- 不实现「文件预览」和「文本编辑器」菜单项：`trim.preview` 与 `trim.text-editor` 都按文件路径工作，对工作目录无效，需要先确定作用对象（具体文件而非目录）再另立变更。
+- 不改变 fnOS 文件授权、ACL 和目录管理行为；沿用 FNOS-001-04 与 FNOS-001-12 已验收的授权规则。
+- 不改动会话头部其它入口（session log、标题、主题）的行为和位置。
 
 ## 验收条件与完成状态
 
@@ -189,6 +199,15 @@ lastVerified: 2026-09-12
 - `FNOS-004-08-AC-04`：CodeBuddy 模型被选中但用户关闭 `showUsage` 偏好时，CodeBuddy 图标仍不显示（供应商条件与偏好取与）。
 - `FNOS-004-08-AC-05`：图标隐藏后没有为它继续后台轮询用量的明显多余请求；Codex Auth、CodeBuddy 与共享包的单元测试与构建保持通过。
 
+### FNOS-004-09 验收条件
+
+- `FNOS-004-09-AC-01`：在 fnOS iframe 中打开会话，会话头部只出现插件提供的文件入口，不再出现 DSH 官方「打开应用」按钮，也不出现 Zed 等误判条目。
+- `FNOS-004-09-AC-02`：入口外观与官方入口在头部的位置和尺寸一致，展开后是下拉菜单而非直接触发操作。
+- `FNOS-004-09-AC-03`：选择「打开文件管理器」后，NAS 文件管理器被打开并定位到当前会话的工作目录。
+- `FNOS-004-09-AC-04`：会话工作目录未知或为空时入口不渲染；SDK 调用失败时给出可见提示，且不把错误冒泡成未处理异常。
+- `FNOS-004-09-AC-05`：独立浏览器中官方按钮行为不变，插件不注册该入口。
+- `FNOS-004-09-AC-06`：fnOS 插件 typecheck、单元测试和构建通过；新增行为有单元测试覆盖遮蔽注册、工作目录判定和 SDK 调用分支。
+
 ### P1 验收条件
 
 - FPK 升级与回滚后，`DSH_HOME`、profile、凭据、工作区、授权目录和插件设置保留，应用能正常启动；安装/升级重复执行不会重装已存在的市场插件或重置 bundle。
@@ -205,6 +224,7 @@ lastVerified: 2026-09-12
 | P0 CLI 与 Token 运行修复 | <Badge type="info" text="规划中" /> | 应用用户权限、CLI wrapper、重启后的 Token 原子刷新 | 补命令、权限、重启和并发回归测试 |
 | P0 DSH CLI 插件管理 | <Badge type="info" text="规划中" /> | 固定 DSH/pnpm、使用官方 CLI 自动初始化 profile、插件 CLI 操作和 bundle 写回 | 移除旧插件脚本和重复初始化逻辑，并完成客户端/NAS 分层验收 |
 | P0 用量图标按模型供应商显隐 | <Badge type="tip" text="已完成" /> | Codex / CodeBuddy 客户端 dock 注册、显隐条件、真值表单测与接线断言 | 无；AC-02/03/04 待补人工复现，见[客户端验收记录](/validation/FNOS-004-08-dsh-client-2026-09-13) |
+| P1 fnOS 原生文件入口 | <Badge type="info" text="规划中" /> | fnOS iframe 内遮蔽官方「打开应用」，提供文件管理器入口 | 进入计划后补实现、测试与 NAS 验收 |
 | P1 发布、升级回滚与 NAS 验收 | <Badge type="info" text="规划中" /> | FPK 产物、用户数据、网关和目标环境证据 | 建立实施计划并记录验证结果 |
 
 ## 变更记录
@@ -220,3 +240,4 @@ lastVerified: 2026-09-12
 | 2026-09-13 | 统一插件发布版本 | 四个运行时插件发布版本由 `0.1.5-rc.2.4` 改为 `0.1.5-rc.2`，与 DSH 运行时基线同号；改版前该版本未发布到 registry，不涉及撤回或重发；`dshPluginApi.version` 仍单独声明运行时兼容基线 |
 | 2026-09-13 | 新增 FNOS-004-08 | 记录会话输入框用量进度图标按所选模型供应商显隐的需求：选中对应供应商模型才显示其图标，切换模型即时变化 |
 | 2026-09-13 | FNOS-004-08 完成验收 | 实现按 `modelSelection` 投影的供应商显隐（`35f0e70`），`AC-01` 经用户在 DSH 客户端浏览器实测通过；`AC-02`/`AC-03`/`AC-04` 目前只有单元测试与接线断言证据，待补人工复现，见[客户端验收记录](/validation/FNOS-004-08-dsh-client-2026-09-13) |
+| 2026-09-13 | 新增 FNOS-004-09 | 记录 fnOS 原生文件入口需求：官方「打开应用」按钮按编译期常量表探测应用，在 fnOS 上把 ZFS Event Daemon（`/usr/sbin/zed`）误判为 Zed 编辑器且取不到图标；改为在 iframe 内遮蔽该入口，用 fnOS JS SDK 提供文件管理器入口。上游 catalog 不可配置且本仓库不提交上游补丁，故在插件侧遮蔽。 |

@@ -34,6 +34,8 @@
   gap: 7px;
 }
 
+.dsh-fnos-open-in-button { border-radius: var(--semi-border-radius-large); }
+.dsh-fnos-open-in-button-icon { display: inline-flex; align-items: center; margin-left: 6px; }
 .dsh-fnos-session-log-button { border-radius: var(--semi-border-radius-large); }
 .dsh-fnos-session-log-button-icon { display: inline-flex; align-items: center; margin-left: 6px; }
 .dsh-fnos-session-log-dialog-body { min-height: 260px; }

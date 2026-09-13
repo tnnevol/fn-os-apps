@@ -265,6 +265,26 @@ describe('dsh-fnos package contract', () => {
     expect(picker).toContain('return paths')
   })
 
+  it('遮蔽官方「打开应用」入口并提供 fnOS 文件入口', async () => {
+    const index = await readFile(new URL('../../src/client/index.ts', import.meta.url), 'utf8')
+    const action = await readFile(new URL('../../src/components/FnosOpenInHeaderAction.tsx', import.meta.url), 'utf8')
+
+    // 遮蔽靠同 id + 更低 priority：官方条目用默认 0，同优先级会直接抛错，
+    // 那时整个插件都加载不起来。
+    expect(index).toContain("id: 'open-in-app'")
+    expect(index).toMatch(/id: 'open-in-app',\s*\n\s*\/\/[^\n]*\n\s*priority: -1/)
+    // 只在 fnOS iframe 内注册，独立浏览器保持官方行为。
+    expect(index).toContain('isEmbeddedFnosFrame()')
+    expect(index).toContain('FnosOpenInHeaderAction')
+
+    // 用的是 fnOS 原生的文件管理器，而不是对目录无意义的 openFile。
+    expect(action).toContain('openFileManager')
+    expect(action).not.toContain('sdk.openFile(')
+    // 外观沿用共享 Semi UI 组件。
+    expect(action).toContain('DshDropdown')
+    expect(action).toContain('DshButton')
+  })
+
   it('declares the DSH API version used by the client bridge', async () => {
     const compatibility = JSON.parse(await readFile(new URL('../../compatibility.json', import.meta.url), 'utf8')) as {
       dshPluginApi: { version: string, packages: string[] }
@@ -285,6 +305,7 @@ describe('dsh-fnos package contract', () => {
       '@deepseek-ai/dsh-client-ui-settings-plugins',
       '@deepseek-ai/dsh-client-ui-sidebar',
       '@deepseek-ai/dsh-client-ui-slots',
+      '@deepseek-ai/dsh-client-ui-session',
       '@deepseek-ai/dsh-host-webserver',
       '@deepseek-ai/dsh-settings',
       '@deepseek-ai/schemastery',
