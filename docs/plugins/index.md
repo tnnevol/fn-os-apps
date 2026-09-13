@@ -6,12 +6,12 @@
 
 | 包名 | 版本 | 适用场景 | 文档 | 源码 |
 | --- | --- | --- | --- | --- |
-| `@tnnevol/dsh-codex-auth` | `0.1.5-rc.2.4` | 使用 ChatGPT 账号登录 Codex，并把模型、用量和图片输入能力接入 DSH | [Codex Auth](/plugins/dsh-codex-auth) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/plugins/dsh-codex-auth-plugin) |
-| `@tnnevol/dsh-codebuddy` | `0.1.5-rc.2.4` | 使用腾讯 CodeBuddy 多账号登录，接入模型目录、额度和 Token 统计 | [CodeBuddy](/plugins/dsh-codebuddy) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/plugins/dsh-codebuddy-plugin) |
-| `@tnnevol/dsh-fnos` | `0.1.5-rc.2.4` | 在 fnOS 中补充主题、授权目录、NAS 文件访问和会话日志导出 | [fnOS](/plugins/dsh-fnos) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/plugins/dsh-fnos-plugin) |
-| `@tnnevol/dsh-semi-ui-showcase` | `0.1.5-rc.2.4` | 在独立路由中检查共享 Semi UI 组件和 DSH 主题效果 | [Semi UI 总览](/plugins/dsh-semi-ui-showcase) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/plugins/dsh-semi-ui-showcase-plugin) |
+| `@tnnevol/dsh-codex-auth` | `0.1.5-rc.2` | 使用 ChatGPT 账号登录 Codex，并把模型、用量和图片输入能力接入 DSH | [Codex Auth](/plugins/dsh-codex-auth) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/plugins/dsh-codex-auth-plugin) |
+| `@tnnevol/dsh-codebuddy` | `0.1.5-rc.2` | 使用腾讯 CodeBuddy 多账号登录，接入模型目录、额度和 Token 统计 | [CodeBuddy](/plugins/dsh-codebuddy) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/plugins/dsh-codebuddy-plugin) |
+| `@tnnevol/dsh-fnos` | `0.1.5-rc.2` | 在 fnOS 中补充主题、授权目录、NAS 文件访问和会话日志导出 | [fnOS](/plugins/dsh-fnos) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/plugins/dsh-fnos-plugin) |
+| `@tnnevol/dsh-semi-ui-showcase` | `0.1.5-rc.2` | 在独立路由中检查共享 Semi UI 组件和 DSH 主题效果 | [Semi UI 总览](/plugins/dsh-semi-ui-showcase) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/plugins/dsh-semi-ui-showcase-plugin) |
 
-DSH 运行时和插件兼容性基线为 `0.1.5-rc.2`；当前运行时插件发布版本为 `0.1.5-rc.2.4`。手动安装请使用精确版本，不使用 `latest`、`next` 或范围版本。
+DSH 运行时和插件兼容性基线为 `0.1.5-rc.2`；四个运行时插件的发布版本也统一为 `0.1.5-rc.2`，与运行时基线同号。手动安装请使用精确版本，不使用 `latest`、`next` 或范围版本。
 
 ## 共享 UI
 
@@ -26,8 +26,8 @@ DSH 运行时和插件兼容性基线为 `0.1.5-rc.2`；当前运行时插件发
 在其他 DSH 环境中可以手动安装：
 
 ```sh
-dsh plugin --profile web add @tnnevol/dsh-fnos@0.1.5-rc.2.4
-dsh plugin --profile web add dshmarket@1.45.1
+dsh plugin --profile web add @tnnevol/dsh-fnos@0.1.5-rc.2
+dsh plugin --profile web add dshmarket@1.46.1
 dsh --profile web --dump-config
 ```
 

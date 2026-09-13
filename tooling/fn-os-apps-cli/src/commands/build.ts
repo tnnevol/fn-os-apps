@@ -17,7 +17,7 @@ const DSH_PUBLISHED_PLUGIN_MANIFEST = 'app/published-dsh-plugins.json'
 const DSH_BUNDLED_PLUGIN_DIRECTORY = 'app/bundled-dsh-plugins'
 const DSH_VERSION = '0.1.5-rc.2'
 const PNPM_VERSION = '11.7.0'
-const DSHMARKET_VERSION = '1.45.1'
+const DSHMARKET_VERSION = '1.46.1'
 const DSH_NATIVE_CONFIG = '.github/config/dsh-native-0.1.5-rc.2.env'
 
 type PublishedDshPluginManifest = {
