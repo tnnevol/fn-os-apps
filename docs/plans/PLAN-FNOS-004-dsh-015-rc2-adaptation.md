@@ -1,7 +1,7 @@
 ---
 id: PLAN-FNOS-004
 title: PLAN-FNOS-004 DSH 0.1.5-rc.2 适配与 FPK 运行修复
-description: 实施 FNOS-004-01 至 FNOS-004-07：完成 DSH 适配、插件策略、权限 wrapper、Token 刷新、发布回滚门禁及 CLI 插件管理。
+description: 实施 FNOS-004-01 至 FNOS-004-07：完成 DSH 适配、插件策略、应用私有 CLI 与网关 Token 刷新、发布回滚门禁及 CLI 插件管理。
 status: planned
 owner: tnnevol
 planDate: 2026-09-12
@@ -16,13 +16,13 @@ lastVerified: 2026-09-12
 | 计划编号 | PLAN-FNOS-004 |
 | 计划日期 | 2026-09-12 |
 | 对应需求 | [FNOS-004 DSH 0.1.5-rc.2 适配与 FPK 运行修复](/requirements/FNOS-004-dsh-015-rc2-adaptation) |
-| 本轮功能 | `FNOS-004-01` 至 `FNOS-004-07`：DSH 适配、Codex/dshmarket 插件策略、dsh CLI wrapper、Token 刷新、发布升级回滚门禁和 CLI 插件管理 |
+| 本轮功能 | `FNOS-004-01` 至 `FNOS-004-07`：DSH 适配、Codex/dshmarket 插件策略、应用私有 dsh CLI、Token 刷新、发布升级回滚门禁和 CLI 插件管理 |
 | 上游依据 | 本地 Harness checkout 的 `dsh-v0.1.5-rc.2`（`fb2c4b9e698e30edb738bca4cf0618587db7d203`） |
 | 计划状态 | <Badge type="info" text="规划中" /> |
 
 ## 计划目标
 
-将 DSH 应用和仓库内四个插件的兼容性基线从 `0.1.2-rc.1` 升级到本地官方 Harness checkout 的 `dsh-v0.1.5-rc.2`，并让新 FPK 不再默认捆绑 Codex 插件。当前计划包含 DSH catalog、锁文件、插件 `compatibility.json`、上游破坏性 API 迁移、FPK native 构建配置、Codex 安装策略、DSH CLI 插件管理、应用权限 wrapper、内部重启 Token 刷新和运行时验证。
+将 DSH 应用和仓库内四个插件的兼容性基线从 `0.1.2-rc.1` 升级到本地官方 Harness checkout 的 `dsh-v0.1.5-rc.2`，并让新 FPK 不再默认捆绑 Codex 插件。当前计划包含 DSH catalog、锁文件、插件 `compatibility.json`、上游破坏性 API 迁移、FPK native 构建配置、Codex 安装策略、DSH CLI 插件管理、应用私有 CLI 权限、内部重启 Token 刷新和运行时验证。
 
 本轮处理 `FNOS-004-01` 至 `FNOS-004-07`。其中 `FNOS-004-06`作为发布、升级和回滚的一致性门禁，不新增独立运行时能力。计划不修改 DeepSeek Harness 上游源码，只在本仓库插件和 FPK 构建链内完成适配。
 
@@ -35,12 +35,12 @@ lastVerified: 2026-09-12
 | Codex Auth 插件 | `plugins/dsh-codex-auth-plugin` | 迁移 attachment、LLM、`pi-ai` 和模型目录接缝；保持老用户可用 |
 | CodeBuddy 插件 | `plugins/dsh-codebuddy-plugin` | 迁移 LLM 流式、文件块和附件接缝 |
 | Semi UI 插件 | `packages/dsh-semi-ui`、`plugins/dsh-semi-ui-showcase-plugin` | 迁移共享 UI、layout、slots 和 renderer 接缝 |
-| FPK 应用 | `apps/fn-deepseek-harness/cmd/install_callback`、`config/resource`、`config/privilege`、`manifest` | 安装并校验 `0.1.5-rc.2` DSH 运行时，在安装流程中生成并注册权限固定的 CLI wrapper，不清理 `DSH_HOME` |
+| FPK 应用 | `apps/fn-deepseek-harness/cmd/install_callback`、`config/resource`、`config/privilege`、`manifest` | 安装并校验 `0.1.5-rc.2` DSH 运行时，真实 CLI 保留在应用私有目录且不注册系统命令，不清理 `DSH_HOME` |
 | FPK 插件策略 | `apps/fn-deepseek-harness/app/published-dsh-plugins.json`、`app/bundled-dsh-plugins`、`app/scripts/install-dsh-plugins.mjs` | 从新 FPK 清单和内置目录移除 Codex，改由 DSH CLI 管理插件，同时保护老用户已有安装 |
 | Native 构建 | `.github/config/`、`.github/scripts/prepare-dsh-native.sh`、`.github/workflows/build-dsh-fn.yml` | 使用新 DSH 依赖树准备 native 产物并生成版本化 FPK |
 | 文档与测试 | `docs/development/`、`docs/apps/`、插件测试目录 | 记录迁移差异、测试命令和本地/NAS 证据 |
 
-`FNOS-004-03` 只通过 `FNOS-004-07` 规定的 DSH CLI 安装固定版本 dshmarket，并处理已安装时跳过，不另建插件安装实现。`FNOS-004-04` 负责把 CLI wrapper 注册到应用 bin，并固定环境和应用用户身份；它不修改 DSH CLI 上游实现。公开 wrapper 的实现不能绕过 `FNOS-004-07` 的 CLI 管理边界。`FNOS-004-05` 负责网关代理和 DSH Web 重启之间的 Token 状态同步、原子持久化和并发请求处理。Codex 清单和内置目录属于 `FNOS-004-02`，本轮会修改，但只允许移除新 FPK 的默认来源，不清理老用户 profile。
+`FNOS-004-03` 只通过 `FNOS-004-07` 规定的 DSH CLI 安装固定版本 dshmarket，并处理已安装时跳过，不另建插件安装实现。`FNOS-004-04` 负责把真实 CLI 固定在应用私有目录并以应用包用户身份运行，且不注册公开 `dsh` 命令（平台未提供非 root 可用的身份切换机制）；它不修改 DSH CLI 上游实现。CLI 管理仍由 `FNOS-004-07` 的 `dsh plugin --profile web` 边界承担。`FNOS-004-05` 负责网关代理和 DSH Web 重启之间的 Token 状态同步、原子持久化和并发请求处理。Codex 清单和内置目录属于 `FNOS-004-02`，本轮会修改，但只允许移除新 FPK 的默认来源，不清理老用户 profile。
 
 ## 目标架构和数据流
 
@@ -120,17 +120,17 @@ DSH 0.1.5-rc.2 发布包
 | PLAN-FNOS-004-T07-03 | FNOS-004-03-AC-03 | 清单校验只允许精确版本 `1.45.1`，禁止 dshmarket 使用 `latest`、`next` 或其他浮动 dist-tag | 构建和 fake CLI 测试能证明命令参数始终带固定版本 |
 | PLAN-FNOS-004-T07-04 | FNOS-004-03-AC-04 | 在当前 DSH 客户端验证 dshmarket 的 CLI 安装、跳过已安装和 Web 重启生效；NAS 只验证 FPK 安装链及 `dsh-fnos` | 客户端和 NAS 证据分开保存，不要求其他插件安装到 NAS |
 
-### P0：注册 dsh CLI 权限 wrapper
+### P0：应用私有 dsh CLI 与网关 Token 收敛
 
 状态：<Badge type="info" text="规划中" />
 
 | 任务 ID | 对应验收 | 实现内容 | 验收 |
 | --- | --- | --- | --- |
-| PLAN-FNOS-004-T08-01 | FNOS-004-04-AC-01 | 在 `install_callback` 中创建并注册 `${TRIM_APPDEST}/app/bin/dsh` 公开 CLI wrapper；`cmd/main` 只把真实 `${TRIM_PKGHOME}/.npm-global/bin/dsh` 路径交给网关，网关以应用包用户直接启动 Web 并固定子进程环境 | bin 入口可执行 `dsh --version`、`dsh --help`；Web 进程命令行只包含真实 CLI，不经 wrapper 或独立启动脚本 |
-| PLAN-FNOS-004-T08-02 | FNOS-004-04-AC-03 | wrapper 内置并覆盖 `DSH_HOME`、`HOME`、`PATH`、`NPM_CONFIG_CACHE`、`NPM_CONFIG_PREFIX`、`XDG_CONFIG_HOME` 等环境变量，清理调用者同名变量 | 使用不同调用环境执行命令时，真实 CLI 始终使用应用 profile 和应用包目录 |
-| PLAN-FNOS-004-T08-03 | FNOS-004-04-AC-02 | wrapper 执行前统一使用 `TRIM_UID` 固定目标用户，并结合 `TRIM_GROUPNAME` 设置执行组；已是目标用户时直接执行，其他用户使用设备支持的安全用户切换机制 | 通过 root、应用用户及其他有权限入口调用时，`id` 和真实进程身份均为指定应用用户；无法切换时非零退出且不降级执行 |
-| PLAN-FNOS-004-T08-04 | FNOS-004-04-AC-04 | 设置 wrapper、真实 CLI、Node/pnpm、profile 和插件依赖的所有权与最小权限；禁止普通用户修改 wrapper、配置或改变所有权 | 使用 `stat` 和实际写入测试证明非应用用户不能篡改 DSH 配置，应用用户可以正常管理自己的 profile |
-| PLAN-FNOS-004-T08-05 | FNOS-004-04-AC-03 | 保证 wrapper 转发参数、stdin/stdout/stderr、退出码和中断信号，不通过 `eval` 拼接参数 | `dsh plugin --profile web ...`、管道输入、非零退出和终止信号均与真实 CLI 行为一致 |
+| PLAN-FNOS-004-T08-01 | FNOS-004-04-AC-01 | 安装回调不再创建 `${TRIM_APPDEST}/app/bin/dsh`，`config/resource` 不再声明 `usr-local-linker`；真实 CLI 固定在 `${TRIM_PKGHOME}/.npm-global/bin/dsh`。构建校验改为拒绝重新引入 wrapper 的产物 | `config/resource` 无 `usr-local-linker`，安装回调无 `CLI_WRAPPER`；构建对重新引入 wrapper 的 FPK 报错失败 |
+| PLAN-FNOS-004-T08-02 | FNOS-004-04-AC-03 | 应用包用户环境（`DSH_HOME`、`HOME`、`PATH`、`NPM_CONFIG_CACHE`、`NPM_CONFIG_PREFIX`、`XDG_CONFIG_HOME`）由安装回调与网关各自固定，不再经 wrapper 传递 | 应用包用户下 `dsh --version`、`dsh --help`、`dsh plugin --profile web ...` 输出与真实 CLI 一致 |
+| PLAN-FNOS-004-T08-03 | FNOS-004-04-AC-02 | 记录平台约束并据此取消公开入口：fnOS 未向非 root 调用者提供身份切换机制，`runuser`/`su`/`setpriv`/sudo 均不可用，需求禁止 setuid | 不存在由普通用户调用却声称以应用包用户执行的入口；NAS 上逐项记录四种切换机制的实测失败输出 |
+| PLAN-FNOS-004-T08-04 | FNOS-004-04-AC-04 | 设置真实 CLI、Node/pnpm、profile 和插件依赖的所有权与最小权限；禁止普通用户修改配置或改变所有权 | 使用 `stat` 和实际写入测试证明非应用用户不能篡改 DSH 配置，应用用户可以正常管理自己的 profile |
+| PLAN-FNOS-004-T08-05 | FNOS-004-05-AC-01 | 网关只在首次不带 DSH 会话 Cookie 的首页请求注入 Token，其余请求透传 Cookie；旧 Cookie 被拒绝时用当前 Token 重新换取一次 | iframe 打开首页返回 200 而非 303 循环；上游仅收到一次带 Token 的请求；失效 Cookie 可自动恢复 |
 
 ### P0：内部重启后的代理 Token 刷新
 
@@ -206,13 +206,13 @@ DSH 0.1.5-rc.2 发布包
 5. 新 bundle 只在 Web profile 下次启动时生效；安装/更新完成后按既有流程重启 Web。清单未列出的老插件不执行自动 remove。
 6. `upgrade_callback` 复用同一流程，禁止回退到旧脚本；任一命令失败都停止回调并保留 profile 数据。
 
-### P0：dsh CLI wrapper 调用流程
+### P0：应用私有 dsh CLI 运行边界
 
-1. `install_callback` 参考 Hermes 应用创建 wrapper 并放入应用 bin 注册目录；wrapper 使用固定的应用安装路径定位 Node、pnpm、真实 dsh CLI 和 profile，不从当前工作目录或调用者 PATH 推断位置。
-2. wrapper 先建立固定环境：覆盖 DSH_HOME、HOME、PATH、NPM_CONFIG_CACHE、NPM_CONFIG_PREFIX 和 XDG_CONFIG_HOME，并清除可能把配置、缓存或包安装位置指向调用者目录的环境变量。
-3. wrapper 读取安装阶段记录的 `TRIM_UID`，并结合 `TRIM_GROUPNAME` 设置执行组。已是目标用户时直接执行真实 CLI；其他有权限调用者通过 fnOS 设备支持的安全用户切换机制执行。无法安全切换时立即返回非零，不尝试以调用者身份运行。
-4. wrapper 使用参数数组直接 `exec` 真实 dsh，保留 stdin/stdout/stderr、退出码和信号；不得通过 `eval` 或字符串拼接重新解释用户参数。
-5. 应用 bin 中的 wrapper、真实 CLI 和运行依赖不可被普通用户写入；profile 和插件依赖由应用用户拥有，wrapper 只提供受控调用入口，不改变配置文件所有权。
+1. `install_callback` 不创建公开 wrapper，也不在 `config/resource` 注册 `usr-local-linker`；真实 CLI 固定在应用私有 `${TRIM_PKGHOME}/.npm-global/bin/dsh`，所有安装阶段命令由 `run_as_app_user` 以应用包用户执行。
+2. 取消公开入口的依据是平台能力：fnOS 上 `runuser` 以非 root 执行报 `may not be used by non-root users`，指定 `--group` 报 `only root can specify alternative groups`，`su` 需要密码，`setpriv` 报 `Operation not permitted`，且需求禁止 setuid 与不受控 sudo。没有可用切换机制时，任何普通用户调用都会以调用者身份运行，违反身份约束，因此不暴露入口。
+3. 网关以应用包用户直接启动 `dsh web --no-open`，并自行固定 `DSH_HOME`、`HOME`、`PATH`、`NPM_CONFIG_CACHE`、`NPM_CONFIG_PREFIX`、`NPM_CONFIG_USERCONFIG`、`XDG_CONFIG_HOME`，不依赖调用者环境。
+4. 构建校验必须拒绝重新引入 wrapper 的产物：`cmd/install_callback` 不得出现 `CLI_WRAPPER` / `setup_cli_wrapper`，`config/resource` 不得出现 `usr-local-linker` 或 `/bin/dsh`。
+5. 真实 CLI 与运行依赖不可被普通用户写入；profile 和插件依赖由应用用户拥有，取消公开入口不改变这些所有权约束。
 
 ### P0：内部重启 Token 刷新流程
 
@@ -224,9 +224,9 @@ DSH 0.1.5-rc.2 发布包
 
 ### P1：发布与升级回滚流程
 
-1. 构建 FPK 前运行清单校验，确认 DSH/native/plugin 版本、Codex 排除规则、dshmarket 固定版本、wrapper 和 FPK 元数据一致；校验失败不进入发布。
+1. 构建 FPK 前运行清单校验，确认 DSH/native/plugin 版本、Codex 排除规则、dshmarket 固定版本、未注册公开 dsh 入口和 FPK 元数据一致；校验失败不进入发布。
 2. 安装或升级前记录当前 runtime 指针、profile 关键元数据和应用版本；不复制或记录 Token、API Key 等敏感内容。
-3. 安装/升级只执行当前计划规定的幂等操作；完成 DSH CLI、wrapper、插件、native 和 Web 启动验证后再写入成功标记。
+3. 安装/升级只执行当前计划规定的幂等操作；完成 DSH CLI、插件、native 和 Web 启动验证后再写入成功标记。
 4. 任一阶段失败时返回非零，保留旧 profile 和用户数据，并按可用的旧 runtime/旧 FPK 回滚入口恢复；不能用清空 profile 的方式“回滚”。
 5. 发布后把构建输入、FPK、版本清单、升级日志、回滚结果和客户端/NAS 验收记录关联保存，作为完成 `FNOS-004-06` 的证据。
 
@@ -244,8 +244,8 @@ DSH 0.1.5-rc.2 发布包
 - 依赖安装使用仓库和安装向导约定的 npm registry，锁文件负责可重复解析；网络失败不能静默回退到浮动版本。
 - DSH CLI 和 pnpm、profile manifest、node_modules 及配置文件都必须由 DSH 应用包用户可读写；权限不足时直接失败，不通过 root 绕过应用权限。
 - 不记录 Token、API Key 或完整凭据；插件管理日志只记录包名、精确版本、命令阶段和错误原因。
-- wrapper 不能信任调用者传入的 DSH_HOME、HOME、PATH、npm/pnpm 前缀、配置目录或代理变量；需要保留的代理设置必须由应用固定配置或显式白名单提供。
-- wrapper 身份切换失败、目标用户不存在、运行文件不可执行或 profile 权限不匹配时，直接返回非零并输出阶段性错误；不能静默改用 root 或调用者身份。
+- 安装回调与网关都不能信任调用者传入的 DSH_HOME、HOME、PATH、npm/pnpm 前缀或配置目录；需要保留的代理设置必须由应用固定配置或显式白名单提供。
+- 平台缺少非 root 可用的身份切换机制时，不暴露需要切换身份的公开入口；不得静默降级为调用者身份，也不得改用 root 绕过应用权限。
 - Token 刷新采用“失效旧状态 → 捕获新 Token → 原子持久化 → 发布内存状态”的顺序；任何中间步骤失败都不能继续对外宣称 Web 已恢复，也不能回退使用旧 Token。
 - Token 文件、临时文件和锁文件都必须位于应用运行目录，由应用包用户拥有；日志只能记录 Token 轮次和状态，不能记录 Token 内容。
 - runtime 指针、profile 快照和升级完成标记不能包含凭据；回滚只恢复版本和配置元数据，不删除用户数据。
@@ -263,8 +263,8 @@ DSH 0.1.5-rc.2 发布包
 | 回滚 | 新 bundle 或构建产物可能无法在旧运行时加载 | 发布前保留旧 FPK；回滚只恢复应用和依赖版本，不删除用户数据 |
 | CLI 迁移 | DSH CLI 的 plugin 命令实际转发给 pnpm，应用自定义脚本与官方行为可能不一致 | 以本地 `dsh-v0.1.5-rc.2` 的 `apps/cli/src/plugin.ts` 为准，使用 fake CLI 夹具和客户端组合入口验证 |
 | 内置包来源 | DSH CLI 不会自动读取 FPK 的 `bundled-dsh-plugins` 目录 | 实施时移除本地复制路径，或改用 DSH CLI 支持的精确版本包 spec；不得绕过 CLI |
-| 跨用户调用 | shell wrapper 默认继承调用者身份和环境，可能污染 profile 权限或配置路径 | 使用 fnOS 支持的安全用户切换机制固定应用用户；切换失败即失败，并用不同调用身份验证 `id`、环境和文件所有权 |
-| wrapper 篡改 | wrapper 或其依赖可写时，调用者可替换真实 CLI 或修改 DSH 配置 | wrapper、Node/pnpm、真实 CLI 和配置入口由受控所有者维护；非应用用户无写权限，应用用户只写 profile 数据 |
+| 跨用户调用 | 由普通用户调用的入口无法切换身份，会以调用者身份运行并污染 profile 权限 | 不暴露该入口；需要 CLI 时由应用包用户在应用私有路径直接调用，并用 `id`、环境和文件所有权验证 |
+| 公开入口篡改 | 入口或其依赖可写时，调用者可替换真实 CLI 或修改 DSH 配置 | 不注册公开入口；真实 CLI、Node/pnpm 和配置由受控所有者维护，非应用用户无写权限 |
 | Token 竞态 | 重启时旧缓存、旧文件和新进程输出可能交错，导致页面继续携带旧 Token | 使用重启轮次、锁、原子文件替换和刷新中状态；并发请求只等待新 Token 或返回可恢复响应 |
 | Token 持久化 | 异步写文件可能尚未完成就更新内存，或留下半截文件 | 写临时文件并完成持久化后再 rename 和发布内存值；写入失败直接进入错误状态 |
 
@@ -343,7 +343,7 @@ git diff --check
 | P0 Codex 默认捆绑移除 | <Badge type="info" text="规划中" /> | 新 FPK 不含 Codex；老用户升级不卸载、不删除、不覆盖已有 Codex 安装 |
 | P0 DSH CLI 插件管理 | <Badge type="info" text="规划中" /> | 固定 DSH/pnpm、使用官方 CLI 自动初始化 profile、add/update 和 bundle 写回；移除旧插件脚本及重复初始化逻辑 |
 | P0 dshmarket 固定安装 | <Badge type="info" text="规划中" /> | 缺失时通过 DSH CLI 安装 `dshmarket@1.45.1`，已存在时跳过并保留原版本 |
-| P0 dsh CLI 权限 wrapper | <Badge type="info" text="规划中" /> | 注册 bin wrapper、固定环境、强制应用用户执行并保护配置权限 |
+| P0 应用私有 dsh CLI | <Badge type="info" text="规划中" /> | 不注册公开入口，固定应用包用户环境并保护真实 CLI 与配置权限 |
 | P0 内部重启 Token 刷新 | <Badge type="info" text="规划中" /> | 重启期间失效旧 Token，捕获并原子持久化新 Token，代理请求等待新状态 |
 | P1 发布升级回滚一致性 | <Badge type="info" text="规划中" /> | 构建前版本门禁、升级幂等、失败恢复和发布证据可追溯 |
 | P0 FPK 构建 | <Badge type="info" text="规划中" /> | FPK 构建成功，安装后 DSH 版本和启动入口正确 |
@@ -362,5 +362,6 @@ git diff --check
 | 2026-09-12 | 纳入 FNOS-004-07 | 将 FPK 插件管理迁移到目标 tag 提供的 DSH CLI，固定 DSH/pnpm/插件版本并移除自定义安装脚本 |
 | 2026-09-12 | 纳入 FNOS-004-03 | 通过 DSH CLI 安装固定版本 `dshmarket@1.45.1`，已安装时跳过且不覆盖用户插件 |
 | 2026-09-12 | 纳入 FNOS-004-04 | 增加应用 bin 中的 dsh CLI wrapper，固定运行环境并强制真实 CLI 使用应用包用户权限 |
+| 2026-09-13 | 修订 FNOS-004-04 | NAS 复现 `runuser: only root can specify alternative groups`；平台无非 root 身份切换机制，改为不注册公开 `dsh` 入口，并在构建校验中拒绝重新引入 wrapper |
 | 2026-09-12 | 纳入 FNOS-004-05 | 增加内部重启 Token 的失效、捕获、原子持久化、代理等待和 NAS 并发回归任务 |
 | 2026-09-12 | 纳入 FNOS-004-06 | 增加构建版本门禁、升级幂等、失败恢复、回滚入口和发布证据追踪任务 |

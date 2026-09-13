@@ -3,7 +3,7 @@ import { spawnSync } from 'node:child_process'
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { once } from 'node:events'
 import { tmpdir } from 'node:os'
-import { dirname, join } from 'node:path'
+import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import { WebProcessController } from '../src/server/web-process.ts'
 
@@ -12,42 +12,15 @@ function isAlive(pid: number): boolean {
 }
 
 describe('DSH web process lifecycle', () => {
-  it('keeps the public CLI wrapper transparent for application-user commands', async () => {
-    const uid = process.getuid?.()
-    if (uid === undefined) throw new Error('the fnOS wrapper requires a POSIX user')
-    const directory = await mkdtemp(join(tmpdir(), 'fnos-cli-wrapper-'))
-    const wrapper = join(directory, 'dsh')
-    const storeFile = join(directory, 'pnpm-store-dir')
-    try {
-      await writeFile(storeFile, join(directory, 'store'))
-      const installCallback = await readFile(new URL('../../../apps/fn-deepseek-harness/cmd/install_callback', import.meta.url), 'utf8')
-      const start = installCallback.indexOf('setup_cli_wrapper() {')
-      const end = installCallback.indexOf('\nrun_as_app_user() {', start)
-      expect(start).toBeGreaterThanOrEqual(0)
-      expect(end).toBeGreaterThan(start)
-      const group = spawnSync('/usr/bin/id', ['-gn'], { encoding: 'utf8' }).stdout.trim()
-      const generated = spawnSync('/bin/bash', ['-c', `${installCallback.slice(start, end)}\nlog_info() { :; }\nsetup_cli_wrapper`], {
-        encoding: 'utf8',
-        env: {
-          PATH: '/usr/bin:/bin',
-          APP_UID: String(uid),
-          APP_GROUP: group,
-          DSH_HOME: directory,
-          NPM_CONFIG_PREFIX: directory,
-          NODE_BIN: dirname(process.execPath),
-          DSH_BIN: process.execPath,
-          PNPM_STORE_FILE: storeFile,
-          CLI_WRAPPER: wrapper,
-        },
-      })
-      expect(generated.status, generated.stderr).toBe(0)
-
-      const launched = spawnSync(wrapper, ['-e', 'process.stdout.write(String(process.pid))'], { encoding: 'utf8' })
-      expect(launched.status, launched.stderr).toBe(0)
-      expect(launched.stdout).toBe(String(launched.pid))
-    } finally {
-      await rm(directory, { recursive: true, force: true })
-    }
+  it('does not expose a public dsh CLI wrapper', async () => {
+    // fnOS offers no root-free identity switch for a normal caller, so a
+    // wrapper cannot hold the fixed application identity it must guarantee.
+    const installCallback = await readFile(new URL('../../../apps/fn-deepseek-harness/cmd/install_callback', import.meta.url), 'utf8')
+    const resource = await readFile(new URL('../../../apps/fn-deepseek-harness/config/resource', import.meta.url), 'utf8')
+    expect(installCallback).not.toContain('setup_cli_wrapper')
+    expect(installCallback).not.toContain('CLI_WRAPPER=')
+    expect(resource).not.toContain('/bin/dsh')
+    expect(resource).not.toContain('usr-local-linker')
   })
 
   it('coalesces concurrent starts that share the gateway lock', async () => {

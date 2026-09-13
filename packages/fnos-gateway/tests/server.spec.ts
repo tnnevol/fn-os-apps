@@ -24,10 +24,10 @@ describe('gateway server', () => {
     while (resources.length > 0) await resources.pop()?.()
   })
 
-  it('keeps the browser URL token-free while proxying the captured launch token upstream', async () => {
-    let upstreamPath: string | undefined
+  it('bootstraps the launch token once and then stops injecting it for cookie-bearing requests', async () => {
+    const upstreamPaths: string[] = []
     const upstream = createServer((req, res) => {
-      upstreamPath = req.url
+      upstreamPaths.push(req.url ?? '')
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' })
       res.end('<!doctype html>')
     })
@@ -54,8 +54,8 @@ describe('gateway server', () => {
     resources.push(async () => gateway.close())
     resources.push(async () => rm(directory, { recursive: true, force: true }))
 
-    const response = await new Promise<{ statusCode: number | undefined, location: string | undefined }>((resolve, reject) => {
-      const request = httpRequest({ socketPath: gatewaySocket, path: `${GATEWAY_PREFIX}/`, method: 'GET' }, res => {
+    const get = (headers: Record<string, string> = {}) => new Promise<{ statusCode: number | undefined, location: string | undefined }>((resolve, reject) => {
+      const request = httpRequest({ socketPath: gatewaySocket, path: `${GATEWAY_PREFIX}/`, method: 'GET', headers }, res => {
         res.resume()
         res.on('end', () => resolve({ statusCode: res.statusCode, location: res.headers.location }))
         res.on('error', reject)
@@ -64,24 +64,16 @@ describe('gateway server', () => {
       request.end()
     })
 
-    expect(response).toEqual({ statusCode: 200, location: undefined })
-    expect(upstreamPath).toBe('/?token=launch-token')
+    // The first visit has no DSH browser-session cookie, so the gateway seeds
+    // one by asking DSH for the tokenized index.
+    await expect(get()).resolves.toEqual({ statusCode: 200, location: undefined })
+    expect(upstreamPaths[0]).toBe('/?token=launch-token')
 
-    await new Promise<void>((resolve, reject) => {
-      const request = httpRequest({
-        socketPath: gatewaySocket,
-        path: `${GATEWAY_PREFIX}/`,
-        method: 'GET',
-        headers: { cookie: 'dsh-auth-test=valid' },
-      }, res => {
-        res.resume()
-        res.on('end', resolve)
-        res.on('error', reject)
-      })
-      request.on('error', reject)
-      request.end()
-    })
-    expect(upstreamPath).toBe('/?token=launch-token')
+    // DSH answers *any* tokenized index request with a 303 to the clean URL,
+    // even when the request already carries a valid cookie. Re-injecting the
+    // token here is what produced the "too many redirects" loop.
+    await expect(get({ cookie: 'dsh-auth-test=valid' })).resolves.toEqual({ statusCode: 200, location: undefined })
+    expect(upstreamPaths[1]).toBe('/')
   })
 
   it('waits for a startup token before forwarding the first Web root request', async () => {
@@ -173,6 +165,90 @@ describe('gateway server', () => {
     })
 
     expect(response).toEqual({ statusCode: 200, location: undefined })
+  })
+
+  it('does not loop when the upstream answers a tokenized index with 303 to the clean URL', async () => {
+    const seen: string[] = []
+    // Mirrors DSH's authorizeIndex: a tokenized index for `/` always mints a
+    // cookie and redirects to `/`, even when the request already had a valid
+    // cookie. A proxy that keeps re-adding the token therefore never settles.
+    const upstream = createServer((req, res) => {
+      const requestUrl = new URL(req.url ?? '/', 'http://upstream.invalid')
+      seen.push(req.url ?? '')
+      const session = String(req.headers.cookie ?? '').includes('dsh-auth-upstream=')
+      if (requestUrl.pathname === '/' && requestUrl.searchParams.has('token')) {
+        res.writeHead(303, {
+          'cache-control': 'no-store',
+          location: '/',
+          'set-cookie': 'dsh-auth-upstream=v1.fresh; Path=/; HttpOnly; SameSite=Strict',
+        })
+        res.end()
+        return
+      }
+      if (requestUrl.pathname === '/' && !session) {
+        res.writeHead(401, { 'content-type': 'text/plain; charset=utf-8' })
+        res.end('dsh web authentication required')
+        return
+      }
+      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' })
+      res.end('<!doctype html>')
+    })
+    const upstreamPort = await listen(upstream)
+    resources.push(async () => new Promise<void>(resolve => upstream.close(() => resolve())))
+
+    const directory = await mkdtemp(join(tmpdir(), 'fnos-gateway-'))
+    const gatewaySocket = join(directory, 'gateway.sock')
+    const gateway = createGateway({
+      socketPath: gatewaySocket,
+      gatewayPrefix: GATEWAY_PREFIX,
+      upstreamHost: '127.0.0.1',
+      upstreamPort,
+      webProcess: {
+        getLaunchToken: () => 'launch-token',
+        snapshot: async () => ({ state: 'running' as const, pid: process.pid }),
+        start: async () => ({ state: 'running' as const, pid: process.pid }),
+        restart: async () => ({ state: 'running' as const, pid: process.pid }),
+        stop: async () => undefined,
+      } as never,
+    })
+    await once(gateway.server, 'listening')
+    resources.push(async () => gateway.close())
+    resources.push(async () => rm(directory, { recursive: true, force: true }))
+
+    // Follow redirects the way a browser does, bounded so a regression shows
+    // up as an assertion failure rather than an infinite loop.
+    let cookie = ''
+    let statusCode: number | undefined
+    let hops = 0
+    for (; hops < 5; hops += 1) {
+      const response = await new Promise<{ statusCode: number | undefined, location: string | undefined, setCookie: string | undefined }>((resolve, reject) => {
+        const request = httpRequest({
+          socketPath: gatewaySocket,
+          path: `${GATEWAY_PREFIX}/`,
+          method: 'GET',
+          headers: cookie === '' ? {} : { cookie },
+        }, res => {
+          res.resume()
+          res.on('end', () => resolve({
+            statusCode: res.statusCode,
+            location: res.headers.location,
+            setCookie: res.headers['set-cookie']?.[0],
+          }))
+          res.on('error', reject)
+        })
+        request.on('error', reject)
+        request.end()
+      })
+      statusCode = response.statusCode
+      if (response.setCookie !== undefined) cookie = response.setCookie.split(';', 1)[0] ?? ''
+      if (statusCode !== 303) break
+    }
+
+    expect(statusCode).toBe(200)
+    expect(hops).toBeLessThan(5)
+    // Only the very first, cookie-less hop may carry the token.
+    expect(seen.filter(path => path.includes('token=launch-token'))).toHaveLength(1)
+    expect(seen.at(-1)).toBe('/')
   })
 
   it('rewrites and proxies the first websocket upgrade', async () => {

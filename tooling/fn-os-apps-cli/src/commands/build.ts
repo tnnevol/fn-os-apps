@@ -104,21 +104,25 @@ async function validateDshReleaseInputs(app: FpkApp): Promise<void> {
   if (!main.includes(`DSH_REAL_BIN="${shellVariable('DSH_HOME')}/.npm-global/bin/dsh"`) ||
       !main.includes(`DSH_BIN="${shellVariable('DSH_REAL_BIN')}"`) ||
       main.includes('DSH_WRAPPER=') || main.includes('DSH_PROCESS_BIN=')) {
-    throw new Error('cmd/main must pass the real DSH CLI to the gateway; the public wrapper is not a Web startup script')
+    throw new Error('cmd/main must pass the real DSH CLI to the gateway; it must not use a CLI wrapper')
   }
   if (main.includes('dsh_running()') || main.includes(`is_runtime_process "${shellVariable('pid')}" dsh`)) {
     throw new Error('cmd/main must not manage DSH Web processes; the gateway owns the Web lifecycle')
   }
-  if (!callback.includes(`CLI_WRAPPER="${shellVariable('TRIM_APPDEST')}/app/bin/dsh"`) || !callback.includes('setup_cli_wrapper')) {
-    throw new Error(`install_callback must create the dsh CLI wrapper at ${shellVariable('TRIM_APPDEST')}/app/bin/dsh`)
+  // fnOS exposes no root-free way for a normal caller to become the application
+  // user: `runuser` refuses non-root, `su` demands a password, and the SDD
+  // forbids setuid/ungoverned sudo. A public `dsh` entry point therefore cannot
+  // keep the fixed application identity it promises, so the app ships none.
+  if (callback.includes('CLI_WRAPPER=') || callback.includes('setup_cli_wrapper')) {
+    throw new Error('install_callback must not create the dsh CLI wrapper; the app does not expose a public dsh command')
   }
   const nativeConfig = await readFile(join(repositoryRoot, DSH_NATIVE_CONFIG), 'utf8')
   if (!nativeConfig.includes(`DSH_VERSION="${DSH_VERSION}"`)) {
     throw new Error(`Native build config is not aligned with DSH ${DSH_VERSION}`)
   }
   const resource = await readFile(join(repositoryRoot, 'apps', app.name, 'config/resource'), 'utf8')
-  if (!resource.includes('app/bin/dsh')) {
-    throw new Error('config/resource must register the generated dsh CLI wrapper')
+  if (resource.includes('/bin/dsh') || resource.includes('usr-local-linker')) {
+    throw new Error('config/resource must not register a dsh CLI wrapper')
   }
 }
 

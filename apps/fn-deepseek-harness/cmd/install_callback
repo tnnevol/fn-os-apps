@@ -4,7 +4,6 @@ NODE_BIN="/var/apps/nodejs_v24/target/bin"
 DSH_HOME="${TRIM_PKGHOME}"
 APP_HOME="${TRIM_APPDEST_VOL}/@appshare/fn-deepseek-harness"
 APP_DEST="${TRIM_APPDEST}"
-CLI_WRAPPER="${TRIM_APPDEST}/app/bin/dsh"
 NPM_CONFIG_PREFIX="${DSH_HOME}/.npm-global"
 PNPM_STORE_DIR="${APP_HOME}/.local/share/pnpm/store"
 PNPM_STORE_FILE="${DSH_HOME}/.pnpm-store-dir"
@@ -115,74 +114,6 @@ prepare_app_user() {
         [ "$(${ID_BIN} -u)" = "${APP_UID}" ] ||
             fail_install "Install callback must run as UID ${APP_UID} or root"
     fi
-}
-
-setup_cli_wrapper() {
-    mkdir -p "$(dirname -- "${CLI_WRAPPER}")" ||
-        fail_install "Unable to create the dsh CLI wrapper directory"
-    if [ -e "${CLI_WRAPPER}" ]; then
-        chmod 755 "${CLI_WRAPPER}" || fail_install "Unable to prepare the existing dsh CLI wrapper"
-    fi
-
-    # usr-local-linker resolves this app-relative path after installation.
-    # Generate the wrapper only after the application user and fixed runtime
-    # have been resolved, so the public command never needs to trust caller
-    # supplied paths or environment variables.
-    cat >"${CLI_WRAPPER}" <<WRAPPER_EOF
-#!/bin/bash
-set -euo pipefail
-
-APP_UID="${APP_UID}"
-APP_GROUP="${APP_GROUP}"
-DSH_HOME="${DSH_HOME}"
-NPM_PREFIX="${NPM_CONFIG_PREFIX}"
-NODE_BIN="${NODE_BIN}"
-REAL_DSH="${DSH_BIN}"
-PNPM_STORE_FILE="${PNPM_STORE_FILE}"
-PNPM_STORE_DIR="\$(/usr/bin/sed -n '1p' "\${PNPM_STORE_FILE}" 2>/dev/null || true)"
-
-exec_dsh() {
-    exec /usr/bin/env -i \\
-        HOME="\${DSH_HOME}" \\
-        DSH_HOME="\${DSH_HOME}" \\
-        NPM_CONFIG_CACHE="\${DSH_HOME}/.npm-cache" \\
-        NPM_CONFIG_PREFIX="\${NPM_PREFIX}" \\
-        NPM_CONFIG_USERCONFIG="\${DSH_HOME}/.npmrc" \\
-        PNPM_CONFIG_STORE_DIR="\${PNPM_STORE_DIR}" \\
-        XDG_CONFIG_HOME="\${DSH_HOME}/.config" \\
-        PATH="\${NODE_BIN}:\${NPM_PREFIX}/bin:/usr/bin:/bin" \\
-        "\${REAL_DSH}" "\$@"
-}
-
-TARGET_USER="\${APP_UID}"
-if [ "\$(/usr/bin/id -u)" = "\${APP_UID}" ]; then
-    exec_dsh "\$@"
-fi
-
-RUNUSER_BIN=""
-for candidate in /usr/sbin/runuser /usr/bin/runuser; do
-    if [ -x "\${candidate}" ]; then RUNUSER_BIN="\${candidate}"; break; fi
-done
-[ -n "\${RUNUSER_BIN}" ] || {
-    printf '%s\\n' 'dsh: secure application-user switch is unavailable' >&2
-    exit 1
-}
-
-exec "\${RUNUSER_BIN}" --user "\${TARGET_USER}" --group "\${APP_GROUP}" -- \\
-    /usr/bin/env -i \\
-    HOME="\${DSH_HOME}" \\
-    DSH_HOME="\${DSH_HOME}" \\
-    NPM_CONFIG_CACHE="\${DSH_HOME}/.npm-cache" \\
-    NPM_CONFIG_PREFIX="\${NPM_PREFIX}" \\
-    NPM_CONFIG_USERCONFIG="\${DSH_HOME}/.npmrc" \\
-    PNPM_CONFIG_STORE_DIR="\${PNPM_STORE_DIR}" \\
-    XDG_CONFIG_HOME="\${DSH_HOME}/.config" \\
-    PATH="\${NODE_BIN}:\${NPM_PREFIX}/bin:/usr/bin:/bin" \\
-    "\${REAL_DSH}" "\$@"
-WRAPPER_EOF
-
-    chmod 755 "${CLI_WRAPPER}" || fail_install "Unable to make the dsh CLI wrapper executable"
-    log_info "Created dsh CLI wrapper at ${CLI_WRAPPER}."
 }
 
 run_as_app_user() {
@@ -574,7 +505,6 @@ main() {
         fail_install "dsh --version reported ${DSH_REPORTED_VERSION:-unknown}; expected ${DSH_VERSION}"
 
     log_info "dsh ${DSH_PACKAGE}@${DSH_VERSION} installation verified at ${DSH_BIN}."
-    setup_cli_wrapper
     install_published_dsh_plugins
 }
 

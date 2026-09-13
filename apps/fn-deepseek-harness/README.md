@@ -14,9 +14,9 @@
 
 FPK 只处理 [`app/published-dsh-plugins.json`](app/published-dsh-plugins.json) 中声明的插件。安装顺序固定为 Node.js → DSH → `pnpm@11.7.0` → `dsh plugin --profile web`；缺失 profile 由官方 CLI 首次执行插件命令时自动初始化。插件安装、更新和移除统一使用 `dsh plugin --profile web add/update/remove`，不再调用自定义插件安装脚本。构建选择内置插件时，只将仓库中存在的本地插件制成 npm 包归档打入 FPK，并由 DSH CLI 使用 `file:` spec 安装运行依赖；旧版同版本 `link:` 安装会在升级时重装归档。三方插件不进入内置目录，仍单独按精确版本安装。当前清单包含 `@tnnevol/dsh-fnos@0.1.5-rc.2.4` 和三方插件 `dshmarket@1.45.1`；dshmarket 不进入 FPK，安装阶段由 DSH CLI 单独安装，已安装时跳过，不覆盖、降级或删除用户版本。FPK 不再携带 Codex 插件；老用户升级不会删除已有 Codex 插件、配置或凭据。
 
-安装回调参考 Hermes 应用创建 `app/bin/dsh` wrapper，再由 `usr-local-linker` 注册到系统 bin。wrapper 仅供公开 CLI 调用，内置固定的应用用户、运行环境和 DSH home，不信任调用者传入的 `DSH_HOME` 或 PATH；root、应用用户或其他用户调用时，真实 DSH CLI 都以应用包用户权限执行，权限切换失败会直接返回非零状态。`cmd/main` 只启动网关进程；网关以应用包用户直接运行真实 DSH CLI 启动 Web，不经 wrapper 或独立启动脚本。网关捕获启动 URL 中的 Token 后写入运行目录，并为页面、HTTP、SSE 和 WebSocket 代理请求注入当前 Token。
+本 FPK 不再注册公开的 `dsh` 系统命令（既不生成 `app/bin/dsh` wrapper，也不通过 `usr-local-linker` 暴露）。飞牛 fnOS 没有为非 root 调用者提供可用的身份切换机制（`runuser` 以非 root 执行时报 `may not be used by non-root users`，指定 `--group` 时报 `only root can specify alternative groups`，`su` 需要密码，`setpriv` 返回 `Operation not permitted`），而需求又禁止依赖 setuid 或不受控的 sudo，因此任何由普通用户直接调用的 wrapper 都无法真正以 DSH 应用包用户身份执行。管理员需要 CLI 时，请在应用包用户下直接运行应用私有路径的 `dsh`。`cmd/main` 只启动网关进程；网关以应用包用户直接运行真实 DSH CLI 启动 Web，不经 wrapper 或独立启动脚本。网关捕获启动 URL 中的 Token 后写入运行目录。浏览器地址始终保持无 Token：只有首次不带 DSH 会话 Cookie 的首页请求会把 Token 注入上游以换取 Cookie，之后的上游请求只带 Cookie——DSH 对任何携带 Token 的首页请求都会回 303 到干净路径，重复注入会造成“重定向次数过多”死循环。
 
-最终固定使用应用全局路径中的 `dsh` 并执行 `dsh --help` 验证：
+使用应用全局路径中的 `dsh` 并执行 `dsh --help` 验证：
 
 ```bash
 ${DSH_HOME}/.npm-global/bin/dsh --help
