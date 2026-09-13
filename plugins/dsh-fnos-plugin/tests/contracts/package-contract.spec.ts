@@ -168,8 +168,13 @@ describe('dsh-fnos package contract', () => {
     expect(action).toContain('sessionLogDialogPreparingTitle')
     expect(action).toContain('dismissDownload(sessionId)')
     expect(action).not.toContain('treeCheckable')
-    expect(host).toContain('ctx.get(\'apiProxy\')')
-    expect(host).toContain('includeDescendants: true')
+    // 上游取数走 DSH 自己的 /api/session.export。早前走 ctx.get('apiProxy')
+    // 是死的：全仓与上游都没有该服务的提供方，取值恒为 undefined，每次
+    // 「导出到 NAS」都必然 503。这里钉住不再回到那个写法——只匹配代码调用，
+    // 避免被解释该 bug 的注释误伤。
+    expect(host).toContain('/api/session.export')
+    expect(host).not.toMatch(/=\s*ctx\.get\(['"]apiProxy['"]\)/u)
+    expect(host).toContain("url.searchParams.set('includeDescendants', 'true')")
     expect(contract).toContain("'/plugins/dsh-fnos/session-log/export'")
   })
 

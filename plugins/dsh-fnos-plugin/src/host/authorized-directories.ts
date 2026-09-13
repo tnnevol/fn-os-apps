@@ -24,11 +24,16 @@ import { FNOS_SESSION_LOG_EXPORT_PATH, type FnosSessionLogExportRequest } from '
 
 const BODY_LIMIT = 64 * 1024
 
-type FnosApiProxy = {
-  downloads: {
-    sessionLog: (request: { sessionId: string, includeDescendants?: boolean }, signal: AbortSignal) => Promise<Response>
-  }
-}
+/**
+ * DSH 自己导出 Session 日志的宿主路由。
+ *
+ * 官方 `session-log-export` 插件在 `/api` 上注册这条 route，返回 ZIP 流。
+ * 这里**不能**改用某个注入服务：本插件早期版本走的是
+ * `ctx.get('apiProxy').downloads.sessionLog(...)`，但全仓与上游 DSH 都没有
+ * 任何插件提供 `apiProxy`，取值恒为 `undefined`，于是每次「导出到 NAS」都
+ * 必然 503。改成回源请求这条真实存在的路由。
+ */
+const DSH_SESSION_LOG_EXPORT_PATH = '/api/session.export'
 
 /** Paths removed during this process must not be reintroduced from a stale env snapshot. */
 const removedAccessiblePaths = new Set<string>()
@@ -607,6 +612,31 @@ function sessionLogExportFilename(sessionId: string): string {
   return `dsh-session-${safeId}-${Date.now()}.zip`
 }
 
+/**
+ * 回源拉取 DSH 自己导出的 Session 日志 ZIP。
+ *
+ * 请求打到本机 webServer 的 loopback 地址：官方 `session-log-export` 通过
+ * `connection.fetch.register('/api/session.export')` 把 route 挂在 DSH 自己的
+ * `/api` 上，宿主直接请求它比在本插件里重做 flush/打包/附件收集安全得多。
+ *
+ * 鉴权：`/api` 的信任判定放行 loopback（`isTrustedApiRequest` 对 loopback
+ * Host 直接返回 true），且不带 Origin 就没有跨源栅栏，所以服务端自址请求
+ * 不需要 token。
+ *
+ * @param ctx - 提供 webServer 的宿主上下文，用于取本机监听地址。
+ * @param sessionId - 目标会话。
+ * @param signal - 调用方中止信号，客户端断开时一并取消上游请求。
+ */
+export async function fetchSessionLogZip(ctx: Context, sessionId: string, signal: AbortSignal): Promise<Response> {
+  const { host, port } = ctx.webServer
+  // 绑定 0.0.0.0 时仍走 loopback：本机请求不需要经过对外网卡。
+  const address = host === '0.0.0.0' ? '127.0.0.1' : host
+  const url = new URL(DSH_SESSION_LOG_EXPORT_PATH, `http://${address}:${String(port)}`)
+  url.searchParams.set('sessionId', sessionId)
+  url.searchParams.set('includeDescendants', 'true')
+  return fetch(url, { method: 'GET', signal })
+}
+
 async function writeSessionLogResponse(response: Response, target: string, signal: AbortSignal): Promise<void> {
   if (!response.ok || response.body === null) {
     throw new Error(`session log export returned HTTP ${response.status}`)
@@ -859,14 +889,11 @@ export function registerAuthorizedDirectoryRoutes(ctx: Context): void {
           req.once('close', abort)
           const target = posix.join(request.directory, sessionLogExportFilename(request.sessionId))
           try {
-            const apiProxy = ctx.get('apiProxy') as FnosApiProxy | undefined
-            if (apiProxy === undefined) return json(res, 503, { error: 'fnos-session-log-export-unavailable' })
-            const response = await apiProxy.downloads.sessionLog(
-              { sessionId: request.sessionId, includeDescendants: true },
-              abortController.signal,
-            )
+            const response = await fetchSessionLogZip(ctx, request.sessionId, abortController.signal)
             if (!response.ok) {
-              return json(res, response.status >= 400 ? response.status : 500, { error: 'fnos-session-log-export-unavailable' })
+              return json(res, response.status >= 400 && response.status < 500 ? response.status : 500, {
+                error: 'fnos-session-log-export-unavailable',
+              })
             }
             await writeSessionLogResponse(response, target, abortController.signal)
             json(res, 201, { path: target })
