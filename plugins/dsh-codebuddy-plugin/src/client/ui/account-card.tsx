@@ -126,6 +126,8 @@ export function AccountCardImpl({ row, labels, autoCheckin, autoSwitch, resource
               <DshTypography.Text className="dsh-codebuddy-account-name" ellipsis={{ showTooltip: true }}>
                 {name}
               </DshTypography.Text>
+            </div>
+            <div className="dsh-codebuddy-account-card-tags">
               {row.active ? <DshTag size="small" type="solid" color="green">{active}</DshTag> : null}
               {row.expired ? <DshTag size="small" type="light" color="orange">{offline}</DshTag> : null}
               <DshTooltip content={`${CODEBUDDY_CLIENT_LABELS[clientId]} · v${clientVersion}`}>

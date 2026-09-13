@@ -69,17 +69,18 @@
   flex-shrink: 0;
 }
 
-/* 截断由 Typography.Text 的 ellipsis 负责；这里只让名称在 flex 行里可收缩。 */
+/* 截断由 Typography.Text 的 ellipsis 负责；名称所在行允许在卡片内收缩。 */
 .dsh-codebuddy-account-name {
-  flex: 0 1 auto;
+  display: block;
+  max-width: 100%;
   min-width: 0;
   font-weight: 600;
   color: var(--dsw-alias-label-primary);
 }
 
 /* 客户端标识：账号用哪个客户端登录（CLI / WorkBuddy）及其固定版本。
-   名称可能较长（如 "CodeBuddy CLI · v2.145.0"），因此不参与压缩、也不换行，
-   空间不足时优先压缩账号名（它的 ellipsis 已就绪）。 */
+   名称可能较长（如 "CodeBuddy CLI · v2.145.0"），因此标签本身不压缩、也不换行；
+   标签所在行整体允许换行，避免撑破卡片。 */
 .dsh-codebuddy-client-tag {
   flex: 0 0 auto;
   white-space: nowrap;
@@ -214,11 +215,18 @@
   min-width: 0;
   flex: 1;
 }
+/* 备注名作为卡片标题单独占一行，状态与客户端信息放到下一行，避免长备注名
+   与多个标签争抢同一行的空间。 */
 .dsh-codebuddy-account-card-title-row {
+  min-width: 0;
+}
+.dsh-codebuddy-account-card-tags {
   display: flex;
   align-items: center;
   gap: 6px;
   flex-wrap: wrap;
+  min-width: 0;
+  min-height: 20px;
 }
 .dsh-codebuddy-account-card-chips { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; min-height: 20px; }
 .dsh-codebuddy-account-card-more { flex-shrink: 0; }
