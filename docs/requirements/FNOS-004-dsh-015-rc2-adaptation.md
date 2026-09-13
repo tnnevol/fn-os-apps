@@ -76,7 +76,7 @@ lastVerified: 2026-09-12
 - 安装回调必须先检查应用私有全局目录中的 `pnpm@11.7.0` 和 `@deepseek-ai/dsh@0.1.5-rc.2`；可执行文件和实际 CLI 版本均精确匹配时跳过对应安装，仅对缺失、不可执行或版本不匹配的依赖执行安装。
 - 插件自身发布版本与 DSH 运行时版本分开管理；插件 `peerDependencies` 使用统一 catalog，不在各插件中重复硬编码 DSH 版本。
 - FPK 清单中的所有自动安装插件必须填写精确的 `version`，捆绑包的 `package.json` 版本必须与清单一致；禁止使用 `latest`、`next` 或其他浮动 `distTag`。
-- `--bundle-dsh-plugins` 只将仓库中可解析的本地插件打入 FPK；清单中的三方插件不得因为出现在 `plugins` 或 `bundled` 中而被复制到内置目录，安装回调仍须通过 DSH CLI 单独安装。`bundled` 中的 dshmarket 仅用于固定安装版本，不提供 FPK 回退包。
+- `--bundle-dsh-plugins` 只将仓库中可解析的本地插件制成带精确版本的 npm 包归档并打入 FPK；安装时通过 DSH CLI 的 `file:` 包 spec 安装，确保插件运行依赖能由 pnpm 安装和解析，不得以 `link:` 直接引用 FPK 插件目录。升级时须修复已经按旧方式安装的同版本 `link:` 插件。清单中的三方插件不得因为出现在 `plugins` 或 `bundled` 中而被内置，安装回调仍须通过 DSH CLI 单独安装。`bundled` 中的 dshmarket 仅用于固定安装版本，不提供 FPK 回退包。
 - FPK 内置本地插件时，安装回调使用 DSH CLI 指向内置包路径完成 profile 管理；不内置的三方插件继续使用精确版本包名安装，不因本地内置逻辑被跳过。
 - 安装/升级前从 Web profile 的 pnpm 模块元数据读取既有 `storeDir`，并持久化到 `${DSH_HOME}/.pnpm-store-dir`，通过 `PNPM_CONFIG_STORE_DIR` 提供给 pnpm；不得让 pnpm 因 `@apphome` 与 `@appshare` 的默认路径变化拒绝复用既有依赖，也不得把 pnpm 专用 `store-dir` 写入 npm 的 `.npmrc`。
 - 新 FPK 的 `published-dsh-plugins.json` 和内置插件目录不得包含 Codex 插件。安装/升级逻辑不能因为 manifest 不再列出 Codex 就删除用户 profile 中已有的 Codex 包、bundle、配置或凭据。
@@ -85,7 +85,8 @@ lastVerified: 2026-09-12
 - 新用户安装时，只有在目标 profile 中未发现 `dshmarket` 时才通过 registry 安装清单指定的固定版本。已安装判断至少覆盖 profile 的包清单和实际包目录；已存在但版本不同也视为已安装，不得自动覆盖、降级或删除。
 - 市场插件的安装结果要加入 DSH Web profile 的 bundle 配置；如果用户已有该插件，保持其现有 bundle 配置，不因跳过安装而重置用户选择。
 - `dsh` wrapper 必须注册到 FPK 的应用 bin 入口，转发参数、退出码、标准输入/输出和中断信号，并设置固定的 `DSH_HOME`、`HOME`、`PATH`、`NPM_CONFIG_CACHE`、`NPM_CONFIG_PREFIX` 和 `XDG_CONFIG_HOME`。它必须清理或覆盖调用者传入的同名环境变量，不能让调用者把 DSH 配置指向其他目录。
-- `cmd/main` 只启动 fnOS 网关；网关负责通过安装回调生成的 dsh wrapper 启动 `dsh web --no-open`、捕获本轮启动 URL 中的 Token，并在 Token 原子持久化后将当前 Token 用于页面、HTTP、SSE 和 WebSocket 代理。网关另接收真实 CLI 路径用于识别和管理 wrapper `exec` 后的 Web 进程。wrapper 固定应用用户、环境和真实 CLI 路径，不能写死 `/var/packages` 别名或信任调用者环境。
+- `cmd/main` 只启动 fnOS 网关；网关以应用包用户直接运行应用私有目录中的真实 DSH CLI 来启动 `dsh web --no-open`，并固定 Web 子进程环境、捕获本轮启动 URL 中的 Token，在 Token 原子持久化后供页面、HTTP、SSE 和 WebSocket 代理使用。公开 dsh wrapper 只供用户调用 CLI，不参与 Web 启停。
+- 网关启动 Web 前检查 `${DSH_HOME}/.credentials.yaml.lock`：锁中 PID 已失效时以原子 rename 后清理遗留锁；锁持有者仍存活时只等待其释放，超时则拒绝本次 Web 启动，不删除活跃写入者的锁。锁内容无效时保留原文件并返回可诊断错误。
 - wrapper 执行真实 CLI 时统一使用 `TRIM_UID` 对应的用户 ID，并结合 `TRIM_GROUPNAME` 设置执行组。已是应用用户时直接执行，其他用户通过设备支持的安全用户切换机制执行。禁止依赖可被普通用户修改的 wrapper、shell setuid 或不受控的 `sudo` 配置；无法安全切换身份时直接失败，不降级为调用者身份执行。
 - wrapper、真实 CLI、Node/pnpm 运行文件和 profile 数据的所有权与权限必须阻止非应用用户修改；wrapper 可被授权用户调用，但不能借此修改 DSH 配置、插件依赖或 profile 文件的所有权。
 - 插件管理生命周期顺序固定为：准备 Node.js → 检查/按需安装精确版本 DSH → 检查/按需准备 `pnpm@11.7.0` → 执行 `dsh plugin --profile web` 的 add/update 操作。缺失 profile 由官方 CLI 首次执行时自动初始化，应用不重复初始化或覆盖 profile；`cmd/main` 只启动网关，Web 进程由网关启动。

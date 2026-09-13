@@ -2,6 +2,9 @@
 
 PID_FILE="${TRIM_PKGVAR}/app.pid"
 GATEWAY_PID_FILE="${TRIM_PKGVAR}/gateway.pid"
+GATEWAY_START_LOCK_DIR="${TRIM_PKGVAR}/gateway-start.lock"
+GATEWAY_START_OWNER_FILE="${GATEWAY_START_LOCK_DIR}/owner"
+GATEWAY_START_WAIT_SECONDS=30
 RESTART_MARKER="${TRIM_PKGVAR}/internal-restart"
 RESTART_GRACE_SECONDS=120
 DSH_HOME="${TRIM_PKGHOME}"
@@ -14,7 +17,6 @@ REQUESTED_HOST="${wizard_host:-127.0.0.1}"
 PORT="${wizard_port:-3080}"
 TRUSTED_HOSTS="${wizard_trusted_hosts:-}"
 DSH_REAL_BIN="${DSH_HOME}/.npm-global/bin/dsh"
-DSH_WRAPPER="${TRIM_APPDEST}/app/bin/dsh"
 HOST="${REQUESTED_HOST}"
 
 export PATH="${NODE_BIN}:${PATH}"
@@ -115,11 +117,13 @@ stop_runtime_pid() {
 }
 
 cleanup_orphaned_runtime_processes() {
-    local entry pid
+    local entry pid active_gateway_pid
+    active_gateway_pid=$(pid_from_file "${GATEWAY_PID_FILE}")
     for entry in /proc/[0-9]*; do
         pid="${entry##*/}"
         [ "${pid}" != "$$" ] || continue
         if is_runtime_process "${pid}" gateway; then
+            [ "${pid}" = "${active_gateway_pid}" ] && continue
             log_info "Stopping orphaned fnOS gateway process ${pid}."
             stop_runtime_pid "${pid}"
         fi
@@ -153,8 +157,55 @@ gateway_running() {
     check_process "${gateway_pid}" && is_runtime_process "${gateway_pid}" gateway
 }
 
+release_gateway_start_lock() {
+    local owner
+    owner=$(pid_from_file "${GATEWAY_START_OWNER_FILE}")
+    if [ "${owner}" = "$$" ]; then
+        rm -f "${GATEWAY_START_OWNER_FILE}"
+        rmdir "${GATEWAY_START_LOCK_DIR}" 2>/dev/null || true
+    fi
+}
+
+acquire_gateway_start_lock() {
+    local waited=0 owner
+    while ! mkdir "${GATEWAY_START_LOCK_DIR}" 2>/dev/null; do
+        if gateway_running; then
+            return 1
+        fi
+
+        owner=$(pid_from_file "${GATEWAY_START_OWNER_FILE}")
+        if [ -n "${owner}" ] && ! check_process "${owner}"; then
+            rmdir "${GATEWAY_START_LOCK_DIR}" 2>/dev/null || true
+            continue
+        fi
+        if [ "${waited}" -ge "${GATEWAY_START_WAIT_SECONDS}" ]; then
+            return 1
+        fi
+        sleep 1
+        waited=$((waited + 1))
+    done
+
+    printf '%s\n' "$$" >"${GATEWAY_START_OWNER_FILE}"
+    return 0
+}
+
 start_process() {
     if gateway_running; then
+        cleanup_orphaned_runtime_processes
+        return 0
+    fi
+    if ! acquire_gateway_start_lock; then
+        if gateway_running; then
+            return 0
+        fi
+        log_error "Another fnOS gateway start is already in progress."
+        return 1
+    fi
+    trap release_gateway_start_lock EXIT
+
+    if gateway_running; then
+        release_gateway_start_lock
+        trap - EXIT
         return 0
     fi
     cleanup_orphaned_runtime_processes
@@ -169,8 +220,7 @@ start_process() {
             GATEWAY_PATH_ALLOWLIST="${TRIM_PKGVAR}/gateway/path-allowlist.json" \
             DSH_UPSTREAM_HOST="127.0.0.1" \
             DSH_UPSTREAM_PORT="${PORT}" \
-            DSH_BIN="${DSH_WRAPPER}" \
-            DSH_PROCESS_BIN="${DSH_REAL_BIN}" \
+            DSH_BIN="${DSH_REAL_BIN}" \
             DSH_CWD="${TRIM_APPDEST}" \
             DSH_PID_FILE="${PID_FILE}" \
             DSH_START_LOCK_FILE="${TRIM_PKGVAR}/web-start.lock" \
@@ -180,6 +230,8 @@ start_process() {
             exec node "${PROXY_SCRIPT}"
     ) &
     printf "%s" "$!" >"${GATEWAY_PID_FILE}"
+    release_gateway_start_lock
+    trap - EXIT
     return 0
 }
 
@@ -203,6 +255,13 @@ stop_pid() {
 stop_process() {
     if [ "${FNOS_INTERNAL_RESTART:-0}" != "1" ]; then
         rm -f "${RESTART_MARKER}"
+    fi
+    if [ -d "${GATEWAY_START_LOCK_DIR}" ]; then
+        local waited=0
+        while [ -d "${GATEWAY_START_LOCK_DIR}" ] && [ "${waited}" -lt "${GATEWAY_START_WAIT_SECONDS}" ]; do
+            sleep 1
+            waited=$((waited + 1))
+        done
     fi
     stop_pid "${GATEWAY_PID_FILE}"
     cleanup_orphaned_runtime_processes

@@ -90,7 +90,7 @@ DSH 0.1.5-rc.2 发布包
 
 | 任务 ID | 对应验收 | 实现内容 | 验收 |
 | --- | --- | --- | --- |
-| PLAN-FNOS-004-T05-01 | FNOS-004-02-AC-01 | 从 `published-dsh-plugins.json` 移除 Codex 条目，并从新 FPK 的 `app/bundled-dsh-plugins` 构建来源移除 Codex 包；保留 `dsh-fnos` 等本轮仍需的条目，并校验所有自动安装插件使用精确版本 | 清单和 FPK 包内容不包含 Codex；捆绑包 `package.json` 版本与清单一致；干净 profile 安装后不会出现 Codex 依赖或 bundle |
+| PLAN-FNOS-004-T05-01 | FNOS-004-02-AC-01 | 从新 FPK 清单和内置目录移除 Codex；仓库内插件使用 `pnpm pack` 生成精确版本归档，核验包名、版本和运行依赖，安装回调用 DSH CLI `file:` spec 安装；发现旧 `link:` 同版本安装时重新安装归档 | 清单和 FPK 不包含 Codex；内置归档元数据与清单一致，干净及旧 `link:` profile 均能解析 `dsh-fnos` 的 `@deepseek-ai/schemastery` 并启动 Web |
 | PLAN-FNOS-004-T05-02 | FNOS-004-02-AC-02 | 审计 `install-dsh-plugins.mjs` 的缺失 manifest 行为，确保不因 Codex 不在新清单中执行删除、卸载、覆盖或 profile bundle 清理 | 老用户已有 Codex 包、配置、凭据和 bundle 在升级后逐项保持不变 |
 | PLAN-FNOS-004-T05-03 | FNOS-004-02-AC-03 | 为安装回调增加新用户、老用户和重复升级场景的隔离回归夹具，记录安装、升级和跳过清理的日志 | 新用户无 Codex；老用户无卸载日志；重复执行幂等且不因缺失 Codex 条目失败 |
 | PLAN-FNOS-004-T05-04 | FNOS-004-02-AC-04 | 检查 FPK 构建 CLI 只按当前发布清单复制仓库中的本地插件；清单中的三方插件不进入内置目录，安装回调仍通过 DSH CLI 单独安装；补充精确版本、产物目录和 profile manifest 检查 | 构建产物不重新带入 Codex 或未解析的三方插件；不存在浮动版本安装；本地 FPK 检查和真实 NAS 升级验证结果一致 |
@@ -126,7 +126,7 @@ DSH 0.1.5-rc.2 发布包
 
 | 任务 ID | 对应验收 | 实现内容 | 验收 |
 | --- | --- | --- | --- |
-| PLAN-FNOS-004-T08-01 | FNOS-004-04-AC-01 | 参考 Hermes 应用，在 `install_callback` 中创建 `${TRIM_APPDEST}/app/bin/dsh` wrapper，并按 fnOS FPK 规则通过 `config/resource` 注册为应用命令；`cmd/main` 将 wrapper 交给网关启动 Web，并另传 `${TRIM_PKGHOME}/.npm-global/bin/dsh` 供网关识别 wrapper `exec` 后的真实进程 | 安装后通过 bin 入口执行 `dsh --version`、`dsh --help` 成功；wrapper 由安装流程生成，网关通过 wrapper 启动 Web，进程识别和生命周期管理使用固定真实 CLI 路径，不依赖调用者 PATH |
+| PLAN-FNOS-004-T08-01 | FNOS-004-04-AC-01 | 在 `install_callback` 中创建并注册 `${TRIM_APPDEST}/app/bin/dsh` 公开 CLI wrapper；`cmd/main` 只把真实 `${TRIM_PKGHOME}/.npm-global/bin/dsh` 路径交给网关，网关以应用包用户直接启动 Web 并固定子进程环境 | bin 入口可执行 `dsh --version`、`dsh --help`；Web 进程命令行只包含真实 CLI，不经 wrapper 或独立启动脚本 |
 | PLAN-FNOS-004-T08-02 | FNOS-004-04-AC-03 | wrapper 内置并覆盖 `DSH_HOME`、`HOME`、`PATH`、`NPM_CONFIG_CACHE`、`NPM_CONFIG_PREFIX`、`XDG_CONFIG_HOME` 等环境变量，清理调用者同名变量 | 使用不同调用环境执行命令时，真实 CLI 始终使用应用 profile 和应用包目录 |
 | PLAN-FNOS-004-T08-03 | FNOS-004-04-AC-02 | wrapper 执行前统一使用 `TRIM_UID` 固定目标用户，并结合 `TRIM_GROUPNAME` 设置执行组；已是目标用户时直接执行，其他用户使用设备支持的安全用户切换机制 | 通过 root、应用用户及其他有权限入口调用时，`id` 和真实进程身份均为指定应用用户；无法切换时非零退出且不降级执行 |
 | PLAN-FNOS-004-T08-04 | FNOS-004-04-AC-04 | 设置 wrapper、真实 CLI、Node/pnpm、profile 和插件依赖的所有权与最小权限；禁止普通用户修改 wrapper、配置或改变所有权 | 使用 `stat` 和实际写入测试证明非应用用户不能篡改 DSH 配置，应用用户可以正常管理自己的 profile |
@@ -138,10 +138,11 @@ DSH 0.1.5-rc.2 发布包
 
 | 任务 ID | 对应验收 | 实现内容 | 验收 |
 | --- | --- | --- | --- |
-| PLAN-FNOS-004-T09-01 | FNOS-004-05-AC-01 | 保持 `cmd/main` 只负责启动网关，由网关通过安装生成的 dsh wrapper 启动 `dsh web --no-open`，并使用固定真实 DSH CLI 路径识别 wrapper `exec` 后的 Web 进程；梳理 `cmd/config_callback`、`gateway-proxy.mjs` 的重启状态、WebProcessController、Token 文件和统一网关代理链路；重启开始时明确标记 Token 失效/刷新中 | 网关能捕获本轮 Web 启动 Token 并仅在内部代理请求中使用；浏览器 iframe 地址不携带 Token，旧 Token 在重启开始后不再用于健康检查或代理鉴权，状态接口能区分刷新中和错误 |
+| PLAN-FNOS-004-T09-01 | FNOS-004-05-AC-01 | 保持 `cmd/main` 只负责启动网关，由网关直接运行应用私有目录中的真实 DSH CLI 启动 `dsh web --no-open`；梳理 `cmd/config_callback`、`gateway-proxy.mjs` 的重启状态、WebProcessController、Token 文件和统一网关代理链路；重启开始时明确标记 Token 失效/刷新中 | 网关能捕获本轮 Web 启动 Token 并仅在内部代理请求中使用；浏览器 iframe 地址不携带 Token，旧 Token 在重启开始后不再用于健康检查或代理鉴权，状态接口能区分刷新中和错误 |
 | PLAN-FNOS-004-T09-02 | FNOS-004-05-AC-02 | DSH Web 启动后从启动输出捕获新 Token，先写临时文件并原子 rename，再更新内存 Token；设置应用包用户所有权和最小权限 | 新 Token 文件内容完整、权限正确，进程内读取值与落盘值一致；写入失败不会发布半截 Token |
 | PLAN-FNOS-004-T09-03 | FNOS-004-05-AC-03 | 调整网关首页认证、健康检查和代理入口的 Token 读取顺序：刷新期间等待本轮启动结果或返回可恢复响应，禁止读取旧缓存；新 Token 生效后仅向 DSH 上游请求注入新值，并清理上游响应中的 Token 跳转 | 浏览器 iframe 地址始终不携带 Token；页面、HTTP、SSE、WebSocket 和并发请求不会因旧 Token 返回未授权；成功后能自动恢复页面访问 |
 | PLAN-FNOS-004-T09-04 | FNOS-004-05-AC-04 | 覆盖首次启动、配置触发的内部重启、异常退出恢复、连续重启和启动超时；清理旧临时文件、锁和失效 Token，保留可诊断错误 | 隔离测试和真实 NAS 回归均能证明新旧 Token 正确切换，旧 Token 不再生效，失败时不会误报启动成功 |
+| PLAN-FNOS-004-T09-04a | FNOS-004-05-AC-04 | 网关在启动前恢复 DSH 凭据文件遗留锁：仅处理锁文件中 PID 已退出的情况，采用 rename 隔离后清理；活跃 PID 必须等待释放，锁内容异常必须保留并失败 | 应用异常退出遗留 `.credentials.yaml.lock` 后可重新启动；活跃凭据写入不会被删除或并发启动破坏 |
 | PLAN-FNOS-004-T09-05 | FNOS-004-05-AC-04 | 在真实 NAS 验证网关 iframe、HTTP/SSE/WebSocket、重启控制接口和并发请求；非 fnOS 插件继续只在当前 DSH 客户端验证 | NAS 记录重启前后 Token 状态、响应码、跳转地址和日志，确认问题不再复现 |
 
 ### P1：发布、升级和回滚一致性门禁

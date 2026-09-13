@@ -142,7 +142,7 @@ PNPM_STORE_FILE="${PNPM_STORE_FILE}"
 PNPM_STORE_DIR="\$(/usr/bin/sed -n '1p' "\${PNPM_STORE_FILE}" 2>/dev/null || true)"
 
 exec_dsh() {
-    /usr/bin/env -i \\
+    exec /usr/bin/env -i \\
         HOME="\${DSH_HOME}" \\
         DSH_HOME="\${DSH_HOME}" \\
         NPM_CONFIG_CACHE="\${DSH_HOME}/.npm-cache" \\
@@ -328,7 +328,7 @@ installed_plugin_version() {
 
 validate_plugin_spec() {
     case "$1" in
-    '' | *[!0-9A-Za-z@/_.+-]*) fail_install "Invalid DSH plugin package spec: $1" ;;
+    '' | *[!0-9A-Za-z@/:_.+-]*) fail_install "Invalid DSH plugin package spec: $1" ;;
     esac
 }
 
@@ -341,31 +341,25 @@ run_dsh_plugin() {
 }
 
 install_published_dsh_plugins() {
-    local plugin_name plugin_version current_version bundled_plugin bundled_name bundled_version
+    local plugin_name plugin_version current_version current_spec bundled_plugin
     while IFS=$'\t' read -r plugin_name plugin_version; do
         [ -n "${plugin_name}" ] || continue
         validate_plugin_spec "${plugin_name}"
         validate_plugin_spec "${plugin_version}"
         current_version="$(installed_plugin_version "${plugin_name}")"
+        current_spec="$(profile_dependency_version "${plugin_name}")"
 
-        # A local plugin copied into the FPK is already an installation source.
-        # Hand it to the DSH CLI directly instead of resolving the same package
-        # from the registry. Third-party manifest entries are not copied by the
-        # build command, so they continue through the registry branch below.
-        bundled_plugin="${DSH_BUNDLED_PLUGIN_DIRECTORY}/${plugin_name}"
-        if [ -f "${bundled_plugin}/package.json" ]; then
-            bundled_name="$(read_package_name "${bundled_plugin}/package.json")"
-            bundled_version="$(read_package_version "${bundled_plugin}/package.json")"
-            [ "${bundled_name}" = "${plugin_name}" ] ||
-                fail_install "Bundled plugin metadata name ${bundled_name:-unknown} does not match ${plugin_name}"
-            [ -n "${bundled_version}" ] ||
-                fail_install "Bundled plugin ${plugin_name} does not declare a version"
-            if [ "${current_version}" = "${bundled_version}" ]; then
-                log_info "Keeping bundled ${plugin_name}@${bundled_version}; exact local version already matches."
+        # pnpm must install from a package archive, not link the FPK directory:
+        # linked packages cannot resolve their own runtime dependencies here.
+        # Reinstall old link: profiles even when the declared version matches.
+        bundled_plugin="${DSH_BUNDLED_PLUGIN_DIRECTORY}/${plugin_name}.tgz"
+        if [ -f "${bundled_plugin}" ]; then
+            if [ "${current_version}" = "${plugin_version}" ] && [ "${current_spec}" = "file:${bundled_plugin}" ]; then
+                log_info "Keeping bundled ${plugin_name}@${plugin_version}; exact local version already matches."
             else
-                log_info "Installing bundled ${plugin_name}@${bundled_version} from the FPK with the dsh CLI."
-                run_dsh_plugin add "${bundled_plugin}" ||
-                    fail_install "Unable to install bundled ${plugin_name}@${bundled_version} with the dsh CLI"
+                log_info "Installing bundled ${plugin_name}@${plugin_version} from the FPK archive with the dsh CLI."
+                run_dsh_plugin add "file:${bundled_plugin}" ||
+                    fail_install "Unable to install bundled ${plugin_name}@${plugin_version} with the dsh CLI"
             fi
             continue
         fi
@@ -373,9 +367,9 @@ install_published_dsh_plugins() {
         if [ -z "${current_version}" ]; then
             run_dsh_plugin add "${plugin_name}@${plugin_version}" ||
                 fail_install "Unable to install ${plugin_name}@${plugin_version} with the dsh CLI"
-        elif [ "${current_version}" != "${plugin_version}" ]; then
+        elif [ "${current_version}" != "${plugin_version}" ] || [[ "${current_spec}" == link:* ]]; then
             log_info "Updating ${plugin_name} from ${current_version} to ${plugin_version} with the dsh CLI."
-            run_dsh_plugin update "${plugin_name}@${plugin_version}" ||
+            run_dsh_plugin add "${plugin_name}@${plugin_version}" ||
                 fail_install "Unable to update ${plugin_name} to ${plugin_version} with the dsh CLI"
         else
             log_info "Keeping installed ${plugin_name}@${current_version}; exact version already matches."

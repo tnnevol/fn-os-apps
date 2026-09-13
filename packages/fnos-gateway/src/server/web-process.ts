@@ -4,11 +4,11 @@ import { spawn, type ChildProcess } from 'node:child_process'
 export const WEB_CONTROL_STATUS_PATH = '/__fnos-gateway/control/web/status'
 export const WEB_CONTROL_START_PATH = '/__fnos-gateway/control/web/start'
 export const WEB_CONTROL_RESTART_PATH = '/__fnos-gateway/control/web/restart'
+const DEFAULT_HEALTH_TIMEOUT_MS = 120_000
 
 export interface WebProcessOptions {
   command: string
-  /** Executable name/path visible after a wrapper replaces itself with DSH. */
-  processCommand?: string
+  env?: NodeJS.ProcessEnv
   args: string[]
   cwd: string
   pidFile: string
@@ -18,6 +18,9 @@ export interface WebProcessOptions {
   healthUrl: string
   healthTimeoutMs?: number
   terminationTimeoutMs?: number
+  /** DSH's provider-managed credential writer lock, recovered only when stale. */
+  credentialsLockFile?: string
+  credentialsLockWaitMs?: number
 }
 
 export interface WebProcessSnapshot { state: 'running' | 'starting' | 'stopped' | 'error', pid?: number, error?: string }
@@ -28,6 +31,49 @@ async function readPid(file: string): Promise<number | undefined> {
 function alive(pid: number): boolean { try { process.kill(pid, 0); return true } catch { return false } }
 
 function delay(ms: number): Promise<void> { return new Promise(resolve => setTimeout(resolve, ms)) }
+
+async function waitForFileRemoval(file: string, timeoutMs: number): Promise<boolean> {
+  const deadline = Date.now() + timeoutMs
+  while (Date.now() < deadline) {
+    try { await readFile(file, 'utf8') } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') return true
+    }
+    await delay(100)
+  }
+  return false
+}
+
+/**
+ * DSH records its writer PID in `<credentials>.lock` and deliberately leaves
+ * orphan recovery to its operator. The fnOS gateway is that operator for its
+ * own private DSH home: recover only a lock whose recorded PID is no longer
+ * alive. A live writer is never interrupted or unlocked by a Web start.
+ */
+async function recoverCredentialsLock(lockFile: string, waitMs: number): Promise<void> {
+  let owner: number | undefined
+  try { owner = await readPid(lockFile) } catch {}
+  if (owner === undefined) {
+    try { await readFile(lockFile, 'utf8') } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') return
+      throw error
+    }
+    throw new Error(`DSH credentials writer lock has no valid PID: ${lockFile}`)
+  }
+  if (alive(owner)) {
+    if (await waitForFileRemoval(lockFile, waitMs)) return
+    throw new Error(`DSH credentials writer lock is still held by PID ${String(owner)}`)
+  }
+
+  // Rename claims this exact stale directory entry without touching a new
+  // lock a concurrent writer might create at the original pathname.
+  const quarantine = `${lockFile}.stale-${String(process.pid)}-${String(Date.now())}`
+  try { await rename(lockFile, quarantine) } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return
+    throw error
+  }
+  await rm(quarantine, { force: true })
+  console.warn(`[fnos-gateway] Recovered stale DSH credentials writer lock held by exited PID ${String(owner)}`)
+}
 
 export async function isDshWebProcess(pid: number, command: string, port?: number): Promise<boolean> {
   if (!alive(pid)) return false
@@ -92,9 +138,7 @@ async function signalChildProcessGroup(child: ChildProcess, signal: NodeJS.Signa
     return
   }
   // This child was created by this controller, so its detached process group
-  // is safe to terminate even while a wrapper is still replacing itself with
-  // the real DSH process. Do not gate cleanup on command-line identity: the
-  // short-lived wrapper/runuser process may not contain the DSH path yet.
+  // can be terminated without a second command-line identity check.
   try { process.kill(-child.pid, signal) } catch {
     try { process.kill(child.pid, signal) } catch { try { child.kill(signal) } catch {} }
   }
@@ -140,10 +184,6 @@ export class WebProcessController {
     return this.launchToken
   }
 
-  private processIdentityCommand(): string {
-    return this.options.processCommand ?? this.options.command
-  }
-
   async snapshot(): Promise<WebProcessSnapshot> {
     await this.restoreLaunchToken()
     if (this.starting !== undefined) return { state: 'starting' }
@@ -152,7 +192,7 @@ export class WebProcessController {
 
   private async currentSnapshot(): Promise<WebProcessSnapshot> {
     const pid = await readPid(this.options.pidFile)
-    if (pid !== undefined && await isDshWebProcess(pid, this.processIdentityCommand())) return { state: 'running', pid }
+    if (pid !== undefined && await isDshWebProcess(pid, this.options.command)) return { state: 'running', pid }
     return this.lastError === undefined ? { state: 'stopped' } : { state: 'error', error: this.lastError }
   }
 
@@ -185,32 +225,36 @@ export class WebProcessController {
     try { lock = await open(this.options.lockFile, 'wx', 0o600) }
     catch (error) {
       if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error
-      const candidate = await readPid(this.options.startingPidFile)
-      if (candidate !== undefined) {
-        const matchesWrapper = await isDshWebProcess(candidate, this.options.command)
-        const matchesDsh = await isDshWebProcess(candidate, this.processIdentityCommand())
-        if (matchesWrapper || matchesDsh) return { state: 'starting', pid: candidate }
+      const lockOwner = await readPid(this.options.lockFile)
+      if (lockOwner !== undefined && alive(lockOwner)) {
+        const released = await waitForFileRemoval(this.options.lockFile, (this.options.healthTimeoutMs ?? DEFAULT_HEALTH_TIMEOUT_MS) + 5_000)
+        if (!released) return { state: 'error', error: 'another DSH Web start is still in progress' }
+        const current = await this.currentSnapshot()
+        if (current.state === 'running') return current
+        if (!retry) return { state: 'error', error: 'DSH Web start failed in another gateway' }
+        return await this.startLocked(false)
       }
+      const candidate = await readPid(this.options.startingPidFile)
+      if (candidate !== undefined && alive(candidate)) return { state: 'starting', pid: candidate }
       if (!retry) return { state: 'error', error: 'stale DSH Web start lock' }
       await rm(this.options.lockFile, { force: true })
       return await this.startLocked(false)
     }
     let child: ChildProcess | undefined
     try {
+      await lock.writeFile(String(process.pid))
       await rm(this.options.startingPidFile, { force: true })
+      if (this.options.credentialsLockFile !== undefined) {
+        await recoverCredentialsLock(this.options.credentialsLockFile, this.options.credentialsLockWaitMs ?? 35_000)
+      }
       // The fnOS app can be restarted after its gateway has been killed or
       // its pid files have been removed. In that case an orphaned DSH Web
       // process may still own the configured port. Reconcile only processes
       // matching this executable, `web`, and this controller's port.
-      const processCommand = this.processIdentityCommand()
       const port = new URL(this.options.healthUrl).port
       const configuredPort = port === '' ? (new URL(this.options.healthUrl).protocol === 'https:' ? 443 : 80) : Number.parseInt(port, 10)
-      const orphanProcesses = new Map<number, string>()
-      for (const command of new Set([this.options.command, processCommand])) {
-        for (const pid of await findDshWebProcesses(command, configuredPort)) orphanProcesses.set(pid, command)
-      }
-      for (const [pid, command] of orphanProcesses) {
-        await terminatePid(pid, command, this.options.terminationTimeoutMs)
+      for (const pid of await findDshWebProcesses(this.options.command, configuredPort)) {
+        await terminatePid(pid, this.options.command, this.options.terminationTimeoutMs)
       }
       // Keep DSH Web in its own process group so shutdown also terminates
       // children started by the CLI instead of leaving a port-owning process
@@ -224,7 +268,7 @@ export class WebProcessController {
       this.launchTokenPersistence = undefined
       this.outputBuffer = ''
       await rm(this.options.launchTokenFile ?? '', { force: true }).catch(() => undefined)
-      const spawned = spawn(this.options.command, this.options.args, { cwd: this.options.cwd, env: process.env, stdio: ['ignore', 'pipe', 'pipe'], detached: true })
+      const spawned = spawn(this.options.command, this.options.args, { cwd: this.options.cwd, env: this.options.env ?? process.env, stdio: ['ignore', 'pipe', 'pipe'], detached: true })
       child = spawned
       this.child = spawned
       if (spawned.pid === undefined) throw new Error('DSH Web did not return a PID')
@@ -237,7 +281,7 @@ export class WebProcessController {
         if (this.child === spawned) this.child = undefined
         void readPid(this.options.pidFile).then(current => current === spawned.pid ? rm(this.options.pidFile, { force: true }) : undefined)
       })
-      const deadline = Date.now() + (this.options.healthTimeoutMs ?? 30_000)
+      const deadline = Date.now() + (this.options.healthTimeoutMs ?? DEFAULT_HEALTH_TIMEOUT_MS)
       while (Date.now() < deadline) {
         if (this.stopping) throw new Error('DSH Web start cancelled')
         if (spawned.exitCode !== null) throw new Error(`DSH Web exited with code ${String(spawned.exitCode)}`)
@@ -283,7 +327,7 @@ export class WebProcessController {
         this.child = undefined
       } else {
         const pid = await readPid(this.options.pidFile) ?? await readPid(this.options.startingPidFile)
-        if (pid !== undefined) await terminatePid(pid, this.processIdentityCommand(), this.options.terminationTimeoutMs)
+        if (pid !== undefined) await terminatePid(pid, this.options.command, this.options.terminationTimeoutMs)
       }
       await Promise.all([rm(this.options.pidFile, { force: true }), rm(this.options.startingPidFile, { force: true }), rm(this.options.lockFile, { force: true })])
       this.launchToken = undefined

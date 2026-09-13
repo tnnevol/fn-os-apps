@@ -1,8 +1,9 @@
 import { createServer } from 'node:http'
+import { spawnSync } from 'node:child_process'
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { once } from 'node:events'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import { WebProcessController } from '../src/server/web-process.ts'
 
@@ -11,6 +12,162 @@ function isAlive(pid: number): boolean {
 }
 
 describe('DSH web process lifecycle', () => {
+  it('keeps the public CLI wrapper transparent for application-user commands', async () => {
+    const uid = process.getuid?.()
+    if (uid === undefined) throw new Error('the fnOS wrapper requires a POSIX user')
+    const directory = await mkdtemp(join(tmpdir(), 'fnos-cli-wrapper-'))
+    const wrapper = join(directory, 'dsh')
+    const storeFile = join(directory, 'pnpm-store-dir')
+    try {
+      await writeFile(storeFile, join(directory, 'store'))
+      const installCallback = await readFile(new URL('../../../apps/fn-deepseek-harness/cmd/install_callback', import.meta.url), 'utf8')
+      const start = installCallback.indexOf('setup_cli_wrapper() {')
+      const end = installCallback.indexOf('\nrun_as_app_user() {', start)
+      expect(start).toBeGreaterThanOrEqual(0)
+      expect(end).toBeGreaterThan(start)
+      const group = spawnSync('/usr/bin/id', ['-gn'], { encoding: 'utf8' }).stdout.trim()
+      const generated = spawnSync('/bin/bash', ['-c', `${installCallback.slice(start, end)}\nlog_info() { :; }\nsetup_cli_wrapper`], {
+        encoding: 'utf8',
+        env: {
+          PATH: '/usr/bin:/bin',
+          APP_UID: String(uid),
+          APP_GROUP: group,
+          DSH_HOME: directory,
+          NPM_CONFIG_PREFIX: directory,
+          NODE_BIN: dirname(process.execPath),
+          DSH_BIN: process.execPath,
+          PNPM_STORE_FILE: storeFile,
+          CLI_WRAPPER: wrapper,
+        },
+      })
+      expect(generated.status, generated.stderr).toBe(0)
+
+      const launched = spawnSync(wrapper, ['-e', 'process.stdout.write(String(process.pid))'], { encoding: 'utf8' })
+      expect(launched.status, launched.stderr).toBe(0)
+      expect(launched.stdout).toBe(String(launched.pid))
+    } finally {
+      await rm(directory, { recursive: true, force: true })
+    }
+  })
+
+  it('coalesces concurrent starts that share the gateway lock', async () => {
+    const probe = createServer((_req, res) => { res.writeHead(200); res.end() })
+    probe.listen(0, '127.0.0.1')
+    await once(probe, 'listening')
+    const address = probe.address()
+    if (address === null || typeof address === 'string') throw new Error('probe did not bind to a TCP port')
+
+    const directory = await mkdtemp(join(tmpdir(), 'fnos-web-process-'))
+    const counter = join(directory, 'starts')
+    const runtimeHome = join(directory, 'dsh-home')
+    await writeFile(counter, '0')
+    const script = [
+      `const fs = require('node:fs')`,
+      `const file = ${JSON.stringify(counter)}`,
+      `const count = Number(fs.readFileSync(file, 'utf8') || '0') + 1`,
+      `fs.writeFileSync(file, String(count))`,
+      `if (process.env.DSH_HOME !== ${JSON.stringify(runtimeHome)}) process.exit(2)`,
+      `setInterval(() => {}, 1000)`,
+    ].join(';')
+    const options = {
+      command: process.execPath,
+      args: ['-e', script, 'web'],
+      env: { ...process.env, DSH_HOME: runtimeHome },
+      cwd: directory,
+      pidFile: join(directory, 'web.pid'),
+      startingPidFile: join(directory, 'web.starting.pid'),
+      lockFile: join(directory, 'web.lock'),
+      healthUrl: `http://127.0.0.1:${address.port}/`,
+      healthTimeoutMs: 1_000,
+      terminationTimeoutMs: 50,
+    } satisfies ConstructorParameters<typeof WebProcessController>[0]
+    const first = new WebProcessController(options)
+    const second = new WebProcessController(options)
+
+    try {
+      await expect(Promise.all([first.start(), second.start()])).resolves.toEqual([
+        expect.objectContaining({ state: 'running' }),
+        expect.objectContaining({ state: 'running' }),
+      ])
+      expect(await readFile(counter, 'utf8')).toBe('1')
+    } finally {
+      await first.stop()
+      await second.stop()
+      await rm(directory, { recursive: true, force: true })
+      await new Promise<void>(resolve => probe.close(() => resolve()))
+    }
+  })
+
+  it('recovers an exited DSH credentials writer before starting Web', async () => {
+    const probe = createServer((_req, res) => { res.writeHead(200); res.end() })
+    probe.listen(0, '127.0.0.1')
+    await once(probe, 'listening')
+    const address = probe.address()
+    if (address === null || typeof address === 'string') throw new Error('probe did not bind to a TCP port')
+
+    const directory = await mkdtemp(join(tmpdir(), 'fnos-web-process-'))
+    const lockFile = join(directory, '.credentials.yaml.lock')
+    const completed = spawnSync(process.execPath, ['-e', ''], { encoding: 'utf8' })
+    if (completed.pid === undefined) throw new Error('failed to allocate a stale lock owner PID')
+    await writeFile(lockFile, `${String(completed.pid)}\n`)
+    const controller = new WebProcessController({
+      command: process.execPath,
+      args: ['-e', 'setInterval(() => {}, 1000)', 'web'],
+      cwd: directory,
+      pidFile: join(directory, 'web.pid'),
+      startingPidFile: join(directory, 'web.starting.pid'),
+      lockFile: join(directory, 'web.lock'),
+      credentialsLockFile: lockFile,
+      healthUrl: `http://127.0.0.1:${address.port}/`,
+      healthTimeoutMs: 1_000,
+      terminationTimeoutMs: 50,
+    })
+
+    try {
+      await expect(controller.start()).resolves.toMatchObject({ state: 'running' })
+      await expect(readFile(lockFile, 'utf8')).rejects.toMatchObject({ code: 'ENOENT' })
+    } finally {
+      await controller.stop()
+      await rm(directory, { recursive: true, force: true })
+      await new Promise<void>(resolve => probe.close(() => resolve()))
+    }
+  })
+
+  it('waits for a live DSH credentials writer instead of deleting its lock', async () => {
+    const probe = createServer((_req, res) => { res.writeHead(200); res.end() })
+    probe.listen(0, '127.0.0.1')
+    await once(probe, 'listening')
+    const address = probe.address()
+    if (address === null || typeof address === 'string') throw new Error('probe did not bind to a TCP port')
+
+    const directory = await mkdtemp(join(tmpdir(), 'fnos-web-process-'))
+    const lockFile = join(directory, '.credentials.yaml.lock')
+    await writeFile(lockFile, `${String(process.pid)}\n`)
+    const release = setTimeout(() => { void rm(lockFile, { force: true }) }, 50)
+    const controller = new WebProcessController({
+      command: process.execPath,
+      args: ['-e', 'setInterval(() => {}, 1000)', 'web'],
+      cwd: directory,
+      pidFile: join(directory, 'web.pid'),
+      startingPidFile: join(directory, 'web.starting.pid'),
+      lockFile: join(directory, 'web.lock'),
+      credentialsLockFile: lockFile,
+      credentialsLockWaitMs: 1_000,
+      healthUrl: `http://127.0.0.1:${address.port}/`,
+      healthTimeoutMs: 1_000,
+      terminationTimeoutMs: 50,
+    })
+
+    try {
+      await expect(controller.start()).resolves.toMatchObject({ state: 'running' })
+    } finally {
+      clearTimeout(release)
+      await controller.stop()
+      await rm(directory, { recursive: true, force: true })
+      await new Promise<void>(resolve => probe.close(() => resolve()))
+    }
+  })
+
   it('captures the launch token and accepts the tokenized startup response as healthy', async () => {
     const token = 'launch-token'
     const probe = createServer((req, res) => {

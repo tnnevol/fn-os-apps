@@ -1,4 +1,5 @@
 import { createGateway } from './server/gateway-server.js'
+import { join } from 'node:path'
 import { normalizePrefix } from './middleware/path-rewrite.js'
 import { PathAllowlistStore } from './server/path-allowlist.js'
 import { WebProcessController } from './server/web-process.js'
@@ -10,9 +11,18 @@ const UPSTREAM_PORT = Number.parseInt(process.env.DSH_UPSTREAM_PORT || '3080', 1
 const GATEWAY_PREFIX = normalizePrefix(process.env.GATEWAY_PREFIX || '/app/fn-deepseek-harness')
 const PATH_ALLOWLIST_FILE = process.env.GATEWAY_PATH_ALLOWLIST || '/var/apps/fn-deepseek-harness/var/gateway/path-allowlist.json'
 const DSH_BIN = process.env.DSH_BIN
-const DSH_PROCESS_BIN = process.env.DSH_PROCESS_BIN
 const DSH_CWD = process.env.DSH_CWD || process.cwd()
 const DSH_PID_FILE = process.env.DSH_PID_FILE
+const DSH_HOME = process.env.DSH_HOME
+const dshEnvironment = DSH_HOME === undefined ? undefined : {
+  ...process.env,
+  HOME: DSH_HOME,
+  DSH_HOME,
+  NPM_CONFIG_CACHE: `${DSH_HOME}/.npm-cache`,
+  NPM_CONFIG_PREFIX: `${DSH_HOME}/.npm-global`,
+  NPM_CONFIG_USERCONFIG: `${DSH_HOME}/.npmrc`,
+  XDG_CONFIG_HOME: `${DSH_HOME}/.config`,
+}
 
 const trustedHosts = (process.env.DSH_TRUSTED_HOSTS || '').split(',').map(value => value.trim()).filter(Boolean)
 const dshArgs = buildDshWebArgs({
@@ -22,13 +32,14 @@ const dshArgs = buildDshWebArgs({
 })
 const webProcess = DSH_BIN && DSH_PID_FILE ? new WebProcessController({
   command: DSH_BIN,
-  ...(DSH_PROCESS_BIN === undefined ? {} : { processCommand: DSH_PROCESS_BIN }),
+  ...(dshEnvironment === undefined ? {} : { env: dshEnvironment }),
   args: dshArgs,
   cwd: DSH_CWD,
   pidFile: DSH_PID_FILE,
   startingPidFile: `${DSH_PID_FILE}.starting`,
   lockFile: process.env.DSH_START_LOCK_FILE || `${DSH_PID_FILE}.lock`,
   launchTokenFile: process.env.DSH_LAUNCH_TOKEN_FILE || `${DSH_PID_FILE}.token`,
+  ...(DSH_HOME === undefined ? {} : { credentialsLockFile: join(DSH_HOME, '.credentials.yaml.lock') }),
   healthUrl: `http://${UPSTREAM_HOST}:${String(UPSTREAM_PORT)}/`,
 }) : undefined
 

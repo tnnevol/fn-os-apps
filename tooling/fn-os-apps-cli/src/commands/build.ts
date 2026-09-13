@@ -1,4 +1,4 @@
-import { cp, mkdir, readFile, rm } from 'node:fs/promises'
+import { mkdir, readFile, rename, rm } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { type OptionValues } from 'commander'
@@ -56,34 +56,25 @@ async function readDshPluginManifest(app: FpkApp): Promise<PublishedDshPluginMan
   return JSON.parse(await readFile(manifestPath, 'utf8')) as PublishedDshPluginManifest
 }
 
-function validatePackageFile(relativePath: string): void {
-  if (relativePath.startsWith('/') || relativePath.split('/').includes('..')) {
-    throw new Error(`Invalid plugin package file path: ${relativePath}`)
-  }
-}
-
-async function copyPluginPackage(sourceDirectory: string, targetDirectory: string, expected?: { name: string, version: string }): Promise<void> {
+async function packPluginPackage(sourceDirectory: string, targetDirectory: string, expected: { name: string, version: string }): Promise<void> {
   const packageManifest = JSON.parse(await readFile(join(sourceDirectory, 'package.json'), 'utf8')) as {
     name?: unknown
     version?: unknown
-    files?: unknown
+    dependencies?: Record<string, string>
   }
-  if (expected !== undefined && (packageManifest.name !== expected.name || packageManifest.version !== expected.version)) {
+  if (packageManifest.name !== expected.name || packageManifest.version !== expected.version) {
     throw new Error(`Plugin package metadata mismatch for ${expected.name}@${expected.version}`)
   }
-  const files = new Set(['package.json'])
-  if (Array.isArray(packageManifest.files)) {
-    for (const file of packageManifest.files) {
-      if (typeof file !== 'string' || file.length === 0) continue
-      validatePackageFile(file)
-      files.add(file)
+  for (const [name, version] of Object.entries(packageManifest.dependencies ?? {})) {
+    if (version.startsWith('workspace:') || version.startsWith('link:')) {
+      throw new Error(`Bundled plugin ${expected.name} has an unpackable runtime dependency: ${name}@${version}`)
     }
   }
-
-  for (const file of files) {
-    await mkdir(dirname(join(targetDirectory, file)), { recursive: true })
-    await cp(join(sourceDirectory, file), join(targetDirectory, file), { recursive: true })
-  }
+  await mkdir(dirname(targetDirectory), { recursive: true })
+  await runCommand('pnpm', ['pack', '--pack-destination', dirname(targetDirectory)], sourceDirectory)
+  const packedName = expected.name.replace(/^@/u, '').replaceAll('/', '-')
+  const generated = join(dirname(targetDirectory), `${packedName}-${expected.version}.tgz`)
+  await rename(generated, targetDirectory)
 }
 
 async function validateDshReleaseInputs(app: FpkApp): Promise<void> {
@@ -111,10 +102,9 @@ async function validateDshReleaseInputs(app: FpkApp): Promise<void> {
   const shellVariable = (name: string) => '$' + '{' + name + '}'
   const main = await readFile(join(repositoryRoot, 'apps', app.name, 'cmd/main'), 'utf8')
   if (!main.includes(`DSH_REAL_BIN="${shellVariable('DSH_HOME')}/.npm-global/bin/dsh"`) ||
-      !main.includes(`DSH_WRAPPER="${shellVariable('TRIM_APPDEST')}/app/bin/dsh"`) ||
-      !main.includes(`DSH_BIN="${shellVariable('DSH_WRAPPER')}"`) ||
-      !main.includes(`DSH_PROCESS_BIN="${shellVariable('DSH_REAL_BIN')}"`)) {
-    throw new Error('cmd/main must start DSH Web through the generated wrapper and pass the real path for process detection')
+      !main.includes(`DSH_BIN="${shellVariable('DSH_REAL_BIN')}"`) ||
+      main.includes('DSH_WRAPPER=') || main.includes('DSH_PROCESS_BIN=')) {
+    throw new Error('cmd/main must pass the real DSH CLI to the gateway; the public wrapper is not a Web startup script')
   }
   if (main.includes('dsh_running()') || main.includes(`is_runtime_process "${shellVariable('pid')}" dsh`)) {
     throw new Error('cmd/main must not manage DSH Web processes; the gateway owns the Web lifecycle')
@@ -155,10 +145,10 @@ async function prepareDshPluginBundle(app: FpkApp, include: boolean): Promise<vo
   await mkdir(targetDirectory, { recursive: true })
   for (const target of pluginTargets) {
     const sourceDirectory = dirname(join(repositoryRoot, target.path))
-    const pluginDirectory = join(targetDirectory, ...target.name.split('/'))
+    const pluginArchive = join(targetDirectory, ...target.name.split('/')) + '.tgz'
     const version = pluginVersions.get(target.name)
     if (version === undefined) throw new Error(`Missing exact version for published DSH plugin ${target.name}`)
-    await copyPluginPackage(sourceDirectory, pluginDirectory, { name: target.name, version })
+    await packPluginPackage(sourceDirectory, pluginArchive, { name: target.name, version })
   }
 }
 
