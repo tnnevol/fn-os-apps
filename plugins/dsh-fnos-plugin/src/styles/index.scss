@@ -101,8 +101,30 @@ img.dsh-fnos-file-manager-icon {
   user-select: none;
 }
 
-.dsh-fnos-session-log-button { border-radius: var(--semi-border-radius-large); }
-.dsh-fnos-session-log-button-icon { display: inline-flex; align-items: center; margin-left: 6px; }
+/* Session log 的触发按钮：数值取自官方 session-log-export 的
+   `HeaderAction.module.css`。头部右侧的 28px 圆形图标按钮，15px 字形，
+   透明无边框，hover 才出底色——它是个纯图标按钮，不带文案也不带边框。 */
+.dsh-fnos-session-log-button {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 6px;
+  color: var(--dsw-alias-label-secondary);
+  background: transparent;
+  border: none;
+  border-radius: 28px;
+  cursor: pointer;
+}
+
+.dsh-fnos-session-log-button svg {
+  width: 15px;
+  height: 15px;
+}
+
+.dsh-fnos-session-log-button:hover { background: var(--dsw-alias-interactive-bg-hover); }
 .dsh-fnos-session-log-dialog-body { min-height: 260px; }
 .dsh-fnos-session-log-error { color: var(--dsw-alias-state-error-primary); }
 .dsh-fnos-session-log-tree { max-height: 340px; overflow: auto; }

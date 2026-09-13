@@ -3,7 +3,9 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type { PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
-import { DshButton, DshDropdown, DshIconFolder, DshIconMore, DshModal, DshTree } from '@tnnevol/dsh-semi-ui'
+import { IconDownloadOutline16, IconEllipsisOutline16, IconFolderOpenOutline16, Menu } from '@deepseek-ai/dsh-client-ui-primitives'
+import type { MenuItem } from '@deepseek-ai/dsh-client-ui-primitives'
+import { DshIconFolder, DshModal, DshTree } from '@tnnevol/dsh-semi-ui'
 import { requestAuthorizedEntries, type AuthorizedEntriesResult } from '../client/services/authorized-directories-client.ts'
 import { exportSessionLogToNas } from '../client/services/session-log-export-client.ts'
 import type { AuthorizedEntry } from '../contracts/authorized-directories-contract.ts'
@@ -73,6 +75,7 @@ function directoryNodes(result: AuthorizedEntriesResult, showFullPath = false): 
 }
 
 export function FnosSessionLogHeaderAction({ sessionId, exportToComputer, useSessionLogDownload, dismissDownload, t }: HeaderProps) {
+  const [open, setOpen] = useState(false)
   const [nasDialogVisible, setNasDialogVisible] = useState(false)
   const [treeData, setTreeData] = useState<DirectoryTreeNode[]>([])
   const [selectedDirectory, setSelectedDirectory] = useState<string>()
@@ -150,31 +153,38 @@ export function FnosSessionLogHeaderAction({ sessionId, exportToComputer, useSes
   }, [selectedDirectory, sessionId, t])
 
   const nasExportEnabled = selectedDirectory !== undefined && !loading
+  // 与官方 session-log-export 一致：菜单项自带图标，触发按钮不带文字。
+  const menuItems: MenuItem[] = [
+    { id: 'computer', label: t('sessionLogExportComputer'), icon: <IconDownloadOutline16 /> },
+    { id: 'nas', label: t('sessionLogExportNas'), icon: <IconFolderOpenOutline16 /> },
+  ]
 
   return (
     <>
-      <DshDropdown
-        showTick={false}
-        menu={[
-          {
-            node: 'item',
-            name: t('sessionLogExportComputer'),
-            onClick: () => { void exportToComputer(sessionId) },
-          },
-          {
-            node: 'item',
-            name: t('sessionLogExportNas'),
-            onClick: openNasDialog,
-          },
-        ]}
-      >
-        <DshButton size="default" type="primary" theme="outline" className="dsh-fnos-session-log-button">
-          {t('sessionLog')}
-          <span className="dsh-fnos-session-log-button-icon">
-            <DshIconMore />
-          </span>
-        </DshButton>
-      </DshDropdown>
+      <Menu
+        open={open}
+        align="end"
+        dense
+        items={menuItems}
+        onClose={() => { setOpen(false) }}
+        onSelect={(id) => {
+          setOpen(false)
+          if (id === 'computer') void exportToComputer(sessionId)
+          else openNasDialog()
+        }}
+        anchor={(
+          <button
+            type="button"
+            className="dsh-fnos-session-log-button"
+            aria-label={t('sessionLog')}
+            aria-haspopup="menu"
+            aria-expanded={open}
+            onClick={() => { setOpen(value => !value) }}
+          >
+            <IconEllipsisOutline16 />
+          </button>
+        )}
+      />
       <DshModal
         visible={browserDownload?.open === true}
         title={browserDialogTitle}

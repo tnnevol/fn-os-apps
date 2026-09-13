@@ -190,6 +190,7 @@ DSH 0.1.5-rc.2 发布包
 | PLAN-FNOS-004-T12-04 | FNOS-004-09-AC-04 | 工作目录未知或为空时不渲染入口；SDK 未就绪、非 web carrier 或调用失败时给出可见失败提示，不回退到 DSH 原生打开逻辑，不预检插件自己的授权目录列表 | 无工作目录时不出现入口；调用失败有可见提示且不产生未处理异常 |
 | PLAN-FNOS-004-T12-05 | FNOS-004-09-AC-06 | 补单元测试：iframe 框架判定、遮蔽注册的 id 与 priority、工作目录判定、SDK 调用与失败分支；更新插件文档 | fnOS 插件 typecheck、测试和构建通过；文档记录入口位置、可用能力和边界 |
 | PLAN-FNOS-004-T12-06 | FNOS-004-09-AC-07 / AC-08 | 插件静态资源改由插件自己的路由提供：插件在 DSH 注册 `/fnos-plugins/static/dsh-fnos` 前缀路由，只按固定资源名映射读取包内文件并返回，拒绝路径穿越；网关把 `/fnos-plugins/static` 加入 `builtinPaths`，使浏览器 bridge 自动补上应用前缀 | 客户端以该 URL 引用图标可正常加载；资源缺失返回 404；路由不读取 fnOS 宿主目录，也不放宽既有图片补前缀规则 |
+| PLAN-FNOS-004-T12-07 | FNOS-004-09-AC-09 / AC-10 | 对齐官方头部布局：两个条目的 `priority`/`order` 取值集中到 `header-utility-seats.ts`（文件入口 order -10、Session log order 0），并在 `index.ts` 里展开使用；Session log 触发控件改为 28px 圆形纯图标按钮（透明、无边框、15px 字形），菜单项带图标 | 左右顺序为「文件入口在左、Session log 在右」且不随注册先后改变；顺序测试用真实 `SlotCore` 驱动，把 order 打平会使测试失败；按钮不带可见文案与边框 |
 
 ### P0：同步 FPK 运行时与构建入口
 
@@ -330,6 +331,7 @@ DSH 0.1.5-rc.2 发布包
 | 上游变更 | 官方 `id`、`order` 或插槽名变化会让遮蔽目标失配 | 断言固定被遮蔽的 `id` 与插槽名，上游变更时测试先失败而不是静默出现两个入口 |
 | SDK 差异 | `openFileManager` 在非 web carrier 或旧宿主上不存在 | 沿用既有 `createTrimApp()` 与 `isWeb`/`isStandaloneWeb` 校验，失败给出可见提示而不回退到 NAS 上不存在的 `xdg-open` |
 | 静态资源泄露路径 | 插件静态路由若直接拼接请求路径，可能被路径穿越读取包外文件 | 只按固定资源名映射到已知文件，未命中即 404，不拼接用户输入 |
+| 头部条目顺序静默反转 | 两个条目的 `priority`/`order` 一旦打平，位置改由注册顺序决定、与官方相反，且不会报错 | 取值集中在 `header-utility-seats.ts` 并由测试用真实 `SlotCore` 注册后断言最终顺序；`index.ts` 必须以展开方式使用该座位（契约测试断言展开写法，防止改回硬编码） |
 | 资源未随包发布 | `package.json` 的 `files` 只含 `lib`，构建若不拷贝资源则运行时 404 | 在 node 构建的 `onSuccess` 中把资源拷入 `lib/assets/`，并用测试断言产物中存在该文件 |
 
 ## 测试、打包和发布
@@ -439,3 +441,4 @@ git diff --check
 | 2026-09-13 | 完成 FNOS-004-08 | `T11-01` 至 `T11-06` 落地（`35f0e70`）：新增 `@deepseek-ai/dsh-client-ui-session` 类型依赖与座位标准套件导入，`CODEX_PROVIDER` 移至 `contracts/`，显隐合取收敛为纯函数；`AC-01` 经 DSH 客户端浏览器实测通过，`AC-02`/`AC-03`/`AC-04` 待补人工复现 |
 | 2026-09-13 | 纳入 FNOS-004-09 | 增加 fnOS 原生文件入口计划（`T12-01` 至 `T12-05`）：在 fnOS iframe 内以同 `id`、更低 `priority` 遮蔽官方「打开应用」，用 Semi UI 还原锚点与下拉菜单，并以 fnOS JS SDK 的 `openFileManager` 打开会话工作目录；预览与编辑器因只支持文件路径而不在本轮范围 |
 | 2026-09-13 | 补充 FNOS-004-09 静态资源方案 | 新增 `T12-06`：插件静态资源不再内联，改由插件注册 `/fnos-plugins/static/dsh-fnos` 路由返回包内资源，网关把 `/fnos-plugins/static` 加入内置前缀；不读取 fnOS 宿主静态目录，也不放宽既有图片补前缀规则 |
+| 2026-09-13 | 补充 FNOS-004-09 头部布局任务 | 新增 `T12-07`：对齐官方左右顺序并把顺序取值集中可测；Session log 改为纯图标按钮 |

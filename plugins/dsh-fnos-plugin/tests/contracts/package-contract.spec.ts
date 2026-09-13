@@ -126,29 +126,39 @@ describe('dsh-fnos package contract', () => {
     expect(contract).toContain("'/plugins/dsh-fnos/settings/document'")
   })
 
-  it('replaces the fnOS Session log utility with a computer/NAS dropdown', async () => {
+  it('replaces the fnOS Session log utility with a computer/NAS menu', async () => {
     const index = await readFile(new URL('../../src/client/index.ts', import.meta.url), 'utf8')
     const action = await readFile(new URL('../../src/components/FnosSessionLogHeaderAction.tsx', import.meta.url), 'utf8')
     const host = await readFile(new URL('../../src/host/authorized-directories.ts', import.meta.url), 'utf8')
     const contract = await readFile(new URL('../../src/contracts/session-log-export-contract.ts', import.meta.url), 'utf8')
     const style = await readFile(new URL('../../src/styles/index.scss', import.meta.url), 'utf8')
     const theme = await readFile(new URL('../../../../packages/dsh-semi-ui/src/theme.scss', import.meta.url), 'utf8')
-    expect(index).toContain("id: 'session-log-download'")
+    const seats = await readFile(new URL('../../src/client/header-utility-seats.ts', import.meta.url), 'utf8')
+    expect(seats).toContain("id: 'session-log-download'")
+    expect(index).toMatch(/ctx\.slots\.register\(\{\s*\.\.\.FNOS_SESSION_LOG_SEAT,/u)
     expect(index).toContain('FnosSessionLogHeaderAction')
-    expect(action).toContain('DshDropdown')
-    expect(action).toContain('DshIconMore')
-    expect(action).toContain('<DshIconMore />')
-    // 下载图标不再属于这个按钮：它打开的是「导出到电脑 / 导出到 NAS」两项菜单，
-    // `IconMore` 才表示「还有更多操作」。
+    expect(action).toContain('Menu')
+    expect(action).toContain('IconEllipsisOutline16')
+    // 触发按钮是纯图标：不带文案、不带边框。它打开「导出到电脑 / 导出到 NAS」
+    // 两项菜单，`Ellipsis` 才表示「还有更多操作」。
     expect(action).not.toContain('DshIconDownload')
-    expect(action).toContain('size="default"')
-    expect(action).toContain('type="primary"')
-    expect(action).toContain('theme="outline"')
-    expect(action.indexOf("{t('sessionLog')}"))
-      .toBeLessThan(action.indexOf('dsh-fnos-session-log-button-icon'))
-    expect(style).toContain('.dsh-fnos-session-log-button')
-    expect(style).toContain('.dsh-fnos-session-log-button-icon { display: inline-flex; align-items: center; margin-left: 6px; }')
-    expect(action).toContain("type: 'primary'")
+    expect(action).not.toContain('DshButton')
+    expect(action).not.toContain('DshDropdown')
+    expect(action).not.toContain('dsh-fnos-session-log-button-icon')
+    // 菜单项自带图标，与官方 session-log-export 一致。
+    expect(action).toContain('<IconDownloadOutline16 />')
+    expect(action).toContain('<IconFolderOpenOutline16 />')
+    expect(action).toContain('aria-haspopup="menu"')
+    // 文案只出现在 aria-label 上（无障碍需要），不作为可见文字渲染。
+    expect(action).toContain("aria-label={t('sessionLog')}")
+    expect(action).not.toContain("{t('sessionLog')}</")
+    // 28px 圆形纯图标按钮，数值取自官方 session-log-export 的 CSS module。
+    expect(style).toMatch(/\.dsh-fnos-session-log-button \{[^}]*width: 28px;/u)
+    expect(style).toMatch(/\.dsh-fnos-session-log-button \{[^}]*height: 28px;/u)
+    expect(style).toMatch(/\.dsh-fnos-session-log-button \{[^}]*border: none;/u)
+    expect(style).toMatch(/\.dsh-fnos-session-log-button \{[^}]*background: transparent;/u)
+    expect(style).toMatch(/\.dsh-fnos-session-log-button svg \{[^}]*width: 15px;/u)
+    expect(style).toContain('.dsh-fnos-session-log-button:hover')
     expect(action).toContain('nasExportEnabled')
     expect(theme).toContain('.semi-button.semi-button-solid:not(.semi-button-disabled)')
     expect(theme).toContain(':not([data-ds-dark-theme]) .semi-button.semi-button-solid:not(.semi-button-disabled)')
@@ -270,9 +280,14 @@ describe('dsh-fnos package contract', () => {
     const action = await readFile(new URL('../../src/components/FnosOpenInHeaderAction.tsx', import.meta.url), 'utf8')
 
     // 遮蔽靠同 id + 更低 priority：官方条目用默认 0，同优先级会直接抛错，
-    // 那时整个插件都加载不起来。
-    expect(index).toContain("id: 'open-in-app'")
-    expect(index).toMatch(/id: 'open-in-app',\s*\n\s*\/\/[^\n]*\n\s*priority: -1/)
+    // 那时整个插件都加载不起来。座位形状集中在 header-utility-seats.ts，
+    // 其顺序由 tests/client/header-utility-order.spec.ts 用真实 SlotCore 验证。
+    const seats = await readFile(new URL('../../src/client/header-utility-seats.ts', import.meta.url), 'utf8')
+    expect(seats).toContain("id: 'open-in-app'")
+    // 必须真的把座位展开进 register 调用：只断言 import 会在把参数改回硬编码
+    // 时照样通过（顺序随之静默变回错误值）。
+    expect(index).toMatch(/ctx\.slots\.register\(\{\s*\.\.\.FNOS_OPEN_IN_APP_SEAT,/u)
+    expect(index).toMatch(/ctx\.slots\.register\(\{\s*\.\.\.FNOS_SESSION_LOG_SEAT,/u)
     // 只在 fnOS iframe 内注册，独立浏览器保持官方行为。
     expect(index).toContain('isEmbeddedFnosFrame()')
     expect(index).toContain('FnosOpenInHeaderAction')

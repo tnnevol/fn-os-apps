@@ -24,6 +24,7 @@ import { AuthorizedDirectoriesCard } from '../components/AuthorizedDirectoriesCa
 import { FnosInputPickerButton } from '../components/FnosInputPickerButton.tsx'
 import { FnosOpenInHeaderAction } from '../components/FnosOpenInHeaderAction.tsx'
 import { FnosSessionLogHeaderAction } from '../components/FnosSessionLogHeaderAction.tsx'
+import { FNOS_OPEN_IN_APP_SEAT, FNOS_SESSION_LOG_SEAT } from './header-utility-seats.ts'
 import { insertFnosReferences } from './input-references/input-reference-actions.ts'
 import { createFnosCommandContribution, createFnosDirectorySource } from './input-references/fnos-command-source.ts'
 import { FNOS_REFERENCE_SOURCE, fnosReferenceDisplayText, fnosReferencePromptText, type FnosInputReference, type InputSnapshotForReference } from './input-references/input-references.ts'
@@ -143,10 +144,7 @@ export function apply(ctx: ClientContext): void {
       const sessionLogDownload = ctx.get('sessionLogDownload') as SessionLogDownloadController | undefined
       if (sessionLogDownload === undefined) throw new Error('sessionLogDownload service is unavailable')
       return ctx.slots.register({
-        name: 'conversation.session.header.utilities',
-        id: 'session-log-download',
-        order: 0,
-        priority: -1,
+        ...FNOS_SESSION_LOG_SEAT,
         locale: namespace,
         inject: (sessionId) => ({
           hooks: { sessionLogDownload: sessionLogDownload.store },
@@ -162,11 +160,10 @@ export function apply(ctx: ClientContext): void {
     // Daemon（`/usr/sbin/zed`）误判为 Zed 编辑器，且取不到对应图标，菜单里
     // 因此出现一个点了也打不开编辑器的条目。该常量表不可配置，所以在这里用
     // fnOS 自己的文件能力替代它。只改 fnOS iframe 内的表现。
+    // 排序（priority 升序、再 order 升序）与遮蔽规则的取值集中在
+    // `header-utility-seats.ts`，并由测试用真实 SlotCore 驱动验证实际顺序。
     ctx.slots.inject('conversation.session.header.utilities', () => ctx.slots.register({
-      name: 'conversation.session.header.utilities',
-      id: 'open-in-app',
-      // 官方条目用默认 priority 0；必须更低才能遮蔽，同优先级会直接抛错。
-      priority: -1,
+      ...FNOS_OPEN_IN_APP_SEAT,
       locale: namespace,
       inject: () => ({ t }),
     }, FnosOpenInHeaderAction))
