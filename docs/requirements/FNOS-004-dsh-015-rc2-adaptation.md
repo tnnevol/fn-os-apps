@@ -191,6 +191,8 @@ lastVerified: 2026-09-12
 - `FNOS-004-07-AC-03`：安装/升级使用 `dsh plugin --profile web` 管理插件，FPK 不再调用 `install-dsh-plugins.mjs`、npm 直装或手工维护 bundle。
 - `FNOS-004-07-AC-04`：自动命令只使用 `<package>@<fixed-version>`，清单拒绝 `latest`、`next` 和其他浮动 dist-tag，捆绑包版本与清单一致。
 - `FNOS-004-07-AC-05`：新安装只 add 清单插件，版本变化只 update 精确版本；缺少清单的老插件不自动 remove，重复执行保持幂等。
+- `FNOS-004-07-AC-09`：内置捆绑插件（FPK 的 `bundled-dsh-plugins/*.tgz`）每次安装/升级都强制以 FPK 内归档覆盖 profile 中的副本，**不比较版本号**。原因：`dsh plugin` 只是 pnpm 转发，`pnpm add` 对相同的 spec 字符串只看 `node_modules/.modules.yaml` 与 lockfile 里的 integrity，即使 tarball 内容已变也报 `Already up to date`；`install --force`、`--fix-lockfile`、`update`、`rebuild`、`store prune` 均不能解决。覆盖前通过 DSH CLI 执行 `remove`，再以同一 spec 重新 `add`；不触碰 pnpm 内部状态文件，profile 的依赖与 bundle 记录恢复指向 FPK 归档，且重复执行幂等。
+- `FNOS-004-07-AC-10`：强制覆盖只对 FPK 中实际存在的内置归档生效；归档不存在的发布插件继续按版本精确安装/更新，缺少清单的老插件不自动 remove。安装失败时生命周期返回非零并输出可定位错误。
 - `FNOS-004-07-AC-06`：DSH CLI、pnpm 或 profile 写入失败时生命周期返回非零，保留原 profile 数据并输出可定位错误。
 - `FNOS-004-07-AC-08`：运行期插件安装与三方市场更新使用与 profile 一致的 pnpm store：网关启动 Web 时注入 `${DSH_HOME}/.pnpm-store-dir` 记录的 `PNPM_CONFIG_STORE_DIR`，`pnpm store path` 解析结果与该 profile `node_modules/.modules.yaml` 的 `storeDir` 相同，不出现 `ERR_PNPM_UNEXPECTED_STORE`；记录缺失或非法时清除继承值而不是猜测。
 - `FNOS-004-07-AC-07`：当前 DSH 客户端完成 Codex Auth、CodeBuddy、Semi UI 和共享包的 CLI 管理、Bundle 生效和重启验证；真实 NAS 只验收 FPK、网关和 `dsh-fnos`。
@@ -253,3 +255,4 @@ lastVerified: 2026-09-12
 | 2026-09-13 | 补充 FNOS-004-09 静态资源方案 | 插件静态资源改由插件自己的 `/fnos-plugins/static` 路由提供，网关把该前缀列为内置前缀；不读取 fnOS 宿主静态目录，也不放宽现有图片资源补前缀规则。原内联图标方案在 `AC-07`/`AC-08` 中改为资源引用 |
 | 2026-09-13 | 补充 FNOS-004-09 头部布局与 Session log 控件 | 明确两个条目的左右顺序与官方一致（AC-09）、Session log 触发控件为纯图标按钮（AC-10）；顺序取值集中并加行为测试 |
 | 2026-09-13 | 修复 FNOS-004-09「导出到 NAS」必然失败 | 上游取数原走 `ctx.get('apiProxy')`，但全仓与上游 DSH 均无该服务提供方，取值恒为 undefined、每次必 503；改为宿主向 loopback 请求 DSH 自己的 `/api/session.export`（AC-11） |
+| 2026-09-13 | 新增 FNOS-004-07 "内置插件强制覆盖" | 记录捆绑插件必须每次安装都按 FPK 归档覆盖（不比较版本），并约束删除路径的推导与校验（AC-09/AC-10） |

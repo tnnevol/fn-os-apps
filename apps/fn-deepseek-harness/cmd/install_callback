@@ -263,6 +263,36 @@ validate_plugin_spec() {
     esac
 }
 
+# Force one bundled plugin to take the FPK's copy, regardless of version.
+#
+# pnpm keys an install off the dependency *spec*: for `file:<bundled>.tgz` the
+# spec never changes between FPK builds, and pnpm compares it against
+# `node_modules/.modules.yaml` plus the integrity recorded in the lockfile. When
+# the archive's contents changed but its path did not, `pnpm add` answers
+# "Already up to date" and keeps the stale copy. `install --force`,
+# `--fix-lockfile`, `update`, `rebuild` and `store prune` were all measured to
+# behave the same way.
+#
+# The supported way to invalidate that state is to remove the package through
+# the DSH CLI first, then add the FPK archive again. Using the CLI (rather than
+# constructing an `rm -rf` path from manifest text) keeps removal safe across
+# pnpm linkers and package layouts. The profile's dependency/bundle record is
+# restored by the second command.
+force_install_bundled_plugin() {
+    local plugin_name="$1"
+    local plugin_version="$2"
+    local bundled_plugin="$3"
+    local current_version="$4"
+
+    if [ -n "${current_version}" ]; then
+        log_info "Removing installed ${plugin_name} before replacing it with the FPK archive copy."
+        run_dsh_plugin remove "${plugin_name}" ||
+            fail_install "Unable to remove bundled ${plugin_name} before reinstalling it"
+    fi
+    run_dsh_plugin add "file:${bundled_plugin}" ||
+        fail_install "Unable to install bundled ${plugin_name}@${plugin_version} with the dsh CLI"
+}
+
 run_dsh_plugin() {
     local action="$1"
     local package_spec="$2"
@@ -282,16 +312,14 @@ install_published_dsh_plugins() {
 
         # pnpm must install from a package archive, not link the FPK directory:
         # linked packages cannot resolve their own runtime dependencies here.
-        # Reinstall old link: profiles even when the declared version matches.
+        #
+        # A bundled plugin is always taken from the FPK archive, even when the
+        # installed version matches: the spec path is identical across FPK
+        # builds, so pnpm would otherwise treat a rebuilt archive as "already up
+        # to date" and keep stale code. See `force_install_bundled_plugin`.
         bundled_plugin="${DSH_BUNDLED_PLUGIN_DIRECTORY}/${plugin_name}.tgz"
         if [ -f "${bundled_plugin}" ]; then
-            if [ "${current_version}" = "${plugin_version}" ] && [ "${current_spec}" = "file:${bundled_plugin}" ]; then
-                log_info "Keeping bundled ${plugin_name}@${plugin_version}; exact local version already matches."
-            else
-                log_info "Installing bundled ${plugin_name}@${plugin_version} from the FPK archive with the dsh CLI."
-                run_dsh_plugin add "file:${bundled_plugin}" ||
-                    fail_install "Unable to install bundled ${plugin_name}@${plugin_version} with the dsh CLI"
-            fi
+            force_install_bundled_plugin "${plugin_name}" "${plugin_version}" "${bundled_plugin}" "${current_version}"
             continue
         fi
 

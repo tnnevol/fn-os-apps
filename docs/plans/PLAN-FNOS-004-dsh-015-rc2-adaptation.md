@@ -192,6 +192,7 @@ DSH 0.1.5-rc.2 发布包
 | PLAN-FNOS-004-T12-06 | FNOS-004-09-AC-07 / AC-08 | 插件静态资源改由插件自己的路由提供：插件在 DSH 注册 `/fnos-plugins/static/dsh-fnos` 前缀路由，只按固定资源名映射读取包内文件并返回，拒绝路径穿越；网关把 `/fnos-plugins/static` 加入 `builtinPaths`，使浏览器 bridge 自动补上应用前缀 | 客户端以该 URL 引用图标可正常加载；资源缺失返回 404；路由不读取 fnOS 宿主目录，也不放宽既有图片补前缀规则 |
 | PLAN-FNOS-004-T12-07 | FNOS-004-09-AC-09 / AC-10 | 对齐官方头部布局：两个条目的 `priority`/`order` 取值集中到 `header-utility-seats.ts`（文件入口 order -10、Session log order 0），并在 `index.ts` 里展开使用；Session log 触发控件改为 28px 圆形纯图标按钮（透明、无边框、15px 字形），菜单项带图标 | 左右顺序为「文件入口在左、Session log 在右」且不随注册先后改变；顺序测试用真实 `SlotCore` 驱动，把 order 打平会使测试失败；按钮不带可见文案与边框 |
 | PLAN-FNOS-004-T12-08 | FNOS-004-09-AC-11 | 修复「导出到 NAS」的上游取数：原实现调 `ctx.get('apiProxy').downloads.sessionLog(...)`，而全仓与上游 DSH 都没有该服务的提供方，取值恒为 `undefined`、必然 503。改为宿主向本机 loopback 请求 DSH 自己的 `/api/session.export`（`includeDescendants=true`），复用既有流式写入与失败清理 | 导出成功写入目标目录并返回 201；绑定 `0.0.0.0` 时回落到 loopback；上游 4xx 与会话不存在可区分；不再出现 `ctx.get('apiProxy')` 调用 |
+| PLAN-FNOS-004-T12-09 | FNOS-004-07-AC-09 / AC-10 | 内置捆绑插件改为每次安装强制以 FPK 归档覆盖：在 `install_callback` 中新增 `force_install_bundled_plugin`，若 profile 已有该插件则先通过 DSH CLI `remove`，再以同一 spec `add`；不触碰 pnpm 内部状态文件，保留 profile 的依赖与 bundle 记录 | 版本号不变但归档内容变化时，profile 中的副本仍被替换为归档内容；重复执行幂等；CLI 失败时生命周期返回非零并输出错误 |
 
 ### P0：同步 FPK 运行时与构建入口
 
@@ -333,6 +334,8 @@ DSH 0.1.5-rc.2 发布包
 | SDK 差异 | `openFileManager` 在非 web carrier 或旧宿主上不存在 | 沿用既有 `createTrimApp()` 与 `isWeb`/`isStandaloneWeb` 校验，失败给出可见提示而不回退到 NAS 上不存在的 `xdg-open` |
 | 静态资源泄露路径 | 插件静态路由若直接拼接请求路径，可能被路径穿越读取包外文件 | 只按固定资源名映射到已知文件，未命中即 404，不拼接用户输入 |
 | 上游取数依赖不存在的服务 | 原实现调用的 `apiProxy` 全仓与上游都没有提供方，取值恒为 undefined，导出必然 503 | 改为回源请求 DSH 已注册的 `/api/session.export`（loopback 免令牌）；契约测试断言不得再出现该调用，行为测试覆盖 loopback 回落与非 2xx 透传 |
+| 内置插件同版本号不更新 | pnpm 对相同 spec 只看 `node_modules/.modules.yaml` 与 lockfile integrity；归档内容变了也报 `Already up to date`，安装后仍跑旧代码（`install --force`、`--fix-lockfile`、`update`、`rebuild`、`store prune` 实测均无效） | 捆绑插件不比较版本，覆盖前通过 DSH CLI `remove` 再以同一 spec `add`；测试断言 remove→add 顺序，并用真实 pnpm 端到端验证 |
+| CLI 覆盖操作失败 | remove 成功后 add 失败会让插件暂时缺失 | 生命周期立即返回非零，保留 profile 依赖/bundle 记录，下一次安装可重新 add；错误日志包含插件名和归档路径 |
 | 头部条目顺序静默反转 | 两个条目的 `priority`/`order` 一旦打平，位置改由注册顺序决定、与官方相反，且不会报错 | 取值集中在 `header-utility-seats.ts` 并由测试用真实 `SlotCore` 注册后断言最终顺序；`index.ts` 必须以展开方式使用该座位（契约测试断言展开写法，防止改回硬编码） |
 | 资源未随包发布 | `package.json` 的 `files` 只含 `lib`，构建若不拷贝资源则运行时 404 | 在 node 构建的 `onSuccess` 中把资源拷入 `lib/assets/`，并用测试断言产物中存在该文件 |
 
@@ -445,3 +448,4 @@ git diff --check
 | 2026-09-13 | 补充 FNOS-004-09 静态资源方案 | 新增 `T12-06`：插件静态资源不再内联，改由插件注册 `/fnos-plugins/static/dsh-fnos` 路由返回包内资源，网关把 `/fnos-plugins/static` 加入内置前缀；不读取 fnOS 宿主静态目录，也不放宽既有图片补前缀规则 |
 | 2026-09-13 | 补充 FNOS-004-09 头部布局任务 | 新增 `T12-07`：对齐官方左右顺序并把顺序取值集中可测；Session log 改为纯图标按钮 |
 | 2026-09-13 | 修复 FNOS-004-09「导出到 NAS」上游取数 | 新增 `T12-08`：数据源由不存在的 `apiProxy` 注入服务改为回源 `/api/session.export` |
+| 2026-09-13 | 新增 FNOS-004-07 内置插件强制覆盖 | 新增 `T12-09`：捆绑插件每次安装按 FPK 归档覆盖（不比较版本），并约束删除路径的推导与校验 |
