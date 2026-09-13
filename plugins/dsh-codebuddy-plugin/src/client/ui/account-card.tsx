@@ -132,7 +132,7 @@ export function AccountCardImpl({ row, labels, autoCheckin, autoSwitch, resource
               {row.expired ? <DshTag size="small" type="light" color="orange">{offline}</DshTag> : null}
               <DshTooltip content={`${CODEBUDDY_CLIENT_LABELS[clientId]} · v${clientVersion}`}>
                 <DshTag size="small" type="light" className="dsh-codebuddy-client-tag">
-                  {CODEBUDDY_CLIENT_LABELS[clientId]} · v{clientVersion}
+                  {CODEBUDDY_CLIENT_LABELS[clientId]}
                 </DshTag>
               </DshTooltip>
               {env !== undefined
