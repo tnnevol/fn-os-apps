@@ -1,4 +1,4 @@
-import { readFile, writeFile } from 'node:fs/promises'
+import { cp, mkdir, readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { UserConfig } from 'tsdown'
 import { dshSemiClientDeps } from '../../packages/dsh-semi-ui/tsdown-client-deps.ts'
@@ -32,6 +32,19 @@ async function inlineClientStyles(config: { cwd: string }): Promise<void> {
   await writeFile(clientPath, client.replace(importStatement, styleLoader), 'utf8')
 }
 
+/**
+ * Copy the plugin's bundled static resources next to the compiled host half.
+ *
+ * The node build uses `clean: true`, so `lib/` is wiped on every build; copying
+ * here (rather than into `src/`) keeps the published artifact self-contained.
+ * `src/host/static-assets.ts` reads them from `lib/assets/`.
+ */
+async function copyStaticAssets(config: { cwd: string }): Promise<void> {
+  const target = join(config.cwd, 'lib', 'assets')
+  await mkdir(target, { recursive: true })
+  await cp(join(config.cwd, 'src', 'assets'), target, { recursive: true })
+}
+
 export default [
   {
     entry: 'src/index.ts',
@@ -42,6 +55,7 @@ export default [
     fixedExtension: false,
     dts: true,
     clean: true,
+    onSuccess: copyStaticAssets,
     deps: {
       neverBundle: [
         '@deepseek-ai/cordis',

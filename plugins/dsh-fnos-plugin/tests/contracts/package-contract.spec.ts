@@ -291,14 +291,38 @@ describe('dsh-fnos package contract', () => {
     expect(action).toContain('aria-expanded={open}')
     expect(action).toContain('IconChevronDownOutline14')
 
-    // 左半按钮用 fnOS 文件管理器的真实图标（内联 data URL，不走运行时资源
-    // 路径——官方按钮正是因为在 fnOS 上取不到图标才只剩通用字形）。
+    // 左半按钮用 fnOS 文件管理器的真实图标，由插件自己的静态路由提供。
     expect(action).toContain('FnosFileManagerIcon')
-    const icon = await readFile(new URL('../../src/components/FnosFileManagerIcon.tsx', import.meta.url), 'utf8')
-    expect(icon).toMatch(/data:image\/png;base64,[A-Za-z0-9+/=]+/u)
     // 官方按钮 15px、菜单行 18px，两者要区分对待。
     expect(action).toContain('current.icon(15)')
     expect(action).toContain('action.icon(18)')
+  })
+
+  it('图标以插件自有前缀的资源 URL 引用，不内联进 bundle', async () => {
+    const icon = await readFile(new URL('../../src/components/FnosFileManagerIcon.tsx', import.meta.url), 'utf8')
+    const host = await readFile(new URL('../../src/host/static-assets.ts', import.meta.url), 'utf8')
+    const contract = await readFile(new URL('../../src/contracts/static-assets-contract.ts', import.meta.url), 'utf8')
+    const index = await readFile(new URL('../../src/index.ts', import.meta.url), 'utf8')
+    const gateway = await readFile(new URL('../../../../packages/fnos-gateway/src/client/bridge.ts', import.meta.url), 'utf8')
+
+    // 客户端只引用 URL；内联 data URL 会随脚本走，且无法随包更新或被缓存。
+    expect(icon).toContain('FNOS_STATIC_PREFIX')
+    expect(icon).not.toContain('data:image')
+    expect(contract).toContain("'/fnos-plugins/static/dsh-fnos'")
+
+    // 插件在 DSH 侧注册同名路由，并显式列举允许读取的资源名——
+    // 请求路径只用于查表，不拼进文件系统路径。
+    expect(index).toContain('registerStaticAssetRoute')
+    expect(host).toContain("kind: 'prefix'")
+    expect(host).toContain('FNOS_STATIC_ASSETS')
+    expect(host).toContain('isKnownAsset')
+
+    // 网关必须把该前缀列为内置前缀，否则浏览器 bridge 不补应用前缀，
+    // fnOS 宿主会用自己的 404 回应。
+    expect(gateway).toMatch(/builtinPaths = \[[^\]]*"\/fnos-plugins\/static"/u)
+
+    // 不读取 fnOS 宿主的静态目录。
+    expect(host).not.toContain('/usr/trim/www')
   })
 
   it('分体按钮的样式数值与官方入口一致', async () => {

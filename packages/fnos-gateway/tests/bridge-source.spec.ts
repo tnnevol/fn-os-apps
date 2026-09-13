@@ -91,6 +91,80 @@ describe('browser bridge artifact', () => {
       'http://nas.example/app/fn-deepseek-harness/open-in-app/open',
     ])
   })
+  it('maps the fnOS plugins static namespace to the app', async () => {
+    const requests: string[] = []
+    const window: Record<string, unknown> = {
+      location: { href: 'http://nas.example/app/fn-deepseek-harness/', origin: 'http://nas.example' },
+      fetch(input: unknown) {
+        requests.push(String(input))
+        return Promise.resolve()
+      },
+    }
+    function Xhr(): void {}
+    Xhr.prototype.open = function (): void {}
+    function Node(): void {}
+    Node.prototype.appendChild = function (node: unknown): unknown { return node }
+    Node.prototype.insertBefore = function (node: unknown): unknown { return node }
+    function Element(): void {}
+    Element.prototype.append = function (): void {}
+
+    runInNewContext(`window.__FNOS_GATEWAY_CONFIG__ = ${JSON.stringify({ prefix: '/app/fn-deepseek-harness', customPaths: [], eventsPath: '/__fnos-gateway/path-allowlist/events' })};${source}`, {
+      window,
+      XMLHttpRequest: Xhr,
+      Node,
+      Element,
+      URL,
+    })
+
+    // 非图片资源：只有 /fnos-plugins/static 被列为内置前缀才会被映射。
+    // 用 .png 测不出来——那条路径已经被「任何图片资源都补前缀」的既有规则
+    // 覆盖，命名空间条目被删掉测试也不会失败。
+    await (window.fetch as (input: unknown) => Promise<void>)('/fnos-plugins/static/dsh-fnos/theme.json')
+
+    expect(requests).toEqual([
+      'http://nas.example/app/fn-deepseek-harness/fnos-plugins/static/dsh-fnos/theme.json',
+    ])
+  })
+
+  it('keeps the fnOS plugins namespace out of unrelated top-level paths', async () => {
+    const requests: string[] = []
+    const window: Record<string, unknown> = {
+      location: { href: 'http://nas.example/app/fn-deepseek-harness/', origin: 'http://nas.example' },
+      fetch(input: unknown) {
+        requests.push(String(input))
+        return Promise.resolve()
+      },
+    }
+    function Xhr(): void {}
+    Xhr.prototype.open = function (): void {}
+    function Node(): void {}
+    Node.prototype.appendChild = function (node: unknown): unknown { return node }
+    Node.prototype.insertBefore = function (node: unknown): unknown { return node }
+    function Element(): void {}
+    Element.prototype.append = function (): void {}
+
+    runInNewContext(`window.__FNOS_GATEWAY_CONFIG__ = ${JSON.stringify({ prefix: '/app/fn-deepseek-harness', customPaths: [], eventsPath: '/__fnos-gateway/path-allowlist/events' })};${source}`, {
+      window,
+      XMLHttpRequest: Xhr,
+      Node,
+      Element,
+      URL,
+    })
+
+    // 兄弟前缀不能被前缀匹配「沾光」：命名空间是 /fnos-plugins/static，
+    // /fnos-plugins/other 不在其中，仍留给 fnOS 宿主（保持相对 URL）。
+    await (window.fetch as (input: unknown) => Promise<void>)('/fnos-plugins/other/theme.json')
+    // fnOS 宿主自己的静态图标路径会被「任何图片资源都补前缀」的既有规则改写，
+    // 即宿主路径会被错误地指向本应用。这正是插件资源不使用宿主目录的原因：
+    // 该规则服务于 DSH 插件在任意路径提供图片的场景，不能为宿主路径放宽。
+    await (window.fetch as (input: unknown) => Promise<void>)('/static/app/icons/trim.file-manager/icon.png')
+
+    expect(requests).toEqual([
+      '/fnos-plugins/other/theme.json',
+      'http://nas.example/app/fn-deepseek-harness/static/app/icons/trim.file-manager/icon.png',
+    ])
+  })
+
   it('leaves an unrelated top-level path to the fnOS host', async () => {
     const requests: string[] = []
     const window: Record<string, unknown> = {

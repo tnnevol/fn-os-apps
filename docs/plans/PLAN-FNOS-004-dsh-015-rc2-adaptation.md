@@ -189,6 +189,7 @@ DSH 0.1.5-rc.2 发布包
 | PLAN-FNOS-004-T12-03 | FNOS-004-09-AC-03 | 菜单项「打开文件管理器」调用 fnOS SDK 的 `openFileManager(cwd)`，目标路径取当前会话工作目录；复用既有 `createTrimApp()` 与 web carrier 校验 | 选择后 NAS 文件管理器打开并定位到会话工作目录 |
 | PLAN-FNOS-004-T12-04 | FNOS-004-09-AC-04 | 工作目录未知或为空时不渲染入口；SDK 未就绪、非 web carrier 或调用失败时给出可见失败提示，不回退到 DSH 原生打开逻辑，不预检插件自己的授权目录列表 | 无工作目录时不出现入口；调用失败有可见提示且不产生未处理异常 |
 | PLAN-FNOS-004-T12-05 | FNOS-004-09-AC-06 | 补单元测试：iframe 框架判定、遮蔽注册的 id 与 priority、工作目录判定、SDK 调用与失败分支；更新插件文档 | fnOS 插件 typecheck、测试和构建通过；文档记录入口位置、可用能力和边界 |
+| PLAN-FNOS-004-T12-06 | FNOS-004-09-AC-07 / AC-08 | 插件静态资源改由插件自己的路由提供：插件在 DSH 注册 `/fnos-plugins/static/dsh-fnos` 前缀路由，只按固定资源名映射读取包内文件并返回，拒绝路径穿越；网关把 `/fnos-plugins/static` 加入 `builtinPaths`，使浏览器 bridge 自动补上应用前缀 | 客户端以该 URL 引用图标可正常加载；资源缺失返回 404；路由不读取 fnOS 宿主目录，也不放宽既有图片补前缀规则 |
 
 ### P0：同步 FPK 运行时与构建入口
 
@@ -285,6 +286,8 @@ DSH 0.1.5-rc.2 发布包
 4. 选择菜单项后调用 fnOS JS SDK 的 `openFileManager(cwd)`：复用既有的 `createTrimApp()`，等待 `ready()`，校验 `isWeb` 且非 `isStandaloneWeb` 再调用。目标路径直接交给 fnOS，不做本地授权预检。
 5. 调用失败时设置可见错误提示并复位忙碌状态；不抛出未处理异常，不阻塞 DSH，也不回退到 NAS 上不存在的 `xdg-open`。
 
+静态资源的取用链路：客户端以 `/fnos-plugins/static/dsh-fnos/<资源>` 引用图标；浏览器 bridge 判定其为图片资源（该前缀同时在网关 `builtinPaths` 内，非图片资源同样成立）并补上 `/app/fn-deepseek-harness` 前缀；fnOS 把 `/app/fn-deepseek-harness/*` 路由到网关 socket；网关按既有规则剥掉网关前缀后转发给 DSH；DSH 侧由插件注册的同名前缀路由返回包内资源字节。资源随插件包发布，网关与插件都不读取 fnOS 宿主文件系统。
+
 ## 数据、权限和错误处理
 
 - 所有应用路径使用 `${TRIM_*}` 环境变量；安装、升级和验证不得写死 NAS 安装目录。
@@ -301,6 +304,7 @@ DSH 0.1.5-rc.2 发布包
 - Host 与 Client 仍遵守 DSH Remote、附件持久化、会话可回放和插件生命周期约束；测试覆盖重复加载、卸载和异常退出清理。
 - 用量图标的显隐只读会话投影，不改写会话数据，也不新增会话事件；投影缺失就当作不显示，不去猜供应商，也不拿登录态或用量请求结果顶替供应商判断。
 - fnOS 文件入口的目标路径来自会话工作目录，只读会话状态，不改写会话数据、不新增会话事件；工作目录缺失时按「不渲染」处理。
+- 插件静态资源只从插件包内目录读取，不读取也不依赖 fnOS 宿主的静态资源布局；请求路径只用于匹配固定资源名，未命中返回 404，不把请求路径拼进文件系统路径。
 - 文件入口不预检插件展示的授权目录列表：该列表用于浏览和选择，可能滞后于 fnOS ACL 状态，预检会误拒合法路径；是否允许由 fnOS 判断。调用失败只影响本次操作，不写入持久化状态，也不移除入口。
 - 供应商标识以各插件已有的常量或 provider 注册名为准，不在 dock 组件里硬编码第二份字符串；未匹配任何已注册供应商时不显示任何图标。
 
@@ -325,6 +329,8 @@ DSH 0.1.5-rc.2 发布包
 | 遮蔽失效 | 与官方条目同 `priority` 会让注册直接抛错，插件整体加载失败 | 使用更低 `priority` 并写断言固定该值；只影响 fnOS iframe，独立浏览器不注册 |
 | 上游变更 | 官方 `id`、`order` 或插槽名变化会让遮蔽目标失配 | 断言固定被遮蔽的 `id` 与插槽名，上游变更时测试先失败而不是静默出现两个入口 |
 | SDK 差异 | `openFileManager` 在非 web carrier 或旧宿主上不存在 | 沿用既有 `createTrimApp()` 与 `isWeb`/`isStandaloneWeb` 校验，失败给出可见提示而不回退到 NAS 上不存在的 `xdg-open` |
+| 静态资源泄露路径 | 插件静态路由若直接拼接请求路径，可能被路径穿越读取包外文件 | 只按固定资源名映射到已知文件，未命中即 404，不拼接用户输入 |
+| 资源未随包发布 | `package.json` 的 `files` 只含 `lib`，构建若不拷贝资源则运行时 404 | 在 node 构建的 `onSuccess` 中把资源拷入 `lib/assets/`，并用测试断言产物中存在该文件 |
 
 ## 测试、打包和发布
 
@@ -408,7 +414,7 @@ git diff --check
 | P1 发布升级回滚一致性 | <Badge type="info" text="规划中" /> | 构建前版本门禁、升级幂等、失败恢复和发布证据可追溯 |
 | P0 FPK 构建 | <Badge type="info" text="规划中" /> | FPK 构建成功，安装后 DSH 版本和启动入口正确 |
 | P0 用量图标按模型供应商显隐 | <Badge type="tip" text="已完成" /> | 两个用量图标只在选中对应供应商模型时挂出，切换即时生效且隐藏时不轮询 |
-| P1 fnOS 原生文件入口 | <Badge type="info" text="规划中" /> | fnOS iframe 内遮蔽官方「打开应用」，用 fnOS JS SDK 提供文件管理器入口 |
+| P1 fnOS 原生文件入口 | <Badge type="info" text="规划中" /> | fnOS iframe 内遮蔽官方「打开应用」，用 fnOS JS SDK 提供文件管理器入口；静态资源走插件自有前缀 |
 | P1 当前 DSH 客户端验证 | <Badge type="info" text="规划中" /> | Codex Auth、CodeBuddy、Semi UI 和共享包完成组合入口与关键行为验证 |
 | P1 fnOS NAS 验收 | <Badge type="info" text="规划中" /> | Web、网关、`dsh-fnos`、Codex 老用户保留、升级数据保留和失败路径均有 NAS 证据 |
 
@@ -432,3 +438,4 @@ git diff --check
 | 2026-09-13 | 纳入 FNOS-004-08 | 增加用量图标按选中模型供应商显隐计划：读取 `modelSelection` 投影的 `provider`，Codex 与 CodeBuddy 各自只在选中本家模型时挂出，切换即时生效，隐藏时不建立用量轮询 |
 | 2026-09-13 | 完成 FNOS-004-08 | `T11-01` 至 `T11-06` 落地（`35f0e70`）：新增 `@deepseek-ai/dsh-client-ui-session` 类型依赖与座位标准套件导入，`CODEX_PROVIDER` 移至 `contracts/`，显隐合取收敛为纯函数；`AC-01` 经 DSH 客户端浏览器实测通过，`AC-02`/`AC-03`/`AC-04` 待补人工复现 |
 | 2026-09-13 | 纳入 FNOS-004-09 | 增加 fnOS 原生文件入口计划（`T12-01` 至 `T12-05`）：在 fnOS iframe 内以同 `id`、更低 `priority` 遮蔽官方「打开应用」，用 Semi UI 还原锚点与下拉菜单，并以 fnOS JS SDK 的 `openFileManager` 打开会话工作目录；预览与编辑器因只支持文件路径而不在本轮范围 |
+| 2026-09-13 | 补充 FNOS-004-09 静态资源方案 | 新增 `T12-06`：插件静态资源不再内联，改由插件注册 `/fnos-plugins/static/dsh-fnos` 路由返回包内资源，网关把 `/fnos-plugins/static` 加入内置前缀；不读取 fnOS 宿主静态目录，也不放宽既有图片补前缀规则 |

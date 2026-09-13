@@ -44,6 +44,7 @@ lastVerified: 2026-09-12
 - DSH Web 内部重启捕获新 Token 后，网关代理、页面跳转和后续请求立即使用新 Token；旧 Token 不能继续把页面导向未授权状态。
 - 保留 FNOS-001～FNOS-003 已验收的网关、授权目录、NAS 引用、插件加载和用户数据行为。
 - fnOS iframe 内的会话头部由插件提供文件入口，替代 DSH 官方「打开应用」按钮；该按钮按编译期常量表探测本机应用，在 fnOS 上会把系统的 ZFS Event Daemon（`/usr/sbin/zed`）误判为 Zed 编辑器，且取不到对应图标，菜单里因此出现一个点了也打不开编辑器的条目。替代入口用 fnOS JS SDK 打开 NAS 文件管理器并定位到当前会话工作目录。
+- fnOS 插件自带的前端资源由插件自己提供，不内联进客户端 bundle：插件在 DSH 注册 `/fnos-plugins/static/<插件>/<资源>` 前缀路由返回包内资源，网关把 `/fnos-plugins` 列入内置前缀以便浏览器 bridge 补上应用前缀。资源归插件包所有，不读取宿主文件系统，也不依赖宿主未公开的静态路由。
 
 ## 涉及范围
 
@@ -56,7 +57,7 @@ lastVerified: 2026-09-12
 | Semi UI 插件 | `packages/dsh-semi-ui`、`plugins/dsh-semi-ui-showcase-plugin` | 适配共享 UI 组件和客户端插槽 |
 | FPK 应用 | `apps/fn-deepseek-harness/{manifest,cmd,app,config}` | DSH 版本、插件清单、安装/升级回调、bin 中的 CLI wrapper 和权限 |
 | 市场插件 | `published-dsh-plugins.json` | 固定 `dshmarket` 版本，构建不内置，按已安装状态决定是否通过 DSH CLI 安装 |
-| 网关代理 | `packages/fnos-gateway`、DSH Web 启停流程 | 刷新、持久化和使用 Web Token |
+| 网关代理 | `packages/fnos-gateway`、DSH Web 启停流程 | 刷新、持久化和使用 Web Token；为 fnOS 插件的静态资源提供内置前缀 |
 | 构建与发布 | `.github/config/`、`.github/workflows/`、`tooling/fn-os-apps-cli` | 生成包含正确插件和版本信息的 FPK |
 
 ## 功能列表
@@ -119,6 +120,7 @@ lastVerified: 2026-09-12
 - 遮蔽使用插槽同 `id`、更低 `priority` 的方式（与插件现有 session log 遮蔽同一机制）；不得与官方条目同优先级，否则注册直接失败。只在 `isEmbeddedFnosFrame()` 为真时注册，独立浏览器和桌面端官方入口行为不变。
 - 替代入口沿用 `@tnnevol/dsh-semi-ui` 的组件，外观与官方入口在头部的位置和尺寸保持一致，展开为下拉菜单而非直接触发操作；菜单项由数据驱动，后续追加 fnOS 文件能力条目时不改动锚点、注册方式、遮蔽关系和已交付条目的行为。
 - 目标路径取当前会话的工作目录；工作目录未知或为空时不渲染入口。SDK 未就绪、非 web carrier 或调用失败时给出可见失败提示，不静默吞掉，也不回退到 DSH 原生打开逻辑（NAS 服务容器内没有 `xdg-open`）。不预检插件自己展示的授权目录列表：该列表用于浏览和选择，可能滞后于 fnOS ACL 状态，预检会误拒合法路径，是否允许由 fnOS 判断。
+- fnOS 插件的前端静态资源走插件自己的路由，不内联进客户端 bundle：客户端以 `/fnos-plugins/static/<插件>/<资源>` 引用，网关把 `/fnos-plugins` 列为内置前缀（与 `/api`、`/plugins`、`/open-in-app` 同级）以便浏览器 bridge 自动补上应用前缀，插件在 DSH 侧以同名前缀路由返回包内资源。该前缀是插件自有命名空间，不代理到 DSH 既有路径，也不读取 fnOS 宿主文件系统；资源缺失时按 404 处理。
 
 ## 不在本次范围内
 
@@ -128,6 +130,8 @@ lastVerified: 2026-09-12
 - 不修改 fnOS 平台权限模型、网关路径、授权目录规则或上游市场插件源码。
 - 不追踪 `0.1.5-alpha.*`、`0.1.5-rc.1` 或后续 rc/正式版；它们另开需求。
 - 不修改 DSH 官方源码，不向上游提交补丁，也不在本仓库内代理 `/open-in-app` 路由；`zed` 误判的根因在上游，本需求只让 fnOS 用户不再看到该条目。
+- 不读取或依赖 fnOS 宿主的静态资源目录（如 `/usr/trim/www/static`）：那是宿主未公开的内部布局，随版本可能变动；插件只服务自己包内的资源。
+- 不为 `/fnos-plugins` 之外的顶层路径做反代，也不放宽现有的「任何图片资源都补应用前缀」规则——该规则仍服务于 DSH 插件在任意路径提供图片的场景。
 - 不实现「文件预览」和「文本编辑器」菜单项：`trim.preview` 与 `trim.text-editor` 都按文件路径工作，对工作目录无效，需要先确定作用对象（具体文件而非目录）再另立变更。
 - 不改变 fnOS 文件授权、ACL 和目录管理行为；沿用 FNOS-001-04 与 FNOS-001-12 已验收的授权规则。
 - 不改动会话头部其它入口（session log、标题、主题）的行为和位置。
@@ -207,6 +211,8 @@ lastVerified: 2026-09-12
 - `FNOS-004-09-AC-04`：会话工作目录未知或为空时入口不渲染；SDK 调用失败时给出可见提示，且不把错误冒泡成未处理异常。
 - `FNOS-004-09-AC-05`：独立浏览器中官方按钮行为不变，插件不注册该入口。
 - `FNOS-004-09-AC-06`：fnOS 插件 typecheck、单元测试和构建通过；新增行为有单元测试覆盖遮蔽注册、工作目录判定和 SDK 调用分支。
+- `FNOS-004-09-AC-07`：会话头部文件入口的图标以 `/fnos-plugins/static/<插件>/<资源>` 引用，由插件自己的路由返回包内资源，不内联进客户端 bundle；`/fnos-plugins` 属于网关内置前缀，浏览器 bridge 会为它补上应用前缀，且不写死宿主安装目录。
+- `FNOS-004-09-AC-08`：资源缺失时路由返回 404，界面不因此崩溃或阻塞 DSH；插件包内不含该资源时也不回退读取 fnOS 宿主目录。
 
 ### P1 验收条件
 
@@ -224,7 +230,7 @@ lastVerified: 2026-09-12
 | P0 CLI 与 Token 运行修复 | <Badge type="info" text="规划中" /> | 应用用户权限、CLI wrapper、重启后的 Token 原子刷新 | 补命令、权限、重启和并发回归测试 |
 | P0 DSH CLI 插件管理 | <Badge type="info" text="规划中" /> | 固定 DSH/pnpm、使用官方 CLI 自动初始化 profile、插件 CLI 操作和 bundle 写回 | 移除旧插件脚本和重复初始化逻辑，并完成客户端/NAS 分层验收 |
 | P0 用量图标按模型供应商显隐 | <Badge type="tip" text="已完成" /> | Codex / CodeBuddy 客户端 dock 注册、显隐条件、真值表单测与接线断言 | 无；AC-02/03/04 待补人工复现，见[客户端验收记录](/validation/FNOS-004-08-dsh-client-2026-09-13) |
-| P1 fnOS 原生文件入口 | <Badge type="info" text="规划中" /> | fnOS iframe 内遮蔽官方「打开应用」，提供文件管理器入口 | 进入计划后补实现、测试与 NAS 验收 |
+| P1 fnOS 原生文件入口 | <Badge type="info" text="规划中" /> | fnOS iframe 内遮蔽官方「打开应用」，提供文件管理器入口，静态资源走插件自有前缀 | 进入计划后补实现、测试与 NAS 验收 |
 | P1 发布、升级回滚与 NAS 验收 | <Badge type="info" text="规划中" /> | FPK 产物、用户数据、网关和目标环境证据 | 建立实施计划并记录验证结果 |
 
 ## 变更记录
@@ -241,3 +247,4 @@ lastVerified: 2026-09-12
 | 2026-09-13 | 新增 FNOS-004-08 | 记录会话输入框用量进度图标按所选模型供应商显隐的需求：选中对应供应商模型才显示其图标，切换模型即时变化 |
 | 2026-09-13 | FNOS-004-08 完成验收 | 实现按 `modelSelection` 投影的供应商显隐（`35f0e70`），`AC-01` 经用户在 DSH 客户端浏览器实测通过；`AC-02`/`AC-03`/`AC-04` 目前只有单元测试与接线断言证据，待补人工复现，见[客户端验收记录](/validation/FNOS-004-08-dsh-client-2026-09-13) |
 | 2026-09-13 | 新增 FNOS-004-09 | 记录 fnOS 原生文件入口需求：官方「打开应用」按钮按编译期常量表探测应用，在 fnOS 上把 ZFS Event Daemon（`/usr/sbin/zed`）误判为 Zed 编辑器且取不到图标；改为在 iframe 内遮蔽该入口，用 fnOS JS SDK 提供文件管理器入口。上游 catalog 不可配置且本仓库不提交上游补丁，故在插件侧遮蔽。 |
+| 2026-09-13 | 补充 FNOS-004-09 静态资源方案 | 插件静态资源改由插件自己的 `/fnos-plugins/static` 路由提供，网关把该前缀列为内置前缀；不读取 fnOS 宿主静态目录，也不放宽现有图片资源补前缀规则。原内联图标方案在 `AC-07`/`AC-08` 中改为资源引用 |

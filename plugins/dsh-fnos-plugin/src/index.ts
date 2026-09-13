@@ -8,6 +8,7 @@ import { FNOS_AUTHORIZED_DIRECTORIES_SETTINGS_NAMESPACE } from './contracts/auth
 import { injectCachedFnosTheme, type DshThemePreference } from './host/theme-bootstrap.ts'
 import { FNOS_GATEWAY_PROXY_PATHS_FIELD, FNOS_SYSTEM_THEME_FIELD, isFnosTheme, type FnosSettings, type FnosTheme } from './contracts/theme-contract.ts'
 import { registerGatewayProxyRoutes } from './host/gateway-proxy-routes.ts'
+import { registerStaticAssetRoute } from './host/static-assets.ts'
 
 /** Stable Host bundle name. */
 export const name = '@tnnevol/dsh-fnos'
@@ -27,6 +28,7 @@ export function apply(ctx: Context): void {
   const settings = ctx.settings.register(FNOS_AUTHORIZED_DIRECTORIES_SETTINGS_NS, FnosSettingsSchema)
   registerAuthorizedDirectoryRoutes(ctx)
   registerGatewayProxyRoutes(ctx, settings)
+  registerStaticAssetRoute(ctx)
   ctx.inject(['webServer'], httpCtx => {
     httpCtx.effect(
       () => httpCtx.webServer.tapIndex(html => injectCachedFnosTheme(
