@@ -7,13 +7,16 @@ import type { SlotRegistry } from '@deepseek-ai/dsh-client-ui-renderer/client'
 import type { ConnectionHandle } from '@deepseek-ai/dsh-client-connection/client'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
+// Type-only: 拉入 ui-session 对 SessionStandardProps 的合并（含 useProjection），
+// 会话作用域座位的标准套件才不会是空对象。
+import type {} from '@deepseek-ai/dsh-client-ui-session/client'
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import type {} from '@deepseek-ai/dsh-client-ui-settings-plugins/client'
 import type {} from '@deepseek-ai/dsh-client-ui-slots'
 import { CodexAuthSection } from '../components/CodexAuthSection.tsx'
 import type { CodexAuthSectionProps } from '../components/CodexAuthSection.tsx'
 import { CodexUsageStatus } from '../components/CodexUsageStatus.tsx'
-import type { CodexUsageStatusProps } from '../components/CodexUsageStatus.tsx'
+import type { CodexUsageStatusInjected } from '../components/CodexUsageStatus.tsx'
 import { en, zh } from './locales.ts'
 import type { CodexAuthLocaleKey } from './locales.ts'
 import { installSemiDshTheme } from '@tnnevol/dsh-semi-ui'
@@ -44,7 +47,7 @@ export function apply(ctx: ClientContext): void {
   // DSH exposes the merged Remote API on `ctx.remote`. Using `ctx.get('remote')`
   // only resolves the base service and omits namespaces such as `session`.
   const remote = ctx.remote as unknown
-  const timer = ctx.get('timer') as CodexUsageStatusProps['timer']
+  const timer = ctx.get('timer') as CodexUsageStatusInjected['timer']
   ctx.slots.inject('settings.section', () => ctx.slots.register({
     name: 'settings.section',
     id: 'codex-auth',
@@ -56,6 +59,6 @@ export function apply(ctx: ClientContext): void {
     name: 'conversation.input.right',
     id: 'codex-usage',
     order: 1,
-    inject: (): CodexUsageStatusProps => ({ t, timer }),
+    inject: (): CodexUsageStatusInjected => ({ t, timer }),
   }, CodexUsageStatus))
 }

@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from 'react'
 import type { KeyboardEvent } from 'react'
+import type { InjectFace, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import { DshPopover, DshProgress, DshTooltip } from '@tnnevol/dsh-semi-ui'
 import type { CodexAuthLocaleKey } from '../client/locales.ts'
 import { readCodexSignedInStatus, readCodexUsage } from '../client/services/usage-status-data.ts'
 import type { CodexUsage } from '../client/services/usage-status-data.ts'
+import { codexUsageVisible } from '../client/services/usage-visibility.ts'
 import { compactUsageWindow, fiveHourWindow, FIVE_HOUR_WINDOW_SECONDS, weeklyWindow } from '../client/services/usage-windows.ts'
 import type { CodexUsageWindow } from '../client/services/usage-windows.ts'
 
@@ -88,18 +90,40 @@ function UsagePopover({ fiveHour, weekly, fallback, t }: { fiveHour: CodexUsageW
   )
 }
 
-export interface CodexUsageStatusProps {
+/** 注册方注入的业务面：翻译和计时器。 */
+export interface CodexUsageStatusInjected {
   t: Translate
   timer: TimerService
 }
 
-export function CodexUsageStatus({ t, timer }: CodexUsageStatusProps) {
+/**
+ * 完整的座位道具：会话作用域标准套件（含 `useProjection`）加上注册方注入的
+ * 业务面。`useProjection` 由渲染器提供，不能走 `inject`——`inject` 在 React
+ * 之外执行，传不了 hook。
+ */
+export type CodexUsageStatusProps =
+  PropsRuntime<'conversation.input.right'>
+  & InjectFace<CodexUsageStatusInjected>
+
+export function CodexUsageStatus({ t, timer, useProjection }: CodexUsageStatusProps) {
+  // 只显示与当前选中模型供应商匹配的图标。读取方式与官方 dock 组件一致
+  // （`StatsPills`、`PlanChip` 都无条件这样拿 `useProjection`）。
+  //
+  // 会话作用域座位的标准套件由渲染器保证存在，所以这里无条件调用 hook；投影
+  // 本身缺失时 `codexUsageVisible` 按「读不到」处理，两家图标都不显示。
+  const selected = useProjection('modelSelection')
+  const visible = codexUsageVisible(selected)
+
   const [accountState, setAccountState] = useState<'checking' | 'signed-out' | 'signed-in'>('checking')
   const [usage, setUsage] = useState<CodexUsage | undefined>()
   const [usageState, setUsageState] = useState<'loading' | 'ready' | 'unavailable'>('loading')
   const [popoverOpen, setPopoverOpen] = useState(false)
 
   useEffect(() => {
+    // 图标不挂出时不建立轮询：判断必须放在 `timer.interval` 之前，否则定时器
+    // 照样会起来，在看不见的情况下继续请求用量接口。`visible` 同时也进依赖
+    // 数组，选中模型切换后会按新条件重建或清理。
+    if (!visible) return
     let active = true
     let requestSequence = 0
     const refresh = async (): Promise<void> => {
@@ -144,14 +168,17 @@ export function CodexUsageStatus({ t, timer }: CodexUsageStatusProps) {
       requestSequence += 1
       disposeInterval()
     }
-  }, [timer])
+  }, [timer, visible])
 
   const fiveHour = usage === undefined ? undefined : fiveHourWindow(usage)
   const weekly = usage === undefined ? undefined : weeklyWindow(usage)
   const usageWindow = usage === undefined ? undefined : compactUsageWindow(usage)
   useEffect(() => {
-    if (usageWindow === undefined && popoverOpen) setPopoverOpen(false)
-  }, [popoverOpen, usageWindow])
+    // 组件被隐藏后浮层状态不该残留，否则重新显示时会自己弹开。
+    if ((usageWindow === undefined || !visible) && popoverOpen) setPopoverOpen(false)
+  }, [popoverOpen, usageWindow, visible])
+  // 供应商不匹配时不挂出任何内容，这一步在轮询 effect 之后、渲染之前。
+  if (!visible) return null
   if (accountState === 'signed-out') return null
   const togglePopover = (): void => setPopoverOpen((open) => !open)
   const handlePopoverTriggerKeyDown = (event: KeyboardEvent<HTMLSpanElement>): void => {

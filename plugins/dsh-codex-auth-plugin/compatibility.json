@@ -8,6 +8,7 @@
     "packages": [
       "@deepseek-ai/dsh-atomic-write",
       "@deepseek-ai/dsh-attachment",
+      "@deepseek-ai/dsh-client-ui-session",
       "@deepseek-ai/dsh-credentials",
       "@deepseek-ai/dsh-home-paths",
       "@deepseek-ai/dsh-host-webserver",

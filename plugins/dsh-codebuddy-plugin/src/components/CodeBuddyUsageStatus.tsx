@@ -2,6 +2,7 @@
 
 import type { Translate, CodeBuddyUsageStatusProps } from '../types/components/CodeBuddyUsageStatus'
 export type { CodeBuddyUsageStatusProps } from '../types/components/CodeBuddyUsageStatus'
+export type { CodeBuddyUsageStatusInjected } from '../types/components/CodeBuddyUsageStatus'
 import { useEffect, useState, useSyncExternalStore } from 'react'
 import type { KeyboardEvent } from 'react'
 import { DshPopover, DshProgress, DshScrollList, DshTooltip } from '@tnnevol/dsh-semi-ui'
@@ -13,6 +14,7 @@ import { accountEpoch, subscribeAccountEpoch } from '../client/store/account-epo
 import type { UsageResult, UsageWindow } from '../client/rpc.ts'
 import { useStore } from '@nanostores/react'
 import { $showUsage } from '../client/store/usage-prefs.ts'
+import { codebuddyUsageVisible } from '../client/usage-visibility.ts'
 import { CodeBuddyLogo } from './CodeBuddyLogo.tsx'
 
 function percent(value: number | undefined): string | undefined {
@@ -109,7 +111,7 @@ function UsagePopover({ windows, fallback, t }: { windows: UsageWindow[]; fallba
   )
 }
 
-export function CodeBuddyUsageStatus({ t, timer, rpc }: CodeBuddyUsageStatusProps) {
+export function CodeBuddyUsageStatus({ t, timer, rpc, useProjection }: CodeBuddyUsageStatusProps) {
   // host 切换账号后通过 llm/adapters-updated 推进代际；立即重拉额度，
   // 不等待一分钟轮询也不需要刷新页面。
   const accountVersion = useSyncExternalStore(subscribeAccountEpoch, accountEpoch, accountEpoch)
@@ -118,10 +120,20 @@ export function CodeBuddyUsageStatus({ t, timer, rpc }: CodeBuddyUsageStatusProp
   // 显示开关直接来自持久化 store：useStore 内部就是 useSyncExternalStore，
   // 因此跨标签变化、其它组件写入都会自动反映到这里，不再需要手写订阅 effect。
   const showUsage = useStore($showUsage)
+  // 只显示与当前选中模型供应商匹配的图标。`showUsage` 仍是更前置的开关，
+  // 供应商条件加在它之上（取与），合取判断收敛在 usage-visibility.ts 里。
+  //
+  // 会话作用域座位的标准套件由渲染器保证存在，所以这里无条件调用 hook；投影
+  // 本身缺失时按「读不到」处理，两家图标都不显示。
+  const selected = useProjection('modelSelection')
+  const visible = codebuddyUsageVisible(selected, showUsage)
   const [popoverOpen, setPopoverOpen] = useState(false)
 
   useEffect(() => {
-    if (!showUsage) return
+    // 图标不挂出时不建立轮询：判断必须放在 `timer.interval` 之前，否则定时器
+    // 照样会起来，在看不见的情况下继续请求用量接口。`visible` 同时也进依赖
+    // 数组，选中模型或偏好变化后按新条件重建或清理。
+    if (!visible) return
     let active = true
     let requestSequence = 0
     const refresh = async (): Promise<void> => {
@@ -151,7 +163,7 @@ export function CodeBuddyUsageStatus({ t, timer, rpc }: CodeBuddyUsageStatusProp
       requestSequence += 1
       disposeInterval()
     }
-  }, [rpc, showUsage, timer, accountVersion])
+  }, [rpc, visible, timer, accountVersion])
 
   const primary = usage?.primary
   // 圆环与 tooltip 读取的是合并后的总额度：账号持有的每个有上限的计量窗口
@@ -190,10 +202,13 @@ export function CodeBuddyUsageStatus({ t, timer, rpc }: CodeBuddyUsageStatusProp
   const popoverWindows: UsageWindow[] = usage?.windows ?? []
 
   useEffect(() => {
-    if (derived === undefined && popoverOpen) setPopoverOpen(false)
-  }, [popoverOpen, derived])
+    // 组件被隐藏后浮层状态不该残留，否则重新显示时会自己弹开。
+    if ((derived === undefined || !visible) && popoverOpen) setPopoverOpen(false)
+  }, [popoverOpen, derived, visible])
 
-  if (!showUsage) return null
+  // 供应商不匹配或偏好关闭时不挂出任何内容（`showUsage` 是更前置的开关，
+  // 已包含在 visible 的合取里）。
+  if (!visible) return null
 
   const hasUsage = derived !== undefined
   const currentSummary = hasUsage ? usageSummary(derived.name, derived, t) : usageState === 'loading' ? t('usageLoading') : t('usageUnavailable')

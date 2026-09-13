@@ -68,6 +68,7 @@
         "@deepseek-ai/dsh-client-ui-model-selection",
         "@deepseek-ai/dsh-client-ui-primitives",
         "@deepseek-ai/dsh-client-ui-renderer",
+        "@deepseek-ai/dsh-client-ui-session",
         "@deepseek-ai/dsh-client-ui-settings",
         "@deepseek-ai/dsh-client-ui-settings-plugins",
         "@deepseek-ai/dsh-client-locale"
@@ -76,6 +77,7 @@
     }
   },
   "peerDependencies": {
+    "@deepseek-ai/dsh-client-ui-session": "catalog:dsh",
     "@earendil-works/pi-ai": "^0.85.1",
     "@deepseek-ai/cordis": "catalog:",
     "@deepseek-ai/dsh-api-remotes": "catalog:dsh",
@@ -103,6 +105,7 @@
     "react": "catalog:codex-peer"
   },
   "devDependencies": {
+    "@deepseek-ai/dsh-client-ui-session": "catalog:dsh",
     "@tnnevol/dsh-semi-ui": "workspace:*",
     "@earendil-works/pi-ai": "catalog:",
     "@deepseek-ai/cordis": "catalog:",

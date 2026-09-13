@@ -5,9 +5,10 @@ import { dirname, join, resolve } from 'node:path'
 import type { Credential, CredentialInfo, CredentialStore, OAuthCredential } from '@earendil-works/pi-ai'
 import { withFileLock, writeFileAtomic } from '@deepseek-ai/dsh-atomic-write'
 import { resolveDshHome } from '@deepseek-ai/dsh-home-paths'
+import { CODEX_PROVIDER } from '../contracts/provider.ts'
 
-/** pi-ai provider id used by ChatGPT Codex OAuth. */
-export const CODEX_PROVIDER = 'openai-codex'
+/** Re-exported so the host's existing `from './store.ts'` imports keep working. */
+export { CODEX_PROVIDER }
 /** Kept compatible with dsh-codex-connect so a login can be reused. */
 export const CODEX_AUTH_FILENAME = '.openai-codex-auth.json'
 

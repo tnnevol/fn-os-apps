@@ -7,13 +7,16 @@ import type {} from '@deepseek-ai/dsh-client-connection/client'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
+// Type-only: 拉入 ui-session 对 SessionStandardProps 的合并（含 useProjection），
+// 会话作用域座位的标准套件才不会是空对象。
+import type {} from '@deepseek-ai/dsh-client-ui-session/client'
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import type {} from '@deepseek-ai/dsh-client-ui-slots'
 import { installSemiDshTheme } from '@tnnevol/dsh-semi-ui'
 import { CodeBuddySection } from '../components/CodeBuddySection.tsx'
 import type { CodeBuddySectionProps } from '../components/CodeBuddySection.tsx'
 import { CodeBuddyUsageStatus } from '../components/CodeBuddyUsageStatus.tsx'
-import type { CodeBuddyUsageStatusProps } from '../components/CodeBuddyUsageStatus.tsx'
+import type { CodeBuddyUsageStatusInjected } from '../components/CodeBuddyUsageStatus.tsx'
 import { CodeBuddyPanelPage } from './panel.tsx'
 import { PanelRouteController } from './panel-route.ts'
 import { bumpAccountEpoch } from './store/account-epoch.ts'
@@ -66,7 +69,7 @@ export function apply(ctx: ClientContext): void {
     name: 'conversation.input.right',
     id: 'codebuddy-usage',
     order: 2,
-    inject: (): CodeBuddyUsageStatusProps => ({ t, timer, rpc }),
+    inject: (): CodeBuddyUsageStatusInjected => ({ t, timer, rpc }),
   }, CodeBuddyUsageStatus))
 
   // 全页面管理面板（hash 路由隔离，非动态组件切换）。shell.overlay 的键由
