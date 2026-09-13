@@ -290,6 +290,15 @@ describe('dsh-fnos package contract', () => {
     expect(action).toContain('aria-haspopup="menu"')
     expect(action).toContain('aria-expanded={open}')
     expect(action).toContain('IconChevronDownOutline14')
+
+    // 左半按钮用 fnOS 文件管理器的真实图标（内联 data URL，不走运行时资源
+    // 路径——官方按钮正是因为在 fnOS 上取不到图标才只剩通用字形）。
+    expect(action).toContain('FnosFileManagerIcon')
+    const icon = await readFile(new URL('../../src/components/FnosFileManagerIcon.tsx', import.meta.url), 'utf8')
+    expect(icon).toMatch(/data:image\/png;base64,[A-Za-z0-9+/=]+/u)
+    // 官方按钮 15px、菜单行 18px，两者要区分对待。
+    expect(action).toContain('current.icon(15)')
+    expect(action).toContain('action.icon(18)')
   })
 
   it('分体按钮的样式数值与官方入口一致', async () => {

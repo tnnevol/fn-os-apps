@@ -92,6 +92,15 @@
   flex: none;
 }
 
+/* 图标按官方 `.icon` 规则：不参与 flex 收缩，img 用 contain 且不可选中。 */
+.dsh-fnos-file-manager-icon { flex: none; }
+
+img.dsh-fnos-file-manager-icon {
+  display: block;
+  object-fit: contain;
+  user-select: none;
+}
+
 .dsh-fnos-session-log-button { border-radius: var(--semi-border-radius-large); }
 .dsh-fnos-session-log-button-icon { display: inline-flex; align-items: center; margin-left: 6px; }
 .dsh-fnos-session-log-dialog-body { min-height: 260px; }

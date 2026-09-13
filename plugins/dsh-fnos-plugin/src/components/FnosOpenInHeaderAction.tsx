@@ -25,7 +25,7 @@ import type { PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots
 import type {} from '@deepseek-ai/dsh-client-ui-session/client'
 import { IconChevronDownOutline14, Menu, Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { MenuItem } from '@deepseek-ai/dsh-client-ui-primitives'
-import { DshIconFolder } from '@tnnevol/dsh-semi-ui'
+import { FnosFileManagerIcon } from './FnosFileManagerIcon.tsx'
 import { isEmbeddedFnosFrame } from '../client/services/sdk-carrier.ts'
 import { openFnosFileManager } from '../client/services/file-manager.ts'
 import { createTrimApp } from '../client/services/sdk.ts'
@@ -55,8 +55,13 @@ export interface FnosFileAction {
   readonly id: string
   /** 菜单行与按钮 tooltip 的文案。 */
   readonly label: (t: Translate) => string
-  /** 左半按钮与菜单行的图标。 */
-  readonly icon: ReactNode
+  /**
+   * 该操作的图标，按需要的尺寸渲染。
+   *
+   * 官方在按钮里用 15px、菜单行里用 18px，这里保持同样的区分，让分体按钮
+   * 与菜单的图标比例和官方一致。
+   */
+  readonly icon: (size: number) => ReactNode
   /** 在给定工作目录上执行。 */
   readonly run: (cwd: string) => Promise<void>
 }
@@ -68,7 +73,7 @@ export interface FnosFileAction {
 const OPEN_FILE_MANAGER: FnosFileAction = {
   id: 'file-manager',
   label: t => t('openFileManager'),
-  icon: <DshIconFolder size="small" />,
+  icon: size => <FnosFileManagerIcon size={size} />,
   run: cwd => openFnosFileManager(cwd, () => createTrimApp()),
 }
 
@@ -104,7 +109,7 @@ export function FnosOpenInHeaderAction({ sessionId, useSessions, t }: FnosOpenIn
   const items: MenuItem[] = FILE_ACTIONS.map(action => ({
     id: action.id,
     label: action.label(t),
-    icon: action.icon,
+    icon: action.icon(18),
   }))
   const title = phase === 'error' ? t('openFileManagerFailed') : current.label(t)
 
@@ -135,7 +140,7 @@ export function FnosOpenInHeaderAction({ sessionId, useSessions, t }: FnosOpenIn
               aria-label={title}
               onClick={() => { launch(current) }}
             >
-              <span className="dsh-fnos-open-in-icon">{current.icon}</span>
+              <span className="dsh-fnos-open-in-icon">{current.icon(15)}</span>
             </button>
           </Tooltip>
           <button
