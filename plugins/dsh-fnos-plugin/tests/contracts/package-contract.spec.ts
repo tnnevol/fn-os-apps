@@ -136,8 +136,11 @@ describe('dsh-fnos package contract', () => {
     expect(index).toContain("id: 'session-log-download'")
     expect(index).toContain('FnosSessionLogHeaderAction')
     expect(action).toContain('DshDropdown')
-    expect(action).toContain('DshIconDownload as IconDownload')
-    expect(action).toContain('<IconDownload />')
+    expect(action).toContain('DshIconMore')
+    expect(action).toContain('<DshIconMore />')
+    // 下载图标不再属于这个按钮：它打开的是「导出到电脑 / 导出到 NAS」两项菜单，
+    // `IconMore` 才表示「还有更多操作」。
+    expect(action).not.toContain('DshIconDownload')
     expect(action).toContain('size="default"')
     expect(action).toContain('type="primary"')
     expect(action).toContain('theme="outline"')
