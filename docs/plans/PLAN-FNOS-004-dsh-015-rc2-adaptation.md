@@ -1,7 +1,7 @@
 ---
 id: PLAN-FNOS-004
 title: PLAN-FNOS-004 DSH 0.1.5-rc.2 适配与 FPK 运行修复
-description: 实施 FNOS-004-01 至 FNOS-004-07：完成 DSH 适配、插件策略、应用私有 CLI 与网关 Token 刷新、发布回滚门禁及 CLI 插件管理。
+description: 实施 FNOS-004-01 至 FNOS-004-08：完成 DSH 适配、插件策略、应用私有 CLI 与网关 Token 刷新、发布回滚门禁、CLI 插件管理，以及用量图标按模型供应商显隐。
 status: planned
 owner: tnnevol
 planDate: 2026-09-12
@@ -16,7 +16,7 @@ lastVerified: 2026-09-12
 | 计划编号 | PLAN-FNOS-004 |
 | 计划日期 | 2026-09-12 |
 | 对应需求 | [FNOS-004 DSH 0.1.5-rc.2 适配与 FPK 运行修复](/requirements/FNOS-004-dsh-015-rc2-adaptation) |
-| 本轮功能 | `FNOS-004-01` 至 `FNOS-004-07`：DSH 适配、Codex/dshmarket 插件策略、应用私有 dsh CLI、Token 刷新、发布升级回滚门禁和 CLI 插件管理 |
+| 本轮功能 | `FNOS-004-01` 至 `FNOS-004-08`：DSH 适配、Codex/dshmarket 插件策略、应用私有 dsh CLI、Token 刷新、发布升级回滚门禁、CLI 插件管理和用量图标按供应商显隐 |
 | 上游依据 | 本地 Harness checkout 的 `dsh-v0.1.5-rc.2`（`fb2c4b9e698e30edb738bca4cf0618587db7d203`） |
 | 计划状态 | <Badge type="info" text="规划中" /> |
 
@@ -24,7 +24,7 @@ lastVerified: 2026-09-12
 
 将 DSH 应用和仓库内四个插件的兼容性基线从 `0.1.2-rc.1` 升级到本地官方 Harness checkout 的 `dsh-v0.1.5-rc.2`，并让新 FPK 继续默认捆绑与 `0.1.5-rc.2` 适配的 Codex 插件。当前计划包含 DSH catalog、锁文件、插件 `compatibility.json`、上游破坏性 API 迁移、FPK native 构建配置、Codex 内置与安装策略、DSH CLI 插件管理、应用私有 CLI 权限、内部重启 Token 刷新和运行时验证。
 
-本轮处理 `FNOS-004-01` 至 `FNOS-004-07`。其中 `FNOS-004-06`作为发布、升级和回滚的一致性门禁，不新增独立运行时能力。计划不修改 DeepSeek Harness 上游源码，只在本仓库插件和 FPK 构建链内完成适配。
+本轮处理 `FNOS-004-01` 至 `FNOS-004-08`。其中 `FNOS-004-06`作为发布、升级和回滚的一致性门禁，不新增独立运行时能力。计划不修改 DeepSeek Harness 上游源码，只在本仓库插件和 FPK 构建链内完成适配。
 
 ## 实现范围和边界
 
@@ -32,15 +32,15 @@ lastVerified: 2026-09-12
 | --- | --- | --- |
 | DSH 依赖基线 | `pnpm-workspace.yaml`、`pnpm-lock.yaml` | 统一 `@deepseek-ai/dsh-*` catalog 和允许提前安装的版本列表 |
 | fnOS 插件 | `plugins/dsh-fnos-plugin` | 迁移客户端输入、命令、附件、会话和 UI 接缝 |
-| Codex Auth 插件 | `plugins/dsh-codex-auth-plugin` | 迁移 attachment、LLM、`pi-ai` 和模型目录接缝；作为内置插件随 FPK 分发并保持老用户数据可用 |
-| CodeBuddy 插件 | `plugins/dsh-codebuddy-plugin` | 迁移 LLM 流式、文件块和附件接缝 |
+| Codex Auth 插件 | `plugins/dsh-codex-auth-plugin` | 迁移 attachment、LLM、`pi-ai` 和模型目录接缝；作为内置插件随 FPK 分发并保持老用户数据可用；`conversation.input.right` 的用量图标按选中模型供应商显隐 |
+| CodeBuddy 插件 | `plugins/dsh-codebuddy-plugin` | 迁移 LLM 流式、文件块和附件接缝；`conversation.input.right` 的用量图标在 `showUsage` 之上叠加选中模型供应商条件 |
 | Semi UI 插件 | `packages/dsh-semi-ui`、`plugins/dsh-semi-ui-showcase-plugin` | 迁移共享 UI、layout、slots 和 renderer 接缝 |
 | FPK 应用 | `apps/fn-deepseek-harness/cmd/install_callback`、`config/resource`、`config/privilege`、`manifest` | 安装并校验 `0.1.5-rc.2` DSH 运行时，真实 CLI 保留在应用私有目录且不注册系统命令，不清理 `DSH_HOME` |
 | FPK 插件策略 | `apps/fn-deepseek-harness/app/published-dsh-plugins.json`、`app/bundled-dsh-plugins` | 在 FPK 清单和内置目录中包含 Codex，改由 DSH CLI 管理插件，同时保护老用户已有数据 |
 | Native 构建 | `.github/config/`、`.github/scripts/prepare-dsh-native.sh`、`.github/workflows/build-dsh-fn.yml` | 使用新 DSH 依赖树准备 native 产物并生成版本化 FPK |
 | 文档与测试 | `docs/development/`、`docs/apps/`、插件测试目录 | 记录迁移差异、测试命令和本地/NAS 证据 |
 
-`FNOS-004-03` 只通过 `FNOS-004-07` 规定的 DSH CLI 安装固定版本 dshmarket，并处理已安装时跳过，不另建插件安装实现。`FNOS-004-04` 负责把真实 CLI 固定在应用私有目录并以应用包用户身份运行，且不注册公开 `dsh` 命令（平台未提供非 root 可用的身份切换机制）；它不修改 DSH CLI 上游实现。CLI 管理仍由 `FNOS-004-07` 的 `dsh plugin --profile web` 边界承担。`FNOS-004-05` 负责网关代理和 DSH Web 重启之间的 Token 状态同步、原子持久化和并发请求处理。Codex 清单和内置目录属于 `FNOS-004-02`，本轮会修改：把 Codex 恢复为 FPK 默认内置插件并按清单精确版本安装，同时不清理老用户 profile 中的凭据和配置。
+`FNOS-004-03` 只通过 `FNOS-004-07` 规定的 DSH CLI 安装固定版本 dshmarket，并处理已安装时跳过，不另建插件安装实现。`FNOS-004-04` 负责把真实 CLI 固定在应用私有目录并以应用包用户身份运行，且不注册公开 `dsh` 命令（平台未提供非 root 可用的身份切换机制）；它不修改 DSH CLI 上游实现。CLI 管理仍由 `FNOS-004-07` 的 `dsh plugin --profile web` 边界承担。`FNOS-004-05` 负责网关代理和 DSH Web 重启之间的 Token 状态同步、原子持久化和并发请求处理。Codex 清单和内置目录属于 `FNOS-004-02`，本轮会修改：把 Codex 恢复为 FPK 默认内置插件并按清单精确版本安装，同时不清理老用户 profile 中的凭据和配置。`FNOS-004-08` 只改两个插件在 `conversation.input.right` 的挂出条件，不新增图标样式、交互，也不动 CodeBuddy 的 `showUsage` 偏好语义和两家插件的用量轮询实现。
 
 ## 目标架构和数据流
 
@@ -159,6 +159,21 @@ DSH 0.1.5-rc.2 发布包
 | PLAN-FNOS-004-T10-03 | FNOS-004-06-AC-03 | 在升级变更前保存可恢复的 runtime/profile 元数据；失败时返回非零并恢复旧指针或旧配置，成功后写入完成标记 | 模拟 DSH、pnpm、插件、native 和启动失败后，上一份 FPK 或受支持回滚流程可恢复启动，用户数据不变 |
 | PLAN-FNOS-004-T10-04 | FNOS-004-06-AC-04 | 生成发布证据索引，关联 FPK、DSH/native/plugin 版本、安装升级日志、回滚结果及当前客户端/NAS 验收记录 | 任一发布包都能追溯到构建输入和目标环境证据；本地结果不冒充 NAS 验收 |
 
+### P0：用量图标按模型供应商显隐
+
+状态：<Badge type="info" text="规划中" />
+
+`FNOS-004-08` 只收敛两个用量图标在 `conversation.input.right` 的挂出条件。两个插件都注册在这个插槽（Codex `id: codex-usage` `order: 1`，CodeBuddy `id: codebuddy-usage` `order: 2`），各自只按自身登录态或偏好判断，选中某一家模型时另一家的图标照样显示。判断依据来自会话投影 `modelSelection` 的 `provider`，和选中模型同源。
+
+| 任务 ID | 对应验收 | 实现内容 | 验收 |
+| --- | --- | --- | --- |
+| PLAN-FNOS-004-T11-01 | FNOS-004-08-AC-01 | 两个 dock 组件从插槽标准道具读取 `useProjection('modelSelection')`，取 `next ?? lastUsed` 的 `provider`；Codex 仅当 provider 为 `openai-codex` 时挂出，CodeBuddy 仅当 provider 为 `codebuddy` 时挂出（常量沿用各自插件已有的 provider 标识） | 选中 Codex 模型时只有 Codex 图标，选中 CodeBuddy 模型时只有 CodeBuddy 图标，同一轮对话不出现两家图标并存 |
+| PLAN-FNOS-004-T11-02 | FNOS-004-08-AC-02 | 显隐条件走 React 订阅路径，选中模型变化立即重算，不缓存首次结果；切换模型不清空草稿、不触发页面刷新 | 在两家模型间来回切换，图标即时跟随，草稿和滚动位置保持不变 |
+| PLAN-FNOS-004-T11-03 | FNOS-004-08-AC-03 | 未选模型、投影缺失、provider 为空或为其它供应商时两者都不挂出；判断只依赖供应商，不依赖登录态或用量请求是否成功 | 未选模型或选中第三方模型时两家图标均不出现 |
+| PLAN-FNOS-004-T11-04 | FNOS-004-08-AC-04 | CodeBuddy 的 `showUsage` 仍是更前置开关，供应商条件与之取与：偏好关闭时即使选中 CodeBuddy 模型也不显示；Codex 保持现有登录态前置条件不变 | 关闭 `showUsage` 后选中 CodeBuddy 模型仍不显示图标，重新开启即恢复 |
+| PLAN-FNOS-004-T11-05 | FNOS-004-08-AC-05 | 图标不挂出时不建立用量轮询（把供应商判断放在挂起轮询的 effect 之前，或让 effect 依赖该条件）；条件变化时已在跑的刷新按现有 cleanup 正常收尾，不额外补一轮请求 | 隐藏状态下无对应插件的后台用量请求；隐藏/显示切换不产生重复定时器 |
+| PLAN-FNOS-004-T11-06 | FNOS-004-08-AC-05 | 为两个组件补单元测试：供应商匹配显示、不匹配隐藏、无投影隐藏、CodeBuddy 偏好取与、切换即时生效和不建立轮询 | Codex Auth 与 CodeBuddy 的类型检查、单元测试和构建通过；测试覆盖上述分支 |
+
 ### P0：同步 FPK 运行时与构建入口
 
 状态：<Badge type="info" text="规划中" />
@@ -238,6 +253,14 @@ DSH 0.1.5-rc.2 发布包
 3. 使用当前客户端的真实 DSH Web 入口验证非 fnOS 插件的 bundle、Host 服务、Remote 调用和页面刷新；在 NAS 端单独验证 `dsh-fnos` 的 fnOS API、路径和网关行为，不只验证单独构造的 Context。
 4. 发现 API 接缝不匹配时，优先根据 `0.1.5-rc.2` 当前源码和生成类型修复插件，不改上游源码；无法等价迁移时停止发布并记录影响。
 
+### P0：用量图标供应商显隐流程
+
+1. 两个插件分别注册在 `conversation.input.right` 的两个 cell（`codex-usage`、`codebuddy-usage`），互不遮蔽；各自组件在渲染前读取当前会话的 `modelSelection` 投影。
+2. 从投影值取 `next ?? lastUsed` 的 `provider`：`next` 是下一次请求将使用的选择，`lastUsed` 兜底，二者都为空表示本会话还没确定模型。
+3. 只有 provider 与本插件一致时组件继续渲染；不一致、为空或投影缺失时返回 `null`。这一步在挂起用量轮询的 effect 之前完成，隐藏状态不建立定时器。
+4. CodeBuddy 额外保留 `showUsage` 作为更前置开关，供应商条件与该偏好取与；Codex 保留现有的登录态前置条件。这些条件只决定图标挂不挂出，不改动图标样式、tooltip 和点击展开行为。
+5. 选中模型变化时投影推送新值，React 订阅触发重算，图标随切换即时增减；已在跑的刷新由现有 cleanup 收尾，不因条件翻转补发请求。
+
 ## 数据、权限和错误处理
 
 - 所有应用路径使用 `${TRIM_*}` 环境变量；安装、升级和验证不得写死 NAS 安装目录。
@@ -252,6 +275,8 @@ DSH 0.1.5-rc.2 发布包
 - runtime 指针、profile 快照和升级完成标记不能包含凭据；回滚只恢复版本和配置元数据，不删除用户数据。
 - Native 依赖准备失败、补丁锚点不唯一、Node ABI 不匹配和插件 API 不匹配分别记录错误，不以跳过检查的方式生成 FPK。
 - Host 与 Client 仍遵守 DSH Remote、附件持久化、会话可回放和插件生命周期约束；测试覆盖重复加载、卸载和异常退出清理。
+- 用量图标的显隐只读会话投影，不改写会话数据，也不新增会话事件；投影缺失就当作不显示，不去猜供应商，也不拿登录态或用量请求结果顶替供应商判断。
+- 供应商标识以各插件已有的常量或 provider 注册名为准，不在 dock 组件里硬编码第二份字符串；未匹配任何已注册供应商时不显示任何图标。
 
 ## 依赖、风险和决策
 
@@ -268,6 +293,9 @@ DSH 0.1.5-rc.2 发布包
 | 公开入口篡改 | 入口或其依赖可写时，调用者可替换真实 CLI 或修改 DSH 配置 | 不注册公开入口；真实 CLI、Node/pnpm 和配置由受控所有者维护，非应用用户无写权限 |
 | Token 竞态 | 重启时旧缓存、旧文件和新进程输出可能交错，导致页面继续携带旧 Token | 使用重启轮次、锁、原子文件替换和刷新中状态；并发请求只等待新 Token 或返回可恢复响应 |
 | Token 持久化 | 异步写文件可能尚未完成就更新内存，或留下半截文件 | 写临时文件并完成持久化后再 rename 和发布内存值；写入失败直接进入错误状态 |
+| 投影可用性 | `modelSelection` 投影缺失或尚未送达时读不到选中模型，可能导致图标该显示时不显示 | 缺失一律按不显示处理并保留其余前置条件；不缓存首次结果，投影到达后随即重算 |
+| 供应商标识漂移 | dock 组件里再写一份 provider 字符串，后续改名会出现两边不一致 | 复用各插件已有的 provider 常量或注册名，测试断言显隐与常量同源 |
+| 轮询残留 | 图标隐藏后仍保留定时器，会在看不见的情况下继续请求用量接口 | 供应商判断置于挂起轮询之前或纳入 effect 依赖，隐藏状态不建立定时器并用测试断言 |
 
 ## 测试、打包和发布
 
@@ -307,6 +335,7 @@ git diff --check
 ### 当前 DSH 客户端验证
 
 - 使用本地官方 Harness checkout 的 `dsh-v0.1.5-rc.2` 组合入口，验证 Codex Auth、CodeBuddy、Semi UI 及共享包的插件加载、关键 UI、Remote/Host 和错误路径。
+- 在同一入口验证用量图标的供应商显隐：分别选中 Codex 与 CodeBuddy 模型，确认只有对应图标出现；关闭 CodeBuddy `showUsage` 后选中其模型仍不显示；两处切换过程不刷新页面、不丢草稿。
 - 保存客户端版本、启动命令、插件加载日志、测试结果和失败场景证据；需要外部服务时使用测试凭据或 mock，不写入真实密钥。
 
 ### 真实 NAS 验证
@@ -348,10 +377,11 @@ git diff --check
 | P0 内部重启 Token 刷新 | <Badge type="info" text="规划中" /> | 重启期间失效旧 Token，捕获并原子持久化新 Token，代理请求等待新状态 |
 | P1 发布升级回滚一致性 | <Badge type="info" text="规划中" /> | 构建前版本门禁、升级幂等、失败恢复和发布证据可追溯 |
 | P0 FPK 构建 | <Badge type="info" text="规划中" /> | FPK 构建成功，安装后 DSH 版本和启动入口正确 |
+| P0 用量图标按模型供应商显隐 | <Badge type="info" text="规划中" /> | 两个用量图标只在选中对应供应商模型时挂出，切换即时生效且隐藏时不轮询 |
 | P1 当前 DSH 客户端验证 | <Badge type="info" text="规划中" /> | Codex Auth、CodeBuddy、Semi UI 和共享包完成组合入口与关键行为验证 |
 | P1 fnOS NAS 验收 | <Badge type="info" text="规划中" /> | Web、网关、`dsh-fnos`、Codex 老用户保留、升级数据保留和失败路径均有 NAS 证据 |
 
-本计划汇总 `FNOS-004-01` 至 `FNOS-004-07`。其中 `FNOS-004-06`以发布、升级和回滚一致性门禁形式实施，不新增独立运行时能力。
+本计划汇总 `FNOS-004-01` 至 `FNOS-004-08`。其中 `FNOS-004-06`以发布、升级和回滚一致性门禁形式实施，不新增独立运行时能力；`FNOS-004-08` 只收敛两个用量图标在输入框 dock 的挂出条件。
 
 ## 变更记录
 
@@ -368,3 +398,4 @@ git diff --check
 | 2026-09-12 | 纳入 FNOS-004-05 | 增加内部重启 Token 的失效、捕获、原子持久化、代理等待和 NAS 并发回归任务 |
 | 2026-09-12 | 纳入 FNOS-004-06 | 增加构建版本门禁、升级幂等、失败恢复、回滚入口和发布证据追踪任务 |
 | 2026-09-13 | 统一插件发布版本 | 四个运行时插件发布版本由 `0.1.5-rc.2.4` 改为 `0.1.5-rc.2`，与 DSH 运行时基线同号；同步 `package.json`、发布清单和文档，`dshPluginApi.version` 仍单独承载兼容基线 |
+| 2026-09-13 | 纳入 FNOS-004-08 | 增加用量图标按选中模型供应商显隐计划：读取 `modelSelection` 投影的 `provider`，Codex 与 CodeBuddy 各自只在选中本家模型时挂出，切换即时生效，隐藏时不建立用量轮询 |
