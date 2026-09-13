@@ -79,6 +79,7 @@ lastVerified: 2026-09-12
 - `--bundle-dsh-plugins` 只将仓库中可解析的本地插件制成带精确版本的 npm 包归档并打入 FPK；安装时通过 DSH CLI 的 `file:` 包 spec 安装，确保插件运行依赖能由 pnpm 安装和解析，不得以 `link:` 直接引用 FPK 插件目录。升级时须修复已经按旧方式安装的同版本 `link:` 插件。清单中的三方插件不得因为出现在 `plugins` 或 `bundled` 中而被内置，安装回调仍须通过 DSH CLI 单独安装。`bundled` 中的 dshmarket 仅用于固定安装版本，不提供 FPK 回退包。
 - FPK 内置本地插件时，安装回调使用 DSH CLI 指向内置包路径完成 profile 管理；不内置的三方插件继续使用精确版本包名安装，不因本地内置逻辑被跳过。
 - 安装/升级前从 Web profile 的 pnpm 模块元数据读取既有 `storeDir`，并持久化到 `${DSH_HOME}/.pnpm-store-dir`，通过 `PNPM_CONFIG_STORE_DIR` 提供给 pnpm；不得让 pnpm 因 `@apphome` 与 `@appshare` 的默认路径变化拒绝复用既有依赖，也不得把 pnpm 专用 `store-dir` 写入 npm 的 `.npmrc`。
+- `PNPM_CONFIG_STORE_DIR` 必须在**运行期**同样生效，而不只是安装期。DSH Web 会在 profile 目录中调用 pnpm 完成插件安装与三方市场更新；pnpm 把建库时的 store 固定进 `node_modules/.modules.yaml`，一旦解析出的 store 变化就以 `ERR_PNPM_UNEXPECTED_STORE` 拒绝所有安装与卸载，三方应用商店报「更新失败，且更新前的构建未能验证恢复」。网关启动 Web 时必须从 `${DSH_HOME}/.pnpm-store-dir` 读取该路径并注入子进程环境；值缺失、为空或非绝对路径时不得猜测，且必须清除继承来的同名变量。npm 的 `.npmrc` 仍不得写入 `store-dir`。
 - 新 FPK 的 `published-dsh-plugins.json` 和内置插件目录不得包含 Codex 插件。安装/升级逻辑不能因为 manifest 不再列出 Codex 就删除用户 profile 中已有的 Codex 包、bundle、配置或凭据。
 - Codex 插件仍需完成 `0.1.5-rc.2` 兼容性适配，以便老用户继续使用；“完成适配”不等于“继续默认捆绑”。
 - `dshmarket` 的包名为 `dshmarket`，版本固定为 `1.45.1`。固定版本来自需求建立时的上游包信息，后续升级必须显式修改本需求和发布清单，不得随 registry 最新版本漂移。[上游项目](https://github.com/dsh-market/dsh-market)
@@ -169,6 +170,7 @@ lastVerified: 2026-09-12
 - `FNOS-004-07-AC-04`：自动命令只使用 `<package>@<fixed-version>`，清单拒绝 `latest`、`next` 和其他浮动 dist-tag，捆绑包版本与清单一致。
 - `FNOS-004-07-AC-05`：新安装只 add 清单插件，版本变化只 update 精确版本；缺少清单的老插件不自动 remove，重复执行保持幂等。
 - `FNOS-004-07-AC-06`：DSH CLI、pnpm 或 profile 写入失败时生命周期返回非零，保留原 profile 数据并输出可定位错误。
+- `FNOS-004-07-AC-08`：运行期插件安装与三方市场更新使用与 profile 一致的 pnpm store：网关启动 Web 时注入 `${DSH_HOME}/.pnpm-store-dir` 记录的 `PNPM_CONFIG_STORE_DIR`，`pnpm store path` 解析结果与该 profile `node_modules/.modules.yaml` 的 `storeDir` 相同，不出现 `ERR_PNPM_UNEXPECTED_STORE`；记录缺失或非法时清除继承值而不是猜测。
 - `FNOS-004-07-AC-07`：当前 DSH 客户端完成 Codex Auth、CodeBuddy、Semi UI 和共享包的 CLI 管理、Bundle 生效和重启验证；真实 NAS 只验收 FPK、网关和 `dsh-fnos`。
 
 ### P1 验收条件

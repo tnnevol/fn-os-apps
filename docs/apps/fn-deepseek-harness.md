@@ -45,6 +45,7 @@ FPK 安装和升级时会根据发布清单按精确版本安装插件：
 - Web profile 在首次执行 `dsh plugin --profile web add/update` 时由官方 CLI 自动初始化，插件通过 `dsh plugin --profile web add/update/remove` 管理，不再执行应用自定义插件脚本。选择 FPK 内置插件时，只将仓库中的本地插件制成 npm 归档并通过 DSH CLI 的 `file:` spec 安装，确保运行依赖可被解析；旧版 `link:` 安装会在升级时修复。清单中的三方插件不进入 FPK，仍由 DSH CLI 单独安装。
 - 应用不注册公开的 `dsh` 系统命令：安装回调不生成 `app/bin/dsh` wrapper，`config/resource` 也不声明 `usr-local-linker`。飞牛 fnOS 未向非 root 调用者提供可用的身份切换机制（`runuser` 以非 root 执行时报 `may not be used by non-root users`，指定 `--group` 时报 `only root can specify alternative groups`，`su` 需要密码，`setpriv` 返回 `Operation not permitted`），且需求禁止依赖 setuid 或不受控的 sudo，因此由普通用户调用的 wrapper 无法保证以应用包用户身份执行。
 - 安装回调会从 Web profile 的 `node_modules/.modules.yaml` 复用已有 pnpm store，并将最终路径持久化到 `${DSH_HOME}/.pnpm-store-dir`，避免应用目录从 `@appshare` 切换到 `@apphome` 后触发 `ERR_PNPM_UNEXPECTED_STORE`，同时不污染 npm 的 `.npmrc`。
+- 该 store 路径在**运行期**同样生效：网关启动 DSH Web 时从 `${DSH_HOME}/.pnpm-store-dir` 读出安装期记录并注入 `PNPM_CONFIG_STORE_DIR`。否则 DSH Web 在 profile 目录里调用的 pnpm 会按 `@apphome` 推导出另一个 store，与 profile 固定的 store 不一致，导致插件安装与三方应用商店更新全部以 `ERR_PNPM_UNEXPECTED_STORE` 失败。记录缺失或非法时清除继承值，不做猜测。
 - 应用安装、升级和启动前会复用已有 Web profile，保留用户配置、凭据、工作区和未列入新清单的旧插件；DSH CLI 在插件变更后负责写回 bundle 配置。
 - `cmd/main` 只启动网关；网关以应用包用户直接运行真实 DSH CLI 启动 Web，捕获本轮启动 Token 后持久化。浏览器 iframe 地址始终不带 Token：仅首次不带 DSH 会话 Cookie 的首页请求会把 Token 注入上游以换取会话 Cookie，其后的上游请求只使用 Cookie。DSH 会对任何携带 Token 的首页请求返回 303 到干净路径，若对每个请求都注入 Token，就会出现“重定向次数过多”。
 

@@ -4,6 +4,7 @@ import { normalizePrefix } from './middleware/path-rewrite.js'
 import { PathAllowlistStore } from './server/path-allowlist.js'
 import { WebProcessController } from './server/web-process.js'
 import { buildDshWebArgs } from './config/dsh-web-args.js'
+import { buildDshRuntimeEnv } from './config/dsh-runtime-env.js'
 
 const SOCKET_PATH = process.env.GATEWAY_SOCKET || '/var/apps/fn-deepseek-harness/target/app.sock'
 const UPSTREAM_HOST = process.env.DSH_UPSTREAM_HOST || '127.0.0.1'
@@ -14,15 +15,7 @@ const DSH_BIN = process.env.DSH_BIN
 const DSH_CWD = process.env.DSH_CWD || process.cwd()
 const DSH_PID_FILE = process.env.DSH_PID_FILE
 const DSH_HOME = process.env.DSH_HOME
-const dshEnvironment = DSH_HOME === undefined ? undefined : {
-  ...process.env,
-  HOME: DSH_HOME,
-  DSH_HOME,
-  NPM_CONFIG_CACHE: `${DSH_HOME}/.npm-cache`,
-  NPM_CONFIG_PREFIX: `${DSH_HOME}/.npm-global`,
-  NPM_CONFIG_USERCONFIG: `${DSH_HOME}/.npmrc`,
-  XDG_CONFIG_HOME: `${DSH_HOME}/.config`,
-}
+const dshEnvironment = DSH_HOME === undefined ? undefined : buildDshRuntimeEnv(DSH_HOME)
 
 const trustedHosts = (process.env.DSH_TRUSTED_HOSTS || '').split(',').map(value => value.trim()).filter(Boolean)
 const dshArgs = buildDshWebArgs({

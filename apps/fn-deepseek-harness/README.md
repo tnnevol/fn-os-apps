@@ -86,7 +86,7 @@ fn-deepseek-harness-v<app-version>-dsh-0.1.5-rc.2.fpk
 | `NPM_CONFIG_CACHE` | `${DSH_HOME}/.npm-cache` |
 | `NPM_CONFIG_PREFIX` | `${DSH_HOME}/.npm-global` |
 | `NPM_CONFIG_USERCONFIG` | `${DSH_HOME}/.npmrc` |
-| pnpm store | `${TRIM_APPDEST_VOL}/@appshare/fn-deepseek-harness/.local/share/pnpm/store`；实际路径持久化到 `${DSH_HOME}/.pnpm-store-dir`，升级时优先复用 Web profile 已记录的 store |
+| pnpm store | `${TRIM_APPDEST_VOL}/@appshare/fn-deepseek-harness/.local/share/pnpm/store`；实际路径持久化到 `${DSH_HOME}/.pnpm-store-dir`，升级时优先复用 Web profile 已记录的 store。安装回调与网关启动 Web 时都通过 `PNPM_CONFIG_STORE_DIR` 注入该路径，保证运行期插件安装/更新与 profile 记录的 store 一致 |
 | npm 全局目录 | `${DSH_HOME}/.npm-global/lib/node_modules` |
 | npm 全局可执行目录 | `${DSH_HOME}/.npm-global/bin` |
 

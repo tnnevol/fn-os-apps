@@ -107,6 +107,7 @@ DSH 0.1.5-rc.2 发布包
 | PLAN-FNOS-004-T06-04 | FNOS-004-07-AC-04 | 清单只接受插件名称和精确版本，生成 `<package>@<version>` 参数；捆绑包 `package.json` 版本必须与清单一致，拒绝 `latest`、`next` 和其他浮动 dist-tag | 所有自动安装命令可审计为精确版本，清单、捆绑包和 profile 依赖版本一致 |
 | PLAN-FNOS-004-T06-05 | FNOS-004-07-AC-05 | 仅对清单中的缺失插件执行 add，对版本变化的插件执行精确 update；`remove` 只由明确的用户操作触发，不因清单缺少 Codex 等旧插件而自动移除 | 新安装、升级和重复升级幂等，老用户旧插件和 bundle 保持不变 |
 | PLAN-FNOS-004-T06-06 | FNOS-004-07-AC-06 | 区分 DSH、pnpm、清单校验和 profile 写入失败；从 `.modules.yaml` 复用既有 pnpm store 并持久化到 `${DSH_HOME}/.pnpm-store-dir`，同时清理旧 `.npmrc` 中的 `store-dir` 配置，任何命令非零都中止回调并保留旧 profile 数据 | fake 命令夹具覆盖成功、旧 store 路径复用、npm 无未知配置警告、缺工具、权限不足和部分失败场景，错误可定位且生命周期返回非零 |
+| PLAN-FNOS-004-T06-08 | FNOS-004-07-AC-08 | 网关启动 DSH Web 时从 `${DSH_HOME}/.pnpm-store-dir` 读取安装期记录的 store，注入子进程 `PNPM_CONFIG_STORE_DIR` 并清理继承的同名变量；值缺失、为空或非绝对路径时不猜测 | 运行期 `pnpm store path` 与该 profile `node_modules/.modules.yaml` 的 `storeDir` 一致，`dsh plugin` 与三方市场更新不再出现 `ERR_PNPM_UNEXPECTED_STORE` |
 | PLAN-FNOS-004-T06-07 | FNOS-004-07-AC-07 | 在当前 DSH 客户端验证非 fnOS 插件的 CLI 管理和 Bundle 重启生效；在真实 NAS 只验证 FPK、网关和 `dsh-fnos` | 两类环境证据分开记录，Codex Auth、CodeBuddy、Semi UI 和共享包不以 NAS 安装为前置条件 |
 
 ### P0：固定并兼容安装 dshmarket
