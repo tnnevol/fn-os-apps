@@ -123,11 +123,12 @@ describe('dsh-fnos package contract', () => {
     expect(source).not.toContain("{busy ? t('deleting') : t('delete')}")
   })
 
-  it('saves gateway proxy paths with Ctrl/Cmd+Enter from the textarea', async () => {
+  it('saves gateway proxy paths with Ctrl/Cmd+S from the textarea', async () => {
     const source = await readFile(new URL('../../src/components/AuthorizedDirectoriesCard.tsx', import.meta.url), 'utf8')
     expect(source).toContain('handleProxyPathsKeyDown')
-    expect(source).toContain("if (!(event.ctrlKey || event.metaKey) || event.key !== 'Enter') return")
+    expect(source).toContain('isProxyPathsSaveShortcut(event)')
     expect(source).toContain('event.preventDefault()')
+    expect(source).toContain('event.stopPropagation()')
     expect(source).toContain('void saveProxyPaths()')
     expect(source).toContain('onKeyDown={handleProxyPathsKeyDown}')
   })

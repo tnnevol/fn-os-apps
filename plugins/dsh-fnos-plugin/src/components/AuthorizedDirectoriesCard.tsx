@@ -16,6 +16,7 @@ import {
   type AuthorizedDirectory,
 } from '../contracts/authorized-directories-contract.ts'
 import { FNOS_GATEWAY_PROXY_PATHS_ROUTE } from '../contracts/gateway-proxy-contract.ts'
+import { isProxyPathsSaveShortcut } from '../client/shortcuts/proxy-paths-save-shortcut.ts'
 
 type Translate = (key: FnosLocaleKey) => string
 
@@ -145,8 +146,11 @@ export function AuthorizedDirectoriesCard({ t }: AuthorizedDirectoriesCardProps)
   }, [proxyPathsDraft, t])
 
   const handleProxyPathsKeyDown = useCallback((event: KeyboardEvent<HTMLTextAreaElement>): void => {
-    if (!(event.ctrlKey || event.metaKey) || event.key !== 'Enter') return
+    if (!isProxyPathsSaveShortcut(event)) return
+    // Suppress the browser's Save-page dialog and stop the gesture from
+    // reaching outer handlers (the DSH shell registers global hotkeys).
     event.preventDefault()
+    event.stopPropagation()
     if (!busy && proxyPathsDraft !== savedProxyPaths) void saveProxyPaths()
   }, [busy, proxyPathsDraft, saveProxyPaths, savedProxyPaths])
 
