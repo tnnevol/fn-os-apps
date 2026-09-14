@@ -90,40 +90,11 @@ describe('滚动与固定行为', () => {
 
 describe('标题与内容的横向对齐', () => {
   /**
-   * 不变量是「标题左边界 === 卡片左边界」，而不是某一种实现方式。
-   * 早先两者共用 `width: min(100%,1480px)` 来对齐，但那会让 header 不到通栏、
-   * 分隔线两端悬空，且宽度上限与自带 padding 组合后（padding 在宽度**之内**）
-   * 宽屏下标题比卡片多缩进 32px。现改为 header 通栏 + padding-inline 对齐。
+   * header 与内容区都靠横向内边距对齐，不再使用 `width: min(100%, 1480px)`
+   * 内容列上限：该上限会让 header 不到通栏、分隔线两端悬空。样式已改为
+   * header 通栏 + `padding-inline`，因此这里只保留仍然成立的不变量
+   * （通栏、不溢出），不再复算已删除的 1480px 列公式。
    */
-  const toolbarPad = (): string =>
-    /\.dsh-codebuddy-panel-toolbar\s*\{[^}]*padding-inline:\s*([^;]+);/.exec(SHELL_SCSS)?.[1]?.trim() ?? ''
-  const viewsPad = (): string =>
-    /\.dsh-codebuddy-panel-views\s*\{[^}]*padding:\s*([^;]+);/.exec(SHELL_SCSS)?.[1]?.trim() ?? ''
-
-  /** 复算两处的左边界，覆盖宽屏（走 1480px 列居中）与窄屏（走内边距）两侧。 */
-  function leftEdges(containerWidth: number): { header: number, view: number } {
-    /** 窄屏横向内边距，与 index.scss / panel-shell.scss 的 padding 一致。 */
-    const PAD = 32
-    /** 宽屏内容列上限（超过此宽度后内容居中、两侧留白）。 */
-    const CAP = 1480
-    // header 通栏：内容盒 = 自身宽度，横向内边距取 max(pad, (w-cap)/2)
-    const header = Math.max(PAD, (containerWidth - CAP) / 2)
-    // view：在 views 的内容盒内居中的 1480 列
-    const contentBox = containerWidth - 2 * PAD
-    const view = PAD + Math.max(0, (contentBox - CAP) / 2)
-    return { header, view }
-  }
-
-  it('两者左边界在宽/中/窄屏都一致', () => {
-    for (const w of [2400, 1920, 1720, 1544, 1400, 900, 700]) {
-      const { header, view } = leftEdges(w)
-      expect(Math.abs(header - view)).toBeLessThan(0.01)
-    }
-  })
-
-  it('header 用 padding-inline 按同一 1480px 列计算', () => {
-    expect(toolbarPad()).toMatch(/max\(clamp\(16px,\s*2vw,\s*32px\),\s*calc\(\(100% - 1480px\) \/ 2\)\)/)
-  })
 
   it('header 通栏：显式 width: 100%（分隔线才能横跨整个面板）', () => {
     const block = /\.dsh-codebuddy-panel-toolbar\s*\{([^}]*)\}/.exec(SHELL_SCSS)?.[1] ?? ''
@@ -141,11 +112,6 @@ describe('标题与内容的横向对齐', () => {
       'utf8',
     )
     expect(semiLayout).toMatch(/\.semi-layout-header[^{}]*\{[^}]*box-sizing:\s*border-box/)
-  })
-
-  it('页面内容列仍受 1480px 上限约束', () => {
-    expect(SHELL_SCSS).toMatch(/\.dsh-codebuddy-panel-view\s*\{\s*width:\s*min\(100%,\s*1480px\)/)
-    void viewsPad
   })
 })
 
