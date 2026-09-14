@@ -4,14 +4,14 @@
         "items": [
             {
                 "type": "tips",
-                "helpText": "当前 DSH 尚未适配 0.0.0.0 监听地址，请选择 127.0.0.1。应用会通过 fnOS 统一网关在 NAS Web 中访问，可信访问地址请填写打开 NAS Web 使用的 host 或 host:port（例如 192.168.119.6 或 192.168.119.6:5000），不要填写 dsh 的 3080 端口。保存后应用会自动重启。"
+                "helpText": "应用通过 fnOS 统一网关在 NAS Web 中打开，不需要对外开放端口。保存后应用会按新配置重启；应用未运行则下次启动生效。"
             },
             {
                 "type": "select",
                 "field": "wizard_host",
                 "label": "监听地址",
                 "initValue": "127.0.0.1",
-                "helpText": "当前 DSH 尚未适配 0.0.0.0，推荐并仅应使用 127.0.0.1；桌面入口会通过 fnOS 统一网关访问。",
+                "helpText": "DSH 暂不支持 0.0.0.0，保持 127.0.0.1 即可。",
                 "options": [
                     {
                         "label": "127.0.0.1（仅本机）",
@@ -29,7 +29,7 @@
                 "field": "wizard_port",
                 "label": "监听端口",
                 "initValue": "3080",
-                "helpText": "DeepSeek Harness Web UI 监听端口。iframe 入口需要使用固定端口，不能填写 0。",
+                "helpText": "DSH Web 的监听端口。iframe 入口需要固定端口，不能填 0。",
                 "rules": [
                     {
                         "required": true,
@@ -46,7 +46,7 @@
                 "field": "wizard_trusted_hosts",
                 "label": "可信访问地址",
                 "initValue": "",
-                "helpText": "必须填写从 NAS Web 打开应用时浏览器地址栏中的 host 或 host:port，例如 192.168.119.6:5666；不确定端口时可填写 192.168.119.6。多个地址请使用英文逗号分隔。",
+                "helpText": "填浏览器打开 NAS Web 时地址栏里的 host 或 host:port，例如 192.168.119.6:5666。不确定端口就只填 host；多个地址用英文逗号分隔。不要填 3080，那是 DSH 自己的端口。",
                 "rules": [
                     {
                         "required": true,
