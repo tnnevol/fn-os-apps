@@ -58,6 +58,7 @@ restore -> summary
 对应本仓库的 `turbo.json`：
 
 - `build` 通过 `^build` 先调度 workspace 依赖的构建。
+- `dev` 通过 `^dev` 先完成依赖包的 `dev`；被依赖包用 `persistent: false` 做一次性构建，插件自身保持常驻并在 `interruptible: true` 下随依赖变化重启。
 - `typecheck` 通过 `^typecheck` 先调度依赖包的类型检查。
 - `test:unit` 依赖当前包的 `build`，避免测试使用过期产物。
 - `check` 汇总当前包的 `typecheck`、`build` 和 `test:unit`；多个独立包之间由 Turbo 自动并行调度。
@@ -129,6 +130,8 @@ status -> fail: 否
 
 `start` 是用户可见的开发启动入口；CLI 先让用户选择插件和/或文档，再把对应的 filters 一次性交给同一个 `turbo watch dev` 进程。文档和插件任务因此都显示在同一个 TUI 中。
 
+插件不能与 `dsh-semi-ui` 同时启动：插件 bundle 需要解析 `@tnnevol/dsh-semi-ui/lib/index.js`，如果两边并行 `tsdown`，`dsh-semi-ui` 的 `clean`（默认删除 `lib/`）会让插件侧解析失败并报 `Could not resolve '@tnnevol/dsh-semi-ui'`。因此 `turbo.json` 的 `dev` 使用 `dependsOn: ["^dev"]`：被依赖包的 `dev` 是一次性构建（在 `packages/dsh-semi-ui/turbo.json` 覆盖 `persistent: false`），先完成；插件自己的 `dev` 仍是常驻 `tsdown --watch`，并在 `interruptible: true` 下于依赖变化时被 `turbo watch` 重启。
+
 ```d2
 direction: down
 
@@ -142,13 +145,15 @@ plugins: "harness 插件：选择目标"
 docs: "文档：VitePress"
 turbo: "turbo watch dev（同一 TUI）"
 filters: "组合 filters：./docs + harness 插件..."
-pluginWatch: "harness 插件 + dsh-semi-ui：tsdown --watch（含初始构建）"
+depDev: "dsh-semi-ui dev（一次性构建，persistent: false）"
+depDone: "lib/** 就绪"
+pluginWatch: "harness 插件：tsdown --watch（常驻）"
 docsWatch: "docs package：vitepress dev"
 changeStatus: {
   label: "有源文件变化？"
   shape: diamond
 }
-rebuild: "是：重新生成 lib/**"
+rebuild: "是：依赖变化时重启插件 dev，重新生成 lib/**"
 keep: "否：保持监听"
 services: "开发服务持续运行"
 
@@ -158,8 +163,9 @@ select -> docs: 文档
 plugins -> turbo
 docs -> turbo
 turbo -> filters
-filters -> pluginWatch -> changeStatus
+filters -> depDev -> depDone -> pluginWatch
 filters -> docsWatch -> services
+pluginWatch -> changeStatus
 changeStatus -> rebuild: 是
 changeStatus -> keep: 否
 rebuild -> changeStatus
@@ -466,7 +472,7 @@ pnpm run start -- --plugin fnos
 pnpm run start -- --docs
 ```
 
-插件和文档均通过同一个 `turbo watch dev` 进程启动：插件和 `@tnnevol/dsh-semi-ui` 的 `dev` 任务为 `tsdown --watch`，`docs` workspace 的 `dev` 任务为 `vitepress dev`。两者在 TUI 中分别显示。
+插件和文档均通过同一个 `turbo watch dev` 进程启动：`@tnnevol/dsh-semi-ui` 的 `dev` 是一次性 `tsdown` 构建并先于插件完成，插件 `dev` 为常驻 `tsdown --watch`，`docs` workspace 的 `dev` 为 `vitepress dev`。它们在 TUI 中分别显示。
 
 ```d2
 developer: 开发者
@@ -480,10 +486,12 @@ shape: sequence_diagram
 developer -> root: pnpm run start -- --plugin fnos
 root -> cli: pnpm exec fn-apps-cli start --plugin fnos
 cli -> turbo: turbo watch dev --filter=dsh-fnos...
-turbo -> semi: 监听并执行 tsdown --watch
-turbo -> plugin: 监听并执行 tsdown --watch
-semi -> turbo: 修改后重新生成 lib
-plugin -> turbo: 修改后重新生成插件 Bundle
+turbo -> semi: 先执行一次性 tsdown（persistent: false）
+semi -> turbo: lib/** 就绪
+turbo -> plugin: 再启动 tsdown --watch
+semi -> turbo: 依赖源文件变化，重新一次性构建 lib/**
+turbo -> plugin: interruptible 重启插件 dev
+plugin -> turbo: 重新生成插件 Bundle
 turbo -> cli: 持续运行直到终止
 ```
 
@@ -492,9 +500,10 @@ turbo -> cli: 持续运行直到终止
 1. 根 `package.json` 只增加稳定入口，不把 `cd`、重复构建依赖或包内实现写入根脚本。
 2. 包的实际任务放在对应 workspace 的 `package.json`；任务名称要能被 Turbo 统一调用。
 3. 新增任务后同步在 `turbo.json` 声明 `dependsOn`、`outputs`、`cache` 或 `persistent`。
-4. workspace 依赖必须真实写入包的 `dependencies` 或 `devDependencies`，否则 `^build` 无法推导依赖顺序。
-5. `package.json` 和 Workflow 中使用 `turbo run`；持续开发使用 `turbo watch`。
-6. 同一类检查尽量通过一次 Turbo 调度传入多个 filter，避免共享依赖被多个 Turbo 进程重复执行。
+4. workspace 依赖必须真实写入包的 `dependencies` 或 `devDependencies`，否则 `^build`、`^dev` 无法推导依赖顺序。
+5. 共享包作为依赖参与 `dev` 时必须是一次性任务：`persistent: false` 且在包内 `turbo.json` 覆盖，否则 `^dev` 会因「persistent task cannot be depended on」报错，或与消费方并行写入 `lib/**`。
+6. `package.json` 和 Workflow 中使用 `turbo run`；持续开发使用 `turbo watch`。
+7. 同一类检查尽量通过一次 Turbo 调度传入多个 filter，避免共享依赖被多个 Turbo 进程重复执行。
 
 ## 常用验证
 

@@ -33,7 +33,7 @@
   ],
   "scripts": {
     "build": "tsdown",
-    "dev": "tsdown --watch",
+    "dev": "tsdown",
     "typecheck": "tsc -p tsconfig.json",
     "test:unit": "vitest run --config vitest.config.ts",
     "test": "pnpm run test:unit",
