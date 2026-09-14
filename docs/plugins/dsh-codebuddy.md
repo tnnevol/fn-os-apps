@@ -130,6 +130,16 @@ dsh --profile web --dump-config
 
 安装后重启 Web profile。
 
+### fnOS 网关内置反代
+
+CodeBuddy 的 RPC 频道是 `/codebuddy`（`CODEBUDDY_AUTH_CHANNEL`），由 DSH 挂成浏览器同级 HTTP 路由。在 fnOS 应用里，浏览器 bridge 只对**内置前缀**和用户规则补应用前缀，因此该频道已作为内置前缀收录，与 `/api`、`/plugins`、`/open-in-app` 同级：
+
+- 随 FPK 内置安装后开箱可用，**不需要**在「设置 → fnos → 三方插件 API URL 反代配置」里手工登记；
+- 前缀按路径段边界匹配，`/codebuddyx` 之类的兄弟路径仍留给 fnOS 宿主；
+- 用户规则只在此基础上追加，不能覆盖或移除内置前缀。
+
+若在非 fnOS 的 DSH 环境里自行部署并需要网关转发该频道，才需要按上面的规则手工添加 `/codebuddy`。
+
 ## 登录
 
 一切交互都在插件 Web 界面中完成。

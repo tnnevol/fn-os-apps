@@ -128,6 +128,73 @@ describe('browser bridge artifact', () => {
     ])
   })
 
+  it('maps the bundled CodeBuddy RPC channel without any configured path', async () => {
+    const requests: string[] = []
+    const window: Record<string, unknown> = {
+      location: { href: 'http://nas.example/app/fn-deepseek-harness/', origin: 'http://nas.example' },
+      fetch(input: unknown) {
+        requests.push(String(input))
+        return Promise.resolve()
+      },
+    }
+    function Xhr(): void {}
+    Xhr.prototype.open = function (): void {}
+    function Node(): void {}
+    Node.prototype.appendChild = function (node: unknown): unknown { return node }
+    Node.prototype.insertBefore = function (node: unknown): unknown { return node }
+    function Element(): void {}
+    Element.prototype.append = function (): void {}
+
+    runInNewContext(`window.__FNOS_GATEWAY_CONFIG__ = ${JSON.stringify({ prefix: '/app/fn-deepseek-harness', customPaths: [], eventsPath: '/__fnos-gateway/path-allowlist/events' })};${source}`, {
+      window,
+      XMLHttpRequest: Xhr,
+      Node,
+      Element,
+      URL,
+    })
+
+    // CodeBuddy 是 FPK 内置插件，它的 RPC 频道（`CODEBUDDY_AUTH_CHANNEL`）
+    // 必须像 /open-in-app 一样始终补前缀，用户无需在设置页手工登记。
+    await (window.fetch as (input: unknown) => Promise<void>)('/codebuddy/status')
+    await (window.fetch as (input: unknown) => Promise<void>)('/codebuddy/usage')
+
+    expect(requests).toEqual([
+      'http://nas.example/app/fn-deepseek-harness/codebuddy/status',
+      'http://nas.example/app/fn-deepseek-harness/codebuddy/usage',
+    ])
+  })
+
+  it('keeps a codebuddy-prefixed sibling path on the fnOS host', async () => {
+    const requests: string[] = []
+    const window: Record<string, unknown> = {
+      location: { href: 'http://nas.example/app/fn-deepseek-harness/', origin: 'http://nas.example' },
+      fetch(input: unknown) {
+        requests.push(String(input))
+        return Promise.resolve()
+      },
+    }
+    function Xhr(): void {}
+    Xhr.prototype.open = function (): void {}
+    function Node(): void {}
+    Node.prototype.appendChild = function (node: unknown): unknown { return node }
+    Node.prototype.insertBefore = function (node: unknown): unknown { return node }
+    function Element(): void {}
+    Element.prototype.append = function (): void {}
+
+    runInNewContext(`window.__FNOS_GATEWAY_CONFIG__ = ${JSON.stringify({ prefix: '/app/fn-deepseek-harness', customPaths: [], eventsPath: '/__fnos-gateway/path-allowlist/events' })};${source}`, {
+      window,
+      XMLHttpRequest: Xhr,
+      Node,
+      Element,
+      URL,
+    })
+
+    // 前缀匹配按路径段边界，不是字符串前缀：/codebuddyx 不属于该频道。
+    await (window.fetch as (input: unknown) => Promise<void>)('/codebuddyx/status')
+
+    expect(requests).toEqual(['/codebuddyx/status'])
+  })
+
   it('keeps the fnOS plugins namespace out of unrelated top-level paths', async () => {
     const requests: string[] = []
     const window: Record<string, unknown> = {

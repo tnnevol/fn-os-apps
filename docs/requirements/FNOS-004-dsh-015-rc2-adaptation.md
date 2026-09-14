@@ -45,6 +45,7 @@ lastVerified: 2026-09-12
 - 保留 FNOS-001～FNOS-003 已验收的网关、授权目录、NAS 引用、插件加载和用户数据行为。
 - fnOS iframe 内的会话头部由插件提供文件入口，替代 DSH 官方「打开应用」按钮；该按钮按编译期常量表探测本机应用，在 fnOS 上会把系统的 ZFS Event Daemon（`/usr/sbin/zed`）误判为 Zed 编辑器，且取不到对应图标，菜单里因此出现一个点了也打不开编辑器的条目。替代入口用 fnOS JS SDK 打开 NAS 文件管理器并定位到当前会话工作目录。
 - fnOS 插件自带的前端资源由插件自己提供，不内联进客户端 bundle：插件在 DSH 注册 `/fnos-plugins/static/<插件>/<资源>` 前缀路由返回包内资源，网关把 `/fnos-plugins` 列入内置前缀以便浏览器 bridge 补上应用前缀。资源归插件包所有，不读取宿主文件系统，也不依赖宿主未公开的静态路由。
+- FPK 内置插件在 DSH 上的浏览器同级 HTTP 路由同样列入网关内置前缀，随 FPK 一起开箱可用：CodeBuddy 的 RPC 频道 `/codebuddy` 与 `/api`、`/plugins`、`/open-in-app` 同级，不需要用户在三方插件 API URL 反代配置里手工登记。
 
 ## 涉及范围
 
@@ -57,7 +58,7 @@ lastVerified: 2026-09-12
 | Semi UI 插件 | `packages/dsh-semi-ui`、`plugins/dsh-semi-ui-showcase-plugin` | 适配共享 UI 组件和客户端插槽 |
 | FPK 应用 | `apps/fn-deepseek-harness/{manifest,cmd,app,config}` | DSH 版本、插件清单、安装/升级回调、bin 中的 CLI wrapper 和权限 |
 | 市场插件 | `published-dsh-plugins.json` | 固定 `dshmarket` 版本，构建不内置，按已安装状态决定是否通过 DSH CLI 安装 |
-| 网关代理 | `packages/fnos-gateway`、DSH Web 启停流程 | 刷新、持久化和使用 Web Token；为 fnOS 插件的静态资源提供内置前缀 |
+| 网关代理 | `packages/fnos-gateway`、DSH Web 启停流程 | 刷新、持久化和使用 Web Token；为 fnOS 插件的静态资源与 FPK 内置插件的浏览器同级路由（如 `/codebuddy`）提供内置前缀 |
 | 构建与发布 | `.github/config/`、`.github/workflows/`、`tooling/fn-os-apps-cli` | 生成包含正确插件和版本信息的 FPK |
 
 ## 功能列表
@@ -154,7 +155,8 @@ lastVerified: 2026-09-12
 - `FNOS-004-02-AC-02`：老用户已有 Codex 凭据、模型配置、workspace 或 `dsh.profile.bundles` 时执行升级，用户数据保持不变，不执行卸载、删除或覆盖；包本体按内置归档校准到清单版本。
 - `FNOS-004-02-AC-03`：安装回调对 Codex 只执行清单驱动的安装或校准，不写入卸载动作；重复安装/升级不会因为版本已匹配而重复安装，也不会输出删除用户数据的日志。
 - `FNOS-004-02-AC-04`：不内置 Codex 的替代路径被明确否决——registry 上 `latest`/`rc` 的 Codex 版本基线低于 `0.1.5-rc.2`，安装后 DSH Web 以 `settingsNamespace` 缺失报错退出；构建清单不得再声明 Codex 排除规则。
-- `FNOS-004-02-AC-04`：FPK 产物检查、安装脚本回归测试和真实 NAS 升级验证均能证明上述新用户/老用户差异。
+- `FNOS-004-02-AC-05`：FPK 产物检查、安装脚本回归测试和真实 NAS 升级验证均能证明上述新用户/老用户差异。
+- `FNOS-004-02-AC-06`：FPK 内置插件的浏览器同级 HTTP 路由由网关内置前缀覆盖，用户无需在设置页手工登记：`@tnnevol/dsh-codebuddy` 的 RPC 频道 `/codebuddy` 与 `/api`、`/plugins`、`/open-in-app` 同级，浏览器 bridge 始终为其补上应用前缀；前缀按路径段边界匹配（`/codebuddyx` 不属于该频道）；用户规则不能覆盖或移除内置前缀。
 
 ### FNOS-004-03 验收条件
 

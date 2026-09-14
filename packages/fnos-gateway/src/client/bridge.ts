@@ -17,9 +17,13 @@
   // routes under these prefixes, so requests must reach DSH rather than the
   // fnOS host. They are deliberately not the host's own `/static` tree —
   // plugins own these resources and never read the host's undocumented layout.
+  // `/codebuddy` is the RPC channel of the bundled CodeBuddy plugin
+  // (`CODEBUDDY_AUTH_CHANNEL`); DSH mounts it as its own browser-sibling route,
+  // and the FPK ships that plugin, so the channel must reach DSH without the
+  // user registering it by hand.
   // Users cannot register or remove these: they are part of the app's own
   // surface, not third-party plugin API URLs.
-  var builtinPaths = ["/api", "/plugins", "/open-in-app", "/fnos-plugins/static", "/fnos-plugins/present"];
+  var builtinPaths = ["/api", "/plugins", "/open-in-app", "/fnos-plugins/static", "/fnos-plugins/present", "/codebuddy"];
   function boundary(pathname, candidate) { return pathname === candidate || pathname.indexOf(candidate + "/") === 0; }
   function isImageResource(pathname) { return /\.(?:avif|bmp|gif|ico|jpe?g|png|svg|webp)$/i.test(pathname); }
   function gatewayPath(pathname) {

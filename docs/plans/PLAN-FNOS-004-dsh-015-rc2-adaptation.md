@@ -94,6 +94,7 @@ DSH 0.1.5-rc.2 发布包
 | PLAN-FNOS-004-T05-02 | FNOS-004-02-AC-02 | 确认安装/升级只按清单对 Codex 执行安装或精确版本校准，不删除用户凭据、模型配置、workspace、授权目录和 profile bundle | 老用户已有 Codex 凭据、配置和 bundle 在升级后逐项保持不变 |
 | PLAN-FNOS-004-T05-03 | FNOS-004-02-AC-03 | 为安装回调增加新用户、老用户和重复升级场景的隔离回归夹具，记录安装、升级和跳过的日志 | 新用户装到清单精确版本；老用户保留用户数据；重复执行幂等 |
 | PLAN-FNOS-004-T05-04 | FNOS-004-02-AC-04 | 移除构建 CLI 与文档中的 Codex 排除规则，改为校验清单包含 Codex 且归档版本与清单一致；三方插件（dshmarket）仍不进入内置目录，安装回调通过 DSH CLI 单独安装 | 构建产物内置 Codex 归档且无浮动版本安装；本地 FPK 检查和真实 NAS 升级验证结果一致 |
+| PLAN-FNOS-004-T05-05 | FNOS-004-02-AC-06 | 把 FPK 内置插件 CodeBuddy 的 RPC 频道 `/codebuddy` 加入网关 `builtinPaths`，与 `/api`、`/plugins`、`/open-in-app` 同级；不改动用户规则与保留路径校验 | 未配置任何自定义路径时 `/codebuddy/<endpoint>` 被补上应用前缀并转发到 DSH；`/codebuddyx` 仍留给 fnOS 宿主；用户规则不能覆盖或移除内置前缀 |
 
 ### P0：使用 DSH CLI 管理 FPK 插件
 
@@ -450,4 +451,5 @@ git diff --check
 | 2026-09-13 | 补充 FNOS-004-09 头部布局任务 | 新增 `T12-07`：对齐官方左右顺序并把顺序取值集中可测；Session log 改为纯图标按钮 |
 | 2026-09-13 | 修复 FNOS-004-09「导出到 NAS」上游取数 | 新增 `T12-08`：数据源由不存在的 `apiProxy` 注入服务改为回源 `/api/session.export` |
 | 2026-09-13 | 新增 FNOS-004-07 内置插件强制覆盖 | 新增 `T12-09`：捆绑插件每次安装按 FPK 归档覆盖（不比较版本），并约束删除路径的推导与校验 |
+| 2026-09-14 | 内置 CodeBuddy RPC 频道进网关 | 新增 `T05-05`：把内置插件的浏览器同级路由 `/codebuddy` 加入网关内置前缀，用户无需在设置页手工登记；补充 `FNOS-004-02-AC-06` |
 | 2026-09-13 | 修复 FNOS-004-09 presented-file 打开 | 新增 `T12-10`：`/api/present.open` 在 fnOS 上报 409 `Host desktop unavailable`，改为经插件解析真实路径后调用 fnOS SDK；`present.host` 在 iframe 内报可用；tooltip 改为动态模板 |
