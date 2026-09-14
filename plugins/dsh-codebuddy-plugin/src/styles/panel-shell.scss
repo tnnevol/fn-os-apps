@@ -84,7 +84,7 @@
   /* 纵向间距保持原值；横向内部留白由 padding-inline 按 1480px 列计算（见下方注释）。 */
   padding-top: 24px;
   padding-bottom: 16px;
-  padding-inline: max(clamp(16px, 2vw, 32px), calc((100% - 1480px) / 2));
+  padding-inline: 32px;
   /* 待滚动内容滚到 header 之下时，分隔线仍在最上层——否则上滑的卡片会盖住它。 */
   border-bottom: 1px solid var(--dsw-alias-border-l2);
   box-shadow: var(--dsw-shadow-lv1);
@@ -112,7 +112,6 @@
 /* 页面内容列宽上限。header 不在此列——它已通栏，内容靠 padding-inline 对齐
    （见 .dsh-codebuddy-panel-toolbar 的说明），这样分隔线才能横跨整个面板。 */
 .dsh-codebuddy-panel-view {
-  width: min(100%, 1480px);
   margin: 0 auto;
 }
 
