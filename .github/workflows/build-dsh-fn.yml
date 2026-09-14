@@ -40,8 +40,18 @@ jobs:
         with:
           version: 11.16.0
 
+      # 必须覆盖 `--bundle-dsh-plugins` 实际会构建的包：内置插件本身，以及它们的
+      # workspace 依赖 `@tnnevol/dsh-semi-ui`（turbo 的 `<plugin>...` filter 会用
+      # 到它）。漏掉 dsh-semi-ui 时它没有 node_modules，构建在该包上以
+      # `sh: 1: tsdown: not found` 失败——它不在 gateway 或 CLI 的依赖闭包里。
       - name: Install repository build dependencies
-        run: pnpm install --filter @tnnevol/fnos-gateway... --filter @tnnevol/fn-os-apps-cli --frozen-lockfile
+        run: |
+          pnpm install \
+            --filter @tnnevol/fnos-gateway... \
+            --filter @tnnevol/fn-os-apps-cli \
+            --filter './plugins/*' \
+            --filter @tnnevol/dsh-semi-ui \
+            --frozen-lockfile
 
       - name: Build bundled fnOS gateway
         run: pnpm exec fn-apps-cli build:gateway
