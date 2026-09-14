@@ -98,6 +98,10 @@ async function validateDshReleaseInputs(app: FpkApp): Promise<void> {
   if (codex === undefined) {
     throw new Error(`The published DSH plugin manifest must bundle the Codex plugin: ${manifestPath}`)
   }
+  const codeBuddy = manifest.plugins.find(plugin => plugin?.name === '@tnnevol/dsh-codebuddy')
+  if (codeBuddy === undefined) {
+    throw new Error(`The published DSH plugin manifest must bundle CodeBuddy: ${manifestPath}`)
+  }
   const dshmarket = manifest.bundled?.find(plugin => plugin?.name === 'dshmarket')
   if (dshmarket?.version !== DSHMARKET_VERSION) {
     throw new Error(`The published DSH plugin manifest must pin dshmarket@${DSHMARKET_VERSION}`)

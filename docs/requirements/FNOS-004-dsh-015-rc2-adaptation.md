@@ -65,7 +65,7 @@ lastVerified: 2026-09-12
 | 编号 | 优先级 | 功能 | 用户行为 | 状态 |
 | --- | --- | --- | --- | --- |
 | FNOS-004-01 | P0 | DSH 与插件适配 0.1.5-rc.2 | FPK 安装后应用私有 `dsh --version` 为 `0.1.5-rc.2`；DSH Web 和仓库内插件正常加载 | <Badge type="info" text="规划中" /> |
-| FNOS-004-02 | P0 | 恢复 Codex 默认捆绑 | 新用户安装 FPK 后即从内置归档安装与 `0.1.5-rc.2` 兼容的 Codex 包；升级老用户时按精确版本校准，不删除用户凭据和配置 | <Badge type="info" text="规划中" /> |
+| FNOS-004-02 | P0 | 恢复 Codex 与 CodeBuddy 默认捆绑 | 新用户安装 FPK 后即从内置归档安装与 `0.1.5-rc.2` 兼容的 Codex、CodeBuddy 包；升级老用户时按精确版本校准，不删除用户凭据和配置 | <Badge type="info" text="规划中" /> |
 | FNOS-004-03 | P0 | 固定并兼容安装 dshmarket | 新用户获得 `dshmarket@1.46.1`；已安装用户跳过安装并保留现有版本和配置 | <Badge type="info" text="规划中" /> |
 | FNOS-004-04 | P0 | 安装私有 dsh CLI 且不暴露系统命令 | 真实 CLI 固定在应用私有目录并由应用包用户运行；FPK 不注册公开 `dsh` 入口，平台无 root 时 wrapper 无法保证应用用户身份 | <Badge type="info" text="规划中" /> |
 | FNOS-004-05 | P0 | 内部重启后刷新代理 Token | DSH Web 重启并生成新 Token 后，页面跳转和代理请求不再使用旧 Token，不出现未授权页面 | <Badge type="info" text="规划中" /> |
@@ -195,7 +195,7 @@ lastVerified: 2026-09-12
 - `FNOS-004-07-AC-10`：强制覆盖只对 FPK 中实际存在的内置归档生效；归档不存在的发布插件继续按版本精确安装/更新，缺少清单的老插件不自动 remove。安装失败时生命周期返回非零并输出可定位错误。
 - `FNOS-004-07-AC-06`：DSH CLI、pnpm 或 profile 写入失败时生命周期返回非零，保留原 profile 数据并输出可定位错误。
 - `FNOS-004-07-AC-08`：运行期插件安装与三方市场更新使用与 profile 一致的 pnpm store：网关启动 Web 时注入 `${DSH_HOME}/.pnpm-store-dir` 记录的 `PNPM_CONFIG_STORE_DIR`，`pnpm store path` 解析结果与该 profile `node_modules/.modules.yaml` 的 `storeDir` 相同，不出现 `ERR_PNPM_UNEXPECTED_STORE`；记录缺失或非法时清除继承值而不是猜测。
-- `FNOS-004-07-AC-07`：当前 DSH 客户端完成 Codex Auth、CodeBuddy、Semi UI 和共享包的 CLI 管理、Bundle 生效和重启验证；真实 NAS 只验收 FPK、网关和 `dsh-fnos`。
+- `FNOS-004-07-AC-07`：当前 DSH 客户端完成 Codex Auth、CodeBuddy、Semi UI 和共享包的 CLI 管理、Bundle 生效和重启验证；真实 NAS 只验收 FPK、网关、CodeBuddy 和 `dsh-fnos`。
 
 ### FNOS-004-08 验收条件
 

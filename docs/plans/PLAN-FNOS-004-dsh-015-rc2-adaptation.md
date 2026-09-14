@@ -84,13 +84,13 @@ DSH 0.1.5-rc.2 发布包
 | PLAN-FNOS-004-T02-04 | FNOS-004-01-AC-07 | CodeBuddy 迁移 `dsh-llm` 流式、文件块和附件序列化接缝，保留现有多账号、切换、签到和用量面板行为 | CodeBuddy 类型检查、单元测试和构建通过；文本、图片和错误流仍能被 UI 正确消费 |
 | PLAN-FNOS-004-T02-05 | FNOS-004-01-AC-08 | Semi UI 共享包和总览插件迁移 layout、renderer、slots、theme 与 primitives 接缝 | 共享组件和总览路由在新客户端下能构建、渲染、刷新和卸载 |
 
-### P0：恢复 Codex 默认捆绑
+### P0：恢复 Codex 与 CodeBuddy 默认捆绑
 
 状态：<Badge type="info" text="规划中" />
 
 | 任务 ID | 对应验收 | 实现内容 | 验收 |
 | --- | --- | --- | --- |
-| PLAN-FNOS-004-T05-01 | FNOS-004-02-AC-01 | 在 `published-dsh-plugins.json` 的 `plugins` 中恢复 `@tnnevol/dsh-codex-auth` 的精确版本；仓库内插件使用 `pnpm pack` 生成精确版本归档，核验包名、版本和运行依赖，安装回调用 DSH CLI `file:` spec 安装；发现旧 `link:` 同版本安装时重新安装归档 | 清单包含 Codex 且与内置归档元数据一致，干净及旧 `link:` profile 均能解析 Codex 依赖并启动 Web |
+| PLAN-FNOS-004-T05-01 | FNOS-004-02-AC-01 | 在 `published-dsh-plugins.json` 的 `plugins` 中维护 `@tnnevol/dsh-codebuddy` 与 `@tnnevol/dsh-codex-auth` 的精确版本；仓库内插件使用 `pnpm pack` 生成精确版本归档，核验包名、版本和运行依赖，安装回调用 DSH CLI `file:` spec 安装；发现旧 `link:` 同版本安装时重新安装归档 | 清单包含 CodeBuddy、Codex 且与内置归档元数据一致，干净及旧 profile 均能解析两个插件依赖并启动 Web |
 | PLAN-FNOS-004-T05-02 | FNOS-004-02-AC-02 | 确认安装/升级只按清单对 Codex 执行安装或精确版本校准，不删除用户凭据、模型配置、workspace、授权目录和 profile bundle | 老用户已有 Codex 凭据、配置和 bundle 在升级后逐项保持不变 |
 | PLAN-FNOS-004-T05-03 | FNOS-004-02-AC-03 | 为安装回调增加新用户、老用户和重复升级场景的隔离回归夹具，记录安装、升级和跳过的日志 | 新用户装到清单精确版本；老用户保留用户数据；重复执行幂等 |
 | PLAN-FNOS-004-T05-04 | FNOS-004-02-AC-04 | 移除构建 CLI 与文档中的 Codex 排除规则，改为校验清单包含 Codex 且归档版本与清单一致；三方插件（dshmarket）仍不进入内置目录，安装回调通过 DSH CLI 单独安装 | 构建产物内置 Codex 归档且无浮动版本安装；本地 FPK 检查和真实 NAS 升级验证结果一致 |

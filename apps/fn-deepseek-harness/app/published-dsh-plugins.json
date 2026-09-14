@@ -3,6 +3,10 @@
   "registry": "https://registry.npmjs.org/",
   "plugins": [
     {
+      "name": "@tnnevol/dsh-codebuddy",
+      "version": "0.1.5-rc.2"
+    },
+    {
       "name": "@tnnevol/dsh-codex-auth",
       "version": "0.1.5-rc.2"
     },
