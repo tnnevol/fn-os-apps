@@ -104,6 +104,15 @@ describe('dsh-fnos package contract', () => {
     expect(source).not.toContain("{busy ? t('deleting') : t('delete')}")
   })
 
+  it('saves gateway proxy paths with Ctrl/Cmd+Enter from the textarea', async () => {
+    const source = await readFile(new URL('../../src/components/AuthorizedDirectoriesCard.tsx', import.meta.url), 'utf8')
+    expect(source).toContain('handleProxyPathsKeyDown')
+    expect(source).toContain("if (!(event.ctrlKey || event.metaKey) || event.key !== 'Enter') return")
+    expect(source).toContain('event.preventDefault()')
+    expect(source).toContain('void saveProxyPaths()')
+    expect(source).toContain('onKeyDown={handleProxyPathsKeyDown}')
+  })
+
   it('adapts opening the DSH settings document to fnOS', async () => {
     const host = await readFile(new URL('../../src/host/authorized-directories.ts', import.meta.url), 'utf8')
     const action = await readFile(new URL('../../src/components/FnosSettingsDocumentAction.tsx', import.meta.url), 'utf8')

@@ -1,6 +1,7 @@
 /** Settings card for the fnOS shared-directory authorization list. */
 
 import { useCallback, useEffect, useState } from 'react'
+import type { KeyboardEvent } from 'react'
 import { DshModal } from '@tnnevol/dsh-semi-ui'
 import type { PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type { FnosLocaleKey } from '../client/locales.ts'
@@ -143,6 +144,12 @@ export function AuthorizedDirectoriesCard({ t }: AuthorizedDirectoriesCardProps)
     finally { setBusy(false) }
   }, [proxyPathsDraft, t])
 
+  const handleProxyPathsKeyDown = useCallback((event: KeyboardEvent<HTMLTextAreaElement>): void => {
+    if (!(event.ctrlKey || event.metaKey) || event.key !== 'Enter') return
+    event.preventDefault()
+    if (!busy && proxyPathsDraft !== savedProxyPaths) void saveProxyPaths()
+  }, [busy, proxyPathsDraft, saveProxyPaths, savedProxyPaths])
+
   const addDirectory = useCallback(async (): Promise<void> => {
     setBusy(true)
     let phase = 'createTrimApp'
@@ -279,7 +286,7 @@ export function AuthorizedDirectoriesCard({ t }: AuthorizedDirectoriesCardProps)
           <div className="dsh-fnos-authorized-gateway">
             <strong className="dsh-fnos-authorized-gateway-title">{t('gatewayProxyTitle')}</strong>
             <p className="dsh-fnos-authorized-body dsh-fnos-authorized-gateway-description">{t('gatewayProxyDescription')}</p>
-            <textarea value={proxyPathsDraft} placeholder={t('gatewayProxyPlaceholder')} className="dsh-fnos-authorized-textarea" disabled={busy} onChange={event => { setProxyPathsDraft(event.currentTarget.value); setProxyMessage(undefined) }} />
+            <textarea value={proxyPathsDraft} placeholder={t('gatewayProxyPlaceholder')} className="dsh-fnos-authorized-textarea" disabled={busy} onKeyDown={handleProxyPathsKeyDown} onChange={event => { setProxyPathsDraft(event.currentTarget.value); setProxyMessage(undefined) }} />
             {proxyMessage === undefined ? null : <p className="dsh-fnos-authorized-body dsh-fnos-authorized-gateway-message">{proxyMessage}</p>}
             <div className="dsh-fnos-authorized-row dsh-fnos-authorized-row--end">
               <button type="button" className="dsh-fnos-authorized-button" disabled={busy || proxyPathsDraft === savedProxyPaths} onClick={() => { setProxyPathsDraft(savedProxyPaths); setProxyMessage(undefined) }}>{t('discard')}</button>
