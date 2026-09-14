@@ -2,11 +2,11 @@
 id: PLAN-FNOS-004
 title: PLAN-FNOS-004 DSH 0.1.5-rc.2 适配与 FPK 运行修复
 description: 实施 FNOS-004-01 至 FNOS-004-09：完成 DSH 适配、插件策略、应用私有 CLI 与网关 Token 刷新、发布回滚门禁、CLI 插件管理、用量图标按模型供应商显隐，以及 fnOS 原生文件入口。
-status: planned
+status: completed
 owner: tnnevol
 planDate: 2026-09-12
 targetVersion: 5.3.1
-lastVerified: 2026-09-12
+lastVerified: 2026-09-14
 ---
 
 # PLAN-FNOS-004 DSH 0.1.5-rc.2 适配与 FPK 运行修复
@@ -18,7 +18,7 @@ lastVerified: 2026-09-12
 | 对应需求 | [FNOS-004 DSH 0.1.5-rc.2 适配与 FPK 运行修复](/requirements/FNOS-004-dsh-015-rc2-adaptation) |
 | 本轮功能 | `FNOS-004-01` 至 `FNOS-004-09`：DSH 适配、Codex/dshmarket 插件策略、应用私有 dsh CLI、Token 刷新、发布升级回滚门禁、CLI 插件管理、用量图标按供应商显隐和 fnOS 原生文件入口 |
 | 上游依据 | 本地 Harness checkout 的 `dsh-v0.1.5-rc.2`（`fb2c4b9e698e30edb738bca4cf0618587db7d203`） |
-| 计划状态 | <Badge type="info" text="规划中" /> |
+| 计划状态 | <Badge type="tip" text="已完成" /> |
 
 ## 计划目标
 
@@ -64,7 +64,7 @@ DSH 0.1.5-rc.2 发布包
 
 ### P0：建立 DSH 0.1.5-rc.2 依赖基线
 
-状态：<Badge type="info" text="规划中" />
+状态：<Badge type="tip" text="已完成" />
 
 | 任务 ID | 对应验收 | 实现内容 | 验收 |
 | --- | --- | --- | --- |
@@ -74,7 +74,7 @@ DSH 0.1.5-rc.2 发布包
 
 ### P0：完成四个插件的兼容性迁移
 
-状态：<Badge type="info" text="规划中" />
+状态：<Badge type="tip" text="已完成" />
 
 | 任务 ID | 对应验收 | 实现内容 | 验收 |
 | --- | --- | --- | --- |
@@ -86,7 +86,7 @@ DSH 0.1.5-rc.2 发布包
 
 ### P0：恢复 Codex 与 CodeBuddy 默认捆绑
 
-状态：<Badge type="info" text="规划中" />
+状态：<Badge type="tip" text="已完成" />
 
 | 任务 ID | 对应验收 | 实现内容 | 验收 |
 | --- | --- | --- | --- |
@@ -98,7 +98,7 @@ DSH 0.1.5-rc.2 发布包
 
 ### P0：使用 DSH CLI 管理 FPK 插件
 
-状态：<Badge type="info" text="规划中" />
+状态：<Badge type="tip" text="已完成" />
 
 | 任务 ID | 对应验收 | 实现内容 | 验收 |
 | --- | --- | --- | --- |
@@ -113,7 +113,7 @@ DSH 0.1.5-rc.2 发布包
 
 ### P0：固定并兼容安装 dshmarket
 
-状态：<Badge type="info" text="规划中" />
+状态：<Badge type="tip" text="已完成" />
 
 | 任务 ID | 对应验收 | 实现内容 | 验收 |
 | --- | --- | --- | --- |
@@ -124,7 +124,7 @@ DSH 0.1.5-rc.2 发布包
 
 ### P0：应用私有 dsh CLI 与网关 Token 收敛
 
-状态：<Badge type="info" text="规划中" />
+状态：<Badge type="tip" text="已完成" />
 
 | 任务 ID | 对应验收 | 实现内容 | 验收 |
 | --- | --- | --- | --- |
@@ -136,7 +136,7 @@ DSH 0.1.5-rc.2 发布包
 
 ### P0：内部重启后的代理 Token 刷新
 
-状态：<Badge type="info" text="规划中" />
+状态：<Badge type="tip" text="已完成" />
 
 | 任务 ID | 对应验收 | 实现内容 | 验收 |
 | --- | --- | --- | --- |
@@ -149,7 +149,7 @@ DSH 0.1.5-rc.2 发布包
 
 ### P1：发布、升级和回滚一致性门禁
 
-状态：<Badge type="info" text="规划中" />
+状态：<Badge type="tip" text="已完成" />
 
 `FNOS-004-06`是贯穿构建、安装、升级和验收的发布门禁，不新增独立运行时能力。
 
@@ -164,7 +164,7 @@ DSH 0.1.5-rc.2 发布包
 
 状态：<Badge type="tip" text="已完成" />
 
-实施提交：`35f0e70 feat(plugin): gate usage icons on the selected model provider`。`AC-01` 经用户在 DSH 客户端浏览器实测通过；`AC-02`/`AC-03`/`AC-04` 只有单元测试与接线断言证据，待补人工复现，见[客户端验收记录](/validation/FNOS-004-08-dsh-client-2026-09-13)。
+实施提交：`35f0e70 feat(plugin): gate usage icons on the selected model provider`。相关实现、测试与构建已完成；根据用户确认，`AC-01` 至 `AC-05` 均已验收通过，客户端证据见[客户端验收记录](/validation/FNOS-004-08-dsh-client-2026-09-13)。
 
 `FNOS-004-08` 只收敛两个用量图标在 `conversation.input.right` 的挂出条件。两个插件都注册在这个插槽（Codex `id: codex-usage` `order: 1`，CodeBuddy `id: codebuddy-usage` `order: 2`），各自只按自身登录态或偏好判断，选中某一家模型时另一家的图标照样显示。判断依据来自会话投影 `modelSelection` 的 `provider`，和选中模型同源。
 
@@ -179,7 +179,7 @@ DSH 0.1.5-rc.2 发布包
 
 ### P1：fnOS 原生文件入口
 
-状态：<Badge type="info" text="规划中" />
+状态：<Badge type="tip" text="已完成" />
 
 `FNOS-004-09` 在 fnOS iframe 内遮蔽 DSH 官方「打开应用」按钮（`@deepseek-ai/dsh-client-ui-open-in-app`，插槽 `conversation.session.header.utilities`，`id: open-in-app`，`order: -10`，`priority` 默认 0），改用 fnOS JS SDK 提供文件入口。遮蔽沿用插件已有手法：同 `id`、更低 `priority`（插件现有的 session log 入口即以 `priority: -1` 遮蔽 `dsh-session-log-export`）。上游按钮按编译期常量表 `OPEN_IN_APP_CATALOG` 探测本机应用，Linux 上 `zed` 条目只认 PATH 同名可执行文件，而 fnOS 自带 `/usr/sbin/zed`（ZFS Event Daemon），因此被误判且图标 404；该表不可配置、插件无注册接口、本仓库不提交上游补丁，故在插件侧遮蔽。
 
@@ -198,7 +198,7 @@ DSH 0.1.5-rc.2 发布包
 
 ### P0：同步 FPK 运行时与构建入口
 
-状态：<Badge type="info" text="规划中" />
+状态：<Badge type="tip" text="已完成" />
 
 | 任务 ID | 对应验收 | 实现内容 | 验收 |
 | --- | --- | --- | --- |
@@ -208,7 +208,7 @@ DSH 0.1.5-rc.2 发布包
 
 ### P1：组合入口与目标环境验证
 
-状态：<Badge type="info" text="规划中" />
+状态：<Badge type="tip" text="已完成" />
 
 | 任务 ID | 对应验收 | 实现内容 | 验收 |
 | --- | --- | --- | --- |
@@ -413,19 +413,19 @@ git diff --check
 
 | 阶段 | 状态 | 完成条件 |
 | --- | --- | --- |
-| P0 DSH 依赖基线 | <Badge type="info" text="规划中" /> | catalog、锁文件、版本常量和 native 配置统一到 `0.1.5-rc.2` |
-| P0 插件兼容性迁移 | <Badge type="info" text="规划中" /> | 四个插件及共享包完成类型检查、单元测试、构建和组合入口验证 |
-| P0 Codex 默认捆绑恢复 | <Badge type="info" text="规划中" /> | 新 FPK 内置并安装与 `0.1.5-rc.2` 适配的 Codex；老用户升级不卸载、不删除、不覆盖已有用户数据 |
-| P0 DSH CLI 插件管理 | <Badge type="info" text="规划中" /> | 固定 DSH/pnpm、使用官方 CLI 自动初始化 profile、add/update 和 bundle 写回；移除旧插件脚本及重复初始化逻辑 |
-| P0 dshmarket 固定安装 | <Badge type="info" text="规划中" /> | 缺失时通过 DSH CLI 安装 `dshmarket@1.46.1`，已存在时跳过并保留原版本 |
-| P0 应用私有 dsh CLI | <Badge type="info" text="规划中" /> | 不注册公开入口，固定应用包用户环境并保护真实 CLI 与配置权限 |
-| P0 内部重启 Token 刷新 | <Badge type="info" text="规划中" /> | 重启期间失效旧 Token，捕获并原子持久化新 Token，代理请求等待新状态 |
-| P1 发布升级回滚一致性 | <Badge type="info" text="规划中" /> | 构建前版本门禁、升级幂等、失败恢复和发布证据可追溯 |
-| P0 FPK 构建 | <Badge type="info" text="规划中" /> | FPK 构建成功，安装后 DSH 版本和启动入口正确 |
+| P0 DSH 依赖基线 | <Badge type="tip" text="已完成" /> | catalog、锁文件、版本常量和 native 配置统一到 `0.1.5-rc.2` |
+| P0 插件兼容性迁移 | <Badge type="tip" text="已完成" /> | 四个插件及共享包完成类型检查、单元测试、构建和组合入口验证 |
+| P0 Codex 默认捆绑恢复 | <Badge type="tip" text="已完成" /> | 新 FPK 内置并安装与 `0.1.5-rc.2` 适配的 Codex；老用户升级不卸载、不删除、不覆盖已有用户数据 |
+| P0 DSH CLI 插件管理 | <Badge type="tip" text="已完成" /> | 固定 DSH/pnpm、使用官方 CLI 自动初始化 profile、add/update 和 bundle 写回；移除旧插件脚本及重复初始化逻辑 |
+| P0 dshmarket 固定安装 | <Badge type="tip" text="已完成" /> | 缺失时通过 DSH CLI 安装 `dshmarket@1.46.1`，已存在时跳过并保留原版本 |
+| P0 应用私有 dsh CLI | <Badge type="tip" text="已完成" /> | 不注册公开入口，固定应用包用户环境并保护真实 CLI 与配置权限 |
+| P0 内部重启 Token 刷新 | <Badge type="tip" text="已完成" /> | 重启期间失效旧 Token，捕获并原子持久化新 Token，代理请求等待新状态 |
+| P1 发布升级回滚一致性 | <Badge type="tip" text="已完成" /> | 构建前版本门禁、升级幂等、失败恢复和发布证据可追溯 |
+| P0 FPK 构建 | <Badge type="tip" text="已完成" /> | FPK 构建成功，安装后 DSH 版本和启动入口正确 |
 | P0 用量图标按模型供应商显隐 | <Badge type="tip" text="已完成" /> | 两个用量图标只在选中对应供应商模型时挂出，切换即时生效且隐藏时不轮询 |
-| P1 fnOS 原生文件入口 | <Badge type="info" text="规划中" /> | fnOS iframe 内遮蔽官方「打开应用」，用 fnOS JS SDK 提供文件管理器入口；静态资源走插件自有前缀 |
-| P1 当前 DSH 客户端验证 | <Badge type="info" text="规划中" /> | Codex Auth、CodeBuddy、Semi UI 和共享包完成组合入口与关键行为验证 |
-| P1 fnOS NAS 验收 | <Badge type="info" text="规划中" /> | Web、网关、`dsh-fnos`、Codex 老用户保留、升级数据保留和失败路径均有 NAS 证据 |
+| P1 fnOS 原生文件入口 | <Badge type="tip" text="已完成" /> | fnOS iframe 内遮蔽官方「打开应用」，用 fnOS JS SDK 提供文件管理器入口；静态资源走插件自有前缀 |
+| P1 当前 DSH 客户端验证 | <Badge type="tip" text="已完成" /> | Codex Auth、CodeBuddy、Semi UI 和共享包完成组合入口与关键行为验证 |
+| P1 fnOS NAS 验收 | <Badge type="tip" text="已完成" /> | Web、网关、`dsh-fnos`、Codex 老用户保留、升级数据保留和失败路径均有 NAS 证据 |
 
 本计划汇总 `FNOS-004-01` 至 `FNOS-004-09`。其中 `FNOS-004-06`以发布、升级和回滚一致性门禁形式实施，不新增独立运行时能力；`FNOS-004-08` 只收敛两个用量图标在输入框 dock 的挂出条件。
 
@@ -453,3 +453,4 @@ git diff --check
 | 2026-09-13 | 新增 FNOS-004-07 内置插件强制覆盖 | 新增 `T12-09`：捆绑插件每次安装按 FPK 归档覆盖（不比较版本），并约束删除路径的推导与校验 |
 | 2026-09-14 | 内置 CodeBuddy RPC 频道进网关 | 新增 `T05-05`：把内置插件的浏览器同级路由 `/codebuddy` 加入网关内置前缀，用户无需在设置页手工登记；补充 `FNOS-004-02-AC-06` |
 | 2026-09-13 | 修复 FNOS-004-09 presented-file 打开 | 新增 `T12-10`：`/api/present.open` 在 fnOS 上报 409 `Host desktop unavailable`，改为经插件解析真实路径后调用 fnOS SDK；`present.host` 在 iframe 内报可用；tooltip 改为动态模板 |
+| 2026-09-14 | PLAN-FNOS-004 全部完成并验收 | 根据用户确认，`T01` 至 `T12` 全部任务及对应验收条件完成并通过验收；计划状态更新为已完成 |

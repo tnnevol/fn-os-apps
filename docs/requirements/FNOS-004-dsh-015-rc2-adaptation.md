@@ -2,10 +2,10 @@
 id: FNOS-004
 title: FNOS-004 DSH 0.1.5-rc.2 适配与 FPK 运行修复
 description: 将 DSH 应用和插件适配到 0.1.5-rc.2，调整 FPK 插件捆绑、统一使用 dsh CLI 管理插件，并修复内部重启后的代理 Token 刷新。
-status: planned
+status: completed
 owner: tnnevol
 targetVersion: 5.3.1
-lastVerified: 2026-09-12
+lastVerified: 2026-09-14
 ---
 
 # FNOS-004 DSH 0.1.5-rc.2 适配与 FPK 运行修复
@@ -14,7 +14,7 @@ lastVerified: 2026-09-12
 | --- | --- |
 | 需求编号 | FNOS-004 |
 | 提出日期 | 2026-09-12 |
-| 需求状态 | <Badge type="info" text="规划中" /> |
+| 需求状态 | <Badge type="tip" text="已完成" /> |
 | 关联计划 | [PLAN-FNOS-004 DSH 0.1.5-rc.2 适配与 FPK 运行修复](/plans/PLAN-FNOS-004-dsh-015-rc2-adaptation) |
 
 ## 需求背景与目标
@@ -65,15 +65,15 @@ lastVerified: 2026-09-12
 
 | 编号 | 优先级 | 功能 | 用户行为 | 状态 |
 | --- | --- | --- | --- | --- |
-| FNOS-004-01 | P0 | DSH 与插件适配 0.1.5-rc.2 | FPK 安装后应用私有 `dsh --version` 为 `0.1.5-rc.2`；DSH Web 和仓库内插件正常加载 | <Badge type="info" text="规划中" /> |
-| FNOS-004-02 | P0 | 恢复 Codex 与 CodeBuddy 默认捆绑 | 新用户安装 FPK 后即从内置归档安装与 `0.1.5-rc.2` 兼容的 Codex、CodeBuddy 包；升级老用户时按精确版本校准，不删除用户凭据和配置 | <Badge type="info" text="规划中" /> |
-| FNOS-004-03 | P0 | 固定并兼容安装 dshmarket | 新用户获得 `dshmarket@1.46.1`；已安装用户跳过安装并保留现有版本和配置 | <Badge type="info" text="规划中" /> |
-| FNOS-004-04 | P0 | 安装私有 dsh CLI 且不暴露系统命令 | 真实 CLI 固定在应用私有目录并由应用包用户运行；FPK 不注册公开 `dsh` 入口，平台无 root 时 wrapper 无法保证应用用户身份 | <Badge type="info" text="规划中" /> |
-| FNOS-004-05 | P0 | 内部重启后刷新代理 Token | DSH Web 重启并生成新 Token 后，页面跳转和代理请求不再使用旧 Token，不出现未授权页面 | <Badge type="info" text="规划中" /> |
-| FNOS-004-06 | P1 | 升级、回滚与发布清单一致 | FPK 升级/回滚不丢失用户数据，构建产物、插件包和发布清单可追溯 | <Badge type="info" text="规划中" /> |
-| FNOS-004-07 | P0 | 使用 DSH CLI 管理 FPK 插件 | 安装、更新和显式移除统一通过 `dsh plugin --profile web`，不再调用应用自定义插件脚本 | <Badge type="info" text="规划中" /> |
+| FNOS-004-01 | P0 | DSH 与插件适配 0.1.5-rc.2 | FPK 安装后应用私有 `dsh --version` 为 `0.1.5-rc.2`；DSH Web 和仓库内插件正常加载 | <Badge type="tip" text="已完成" /> |
+| FNOS-004-02 | P0 | 恢复 Codex 与 CodeBuddy 默认捆绑 | 新用户安装 FPK 后即从内置归档安装与 `0.1.5-rc.2` 兼容的 Codex、CodeBuddy 包；升级老用户时按精确版本校准，不删除用户凭据和配置 | <Badge type="tip" text="已完成" /> |
+| FNOS-004-03 | P0 | 固定并兼容安装 dshmarket | 新用户获得 `dshmarket@1.46.1`；已安装用户跳过安装并保留现有版本和配置 | <Badge type="tip" text="已完成" /> |
+| FNOS-004-04 | P0 | 安装私有 dsh CLI 且不暴露系统命令 | 真实 CLI 固定在应用私有目录并由应用包用户运行；FPK 不注册公开 `dsh` 入口，平台无 root 时 wrapper 无法保证应用用户身份 | <Badge type="tip" text="已完成" /> |
+| FNOS-004-05 | P0 | 内部重启后刷新代理 Token | DSH Web 重启并生成新 Token 后，页面跳转和代理请求不再使用旧 Token，不出现未授权页面 | <Badge type="tip" text="已完成" /> |
+| FNOS-004-06 | P1 | 升级、回滚与发布清单一致 | FPK 升级/回滚不丢失用户数据，构建产物、插件包和发布清单可追溯 | <Badge type="tip" text="已完成" /> |
+| FNOS-004-07 | P0 | 使用 DSH CLI 管理 FPK 插件 | 安装、更新和显式移除统一通过 `dsh plugin --profile web`，不再调用应用自定义插件脚本 | <Badge type="tip" text="已完成" /> |
 | FNOS-004-08 | P0 | 按所选模型供应商显隐用量图标 | 选中 Codex 模型时输入框只显示 Codex 用量图标，选中 CodeBuddy 模型时只显示 CodeBuddy 图标；切换模型即时变化 | <Badge type="tip" text="已完成" /> |
-| FNOS-004-09 | P1 | fnOS 原生文件入口 | 在 fnOS iframe 内遮蔽 DSH 官方「打开应用」按钮，改由插件用 fnOS JS SDK 提供文件入口，可打开 NAS 文件管理器并定位到当前会话工作目录 | <Badge type="info" text="规划中" /> |
+| FNOS-004-09 | P1 | fnOS 原生文件入口 | 在 fnOS iframe 内遮蔽 DSH 官方「打开应用」按钮，改由插件用 fnOS JS SDK 提供文件入口，可打开 NAS 文件管理器并定位到当前会话工作目录 | <Badge type="tip" text="已完成" /> |
 
 ## 交互和行为约束
 
@@ -234,13 +234,13 @@ lastVerified: 2026-09-12
 
 | 阶段 | 状态 | 当前范围 | 下一步 |
 | --- | --- | --- | --- |
-| P0 DSH 与插件兼容性升级 | <Badge type="info" text="规划中" /> | 运行时、catalog、插件接缝和 FPK 基线 | 建立 0.1.5-rc.2 依赖并完成逐包适配 |
-| P0 FPK 插件安装策略 | <Badge type="info" text="规划中" /> | 内置 Codex 并随 FPK 安装，固定 dshmarket 且兼容已安装状态 | 更新包清单、内置包和安装/升级回调 |
-| P0 CLI 与 Token 运行修复 | <Badge type="info" text="规划中" /> | 应用用户权限、CLI wrapper、重启后的 Token 原子刷新 | 补命令、权限、重启和并发回归测试 |
-| P0 DSH CLI 插件管理 | <Badge type="info" text="规划中" /> | 固定 DSH/pnpm、使用官方 CLI 自动初始化 profile、插件 CLI 操作和 bundle 写回 | 移除旧插件脚本和重复初始化逻辑，并完成客户端/NAS 分层验收 |
-| P0 用量图标按模型供应商显隐 | <Badge type="tip" text="已完成" /> | Codex / CodeBuddy 客户端 dock 注册、显隐条件、真值表单测与接线断言 | 无；AC-02/03/04 待补人工复现，见[客户端验收记录](/validation/FNOS-004-08-dsh-client-2026-09-13) |
-| P1 fnOS 原生文件入口 | <Badge type="info" text="规划中" /> | fnOS iframe 内遮蔽官方「打开应用」，提供文件管理器入口，静态资源走插件自有前缀 | 进入计划后补实现、测试与 NAS 验收 |
-| P1 发布、升级回滚与 NAS 验收 | <Badge type="info" text="规划中" /> | FPK 产物、用户数据、网关和目标环境证据 | 建立实施计划并记录验证结果 |
+| P0 DSH 与插件兼容性升级 | <Badge type="tip" text="已完成" /> | 运行时、catalog、插件接缝和 FPK 基线 | 无；已完成并验收通过 |
+| P0 FPK 插件安装策略 | <Badge type="tip" text="已完成" /> | 内置 Codex 并随 FPK 安装，固定 dshmarket 且兼容已安装状态 | 无；已完成并验收通过 |
+| P0 CLI 与 Token 运行修复 | <Badge type="tip" text="已完成" /> | 应用用户权限、CLI wrapper、重启后的 Token 原子刷新 | 无；已完成并验收通过 |
+| P0 DSH CLI 插件管理 | <Badge type="tip" text="已完成" /> | 固定 DSH/pnpm、使用官方 CLI 自动初始化 profile、插件 CLI 操作和 bundle 写回 | 无；已完成并验收通过 |
+| P0 用量图标按模型供应商显隐 | <Badge type="tip" text="已完成" /> | Codex / CodeBuddy 客户端 dock 注册、显隐条件、真值表单测与接线断言 | 无；已完成并验收通过 |
+| P1 fnOS 原生文件入口 | <Badge type="tip" text="已完成" /> | fnOS iframe 内遮蔽官方「打开应用」，提供文件管理器入口，静态资源走插件自有前缀 | 无；已完成并验收通过 |
+| P1 发布、升级回滚与 NAS 验收 | <Badge type="tip" text="已完成" /> | FPK 产物、用户数据、网关和目标环境证据 | 无；已完成并验收通过 |
 
 ## 变更记录
 
@@ -260,3 +260,4 @@ lastVerified: 2026-09-12
 | 2026-09-13 | 补充 FNOS-004-09 头部布局与 Session log 控件 | 明确两个条目的左右顺序与官方一致（AC-09）、Session log 触发控件为纯图标按钮（AC-10）；顺序取值集中并加行为测试 |
 | 2026-09-13 | 修复 FNOS-004-09「导出到 NAS」必然失败 | 上游取数原走 `ctx.get('apiProxy')`，但全仓与上游 DSH 均无该服务提供方，取值恒为 undefined、每次必 503；改为宿主向 loopback 请求 DSH 自己的 `/api/session.export`（AC-11） |
 | 2026-09-13 | 新增 FNOS-004-07 "内置插件强制覆盖" | 记录捆绑插件必须每次安装都按 FPK 归档覆盖（不比较版本），并约束删除路径的推导与校验（AC-09/AC-10） |
+| 2026-09-14 | FNOS-004 全部完成并验收 | 根据用户确认，FNOS-004-01 至 FNOS-004-09 及其验收条件全部完成并通过验收；需求状态更新为已完成 |
