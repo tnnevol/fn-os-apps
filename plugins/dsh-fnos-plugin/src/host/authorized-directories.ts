@@ -620,21 +620,29 @@ function sessionLogExportFilename(sessionId: string): string {
  * `/api` 上，宿主直接请求它比在本插件里重做 flush/打包/附件收集安全得多。
  *
  * 鉴权：`/api` 的信任判定放行 loopback（`isTrustedApiRequest` 对 loopback
- * Host 直接返回 true），且不带 Origin 就没有跨源栅栏，所以服务端自址请求
- * 不需要 token。
+ * Host 直接返回 true），但 browser-session 认证仍然需要 `dsh-auth-*` Cookie。
+ * 因此把当前浏览器请求的 Cookie 原样转发给 loopback 上的 DSH；不能误以为
+ * loopback 同时绕过了 browser-session 校验。
  *
  * @param ctx - 提供 webServer 的宿主上下文，用于取本机监听地址。
  * @param sessionId - 目标会话。
  * @param signal - 调用方中止信号，客户端断开时一并取消上游请求。
+ * @param cookie - 当前浏览器请求的 Cookie，供 DSH browser-session 认证。
  */
-export async function fetchSessionLogZip(ctx: Context, sessionId: string, signal: AbortSignal): Promise<Response> {
+export async function fetchSessionLogZip(
+  ctx: Context,
+  sessionId: string,
+  signal: AbortSignal,
+  cookie: string | undefined,
+): Promise<Response> {
   const { host, port } = ctx.webServer
   // 绑定 0.0.0.0 时仍走 loopback：本机请求不需要经过对外网卡。
   const address = host === '0.0.0.0' ? '127.0.0.1' : host
   const url = new URL(DSH_SESSION_LOG_EXPORT_PATH, `http://${address}:${String(port)}`)
   url.searchParams.set('sessionId', sessionId)
   url.searchParams.set('includeDescendants', 'true')
-  return fetch(url, { method: 'GET', signal })
+  const headers = cookie === undefined ? undefined : { cookie }
+  return fetch(url, { method: 'GET', ...(headers === undefined ? {} : { headers }), signal })
 }
 
 async function writeSessionLogResponse(response: Response, target: string, signal: AbortSignal): Promise<void> {
@@ -889,7 +897,7 @@ export function registerAuthorizedDirectoryRoutes(ctx: Context): void {
           req.once('close', abort)
           const target = posix.join(request.directory, sessionLogExportFilename(request.sessionId))
           try {
-            const response = await fetchSessionLogZip(ctx, request.sessionId, abortController.signal)
+            const response = await fetchSessionLogZip(ctx, request.sessionId, abortController.signal, req.headers.cookie)
             if (!response.ok) {
               return json(res, response.status >= 400 && response.status < 500 ? response.status : 500, {
                 error: 'fnos-session-log-export-unavailable',

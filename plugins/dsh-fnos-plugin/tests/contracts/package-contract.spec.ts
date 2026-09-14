@@ -175,6 +175,8 @@ describe('dsh-fnos package contract', () => {
     expect(host).toContain('/api/session.export')
     expect(host).not.toMatch(/=\s*ctx\.get\(['"]apiProxy['"]\)/u)
     expect(host).toContain("url.searchParams.set('includeDescendants', 'true')")
+    expect(host).toContain('req.headers.cookie')
+    expect(host).toContain('fetchSessionLogZip(ctx, request.sessionId, abortController.signal, req.headers.cookie)')
     expect(contract).toContain("'/plugins/dsh-fnos/session-log/export'")
   })
 

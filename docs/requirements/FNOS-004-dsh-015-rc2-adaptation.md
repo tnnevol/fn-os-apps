@@ -217,7 +217,7 @@ lastVerified: 2026-09-12
 - `FNOS-004-09-AC-06`：fnOS 插件 typecheck、单元测试和构建通过；新增行为有单元测试覆盖遮蔽注册、工作目录判定和 SDK 调用分支。
 - `FNOS-004-09-AC-07`：会话头部文件入口的图标以 `/fnos-plugins/static/<插件>/<资源>` 引用，由插件自己的路由返回包内资源，不内联进客户端 bundle；`/fnos-plugins` 属于网关内置前缀，浏览器 bridge 会为它补上应用前缀，且不写死宿主安装目录。
 - `FNOS-004-09-AC-08`：资源缺失时路由返回 404，界面不因此崩溃或阻塞 DSH；插件包内不含该资源时也不回退读取 fnOS 宿主目录。
-- `FNOS-004-09-AC-11`：导出到 NAS 的 ZIP 由 DSH 自己的 `/api/session.export` 生成（宿主向 loopback 请求该路由并流转写入目标目录）；不依赖任何无提供方的注入服务，因此源不可达时不会退化成必然失败的调用。
+- `FNOS-004-09-AC-11`：导出到 NAS 的 ZIP 由 DSH 自己的 `/api/session.export` 生成；宿主向 loopback 请求该路由时必须转发当前浏览器的 `dsh-auth-*` Cookie 完成 browser-session 认证，再流转写入目标目录；不依赖任何无提供方的注入服务。
 
 ### P1 验收条件
 

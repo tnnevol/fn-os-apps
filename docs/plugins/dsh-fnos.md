@@ -76,7 +76,7 @@ fnOS 环境中的 Session log 菜单由头部右侧的 `…` 图标按钮展开�
 
 NAS 导出只允许选择插件返回的授权目录，写入失败时会保留原有会话数据并显示错误。
 
-导出的 ZIP 由 DSH 自己的 `/api/session.export` 生成：插件宿主半边向本机 loopback 地址请求该路由，再把返回的流写入所选目录。不在插件里重复实现会话日志打包（flush、附件收集等），也不依赖任何注入服务——`/api` 的信任判定放行 loopback，服务端自址请求不需要令牌。
+导出的 ZIP 由 DSH 自己的 `/api/session.export` 生成：插件宿主半边向本机 loopback 地址请求该路由，并转发当前浏览器的 `dsh-auth-*` Cookie 完成 browser-session 认证，再把返回的流写入所选目录。不在插件里重复实现会话日志打包（flush、附件收集等），也不依赖不存在的 `apiProxy` 服务。loopback 只绕过 Host/Origin 信任检查，不能省略 browser-session Cookie。
 
 ## 会话头部文件入口
 
