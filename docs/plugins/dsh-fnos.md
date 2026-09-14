@@ -21,6 +21,8 @@ dsh --profile web --dump-config
 
 ## 授权目录
 
+![授权目录设置页](/images/plugins/dsh-fnos/authorized-directories.jpg)
+
 打开「设置 → 插件 → fnos」可以查看应用可访问的 NAS 目录：
 
 - 「添加授权目录」调用 fnOS 授权窗口，成功后立即刷新列表；
@@ -65,9 +67,11 @@ fnOS 应用侧边菜单提供「刷新」和「重启 Web」入口：
 
 fnOS iframe 内的会话头部有两个条目，左右顺序与官方一致：**左侧**是 fnOS 文件入口的分体按钮，**右侧**是 Session log 的 `…` 图标按钮。
 
-顺序由插槽的排序规则决定（`priority` 升序、再 `order` 升序），取值集中在 `header-utility-seats.ts` 并由测试用真实插槽核心验证。这里需要留意：两个条目的 `order` 一旦打平，位置就会静默地改由注册顺序决定、与官方相反——不会报错，只是两个按钮换了位置，因此有专门的顺序测试守着。
+顺序由插槽的排序规则决定（`priority` 升序、再 `order` 升序），取值集中在 `header-utility-seats.ts` 并由测试用真实插槽核心验证。这里需要留意：两个条目的 `order` 一旦打平，位置就会静默地改由注册顺序决定、与官方相反。不会报错，只是两个按钮换了位置，因此有专门的顺序测试守着。
 
 ## 导出会话日志
+
+![会话日志导出菜单](/images/plugins/dsh-fnos/session-log-export.jpg)
 
 fnOS 环境中的 Session log 菜单由头部右侧的 `…` 图标按钮展开（28px 圆形、透明无边框、悬停才出底色，与官方 `session-log-export` 一致）。菜单提供两种导出方式，每项带图标：
 
@@ -79,6 +83,8 @@ NAS 导出只允许选择插件返回的授权目录，写入失败时会保留�
 导出的 ZIP 由 DSH 自己的 `/api/session.export` 生成：插件宿主半边向本机 loopback 地址请求该路由，并转发当前浏览器的 `dsh-auth-*` Cookie 完成 browser-session 认证，再把返回的流写入所选目录。不在插件里重复实现会话日志打包（flush、附件收集等），也不依赖不存在的 `apiProxy` 服务。loopback 只绕过 Host/Origin 信任检查，不能省略 browser-session Cookie。
 
 ## 会话头部文件入口
+
+![会话头部文件入口：分体按钮与菜单](/images/plugins/dsh-fnos/header-file-entry.jpg)
 
 fnOS iframe 内的会话头部提供与官方同款的分体按钮：**左半**执行当前选中的文件操作（只显示该操作的图标），**右半**的箭头展开菜单选择。当前提供一项：
 

@@ -16,7 +16,7 @@ import SemiUiPreview from '../components/SemiUiPreview.vue'
 
 ## 对应共享包
 
-页面展示的组件对应 [`@tnnevol/dsh-semi-ui`](/plugins/dsh-semi-ui) 的公开导出。运行时交互总览仍可从 DSH 设置中的“DSH Semi UI → 打开总览”进入 [`#/plugins/semi-ui`](https://deepseek-harness.github.io/deepseek-harness/)。
+页面展示的组件对应 [`@tnnevol/dsh-semi-ui`](/plugins/dsh-semi-ui) 的公开导出。运行时交互总览仍可从 DSH 设置中的「DSH Semi UI → 打开总览」进入 [`#/plugins/semi-ui`](https://deepseek-harness.github.io/deepseek-harness/)。
 
 组件分组和演示状态参考 Semi 官方文档；当前已接入 [Button](https://semi.design/zh-CN/basic/button)、[Icon](https://semi.design/zh-CN/basic/icon)、[Cascader](https://semi.design/zh-CN/input/cascader)、[TreeSelect](https://semi.design/zh-CN/input/treeselect)、[Tree](https://semi.design/zh-CN/navigation/tree)、[Modal](https://semi.design/zh-CN/show/modal)、[Progress](https://semi.design/zh-CN/feedback/progress)、[Spin](https://semi.design/zh-CN/feedback/spin) 与 [Toast](https://semi.design/zh-CN/feedback/toast)。官方仓库中的 `content/**` 文档和组件示例作为展示状态与 API 的参考，插件运行时继续使用共享包的按需导出。
 
