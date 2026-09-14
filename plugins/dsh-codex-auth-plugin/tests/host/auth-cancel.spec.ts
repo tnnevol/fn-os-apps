@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { CodexWebAuth } from '../../src/host/auth-routes.ts'
+import { CodexWebAuth, CODEX_AUTH_URL_TIMEOUT_MS } from '../../src/host/auth-routes.ts'
 import { CODEX_PROVIDER } from '../../src/host/store.ts'
 
 /**
@@ -58,5 +58,17 @@ describe('Codex 授权取消', () => {
 
     expect(del).toHaveBeenCalledWith(CODEX_PROVIDER)
     expect((await auth.status()).status).toBe('signed-out')
+  })
+
+  it('等授权 URL 的超时是两分钟', () => {
+    // 放宽到 2 分钟是因为 30 秒对慢网络/慢网关偏紧。
+    expect(CODEX_AUTH_URL_TIMEOUT_MS).toBe(120_000)
+  })
+
+  it('构造函数拒绝非正或非法超时', () => {
+    const { store } = fakeStore(undefined)
+    for (const bad of [0, -1, Number.NaN, Number.POSITIVE_INFINITY]) {
+      expect(() => new CodexWebAuth(store, bad)).toThrow(TypeError)
+    }
   })
 })

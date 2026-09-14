@@ -20,7 +20,13 @@ import {
 import { CodexUsageService } from './usage.ts'
 import { refreshCodexModelCatalog } from './model-refresh.ts'
 
-export const CODEX_AUTH_URL_TIMEOUT_MS = 30_000
+/**
+ * 等 OpenAI 返回设备授权码（授权 URL）的上限。
+ *
+ * 拿到设备码后这个计时器就清掉了（见 `onEvent`），因此它**不**约束用户在浏览器
+ * 里完成授权的时间——那段由 pi-ai 自己的设备码轮询窗口兜底。
+ */
+export const CODEX_AUTH_URL_TIMEOUT_MS = 120_000
 export const REMOTE_WEB_ORIGIN_NOT_TRUSTED = 'remote-web-origin-not-trusted'
 export const CODEX_USAGE_UNAVAILABLE = 'codex-usage-unavailable'
 export const CODEX_GLOBAL_MODEL_INVALID = 'codex-global-model-invalid'
