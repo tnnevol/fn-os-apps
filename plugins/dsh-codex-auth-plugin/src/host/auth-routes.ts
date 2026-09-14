@@ -9,6 +9,7 @@ import type { CodexCredentialMirror } from './credential-mirror.ts'
 import { CODEX_PROVIDER } from './store.ts'
 import type { CodexCredentialStore } from './store.ts'
 import {
+  CODEX_AUTH_CANCEL_PATH,
   CODEX_AUTH_LOGIN_PATH,
   CODEX_AUTH_LOGOUT_PATH,
   CODEX_AUTH_STATUS_PATH,
@@ -72,6 +73,8 @@ export class CodexWebAuth {
   private challenge: CodexLoginChallenge | undefined
   private challengeWaiters: Array<{ resolve(value: CodexLoginChallenge): void; reject(error: unknown): void }> = []
   private challengeTimer: ReturnType<typeof setTimeout> | undefined
+  /** 用户主动取消（或关闭授权窗口）后由 `cancel()` 独占最终状态写入。 */
+  private cancelled = false
 
   constructor(
     private readonly store: CodexCredentialStore,
@@ -104,12 +107,30 @@ export class CodexWebAuth {
   }
 
   async signOut(): Promise<void> {
-    this.cancelSignIn(new Error('Codex sign-in cancelled'))
-    await this.operation?.catch(() => undefined)
+    await this.cancel()
     await logoutCodex(this.store)
     await this.mirror?.clear()
-    this.challenge = undefined
     this.state = { status: 'signed-out' }
+  }
+
+  /**
+   * Stop an in-flight sign-in without touching stored credentials.
+   *
+   * 与 `signOut()` 的区别：这里只回收本次未完成的授权（中止 device-code
+   * 轮询、拒绝还在等的 challenge 请求、清掉一次性授权码），不删除已保存的
+   * 凭据。用户关闭授权窗口或点击「取消」时走这条路径——他们放弃的是**这次**
+   * 登录，不是已经登录的账号。
+   */
+  async cancel(): Promise<void> {
+    // 标记在 abort 之前置起：login 的 rejection 分支会读到它并让出状态写入权，
+    // 否则客户端轮询可能在取消瞬间读到一次「error」。
+    this.cancelled = true
+    this.cancelSignIn(new Error('Codex sign-in cancelled'))
+    this.challenge = undefined
+    await this.operation?.catch(() => undefined)
+    // 已登录的账号保持已登录；本次取消只把界面退回未登录态。
+    const stored = await codexAuthStatus(this.store)
+    this.state = stored.authenticated ? signedInStatus(stored.expiresAt) : { status: 'signed-out' }
   }
 
   async dispose(): Promise<void> {
@@ -120,6 +141,7 @@ export class CodexWebAuth {
   private start(): void {
     const cancellation = new AbortController()
     this.cancellation = cancellation
+    this.cancelled = false
     this.challenge = undefined
     this.state = { status: 'signing-in' }
     this.challengeTimer = setTimeout(() => {
@@ -137,6 +159,8 @@ export class CodexWebAuth {
       notify: event => { this.onEvent(event) },
     }, this.store).then(
       async () => {
+        // 已取消时由 `cancel()` 决定状态，这里不再覆盖。
+        if (this.cancelled) return
         if (this.challenge === undefined) {
           const error = new Error('Codex sign-in finished without an authorization code')
           this.rejectChallenge(error)
@@ -149,6 +173,8 @@ export class CodexWebAuth {
       },
       (error: unknown) => {
         this.rejectChallenge(error)
+        // 取消导致的 abort 不是错误，不向界面暴露。
+        if (this.cancelled) return
         this.state = { status: 'error', message: safeMessage(error) }
       },
     ).finally(() => {
@@ -439,6 +465,20 @@ export function registerCodexAuthRoutes(
           if (!authorize(req, res)) return
           try {
             json(res, 200, await auth.signIn())
+          } catch (error: unknown) {
+            json(res, 500, { error: safeMessage(error) })
+          }
+        },
+      }),
+      ctx.webServer.register({
+        kind: 'exact',
+        path: CODEX_AUTH_CANCEL_PATH,
+        handler: async (req, res) => {
+          if (req.method !== 'POST') return json(res, 405, { error: 'method not allowed' })
+          if (!authorize(req, res)) return
+          try {
+            await auth.cancel()
+            json(res, 200, { ok: true })
           } catch (error: unknown) {
             json(res, 500, { error: safeMessage(error) })
           }

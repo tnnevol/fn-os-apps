@@ -241,7 +241,8 @@
 }
 
 .dsh-codex-auth-body,
-.dsh-codex-auth-error {
+.dsh-codex-auth-error,
+.dsh-codex-auth-notice {
   margin: 0;
   color: var(--dsw-alias-label-secondary);
   font-size: 13px;
