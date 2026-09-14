@@ -55,8 +55,8 @@ export interface FnosFileAction {
   readonly id: string
   /** 下拉菜单项的文案。 */
   readonly label: (t: Translate) => string
-  /** 左侧主按钮 tooltip 的文案。 */
-  readonly tooltip: (t: Translate) => string
+  /** 左侧主按钮 tooltip 的文案，应用名称由当前菜单项动态传入。 */
+  readonly tooltip: (t: Translate, appName: string) => string
   /**
    * 该操作的图标，按需要的尺寸渲染。
    *
@@ -75,7 +75,7 @@ export interface FnosFileAction {
 const OPEN_FILE_MANAGER: FnosFileAction = {
   id: 'file-manager',
   label: t => t('fileManager'),
-  tooltip: t => t('openFileManagerTooltip'),
+  tooltip: (t, appName) => t('openInAppTooltip').replace('{app}', appName),
   icon: size => <FnosFileManagerIcon size={size} />,
   run: cwd => openFnosFileManager(cwd, () => createTrimApp()),
 }
@@ -114,7 +114,8 @@ export function FnosOpenInHeaderAction({ sessionId, useSessions, t }: FnosOpenIn
     label: action.label(t),
     icon: action.icon(18),
   }))
-  const title = phase === 'error' ? t('openFileManagerFailed') : current.tooltip(t)
+  const currentLabel = current.label(t)
+  const title = phase === 'error' ? t('openFileManagerFailed') : current.tooltip(t, currentLabel)
 
   return (
     <Menu
