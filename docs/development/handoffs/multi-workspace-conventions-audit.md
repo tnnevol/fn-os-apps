@@ -181,7 +181,7 @@ codebuddy 采取「类型集中到 `src/types/`、用 `.d.ts` 后缀」的策略
 
 `dsh-codebuddy-plugin/src/types/client/rpc.d.ts` 曾把 `ConnectionRpc.call` 的 `payload` 声明为**可选**，而 DSH 真实契约是**必填**。结果有人省略该参数时 tsc 不报错、测试也照过，直到真实联调才发现——host 用 zod 校验信封，缺键直接拒收整个请求。
 
-```ts
+```text
 // 真实契约（@deepseek-ai/dsh-client-connection/lib/types/rpc.d.ts）
 call(channel: string, endpoint: string, payload: unknown, signal?: AbortSignal)
 ```
