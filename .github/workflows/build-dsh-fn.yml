@@ -40,18 +40,10 @@ jobs:
         with:
           version: 11.16.0
 
-      # 必须覆盖 `--bundle-dsh-plugins` 实际会构建的包：内置插件本身，以及它们的
-      # workspace 依赖 `@tnnevol/dsh-semi-ui`（turbo 的 `<plugin>...` filter 会用
-      # 到它）。漏掉 dsh-semi-ui 时它没有 node_modules，构建在该包上以
-      # `sh: 1: tsdown: not found` 失败——它不在 gateway 或 CLI 的依赖闭包里。
+      # 只需要网关和 CLI：FPK 不再内置插件，因此不构建插件包，也不装它们的
+      # workspace 依赖 `@tnnevol/dsh-semi-ui`。
       - name: Install repository build dependencies
-        run: |
-          pnpm install \
-            --filter @tnnevol/fnos-gateway... \
-            --filter @tnnevol/fn-os-apps-cli \
-            --filter './plugins/*' \
-            --filter @tnnevol/dsh-semi-ui \
-            --frozen-lockfile
+        run: pnpm install --filter @tnnevol/fnos-gateway... --filter @tnnevol/fn-os-apps-cli --frozen-lockfile
 
       - name: Build bundled fnOS gateway
         run: pnpm exec fn-apps-cli build:gateway
@@ -76,8 +68,13 @@ jobs:
           NPM_FETCH_RETRIES: 2
         run: bash ../../.github/scripts/prepare-dsh-native.sh
 
-      - name: Build FPK with the fixed DSH plugin bundle
-        run: pnpm exec fn-apps-cli build --fpk --app fn-deepseek-harness --bundle-dsh-plugins
+      # 只编译 DSH 应用本身，不把仓库内的 DSH 插件打进 FPK。插件由用户在应用内
+      # 通过 `dsh plugin` 从 npm 安装，FPK 不再随包分发插件归档。
+      #
+      # `--skip-bundle-dsh-plugins` 是必填的：缺省时 `selectDshPluginBundle`
+      # 会落到交互式确认，CI 会一直等输入直到超时。
+      - name: Build fn-deepseek-harness FPK
+        run: pnpm run build -- --fpk --app fn-deepseek-harness --skip-bundle-dsh-plugins
 
       - name: Rename FPK with DSH version
         id: rename
