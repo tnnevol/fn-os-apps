@@ -382,7 +382,8 @@ SSE 路由由网关自身处理，不转发到 DSH。它经过 fnOS 统一网关
 | PLAN-FNOS-002-T01-04 | FNOS-002-01 | 仅在已登录且识别到五小时窗口时渲染对应进度和重置时间，不增加用户配置开关 | <Badge type="tip" text="已完成" /> |
 | PLAN-FNOS-002-T01-05 | FNOS-002-01 | 补充未登录、退出、鉴权失败、窗口乱序、无时长和请求失败测试 | <Badge type="tip" text="已完成" /> |
 | PLAN-FNOS-002-T01-06 | FNOS-002-01 | 授权码改用 Typography `copyable` 由用户点击复制（打开授权页时自动复制必然失败，因为焦点已交给新窗口）；失败时给出提示，补充回归测试 | <Badge type="tip" text="已完成" /> |
-| PLAN-FNOS-002-T01-07 | FNOS-002-01 | 等待授权期间提供「取消」，并轮询授权窗口 `closed`：关窗或点取消都中止本次登录、清除一次性授权码，且不删除已保存凭据；登录按钮文案改为「登录」 | <Badge type="tip" text="已完成" /> |
+| PLAN-FNOS-002-T01-07 | FNOS-002-01 | 等待授权期间提供「取消」：中止本次登录、清除一次性授权码、关闭仍开着的授权窗口，且不删除已保存凭据；登录按钮文案改为「登录」 | <Badge type="tip" text="已完成" /> |
+| PLAN-FNOS-002-T01-08 | FNOS-002-01 | 去掉「授权窗口关闭即取消」的判定：授权成功后授权页会自行关闭，该判定会误杀登录（宿主 `cancel()` 会 abort device-code 轮询） | <Badge type="tip" text="已完成" /> |
 
 ### P1：NAS 引用与 Tree 状态
 
@@ -760,7 +761,7 @@ pnpm --filter @tnnevol/dsh-codex-auth run test
 pnpm --filter @tnnevol/dsh-codex-auth run build
 ```
 
-测试至少覆盖未登录、登录、退出、鉴权失败，以及五小时窗口位于 primary、位于 secondary、只有每周窗口、缺少时长和接口失败；授权码复制覆盖点击成功与失败提示，取消覆盖点按钮、关闭授权窗口，以及「取消不删除已保存凭据」。
+测试至少覆盖未登录、登录、退出、鉴权失败，以及五小时窗口位于 primary、位于 secondary、只有每周窗口、缺少时长和接口失败；授权码复制覆盖点击成功与失败提示，取消覆盖点按钮与「取消不删除已保存凭据」，并覆盖「授权窗口自行关闭不影响登录」。
 
 ### CodeBuddy 插件检查（已迁出）
 

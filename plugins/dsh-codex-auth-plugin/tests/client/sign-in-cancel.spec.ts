@@ -2,11 +2,14 @@ import { readFile } from 'node:fs/promises'
 import { describe, expect, it } from 'vitest'
 
 /**
- * 授权等待期间的「放弃」路径。
+ * 授权等待期间的「取消」路径。
  *
- * 用户在等待 Codex 授权时有两种退出方式：点「取消」，或者直接关掉授权窗口。
- * 两者都必须让界面停止等待，但**不能**走退出登录——那会删掉已经登录的账号。
- * 这类行为靠组件状态机串起来，纯函数测不到，因此盯源码结构。
+ * 只有用户**主动点「取消」**才放弃本次登录，并且不能走退出登录——那会删掉已经
+ * 登录的账号。这类行为靠组件状态机串起来，纯函数测不到，因此盯源码结构。
+ *
+ * 注意这里**不**包含「关掉授权窗口即取消」：授权成功后 OpenAI 会自己关掉那个
+ * 窗口，把关窗当成放弃会误杀刚成功的登录（宿主侧 `cancel()` 会 abort 掉 device
+ * code 轮询）。因此关窗不再是放弃信号，见下方专门的反向断言。
  */
 const SECTION = new URL('../../src/components/CodexAuthSection.tsx', import.meta.url)
 const PATHS = new URL('../../src/contracts/auth-paths.ts', import.meta.url)
@@ -36,25 +39,27 @@ describe('Codex 授权取消接线', () => {
     expect(locales).not.toContain("signIn: '去登录'")
   })
 
-  it('轮询授权窗口的 closed，关掉即取消本次登录', async () => {
+  it('不把授权窗口被关闭当成放弃信号', async () => {
     const source = await readFile(SECTION, 'utf8')
-    expect(source).toContain('authWindowsRef')
-    expect(source).toContain('.closed')
-    // 只在等待授权期间判定，避免把用户其它窗口算进来。
-    const effectStart = source.indexOf('授权窗口被关掉即视为放弃')
-    expect(effectStart).toBeGreaterThan(-1)
-    const body = source.slice(effectStart, source.indexOf('const signIn = async', effectStart))
-    expect(body).toContain("status.status !== 'signing-in'")
-    // 关窗场景带提示；用户主动点「取消」则不带。
-    expect(body).toContain("void cancelSignIn('authorizationWindowClosed')")
-    // 全部窗口都关掉才算放弃：用户可能另开了一个冗余授权窗口。
-    expect(body).toContain('.every(authWindow => authWindow.closed)')
+    const locales = await readFile(new URL('../../src/client/locales.ts', import.meta.url), 'utf8')
+    // 授权成功后 OpenAI 主动关窗，若把它当放弃，宿主 `cancel()` 会 abort 掉
+    // device code 轮询，刚拿到的凭据就丢了。因此不再有关窗检测。
+    expect(source).not.toContain('authorizationWindowClosed')
+    expect(locales).not.toContain('authorizationWindowClosed')
+    // cancelSignIn 不接受「关窗提示」参数，调用点也不传。
+    expect(source).toContain('void cancelSignIn()')
+    // `.closed` 只用于「取消时跳过已关闭的窗口」，不再是判定放弃的依据。
+    const closedUses = source.match(/\.closed/gu) ?? []
+    expect(closedUses.length).toBe(1)
+    expect(source).toContain('if (!authWindow.closed) authWindow.close()')
+    // 状态轮询必须保留：它是界面得知「登录成功」的唯一途径。
+    expect(source).toContain('window.setInterval(() => { void refresh() }, 1_000)')
   })
 
   it('取消时关掉仍开着的授权窗口', async () => {
     const source = await readFile(SECTION, 'utf8')
     const start = source.indexOf('const cancelSignIn = useCallback')
-    const end = source.indexOf('授权窗口被关掉即视为放弃', start)
+    const end = source.indexOf('const signIn = async', start)
     expect(start).toBeGreaterThan(-1)
     const body = source.slice(start, end)
     // 先取快照再清空集合，避免遍历时被改动影响。

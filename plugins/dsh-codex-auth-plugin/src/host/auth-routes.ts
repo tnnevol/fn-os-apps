@@ -73,7 +73,7 @@ export class CodexWebAuth {
   private challenge: CodexLoginChallenge | undefined
   private challengeWaiters: Array<{ resolve(value: CodexLoginChallenge): void; reject(error: unknown): void }> = []
   private challengeTimer: ReturnType<typeof setTimeout> | undefined
-  /** 用户主动取消（或关闭授权窗口）后由 `cancel()` 独占最终状态写入。 */
+  /** 用户点「取消」后由 `cancel()` 独占最终状态写入。 */
   private cancelled = false
 
   constructor(
@@ -118,8 +118,11 @@ export class CodexWebAuth {
    *
    * 与 `signOut()` 的区别：这里只回收本次未完成的授权（中止 device-code
    * 轮询、拒绝还在等的 challenge 请求、清掉一次性授权码），不删除已保存的
-   * 凭据。用户关闭授权窗口或点击「取消」时走这条路径——他们放弃的是**这次**
-   * 登录，不是已经登录的账号。
+   * 凭据。用户点「取消」时走这条路径——他们放弃的是**这次**登录，不是已经
+   * 登录的账号。
+   *
+   * 只有用户主动取消才会调用它。授权窗口自行关闭**不是**放弃信号：授权成功
+   * 后授权页会自己关闭，若据此取消就会中止正在进行的轮询并丢掉刚取得的凭据。
    */
   async cancel(): Promise<void> {
     // 标记在 abort 之前置起：login 的 rejection 分支会读到它并让出状态写入权，

@@ -100,7 +100,6 @@ export function CodexAuthSection({ t, connection, remote }: CodexAuthSectionProp
   const [busy, setBusy] = useState(false)
   const [challenge, setChallenge] = useState<LoginChallenge | undefined>()
   const [copyFailed, setCopyFailed] = useState(false)
-  const [notice, setNotice] = useState<CodexAuthLocaleKey | undefined>()
   const [modelRefresh, setModelRefresh] = useState<ModelRefreshState>({ status: 'idle' })
   const [catalogRefreshKey, setCatalogRefreshKey] = useState(0)
   /**
@@ -110,7 +109,8 @@ export function CodexAuthSection({ t, connection, remote }: CodexAuthSectionProp
    * 开第二个。只留最后一个引用会让先前那个变成孤儿——取消时关不掉，留下一个
    * 无人认领的登录页。
    *
-   * 跨域窗口只允许读 `closed`，所以轮询是唯一的检测手段。
+   * 只用于「用户点取消时把窗口一并关掉」。**不**轮询 `closed` 判断用户是否放弃：
+   * 授权成功后授权页会自行关闭，那会把刚成功的登录误判成放弃。
    */
   const authWindowsRef = useRef<Set<Window>>(new Set())
   /**
@@ -170,13 +170,9 @@ export function CodexAuthSection({ t, connection, remote }: CodexAuthSectionProp
    * 用户放弃本次授权时回收等待状态。
    *
    * 只中止这一次登录，不动已保存的凭据——所以走 cancel 端点而不是 logout。
-   * `signOut()` 会连带清掉账号，用它来响应「关掉授权窗口」会把用户已登录的
-   * 账号一起删掉。
-   *
-   * @param notice 关窗场景要展示的提示；用户主动点「取消」时不传，因为那是
-   *   他自己的操作，不需要再解释一遍。
+   * `signOut()` 会连带清掉账号，用它来响应「取消」会把用户已登录的账号一起删掉。
    */
-  const cancelSignIn = useCallback(async (notice?: CodexAuthLocaleKey): Promise<void> => {
+  const cancelSignIn = useCallback(async (): Promise<void> => {
     // 推进代号，作废可能仍在途的 login 请求。
     loginGenerationRef.current += 1
     // 用户点「取消」时授权窗口通常还开着，把本次登录开过的窗口**全部**关掉，
@@ -186,7 +182,6 @@ export function CodexAuthSection({ t, connection, remote }: CodexAuthSectionProp
     for (const authWindow of authWindows) {
       if (!authWindow.closed) authWindow.close()
     }
-    if (notice !== undefined) setNotice(notice)
     try {
       await jsonRequest<{ ok: true }>(CODEX_AUTH_CANCEL_PATH, 'POST')
     } catch {
@@ -199,26 +194,6 @@ export function CodexAuthSection({ t, connection, remote }: CodexAuthSectionProp
     setBusy(false)
     await refresh()
   }, [refresh])
-
-  /**
-   * 授权窗口被关掉即视为放弃。
-   *
-   * 只有轮询 `closed` 这一条路：窗口跳到 OpenAI 域之后就跨域了，读不到任何
-   * 内部状态，但 `closed` 始终可读。判定只在 `signing-in` 期间生效，避免把
-   * 用户之后自己开的无关窗口算进来。
-   */
-  useEffect(() => {
-    if (status.status !== 'signing-in') return
-    const timer = window.setInterval(() => {
-      // 全部授权窗口都关掉才算放弃。用户可能通过「打开授权页面」开了第二个窗口，
-      // 关掉其中一个（例如重复的那个）时另一个仍可用于授权，不该取消。
-      const authWindows = [...authWindowsRef.current]
-      if (authWindows.length === 0) return
-      if (!authWindows.every(authWindow => authWindow.closed)) return
-      void cancelSignIn('authorizationWindowClosed')
-    }, 500)
-    return () => { window.clearInterval(timer) }
-  }, [cancelSignIn, status.status])
 
   const signIn = async (): Promise<void> => {
     const generation = loginGenerationRef.current + 1
@@ -238,7 +213,6 @@ export function CodexAuthSection({ t, connection, remote }: CodexAuthSectionProp
     setStatus({ status: 'signing-in' })
     setChallenge(undefined)
     setCopyFailed(false)
-    setNotice(undefined)
     try {
       const next = await jsonRequest<LoginChallenge>(CODEX_AUTH_LOGIN_PATH, 'POST')
       // 请求期间用户已取消：丢弃这次结果，也不再跳转那个已关闭的窗口。
@@ -269,7 +243,6 @@ export function CodexAuthSection({ t, connection, remote }: CodexAuthSectionProp
       setStatus({ status: 'signed-out' })
       setChallenge(undefined)
       setCopyFailed(false)
-      setNotice(undefined)
       authWindowsRef.current = new Set()
     } catch (error: unknown) {
       setStatus({ status: 'error', message: error instanceof Error ? error.message : t('requestFailed') })
@@ -309,7 +282,6 @@ export function CodexAuthSection({ t, connection, remote }: CodexAuthSectionProp
       </div>
       {status.status === 'error' ? <p className="dsh-codex-auth-error">{status.message}</p> : null}
       {status.status === 'remote-web-origin-not-trusted' ? <p className="dsh-codex-auth-error">{t('remoteOrigin')}</p> : null}
-      {notice !== undefined && status.status !== 'error' ? <p className="dsh-codex-auth-notice">{t(notice)}</p> : null}
       {status.status === 'signing-in' && challenge !== undefined ? (
         <div className="dsh-codex-auth-signing-in">
           <p className="dsh-codex-auth-body">{t('authorizationCodeHelp')}</p>

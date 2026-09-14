@@ -5,9 +5,9 @@ import { CODEX_PROVIDER } from '../../src/host/store.ts'
 /**
  * `cancel()` 与 `signOut()` 必须分开。
  *
- * 用户关掉授权窗口、或点「取消」时，放弃的只是**这一次**未完成的登录；如果按
- * `signOut()` 处理（它内部会 `logoutCodex`），就会把已经登录的账号一起删掉——
- * 用户只是想退出本次授权，结果凭据被清空。这里锁住两者的差异。
+ * 用户点「取消」时，放弃的只是**这一次**未完成的登录；如果按 `signOut()` 处理
+ * （它内部会 `logoutCodex`），就会把已经登录的账号一起删掉——用户只是想退出本次
+ * 授权，结果凭据被清空。这里锁住两者的差异。
  */
 function fakeStore(credential: unknown) {
   // 有状态：`delete` 必须真正清掉凭据，否则 `status()` 读到的还是旧值，
