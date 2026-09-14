@@ -303,7 +303,9 @@ describe('dsh-fnos package contract', () => {
     // 用的是 fnOS 原生的文件管理器，而不是对目录无意义的 openFile。
     expect(action).toContain('openFileManager')
     expect(action).toContain("label: t => t('fileManager')")
+    expect(action).toContain("tooltip: t => t('openFileManagerTooltip')")
     expect(locales).toContain("fileManager: '文件管理'")
+    expect(locales).toContain("openFileManagerTooltip: '在文件管理打开'")
     expect(action).not.toContain('sdk.openFile(')
 
     // 分体按钮：左半执行当前操作、右半展开菜单，两半各自可点。这是官方

@@ -53,8 +53,10 @@ export type FnosOpenInHeaderActionProps =
 /** 一次文件操作：菜单行与左半按钮共用同一条定义。 */
 export interface FnosFileAction {
   readonly id: string
-  /** 菜单行与按钮 tooltip 的文案。 */
+  /** 下拉菜单项的文案。 */
   readonly label: (t: Translate) => string
+  /** 左侧主按钮 tooltip 的文案。 */
+  readonly tooltip: (t: Translate) => string
   /**
    * 该操作的图标，按需要的尺寸渲染。
    *
@@ -73,6 +75,7 @@ export interface FnosFileAction {
 const OPEN_FILE_MANAGER: FnosFileAction = {
   id: 'file-manager',
   label: t => t('fileManager'),
+  tooltip: t => t('openFileManagerTooltip'),
   icon: size => <FnosFileManagerIcon size={size} />,
   run: cwd => openFnosFileManager(cwd, () => createTrimApp()),
 }
@@ -111,7 +114,7 @@ export function FnosOpenInHeaderAction({ sessionId, useSessions, t }: FnosOpenIn
     label: action.label(t),
     icon: action.icon(18),
   }))
-  const title = phase === 'error' ? t('openFileManagerFailed') : current.label(t)
+  const title = phase === 'error' ? t('openFileManagerFailed') : current.tooltip(t)
 
   return (
     <Menu
