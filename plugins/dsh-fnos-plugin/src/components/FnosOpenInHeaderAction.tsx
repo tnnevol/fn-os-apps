@@ -72,7 +72,7 @@ export interface FnosFileAction {
  */
 const OPEN_FILE_MANAGER: FnosFileAction = {
   id: 'file-manager',
-  label: t => t('openFileManager'),
+  label: t => t('fileManager'),
   icon: size => <FnosFileManagerIcon size={size} />,
   run: cwd => openFnosFileManager(cwd, () => createTrimApp()),
 }

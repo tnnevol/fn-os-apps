@@ -186,7 +186,7 @@ DSH 0.1.5-rc.2 发布包
 | --- | --- | --- | --- |
 | PLAN-FNOS-004-T12-01 | FNOS-004-09-AC-01 | 在 `isEmbeddedFnosFrame()` 为真时注册 `conversation.session.header.utilities`，使用与官方相同的 `id: 'open-in-app'` 和更低的 `priority`（不得同优先级，否则注册抛错） | fnOS iframe 内官方按钮不再渲染；独立浏览器不受影响 |
 | PLAN-FNOS-004-T12-02 | FNOS-004-09-AC-02 | 新增 fnOS 文件入口组件，结构与交互对齐官方 `OpenInAppAction`：28px 高的分体按钮，左半执行当前操作（仅图标，15px）、右半 chevron（11px）展开菜单，两半之间有 l4 发丝分隔线并各有 hover；用 `ui-primitives` 的 `Menu`/`Tooltip`，样式数值与官方 CSS 对齐；操作项由数组驱动，便于追加 | 外观、尺寸和交互与官方入口一致；左半点击执行、右半点击展开 |
-| PLAN-FNOS-004-T12-03 | FNOS-004-09-AC-03 | 菜单项「打开文件管理器」调用 fnOS SDK 的 `openFileManager(cwd)`，目标路径取当前会话工作目录；复用既有 `createTrimApp()` 与 web carrier 校验 | 选择后 NAS 文件管理器打开并定位到会话工作目录 |
+| PLAN-FNOS-004-T12-03 | FNOS-004-09-AC-03 | 菜单项「文件管理」调用 fnOS SDK 的 `openFileManager(cwd)`，目标路径取当前会话工作目录；复用既有 `createTrimApp()` 与 web carrier 校验 | 选择后 NAS 文件管理器打开并定位到会话工作目录 |
 | PLAN-FNOS-004-T12-04 | FNOS-004-09-AC-04 | 工作目录未知或为空时不渲染入口；SDK 未就绪、非 web carrier 或调用失败时给出可见失败提示，不回退到 DSH 原生打开逻辑，不预检插件自己的授权目录列表 | 无工作目录时不出现入口；调用失败有可见提示且不产生未处理异常 |
 | PLAN-FNOS-004-T12-05 | FNOS-004-09-AC-06 | 补单元测试：iframe 框架判定、遮蔽注册的 id 与 priority、工作目录判定、SDK 调用与失败分支；更新插件文档 | fnOS 插件 typecheck、测试和构建通过；文档记录入口位置、可用能力和边界 |
 | PLAN-FNOS-004-T12-06 | FNOS-004-09-AC-07 / AC-08 | 插件静态资源改由插件自己的路由提供：插件在 DSH 注册 `/fnos-plugins/static/dsh-fnos` 前缀路由，只按固定资源名映射读取包内文件并返回，拒绝路径穿越；网关把 `/fnos-plugins/static` 加入 `builtinPaths`，使浏览器 bridge 自动补上应用前缀 | 客户端以该 URL 引用图标可正常加载；资源缺失返回 404；路由不读取 fnOS 宿主目录，也不放宽既有图片补前缀规则 |
@@ -285,7 +285,7 @@ DSH 0.1.5-rc.2 发布包
 
 1. 插件只在 `isEmbeddedFnosFrame()` 为真时注册会话头部入口，使用与官方相同的 `id: 'open-in-app'` 和更低的 `priority`。列表插槽的遮蔽按「同 id、不同 priority、低者生效」判定，因此官方条目不再渲染，且不会出现两个入口。
 2. 入口读取当前会话的工作目录；工作目录未知或为空时返回 `null`，不渲染锚点。
-3. 锚点用 Semi UI 的按钮加图标，外观与官方入口在头部的位置和尺寸一致；点击展开下拉菜单，菜单项由数据驱动，当前只有「打开文件管理器」。
+3. 锚点用 Semi UI 的按钮加图标，外观与官方入口在头部的位置和尺寸一致；点击展开下拉菜单，菜单项由数据驱动，当前只有「文件管理」。
 4. 选择菜单项后调用 fnOS JS SDK 的 `openFileManager(cwd)`：复用既有的 `createTrimApp()`，等待 `ready()`，校验 `isWeb` 且非 `isStandaloneWeb` 再调用。目标路径直接交给 fnOS，不做本地授权预检。
 5. 调用失败时设置可见错误提示并复位忙碌状态；不抛出未处理异常，不阻塞 DSH，也不回退到 NAS 上不存在的 `xdg-open`。
 

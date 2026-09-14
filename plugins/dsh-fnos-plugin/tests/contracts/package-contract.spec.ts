@@ -285,6 +285,7 @@ describe('dsh-fnos package contract', () => {
   it('遮蔽官方「打开应用」入口并提供 fnOS 文件入口', async () => {
     const index = await readFile(new URL('../../src/client/index.ts', import.meta.url), 'utf8')
     const action = await readFile(new URL('../../src/components/FnosOpenInHeaderAction.tsx', import.meta.url), 'utf8')
+    const locales = await readFile(new URL('../../src/client/locales.ts', import.meta.url), 'utf8')
 
     // 遮蔽靠同 id + 更低 priority：官方条目用默认 0，同优先级会直接抛错，
     // 那时整个插件都加载不起来。座位形状集中在 header-utility-seats.ts，
@@ -301,6 +302,8 @@ describe('dsh-fnos package contract', () => {
 
     // 用的是 fnOS 原生的文件管理器，而不是对目录无意义的 openFile。
     expect(action).toContain('openFileManager')
+    expect(action).toContain("label: t => t('fileManager')")
+    expect(locales).toContain("fileManager: '文件管理'")
     expect(action).not.toContain('sdk.openFile(')
 
     // 分体按钮：左半执行当前操作、右半展开菜单，两半各自可点。这是官方
