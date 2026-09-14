@@ -46,6 +46,25 @@ describe('dsh-fnos package contract', () => {
     expect(manifest.devDependencies['@tnnevol/dsh-semi-ui']).toBe('workspace:*')
   })
 
+  it('adapts DSH present.open to the fnOS iframe opener', async () => {
+    const source = await readFile(new URL('../../src/client/index.ts', import.meta.url), 'utf8')
+    const hostIndex = await readFile(new URL('../../src/index.ts', import.meta.url), 'utf8')
+    const client = await readFile(new URL('../../src/client/services/present-open.ts', import.meta.url), 'utf8')
+    const host = await readFile(new URL('../../src/host/presented-open.ts', import.meta.url), 'utf8')
+    const contract = await readFile(new URL('../../src/contracts/presented-open-contract.ts', import.meta.url), 'utf8')
+    expect(source).toContain('installFnosPresentedOpen(createTrimApp)')
+    expect(client).toContain("url.pathname === DSH_PRESENT_HOST_PATH")
+    expect(client).toContain("url.pathname !== DSH_PRESENT_OPEN_PATH")
+    expect(client).toContain('sdk.openFile(value.path)')
+    expect(client).toContain('sdk.openFileManager(value.path)')
+    expect(host).toContain("path: FNOS_PRESENTED_PATH_RESOLVE_PATH")
+    expect(host).toContain('resolvePresentedPath(ctx, request, lifetime.signal)')
+    expect(host).toContain('workspaceFiles.stat')
+    expect(host).toContain('fs.processPathFromHostPath')
+    expect(contract).toContain("'/fnos-plugins/present/resolve'")
+    expect(hostIndex).toContain('registerPresentedPathRoute(ctx)')
+  })
+
   it('does not block fnOS routes on the optional ApiProxy service', async () => {
     const source = await readFile(new URL('../../src/index.ts', import.meta.url), 'utf8')
     expect(source).toMatch(/export const inject = \['webServer', 'settings'\]/u)

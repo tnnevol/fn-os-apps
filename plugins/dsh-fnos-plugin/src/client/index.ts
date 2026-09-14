@@ -30,6 +30,7 @@ import { createFnosCommandContribution, createFnosDirectorySource } from './inpu
 import { FNOS_REFERENCE_SOURCE, fnosReferenceDisplayText, fnosReferencePromptText, type FnosInputReference, type InputSnapshotForReference } from './input-references/input-references.ts'
 import { en, zh } from './locales.ts'
 import { installFnosRemotePathOpener } from './services/path-opener.ts'
+import { installFnosPresentedOpen } from './services/present-open.ts'
 import { FnosSettingsDocumentAction } from '../components/FnosSettingsDocumentAction.tsx'
 import { FnosWebRestartAction } from '../components/FnosWebRestartAction.tsx'
 import { installFnosBrowserRefreshShortcut } from './shortcuts/browser-refresh-shortcut.ts'
@@ -140,6 +141,7 @@ export function apply(ctx: ClientContext): void {
   })
 
   if (isEmbeddedFnosFrame()) {
+    ctx.effect(() => installFnosPresentedOpen(createTrimApp), 'dsh-fnos: presented-file opener')
     ctx.slots.inject('conversation.session.header.utilities', () => {
       const sessionLogDownload = ctx.get('sessionLogDownload') as SessionLogDownloadController | undefined
       if (sessionLogDownload === undefined) throw new Error('sessionLogDownload service is unavailable')

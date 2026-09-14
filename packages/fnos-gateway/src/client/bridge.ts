@@ -12,14 +12,14 @@
   // app prefix; without it the host answers its own 404 and the owning DSH
   // control silently disappears (the session-header "open in app" split
   // button fetches its availability list and renders nothing on failure).
-  // `/fnos-plugins/static` is the fnOS plugins' own asset namespace: a plugin
-  // serves its bundled resources from a DSH route under that prefix, so the
-  // request must reach DSH rather than the fnOS host. It is deliberately not
-  // the host's own `/static` tree — plugins own their assets and never read
-  // the host's undocumented static layout.
+  // `/fnos-plugins/static` and `/fnos-plugins/present` are the fnOS plugin
+  // namespaces: the plugin serves assets and presented-file resolution from DSH
+  // routes under these prefixes, so requests must reach DSH rather than the
+  // fnOS host. They are deliberately not the host's own `/static` tree —
+  // plugins own these resources and never read the host's undocumented layout.
   // Users cannot register or remove these: they are part of the app's own
   // surface, not third-party plugin API URLs.
-  var builtinPaths = ["/api", "/plugins", "/open-in-app", "/fnos-plugins/static"];
+  var builtinPaths = ["/api", "/plugins", "/open-in-app", "/fnos-plugins/static", "/fnos-plugins/present"];
   function boundary(pathname, candidate) { return pathname === candidate || pathname.indexOf(candidate + "/") === 0; }
   function isImageResource(pathname) { return /\.(?:avif|bmp|gif|ico|jpe?g|png|svg|webp)$/i.test(pathname); }
   function gatewayPath(pathname) {

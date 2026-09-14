@@ -162,7 +162,7 @@ function localPeer(req: IncomingMessage): boolean {
 }
 
 /** Accept the NAS gateway's same-origin requests, but reject cross-site calls. */
-function trustedRequest(req: IncomingMessage): boolean {
+export function isTrustedFnosRequest(req: IncomingMessage): boolean {
   const fetchSite = header(req, 'sec-fetch-site')?.trim().toLowerCase()
   if (fetchSite === 'cross-site') return false
   const origin = header(req, 'origin')
@@ -835,7 +835,7 @@ async function validatePathsForConversion(req: IncomingMessage, paths: readonly 
 export function registerAuthorizedDirectoryRoutes(ctx: Context): void {
   ctx.effect(() => {
     const authorize = (req: IncomingMessage, res: ServerResponse): boolean => {
-      if (trustedRequest(req)) return true
+      if (isTrustedFnosRequest(req)) return true
       json(res, 403, { error: 'remote-web-origin-not-trusted' })
       return false
     }

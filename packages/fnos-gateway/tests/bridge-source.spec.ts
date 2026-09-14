@@ -116,13 +116,15 @@ describe('browser bridge artifact', () => {
       URL,
     })
 
-    // 非图片资源：只有 /fnos-plugins/static 被列为内置前缀才会被映射。
+    // 非图片资源：fnOS 插件命名空间被列为内置前缀才会被映射。
     // 用 .png 测不出来——那条路径已经被「任何图片资源都补前缀」的既有规则
     // 覆盖，命名空间条目被删掉测试也不会失败。
     await (window.fetch as (input: unknown) => Promise<void>)('/fnos-plugins/static/dsh-fnos/theme.json')
+    await (window.fetch as (input: unknown) => Promise<void>)('/fnos-plugins/present/resolve')
 
     expect(requests).toEqual([
       'http://nas.example/app/fn-deepseek-harness/fnos-plugins/static/dsh-fnos/theme.json',
+      'http://nas.example/app/fn-deepseek-harness/fnos-plugins/present/resolve',
     ])
   })
 

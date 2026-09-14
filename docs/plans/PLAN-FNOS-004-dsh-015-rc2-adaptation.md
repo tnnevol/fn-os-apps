@@ -193,6 +193,7 @@ DSH 0.1.5-rc.2 发布包
 | PLAN-FNOS-004-T12-07 | FNOS-004-09-AC-09 / AC-10 | 对齐官方头部布局：两个条目的 `priority`/`order` 取值集中到 `header-utility-seats.ts`（文件入口 order -10、Session log order 0），并在 `index.ts` 里展开使用；Session log 触发控件改为 28px 圆形纯图标按钮（透明、无边框、15px 字形），菜单项带图标 | 左右顺序为「文件入口在左、Session log 在右」且不随注册先后改变；顺序测试用真实 `SlotCore` 驱动，把 order 打平会使测试失败；按钮不带可见文案与边框 |
 | PLAN-FNOS-004-T12-08 | FNOS-004-09-AC-11 | 修复「导出到 NAS」的上游取数：原实现调 `ctx.get('apiProxy').downloads.sessionLog(...)`，而全仓与上游 DSH 都没有该服务的提供方，取值恒为 `undefined`、必然 503。改为宿主向本机 loopback 请求 DSH 自己的 `/api/session.export`，并转发当前浏览器的 `dsh-auth-*` Cookie 完成 browser-session 认证（`includeDescendants=true`），复用既有流式写入与失败清理 | 导出成功写入目标目录并返回 201；绑定 `0.0.0.0` 时回落到 loopback；上游 4xx 与会话不存在可区分；Cookie 缺失或认证失败时能明确报错；不再出现 `ctx.get('apiProxy')` 调用 |
 | PLAN-FNOS-004-T12-09 | FNOS-004-07-AC-09 / AC-10 | 内置捆绑插件改为每次安装强制以 FPK 归档覆盖：在 `install_callback` 中新增 `force_install_bundled_plugin`，若 profile 已有该插件则先通过 DSH CLI `remove`，再以同一 spec `add`；不触碰 pnpm 内部状态文件，保留 profile 的依赖与 bundle 记录 | 版本号不变但归档内容变化时，profile 中的副本仍被替换为归档内容；重复执行幂等；CLI 失败时生命周期返回非零并输出错误 |
+| PLAN-FNOS-004-T12-10 | FNOS-004-09-AC-12 / AC-13 | 适配 DSH 的 presented-file 打开动作：客户端在 fnOS iframe 内包装 `fetch`，把 `/api/present.host` 报为可用、把 `/api/present.open` 改走网关到插件的 `/fnos-plugins/present/resolve`，由宿主按 Session 事件、工作区与文件系统校验出真实路径后再调用 fnOS SDK `openFile`/`openFileManager`；`/fnos-plugins/present` 加入网关内置前缀；tooltip 改为动态模板 | 不再出现 409 `Host desktop unavailable`；解析、路径校验和打开失败时可重试；非 fnOS 环境与非 present 请求完全保持原行为 |
 
 ### P0：同步 FPK 运行时与构建入口
 
@@ -449,3 +450,4 @@ git diff --check
 | 2026-09-13 | 补充 FNOS-004-09 头部布局任务 | 新增 `T12-07`：对齐官方左右顺序并把顺序取值集中可测；Session log 改为纯图标按钮 |
 | 2026-09-13 | 修复 FNOS-004-09「导出到 NAS」上游取数 | 新增 `T12-08`：数据源由不存在的 `apiProxy` 注入服务改为回源 `/api/session.export` |
 | 2026-09-13 | 新增 FNOS-004-07 内置插件强制覆盖 | 新增 `T12-09`：捆绑插件每次安装按 FPK 归档覆盖（不比较版本），并约束删除路径的推导与校验 |
+| 2026-09-13 | 修复 FNOS-004-09 presented-file 打开 | 新增 `T12-10`：`/api/present.open` 在 fnOS 上报 409 `Host desktop unavailable`，改为经插件解析真实路径后调用 fnOS SDK；`present.host` 在 iframe 内报可用；tooltip 改为动态模板 |

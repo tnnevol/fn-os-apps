@@ -100,6 +100,17 @@ fnOS iframe 内的会话头部提供与官方同款的分体按钮：**左半**�
 
 当前不支持「文件预览」和「文本编辑器」：它们按具体文件路径工作，对工作目录没有意义。后续接入时需要先确定作用对象（某个具体文件而不是目录）。
 
+## presented-file 打开适配
+
+DSH 交付文件卡片上的「默认应用/文件管理器」动作原本请求 `/api/present.open`，由宿主进程调用本机桌面 opener。NAS 服务没有桌面环境，这条路径恒为 409 `Host desktop unavailable`。插件在 fnOS iframe 内包装 `fetch`：
+
+- `/api/present.host` 直接返回可用，避免卡片因探测失败而禁用动作；
+- `/api/present.open` 改为请求插件的 `/fnos-plugins/present/resolve`，携带 `sessionId`/`seq`/`index` 与动作类型；
+- 宿主用 Session 事件定位 `deliverables/presented` 文件，再经工作区与文件系统校验出真实 Host 路径后返回；
+- 客户端拿到路径后调用 fnOS SDK 的 `openFile`（`reveal` 用 `openFileManager`），失败由调用方显示可重试错误。
+
+解析路由复用 Session 查询、workspace files 与 `fs` 的路径校验，不信任客户端传入的任意路径；`/fnos-plugins/present` 与静态资源前缀一样列在网关内置前缀中，浏览器 bridge 才会为它补上应用前缀。独立浏览器与非 present 请求完全保持原行为。
+
 ## 运行边界
 
 | 场景 | 行为 |

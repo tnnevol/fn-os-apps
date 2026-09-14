@@ -218,6 +218,8 @@ lastVerified: 2026-09-12
 - `FNOS-004-09-AC-07`：会话头部文件入口的图标以 `/fnos-plugins/static/<插件>/<资源>` 引用，由插件自己的路由返回包内资源，不内联进客户端 bundle；`/fnos-plugins` 属于网关内置前缀，浏览器 bridge 会为它补上应用前缀，且不写死宿主安装目录。
 - `FNOS-004-09-AC-08`：资源缺失时路由返回 404，界面不因此崩溃或阻塞 DSH；插件包内不含该资源时也不回退读取 fnOS 宿主目录。
 - `FNOS-004-09-AC-11`：导出到 NAS 的 ZIP 由 DSH 自己的 `/api/session.export` 生成；宿主向 loopback 请求该路由时必须转发当前浏览器的 `dsh-auth-*` Cookie 完成 browser-session 认证，再流转写入目标目录；不依赖任何无提供方的注入服务。
+- `FNOS-004-09-AC-12`：文件入口的左侧主按钮 tooltip 使用动态模板「在{应用名称}打开」，名称取自当前选中的菜单项，不写死为文件管理。
+- `FNOS-004-09-AC-13`：fnOS iframe 内 DSH 的「打开文件/定位文件」动作（`/api/present.open` 与 `/api/present.host`）改由 fnOS SDK 执行：`present.host` 不因 NAS 无桌面而报告不可用；`present.open` 先经插件 `/fnos-plugins/present/resolve` 按 Session 事件、工作区与文件系统校验出真实 Host 路径，再调用 fnOS `openFile`（`reveal` 走文件管理器），不再返回 409 `Host desktop unavailable`；解析或打开失败时返回可重试的错误状态，独立浏览器行为不变。
 
 ### P1 验收条件
 
