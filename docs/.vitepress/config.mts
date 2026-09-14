@@ -132,6 +132,10 @@ const requirementsSidebar = [
         text: 'FNOS-004 DSH 0.1.5-rc.2 适配',
         link: '/requirements/FNOS-004-dsh-015-rc2-adaptation'
       },
+      {
+        text: 'FNOS-005 CodeBuddy 成长任务移植',
+        link: '/requirements/FNOS-005-codebuddy-growth-tasks'
+      },
     ]
   }
 ]
@@ -156,6 +160,10 @@ const plansSidebar = [
       {
         text: 'PLAN-FNOS-004 DSH 0.1.5-rc.2 适配与 FPK 运行修复',
         link: '/plans/PLAN-FNOS-004-dsh-015-rc2-adaptation'
+      },
+      {
+        text: 'PLAN-FNOS-005 CodeBuddy 成长任务移植',
+        link: '/plans/PLAN-FNOS-005-codebuddy-growth-tasks'
       },
     ]
   }
