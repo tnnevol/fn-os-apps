@@ -1,9 +1,9 @@
 {
   "name": "@tnnevol/fn-os-apps-cli",
+  "type": "module",
+  "version": "0.0.0",
   "private": true,
   "description": "Release, build and repository maintenance CLI for fn-os-apps.",
-  "version": "0.0.0",
-  "type": "module",
   "bin": {
     "fn-apps-cli": "lib/index.mjs"
   },

@@ -1,19 +1,19 @@
 {
   "compilerOptions": {
-    "strict": true,
-    "noImplicitAny": true,
-    "noUncheckedIndexedAccess": true,
-    "exactOptionalPropertyTypes": true,
-    "skipLibCheck": true,
+    "target": "es2024",
+    "jsx": "react-jsx",
+    "lib": ["es2024", "dom", "dom.iterable"],
     "module": "esnext",
     "moduleResolution": "bundler",
-    "target": "es2024",
-    "lib": ["es2024", "dom", "dom.iterable"],
+    "types": ["node", "react"],
     "allowImportingTsExtensions": true,
-    "esModuleInterop": true,
-    "jsx": "react-jsx",
+    "strict": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitAny": true,
+    "noUncheckedIndexedAccess": true,
     "noEmit": true,
-    "types": ["node", "react"]
+    "esModuleInterop": true,
+    "skipLibCheck": true
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "tests/**/*.ts", "tests/**/*.tsx", "tsdown.config.ts"]
 }

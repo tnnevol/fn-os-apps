@@ -156,7 +156,7 @@ async function prepareDshPluginBundle(app: FpkApp, include: boolean): Promise<vo
     return [target]
   })
 
-  if (pluginTargets.length > 0) await runTurbo('build', pluginTargets.map(target => target.filter))
+  if (pluginTargets.length > 0) await runTurbo(['build'], pluginTargets.map(target => target.filter))
   await mkdir(targetDirectory, { recursive: true })
   for (const target of pluginTargets) {
     const sourceDirectory = dirname(join(repositoryRoot, target.path))
@@ -190,7 +190,7 @@ async function buildFpkApps(apps: FpkApp[], options: { bundleDshPlugins?: boolea
   if (apps.some(app => app.requiresGateway)) {
     const gatewayName = readGatewayName()
     if (gatewayName === undefined) throw new Error('Unable to resolve the fnOS Gateway package')
-    await runTurbo('build:app', [gatewayName])
+    await runTurbo(['build:app'], [gatewayName])
   }
   for (const app of apps) {
     await validateDshReleaseInputs(app)
@@ -232,7 +232,7 @@ export async function runBuild(args: string[]): Promise<void> {
   }
   if (args.includes('--plugin')) {
     const filters = await selectPluginFilters(plugin)
-    if (filters !== undefined) await runTurbo('build', filters)
+    if (filters !== undefined) await runTurbo(['build'], filters)
     return
   }
   if (args.includes('--docs')) {
@@ -249,7 +249,7 @@ export async function runBuild(args: string[]): Promise<void> {
   if (fpkApps !== undefined && bundleDshPlugins === undefined) return
 
   const tasks: Promise<void>[] = []
-  if (pluginFilters !== undefined) tasks.push(runTurbo('build', pluginFilters))
+  if (pluginFilters !== undefined) tasks.push(runTurbo(['build'], pluginFilters))
   if (fpkApps !== undefined && bundleDshPlugins !== undefined) {
     tasks.push(buildFpkApps(fpkApps, { bundleDshPlugins }))
   }

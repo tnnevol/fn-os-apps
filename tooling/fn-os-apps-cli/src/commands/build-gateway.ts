@@ -8,5 +8,5 @@ program
   .action(async () => {
     const gatewayName = readGatewayName()
     if (gatewayName === undefined) throw new Error('Unable to resolve the fnOS Gateway package')
-    await runTurbo('build:app', [gatewayName])
+    await runTurbo(['build:app'], [gatewayName])
   })

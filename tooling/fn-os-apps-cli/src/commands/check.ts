@@ -36,7 +36,7 @@ export async function runCheck(args: string[]): Promise<void> {
     ...(selection.includes('packages') ? ['./packages/*'] : []),
     ...(selection.includes('plugins') ? ['./plugins/*'] : []),
   ]
-  if (turboFilters.length > 0) tasks.push(runTurbo('check', turboFilters))
+  if (turboFilters.length > 0) tasks.push(runTurbo(['check'], turboFilters))
   await Promise.all(tasks)
 }
 

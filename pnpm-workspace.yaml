@@ -10,6 +10,7 @@ catalog:
   '@commitlint/cli': ^21.2.2
   '@commitlint/config-conventional': ^21.2.2
   '@deepseek-ai/cordis': ^4.0.2
+  '@deepseek-ai/dsh': 0.1.5-rc.2
   '@deepseek-ai/schemastery': 3.18.2
   '@douyinfe/semi-icons': 2.90.2
   '@douyinfe/semi-icons-lab': 2.90.2
@@ -28,6 +29,7 @@ catalog:
   eslint-plugin-react-refresh: ^0.5.6
   eventsource-parser: ^3.1.0
   globals: ^17.12.0
+  jsonc-eslint-parser: 3.3.0
   lefthook: ^2.1.12
   lint-staged: ^17.5.0
   nanostores: ^1.5.3
@@ -97,11 +99,17 @@ catalogs:
   conflicts_@earendil-works/pi-ai_h0_85_1:
     '@earendil-works/pi-ai': ^0.85.1
 
+# DSH ships fully prebuilt native helpers (node-pty spawn-helper, koffi), so the
+# install scripts are denied on purpose: no compiler is required and the
+# install stays non-interactive.
 allowBuilds:
+  '@deepseek-ai/dsh-subprocess-local': false
   '@google/genai': true
   '@parcel/watcher': true
   esbuild: true
+  koffi: false
   lefthook: true
+  node-pty: false
   protobufjs: true
 
 minimumReleaseAgeExclude:

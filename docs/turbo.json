@@ -1,0 +1,13 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "extends": ["//"],
+  "tasks": {
+    "build": {
+      "outputs": [".vitepress/dist/**"],
+      "env": ["$TURBO_EXTENDS$", "D2_BIN"]
+    },
+    "dev": {
+      "interactive": true
+    }
+  }
+}

@@ -4,7 +4,7 @@ import type { FpkApp } from '../config/workspace.js'
 
 export type ReleaseArea = 'project' | 'plugin'
 export type BuildSelection = 'plugins' | 'fpk' | 'docs'
-export type StartSelection = 'plugins' | 'docs'
+export type StartSelection = 'docs' | 'plugins' | 'web'
 export type CheckSelection = 'sdd' | 'docs' | 'packages' | 'plugins'
 
 export async function askReleaseArea(): Promise<ReleaseArea | undefined> {
@@ -78,6 +78,7 @@ export async function askStartSelection(): Promise<StartSelection[] | undefined>
     options: [
       { value: 'plugins', label: 'Harness 插件', hint: '通过 Turbo watch 编译插件及其共享包依赖' },
       { value: 'docs', label: '项目文档', hint: '启动 VitePress 文档开发服务' },
+      { value: 'web', label: 'DSH Web', hint: '以仓库根 .dsh 作为 DSH_HOME 启动 DSH Web（端口 3150），与其他目标共用同一个 Turbo TUI' },
     ],
   })
   if (isCancel(result)) {

@@ -14,6 +14,7 @@ Examples:
   fn-apps-cli build --fpk --app fn-deepseek-harness
   fn-apps-cli build --plugin fnos
   fn-apps-cli build --docs
+  fn-apps-cli start --web
   fn-apps-cli check --all
   fn-apps-cli check --sdd --plugins
   fn-apps-cli publish --plugin fnos

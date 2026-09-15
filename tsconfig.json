@@ -14,5 +14,11 @@
     "esModuleInterop": true,
     "skipLibCheck": true
   },
-  "include": ["src/**/*.ts", "tsdown.config.ts", "tsdown.app.config.ts", "tsdown.bridge.config.ts"]
+  "include": [
+    "*.config.ts",
+    "*.config.mts",
+    "scripts/**/*.ts",
+    "types/**/*.d.ts"
+  ],
+  "exclude": ["node_modules"]
 }

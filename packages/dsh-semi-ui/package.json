@@ -1,36 +1,36 @@
 {
   "name": "@tnnevol/dsh-semi-ui",
   "displayName": "DSH Semi UI",
-  "description": "Shared Semi Design components themed for DeepSeek Harness.",
+  "type": "module",
   "version": "5.4.0",
+  "description": "Shared Semi Design components themed for DeepSeek Harness.",
   "author": "tnnevol",
+  "documentation": "https://fnapps-doc.tnnevol.cn/plugins/",
+  "publishConfig": {
+    "access": "public"
+  },
+  "license": "AGPL-3.0-only",
+  "homepage": "https://github.com/tnnevol/fn-os-apps/tree/main/packages/dsh-semi-ui",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/tnnevol/fn-os-apps.git",
     "directory": "packages/dsh-semi-ui"
   },
-  "homepage": "https://github.com/tnnevol/fn-os-apps/tree/main/packages/dsh-semi-ui",
-  "documentation": "https://fnapps-doc.tnnevol.cn/plugins/",
-  "publishConfig": {
-    "access": "public"
-  },
-  "type": "module",
-  "license": "AGPL-3.0-only",
-  "engines": {
-    "node": "^22.19.0 || >=24.0.0"
-  },
-  "main": "lib/index.js",
-  "types": "lib/index.d.ts",
   "exports": {
     ".": {
       "types": "./lib/index.d.ts",
       "default": "./lib/index.js"
     }
   },
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
   "files": [
-    "lib",
-    "README.md"
+    "README.md",
+    "lib"
   ],
+  "engines": {
+    "node": "^22.19.0 || >=24.0.0"
+  },
   "scripts": {
     "build": "tsdown",
     "dev": "tsdown",

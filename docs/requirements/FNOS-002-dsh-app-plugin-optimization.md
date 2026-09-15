@@ -203,3 +203,5 @@ DSH 在 fnOS 中运行后，还有几处使用体验需要调整。Codex 登录�
 | 2026-09-09 | 迁出 CodeBuddy 需求 | 将 FNOS-002-06 的 CodeBuddy 多账号、自动切换、签到、额度/有效期和 Token 统计图表需求整体迁移到 FNOS-003-08、FNOS-003-09，计划迁移到 PLAN-FNOS-003-C01～C04 |
 | 2026-09-12 | 完成全部需求验收 | FNOS-002-01～05 及其 FPK/NAS、网关和 Codex 遗留验收已由 FNOS-003 完成，需求与功能状态统一更新为“已完成” |
 | 2026-09-13 | 补充内置路由反代需求 | 明确 DSH 内置浏览器同级 HTTP 路由（如“打开应用”使用的 `/open-in-app`）属于网关默认反代范围，不占用用户反代规则，修复其在 iframe 内请求 404 导致入口消失的问题 |
+| 2026-09-15 | 恢复文档服务的终端快捷键 | `docs` 包的 `dev` 标记 `interactive: true`，TUI 可用 `i` 把键盘交给该任务、`Ctrl+z` 返回，VitePress 的 `h`/`r` 快捷键恢复可用；因 Turbo 拒绝在无终端界面时运行 interactive 任务，`start` 无 TTY 时改为直接启动 `vitepress dev`，避免整条命令报 `Cannot run interactive task` 失败 |
+| 2026-09-15 | 修正 Turbo 任务配置缺陷 | 按 Turborepo 规范审计 `turbo.json` 并修复四处缺陷：`check` 把 `typecheck`/`test:unit` 与包内 `check` 脚本重复调度（同一 vitest 跑两遍）、`test` 与 `test:unit` 串联重复执行、`lint` 是匹配空集的死配置（ESLint 只有根配置，改为根任务 `//#lint`）、`build` 未声明 `NODE_ENV` 导致不同环境共用缓存；`docs` 包新增包级 `turbo.json`，把 `outputs` 修正为 `.vitepress/dist/**` 并用 `$TURBO_EXTENDS$` 追加 `D2_BIN`（原 `dist/**` 让 Turbo 报 `no output files found`，文档产物既不入缓存也无法恢复） |

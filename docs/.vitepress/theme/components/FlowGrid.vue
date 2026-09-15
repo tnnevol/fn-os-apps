@@ -34,8 +34,12 @@ const variantClass = (variant: FlowStep['variant']): string => {
   <div class="flow-grid" :style="props.columns ? { '--flow-columns': props.columns } : undefined">
     <template v-for="(step, index) in props.steps" :key="index">
       <div class="flow-step" :class="variantClass(step.variant)">
-        <div class="flow-step__label">{{ step.label }}</div>
-        <div v-if="step.detail" class="flow-step__detail">{{ step.detail }}</div>
+        <div class="flow-step__label">
+          {{ step.label }}
+        </div>
+        <div v-if="step.detail" class="flow-step__detail">
+          {{ step.detail }}
+        </div>
         <div v-if="step.children && step.children.length > 0" class="flow-step__children">
           <div
             v-for="(child, childIndex) in step.children"
@@ -43,12 +47,18 @@ const variantClass = (variant: FlowStep['variant']): string => {
             class="flow-step flow-step--child"
             :class="variantClass(child.variant)"
           >
-            <div class="flow-step__label">{{ child.label }}</div>
-            <div v-if="child.detail" class="flow-step__detail">{{ child.detail }}</div>
+            <div class="flow-step__label">
+              {{ child.label }}
+            </div>
+            <div v-if="child.detail" class="flow-step__detail">
+              {{ child.detail }}
+            </div>
           </div>
         </div>
       </div>
-      <div v-if="index < props.steps.length - 1" class="flow-arrow" aria-hidden="true">↓</div>
+      <div v-if="index < props.steps.length - 1" class="flow-arrow" aria-hidden="true">
+        ↓
+      </div>
     </template>
   </div>
 </template>

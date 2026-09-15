@@ -14,7 +14,7 @@
 
 | 命令 | 当前用途 | 是否交互 |
 | --- | --- | --- |
-| `pnpm run start` | 启动 harness 插件 watch 和/或文档服务 | 可选 |
+| `pnpm run start` | 启动 harness 插件 watch、文档服务和/或本地 DSH Web | 可选 |
 | `pnpm run build` | 构建 harness 插件、FPK 应用和文档 | 可选 |
 | `pnpm run check` | 检查 SDD、文档、共享包和 harness 插件 | 可选 |
 | `pnpm run version` | 维护项目/FPK 或单个 harness 插件版本 | 可选 |
@@ -56,7 +56,7 @@ pnpm exec fn-apps-cli build:gateway
 | pnpm | `>=11.16.0`，项目固定 `11.16.0` | 根 `package.json#packageManager`、CI |
 | [fnpack](https://developer.fnnas.com/docs/cli/fnpack/) | 本地 `1.2.3`；CI 构建 Workflow 当前使用 `1.2.1` | 本机 `PATH`、`.github/workflows/build-*.yml` |
 | [D2](https://d2lang.com/tour/install/) | `0.7.1`，仅文档流程图需要 | 本机 `PATH`、文档 Workflow |
-| [dsh](https://github.com/deepseek-ai/deepseek-harness) | 与插件兼容声明和锁定版本一致 | 本机 CLI、插件 `package.json` |
+| [dsh](https://github.com/deepseek-ai/deepseek-harness) | 与插件兼容声明和锁定版本一致（当前 `0.1.5-rc.2`） | 根 `package.json`、`pnpm-lock.yaml` |
 
 初始化环境：
 
@@ -157,22 +157,46 @@ pnpx skills add tnnevol/skills --skill dsh -g
 插件基础检查：
 
 ```bash
-dsh --version
+# 仓库内 CLI，版本与 FPK 运行时基线一致
+pnpm exec dsh --version
 pnpm run check -- --packages --plugins
 ```
 
-使用目标版本启动 Web Profile：
-
-```bash
-dsh web --no-open
-```
-
-需要查看组合配置时：
+需要查看组合配置时（下列命令使用全局 `dsh`；要检查仓库内 profile，请先按下一节设置 `DSH_HOME`）：
 
 ```bash
 dsh --profile web --dump-config
 dsh --profile web --dump-config | grep -n -C 3 'dsh-fnos'
 ```
+
+### 本地 DSH Web
+
+仓库根 `package.json` 声明了与 FPK 运行时基线相同的 `@deepseek-ai/dsh`；`pnpm install` 之后即可用仓库内的 CLI，不必依赖全局安装。`start` 的「DSH Web」目标会以仓库根 `.dsh` 作为 `DSH_HOME` 启动本地实例，profile、凭据和会话都留在检出目录，与开发者的 `$HOME/.dsh` 互不影响：
+
+```bash
+# 交互多选：Harness 插件 / 项目文档 / DSH Web
+pnpm run start
+
+# 直接启动本地 DSH Web（固定 3150 端口）
+pnpm run start -- --web
+
+# 需要手工检查仓库内 profile 时，自行指定同一个 DSH_HOME
+DSH_HOME="$PWD/.dsh" pnpm exec dsh --profile web --dump-config
+```
+
+本地 DSH Web 固定使用 `3150`，与 FPK 网关占用的 `127.0.0.1:3080` 区分，两者可在同一台开发机同时运行。三类目标可以任意组合：`start` 把「Harness 插件」「项目文档」和 DSH Web 一起交给**同一个 `turbo watch`**，各自作为一行任务显示在同一个 TUI 里。DSH Web 因此是 Turbo 的根任务 `//#dev:web`，而不是 Turbo 之外另起的第二个前台进程——后者会把终端从 TUI 手里抢走。`.dsh/` 属于本地运行状态，已在 `.gitignore` 中排除。
+
+文档服务的 `dev` 任务标记为 `interactive`，这样它的快捷键仍然可用：在 TUI 中按 `i` 把键盘交给该任务，按 `Ctrl+z` 交还给 Turbo；VitePress 自己的 `h`（帮助）和 `r`（重启）因此照常工作。Turbo 不允许在没有终端界面的情况下运行 interactive 任务，所以 `start` 按是否有 TTY 决定文档服务的运行位置：有 TTY 时它进入 `turbo watch`（保留 TUI 与快捷键），没有 TTY 时（CI、管道、后台任务）直接启动 `vitepress dev`，而不是让整条命令报 `Cannot run interactive task` 失败。
+
+插件与文档共用 `dev` 任务名，因此文档只作为 `dev` 的 `--filter` 出现，不写成显式的 `包#任务`：显式任务名会把该包重新拉进范围，裸 `dev` 随即再匹配一次，VitePress 会被启动两遍。
+
+启动前，CLI 会把本仓库的插件链接进这个本地 profile，因此新克隆的检出目录第一次 `pnpm run start -- --web` 也能直接进入带插件的 DSH Web：
+
+1. 先用 Turbo 构建待链接的插件。profile 通过包 `exports` 解析入口，而入口指向 git 忽略的 `lib/`；没有产物时 `dsh plugin add` 会链到一个无法加载的包。
+2. 再用 `dsh plugin --profile web add <插件目录>` 逐个链接。由 DSH CLI 写入（而不是直接改 profile 清单）才会把插件同步进 `dsh.profile.bundles`，插件因此真正成为一层 patch layer。
+3. 已链接且已在 bundle 列表中的插件会被跳过，重复启动不重复安装；链接后的插件产物变更由 `start` 的插件 watch 或重新构建生效。
+
+内置范围是仓库里可在任意 DSH 客户端使用的插件。**`@tnnevol/dsh-fnos` 不在其中**：它注册 fnOS 设置命名空间、fnOS JS SDK 桥和网关前缀路由，脱离 fnOS 宿主没有可提供的能力，只会给本地 profile 增加加载失败的行。
 
 ### 插件构建、启动和检查
 

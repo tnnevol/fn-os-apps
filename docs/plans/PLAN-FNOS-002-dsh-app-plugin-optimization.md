@@ -830,3 +830,5 @@ CodeBuddy 插件的检查命令与测试覆盖要求已迁入 [PLAN-FNOS-003](/p
 | 2026-09-08 | 按当前实现重整计划 | 动态模型目录和 CodeBuddy 管理面板纳入已实现范围；旧版本描述改为当前发布基线；未完成的 FPK/NAS 集成验收转入 PLAN-FNOS-003 |
 | 2026-09-09 | 迁出 CodeBuddy 计划 | CodeBuddy 多账号与管理面板的 `T07` 任务、插件检查命令和 Token 图表条款整体迁移到 PLAN-FNOS-003 的 `C` 系列任务，本计划只保留验收交接说明 |
 | 2026-09-12 | 完成全部计划验收 | FNOS-002 全部功能、FPK/NAS 集成、网关和 Codex 遗留验收已由 FNOS-003 完成，计划总状态更新为“已完成” |
+| 2026-09-15 | 恢复文档服务的终端快捷键 | `docs/turbo.json` 为 `dev` 增加 `interactive: true`，由 TUI 的「interact with task」转发键盘；`start` 按 TTY 决定文档服务经 `turbo watch` 还是直接 `vitepress dev`，避免无 TTY 时 interactive 任务硬失败 |
+| 2026-09-15 | 修正 Turbo 任务配置缺陷 | 按 Turborepo 规范修订 `T01` 的 `turbo.json`：`check` 去掉与包内 `check` 脚本重复的 `typecheck`/`test:unit` 依赖（改为 `build` + `^typecheck`，保留依赖包类型检查覆盖）、`test` 不再串联 `test:unit`、`lint` 改为根任务 `//#lint`、`build` 声明 `NODE_ENV`；新增 `docs/turbo.json` 修正 VitePress 产物路径并继承根 `env` 后追加 `D2_BIN` |

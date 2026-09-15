@@ -1,26 +1,21 @@
 {
   "name": "@tnnevol/dsh-semi-ui-showcase",
   "displayName": "DSH Semi UI Showcase",
-  "description": "Component showcase for the shared DSH-themed Semi Design package.",
+  "type": "module",
   "version": "0.1.5-rc.2",
+  "description": "Component showcase for the shared DSH-themed Semi Design package.",
   "author": "tnnevol",
+  "documentation": "https://fnapps-doc.tnnevol.cn/plugins/dsh-semi-ui-showcase",
+  "publishConfig": {
+    "access": "public"
+  },
+  "license": "AGPL-3.0-only",
+  "homepage": "https://github.com/tnnevol/fn-os-apps/tree/main/plugins/dsh-semi-ui-showcase-plugin",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/tnnevol/fn-os-apps.git",
     "directory": "plugins/dsh-semi-ui-showcase-plugin"
   },
-  "homepage": "https://github.com/tnnevol/fn-os-apps/tree/main/plugins/dsh-semi-ui-showcase-plugin",
-  "documentation": "https://fnapps-doc.tnnevol.cn/plugins/dsh-semi-ui-showcase",
-  "publishConfig": {
-    "access": "public"
-  },
-  "type": "module",
-  "license": "AGPL-3.0-only",
-  "engines": {
-    "node": "^22.19.0 || >=24.0.0"
-  },
-  "main": "lib/index.js",
-  "types": "lib/index.d.ts",
   "exports": {
     ".": {
       "types": "./lib/index.d.ts",
@@ -31,12 +26,17 @@
     "./compatibility.json": "./compatibility.json",
     "./package.json": "./package.json"
   },
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
   "files": [
-    "lib",
+    "README.md",
     "compatibility.json",
     "cordis.patch.yml",
-    "README.md"
+    "lib"
   ],
+  "engines": {
+    "node": "^22.19.0 || >=24.0.0"
+  },
   "scripts": {
     "build": "tsdown",
     "dev": "tsdown --watch",

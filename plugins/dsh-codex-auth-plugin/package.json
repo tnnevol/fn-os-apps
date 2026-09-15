@@ -1,15 +1,17 @@
 {
   "name": "@tnnevol/dsh-codex-auth",
   "displayName": "Codex Auth",
-  "description": "Standalone ChatGPT OAuth account management for DeepSeek Harness.",
+  "type": "module",
   "version": "0.1.5-rc.2",
+  "description": "Standalone ChatGPT OAuth account management for DeepSeek Harness.",
   "author": "tnnevol",
+  "license": "AGPL-3.0-only",
+  "homepage": "https://github.com/tnnevol/fn-os-apps/tree/main/plugins/dsh-codex-auth-plugin",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/tnnevol/fn-os-apps.git",
     "directory": "plugins/dsh-codex-auth-plugin"
   },
-  "homepage": "https://github.com/tnnevol/fn-os-apps/tree/main/plugins/dsh-codex-auth-plugin",
   "documentation": "https://fnapps-doc.tnnevol.cn/plugins/dsh-codex-auth",
   "bugs": {
     "url": "https://github.com/tnnevol/fn-os-apps/issues"
@@ -17,13 +19,6 @@
   "publishConfig": {
     "access": "public"
   },
-  "type": "module",
-  "license": "AGPL-3.0-only",
-  "engines": {
-    "node": "^22.19.0 || >=24.0.0"
-  },
-  "main": "lib/index.js",
-  "types": "lib/index.d.ts",
   "exports": {
     ".": {
       "types": "./lib/index.d.ts",
@@ -39,12 +34,17 @@
     "./compatibility.json": "./compatibility.json",
     "./package.json": "./package.json"
   },
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
   "files": [
-    "lib",
+    "README.md",
     "compatibility.json",
     "cordis.patch.yml",
-    "README.md"
+    "lib"
   ],
+  "engines": {
+    "node": "^22.19.0 || >=24.0.0"
+  },
   "scripts": {
     "build": "tsdown",
     "dev": "tsdown --watch",
@@ -77,50 +77,47 @@
     }
   },
   "peerDependencies": {
-    "@deepseek-ai/dsh-client-ui-session": "catalog:dsh",
-    "@earendil-works/pi-ai": "^0.85.1",
     "@deepseek-ai/cordis": "catalog:",
+    "@deepseek-ai/dsh-agent-default-model": "catalog:dsh",
     "@deepseek-ai/dsh-api-remotes": "catalog:dsh",
     "@deepseek-ai/dsh-api-session-controller": "catalog:dsh",
-    "@deepseek-ai/dsh-scope": "catalog:dsh",
-    "@deepseek-ai/dsh-attachment": "catalog:dsh",
-    "@deepseek-ai/dsh-agent-default-model": "catalog:dsh",
     "@deepseek-ai/dsh-atomic-write": "catalog:dsh",
-    "@deepseek-ai/dsh-home-paths": "catalog:dsh",
-    "@deepseek-ai/dsh-host-webserver": "catalog:dsh",
-    "@deepseek-ai/dsh-invariants": "catalog:dsh",
-    "@deepseek-ai/dsh-llm": "catalog:dsh",
-    "@deepseek-ai/dsh-llm-pi-ai": "catalog:dsh",
-    "@deepseek-ai/dsh-settings": "catalog:dsh",
+    "@deepseek-ai/dsh-attachment": "catalog:dsh",
     "@deepseek-ai/dsh-client-locale": "catalog:dsh",
     "@deepseek-ai/dsh-client-ui-primitives": "catalog:dsh",
     "@deepseek-ai/dsh-client-ui-renderer": "catalog:dsh",
+    "@deepseek-ai/dsh-client-ui-session": "catalog:dsh",
     "@deepseek-ai/dsh-client-ui-settings": "catalog:dsh",
     "@deepseek-ai/dsh-client-ui-settings-plugins": "catalog:dsh",
     "@deepseek-ai/dsh-client-ui-slots": "catalog:dsh",
     "@deepseek-ai/dsh-credentials": "catalog:dsh",
+    "@deepseek-ai/dsh-home-paths": "catalog:dsh",
+    "@deepseek-ai/dsh-host-webserver": "catalog:dsh",
+    "@deepseek-ai/dsh-invariants": "catalog:dsh",
     "@deepseek-ai/dsh-launch-environment": "catalog:dsh",
+    "@deepseek-ai/dsh-llm": "catalog:dsh",
+    "@deepseek-ai/dsh-llm-pi-ai": "catalog:dsh",
+    "@deepseek-ai/dsh-scope": "catalog:dsh",
+    "@deepseek-ai/dsh-settings": "catalog:dsh",
     "@deepseek-ai/dsh-timeout": "catalog:dsh",
     "@deepseek-ai/schemastery": "catalog:",
+    "@earendil-works/pi-ai": "^0.85.1",
     "react": "catalog:codex-peer"
   },
   "devDependencies": {
-    "@deepseek-ai/dsh-client-ui-session": "catalog:dsh",
-    "@tnnevol/dsh-semi-ui": "workspace:*",
-    "@earendil-works/pi-ai": "catalog:",
     "@deepseek-ai/cordis": "catalog:",
+    "@deepseek-ai/dsh-agent-default-model": "catalog:dsh",
     "@deepseek-ai/dsh-api-remotes": "catalog:dsh",
     "@deepseek-ai/dsh-api-session-controller": "catalog:dsh",
-    "@deepseek-ai/dsh-scope": "catalog:dsh",
-    "@deepseek-ai/dsh-agent-default-model": "catalog:dsh",
-    "@deepseek-ai/dsh-attachment": "catalog:dsh",
     "@deepseek-ai/dsh-atomic-write": "catalog:dsh",
+    "@deepseek-ai/dsh-attachment": "catalog:dsh",
     "@deepseek-ai/dsh-client-connection": "catalog:dsh",
     "@deepseek-ai/dsh-client-locale": "catalog:dsh",
     "@deepseek-ai/dsh-client-ui-conversation": "catalog:dsh",
     "@deepseek-ai/dsh-client-ui-model-selection": "catalog:dsh",
     "@deepseek-ai/dsh-client-ui-primitives": "catalog:dsh",
     "@deepseek-ai/dsh-client-ui-renderer": "catalog:dsh",
+    "@deepseek-ai/dsh-client-ui-session": "catalog:dsh",
     "@deepseek-ai/dsh-client-ui-settings": "catalog:dsh",
     "@deepseek-ai/dsh-client-ui-settings-plugins": "catalog:dsh",
     "@deepseek-ai/dsh-client-ui-slots": "catalog:dsh",
@@ -131,9 +128,12 @@
     "@deepseek-ai/dsh-launch-environment": "catalog:dsh",
     "@deepseek-ai/dsh-llm": "catalog:dsh",
     "@deepseek-ai/dsh-llm-pi-ai": "catalog:dsh",
+    "@deepseek-ai/dsh-scope": "catalog:dsh",
     "@deepseek-ai/dsh-settings": "catalog:dsh",
     "@deepseek-ai/dsh-timeout": "catalog:dsh",
     "@deepseek-ai/schemastery": "catalog:",
+    "@earendil-works/pi-ai": "catalog:",
+    "@tnnevol/dsh-semi-ui": "workspace:*",
     "@types/node": "catalog:",
     "@types/react": "catalog:codex-dev",
     "react": "catalog:",

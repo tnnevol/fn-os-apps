@@ -1,8 +1,9 @@
 {
-  "**/*.{json,jsonc}": "tsx scripts/validate-json.ts",
-  "apps/**/wizard/*": "tsx scripts/validate-json.ts",
-  "apps/**/app/ui/config": "tsx scripts/validate-json.ts",
+  "**/*.{json,jsonc}": "eslint --fix",
+  "apps/**/wizard/*": "eslint --no-warn-ignored",
+  "apps/**/app/ui/config": "eslint --no-warn-ignored",
+  "apps/**/app/**/*.{js,mjs,cjs}": "eslint --no-warn-ignored --fix",
   "apps/**/cmd/*": "shfmt -d -i 4",
   "apps/**/app/**/*.sh": "shfmt -d -i 4",
-  "{packages,plugins,tooling,docs}/**/*.{ts,tsx,mts,cts,vue}": "eslint --fix"
+  "{packages,plugins,tooling,docs,scripts}/**/*.{ts,tsx,mts,cts,vue}": "eslint --fix"
 }

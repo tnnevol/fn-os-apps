@@ -4,7 +4,8 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**", "lib/**"]
+      "outputs": ["dist/**", "lib/**"],
+      "env": ["NODE_ENV"]
     },
     "build:app": {
       "cache": false
@@ -15,11 +16,16 @@
       "persistent": true,
       "interruptible": true
     },
+    "//#dev:web": {
+      "cache": false,
+      "persistent": true,
+      "passThroughEnv": ["DSH_HOME"]
+    },
     "typecheck": {
       "dependsOn": ["^typecheck"],
       "outputs": []
     },
-    "lint": {
+    "//#lint": {
       "outputs": []
     },
     "test:unit": {
@@ -27,11 +33,11 @@
       "outputs": []
     },
     "test": {
-      "dependsOn": ["test:unit"],
+      "dependsOn": ["build"],
       "outputs": []
     },
     "check": {
-      "dependsOn": ["typecheck", "build", "test:unit"],
+      "dependsOn": ["build", "^typecheck"],
       "outputs": []
     }
   }
