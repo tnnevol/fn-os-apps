@@ -33,6 +33,18 @@ export const $growthRunning = atom<GrowthRunStateView>({ running: false })
  */
 export const $growthTaskInFlight = atom<readonly string[]>([])
 
+/**
+ * 本地乐观起点：单项任务刚点下、宿主还没落盘时的临时状态。
+ *
+ * 为什么需要它：`growthRun` 是**异步落盘**的——宿主先建队列（`beginGrowthRun`）
+ * 再拉任务列表，才写出第一条日志。这段时间抽屉若显示上一轮的日志或空态，用户会
+ * 以为点击没生效。所以点下按钮的瞬间就在本地造一条「正在执行」。
+ *
+ * 只在这条记录**仍比宿主状态新**时生效（见 `selectGrowthRunView`），宿主一旦写出
+ * 本轮状态就自然让位，不会重复显示。
+ */
+export const $growthOptimistic = atom<{ accountId: string, taskCode: string, account: string, startedAt: number } | undefined>(undefined)
+
 /** 轮询间隔：与宿主回读节奏（3s）同量级，够用且不打扰。 */
 export const GROWTH_RUN_POLL_MS = 2_000
 
@@ -72,6 +84,77 @@ export function markGrowthTaskRunning(accountId: string, taskCode: string): void
   if (!current.includes(key)) $growthTaskInFlight.set([...current, key])
 }
 
+/**
+ * 记下单项执行的本地乐观起点（在发起 RPC 前调用）。
+ *
+ * @param accountId - 账号本地 id。
+ * @param taskCode - 任务 code。
+ * @param account - 账号展示名，用于日志里的 `[账号]` 列。
+ */
+export function markGrowthOptimistic(accountId: string, taskCode: string, account: string): void {
+  $growthOptimistic.set({ accountId, taskCode, account, startedAt: Date.now() })
+}
+
+/** 清掉本地乐观起点（宿主已接管或本轮已结束）。 */
+export function clearGrowthOptimistic(): void {
+  $growthOptimistic.set(undefined)
+}
+
+/**
+ * 合并宿主状态与本地乐观起点，得到抽屉该渲染的状态。
+ *
+ * 宿主状态**优先**：一旦它写出了本轮单项执行的日志，就说明已经接管，本地那条
+ * 临时记录必须让位（否则会重复显示一条「正在执行」）。反之则用本地记录，
+ * 让点下按钮的瞬间就有该任务的具体日志，而不是上一轮的内容或空态。
+ *
+ * @param state - 宿主最近一次上报的状态。
+ * @param optimistic - 本地乐观起点。
+ * @param startingMessage - 那条临时日志的说明文案。
+ */
+export function selectGrowthRunView(
+  state: GrowthRunStateView | undefined,
+  optimistic: { accountId: string, taskCode: string, account: string, startedAt: number } | undefined,
+  startingMessage: string,
+): GrowthRunStateView | undefined {
+  if (optimistic === undefined) return state
+  // 宿主已经在跑**这一次**单项执行，且已写出日志 → 交给宿主。
+  const hostOwnsThisRun = state?.mode === 'one'
+    && state.accountId === optimistic.accountId
+    && state.taskCode === optimistic.taskCode
+    && (state.log?.length ?? 0) > 0
+  if (hostOwnsThisRun) return state
+  return {
+    running: true,
+    mode: 'one',
+    accountId: optimistic.accountId,
+    taskCode: optimistic.taskCode,
+    startedAt: optimistic.startedAt,
+    log: [{
+      at: optimistic.startedAt,
+      account: optimistic.account,
+      code: optimistic.taskCode,
+      status: 'running',
+      message: startingMessage,
+    }],
+  }
+}
+
+/**
+ * 全量执行（「完成任务」）期间是否应禁用单项任务按钮。
+ *
+ * 宿主只有一个执行队列（`growthTasksGuard`），全量跑着时再点单项只会被判重拒绝；
+ * 与其让用户点了没反应，不如直接禁用。**单项执行不影响其它单项**——那是刻意的：
+ * 每个任务行只看自己的状态。
+ *
+ * @param hostState - 宿主运行状态。
+ * @param inFlight - 本地在跑集合（单项执行才有值）。
+ */
+export function isBlockedByRunAll(hostState: GrowthRunStateView, inFlight: readonly string[]): boolean {
+  // 本地刚发起单项、宿主还没落盘的瞬间可能仍是上一轮的 mode='all'，此时不该被禁。
+  if (inFlight.length > 0) return false
+  return hostState.running && hostState.mode === 'all'
+}
+
 /** 标记一个任务结束执行。 */
 export function clearGrowthTaskRunning(accountId: string, taskCode: string): void {
   const key = growthTaskKey(accountId, taskCode)
@@ -87,8 +170,20 @@ export async function hydrateGrowthRunState(rpc: ConnectionRpc): Promise<GrowthR
   const result = await rpc.call<GrowthRunStateView>(CODEBUDDY_AUTH_CHANNEL, 'growthRunStatus', {})
   if (!result.ok) return undefined
   $growthRunning.set(result.value)
+  // 宿主已写出本轮单项状态 → 本地乐观记录让位，避免重复显示。
+  const optimistic = $growthOptimistic.get()
+  if (optimistic !== undefined) {
+    const takenOver = result.value.mode === 'one'
+      && result.value.accountId === optimistic.accountId
+      && result.value.taskCode === optimistic.taskCode
+      && (result.value.log?.length ?? 0) > 0
+    if (takenOver) $growthOptimistic.set(undefined)
+  }
   // 宿主已结束：清掉本地在跑集合，避免清理失败时按钮永久 loading。
-  if (!result.value.running) $growthTaskInFlight.set([])
+  if (!result.value.running) {
+    $growthTaskInFlight.set([])
+    $growthOptimistic.set(undefined)
+  }
   return result.value
 }
 

@@ -170,6 +170,7 @@ export function AccountResourcesModalImpl({ row, items, t, rpc, notify, onClose,
                 rpc={rpc}
                 t={t}
                 accountId={row.id}
+                accountName={row.name}
                 notify={notify}
                 {...onOpenLog === undefined ? {} : { onOpenLog }}
               />

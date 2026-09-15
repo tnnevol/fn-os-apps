@@ -106,16 +106,26 @@ describe('单个任务按钮互不影响', () => {
     expect(LIST).toMatch(/loading=\{taskRunning\}/)
   })
 
-  it('任务按钮只按自身状态 loading，不因别的任务在跑而禁用', () => {
+  it('单项按钮只按自身状态 loading，不因别的任务在跑而禁用', () => {
     // 旧写法 `disabled={running.running && !isRunningTask(...)}` 会让一个任务
     // 执行时把其余任务按钮全部压成不可点，正是要移除的行为。
-    // 断言必须**限定在单项按钮**上：工具栏刷新按钮合理地用 disabled={running.running}
-    // （别处任务在跑时刷新列表没意义），对整个文件断言会把它误判为违规。
+    // 现在只允许受「全量执行」影响（那时宿主队列被占，点单项也只会被拒）。
+    // 断言必须**限定在单项按钮**上：工具栏刷新按钮另有自己的条件，
+    // 对整个文件断言会把它误判为违规。
     const at = LIST_CODE.indexOf('loading={taskRunning}')
     expect(at).toBeGreaterThan(-1)
     const button = LIST_CODE.slice(Math.max(0, at - 300), at + 100)
-    expect(button).not.toContain('disabled=')
+    expect(button).toContain('disabled={blockedByRunAll}')
+    // 不得回退成「别人在跑就禁我」。
     expect(button).not.toContain('running.running')
+  })
+
+  it('全量执行期间禁用所有单项按钮，单项执行不互相影响', () => {
+    // 规则在 store 里，单独可测（见 growth-run.spec.ts 的 isBlockedByRunAll）。
+    expect(STORE).toContain('export function isBlockedByRunAll')
+    expect(LIST_CODE).toContain('isBlockedByRunAll(running, inFlight)')
+    // 本地刚发起单项时不该被上一轮的 mode='all' 误禁。
+    expect(STORE).toMatch(/if \(inFlight\.length > 0\) return false/)
   })
 
   it('store 用集合记录逐任务在跑状态，而非单个全局标记', () => {
@@ -126,8 +136,30 @@ describe('单个任务按钮互不影响', () => {
 
   it('单个任务结束后只清自己那一项', () => {
     const start = LIST.indexOf('const runOne')
-    const body = LIST.slice(start, start + 900)
+    // 窗口取到 runOne 结束：函数体随日志/禁用逻辑增长，写死过小会假失败。
+    const body = LIST.slice(start, LIST.indexOf('const groups', start))
     expect(body).toContain('clearGrowthTaskRunning(accountId, taskCode)')
+  })
+
+  it('收尾顺序：先解 loading，再以宿主为准，最后清乐观记录', () => {
+    const start = LIST.indexOf('const runOne')
+    const body = LIST.slice(start, LIST.indexOf('const groups', start))
+    const clearAt = body.indexOf('clearGrowthTaskRunning(accountId, taskCode)')
+    const hydrateAt = body.indexOf('await hydrateGrowthRunState(rpc)')
+    const optimisticAt = body.indexOf('clearGrowthOptimistic()', hydrateAt)
+    expect(clearAt).toBeGreaterThan(-1)
+    // hydrate 会自己清乐观记录；提前清会让抽屉闪一下上一轮的旧日志。
+    expect(hydrateAt).toBeGreaterThan(clearAt)
+    expect(optimisticAt).toBeGreaterThan(hydrateAt)
+  })
+
+  it('点下按钮立刻记本地乐观日志（宿主落盘前就有内容）', () => {
+    const start = LIST.indexOf('const runOne')
+    const body = LIST.slice(start, LIST.indexOf('const groups', start))
+    const optimisticAt = body.indexOf('markGrowthOptimistic(')
+    const rpcAt = body.indexOf("'growthRun'")
+    expect(optimisticAt).toBeGreaterThan(-1)
+    expect(rpcAt).toBeGreaterThan(optimisticAt)
   })
 
   it('单项按钮自己挡重入（Semi 的 loading 不拦点击）', () => {
@@ -264,7 +296,7 @@ describe('运行态持久化', () => {
 
   it('执行结束以宿主状态收尾，避免永久 loading', () => {
     const start = LIST.indexOf('const runOne')
-    const body = LIST.slice(start, start + 900)
+    const body = LIST.slice(start, LIST.indexOf('const groups', start))
     expect(body).toContain('hydrateGrowthRunState')
   })
 })

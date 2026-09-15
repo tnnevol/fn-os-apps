@@ -52,8 +52,9 @@ describe('日志抽屉组件', () => {
   })
 
   it('只在展开且执行中轮询，跑完与收起都要停', () => {
-    // 轮询条件同时看 visible 与 running。
-    expect(DRAWER).toMatch(/if \(!visible \|\| !running\.running\) return/)
+    // 轮询条件是 visible 且（宿主在跑 **或** 本地有乐观起点）。
+    // 乐观态下宿主可能还没置 running，不轮询就永远拉不到后续日志。
+    expect(DRAWER).toMatch(/if \(!visible \|\| \(!running\.running && optimistic === undefined\)\) return/)
     // effect 必须返回清理函数，否则收起后定时器继续跑。
     expect(DRAWER).toMatch(/clearInterval\(timer\)/)
     // 间隔复用 store 的常量，避免两处各写一个数字。
@@ -187,7 +188,8 @@ describe('抽屉观感与滚动', () => {
   it('只有最后一行且仍在执行时才标 live（历史行不闪）', () => {
     // running/waiting 是过程标记，后续行一出现就说明它过去了；
     // 给历史行加呼吸动画会让整屏一直闪。
-    expect(DRAWER).toMatch(/const live = running\.running && line\.tone === 'info' && index === lines\.length - 1/)
+    // 用合并后的 view.running（含本地乐观态），否则点下按钮的瞬间不算「在执行」。
+    expect(DRAWER).toMatch(/const live = view\?\.running === true && line\.tone === 'info' && index === lines\.length - 1/)
     expect(DRAWER).toMatch(/is-live/)
   })
 

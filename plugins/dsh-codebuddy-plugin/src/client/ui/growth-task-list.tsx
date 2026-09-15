@@ -22,7 +22,18 @@ import { useStore } from '@nanostores/react'
 import { DshButton, DshTabs, DshTag } from '@tnnevol/dsh-semi-ui'
 import { CODEBUDDY_AUTH_CHANNEL } from '../../contracts/constants.ts'
 import type { ConnectionRpc, GrowthTaskView, GrowthTasksResult } from '../rpc.ts'
-import { $growthRunning, $growthTaskInFlight, clearGrowthTaskRunning, growthTaskKey, hydrateGrowthRunState, isGrowthTaskRunning, markGrowthTaskRunning } from '../store/growth-run.ts'
+import {
+  $growthRunning,
+  $growthTaskInFlight,
+  clearGrowthOptimistic,
+  clearGrowthTaskRunning,
+  growthTaskKey,
+  hydrateGrowthRunState,
+  isBlockedByRunAll,
+  isGrowthTaskRunning,
+  markGrowthOptimistic,
+  markGrowthTaskRunning,
+} from '../store/growth-run.ts'
 import { groupGrowthTasks } from '../growth-task-groups.ts'
 import type { Translate } from '../../types/client/panel-types'
 
@@ -38,10 +49,12 @@ type GrowthTabKey = 'pending' | 'done'
  * @param notify - 结果提示。
  * @param onOpenLog - 执行单项任务时打开日志抽屉（复用同一份宿主日志）。
  */
-export function GrowthTaskList({ rpc, t, accountId, notify, onOpenLog }: {
+export function GrowthTaskList({ rpc, t, accountId, accountName, notify, onOpenLog }: {
   rpc: ConnectionRpc
   t: Translate
   accountId: string | undefined
+  /** 账号展示名：本地乐观日志的 `[账号]` 列要用。 */
+  accountName?: string
   notify: (ok: boolean, text: string) => void
   onOpenLog?: () => void
 }): ReactNode {
@@ -83,7 +96,11 @@ export function GrowthTaskList({ rpc, t, accountId, notify, onOpenLog }: {
     // 同上：单项按钮用 loading 表达进行中，重复点击由这里挡住，
     // 且**只挡自己**——其它任务不受影响。
     if (inFlight.includes(growthTaskKey(accountId, taskCode))) return
+    // 全量执行中不允许再点单项：宿主只有一个执行队列，点了也只会被判重拒绝。
+    if (blockedByRunAll) return
     markGrowthTaskRunning(accountId, taskCode)
+    // 宿主落盘前先给抽屉一条具体日志（见 store 里的 selectGrowthRunView）。
+    markGrowthOptimistic(accountId, taskCode, accountName ?? accountId)
     /**
      * 与「完成任务」同一处理：先把抽屉打开，再看结果。
      *
@@ -100,13 +117,25 @@ export function GrowthTaskList({ rpc, t, accountId, notify, onOpenLog }: {
       notify(true, t('growthRunDone'))
       await reload()
     } finally {
-      // 无论成功失败都要收尾：先清本地在跑标记解除本行 loading，再以宿主为准。
+      /**
+       * 收尾顺序是刻意的：先解除本行 loading，再**以宿主为准**刷新一次，
+       * 最后兜底清掉本地乐观记录。
+       *
+       * 乐观清理放在 hydrate **之后**：hydrate 在宿主已接管或本轮已结束时会自己
+       * 清掉乐观记录。若提前清，`state` 可能还停在宿主的**上一轮**日志上，
+       * 抽屉会闪一下旧内容再跳到新内容。放在最后既避免这次闪烁，又能在 RPC
+       * 失败（hydrate 返回 undefined、state 没更新）时兜住，
+       * 不让抽屉永远卡在「开始执行…」。
+       */
       clearGrowthTaskRunning(accountId, taskCode)
       await hydrateGrowthRunState(rpc)
+      clearGrowthOptimistic()
     }
   }
 
   const groups = useMemo(() => groupGrowthTasks(tasks), [tasks])
+  // 全量执行期间禁用所有单项按钮（见 store 里的 isBlockedByRunAll）。
+  const blockedByRunAll = isBlockedByRunAll(running, inFlight)
 
   if (accountId === undefined) return <p className="dsh-codebuddy-muted">{t('growthTasksEmpty')}</p>
 
@@ -136,6 +165,7 @@ export function GrowthTaskList({ rpc, t, accountId, notify, onOpenLog }: {
                   size="small"
                   theme="light"
                   loading={taskRunning}
+                  disabled={blockedByRunAll}
                   onClick={() => { void runOne(task.taskCode) }}
                 >
                   {t('growthRunOne')}

@@ -211,3 +211,69 @@ describe('日志落盘', () => {
     expect(state?.log?.map(entry => entry.code)).toEqual(['chat_5'])
   })
 })
+
+/**
+ * 单项任务的「立刻有日志」与「全量执行时禁点单项」。
+ *
+ * 前者是纯函数 `selectGrowthRunView`：把宿主状态与本地乐观起点合并，
+ * 让点下按钮的瞬间抽屉就有该任务的具体日志，而不是空态或上一轮内容。
+ */
+describe('本地乐观日志与全量执行禁用', () => {
+  const entries = [
+    { at: 1, account: '4993', code: 'chat_5', status: 'running', message: '旧一轮' },
+  ]
+
+  it('宿主还没落盘时，抽屉显示本地乐观记录（该任务的具体日志）', async () => {
+    const { selectGrowthRunView } = await import('../src/client/store/growth-run.ts')
+    // 宿主此刻报告的是**上一轮**的全量执行。
+    const host = { running: true, mode: 'all' as const, log: [{ at: 0, account: '-', code: '开始', status: 'running' }] }
+    const view = selectGrowthRunView(host, { accountId: 'a1', taskCode: 'black_cat', account: '4993', startedAt: 99 }, '开始执行…')
+    expect(view?.mode).toBe('one')
+    expect(view?.taskCode).toBe('black_cat')
+    expect(view?.running).toBe(true)
+    expect(view?.log).toEqual([
+      { at: 99, account: '4993', code: 'black_cat', status: 'running', message: '开始执行…' },
+    ])
+  })
+
+  it('宿主已写出本轮日志后让位，避免重复显示', async () => {
+    const { selectGrowthRunView } = await import('../src/client/store/growth-run.ts')
+    const host = {
+      running: true,
+      mode: 'one' as const,
+      accountId: 'a1',
+      taskCode: 'black_cat',
+      log: [{ at: 5, account: '4993', code: 'black_cat', status: 'running', message: '宿主写的' }],
+    }
+    const view = selectGrowthRunView(host, { accountId: 'a1', taskCode: 'black_cat', account: '4993', startedAt: 99 }, '开始执行…')
+    // 返回宿主原值，而不是本地那条。
+    expect(view).toBe(host)
+  })
+
+  it('宿主在跑同一个任务但还没写日志时，仍用本地记录', async () => {
+    const { selectGrowthRunView } = await import('../src/client/store/growth-run.ts')
+    const host = { running: true, mode: 'one' as const, accountId: 'a1', taskCode: 'black_cat', log: [] }
+    const view = selectGrowthRunView(host, { accountId: 'a1', taskCode: 'black_cat', account: '4993', startedAt: 99 }, '开始执行…')
+    expect(view?.log?.[0]?.message).toBe('开始执行…')
+  })
+
+  it('没有乐观记录时原样返回宿主状态', async () => {
+    const { selectGrowthRunView } = await import('../src/client/store/growth-run.ts')
+    const host = { running: false, log: entries }
+    expect(selectGrowthRunView(host, undefined, 'x')).toBe(host)
+    expect(selectGrowthRunView(undefined, undefined, 'x')).toBeUndefined()
+  })
+
+  it('全量执行期间禁用单项按钮', async () => {
+    const { isBlockedByRunAll } = await import('../src/client/store/growth-run.ts')
+    expect(isBlockedByRunAll({ running: true, mode: 'all' }, [])).toBe(true)
+  })
+
+  it('单项执行不禁用其它单项', async () => {
+    const { isBlockedByRunAll } = await import('../src/client/store/growth-run.ts')
+    expect(isBlockedByRunAll({ running: true, mode: 'one', accountId: 'a', taskCode: 't' }, [])).toBe(false)
+    // 本地刚发起单项、宿主还是上一轮的 mode='all'：不该被误禁。
+    expect(isBlockedByRunAll({ running: true, mode: 'all' }, ['a:t'])).toBe(false)
+    expect(isBlockedByRunAll({ running: false }, [])).toBe(false)
+  })
+})

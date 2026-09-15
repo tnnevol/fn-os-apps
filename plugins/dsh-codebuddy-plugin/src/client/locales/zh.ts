@@ -85,6 +85,7 @@ export const zh: { [Key in CodeBuddyLocaleKey]: string } = {
   growthLogOpen: '查看日志',
   growthLogEmpty: '还没有执行记录。点击「完成任务」后这里会显示逐条进度。',
   growthLogRunning: '执行中，日志实时更新',
+  growthLogStarting: '开始执行…',
   resourcesTitle: '资源包',
   accountInfoTitle: '账户信息',
   accountIdentity: '身份信息',

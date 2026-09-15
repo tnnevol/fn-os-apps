@@ -23,7 +23,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useStore } from '@nanostores/react'
 import { DshSideSheet } from '@tnnevol/dsh-semi-ui'
 import type { ConnectionRpc, GrowthRunStateView } from '../rpc.ts'
-import { $growthRunning, GROWTH_RUN_POLL_MS, hydrateGrowthRunState } from '../store/growth-run.ts'
+import { $growthOptimistic, $growthRunning, GROWTH_RUN_POLL_MS, hydrateGrowthRunState, selectGrowthRunView } from '../store/growth-run.ts'
 import { growthLogLines } from '../log-presentation.ts'
 import type { Translate } from '../../types/client/panel-types'
 
@@ -73,11 +73,23 @@ export function GrowthRunDrawer({ rpc, t, visible, onClose }: {
   onClose: () => void
 }): ReactNode {
   const running = useStore($growthRunning)
+  const optimistic = useStore($growthOptimistic)
   // 抽屉里的日志取自 store；组件卸载后仍保留最近一轮（宿主也持久化了）。
   const [state, setState] = useState<GrowthRunStateView | undefined>(undefined)
 
   // 与 store 同步：store 是宿主状态的镜像，这里只做渲染用的快照。
   useEffect(() => { setState(running) }, [running])
+
+  /**
+   * 实际渲染用的状态：宿主状态与本地乐观起点的合并结果。
+   *
+   * 单项执行刚点下时宿主还没落盘，此时显示该任务的具体日志（而不是空态或上一轮
+   * 的内容）；宿主一旦写出本轮日志就自动让位。
+   */
+  const view = useMemo(
+    () => selectGrowthRunView(state, optimistic, t('growthLogStarting')),
+    [state, optimistic, t],
+  )
 
   /**
    * 展开期间轮询宿主，让日志逐条追上来。
@@ -87,7 +99,9 @@ export function GrowthRunDrawer({ rpc, t, visible, onClose }: {
    * 那段时间就是用户看到的空态。
    */
   useEffect(() => {
-    if (!visible || !running.running) return
+    // 本地乐观态下也必须轮询：那时 `running.running` 可能还是 false，但执行已经在路上，
+    // 不拉就永远看不到后续日志。乐观记录由 hydrate 在宿主接管后自动清掉。
+    if (!visible || (!running.running && optimistic === undefined)) return
     let active = true
     const pull = async (): Promise<void> => {
       const next = await hydrateGrowthRunState(rpc)
@@ -96,7 +110,7 @@ export function GrowthRunDrawer({ rpc, t, visible, onClose }: {
     void pull()
     const timer = setInterval(() => { void pull() }, GROWTH_RUN_POLL_MS)
     return () => { active = false; clearInterval(timer) }
-  }, [rpc, running.running, visible])
+  }, [rpc, running.running, optimistic, visible])
 
   // 展开时立刻拉一次：覆盖「跑完后再打开回看」的情形（那时不会轮询）。
   useEffect(() => {
@@ -104,7 +118,7 @@ export function GrowthRunDrawer({ rpc, t, visible, onClose }: {
     void hydrateGrowthRunState(rpc).then((next) => { if (next !== undefined) setState(next) })
   }, [rpc, visible])
 
-  const lines = useMemo(() => growthLogLines(state?.log), [state?.log])
+  const lines = useMemo(() => growthLogLines(view?.log), [view?.log])
 
   return (
     <DshSideSheet
@@ -119,7 +133,7 @@ export function GrowthRunDrawer({ rpc, t, visible, onClose }: {
     >
       <div className="dsh-codebuddy-growth-log-body">
         {/* 状态行常驻：让「正在执行」与日志滚动互不影响。 */}
-        {running.running ? <p className="dsh-codebuddy-muted">{t('growthLogRunning')}</p> : null}
+        {view?.running === true ? <p className="dsh-codebuddy-muted">{t('growthLogRunning')}</p> : null}
         {/* 终端：深色底、亮色字，按段着色。整块（含滚动条）使用同一底色，
             避免滚动条落在另一种背景上显得「溢出」（见 styles/growth-tasks.scss）。 */}
         <div className="dsh-codebuddy-growth-log-terminal">
@@ -135,7 +149,7 @@ export function GrowthRunDrawer({ rpc, t, visible, onClose }: {
                      * 为什么限定最后一行：`running` / `waiting` 是过程标记，一旦后续
                      * 行出现就说明它已经过去了——给历史行加呼吸动画会让整屏一直在闪。
                      */
-                    const live = running.running && line.tone === 'info' && index === lines.length - 1
+                    const live = view?.running === true && line.tone === 'info' && index === lines.length - 1
                     return (
                       <li
                         key={`${line.at}-${line.account}-${line.code}-${index}`}
