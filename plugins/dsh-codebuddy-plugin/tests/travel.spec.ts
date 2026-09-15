@@ -1,5 +1,13 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { claimTravel, departTravel, fetchTravelLocations, fetchTravelStatus } from '../src/host/travel.ts'
+import {
+  adoptBuddy,
+  claimTravel,
+  departTravel,
+  fetchTravelLocations,
+  fetchTravelStatus,
+  hasBuddy,
+  isAdoptThresholdError,
+} from '../src/host/travel.ts'
 import type { CodeBuddyIdentity } from '../src/host/codebuddy.ts'
 
 const IDENTITY: CodeBuddyIdentity = {
@@ -126,5 +134,77 @@ describe('CodeBuddy buddy travel', () => {
     const result = await claimTravel(ENDPOINT, IDENTITY, 42)
     expect(result.ok).toBe(false)
     expect(result.error).toContain('not arrived yet')
+  })
+})
+
+describe('猫猫档案与领养（旅行前置）', () => {
+  it('buddy 为 null 表示确实没有猫猫', async () => {
+    stub(() => envelope({ buddy: null, poll_interval_seconds: 3 }))
+    expect(await hasBuddy(ENDPOINT, IDENTITY)).toBe(false)
+  })
+
+  it('buddy 有内容表示已有猫猫', async () => {
+    stub(() => envelope({ buddy: { instance_id: 1, name: '像素喵' } }))
+    expect(await hasBuddy(ENDPOINT, IDENTITY)).toBe(true)
+  })
+
+  it('缺 buddy 字段时返回 undefined，不触发领养', async () => {
+    // 关键：把「字段缺失」当成无猫会让任何异常响应体都触发一整轮领养链
+    // （上报 + 协议 + buddy/first），宁可这轮不领养也不要在形状不认识时乱动账号。
+    stub(() => envelope({ poll_interval_seconds: 3 }))
+    expect(await hasBuddy(ENDPOINT, IDENTITY)).toBeUndefined()
+  })
+
+  it('查询失败时返回 undefined（无法判定）', async () => {
+    stub(() => new Response('nope', { status: 500 }))
+    expect(await hasBuddy(ENDPOINT, IDENTITY)).toBeUndefined()
+  })
+
+  it('不能拿 travel/status 的 buddy_id 判断有无猫猫', async () => {
+    // 未派发时服务端一律返回 buddy_id: 0；若用它判断，从未派发过的账号
+    // 会被永久拦在派发之外（越是没派过就越被拦）。
+    stub(() => envelope({ state: 'idle', buddy_id: 0, record_id: 0, daily_limit_reached: false }))
+    const status = await fetchTravelStatus(ENDPOINT, IDENTITY)
+    expect(status.ok).toBe(true)
+    // 同时 buddy/info 说确实有猫 → 两者语义不同，不能互相替代。
+    stub(() => envelope({ buddy: { instance_id: 7627132 } }))
+    expect(await hasBuddy(ENDPOINT, IDENTITY)).toBe(true)
+  })
+
+  it('领养链路先同意协议再 buddy/first', async () => {
+    const { calls } = stub(() => envelope({}))
+    const result = await adoptBuddy(ENDPOINT, IDENTITY)
+    expect(result.ok).toBe(true)
+    expect(calls.map(call => call.url)).toEqual([
+      `${ENDPOINT}/activity/growth/buddy/agreement`,
+      `${ENDPOINT}/activity/growth/buddy/first`,
+    ])
+    expect(calls[0]!.method).toBe('POST')
+    expect(JSON.parse(calls[0]!.body!)).toEqual({ agree: true })
+  })
+
+  it('「门槛未达标」标记为 threshold，供调用方记当日已试', async () => {
+    stub(() => new Response(
+      JSON.stringify({ code: 400, msg: 'first_buddy task not completed yet' }),
+      { status: 400, headers: { 'content-type': 'application/json' } },
+    ))
+    const result = await adoptBuddy(ENDPOINT, IDENTITY)
+    expect(result.ok).toBe(false)
+    expect(result.threshold).toBe(true)
+  })
+
+  it('其它失败不算 threshold（下次仍应重试）', async () => {
+    stub(() => new Response(
+      JSON.stringify({ code: 500, msg: 'internal error' }),
+      { status: 500, headers: { 'content-type': 'application/json' } },
+    ))
+    const result = await adoptBuddy(ENDPOINT, IDENTITY)
+    expect(result.ok).toBe(false)
+    expect(result.threshold).toBeUndefined()
+  })
+
+  it('isAdoptThresholdError 按文案识别门槛错误', () => {
+    expect(isAdoptThresholdError(new Error('first_buddy task not completed yet'))).toBe(true)
+    expect(isAdoptThresholdError(new Error('500 internal'))).toBe(false)
   })
 })

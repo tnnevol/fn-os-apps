@@ -279,7 +279,7 @@ describe('签到与旅行并入成长任务流程', () => {
     expect(body).toMatch(/等待上游计分/)
     // 签到与旅行各自先记「开始」再记结果。
     expect(body).toMatch(/查询签到状态/)
-    expect(body).toMatch(/查询猫猫旅行状态/)
+    expect(body).toMatch(/确认猫猫档案/)
   })
 
   it('进度写进结构化字段，供前端区分「没开始」与「做了一半」', () => {
@@ -316,9 +316,33 @@ describe('签到与旅行并入成长任务流程', () => {
 
   it('旅行在途或今日已旅行即跳过，不重复派发', () => {
     const start = HOST.indexOf('private async travelOneAccount')
-    const body = HOST.slice(start, start + 1600)
-    expect(body).toContain("status.state === 'traveling') return { id, name, result: 'traveling' }")
-    expect(body).toContain("return { id, name, result: 'daily-limit' }")
+    const body = HOST.slice(start, start + 2600)
+    // 返回结果现在带 adopted 标记，因此只断言状态本身。
+    expect(body).toContain("result: 'traveling'")
+    expect(body).toContain("result: 'daily-limit'")
+  })
+
+  it('旅行前先确认有无猫猫，没有就先领养再旅行', () => {
+    const start = HOST.indexOf('private async travelOneAccount')
+    const body = HOST.slice(start, start + 2600)
+    // 顺序必须是：探猫 → （无猫时）领养 → 再走旅行状态机。
+    const buddyAt = body.indexOf('hasBuddy(')
+    const adoptAt = body.indexOf('adoptBeforeTravel(')
+    const statusAt = body.indexOf('fetchTravelStatus(')
+    expect(buddyAt).toBeGreaterThan(-1)
+    expect(adoptAt).toBeGreaterThan(buddyAt)
+    expect(statusAt).toBeGreaterThan(adoptAt)
+    // 领养没成就直接返回，不派发。
+    expect(body).toMatch(/adopt\.result !== 'adopted'/)
+  })
+
+  it('自动旅行周期同样先领养再旅行', () => {
+    const start = HOST.indexOf('private async runTravelPass')
+    const body = HOST.slice(start, start + 2600)
+    const buddyAt = body.indexOf('hasBuddy(')
+    const adoptAt = body.indexOf('adoptBeforeTravel(')
+    expect(buddyAt).toBeGreaterThan(-1)
+    expect(adoptAt).toBeGreaterThan(buddyAt)
   })
 
   it('企业账号签到与旅行都跳过', () => {

@@ -21,6 +21,19 @@ function reportHeaders(identity: CodeBuddyIdentity): Record<string, string> {
   }
 }
 
+/**
+ * 发一条对话活跃上报（`chat_request_send`）。
+ *
+ * 供「领养前置」复用：该上报会**解锁 `first_buddy` 任务**，没有它时
+ * `buddy/first` 会返回 400「门槛未达标」。
+ *
+ * @param identity - 已登录身份。
+ * @param signal - 可选取消。
+ */
+export async function reportGrowthActivity(identity: CodeBuddyIdentity, signal?: AbortSignal): Promise<void> {
+  await report(identity, 'chat_request_send', signal)
+}
+
 async function report(
   identity: CodeBuddyIdentity,
   eventCode: string,

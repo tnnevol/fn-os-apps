@@ -122,12 +122,16 @@ export function statusTone(status: string, progress?: { current: number, target:
     case 'traveling':
     case 'departed':
     case 'claiming':
+    case 'adopted':
       return 'warn'
     // 今日已旅行（服务端 daily_limit_reached）＝今天这件事不用再做了 → 跳过 → 绿。
     case 'daily-limit':
       return 'ok'
     // 没有猫猫：可重试，不算失败，但也确实没完成。
     case 'no-buddy':
+      return 'warn'
+    // 领养门槛未达标：今日活跃度不够，不是账号故障，也不是「完成」。
+    case 'adopt-threshold':
       return 'warn'
     default:
       return 'info'

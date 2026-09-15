@@ -98,7 +98,7 @@ describe('状态色调映射', () => {
   })
 
   it('旅行中间态按「完成了一半」为黄', () => {
-    for (const status of ['traveling', 'departed', 'claiming', 'no-buddy']) {
+    for (const status of ['traveling', 'departed', 'claiming', 'no-buddy', 'adopted', 'adopt-threshold']) {
       expect(statusTone(status)).toBe('warn')
     }
   })

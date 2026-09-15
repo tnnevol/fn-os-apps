@@ -104,15 +104,21 @@ describe('周期任务重入保护', () => {
 
     const first = service.runTravelCycle()
     // 第二轮在首轮仍 await 远端时进入：必须被拒绝。
+    // 快照取在第二轮**之前**：首轮的远端调用是异步发出的，取在其后会因时序而抖动。
+    const callsBeforeSecond = statusCalls
     const second = await service.runTravelCycle()
     expect(second.status).toBe('skipped')
     expect(second.accounts).toEqual([])
+    // 被拒绝的那一轮一次请求都没发——这才是重入保护要断言的事。
+    // 不断言总次数的绝对值：首轮会先探 buddy/info 再探 travel/status，
+    // 写死次数会随探测步骤增减而误报。
+    expect(statusCalls).toBe(callsBeforeSecond)
 
     releaseProbe?.()
     const firstResult = await first
     expect(firstResult.status).toBe('ok')
-    // 只探测了一次：第二轮没有真的打请求。
-    expect(statusCalls).toBe(1)
+    // 首轮确实打出了请求（否则上面的「零请求」是同义反复）。
+    expect(statusCalls).toBeGreaterThan(callsBeforeSecond)
   })
 
   it('旅行领取周期同样受保护，且与派发周期各自独立', async () => {

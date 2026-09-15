@@ -27,6 +27,24 @@ import { CODEBUDDY_IDE_VERSION } from '../contracts/constants.ts'
 /** 成长中心接口前缀。 */
 const TRAVEL_API_PREFIX = '/activity/growth/buddy/travel'
 
+/** 猫猫（Buddy）本身的接口前缀：查档案与领养。 */
+const BUDDY_API_PREFIX = '/activity/growth/buddy'
+
+/**
+ * 「领养门槛未达标」的服务端文案。
+ *
+ * 未先做活跃上报时 `buddy/first` 返回 HTTP 400 + `first_buddy task not completed yet`。
+ * 该门槛的真实来源是**当日无活跃上报**，不是账号问题——所以调用方应记一次「今日已试」
+ * 后静默跳过，而不是当成失败反复重试。
+ */
+const ADOPT_THRESHOLD_MARKER = 'first_buddy task not completed yet'
+
+/** 该错误是否为「领养门槛未达标」（可判定为今日不再重试）。 */
+export function isAdoptThresholdError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error)
+  return message.includes(ADOPT_THRESHOLD_MARKER)
+}
+
 /**
  * 成长中心要求的浏览器语境请求头。
  *
@@ -104,8 +122,55 @@ async function travelRequest(
   }
 }
 
-/** 读取可选的地点列表（派发时按顺序尝试）。 */
-export async function fetchTravelLocations(
+/**
+ * 查询账号是否已有猫猫。
+ *
+ * **不能用 `travel/status` 的 `buddy_id` 判断**：那表示*当前正在旅行的猫猫 id*，
+ * 未派发时服务端一律返回 0——用它判断会让从未派发过的账号被永久拦在派发之外
+ * （越是没派过就越被拦）。这里查的是 `/activity/growth/buddy/info` 的 `data.buddy`。
+ *
+ * 只把**显式的 `null`** 当作「没有猫猫」；字段缺失/响应形状意外一律返回 `undefined`
+ * （无法判定）。原因：把「缺失」也当无猫时，任何异常的响应体都会触发一整轮领养链
+ * （上报 + 协议 + `buddy/first`）——宁可这轮不领养，也不要在形状不认识时乱动账号状态。
+ *
+ * @returns `true` 有猫猫、`false` 确定没有、`undefined` 无法判定。
+ */
+export async function hasBuddy(
+  endpoint: string,
+  identity: CodeBuddyIdentity,
+  signal?: AbortSignal,
+): Promise<boolean | undefined> {
+  const resp = await travelRequest(endpoint, `${BUDDY_API_PREFIX}/info`, identity, 'GET', undefined, signal)
+  if (!resp.ok) return undefined
+  const data = (resp.data ?? {}) as Record<string, unknown>
+  // 只有明确带 `buddy` 键的响应才可判定：`null` → 无猫，其它值 → 有猫。
+  if (!('buddy' in data)) return undefined
+  return data.buddy !== null
+}
+
+/**
+ * 领养第一只猫猫：同意协议 → `buddy/first`。
+ *
+ * **调用方必须先做活跃上报**，否则 `buddy/first` 会返回「门槛未达标」。
+ * 门槛未达标属预期（当日活跃度不够），用 {@link isAdoptThresholdError} 判定后
+ * 应当记「今日已试」并跳过，而不是反复重试。
+ *
+ * @returns `ok` 表示领养成功；`threshold` 表示门槛未达标（今日不必再试）。
+ */
+export async function adoptBuddy(
+  endpoint: string,
+  identity: CodeBuddyIdentity,
+  signal?: AbortSignal,
+): Promise<{ ok: boolean, threshold?: boolean, error?: string }> {
+  // 协议幂等，重复调用无副作用；失败不阻塞——让 buddy/first 按既有错误路径暴露。
+  await travelRequest(endpoint, `${BUDDY_API_PREFIX}/agreement`, identity, 'POST', JSON.stringify({ agree: true }), signal)
+  const first = await travelRequest(endpoint, `${BUDDY_API_PREFIX}/first`, identity, 'POST', JSON.stringify({}), signal)
+  if (first.ok) return { ok: true }
+  if (first.message.includes(ADOPT_THRESHOLD_MARKER)) return { ok: false, threshold: true, error: first.message }
+  return { ok: false, error: first.message }
+}
+
+/** 读取可选的地点列表（派发时按顺序尝试）。 */export async function fetchTravelLocations(
   endpoint: string,
   identity: CodeBuddyIdentity,
   signal?: AbortSignal,

@@ -27,9 +27,9 @@ import {
 
 import { getCheckinStatus, performCheckin, fetchUsage } from './usage.ts'
 import { BackoffGate, mapWithConcurrency, RunGuard } from './concurrency.ts'
-import { claimTravel, departTravel, fetchTravelLocations, fetchTravelStatus } from './travel.ts'
+import { adoptBuddy, claimTravel, departTravel, fetchTravelLocations, fetchTravelStatus, hasBuddy } from './travel.ts'
 import { acceptGrowthTasks, claimGrowthTask, isAutomatableGrowthTask, listGrowthTasks, sortGrowthTasksByOrder } from './growth-tasks.ts'
-import { runGrowthTaskAction } from './growth-actions.ts'
+import { reportGrowthActivity, runGrowthTaskAction } from './growth-actions.ts'
 import { appendGrowthRunLog, beginGrowthRun, finishGrowthRun, loadGrowthRunState } from './growth-run.ts'
 import { getLoginAccount, pollAuthToken, requestAuthState } from './codebuddy.ts'
 import {
@@ -354,6 +354,60 @@ export class CodeBuddyAuthService {
   /** 正在领取中的账号 id：两个旅行周期的守卫互相独立，需按账号去重。 */
   private readonly claiming = new Set<string>()
 
+  /**
+   * 领养尝试的当日记录：账号 id → 自然日（本地日期串）。
+   *
+   * 参考项目 `Scheduler.adoptTried` 同一口径：当日的活跃上报不够时 `buddy/first`
+   * 会返回「门槛未达标」，这**不是账号问题**，同一天内重试没有意义——
+   * 记下当日已试，避免每个旅行周期都白跑一次领养链。
+   */
+  private readonly adoptTried = new Map<string, string>()
+
+  /** 当日日期串（本地时区），用于「今日已试」判定。 */
+  private static travelDay(now: Date = new Date()): string {
+    return `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`
+  }
+
+  private adoptTriedToday(accountId: string): boolean {
+    return this.adoptTried.get(accountId) === CodeBuddyAuthService.travelDay()
+  }
+
+  private markAdoptTried(accountId: string): void {
+    this.adoptTried.set(accountId, CodeBuddyAuthService.travelDay())
+  }
+
+  /**
+   * 没有猫猫时先领养（旅行前置）。
+   *
+   * 链路与参考项目 `travelAdopt` 一致：**活跃上报 → 同意协议 → `buddy/first`**。
+   * 上报必须先跑：它解锁 `first_buddy` 任务，否则 `buddy/first` 直接 400
+   * 「门槛未达标」。门槛未达标记当日已试后跳过，不再重试。
+   *
+   * @returns 领养结果，供日志展示。
+   */
+  private async adoptBeforeTravel(
+    id: string,
+    name: string,
+    endpoint: string,
+    identity: CodeBuddyIdentity,
+    signal?: AbortSignal,
+  ): Promise<{ id: string, name: string, result: string, error?: string }> {
+    if (this.adoptTriedToday(id)) return { id, name, result: 'adopt-threshold' }
+    // 前置：解锁 first_buddy 任务（幂等；失败不阻塞，让 buddy/first 自己暴露原因）。
+    try {
+      await reportGrowthActivity(identity, signal)
+    } catch {
+      // 上报失败不阻塞：下面 buddy/first 会按既有错误路径给出真实原因。
+    }
+    const adopted = await adoptBuddy(endpoint, identity, signal)
+    if (adopted.ok) return { id, name, result: 'adopted' }
+    if (adopted.threshold === true) {
+      this.markAdoptTried(id)
+      return { id, name, result: 'adopt-threshold' }
+    }
+    return { id, name, result: 'adopt-failed', ...adopted.error === undefined ? {} : { error: adopted.error } }
+  }
+
   /** 派发周期：逐账号同步状态并按状态机推进。
    *
    * - `arrived` → 领取奖励；
@@ -399,6 +453,24 @@ export class CodeBuddyAuthService {
       eligible += 1
       const endpoint = resolveEntryEndpoint(entry)
       try {
+        /**
+         * 前置：没有猫猫就先领养（与「完成任务」路径同源）。
+         *
+         * 没有这一步时，从没领养过的账号每轮都拿 `no active buddy` 走一遍派发尝试，
+         * 而「先领养、再旅行」才是能真正推进那条路径的顺序。
+         */
+        const buddy = await hasBuddy(endpoint, identity)
+        if (buddy === false) {
+          const adopt = await this.adoptBeforeTravel(entry.id, name, endpoint, identity)
+          if (adopt.result !== 'adopted') {
+            // 领养没成（门槛未达 / 失败）：本轮不派发。
+            push({ result: adopt.result, ...adopt.error === undefined ? {} : { error: adopt.error } })
+            continue
+          }
+          // 领养成功**不中断本轮**：继续往下走状态机派发猫猫（与「完成任务」路径
+          // 同一顺序——先领养、再旅行）。若派发被服务端拒（刚领养的猫尚未就绪），
+          // 会落到下面的 no-buddy 分支，下个周期自然重试。
+        }
         const status = await fetchTravelStatus(endpoint, identity)
         if (!status.ok) {
           if (status.unsupported === true) push({ result: 'skipped' })
@@ -573,33 +645,61 @@ export class CodeBuddyAuthService {
    *  - `idle` + `daily_limit_reached` → `daily-limit`（今日已旅行，跳过）；
    *  - `idle` → 尝试派发；没有猫猫返回 `no-buddy`（可重试，不算失败）。
    *
-   * **必须先领养猫猫**：没有 Buddy 时派发只会被服务端拒（`no active buddy`），
-   * 所以调用方把领养排在旅行之前。
+   * **必须先领养猫猫**：没有 Buddy 时派发只会被服务端拒（`no active buddy`）。
+   * 因此这里先确认有没有猫猫——没有就先走领养链（活跃上报 → 协议 → `buddy/first`），
+   * **领养成功后再继续旅行**，而不是直接派发等着被拒。
    */
   private async travelOneAccount(
     id: string,
     name: string,
     endpoint: string,
     identity: CodeBuddyIdentity,
-  ): Promise<{ id: string, name: string, result: string, rewardCredit?: number, error?: string }> {
+    signal?: AbortSignal,
+  ): Promise<{ id: string, name: string, result: string, state?: string, rewardCredit?: number, adopted?: boolean, error?: string }> {
     if (identity.enterpriseId !== undefined) return { id, name, result: 'skipped' }
     try {
-      const status = await fetchTravelStatus(endpoint, identity)
+      /**
+       * 前置：没有猫猫就先领养，领养完成后才继续旅行。
+       *
+       * 用 `buddy/info` 判断而不是 `travel/status` 的 `buddy_id`——后者只在
+       * 「正在旅行」时才有值、未派发一律为 0，用它判断会把从未派发过的账号
+       * 永久拦在门外。查询失败（`undefined`）时不领养，避免误判。
+       */
+      const buddy = await hasBuddy(endpoint, identity, signal)
+      let adopted = false
+      if (buddy === false) {
+        const adopt = await this.adoptBeforeTravel(id, name, endpoint, identity, signal)
+        if (adopt.result !== 'adopted') {
+          // 领养没成（门槛未达 / 失败）：本轮不派发，如实报告原因。
+          return { id, name, result: adopt.result, ...adopt.error === undefined ? {} : { error: adopt.error } }
+        }
+        adopted = true
+      }
+      const status = await fetchTravelStatus(endpoint, identity, signal)
       if (!status.ok) {
         if (status.unsupported === true) return { id, name, result: 'skipped' }
         return { id, name, result: 'error', ...status.error === undefined ? {} : { error: status.error } }
       }
-      if (status.state === 'traveling') return { id, name, result: 'traveling' }
+      if (status.state === 'traveling') return { id, name, result: 'traveling', ...adopted ? { adopted } : {} }
       if (status.state === 'arrived') {
         const claimed = await this.claimArrived(id, endpoint, identity, status.recordId)
-        if (claimed.ok) return { id, name, result: 'claimed', ...claimed.rewardCredit === undefined ? {} : { rewardCredit: claimed.rewardCredit } }
+        if (claimed.ok) {
+          return {
+            id,
+            name,
+            result: 'claimed',
+            ...claimed.rewardCredit === undefined ? {} : { rewardCredit: claimed.rewardCredit },
+            ...adopted ? { adopted } : {},
+          }
+        }
         if (claimed.busy === true) return { id, name, result: 'claiming' }
         return { id, name, result: 'error', ...claimed.error === undefined ? {} : { error: claimed.error } }
       }
       if (status.dailyLimitReached) return { id, name, result: 'daily-limit' }
+      // 领养成功那一刻猫猫还没派出去，正好接上派发。
       const departed = await this.departAtAnyLocation(endpoint, identity)
-      if (departed.ok) return { id, name, result: 'departed' }
-      if (departed.already === true) return { id, name, result: 'traveling' }
+      if (departed.ok) return { id, name, result: 'departed', ...adopted ? { adopted } : {} }
+      if (departed.already === true) return { id, name, result: 'traveling', ...adopted ? { adopted } : {} }
       if (departed.noBuddy === true) return { id, name, result: 'no-buddy' }
       return { id, name, result: 'error', ...departed.error === undefined ? {} : { error: departed.error } }
     } catch (error) {
@@ -1968,7 +2068,7 @@ export class CodeBuddyAuthService {
           }).catch(() => {})
           items.push({ code: '签到', status: checkin.result, ...checkin.error === undefined ? {} : { error: checkin.error } })
 
-          await appendGrowthRunLog({ account: item.name, code: '旅行', status: 'running', message: '查询猫猫旅行状态…' }).catch(() => {})
+          await appendGrowthRunLog({ account: item.name, code: '旅行', status: 'running', message: '确认猫猫档案…' }).catch(() => {})
           const travel = await this.travelOneAccount(item.id, item.name, endpoint, item.identity)
           await appendGrowthRunLog({
             account: item.name,
@@ -1981,10 +2081,16 @@ export class CodeBuddyAuthService {
                 : travel.result === 'claimed'
                   ? `领取旅行奖励 +${travel.rewardCredit ?? 0} 积分`
                   : travel.result === 'departed'
-                    ? '已派猫猫出门旅行'
-                    : travel.result === 'no-buddy'
-                      ? '暂无猫猫（需先完成领养任务）'
-                      : travel.result === 'skipped' ? '企业账号无成长中心' : travel.error ?? '旅行失败',
+                    ? travel.adopted === true
+                      ? '领养了第一只猫猫并已派出门旅行'
+                      : '已派猫猫出门旅行'
+                    : travel.result === 'adopt-threshold'
+                      ? '领养门槛未达标（今日活跃不足），今日不再重试'
+                      : travel.result === 'adopt-failed'
+                        ? `领养失败：${travel.error ?? '未知原因'}`
+                        : travel.result === 'no-buddy'
+                          ? '暂无猫猫（需先完成领养任务）'
+                          : travel.result === 'skipped' ? '企业账号无成长中心' : travel.error ?? '旅行失败',
           }).catch(() => {})
           items.push({ code: '旅行', status: travel.result, ...travel.error === undefined ? {} : { error: travel.error } })
 
