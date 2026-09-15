@@ -142,6 +142,55 @@ describe('自动切换账号开关', () => {
     // 用户在面板里拨动开关 → 推给 host（在 AccountsPage 的 onChange 内联里）。
     expect(accountsBody).toMatch(/rpc\.call\(CODEBUDDY_AUTH_CHANNEL, 'autoSwitch', \{ enabled: checked \}\)/)
   })
+})
+
+/**
+ * 自动签到 / 自动旅行开关只在管理面板，不在设置页。
+ *
+ * 这两个开关是运营周期（FNOS-003）的唯一入口，因此必须留一个可操作的位置：
+ *  - **管理面板**提供开关（本组用例守住）；
+ *  - **设置页隐藏**（用户要求：设置里只保留自动切换/阈值/显示额度余量，运营周期
+ *    的开关收拢到管理面板，避免两处重复）。
+ *
+ * 曾出现过的两种错误都必须被这组用例挡住：
+ *  1. 两处都删 —— Host 周期默认开启，用户却无处可关；
+ *  2. 两处都留 —— 同一件事有两个入口，改一处忘另一处。
+ */
+describe('自动签到 / 自动旅行开关只在管理面板', () => {
+  it('管理面板动作区有这两个开关', () => {
+    expect(accountsBody).toContain('<AutoCheckinToggle')
+    expect(accountsBody).toContain('<AutoTravelToggle')
+    expect(accountsBody).toContain('autoCheckinOn')
+    expect(accountsBody).toContain('autoTravelOn')
+  })
+
+  it('拨动面板开关会同步到 host（面板是控制任务的入口）', () => {
+    expect(accountsBody).toMatch(/rpc\.call\(CODEBUDDY_AUTH_CHANNEL, 'autoCheckin', \{ enabled: checked \}\)/)
+    expect(accountsBody).toMatch(/rpc\.call\(CODEBUDDY_AUTH_CHANNEL, 'autoTravel', \{ enabled: checked \}\)/)
+  })
+
+  it('设置页不再渲染这两个开关', () => {
+    // 设置页的偏好表只剩自动切换 / 阈值 / 显示额度余量。
+    expect(SECTION).not.toMatch(/title=\{t\('autoCheckin'\)\}/)
+    expect(SECTION).not.toMatch(/title=\{t\('travelAuto'\)\}/)
+    expect(SECTION).not.toContain('toggleAutoCheckin')
+    expect(SECTION).not.toContain('toggleAutoTravel')
+  })
+
+  it('设置页仍保留自动切换与显示额度余量（只收走运营周期那两个）', () => {
+    expect(SECTION).toMatch(/title=\{t\('autoSwitch'\)\}/)
+    expect(SECTION).toMatch(/title=\{t\('autoSwitchPct'\)\}/)
+    expect(SECTION).toMatch(/title=\{t\('showUsage'\)\}/)
+  })
+
+  it('两个开关组件仍被导出（不是删了实现只留引用）', () => {
+    const TOGGLES = readFileSync(
+      '/Users/tnnevol/workspace/fn-packages/fn-os-apps/plugins/dsh-codebuddy-plugin/src/client/ui/auto-toggles.tsx',
+      'utf8',
+    )
+    expect(TOGGLES).toContain('export function AutoCheckinToggleImpl')
+    expect(TOGGLES).toContain('export function AutoTravelToggleImpl')
+  })
 
   it('挂载时**读** host 配置，而不是把本地值推上去', () => {
     // 曾经挂载时会推 { enabled: autoSwitchOn }，那会让 host 上更新的值被旧

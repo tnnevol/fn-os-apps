@@ -37,7 +37,7 @@ import { classifyResources, forgetResources, recordResources, resourceHistorySto
 import type { ClassifiedResource } from './resource-history.ts'
 import { TokenStatsStore } from './store/token-stats.ts'
 import {
-  $autoSwitch,
+  $autoCheckin, $autoSwitch, $autoTravel,
 } from './store/usage-prefs.ts'
 import { sortSegmentsByValueDesc } from './segment-bar.ts'
 import { formatUpdatedAt } from './format-time.ts'
@@ -54,7 +54,9 @@ import { AccountCardImpl as AccountCard } from './ui/account-card.tsx'
 import { AccountResourcesModalImpl as AccountResourcesModal } from './ui/account-resources-modal.tsx'
 import { ActivityGridImpl as ActivityGrid } from './ui/activity-grid.tsx'
 import {
+  AutoCheckinToggleImpl as AutoCheckinToggle,
   AutoSwitchToggleImpl as AutoSwitchToggle,
+  AutoTravelToggleImpl as AutoTravelToggle,
 } from './ui/auto-toggles.tsx'
 import {
   BreakdownListImpl as BreakdownList,
@@ -106,8 +108,8 @@ function AccountsPage({
   /** 「完成任务」重入标志（同上：loading 不拦点击）。 */
   const runAllGrowthRef = useRef(false)
   const [resourceTarget, setResourceTarget] = useState<PanelAccountRow | undefined>(undefined)
-  // Host 侧仍提供自动周期的状态给账号卡片，但管理面板不再展示两个自动周期配置开关。
-  const { autoCheckin: autoCheckinOn, autoSwitch: autoSwitchOn } = useAutoPrefs(rpc)
+  // 三个 auto* 偏好的展示 / 同步 host 都封装在 hook 里——这样本页与设置页同源。
+  const { autoCheckin: autoCheckinOn, autoSwitch: autoSwitchOn, autoTravel: autoTravelOn } = useAutoPrefs(rpc)
   // 「完成任务」的运行态来自宿主落盘状态（见 store/growth-run.ts）：
   // 刷新页面后仍是 loading，不会因为组件 state 重置而变回可点击。
   const growthRun = useStore($growthRunning)
@@ -260,6 +262,14 @@ function AccountsPage({
           <AutoSwitchToggle checked={autoSwitchOn} t={t} onChange={(checked: boolean) => {
             $autoSwitch.set(checked)
             void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoSwitch', { enabled: checked })
+          }} />
+          <AutoCheckinToggle checked={autoCheckinOn} t={t} onChange={(checked: boolean) => {
+            $autoCheckin.set(checked)
+            void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoCheckin', { enabled: checked })
+          }} />
+          <AutoTravelToggle checked={autoTravelOn} t={t} onChange={(checked: boolean) => {
+            $autoTravel.set(checked)
+            void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoTravel', { enabled: checked })
           }} />
           {/* 两个属性并存、各表达一件事：loading = 本轮签到在跑（转圈），
               disabled = 此刻不可提交（签到状态未探测完 / 全部已签到 / 无账号）。
