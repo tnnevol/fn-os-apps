@@ -4,6 +4,7 @@ const mocks = vi.hoisted(() => ({
   askPlugin: vi.fn(),
   confirm: vi.fn(),
   select: vi.fn(),
+  text: vi.fn(),
   readFile: vi.fn(),
   writeFile: vi.fn(),
   spawnSync: vi.fn(),
@@ -17,6 +18,7 @@ vi.mock('@clack/prompts', () => ({
   confirm: mocks.confirm,
   isCancel: vi.fn(() => false),
   select: mocks.select,
+  text: mocks.text,
 }))
 vi.mock('node:fs/promises', () => ({
   readFile: mocks.readFile,
@@ -65,6 +67,7 @@ describe('plugin version command', () => {
     }))
     mocks.versionBump.mockResolvedValue({ currentVersion: '1.2.3', newVersion: '1.2.4' })
     mocks.select.mockResolvedValue('patch')
+    mocks.text.mockResolvedValue('1.2.3')
     mocks.confirm.mockResolvedValue(true)
     mocks.readFile.mockImplementation(async (path: string) => path.endsWith('published-dsh-plugins.json')
       ? JSON.stringify({
@@ -96,6 +99,26 @@ describe('plugin version command', () => {
 
     expect(mocks.writeFile).toHaveBeenCalledTimes(2)
     expect(mocks.spawnSync).toHaveBeenNthCalledWith(2, 'git', ['commit', '-m', 'chore(plugin): release @tnnevol/dsh-fnos v1.2.4'], expect.any(Object))
+  })
+
+  it('accepts a custom version from the interactive release prompt', async () => {
+    mocks.askPlugin.mockResolvedValue([targets[1]])
+    mocks.readPackageInfo.mockResolvedValue({ name: '@tnnevol/dsh-fnos', version: '1.2.3' })
+    mocks.select.mockResolvedValue('custom')
+    mocks.text.mockResolvedValue('2.0.0-beta.1')
+
+    await runVersion(['plugin', '--no-commit', '--yes'])
+
+    expect(mocks.text).toHaveBeenCalledWith(expect.objectContaining({
+      message: '输入新的版本号',
+      initialValue: '1.2.3',
+      validate: expect.any(Function),
+    }))
+    const textOptions = mocks.text.mock.calls[0]?.[0] as { validate: (value: string) => string | undefined }
+    expect(textOptions.validate('invalid')).toBe('无效的插件版本号')
+    expect(textOptions.validate(' v2.0.0 ')).toBeUndefined()
+    const writtenPackage = mocks.writeFile.mock.calls.find(call => String(call[0]).endsWith('package.json'))
+    expect(writtenPackage?.[1]).toContain('2.0.0-beta.1')
   })
 
   it('rejects a combined release when plugin versions differ', async () => {

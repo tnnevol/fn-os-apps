@@ -22,7 +22,7 @@ pnpm run version -- project patch --no-commit --no-tag
 
 ## 插件版本
 
-插件版本可选择单个插件，或在交互提示中复选多个插件；脚本把所选插件的 `package.json` 更新到同一目标版本，并检查 `apps/fn-deepseek-harness/app/published-dsh-plugins.json`，将其中同名插件的 `version` 一并同步。插件版本更新不调用 `bumpp`，多选时直接创建一条合并提交，不创建插件 Git Tag：
+插件版本可选择单个插件，或在交互提示中复选多个插件；选择版本时支持 `patch`、`minor`、`major`、`prerelease` 以及 bumpp 风格的 `custom ...` 自定义版本输入。脚本把所选插件的 `package.json` 更新到同一目标版本，并检查 `apps/fn-deepseek-harness/app/published-dsh-plugins.json`，将其中同名插件的 `version` 一并同步。插件版本更新不调用 `bumpp`，多选时直接创建一条合并提交，不创建插件 Git Tag：
 
 ```bash
 # 直接指定单个插件

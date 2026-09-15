@@ -22,7 +22,7 @@ lastVerified: 2026-09-12
 本计划记录已经落地并完成目标环境验收的功能实现：
 
 - `FNOS-002-01`：统一 Codex 登录与用量状态；未登录时隐藏状态，登录后根据接口是否提供五小时窗口自动显示或隐藏对应额度；取得一次性授权码后由用户点击复制，等待授权时可取消。
-- 版本脚本与插件版本发布流程由 `tooling/fn-os-apps-cli` workspace 中的 `fn-apps-cli` CLI 负责；项目/FPK 使用 `bumpp`，插件直接更新选中插件并检查 `published-dsh-plugins.json` 同步版本；多选插件时一次性更新所有选中插件并只生成一条合并提交，插件不创建 Git Tag。
+- 版本脚本与插件版本发布流程由 `tooling/fn-os-apps-cli` workspace 中的 `fn-apps-cli` CLI 负责；项目/FPK 使用 `bumpp`，插件直接更新选中插件并检查 `published-dsh-plugins.json` 同步版本；插件交互式版本提示支持 bumpp 风格的 `custom ...` 自定义版本输入；多选插件时一次性更新所有选中插件并只生成一条合并提交，插件不创建 Git Tag。
 - `FNOS-002-02`：修正 NAS 文件和目录引用的插入规则；TreeSelect 使用独立关系模式支持多个文件/目录（含父子路径）同时选择，并在面板打开期间让本次引用删除状态反向同步到勾选节点，历史引用不参与当前选择。
 - `FNOS-002-03`：新增 DSH Semi UI 总览插件，集中展示 `@tnnevol/dsh-semi-ui` 的公共组件、状态和浅色/深色主题效果。
 - `FNOS-002-05`：从 ChatGPT Codex 账号刷新动态模型目录和思考级别，并写入 DSH OpenAI Codex 路由配置。
@@ -461,7 +461,7 @@ SSE 路由由网关自身处理，不转发到 DSH。它经过 fnOS 统一网关
 | 任务 ID | 实现内容 | 状态 |
 | --- | --- | --- |
 | PLAN-FNOS-002-TT-01 | 引入 Turbo，使用 `turbo.json` 声明 build、typecheck、test、check 和网关应用构建依赖；根 `package.json` 只提供统一任务入口 | <Badge type="tip" text="已完成" /> |
-| PLAN-FNOS-002-TT-02 | 合并版本入口为交互式 `version`，由 `@clack/prompts` 选择项目/FPK或插件区域；插件多选时直接更新所有选中 package.json，并同步 `published-dsh-plugins.json` 中的同名版本，生成一条合并提交，不创建插件 Git Tag；`tooling/fn-os-apps-cli` workspace 通过 `fn-apps-cli` CLI 暴露，全部使用 TypeScript 并由 tsdown 编译 | <Badge type="tip" text="已完成" /> |
+| PLAN-FNOS-002-TT-02 | 合并版本入口为交互式 `version`，由 `@clack/prompts` 选择项目/FPK或插件区域；插件版本提示提供 patch、minor、major、prerelease 和 bumpp 风格的 `custom ...` 自定义版本输入，插件多选时直接更新所有选中 package.json，并同步 `published-dsh-plugins.json` 中的同名版本，生成一条合并提交，不创建插件 Git Tag；`tooling/fn-os-apps-cli` workspace 通过 `fn-apps-cli` CLI 暴露，全部使用 TypeScript 并由 tsdown 编译 | <Badge type="tip" text="已完成" /> |
 | PLAN-FNOS-002-TT-03 | 根目录仅暴露交互式 `build`；支持选择文档构建和复选 FPK，DSH FPK 自动先编译网关，插件通过 Turbo 自动先编译 `dsh-semi-ui`，共享包不进入顶层构建选择，移除 `fnos-gateway` 的 `build:fpk` | <Badge type="tip" text="已完成" /> |
 | PLAN-FNOS-002-TT-04 | 引入 `changelogithub`，由根 `release:notes` 任务生成 Tag 对应 Release 日志，移除 workflow 内手写 Release 日志生成 | <Badge type="tip" text="已完成" /> |
 | PLAN-FNOS-002-TT-05 | 由独立 `program.ts` 暴露 Commander 实例，各 `commands/*.ts` 模块注册命令并实现 `action`，`src/index.ts` 统一加载并解析；按 `commands/`、`config/`、`core/`、`ui/`、`sdd/` 拆分版本、构建、提示、进程和文档检查职责 | <Badge type="tip" text="已完成" /> |
@@ -477,7 +477,7 @@ SSE 路由由网关自身处理，不转发到 DSH。它经过 fnOS 统一网关
 
 - DSH 运行时、`@deepseek-ai/dsh-*` 依赖和插件兼容性基线为 `0.1.2-rc.1`。
 - 当前项目版本为 `5.3.1`；源码插件和 `published-dsh-plugins.json` 中的发布版本为 `0.1.2-rc.1.3`。
-- 项目/FPK 版本使用一次 `bumpp` 并生成项目 `v<version>` Tag；插件版本直接更新并只生成提交，不生成 Git Tag。
+- 项目/FPK 版本使用一次 `bumpp` 并生成项目 `v<version>` Tag；插件版本直接更新并只生成提交，不生成 Git Tag；插件交互版本提示中的 `custom ...` 选项校验有效 SemVer 后再写入版本文件。
 - FPK 内置插件包同步、安装/升级、版本回滚和插件加载的目标环境验收已由 [PLAN-FNOS-003](/plans/PLAN-FNOS-003-fpk-runtime-settings) 完成。
 
 ## 详细交互
@@ -832,3 +832,4 @@ CodeBuddy 插件的检查命令与测试覆盖要求已迁入 [PLAN-FNOS-003](/p
 | 2026-09-12 | 完成全部计划验收 | FNOS-002 全部功能、FPK/NAS 集成、网关和 Codex 遗留验收已由 FNOS-003 完成，计划总状态更新为“已完成” |
 | 2026-09-15 | 恢复文档服务的终端快捷键 | `docs/turbo.json` 为 `dev` 增加 `interactive: true`，由 TUI 的「interact with task」转发键盘；`start` 按 TTY 决定文档服务经 `turbo watch` 还是直接 `vitepress dev`，避免无 TTY 时 interactive 任务硬失败 |
 | 2026-09-15 | 修正 Turbo 任务配置缺陷 | 按 Turborepo 规范修订 `T01` 的 `turbo.json`：`check` 去掉与包内 `check` 脚本重复的 `typecheck`/`test:unit` 依赖（改为 `build` + `^typecheck`，保留依赖包类型检查覆盖）、`test` 不再串联 `test:unit`、`lint` 改为根任务 `//#lint`、`build` 声明 `NODE_ENV`；新增 `docs/turbo.json` 修正 VitePress 产物路径并继承根 `env` 后追加 `D2_BIN` |
+| 2026-09-15 | 支持插件自定义版本 | 插件版本提示增加 bumpp 风格的 `custom ...` 选项，使用文本提示输入并校验有效 SemVer，再同步插件包和已发布插件清单 |

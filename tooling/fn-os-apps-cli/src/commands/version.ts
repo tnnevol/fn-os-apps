@@ -1,4 +1,4 @@
-import { confirm, intro, isCancel, outro, select } from '@clack/prompts'
+import { confirm, intro, isCancel, outro, select, text } from '@clack/prompts'
 import { type OptionValues } from 'commander'
 import { spawnSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
@@ -32,7 +32,7 @@ type ParsedVersion = {
 }
 
 function parsePluginVersion(version: string): ParsedVersion {
-  const match = /^v?(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$/.exec(version)
+  const match = /^v?(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/.exec(version)
   if (match === null) throw new Error(`Invalid plugin version: ${version}`)
   const [, major, minor, patch, prerelease] = match
   return {
@@ -60,9 +60,10 @@ function prereleaseVersion(major: number, minor: number, patch: number): string 
 }
 
 function bumpPluginVersion(currentVersion: string, release: string): string {
-  if (/^v?\d+\.\d+\.\d+(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/.test(release)) {
-    parsePluginVersion(release)
-    return release.replace(/^v/, '')
+  const normalizedRelease = release.trim()
+  if (/^v?\d+\.\d+\.\d+(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/.test(normalizedRelease)) {
+    parsePluginVersion(normalizedRelease)
+    return normalizedRelease.replace(/^v/, '')
   }
 
   const current = parsePluginVersion(currentVersion)
@@ -109,9 +110,26 @@ async function choosePluginRelease(currentVersion: string, pluginNames: string[]
       { value: 'minor', label: 'minor', hint: '功能版本' },
       { value: 'major', label: 'major', hint: '破坏性版本' },
       { value: 'prerelease', label: 'prerelease', hint: '下一个预发布版本' },
+      { value: 'custom', label: 'custom ...', hint: '输入指定版本号' },
     ],
   })
-  return isCancel(result) ? undefined : result
+  if (isCancel(result)) return undefined
+  if (result !== 'custom') return result
+
+  const customVersion = await text({
+    message: '输入新的版本号',
+    initialValue: currentVersion,
+    validate: value => {
+      if (value === undefined || value.trim() === '') return '请输入版本号'
+      try {
+        parsePluginVersion(value.trim())
+        return undefined
+      } catch {
+        return '无效的插件版本号'
+      }
+    },
+  })
+  return isCancel(customVersion) ? undefined : customVersion
 }
 
 async function readJson(relativePath: string): Promise<JsonObject> {
