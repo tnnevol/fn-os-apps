@@ -18,6 +18,12 @@ export const dshSemiClientDeps = {
       /^@tnnevol\/dsh-semi-ui(?:\/|$)/u,
       /^@douyinfe\/semi-ui(?:\/|$)/u,
       /^@douyinfe\/semi-icons(?:\/|$)/u,
+      // Semi Table 的虚拟滚动（`virtualized`）内部使用 react-window 的
+      // `VariableSizeList`。它是 Semi 的实现细节、不在插件可见的解析路径上，
+      // 若不放行内联，启用虚拟化时会留下一个解析不到的 require。
+      /^react-window(?:\/|$)/u,
+      /^memoize-one(?:\/|$)/u,
+      /^@babel\/runtime(?:\/|$)/u,
     ],
   },
   alias: {

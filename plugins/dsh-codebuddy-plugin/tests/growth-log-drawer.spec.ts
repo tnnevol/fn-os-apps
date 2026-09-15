@@ -47,7 +47,8 @@ describe('日志抽屉组件', () => {
       expect(DRAWER).toContain(cls)
     }
     // 色调由逐行数据给出（已结合进度算出「没开始/做了一半」），组件不再自行判断。
-    expect(DRAWER).toMatch(/is-\$\{line\.tone\}/)
+    // 列 render 拿不到行对象以外的信息，所以从 record 上取 tone。
+    expect(DRAWER).toMatch(/is-\$\{record\.tone\}/)
     expect(DRAWER).not.toContain('statusTone(line')
   })
 
@@ -119,19 +120,57 @@ describe('抽屉观感与滚动', () => {
     expect(DRAWER_CODE).not.toContain('--semi-color-overlay-bg')
   })
 
-  it('日志区固定高度 + 内部滚动，抽屉本身不整体滚动', () => {
+  it('日志区固定高度，滚动交给 Semi Table 虚拟化', () => {
     const GROWTH_SCSS = readFileSync(`${ROOT}/styles/growth-tasks.scss`, 'utf8')
     const terminal = /\.dsh-codebuddy-growth-log-terminal\s*\{([^}]*)\}/.exec(GROWTH_SCSS)?.[1] ?? ''
     expect(terminal).toMatch(/flex:\s*1/)
-    // min-height: 0 是 flex 子项内部滚动生效的前提（默认 auto 会被内容撑开）。
+    // min-height: 0 是 flex 子项能被压缩的前提（默认 auto 会被内容撑开，抽屉被顶高）。
     expect(terminal).toMatch(/min-height:\s*0/)
-    const scroll = /\.dsh-codebuddy-growth-log-scroll\s*\{([^}]*)\}/.exec(GROWTH_SCSS)?.[1] ?? ''
-    expect(scroll).toMatch(/overflow:\s*auto/)
+    // 滚动容器现在是 Semi Table 自己的 body，我们不再自己 overflow: auto。
+    expect(terminal).toMatch(/overflow:\s*hidden/)
     const body = /\.dsh-codebuddy-growth-log-body\s*\{([^}]*)\}/.exec(GROWTH_SCSS)?.[1] ?? ''
     expect(body).toMatch(/min-height:\s*0/)
-    // 外层不该自己滚动——否则标题与状态行会被一起滚走。
     expect(body).not.toMatch(/overflow-y:\s*auto/)
-    expect(DRAWER).toContain('dsh-codebuddy-growth-log-scroll')
+    // 组件必须把虚拟化三件套交给 Table：virtualized / scroll.y / style.width。
+    expect(DRAWER).toMatch(/virtualized:\s*\{\s*itemSize/)
+    expect(DRAWER).toMatch(/scroll:\s*\{\s*y:\s*height/)
+    expect(DRAWER).toMatch(/style:\s*\{\s*width\s*\}/)
+  })
+
+  it('虚拟化所需的高度与宽度是实测数字（Semi 只接受 number）', () => {
+    // Semi 虚拟化要求 scroll.y(number) 与 style.width(number)，不接受 vh/% 这类相对值。
+    expect(DRAWER).toContain('ResizeObserver')
+    expect(DRAWER).toMatch(/element\.clientWidth|clientHeight/)
+    // 测量不到（尚未布局）时退化为普通表格，而不是渲染空白。
+    expect(DRAWER).toMatch(/height > 0 && width > 0/)
+  })
+
+  it('Table 选择器是后代选择器（className 落在最外层 wrapper 上）', () => {
+    const GROWTH_SCSS = readFileSync(`${ROOT}/styles/growth-tasks.scss`, 'utf8')
+    // Semi Table 把 className 放在最外层 `.semi-table-wrapper`，不在 `.semi-table` 根上，
+    // 所以 `.xxx.semi-table` 这种同元素组合永远匹配不到——必须用后代选择器。
+    expect(GROWTH_SCSS).not.toMatch(/\.dsh-codebuddy-growth-log-table\.semi-table/)
+    expect(GROWTH_SCSS).toMatch(/\.dsh-codebuddy-growth-log-table \.semi-table-row-cell/)
+    // 单元格高度要与虚拟化的 itemSize 一致，否则滚动位置与内容错位。
+    expect(GROWTH_SCSS).toMatch(/\.dsh-codebuddy-growth-log-table \.semi-table-row-cell \{[^}]*height: 24px/)
+  })
+
+  it('Tabs 只做轮次切换，内容区不占位', () => {
+    const GROWTH_SCSS = readFileSync(`${ROOT}/styles/growth-tasks.scss`, 'utf8')
+    // Tabs 的 pane 是空的（日志在 Tabs 外面），默认 padding 会在抽屉里留一条空档。
+    expect(GROWTH_SCSS).toMatch(/\.dsh-codebuddy-growth-log-sheet \.semi-tabs-content/)
+    // 没有上一轮时不渲染页签（避免一个永远空着的入口）。
+    expect(DRAWER).toMatch(/hasPrevious\s*\n?\s*\?/)
+    expect(DRAWER).toContain('growthLogRoundCurrent')
+    expect(DRAWER).toContain('growthLogRoundPrevious')
+  })
+
+  it('虚拟化的行高是固定常量（按 itemSize 算可视区间）', () => {
+    expect(DRAWER).toMatch(/const LOG_ROW_HEIGHT = \d+/)
+    expect(DRAWER).toMatch(/itemSize:\s*LOG_ROW_HEIGHT/)
+    // 单元格高度必须与 itemSize 一致，否则滚动位置与内容错位。
+    const GROWTH_SCSS = readFileSync(`${ROOT}/styles/growth-tasks.scss`, 'utf8')
+    expect(GROWTH_SCSS).toMatch(/height:\s*24px/)
   })
 
   it('滚动条与深色背景同在一层（避免滚动条看起来「溢出」）', () => {
@@ -141,8 +180,9 @@ describe('抽屉观感与滚动', () => {
     const terminal = /\.dsh-codebuddy-growth-log-terminal\s*\{([^}]*)\}/.exec(GROWTH_SCSS)?.[1] ?? ''
     expect(terminal).toMatch(/background:\s*#11151c/)
     expect(terminal).toMatch(/scrollbar-color/)
-    // 深色滚动条样式限定在本插件命名空间内，不污染其它滚动区。
-    expect(GROWTH_SCSS).toMatch(/\.dsh-codebuddy-growth-log-scroll::-webkit-scrollbar/)
+    // 虚拟化后滚动容器是 Semi Table 的 body，所以滚动条样式用后代选择器覆盖
+    // 终端内的所有滚动元素；选择器仍限定在本插件命名空间，不污染其它滚动区。
+    expect(GROWTH_SCSS).toMatch(/\.dsh-codebuddy-growth-log-terminal ::-webkit-scrollbar/)
     expect(GROWTH_SCSS).not.toMatch(/^\s*\.semi-codeHighlight\s*\{/m)
   })
 
@@ -189,13 +229,16 @@ describe('抽屉观感与滚动', () => {
     // running/waiting 是过程标记，后续行一出现就说明它过去了；
     // 给历史行加呼吸动画会让整屏一直闪。
     // 用合并后的 view.running（含本地乐观态），否则点下按钮的瞬间不算「在执行」。
-    expect(DRAWER).toMatch(/const live = view\?\.running === true && line\.tone === 'info' && index === lines\.length - 1/)
+    expect(DRAWER).toMatch(/live: running && line\.tone === 'info' && index === lines\.length - 1/)
     expect(DRAWER).toMatch(/is-live/)
+    // 上一轮永远不是 live（它已经结束了）。
+    expect(DRAWER).toMatch(/round === 'current' && view\?\.running === true/)
   })
 
   it('live 行有呼吸与跳动小点的样式，并尊重减少动效偏好', () => {
     const GROWTH_SCSS = readFileSync(`${ROOT}/styles/growth-tasks.scss`, 'utf8')
-    expect(GROWTH_SCSS).toMatch(/\.dsh-codebuddy-growth-log-line\.is-live/)
+    // 背景要落在单元格上：虚拟化表格的 td 自带底色，只给 tr 上色会被盖住。
+    expect(GROWTH_SCSS).toMatch(/\.semi-table-row\.is-live \.semi-table-row-cell/)
     expect(GROWTH_SCSS).toMatch(/@keyframes dsh-codebuddy-log-pulse/)
     expect(GROWTH_SCSS).toMatch(/@keyframes dsh-codebuddy-log-dots/)
     // prefers-reduced-motion 下必须关掉动画。
@@ -253,9 +296,12 @@ describe('展开时的日志接线', () => {
 })
 
 describe('宿主持久化日志', () => {
-  it('提供追加接口并设上限', () => {
+  it('提供追加接口，并按轮次保留（不再按条数裁剪）', () => {
     expect(HOST_RUN).toContain('export async function appendGrowthRunLog')
-    expect(HOST_RUN).toContain('MAX_LOG_ENTRIES')
+    // 条数上限会静默丢掉早期账号的日志，改为「本次 + 上次」两轮。
+    expect(HOST_RUN).toContain('RETAINED_LOG_ROUNDS')
+    expect(HOST_RUN).toContain('previousLog')
+    expect(HOST_RUN).not.toContain('MAX_LOG_ENTRIES')
   })
 
   it('追加走串行队列：账号并发处理时读-改-写会互相覆盖', () => {

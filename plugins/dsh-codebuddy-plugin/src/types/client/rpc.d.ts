@@ -150,6 +150,8 @@ export interface GrowthRunStateView {
   inFlight?: boolean
   /** 逐条执行日志（按发生顺序）；抽屉据此展示具体做了什么。 */
   log?: GrowthRunLogEntryView[]
+  /** 上一轮的日志（只保留一轮）；抽屉由此提供「上次」视图。 */
+  previousLog?: GrowthRunLogEntryView[]
 }
 /** The startLogin result shape. */
 export interface LoginStart {

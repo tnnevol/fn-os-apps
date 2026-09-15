@@ -58,16 +58,24 @@ export interface GrowthRunState {
   /** 最近一次执行的逐账号结果，供刷新后回看。 */
   summary?: string
   /**
-   * 逐条执行日志（按发生顺序追加）。
+   * 本轮的逐条执行日志（按发生顺序追加）。
    *
    * 为什么不只留 `summary`：客户端要在抽屉里展示「具体执行了什么」，
    * 而逐条结果原先只在整轮结束时一次性返回、过程不可见。每条处理完就追加并落盘，
    * 客户端轮询 `growthRunStatus` 即可拿到最新进度。
    *
-   * 有上限（见 {@link MAX_LOG_ENTRIES}）：多账号 × 17 个任务的日志会无限增长，
-   * 而这是**运维观察**用的短期记录，不需要长期保留。
+   * 保留策略见 {@link GrowthRunState.previousLog}：**只留「本次 + 上次」两轮**，
+   * 不做按条数裁剪——裁剪会把最早账号的日志悄悄丢掉，而这两轮已是有界数量。
    */
   log?: GrowthRunLogEntry[]
+  /**
+   * 上一轮的日志（只保留一轮）。
+   *
+   * 新一轮开始时把当时的 `log` 整体降级到这里，更早的那份直接丢弃。因此文件里
+   * 最多只有两轮日志，既能让「查看日志」在跑新一轮时仍看得到上一次的结果，
+   * 又不会无限增长。
+   */
+  previousLog?: GrowthRunLogEntry[]
 }
 
 /**
@@ -79,13 +87,15 @@ export interface GrowthRunState {
 const STALE_RUN_MS = 30 * 60_000
 
 /**
- * 日志行数上限。
+ * 日志保留轮数：本次与上次，共两轮。
  *
- * 4 个账号 × 17 个可自动化任务 ≈ 68 条，再加上账号级错误就接近 80；留 200 的余量
- * 既能容纳更多账号，又不会让落盘文件无限膨胀。超出后**丢最早的**（保留最近进度，
- * 因为用户看的是「现在跑到哪了」）。
+ * 不用「条数上限 + 丢最早」是因为那个策略会**静默吃掉早期账号的日志**：
+ * 新账号首次执行时 4 个账号 × 16 个任务可达 370+ 行，按条裁剪会把最早的
+ * 「开始执行」以及第一、二个账号的整段记录删掉，用户既看不到也毫不知情。
+ * 按**轮次**保留则是有界且不丢内容的：新一轮开始时把上一轮整体降级到
+ * `previousLog`，更早的那份丢弃。
  */
-export const MAX_LOG_ENTRIES = 200
+export const RETAINED_LOG_ROUNDS = 2
 
 /** 运行状态文件路径（与凭据同一目录，随 DSH_HOME 迁移）。 */
 function growthRunStatePath(): string {
@@ -128,15 +138,26 @@ export async function saveGrowthRunState(state: GrowthRunState): Promise<void> {
   }
 }
 
-/** 标记一次执行开始（清空上一轮的日志）。 */
+/**
+ * 标记一次执行开始。
+ *
+ * 日志按**轮次**滚动：把上一轮的 `log` 降级为 `previousLog`（原有的
+ * `previousLog` 直接丢弃），再把本轮 `log` 清空。这样抽屉在跑新一轮时仍能回看
+ * 上一次的结果，同时文件里最多只留两轮。
+ */
 export async function beginGrowthRun(mode: 'all' | 'one', target?: { accountId: string, taskCode: string }): Promise<void> {
-  await saveGrowthRunState({
-    running: true,
-    mode,
-    startedAt: Date.now(),
-    // 日志按轮次隔离：新一轮开始时清空，否则抽屉会把上一轮的结果混进来。
-    log: [],
-    ...target === undefined ? {} : { accountId: target.accountId, taskCode: target.taskCode },
+  // 必须与追加日志共用同一队列：否则「上一轮最后一条日志还在排队」时，
+  // begin 先落盘会把那条日志连同一个陈旧的 log 一起写回来。
+  await logQueue.runExclusive(async () => {
+    const previous = await loadGrowthRunState()
+    await saveGrowthRunState({
+      running: true,
+      mode,
+      startedAt: Date.now(),
+      log: [],
+      ...previous?.log === undefined || previous.log.length === 0 ? {} : { previousLog: previous.log },
+      ...target === undefined ? {} : { accountId: target.accountId, taskCode: target.taskCode },
+    })
   })
 }
 
@@ -161,13 +182,28 @@ export async function appendGrowthRunLog(entry: Omit<GrowthRunLogEntry, 'at'> & 
   await logQueue.runExclusive(async () => {
     const previous = await loadGrowthRunState()
     if (previous === undefined) return
-    const next = [...previous.log ?? [], { ...entry, at: entry.at ?? Date.now() }]
+    // 不按条数裁剪：条数策略会静默丢掉早期账号的日志（见 RETAINED_LOG_ROUNDS）。
+    // 增长由「每轮开始时滚动到 previousLog」封顶，因此这里是追加即可。
     await saveGrowthRunState({
       ...previous,
-      // 超出上限丢最早的：用户关心的是最近进度，保留头部老日志没有价值。
-      log: next.length > MAX_LOG_ENTRIES ? next.slice(next.length - MAX_LOG_ENTRIES) : next,
+      log: [...previous.log ?? [], { ...entry, at: entry.at ?? Date.now() }],
     })
   })
+}
+
+/**
+ * 取出目前保留的日志轮次（本次在前，上次在后）。
+ *
+ * 用 `RETAINED_LOG_ROUNDS` 强制封顶，而不是靠调用方自觉：将来若有人再加第三个
+ * 日志数组，这里会自动把它排除，保证落盘与渲染都不会突破两轮。
+ *
+ * @param state - 宿主状态。
+ * @returns 各轮日志；无日志的轮次不出现在结果里。
+ */
+export function retainedLogRounds(state: Pick<GrowthRunState, 'log' | 'previousLog'>): GrowthRunLogEntry[][] {
+  return [state.log, state.previousLog]
+    .slice(0, RETAINED_LOG_ROUNDS)
+    .filter((round): round is GrowthRunLogEntry[] => round !== undefined && round.length > 0)
 }
 
 /**
@@ -187,6 +223,9 @@ export async function finishGrowthRun(summary?: string): Promise<void> {
       ...previous?.accountId === undefined ? {} : { accountId: previous.accountId },
       ...previous?.taskCode === undefined ? {} : { taskCode: previous.taskCode },
       ...previous?.log === undefined ? {} : { log: previous.log },
+      // 上一轮日志要一起带过去：结束标记是「读-改-写」，漏掉它会把
+      // previousLog 从文件里抹掉，用户就再也回看不到再上一次的结果了。
+      ...previous?.previousLog === undefined ? {} : { previousLog: previous.previousLog },
       ...summary === undefined ? {} : { summary },
     })
   })

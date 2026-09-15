@@ -183,17 +183,56 @@ describe('日志落盘', () => {
     expect(new Set(log.map(entry => entry.code)).size).toBe(20)
   })
 
-  it('超过上限丢最早的，保留最近进度', async () => {
-    const { appendGrowthRunLog, beginGrowthRun, loadGrowthRunState, MAX_LOG_ENTRIES } = await import('../src/host/growth-run.ts')
+  it('不按条数裁剪：本轮日志完整保留（早期账号不会被静默丢掉）', async () => {
+    const { appendGrowthRunLog, beginGrowthRun, loadGrowthRunState } = await import('../src/host/growth-run.ts')
     await beginGrowthRun('all')
-    for (let i = 0; i < MAX_LOG_ENTRIES + 5; i += 1) {
+    // 400 行远超原先的 200 条上限；新策略按轮次保留，因此一行都不该丢。
+    for (let i = 0; i < 400; i += 1) {
       await appendGrowthRunLog({ account: 'a', code: `t${i}`, status: 'claimed' })
     }
     const log = (await loadGrowthRunState())?.log ?? []
-    expect(log).toHaveLength(MAX_LOG_ENTRIES)
-    // 最早 5 条被丢弃，最新一条仍在。
-    expect(log[0]?.code).toBe('t5')
-    expect(log.at(-1)?.code).toBe(`t${MAX_LOG_ENTRIES + 4}`)
+    expect(log).toHaveLength(400)
+    expect(log[0]?.code).toBe('t0')
+    expect(log.at(-1)?.code).toBe('t399')
+  })
+
+  it('新一轮开始时把上一轮降级为 previousLog，最多只留两轮', async () => {
+    const { appendGrowthRunLog, beginGrowthRun, loadGrowthRunState } = await import('../src/host/growth-run.ts')
+    // 第 1 轮
+    await beginGrowthRun('all')
+    await appendGrowthRunLog({ account: 'a', code: 'round1', status: 'claimed' })
+    // 第 2 轮：第 1 轮应降级为 previousLog
+    await beginGrowthRun('all')
+    await appendGrowthRunLog({ account: 'a', code: 'round2', status: 'claimed' })
+    let state = await loadGrowthRunState()
+    expect(state?.log?.map(e => e.code)).toEqual(['round2'])
+    expect(state?.previousLog?.map(e => e.code)).toEqual(['round1'])
+    // 第 3 轮：第 1 轮被直接丢弃，只剩第 2、3 轮
+    await beginGrowthRun('all')
+    await appendGrowthRunLog({ account: 'a', code: 'round3', status: 'claimed' })
+    state = await loadGrowthRunState()
+    expect(state?.log?.map(e => e.code)).toEqual(['round3'])
+    expect(state?.previousLog?.map(e => e.code)).toEqual(['round2'])
+  })
+
+  it('空日志的上一轮不写成 previousLog（避免空页签）', async () => {
+    const { beginGrowthRun, loadGrowthRunState } = await import('../src/host/growth-run.ts')
+    // 首次运行：没有上一轮
+    await beginGrowthRun('all')
+    expect((await loadGrowthRunState())?.previousLog).toBeUndefined()
+    // 这一轮没写任何日志就又开始了新一轮 → 不该产生空的 previousLog
+    await beginGrowthRun('all')
+    expect((await loadGrowthRunState())?.previousLog).toBeUndefined()
+  })
+
+  it('retainedLogRounds 最多返回两轮，且跳过空轮', async () => {
+    const { retainedLogRounds, RETAINED_LOG_ROUNDS } = await import('../src/host/growth-run.ts')
+    expect(RETAINED_LOG_ROUNDS).toBe(2)
+    const entry = { at: 1, account: 'a', code: 't', status: 'claimed' }
+    expect(retainedLogRounds({ log: [entry], previousLog: [entry] })).toHaveLength(2)
+    // 空轮次不出现，也不会返回第三个数组
+    expect(retainedLogRounds({ log: [entry] })).toHaveLength(1)
+    expect(retainedLogRounds({})).toHaveLength(0)
   })
 
   it('finish 保留日志并标记结束（不被在途 append 覆盖）', async () => {

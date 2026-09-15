@@ -1,30 +1,35 @@
 /**
  * 任务执行日志抽屉。
  *
- * 从管理后台下方滑出的 `SideSheet`，内部是**终端风格**的日志视图。日志内容来自
- * 宿主逐条落盘的 `GrowthRunState.log`（见 `host/growth-run.ts`），因此「执行中逐条
- * 冒出」与「跑完回看」是同一份数据。
+ * 从管理后台下方滑出的 `SideSheet`，内部是**终端风格**的虚拟滚动日志。日志内容来自
+ * 宿主落盘的 `GrowthRunState`（见 `host/growth-run.ts`），因此「执行中逐条冒出」与
+ * 「跑完回看」是同一份数据。
  *
- * 三个刻意的选择：
+ * 四个刻意的选择：
  *  - **抽屉占屏幕下半部分**（`50vh`）：日志是横向长行（时间 + 账号 + 任务 + 状态），
  *    左右抽屉会把每行挤到折行，底部抽屉宽度才够；占一半高度则让上半部分仍能看到面板；
  *  - **上半部分磨砂蒙层**：`maskStyle` 做半透明 + `backdrop-filter: blur`，
  *    被遮住的账号卡片仍然可辨，而不是压成一片死黑；
- *  - **不用 `CodeHighlight`，自己渲染逐行**：Semi 只注册了 Prism core、没有加载任何
- *    语言词法（连 `log` 都没有），且 `CodeHighlight` 只接收纯字符串、无法注入分段
- *    标记——要按「时间/账号/状态」分段上色只能自己渲染。等宽字体与数据侧补齐
+ *  - **虚拟滚动用 Semi `Table`**：Semi 只有 `Table` 自带虚拟化（`virtualized`，底层
+ *    `react-window`）——`List` / `ScrollList` 都没有，官方文档把 `List` 的虚拟化交给
+ *    外部 `react-virtualized`。多账号 × 16 个任务的日志可达数百行，全量渲染会明显卡顿，
+ *    所以走 Semi 自己的虚拟化能力，而不是自己写窗口化；
+ *  - **按段着色而非代码高亮**：Semi 只注册了 Prism core、没有加载任何语言词法
+ *    （连 `log` 都没有），且 `CodeHighlight` 只接收纯字符串、无法注入分段标记——
+ *    要按「时间/账号/状态」分段上色只能自己渲染单元格。等宽字体与数据侧补齐
  *    （见 `log-presentation.ts`）保证列对齐。
  *
  * @module dsh-codebuddy/ui/growth-run-drawer
  */
 
 import type { CSSProperties, ReactNode } from 'react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useStore } from '@nanostores/react'
-import { DshSideSheet } from '@tnnevol/dsh-semi-ui'
+import { DshSideSheet, DshTable, DshTabs } from '@tnnevol/dsh-semi-ui'
 import type { ConnectionRpc, GrowthRunStateView } from '../rpc.ts'
 import { $growthOptimistic, $growthRunning, GROWTH_RUN_POLL_MS, hydrateGrowthRunState, selectGrowthRunView } from '../store/growth-run.ts'
 import { growthLogLines } from '../log-presentation.ts'
+import type { GrowthLogLine } from '../log-presentation.ts'
 import type { Translate } from '../../types/client/panel-types'
 
 /** 抽屉高度：占视口下半部分，上半部分留给面板（配合磨砂蒙层仍可辨认）。 */
@@ -39,6 +44,26 @@ const DRAWER_HEIGHT = '50vh'
  * 取 1010 与仓库里 toast 的层级口径一致。
  */
 const DRAWER_Z_INDEX = 1010
+
+/**
+ * 单行高度（像素）。
+ *
+ * 虚拟滚动必须知道行高才能算出可视区间；日志行固定不折行（见 SCSS 的 `white-space: pre`），
+ * 所以是常数。12px 等宽字 × 1.6 行高 ≈ 19px，取 24 留出呼吸空间。
+ */
+const LOG_ROW_HEIGHT = 24
+
+/** 各列宽度：定宽才能让虚拟滚动与横向滚动都算得准。 */
+const COLUMN_WIDTH = {
+  time: 78,
+  account: 168,
+  code: 168,
+  status: 92,
+  message: 520,
+} as const
+
+/** 表格总宽度（各列之和）；虚拟化要求横向滚动区有确定宽度。 */
+const TABLE_WIDTH = COLUMN_WIDTH.time + COLUMN_WIDTH.account + COLUMN_WIDTH.code + COLUMN_WIDTH.status + COLUMN_WIDTH.message
 
 /**
  * 上半部分蒙层的「磨砂玻璃」样式。
@@ -59,6 +84,70 @@ const FROSTED_MASK_STYLE: CSSProperties = {
 }
 
 /**
+ * 测量一个元素的可用尺寸。
+ *
+ * 为什么需要它：Semi `Table` 的虚拟化**要求 `scroll.y` 与 `style.width` 都是数字**
+ * （见官方文档「虚拟化表格」），不接受 `50vh` 或 `100%` 这类相对值。抽屉高度是
+ * `50vh`，只有实测才知道具体像素，所以这里用 `ResizeObserver` 跟随容器尺寸
+ * （窗口缩放、抽屉动画结束都会触发）。
+ *
+ * 没有 `ResizeObserver` 的环境（旧浏览器、测试）退化为「挂载时量一次」，
+ * 不抛错——量不到就返回 0，调用方据此退化为不启用虚拟化的普通表格。
+ *
+ * @param ref - 被测量的容器。
+ * @param active - 是否处于需要测量的状态（抽屉未展开时容器尺寸为 0）。
+ * @returns 实测宽高（像素）；无法测量时为 `{ width: 0, height: 0 }`。
+ */
+function useMeasuredSize(ref: { current: HTMLElement | null }, active: boolean): { width: number, height: number } {
+  const [size, setSize] = useState({ width: 0, height: 0 })
+  useEffect(() => {
+    const element = ref.current
+    if (!active || element === null) {
+      setSize({ width: 0, height: 0 })
+      return
+    }
+    const measure = (): void => {
+      setSize({ width: element.clientWidth, height: element.clientHeight })
+    }
+    measure()
+    if (typeof ResizeObserver === 'undefined') return
+    const observer = new ResizeObserver(measure)
+    observer.observe(element)
+    return () => { observer.disconnect() }
+  }, [ref, active])
+  return size
+}
+
+/** 一行的渲染数据：展示字段 + 稳定 key + 是否处于进行中。 */
+interface LogRow extends GrowthLogLine {
+  key: string
+  live: boolean
+}
+
+/**
+ * 把逐行展示数据转成表格行。
+ *
+ * `key` 用「时间戳-账号-任务-序号」：同一毫秒内同一任务的多次记录（如
+ * `执行中` 后紧跟 `等待上游计分`）时间戳可能相同，只靠前三个字段会撞 key。
+ *
+ * @param lines - `growthLogLines` 的输出。
+ * @param running - 该轮是否仍在执行（最后一行才可能是 live）。
+ */
+function toRows(lines: readonly GrowthLogLine[], running: boolean): LogRow[] {
+  return lines.map((line, index) => ({
+    ...line,
+    key: `${line.at}-${line.account}-${line.code}-${index}`,
+    /**
+     * 只有**最后一行**且仍在执行时才标成 live。
+     *
+     * 为什么限定最后一行：`running` / `waiting` 是过程标记，一旦后续行出现就说明
+     * 它已经过去了——给历史行加呼吸动画会让整屏一直在闪。
+     */
+    live: running && line.tone === 'info' && index === lines.length - 1,
+  }))
+}
+
+/**
  * 任务执行日志抽屉。
  *
  * @param rpc - 连接 RPC。
@@ -76,6 +165,8 @@ export function GrowthRunDrawer({ rpc, t, visible, onClose }: {
   const optimistic = useStore($growthOptimistic)
   // 抽屉里的日志取自 store；组件卸载后仍保留最近一轮（宿主也持久化了）。
   const [state, setState] = useState<GrowthRunStateView | undefined>(undefined)
+  /** 当前查看哪一轮：本次（宿主最新）或上次（`previousLog`）。 */
+  const [round, setRound] = useState<'current' | 'previous'>('current')
 
   // 与 store 同步：store 是宿主状态的镜像，这里只做渲染用的快照。
   useEffect(() => { setState(running) }, [running])
@@ -118,7 +209,19 @@ export function GrowthRunDrawer({ rpc, t, visible, onClose }: {
     void hydrateGrowthRunState(rpc).then((next) => { if (next !== undefined) setState(next) })
   }, [rpc, visible])
 
-  const lines = useMemo(() => growthLogLines(view?.log), [view?.log])
+  const previousLines = useMemo(() => growthLogLines(view?.previousLog), [view?.previousLog])
+  const hasPrevious = previousLines.length > 0
+  // 上一轮已经不存在时（新一轮把 previousLog 挤掉）自动回到本次，避免停在空视图。
+  useEffect(() => { if (!hasPrevious) setRound('current') }, [hasPrevious])
+
+  const activeLog = round === 'previous' ? view?.previousLog : view?.log
+  const rows = useMemo(
+    () => toRows(growthLogLines(activeLog), round === 'current' && view?.running === true),
+    [activeLog, round, view?.running],
+  )
+
+  const terminalRef = useRef<HTMLDivElement | null>(null)
+  const { width, height } = useMeasuredSize(terminalRef, visible)
 
   return (
     <DshSideSheet
@@ -134,43 +237,95 @@ export function GrowthRunDrawer({ rpc, t, visible, onClose }: {
       <div className="dsh-codebuddy-growth-log-body">
         {/* 状态行常驻：让「正在执行」与日志滚动互不影响。 */}
         {view?.running === true ? <p className="dsh-codebuddy-muted">{t('growthLogRunning')}</p> : null}
+        {/* 只保留两轮日志（本次 / 上次），因此这里最多两个页签；没有上一轮时不渲染，
+            免得出现一个永远空着的入口。 */}
+        {hasPrevious
+          ? (
+            <DshTabs
+              type="button"
+              size="small"
+              activeKey={round}
+              onChange={(key: string) => { setRound(key as 'current' | 'previous') }}
+              className="dsh-codebuddy-growth-log-rounds"
+            >
+              <DshTabs.TabPane itemKey="current" tab={<span className="dsh-codebuddy-resource-tab">{t('growthLogRoundCurrent')}</span>} />
+              <DshTabs.TabPane itemKey="previous" tab={<span className="dsh-codebuddy-resource-tab">{t('growthLogRoundPrevious')}</span>} />
+            </DshTabs>
+          )
+          : null}
         {/* 终端：深色底、亮色字，按段着色。整块（含滚动条）使用同一底色，
             避免滚动条落在另一种背景上显得「溢出」（见 styles/growth-tasks.scss）。 */}
-        <div className="dsh-codebuddy-growth-log-terminal">
-          <div className="dsh-codebuddy-growth-log-scroll">
-            {lines.length === 0
-              ? <p className="dsh-codebuddy-growth-log-empty">{t('growthLogEmpty')}</p>
-              : (
-                <ol className="dsh-codebuddy-growth-log-lines">
-                  {lines.map((line, index) => {
-                    /**
-                     * 只有**最后一行**且仍在执行时才标成 live。
-                     *
-                     * 为什么限定最后一行：`running` / `waiting` 是过程标记，一旦后续
-                     * 行出现就说明它已经过去了——给历史行加呼吸动画会让整屏一直在闪。
-                     */
-                    const live = view?.running === true && line.tone === 'info' && index === lines.length - 1
-                    return (
-                      <li
-                        key={`${line.at}-${line.account}-${line.code}-${index}`}
-                        className={`dsh-codebuddy-growth-log-line${live ? ' is-live' : ''}`}
-                      >
-                        <span className="dsh-codebuddy-growth-log-time">{line.time}</span>
-                        <span className="dsh-codebuddy-growth-log-account">{line.account}</span>
-                        <span className="dsh-codebuddy-growth-log-code">{line.code}</span>
-                        <span className={`dsh-codebuddy-growth-log-status is-${line.tone}`}>
-                          {live ? <span className="dsh-codebuddy-growth-log-dots" aria-hidden /> : null}
-                          {line.status.trim()}
-                        </span>
-                        {line.message === undefined ? null : <span className="dsh-codebuddy-growth-log-message">{line.message}</span>}
-                      </li>
-                    )
-                  })}
-                </ol>
-              )}
-          </div>
+        <div className="dsh-codebuddy-growth-log-terminal" ref={terminalRef}>
+          {rows.length === 0
+            ? <p className="dsh-codebuddy-growth-log-empty">{t('growthLogEmpty')}</p>
+            : (
+              <DshTable
+                className="dsh-codebuddy-growth-log-table"
+                columns={LOG_COLUMNS}
+                dataSource={rows}
+                rowKey="key"
+                pagination={false}
+                showHeader={false}
+                // 虚拟化必须拿到数字高度与宽度；测量到 0（尚未布局）时退化为普通表格，
+                // 保证首帧也有内容，而不是一片空白。
+                {...height > 0 && width > 0
+                  ? {
+                      virtualized: { itemSize: LOG_ROW_HEIGHT },
+                      scroll: { y: height, x: TABLE_WIDTH },
+                      style: { width },
+                    }
+                  : {}}
+                onRow={(record: LogRow) => ({
+                  className: `dsh-codebuddy-growth-log-line${record.live ? ' is-live' : ''}`,
+                })}
+              />
+            )}
         </div>
       </div>
     </DshSideSheet>
   )
 }
+
+/**
+ * 列定义放在组件外：Semi `Table` 内部对 `columns`/`dataSource` 做**浅比较**，
+ * 每次渲染新建字面量会触发多余的内部更新（官方 FAQ 明确提醒）。
+ */
+const LOG_COLUMNS = [
+  {
+    title: '时间',
+    dataIndex: 'time',
+    width: COLUMN_WIDTH.time,
+    render: (text: string) => <span className="dsh-codebuddy-growth-log-time">{text}</span>,
+  },
+  {
+    title: '账号',
+    dataIndex: 'account',
+    width: COLUMN_WIDTH.account,
+    render: (text: string) => <span className="dsh-codebuddy-growth-log-account">{text}</span>,
+  },
+  {
+    title: '任务',
+    dataIndex: 'code',
+    width: COLUMN_WIDTH.code,
+    render: (text: string) => <span className="dsh-codebuddy-growth-log-code">{text}</span>,
+  },
+  {
+    title: '状态',
+    dataIndex: 'status',
+    width: COLUMN_WIDTH.status,
+    render: (text: string, record: LogRow) => (
+      <span className={`dsh-codebuddy-growth-log-status is-${record.tone}`}>
+        {record.live ? <span className="dsh-codebuddy-growth-log-dots" aria-hidden /> : null}
+        {text.trim()}
+      </span>
+    ),
+  },
+  {
+    title: '说明',
+    dataIndex: 'message',
+    width: COLUMN_WIDTH.message,
+    render: (text: string | undefined) => (
+      text === undefined ? null : <span className="dsh-codebuddy-growth-log-message">{text}</span>
+    ),
+  },
+]

@@ -105,11 +105,16 @@
   padding: 4px 2px;
 }
 
-/* 终端外壳：**深色底与滚动条在这一层**（滚动也在这层的子元素上），
+/* 终端外壳：**深色底与滚动条在这一层**（滚动在内部 Semi Table 的 body 上），
    这样滚动条不会落在与日志不同的另一种背景上、显得「溢出」。
 
    配色是固定的终端观感（不跟随 DSH 主题）：深底 + 亮字在明暗两种主题下都成立，
-   而主题化的浅色代码块正是上一次「滚动条与背景分离」的成因。 */
+   而主题化的浅色代码块正是上一次「滚动条与背景分离」的成因。
+
+   `min-height: 0` 是必须的——flex 子项默认 `min-height: auto`，会被内容撑开，
+   抽屉就被顶高了。滚动交给 Semi `Table` 的虚拟化（`scroll.y` 数字高度 + 其内部
+   滚动容器），所以这里给出一块确定尺寸的区域并 `overflow: hidden`，
+   不再自己 `overflow: auto`。 */
 .dsh-codebuddy-growth-log-terminal {
   flex: 1;
   min-height: 0;
@@ -120,63 +125,100 @@
   font-family: var(--dsw-font-family-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
   font-size: 12px;
   line-height: 1.6;
+  overflow: hidden;
   /* 滚动条常驻槽位会占宽度；用一个只在本组件内生效的细滚动条，避免右侧留白跳变。 */
   scrollbar-width: thin;
   scrollbar-color: #3b4451 transparent;
 }
 
-/* 日志滚动区：固定占满剩余高度并内部滚动。
-   `min-height: 0` 是必须的——flex 子项默认 `min-height: auto`，会被内容撑开，
-   `overflow` 便永远不生效（长日志会把抽屉整体顶高而不是内部滚动）。 */
-.dsh-codebuddy-growth-log-scroll {
-  height: 100%;
-  overflow: auto;
-  padding: 8px 10px;
-  box-sizing: border-box;
-}
-
-/* Webkit 细滚动条：与终端底色同系，缩略用中性灰。 */
-.dsh-codebuddy-growth-log-scroll::-webkit-scrollbar {
+/* Webkit 细滚动条：与终端底色同系，缩略用中性灰。
+   选择器覆盖到 Terminal 内部所有可滚动元素——虚拟化后滚动容器变成 Semi Table
+   自己的 body（`.semi-table-body`），不再是我们的子元素。 */
+.dsh-codebuddy-growth-log-terminal ::-webkit-scrollbar {
   width: 10px;
   height: 10px;
 }
 
-.dsh-codebuddy-growth-log-scroll::-webkit-scrollbar-track {
+.dsh-codebuddy-growth-log-terminal ::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.dsh-codebuddy-growth-log-scroll::-webkit-scrollbar-thumb {
+.dsh-codebuddy-growth-log-terminal ::-webkit-scrollbar-thumb {
   border: 2px solid transparent;
   border-radius: 6px;
   background-clip: content-box;
   background-color: #3b4451;
 }
 
-.dsh-codebuddy-growth-log-scroll::-webkit-scrollbar-thumb:hover {
+.dsh-codebuddy-growth-log-terminal ::-webkit-scrollbar-thumb:hover {
   background-color: #4d5765;
 }
 
 .dsh-codebuddy-growth-log-empty {
   margin: 0;
+  padding: 8px 10px;
   color: #7c8798;
 }
 
-/* 行：用 grid 固定各列宽度，时间/账号/code/状态纵向对齐。
-   说明列 `minmax(0, 1fr)` + 不折行，长文案靠横向滚动而不是折行——
-   折行会把一条记录切成两行、更难扫读。 */
-.dsh-codebuddy-growth-log-lines {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  white-space: pre;
-  min-width: fit-content;
+/* 把 Semi Table 洗成终端：去掉表头边框、单元格内边距与悬浮底色，
+   让「时间 账号 任务 状态 说明」看起来像一块等宽终端而不是数据表格。
+
+   选择器都限定在 `.dsh-codebuddy-growth-log-table` 下，不影响其它表格。
+   注意 className 落在 Table 的**最外层**（`semi-table-wrapper`）而不是
+   `.semi-table` 根上，所以这里一律用后代选择器；裸的 `.table.semi-table`
+   永远匹配不到。 */
+.dsh-codebuddy-growth-log-table .semi-table,
+.dsh-codebuddy-growth-log-table .semi-table-container,
+.dsh-codebuddy-growth-log-table .semi-table-body,
+.dsh-codebuddy-growth-log-table .semi-table-tbody,
+.dsh-codebuddy-growth-log-table .semi-table-row,
+.dsh-codebuddy-growth-log-table .semi-table-row-cell {
+  background: transparent;
 }
 
-.dsh-codebuddy-growth-log-line {
-  display: grid;
-  grid-template-columns: auto auto auto auto minmax(0, 1fr);
-  gap: 8px;
+.dsh-codebuddy-growth-log-table .semi-table-container,
+.dsh-codebuddy-growth-log-table .semi-table-body {
+  border: 0;
 }
+
+/* Tabs 只用来切换「本次 / 上次」，它的内容区里没有内容（真正的日志在
+   Tabs 外面），默认的 `padding: 5px 0` 会在抽屉里留一条空档。 */
+.dsh-codebuddy-growth-log-sheet .semi-tabs-content {
+  display: none;
+}
+
+.dsh-codebuddy-growth-log-sheet .dsh-codebuddy-growth-log-rounds {
+  margin-bottom: 4px;
+}
+
+.dsh-codebuddy-growth-log-table .semi-table-row-cell {
+  border: 0;
+  padding: 0 8px;
+  /* 行高必须是固定值：虚拟化按 `itemSize` 计算可视区间，
+     单元格若因换行变高，滚动位置与实际内容会错位。 */
+  height: 24px;
+  line-height: 24px;
+  white-space: pre;
+  overflow: hidden;
+}
+
+.dsh-codebuddy-growth-log-table .semi-table-row:hover .semi-table-row-cell {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+/* 列宽由 JS 侧的 COLUMN_WIDTH 固定（虚拟化要求确定宽度），这里只保证不折行。 */
+.dsh-codebuddy-growth-log-table .semi-table-row-cell > span {
+  display: inline-block;
+  vertical-align: top;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: pre;
+}
+
+
+/* 列内容样式：与具体容器无关，因此虚拟化换成 Semi Table 后仍然适用。
+   时间/账号/任务/状态各用不同颜色，便于纵向扫读。 */
 
 /* 时间：暗青，模仿终端的低优先级元信息。 */
 .dsh-codebuddy-growth-log-time {
@@ -214,13 +256,15 @@
    --------------------------------------------------------------------------- */
 
 /* 最后一行若仍在执行，整行轻微提亮，并把状态文字做成呼吸效果。
-   只作用于 `.is-live`（组件只给最后一行加），历史行保持静态。 */
-.dsh-codebuddy-growth-log-line.is-live {
+   只作用于 `.is-live`（组件只给最后一行加），历史行保持静态。
+
+   背景要落在**单元格**上而不是行上：虚拟化表格里 `td` 自带底色，
+   只给 `tr` 上色会被单元格盖住、看不到效果。 */
+.dsh-codebuddy-growth-log-table .semi-table-row.is-live .semi-table-row-cell {
   background: rgba(86, 156, 214, 0.08);
-  border-radius: 3px;
 }
 
-.dsh-codebuddy-growth-log-line.is-live .dsh-codebuddy-growth-log-status {
+.dsh-codebuddy-growth-log-table .semi-table-row.is-live .dsh-codebuddy-growth-log-status {
   animation: dsh-codebuddy-log-pulse 1.4s ease-in-out infinite;
 }
 
@@ -252,7 +296,7 @@
 
 /* 尊重「减少动效」偏好：关闭呼吸与跳动，只保留静态提示。 */
 @media (prefers-reduced-motion: reduce) {
-  .dsh-codebuddy-growth-log-line.is-live .dsh-codebuddy-growth-log-status {
+  .dsh-codebuddy-growth-log-table .semi-table-row.is-live .dsh-codebuddy-growth-log-status {
     animation: none;
   }
 

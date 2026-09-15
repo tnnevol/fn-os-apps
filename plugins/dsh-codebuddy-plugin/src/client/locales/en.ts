@@ -85,6 +85,8 @@ export const en = {
   growthLogTitle: 'Task execution log',
   growthLogOpen: 'View log',
   growthLogEmpty: 'No runs yet. Complete tasks and per-task progress shows up here.',
+  growthLogRoundCurrent: 'Current',
+  growthLogRoundPrevious: 'Previous',
   growthLogRunning: 'Running, log updates live',
   growthLogStarting: 'Starting…',
   resourcesTitle: 'Resource packages',
