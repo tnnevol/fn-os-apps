@@ -199,10 +199,65 @@
   white-space: pre-wrap;
 }
 
-/* 状态按色调上色：成功绿、失败红、待办黄、进行中蓝、跳过灰。
-   与上游语义一一对应（见 log-presentation.ts 的 statusTone）。 */
+/* 状态按色调上色（规则见 log-presentation.ts 的 statusTone）：
+   - 绿 = 完成 / 跳过（已经不用再做）
+   - 红 = 未完成（没开始做，或执行失败）
+   - 黄 = 完成了一半（有进度未达标、旅行在途）
+   - 蓝 = 进行中（过程标记，不算结局） */
 .dsh-codebuddy-growth-log-status.is-ok { color: #4ec9b0; }
 .dsh-codebuddy-growth-log-status.is-error { color: #f14c4c; }
 .dsh-codebuddy-growth-log-status.is-warn { color: #d7ba7d; }
 .dsh-codebuddy-growth-log-status.is-info { color: #569cd6; }
-.dsh-codebuddy-growth-log-status.is-muted { color: #7c8798; }
+
+/* ---------------------------------------------------------------------------
+   进行中指示：请求耗时长时给出「还在跑」的视觉反馈
+   --------------------------------------------------------------------------- */
+
+/* 最后一行若仍在执行，整行轻微提亮，并把状态文字做成呼吸效果。
+   只作用于 `.is-live`（组件只给最后一行加），历史行保持静态。 */
+.dsh-codebuddy-growth-log-line.is-live {
+  background: rgba(86, 156, 214, 0.08);
+  border-radius: 3px;
+}
+
+.dsh-codebuddy-growth-log-line.is-live .dsh-codebuddy-growth-log-status {
+  animation: dsh-codebuddy-log-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes dsh-codebuddy-log-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
+/* 三个跳动的小点：表示「正在等待上游」。
+   用 CSS 动画而不是 JS 定时器——组件不因它重渲染，也不需要在卸载时清理。 */
+.dsh-codebuddy-growth-log-dots {
+  display: inline-block;
+  width: 12px;
+  margin-right: 4px;
+  vertical-align: baseline;
+}
+
+.dsh-codebuddy-growth-log-dots::after {
+  content: '';
+  animation: dsh-codebuddy-log-dots 1.2s steps(4, end) infinite;
+}
+
+@keyframes dsh-codebuddy-log-dots {
+  0% { content: ''; }
+  25% { content: '.'; }
+  50% { content: '..'; }
+  75%, 100% { content: '...'; }
+}
+
+/* 尊重「减少动效」偏好：关闭呼吸与跳动，只保留静态提示。 */
+@media (prefers-reduced-motion: reduce) {
+  .dsh-codebuddy-growth-log-line.is-live .dsh-codebuddy-growth-log-status {
+    animation: none;
+  }
+
+  .dsh-codebuddy-growth-log-dots::after {
+    animation: none;
+    content: '...';
+  }
+}

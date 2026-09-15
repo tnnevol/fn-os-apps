@@ -46,8 +46,9 @@ describe('日志抽屉组件', () => {
     ]) {
       expect(DRAWER).toContain(cls)
     }
-    // 状态用色调类名（is-ok / is-error …）驱动颜色。
-    expect(DRAWER).toMatch(/is-\$\{statusTone\(line\.status\)\}/)
+    // 色调由逐行数据给出（已结合进度算出「没开始/做了一半」），组件不再自行判断。
+    expect(DRAWER).toMatch(/is-\$\{line\.tone\}/)
+    expect(DRAWER).not.toContain('statusTone(line')
   })
 
   it('只在展开且执行中轮询，跑完与收起都要停', () => {
@@ -183,6 +184,22 @@ describe('抽屉观感与滚动', () => {
     expect(body).toMatch(/overflow:\s*hidden/)
   })
 
+  it('只有最后一行且仍在执行时才标 live（历史行不闪）', () => {
+    // running/waiting 是过程标记，后续行一出现就说明它过去了；
+    // 给历史行加呼吸动画会让整屏一直闪。
+    expect(DRAWER).toMatch(/const live = running\.running && line\.tone === 'info' && index === lines\.length - 1/)
+    expect(DRAWER).toMatch(/is-live/)
+  })
+
+  it('live 行有呼吸与跳动小点的样式，并尊重减少动效偏好', () => {
+    const GROWTH_SCSS = readFileSync(`${ROOT}/styles/growth-tasks.scss`, 'utf8')
+    expect(GROWTH_SCSS).toMatch(/\.dsh-codebuddy-growth-log-line\.is-live/)
+    expect(GROWTH_SCSS).toMatch(/@keyframes dsh-codebuddy-log-pulse/)
+    expect(GROWTH_SCSS).toMatch(/@keyframes dsh-codebuddy-log-dots/)
+    // prefers-reduced-motion 下必须关掉动画。
+    expect(GROWTH_SCSS).toMatch(/prefers-reduced-motion: reduce/)
+  })
+
   it('不再有「准备中」空态：状态行直接说正在执行', () => {
     expect(DRAWER).not.toContain('growthLogWaiting')
     expect(DRAWER).toContain("t('growthLogRunning')")
@@ -246,12 +263,34 @@ describe('签到与旅行并入成长任务流程', () => {
 
   it('growthRunAll 串入签到与旅行步骤', () => {
     const start = HOST.indexOf('async growthRunAll')
-    const body = HOST.slice(start, start + 9000)
+    const body = HOST.slice(start, start + 14000)
     expect(body).toContain('checkinOneAccount')
     expect(body).toContain('travelOneAccount')
     // 日志里能看到这两步（抽屉据此展示）。
     expect(body).toContain("code: '签到'")
     expect(body).toContain("code: '旅行'")
+  })
+
+  it('长请求有等待日志，不出现静默期', () => {
+    const start = HOST.indexOf('async growthRunAll')
+    const body = HOST.slice(start, start + 14000)
+    // 任务动作前后都落日志，回读等待期间也落一条。
+    expect(body).toContain("status: 'waiting'")
+    expect(body).toMatch(/等待上游计分/)
+    // 签到与旅行各自先记「开始」再记结果。
+    expect(body).toMatch(/查询签到状态/)
+    expect(body).toMatch(/查询猫猫旅行状态/)
+  })
+
+  it('进度写进结构化字段，供前端区分「没开始」与「做了一半」', () => {
+    const start = HOST.indexOf('async growthRunAll')
+    const body = HOST.slice(start, start + 14000)
+    // pending 分支必须同时带 current/target，否则前端无法上色。
+    const pendingAt = body.indexOf("status: 'pending'")
+    expect(pendingAt).toBeGreaterThan(-1)
+    const chunk = body.slice(pendingAt, pendingAt + 300)
+    expect(chunk).toContain('current:')
+    expect(chunk).toContain('target:')
   })
 
   it('任务按依赖序执行：领安排在最前', () => {

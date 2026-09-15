@@ -24,7 +24,7 @@ import { useStore } from '@nanostores/react'
 import { DshSideSheet } from '@tnnevol/dsh-semi-ui'
 import type { ConnectionRpc, GrowthRunStateView } from '../rpc.ts'
 import { $growthRunning, GROWTH_RUN_POLL_MS, hydrateGrowthRunState } from '../store/growth-run.ts'
-import { growthLogLines, statusTone } from '../log-presentation.ts'
+import { growthLogLines } from '../log-presentation.ts'
 import type { Translate } from '../../types/client/panel-types'
 
 /** 抽屉高度：占视口下半部分，上半部分留给面板（配合磨砂蒙层仍可辨认）。 */
@@ -117,15 +117,30 @@ export function GrowthRunDrawer({ rpc, t, visible, onClose }: {
               ? <p className="dsh-codebuddy-growth-log-empty">{t('growthLogEmpty')}</p>
               : (
                 <ol className="dsh-codebuddy-growth-log-lines">
-                  {lines.map(line => (
-                    <li key={`${line.at}-${line.account}-${line.code}`} className="dsh-codebuddy-growth-log-line">
-                      <span className="dsh-codebuddy-growth-log-time">{line.time}</span>
-                      <span className="dsh-codebuddy-growth-log-account">{line.account}</span>
-                      <span className="dsh-codebuddy-growth-log-code">{line.code}</span>
-                      <span className={`dsh-codebuddy-growth-log-status is-${statusTone(line.status)}`}>{line.status.trim()}</span>
-                      {line.message === undefined ? null : <span className="dsh-codebuddy-growth-log-message">{line.message}</span>}
-                    </li>
-                  ))}
+                  {lines.map((line, index) => {
+                    /**
+                     * 只有**最后一行**且仍在执行时才标成 live。
+                     *
+                     * 为什么限定最后一行：`running` / `waiting` 是过程标记，一旦后续
+                     * 行出现就说明它已经过去了——给历史行加呼吸动画会让整屏一直在闪。
+                     */
+                    const live = running.running && line.tone === 'info' && index === lines.length - 1
+                    return (
+                      <li
+                        key={`${line.at}-${line.account}-${line.code}-${index}`}
+                        className={`dsh-codebuddy-growth-log-line${live ? ' is-live' : ''}`}
+                      >
+                        <span className="dsh-codebuddy-growth-log-time">{line.time}</span>
+                        <span className="dsh-codebuddy-growth-log-account">{line.account}</span>
+                        <span className="dsh-codebuddy-growth-log-code">{line.code}</span>
+                        <span className={`dsh-codebuddy-growth-log-status is-${line.tone}`}>
+                          {live ? <span className="dsh-codebuddy-growth-log-dots" aria-hidden /> : null}
+                          {line.status.trim()}
+                        </span>
+                        {line.message === undefined ? null : <span className="dsh-codebuddy-growth-log-message">{line.message}</span>}
+                      </li>
+                    )
+                  })}
                 </ol>
               )}
           </div>

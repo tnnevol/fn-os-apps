@@ -94,8 +94,9 @@ describe('任务执行顺序（领养前置）', () => {
       { taskCode: 'template_5' },
       { taskCode: 'chat_5' },
     ])
-    // chat_5（活跃上报）→ first_buddy（领养）→ 其余按登记顺序（template_5 先于 expert_5）。
-    expect(sorted.map(task => task.taskCode)).toEqual(['chat_5', 'first_buddy', 'template_5', 'expert_5'])
+    // first_buddy（领养）必须是第一个 —— 它产出的 Buddy 是旅行派发的前提；
+    // 其余按登记顺序（chat_5 次之，template_5 先于 expert_5）。
+    expect(sorted.map(task => task.taskCode)).toEqual(['first_buddy', 'chat_5', 'template_5', 'expert_5'])
   })
 
   it('未登记的新任务排在最后，不插队也不会消失', async () => {

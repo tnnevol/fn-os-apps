@@ -128,6 +128,9 @@ export interface GrowthRunLogEntryView {
   code: string
   status: string
   message?: string
+  /** Progress (paired with `target`); lets the UI tell "not started" from "half done". */
+  current?: number
+  target?: number
 }
 
 /**

@@ -39,6 +39,17 @@ describe('逐行展示数据', () => {
     const lines = growthLogLines([{ at, account: 'a', code: 'chat_5', status: 'claimed' }])
     expect('message' in lines[0]!).toBe(false)
   })
+
+  it('每行都带 tone，且 pending 的色调取决于进度', () => {
+    const lines = growthLogLines([
+      { at, account: 'a', code: 't1', status: 'pending', current: 0, target: 5 },
+      { at, account: 'a', code: 't2', status: 'pending', current: 2, target: 5 },
+      { at, account: 'a', code: 't3', status: 'claimed' },
+    ])
+    expect(lines[0]!.tone).toBe('error')
+    expect(lines[1]!.tone).toBe('warn')
+    expect(lines[2]!.tone).toBe('ok')
+  })
 })
 
 describe('纯文本拼接与渲染共用同一份数据', () => {
@@ -56,28 +67,50 @@ describe('纯文本拼接与渲染共用同一份数据', () => {
   })
 })
 
+/**
+ * 色调规则（由使用者指定）：
+ *   - 未完成 → 红
+ *   - 完成 / 跳过 → 绿
+ *   - 完成了一半 → 黄
+ *   - 进行中 → 蓝（过程标记，不算结局）
+ */
 describe('状态色调映射', () => {
-  it('成功类状态为 ok', () => {
-    for (const status of ['claimed', 'success', 'done']) expect(statusTone(status)).toBe('ok')
+  it('完成类为绿（ok）', () => {
+    for (const status of ['claimed', 'success', 'done', 'already']) expect(statusTone(status)).toBe('ok')
   })
 
-  it('失败为 error', () => {
+  it('跳过类也是绿：不用再做＝终态', () => {
+    for (const status of ['skipped', 'unsupported', 'daily-limit']) expect(statusTone(status)).toBe('ok')
+  })
+
+  it('失败为红', () => {
     expect(statusTone('error')).toBe('error')
   })
 
-  it('待办类为 warn', () => {
-    for (const status of ['pending', 'daily-limit', 'traveling', 'departed', 'claiming', 'no-buddy']) {
+  it('未完成（零进度）为红', () => {
+    expect(statusTone('pending')).toBe('error')
+    expect(statusTone('pending', { current: 0, target: 5 })).toBe('error')
+  })
+
+  it('完成了一半（有进度未达标）为黄', () => {
+    expect(statusTone('pending', { current: 2, target: 5 })).toBe('warn')
+    expect(statusTone('pending', { current: 1, target: 1 })).toBe('warn')
+  })
+
+  it('旅行中间态按「完成了一半」为黄', () => {
+    for (const status of ['traveling', 'departed', 'claiming', 'no-buddy']) {
       expect(statusTone(status)).toBe('warn')
     }
   })
 
-  it('跳过类为 muted', () => {
-    for (const status of ['already', 'skipped', 'unsupported']) expect(statusTone(status)).toBe('muted')
+  it('进行中为蓝（过程标记而非结局）', () => {
+    for (const status of ['running', 'accepted', 'waiting']) expect(statusTone(status)).toBe('info')
   })
 
   it('带对齐尾随空格也能识别（宿主写入的 status 已 padEnd）', () => {
     expect(statusTone('claimed    ')).toBe('ok')
-    expect(statusTone(' pending ')).toBe('warn')
+    expect(statusTone(' pending ')).toBe('error')
+    expect(statusTone(' pending ', { current: 3, target: 5 })).toBe('warn')
   })
 
   it('未登记状态回落到 info，不误标成功或失败', () => {

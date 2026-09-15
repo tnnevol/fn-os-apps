@@ -39,20 +39,17 @@ export interface GrowthClaimResult {
  * 任务执行顺序（依赖序）。
  *
  * 上游 API 的返回顺序**没有任何依赖保证**（实测 `first_buddy` 排在第 13 位、
- * `chat_5` 第 14 位），而这两条有真实的先后约束：
+ * `chat_5` 第 14 位），而这些任务有真实的先后约束：
  *
- *  - `first_buddy`（领养第一只 Buddy）是**前置任务**：它需要当日活跃上报解锁，
- *    且产生的 Buddy 是「派猫猫旅行」的前提——没有猫猫时旅行派发会被服务端拒绝
- *    （`no active buddy`），所以领养必须先于旅行；
- *  - `chat_5` 做 5 次活跃上报，放在领养之前能为门槛补齐当日活跃度
- *    （来源项目注释：「first_buddy 依赖活跃上报解锁」）。
- *
- * 其余任务彼此独立，保持原有相对顺序即可。
+ *  - `first_buddy`（领取第一只 Buddy）必须是**第一个**执行的任务：它产出的 Buddy
+ *    是「派猫猫旅行」的前提——没有猫猫时旅行派发会被服务端拒绝（`no active buddy`）。
+ *    该任务自带活跃上报（report）步骤，因此不依赖 `chat_5` 先跑。
+ *  - 其余任务彼此独立，按登记顺序执行即可。
  */
 const AUTOMATABLE_TASK_ORDER = [
-  // ── 前置：活跃上报 + 领养（领养产出旅行所需的 Buddy） ──
-  'chat_5',
+  // ── 前置：必须先领养，否则后面的旅行无法派发 ──
   'first_buddy',
+  'chat_5',
   // ── 其余可自动化任务 ──
   'Model_chat_GLM5.2',
   'RichMeow_Chat',
@@ -73,7 +70,7 @@ const AUTOMATABLE_TASK_ORDER = [
 
 const AUTOMATABLE_TASKS = new Set<string>(AUTOMATABLE_TASK_ORDER)
 
-/** 领养任务的 code：它是「派猫猫旅行」的前置，必须卡在旅行之前执行。 */
+/** 领养任务的 code：它是「派猫猫旅行」的前置，必须是第一个执行的任务。 */
 export const ADOPTION_TASK_CODE = 'first_buddy'
 
 /**

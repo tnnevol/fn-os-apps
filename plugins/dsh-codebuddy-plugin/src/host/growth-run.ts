@@ -32,6 +32,15 @@ export interface GrowthRunLogEntry {
   status: string
   /** 补充说明：奖励数量、失败原因、不可自动化的理由等。 */
   message?: string
+  /**
+   * 进度（可选，与 `target` 成对）。
+   *
+   * 客户端据此区分 `pending` 的两种含义：**零进度＝还没开始（红）**、
+   * **有进度＝做了一半（黄）**。与具体任务无关的日志（账号级、流程级）不填。
+   */
+  current?: number
+  /** 进度目标。 */
+  target?: number
 }
 
 /** 一次成长任务执行的运行状态。 */

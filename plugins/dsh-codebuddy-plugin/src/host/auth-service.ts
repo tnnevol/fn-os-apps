@@ -1842,27 +1842,79 @@ export class CodeBuddyAuthService {
             let latest = task
             if (!latest.claimable) {
               try {
+                // 先记「开始执行」：动作内部可能有真实对话/多次上报，耗时可观。
+                // 带上当前进度，前端据此把「没开始（红）」与「做了一半（黄）」分开。
+                await appendGrowthRunLog({
+                  account: item.name,
+                  code: task.taskCode,
+                  status: 'running',
+                  message: `执行中（当前 ${task.current}/${task.target}）`,
+                  current: task.current,
+                  target: task.target,
+                }).catch(() => {})
                 const action = await runGrowthTaskAction(item.identity, task.taskCode, task.current, task.target, signal)
                 if (!action.supported) {
-                  await appendGrowthRunLog({ account: item.name, code: task.taskCode, status: 'unsupported', message: action.message }).catch(() => {})
+                  await appendGrowthRunLog({
+                    account: item.name,
+                    code: task.taskCode,
+                    status: 'unsupported',
+                    message: action.message,
+                    current: task.current,
+                    target: task.target,
+                  }).catch(() => {})
                   items.push({ code: task.taskCode, status: 'unsupported', current: task.current, target: task.target, error: action.message })
                   continue
                 }
+                await appendGrowthRunLog({
+                  account: item.name,
+                  code: task.taskCode,
+                  status: 'running',
+                  message: action.message,
+                  current: task.current,
+                  target: task.target,
+                }).catch(() => {})
+                // 上游计分是异步的：回读要有耐心，并把「还在等」写进日志，
+                // 否则这一段静默期看起来像卡住了。
                 for (let attempt = 0; attempt < GROWTH_POLL_ATTEMPTS; attempt += 1) {
-                  if (attempt > 0) await waitForGrowthPoll(signal)
+                  if (attempt > 0) {
+                    await appendGrowthRunLog({
+                      account: item.name,
+                      code: task.taskCode,
+                      status: 'waiting',
+                      message: `等待上游计分（第 ${attempt}/${GROWTH_POLL_ATTEMPTS - 1} 次回读）`,
+                    }).catch(() => {})
+                    await waitForGrowthPoll(signal)
+                  }
                   const refreshed = await listGrowthTasks(item.identity, signal)
                   latest = refreshed.find(candidate => candidate.taskCode === task.taskCode) ?? latest
                   if (latest.claimable || latest.claimed) break
                 }
               } catch (error) {
                 const message = error instanceof Error ? error.message : String(error)
-                await appendGrowthRunLog({ account: item.name, code: task.taskCode, status: 'error', message }).catch(() => {})
+                await appendGrowthRunLog({
+                  account: item.name,
+                  code: task.taskCode,
+                  status: 'error',
+                  message,
+                  current: task.current,
+                  target: task.target,
+                }).catch(() => {})
                 items.push({ code: task.taskCode, status: 'error', current: task.current, target: task.target, error: message })
                 continue
               }
             }
             if (!latest.claimable) {
-              await appendGrowthRunLog({ account: item.name, code: task.taskCode, status: 'pending', message: `进度 ${latest.current}/${latest.target}，未达标` }).catch(() => {})
+              // 进度信息同时进 message 与结构化字段：前者给人看，后者定颜色。
+              await appendGrowthRunLog({
+                account: item.name,
+                code: task.taskCode,
+                status: 'pending',
+                message: latest.current > 0
+                  ? `进度 ${latest.current}/${latest.target}，未达标（已完成一半）`
+                  : `进度 0/${latest.target}，未完成`,
+                current: latest.current,
+                target: latest.target,
+              }).catch(() => {})
               items.push({ code: task.taskCode, status: 'pending', current: latest.current, target: latest.target })
               continue
             }
@@ -1874,8 +1926,10 @@ export class CodeBuddyAuthService {
                 code: task.taskCode,
                 status,
                 ...claim.alreadyClaimed
-                  ? { message: '奖励此前已领取' }
-                  : { message: `领奖 +${claim.credit} 积分 +${claim.energy} 能量` },
+                  ? { message: '已达标，奖励此前已领取' }
+                  : { message: `已达标并领奖：+${claim.credit} 积分 +${claim.energy} 能量` },
+                current: latest.current,
+                target: latest.target,
               }).catch(() => {})
               items.push({
                 code: task.taskCode,
@@ -1899,19 +1953,22 @@ export class CodeBuddyAuthService {
            * 旅行 `traveling` / `daily-limit`），不会重复执行。
            */
           const endpoint = item.endpoint
+          // 这两步各是一次网络往返，先记「开始」让等待可见。
+          await appendGrowthRunLog({ account: item.name, code: '签到', status: 'running', message: '查询签到状态…' }).catch(() => {})
           const checkin = await this.checkinOneAccount(item.id, item.name, endpoint, item.identity)
           await appendGrowthRunLog({
             account: item.name,
             code: '签到',
             status: checkin.result,
             message: checkin.result === 'already'
-              ? '今日已签到，跳过'
+              ? '今日已签到，跳过（不重复提交）'
               : checkin.result === 'skipped'
-                ? '企业账号不支持签到'
-                : checkin.result === 'success' ? '签到成功' : checkin.error ?? '签到失败',
+                ? '企业账号不支持签到，跳过'
+                : checkin.result === 'success' ? '签到成功，额度已重置' : checkin.error ?? '签到失败',
           }).catch(() => {})
           items.push({ code: '签到', status: checkin.result, ...checkin.error === undefined ? {} : { error: checkin.error } })
 
+          await appendGrowthRunLog({ account: item.name, code: '旅行', status: 'running', message: '查询猫猫旅行状态…' }).catch(() => {})
           const travel = await this.travelOneAccount(item.id, item.name, endpoint, item.identity)
           await appendGrowthRunLog({
             account: item.name,

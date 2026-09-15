@@ -28,6 +28,8 @@ export interface GrowthLogLine {
   status: string
   /** 补充说明（可能缺省）。 */
   message?: string
+  /** 该行状态对应的色调（未完成红 / 完成一半黄 / 完成跳过绿）。 */
+  tone: GrowthLogTone
 }
 
 /** 状态列的宽度：最长状态 `daily-limit`(11) / `unsupported`(11) 刚好容纳。 */
@@ -53,49 +55,80 @@ export function formatLogTime(at: number): string {
 export function growthLogLines(entries: readonly GrowthRunLogEntryView[] | undefined): GrowthLogLine[] {
   if (entries === undefined || entries.length === 0) return []
   const codeWidth = entries.reduce((max, entry) => Math.max(max, entry.code.length), 0)
-  return entries.map(entry => ({
-    at: entry.at,
-    time: formatLogTime(entry.at),
-    account: `[${entry.account}]`,
-    code: entry.code.padEnd(codeWidth, ' '),
-    status: entry.status.padEnd(STATUS_WIDTH, ' '),
-    ...entry.message === undefined ? {} : { message: entry.message },
-  }))
+  return entries.map(entry => {
+    // 进度决定 pending 是「红（没做）」还是「黄（做了一半）」。
+    const progress = entry.current === undefined || entry.target === undefined
+      ? undefined
+      : { current: entry.current, target: entry.target }
+    return {
+      at: entry.at,
+      time: formatLogTime(entry.at),
+      account: `[${entry.account}]`,
+      code: entry.code.padEnd(codeWidth, ' '),
+      status: entry.status.padEnd(STATUS_WIDTH, ' '),
+      tone: statusTone(entry.status, progress),
+      ...entry.message === undefined ? {} : { message: entry.message },
+    }
+  })
 }
 
-/** 状态的视觉色调：决定这一行状态文字用什么颜色。 */
-export type GrowthLogTone = 'ok' | 'error' | 'warn' | 'info' | 'muted'
+/**
+ * 状态的视觉色调：决定这一行状态文字用什么颜色。
+ *
+ * 四种色调对应「任务结局」的四类，与使用者指定的规则一一对应：
+ * `ok`＝完成/跳过（绿）、`error`＝未完成（红）、`warn`＝完成一半（黄）、
+ * `info`＝进行中（蓝，过程标记而非结局）。刻意不含「灰」——跳过已经归入绿色。
+ */
+export type GrowthLogTone = 'ok' | 'error' | 'warn' | 'info'
 
 /**
  * 把宿主的状态串映射到视觉色调。
  *
- * 覆盖 `growth-run.ts` 与 `auth-service.ts` 里实际会出现的全部取值；未登记的
- * 状态回落到 `info`（宁可平淡也不要误标成成功或失败）。
+ * 按「任务结局」上色，规则由使用者指定：
+ *  - **未完成 → 红**：还没做（进度 0）或执行失败；
+ *  - **完成了一半 → 黄**：有进度但未达标；
+ *  - **完成 / 跳过 → 绿**：已领奖、已在跑或今日已完成而跳过、不支持自动化的跳过；
+ *  - **进行中 → 蓝**：`running` / `accepted` 是**过程标记**而不是结局，
+ *    用中性色，避免整屏因为「正在跑」而全红。
  *
  * @param status - 宿主写入的状态（可能带对齐用的尾随空格）。
+ * @param progress - 该任务的进度；缺省表示这条日志与具体任务无关（账号级/流程级）。
  */
-export function statusTone(status: string): GrowthLogTone {
+export function statusTone(status: string, progress?: { current: number, target: number }): GrowthLogTone {
   switch (status.trim()) {
+    // 已完成：领奖成功、任务完成、此前已领取。
     case 'claimed':
     case 'success':
     case 'done':
+    case 'already':
       return 'ok'
+    // 跳过也是「不用做」的终态：今日已签到/已旅行、不支持自动化、企业账号不支持。
+    case 'skipped':
+    case 'unsupported':
+      return 'ok'
+    // 失败是未完成的一种。
     case 'error':
       return 'error'
+    // 未达标：有进度算「完成了一半」，零进度算「没开始做」。
     case 'pending':
-    case 'daily-limit':
+      if (progress !== undefined && progress.current > 0) return 'warn'
+      return 'error'
+    // 进行中的过程标记，不属于结局。
+    case 'running':
+    case 'accepted':
+    case 'waiting':
+      return 'info'
+    // 旅行类中间态：尚在等到达/领取中，按「完成了一半」处理。
     case 'traveling':
     case 'departed':
     case 'claiming':
+      return 'warn'
+    // 今日已旅行（服务端 daily_limit_reached）＝今天这件事不用再做了 → 跳过 → 绿。
+    case 'daily-limit':
+      return 'ok'
+    // 没有猫猫：可重试，不算失败，但也确实没完成。
     case 'no-buddy':
       return 'warn'
-    case 'running':
-    case 'accepted':
-      return 'info'
-    case 'already':
-    case 'skipped':
-    case 'unsupported':
-      return 'muted'
     default:
       return 'info'
   }
