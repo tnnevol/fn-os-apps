@@ -115,6 +115,17 @@ describe('抽屉观感与滚动', () => {
     expect(DRAWER).toContain('dsh-codebuddy-growth-log-scroll')
   })
 
+  it('内容区用 border-box，避免「内容没超出也出滚动条」', () => {
+    const GROWTH_SCSS = readFileSync(`${ROOT}/styles/growth-tasks.scss`, 'utf8')
+    const body = /\.dsh-codebuddy-growth-log-body\s*\{([^}]*)\}/.exec(GROWTH_SCSS)?.[1] ?? ''
+    // 本仓库没有全局 border-box 重置，而 Semi 的 .semi-sidesheet-body 自带
+    // overflow: auto：按 content-box 算时 height:100% + 8px padding 会比容器高
+    // 8px，于是内容很短也冒出滚动条。
+    expect(body).toMatch(/box-sizing:\s*border-box/)
+    // 再兜一层：真出现高度溢出也不让外层滚（该滚的是日志区）。
+    expect(body).toMatch(/overflow:\s*hidden/)
+  })
+
   it('不再有「准备中」空态：状态行直接说正在执行', () => {
     expect(DRAWER).not.toContain('growthLogWaiting')
     expect(DRAWER).toContain("t('growthLogRunning')")

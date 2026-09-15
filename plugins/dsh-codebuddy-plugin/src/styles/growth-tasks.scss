@@ -75,13 +75,21 @@
    --------------------------------------------------------------------------- */
 
 /* 抽屉内容区：纵向排列，占满 body 高度。
-   刻意**不**整体滚动：标题与状态行常驻，只有下面的日志块滚。 */
+   刻意**不**整体滚动：标题与状态行常驻，只有下面的日志块滚。
+
+   `box-sizing: border-box` 是必须的：本仓库没有全局 border-box 重置，而 Semi 的
+   `.semi-sidesheet-body` 自带 `overflow: auto`——按 content-box 算时，`height: 100%`
+   再加上 4px 上下的 padding 会比容器高 8px，于是**内容根本没超出也冒出滚动条**。
+   `overflow: hidden` 再兜一层：万一将来又引入类似的高度溢出，也不让它变成滚动条
+   （真正要滚的是下面的日志区）。 */
 .dsh-codebuddy-growth-log-body {
   display: flex;
   flex-direction: column;
   gap: 8px;
   height: 100%;
   min-height: 0;
+  box-sizing: border-box;
+  overflow: hidden;
   padding: 4px 2px;
 }
 
