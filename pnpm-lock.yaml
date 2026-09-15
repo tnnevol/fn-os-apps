@@ -76,6 +76,9 @@ catalogs:
     '@types/react-dom':
       specifier: ^19.2.4
       version: 19.2.4
+    '@wasm-fmt/shfmt':
+      specifier: ^0.2.7
+      version: 0.2.7
     bumpp:
       specifier: 12.3.0
       version: 12.3.0
@@ -286,6 +289,9 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 22.20.1
+      '@wasm-fmt/shfmt':
+        specifier: 'catalog:'
+        version: 0.2.7
       eslint:
         specifier: 'catalog:'
         version: 9.39.5(jiti@2.7.0)(supports-color@7.2.0)
@@ -5012,6 +5018,10 @@ packages:
 
   '@vueuse/shared@12.8.2':
     resolution: {integrity: sha512-dznP38YzxZoNloI0qpEfpkms8knDtaoQ6Y/sfS0L7Yki4zh40LFHEhur0odJC6xTHG5dxWVPiUWBXn+wCG2s5w==}
+
+  '@wasm-fmt/shfmt@0.2.7':
+    resolution: {integrity: sha512-bxmf5pXBHe3ujjc2iEoXqRXKgrQmR44jHLZ9G5BsKsb5moDWsuqsISs+88Ov9/SAI88caXYIsP02U4c4YDQpIQ==}
+    engines: {node: '>=16.17.0'}
 
   '@xterm/headless@6.0.0':
     resolution: {integrity: sha512-5Yj1QINYCyzrZtf8OFIHi47iQtI+0qYFPHmouEfG8dHNxbZ9Tb9YGSuLcsEwj9Z+OL75GJqPyJbyoFer80a2Hw==}
@@ -13019,6 +13029,8 @@ snapshots:
       vue: 3.5.41(typescript@5.9.3)
     transitivePeerDependencies:
       - typescript
+
+  '@wasm-fmt/shfmt@0.2.7': {}
 
   '@xterm/headless@6.0.0': {}
 

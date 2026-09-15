@@ -1,5 +1,6 @@
-import antfu from '@antfu/eslint-config'
+import antfu, { parserPlain } from '@antfu/eslint-config'
 import { plugin as jsonConfig } from './scripts/eslint-plugin-json-config.ts'
+import { plugin as shellFormat } from './scripts/eslint-plugin-shell-format.ts'
 
 export default antfu(
   {
@@ -112,6 +113,28 @@ export default antfu(
     rules: {
       'jsonc/no-comments': 'error',
       'jsonc/comma-dangle': ['error', 'never'],
+    },
+  },
+  // shell 脚本（fnOS 生命周期脚本 + .sh）：语法与格式由 wasm shfmt 在规则
+  // 内完成，与 `shfmt -d -i 4` 等效且支持 --fix。文件按名字圈定，不再用
+  // shebang 内容匹配（会误抓 markdown 示例等）。规则只用文件原文，
+  // parser 挂 antfu 的 parser-plain（空 AST）避免 espree 把 shell 当 JS 解析。
+  {
+    files: [
+      'apps/*/cmd/{main,install_init,install_callback,upgrade_init,upgrade_callback,uninstall_init,uninstall_callback,config_init,config_callback}',
+      '**/*.sh',
+    ],
+    languageOptions: { parser: parserPlain },
+    plugins: { 'shell-format': shellFormat },
+    rules: {
+      'shell-format/format': 'error',
+    },
+  },
+  {
+    // 第三方脚本（nvm 官方 install.sh），不强制本仓库格式。
+    files: ['apps/fn-nvm/**'],
+    rules: {
+      'shell-format/format': 'off',
     },
   },
 )

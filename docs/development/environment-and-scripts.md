@@ -24,7 +24,6 @@
 | `pnpm run test:unit` | 通过 Turbo 执行单元测试 | 否 |
 | `pnpm run test` | `test:unit` 的兼容别名 | 否 |
 | `pnpm run docs:preview` | 预览已经构建好的 VitePress 站点 | 否 |
-| `pnpm run lint:shell` | 检查 Shell 脚本格式 | 否 |
 
 CLI 也提供一个仅用于 CI 或网关构建的入口：
 
