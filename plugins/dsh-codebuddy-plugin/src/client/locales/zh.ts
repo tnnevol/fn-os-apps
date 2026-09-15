@@ -86,7 +86,6 @@ export const zh: { [Key in CodeBuddyLocaleKey]: string } = {
   growthClaimable: '可领奖',
   growthManual: '需手动',
   growthLogTitle: '任务执行日志',
-  growthLogOpen: '执行日志',
   growthLogEmpty: '还没有执行记录。点击「完成任务」后这里会显示逐条进度。',
   growthLogWaiting: '正在准备…',
   growthLogRunning: '执行中，日志实时更新',

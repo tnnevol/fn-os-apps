@@ -24,7 +24,7 @@ import type { ReactNode } from 'react'
 import { useStore } from '@nanostores/react'
 import {
   DshButton, DshCard, DshEmpty, DshIconButton,
-  DshIconArrowLeft, DshIconCommand, DshIconElementStroked, DshIconList, DshIconRefresh,
+  DshIconArrowLeft, DshIconCommand, DshIconElementStroked, DshIconRefresh,
   DshIconUser, DshInput, DshLayout, DshModal, DshNav, DshTag, DshToast,
   DshTooltip,
 } from '@tnnevol/dsh-semi-ui'
@@ -290,17 +290,6 @@ function AccountsPage({
             {checkinProbing ? t('checkinLoading') : t('checkinAll')}
           </DshButton>
           <DshButton size="small" theme="light" icon={<DshIconRefresh />} loading={loading} onClick={reload}>{t('refresh')}</DshButton>
-          {/* 日志抽屉的手动入口：跑完后用户仍可打开回看最近一轮。
-              执行中该按钮也显示 loading，与「完成任务」同源（$growthRunning）。 */}
-          <DshButton
-            size="small"
-            theme="light"
-            icon={<DshIconList />}
-            loading={growthRun.running}
-            onClick={() => { setLogOpen(true) }}
-          >
-            {t('growthLogOpen')}
-          </DshButton>
         </div>
       </div>
       {rows.length === 0 ? (

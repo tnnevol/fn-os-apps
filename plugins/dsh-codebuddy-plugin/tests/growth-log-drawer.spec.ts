@@ -57,10 +57,19 @@ describe('抽屉与面板的接线', () => {
     expect(body).toContain('setLogOpen(true)')
   })
 
-  it('面板保留手动入口，跑完可回看最近一轮', () => {
-    expect(PANEL).toContain('setLogOpen(true)')
-    expect(PANEL).toContain("t('growthLogOpen')")
+  it('抽屉挂在面板上（关闭由抽屉自身的 ✕ 触发）', () => {
     expect(PANEL).toContain('<GrowthRunDrawer')
+    expect(PANEL).toMatch(/onClose=\{\(\) => \{ setLogOpen\(false\) \}\}/)
+  })
+
+  it('动作区不再有手动的「执行日志」按钮（抽屉只由「完成任务」唤起）', () => {
+    // 曾经在动作区加过一个手动入口，用户要求去掉：抽屉改为只在点击
+    // 「完成任务」时自动展开，避免动作区控件过多。
+    expect(PANEL).not.toContain("t('growthLogOpen')")
+    const actionsAt = PANEL.indexOf('dsh-codebuddy-accounts-head-actions')
+    const actionsEnd = PANEL.indexOf('</div>', PANEL.indexOf('dsh-codebuddy-panel-section-head'))
+    const actions = PANEL.slice(actionsAt, actionsEnd)
+    expect(actions).not.toContain('setLogOpen(true)')
   })
 
   it('两侧都在 dsh-semi-ui 中导出（面板不能直接依赖 semi-ui 内部路径）', () => {

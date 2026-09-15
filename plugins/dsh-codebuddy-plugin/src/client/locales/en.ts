@@ -87,7 +87,6 @@ export const en = {
   growthClaimable: 'Claimable',
   growthManual: 'Manual',
   growthLogTitle: 'Task execution log',
-  growthLogOpen: 'Log',
   growthLogEmpty: 'No runs yet. Complete tasks and per-task progress shows up here.',
   growthLogWaiting: 'Preparing…',
   growthLogRunning: 'Running, log updates live',
