@@ -1808,6 +1808,9 @@ export class CodeBuddyAuthService {
     const guard = this.growthTasksGuard.tryAcquire()
     if (guard === undefined) return { status: 'skipped', accounts: [] }
     await beginGrowthRun('all')
+    // 立刻落一条「开始」：否则从点击到第一个账号返回结果之间，抽屉里没有任何
+    // 内容，用户只看到一个空态或「准备中」——那段时间正是最需要反馈的时候。
+    await appendGrowthRunLog({ account: '-', code: '开始', status: 'running', message: '开始执行：成长任务 → 签到 → 旅行' }).catch(() => {})
     try {
       const rows = await this.forEachAccount(async item => {
         // 账号级日志：让抽屉里能看到「这个号被跳过/失败了」而不只是没有输出。
@@ -1815,6 +1818,8 @@ export class CodeBuddyAuthService {
           await appendGrowthRunLog({ account: item.name, code: '-', status: 'error', message: 'refresh token expired' }).catch(() => {})
           return { id: item.id, name: item.name, client: item.client, status: 'error', items: [], error: 'refresh token expired' }
         }
+        // 每个账号开始处理时先落一条：拉任务列表等网络往返期间也有具体日志。
+        await appendGrowthRunLog({ account: item.name, code: '开始', status: 'running', message: '读取任务列表…' }).catch(() => {})
         try {
           const tasks = await listGrowthTasks(item.identity, signal)
           // 按依赖序排列：领养（first_buddy）必须先执行，它产出的 Buddy 是旅行前提。
@@ -1941,9 +1946,22 @@ export class CodeBuddyAuthService {
           return { id: item.id, name: item.name, client: item.client, status: 'error', items: [], error: message }
         }
       }, signal)
+      await appendGrowthRunLog({
+        account: '-',
+        code: '结束',
+        status: 'done',
+        message: `全部完成，共处理 ${rows.length} 个账号`,
+      }).catch(() => {})
       await finishGrowthRun(`all:${rows.length} accounts`)
       return { status: 'ok', accounts: rows }
     } catch (error) {
+      // 整轮崩溃也要留痕：否则抽屉里只看得到中断前的日志、没有失败原因。
+      await appendGrowthRunLog({
+        account: '-',
+        code: '结束',
+        status: 'error',
+        message: error instanceof Error ? error.message : String(error),
+      }).catch(() => {})
       await finishGrowthRun('all:error').catch(() => {})
       throw error
     } finally {

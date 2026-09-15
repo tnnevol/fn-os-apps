@@ -5,26 +5,47 @@
  * 日志。日志内容来自宿主逐条落盘的 `GrowthRunState.log`（见 `host/growth-run.ts`），
  * 因此「执行中逐条冒出」与「跑完回看」是同一份数据。
  *
- * 三个刻意的选择：
- *  - **抽屉而非弹框**：执行要跑几十秒，抽屉贴底、不遮挡面板主体，边跑还能边看任务列表；
- *  - **`placement="bottom"`**：日志是横向长行（时间 + 账号 + 任务 + 状态），
- *    左右抽屉会把每行挤到折行，底部抽屉的宽度才够；
+ * 四个刻意的选择：
+ *  - **抽屉占屏幕下半部分**（`50vh`）：日志是横向长行（时间 + 账号 + 任务 + 状态），
+ *    左右抽屉会把每行挤到折行，底部抽屉宽度才够；占一半高度则让上半部分仍能看到面板；
+ *  - **上半部分磨砂蒙层**：`maskStyle` 上做半透明 + `backdrop-filter: blur`，
+ *    被遮住的账号卡片仍然可辨，而不是压成一片死黑；
+ *  - **日志区固定高度、内部滚动**：抽屉本身不整体滚动（标题与状态行始终可见），
+ *    只有日志块滚，长日志不会把标题顶出视口；
  *  - **语言传 `log`**：Prism 没有 log 词法，取到空 grammar 会退化为纯文本（不报错），
  *    这正是我们要的——日志本身不需要着色，等宽对齐就够了。
  *
  * @module dsh-codebuddy/ui/growth-run-drawer
  */
 
-import type { ReactNode } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 import { useEffect, useMemo, useState } from 'react'
 import { useStore } from '@nanostores/react'
-import { DshCodeHighlight, DshSideSheet, DshSpin } from '@tnnevol/dsh-semi-ui'
+import { DshCodeHighlight, DshSideSheet } from '@tnnevol/dsh-semi-ui'
 import type { ConnectionRpc, GrowthRunStateView } from '../rpc.ts'
 import { $growthRunning, GROWTH_RUN_POLL_MS, formatGrowthRunLog, hydrateGrowthRunState } from '../store/growth-run.ts'
 import type { Translate } from '../../types/client/panel-types'
 
-/** 抽屉高度：够放十余行日志并可滚动，又不至于盖住整个面板。 */
-const DRAWER_HEIGHT = 320
+/** 抽屉高度：占视口下半部分，上半部分留给面板（配合磨砂蒙层仍可辨认）。 */
+const DRAWER_HEIGHT = '50vh'
+
+/**
+ * 上半部分蒙层的「磨砂玻璃」样式。
+ *
+ * 颜色取 DSH 自己的蒙层 token（`--dsw-alias-bg-mask-1`，浅色 `#0000003d`、
+ * 暗色 `#00000080`）——**不能**用 Semi 的默认蒙层色：本仓库的主题桥
+ * （`packages/dsh-semi-ui/src/theme.scss`）把 `--semi-color-overlay-bg` 映射到
+ * `--dsw-alias-bg-base`（不透明的白/黑），直接用会把上半屏压成一片实心，
+ * 既不是半透明也看不到下面的账号卡片。
+ *
+ * `backdrop-filter` 给被遮住的账号卡片留下轮廓，方便对照「哪个号在跑」；
+ * `-webkit-` 前缀供 Safari。
+ */
+const FROSTED_MASK_STYLE: CSSProperties = {
+  background: 'var(--dsw-alias-bg-mask-1, rgba(0, 0, 0, 0.24))',
+  backdropFilter: 'blur(10px)',
+  WebkitBackdropFilter: 'blur(10px)',
+}
 
 /**
  * 任务执行日志抽屉。
@@ -51,20 +72,22 @@ export function GrowthRunDrawer({ rpc, t, visible, onClose }: {
    * 展开期间轮询宿主，让日志逐条追上来。
    *
    * 只在**展开且正在跑**时轮询：关着的时候没必要请求；跑完就停，避免空转。
-   * 依赖里带 `visible`，收起时 effect 清理并清掉定时器。
+   * **先立刻拉一次再起定时器**：否则点开抽屉后要干等一个轮询周期才有内容，
+   * 那段时间就是用户看到的「准备中」。
    */
   useEffect(() => {
     if (!visible || !running.running) return
     let active = true
-    const timer = setInterval(() => {
-      void hydrateGrowthRunState(rpc).then((next) => {
-        if (active && next !== undefined) setState(next)
-      })
-    }, GROWTH_RUN_POLL_MS)
+    const pull = async (): Promise<void> => {
+      const next = await hydrateGrowthRunState(rpc)
+      if (active && next !== undefined) setState(next)
+    }
+    void pull()
+    const timer = setInterval(() => { void pull() }, GROWTH_RUN_POLL_MS)
     return () => { active = false; clearInterval(timer) }
   }, [rpc, running.running, visible])
 
-  // 展开时立刻拉一次：否则要等第一个轮询周期才看到内容。
+  // 展开时立刻拉一次：覆盖「跑完后再打开回看」的情形（那时不会轮询）。
   useEffect(() => {
     if (!visible) return
     void hydrateGrowthRunState(rpc).then((next) => { if (next !== undefined) setState(next) })
@@ -79,21 +102,18 @@ export function GrowthRunDrawer({ rpc, t, visible, onClose }: {
       height={DRAWER_HEIGHT}
       visible={visible}
       onCancel={onClose}
+      maskStyle={FROSTED_MASK_STYLE}
       className="dsh-codebuddy-growth-log-sheet"
     >
       <div className="dsh-codebuddy-growth-log-body">
-        {text.length === 0
-          ? <p className="dsh-codebuddy-muted">{running.running ? t('growthLogWaiting') : t('growthLogEmpty')}</p>
-          : (
-            <>
-              {running.running ? (
-                <p className="dsh-codebuddy-muted">
-                  <DshSpin size="small" /> {t('growthLogRunning')}
-                </p>
-              ) : null}
-              <DshCodeHighlight code={text} language="log" lineNumber />
-            </>
-          )}
+        {/* 状态行常驻：让「正在执行」与日志滚动互不影响。 */}
+        {running.running ? <p className="dsh-codebuddy-muted">{t('growthLogRunning')}</p> : null}
+        {/* 日志区固定高度 + 内部滚动（见 styles/growth-tasks.scss）。 */}
+        <div className="dsh-codebuddy-growth-log-scroll">
+          {text.length === 0
+            ? <p className="dsh-codebuddy-muted">{t('growthLogEmpty')}</p>
+            : <DshCodeHighlight code={text} language="log" lineNumber />}
+        </div>
       </div>
     </DshSideSheet>
   )

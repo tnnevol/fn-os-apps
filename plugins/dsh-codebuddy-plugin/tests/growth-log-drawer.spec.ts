@@ -62,14 +62,73 @@ describe('抽屉与面板的接线', () => {
     expect(PANEL).toMatch(/onClose=\{\(\) => \{ setLogOpen\(false\) \}\}/)
   })
 
-  it('动作区不再有手动的「执行日志」按钮（抽屉只由「完成任务」唤起）', () => {
-    // 曾经在动作区加过一个手动入口，用户要求去掉：抽屉改为只在点击
-    // 「完成任务」时自动展开，避免动作区控件过多。
-    expect(PANEL).not.toContain("t('growthLogOpen')")
-    const actionsAt = PANEL.indexOf('dsh-codebuddy-accounts-head-actions')
-    const actionsEnd = PANEL.indexOf('</div>', PANEL.indexOf('dsh-codebuddy-panel-section-head'))
-    const actions = PANEL.slice(actionsAt, actionsEnd)
-    expect(actions).not.toContain('setLogOpen(true)')
+  it('动作区有「查看日志」按钮，且刻意不带 loading/disabled', () => {
+    // 用户要求：按钮随时可点，用来查看上一轮或正在执行的日志，
+    // 因此不得加 loading / disabled（那会让人以为不能点）。
+    expect(PANEL).toContain("t('growthLogOpen')")
+    // 从 <DshButton 起切到该按钮的 onClick，才是这个按钮自己的属性组；
+    // 向前取窗口会把上一个「刷新」按钮的 loading 也框进来（实测假失败）。
+    const openAt = PANEL.indexOf("icon={<DshIconList />}")
+    expect(openAt).toBeGreaterThan(-1)
+    const buttonStart = PANEL.lastIndexOf('<DshButton', openAt)
+    const button = PANEL.slice(buttonStart, PANEL.indexOf('setLogOpen(true) }}', openAt))
+    expect(button).not.toContain('loading=')
+    expect(button).not.toContain('disabled=')
+  })
+})
+
+describe('抽屉观感与滚动', () => {
+  it('抽屉占屏幕下半部分（50vh），上半部分留给面板', () => {
+    expect(DRAWER).toMatch(/DRAWER_HEIGHT = '50vh'/)
+    expect(DRAWER).toMatch(/height=\{DRAWER_HEIGHT\}/)
+  })
+
+  it('上半部分蒙层是半透明磨砂（backdrop-filter blur）', () => {
+    expect(DRAWER).toContain('maskStyle')
+    expect(DRAWER).toMatch(/backdropFilter: 'blur/)
+    // Safari 需要 -webkit- 前缀，否则磨砂不生效。
+    expect(DRAWER).toMatch(/WebkitBackdropFilter/)
+  })
+
+  it('蒙层用 DSH 的 mask token，而不是 Semi 的 overlay 色', () => {
+    // 主题桥把 --semi-color-overlay-bg 映射成不透明的 --dsw-alias-bg-base，
+    // 用它会把上半屏压成实心、失去半透明效果。必须用真正半透明的
+    // --dsw-alias-bg-mask-1（浅色 #0000003d）。
+    // 断言用去注释源码：上面这段解释本身就包含被否决的 token 名。
+    const DRAWER_CODE = DRAWER.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '')
+    expect(DRAWER_CODE).toContain('--dsw-alias-bg-mask-1')
+    expect(DRAWER_CODE).not.toContain('--dsw-alias-bg-mask,')
+    expect(DRAWER_CODE).not.toContain('--semi-color-overlay-bg')
+  })
+
+  it('日志区固定高度 + 内部滚动，抽屉本身不整体滚动', () => {
+    const GROWTH_SCSS = readFileSync(`${ROOT}/styles/growth-tasks.scss`, 'utf8')
+    const scroll = /\.dsh-codebuddy-growth-log-scroll\s*\{([^}]*)\}/.exec(GROWTH_SCSS)?.[1] ?? ''
+    expect(scroll).toMatch(/flex:\s*1/)
+    // min-height: 0 是 flex 子项内部滚动生效的前提（默认 auto 会被内容撑开）。
+    expect(scroll).toMatch(/min-height:\s*0/)
+    expect(scroll).toMatch(/overflow-y:\s*auto/)
+    const body = /\.dsh-codebuddy-growth-log-body\s*\{([^}]*)\}/.exec(GROWTH_SCSS)?.[1] ?? ''
+    expect(body).toMatch(/min-height:\s*0/)
+    // 外层不该自己滚动——否则标题与状态行会被一起滚走。
+    expect(body).not.toMatch(/overflow-y:\s*auto/)
+    expect(DRAWER).toContain('dsh-codebuddy-growth-log-scroll')
+  })
+
+  it('不再有「准备中」空态：状态行直接说正在执行', () => {
+    expect(DRAWER).not.toContain('growthLogWaiting')
+    expect(DRAWER).toContain("t('growthLogRunning')")
+    const ZH = readFileSync(`${ROOT}/client/locales/zh.ts`, 'utf8')
+    expect(ZH).not.toContain('growthLogWaiting')
+  })
+})
+
+describe('展开时的日志接线', () => {
+  it('点「完成任务」自动展开抽屉', () => {
+    const start = PANEL.indexOf('const runAllGrowth = async')
+    expect(start).toBeGreaterThan(-1)
+    const body = PANEL.slice(start, start + 700)
+    expect(body).toContain('setLogOpen(true)')
   })
 
   it('两侧都在 dsh-semi-ui 中导出（面板不能直接依赖 semi-ui 内部路径）', () => {

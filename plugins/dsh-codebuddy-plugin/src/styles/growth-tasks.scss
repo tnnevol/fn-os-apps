@@ -74,14 +74,25 @@
    任务执行日志抽屉（SideSheet placement="bottom"）
    --------------------------------------------------------------------------- */
 
-/* 抽屉内容区：日志可能很长，整体纵向可滚；内边距与弹框内的列表对齐。 */
+/* 抽屉内容区：纵向排列，占满 body 高度。
+   刻意**不**整体滚动：标题与状态行常驻，只有下面的日志块滚。 */
 .dsh-codebuddy-growth-log-body {
   display: flex;
   flex-direction: column;
   gap: 8px;
   height: 100%;
+  min-height: 0;
   padding: 4px 2px;
+}
+
+/* 日志滚动区：固定占满剩余高度并内部滚动。
+   `min-height: 0` 是必须的——flex 子项默认 `min-height: auto`，会被内容撑开，
+   `overflow` 便永远不生效（长日志会把抽屉整体顶高而不是内部滚动）。 */
+.dsh-codebuddy-growth-log-scroll {
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden;
 }
 
 /* 日志正文：等宽 + 不折行 + 横向可滚。

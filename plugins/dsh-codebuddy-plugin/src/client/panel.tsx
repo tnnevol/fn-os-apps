@@ -24,7 +24,7 @@ import type { ReactNode } from 'react'
 import { useStore } from '@nanostores/react'
 import {
   DshButton, DshCard, DshEmpty, DshIconButton,
-  DshIconArrowLeft, DshIconCommand, DshIconElementStroked, DshIconRefresh,
+  DshIconArrowLeft, DshIconCommand, DshIconElementStroked, DshIconList, DshIconRefresh,
   DshIconUser, DshInput, DshLayout, DshModal, DshNav, DshTag, DshToast,
   DshTooltip,
 } from '@tnnevol/dsh-semi-ui'
@@ -233,6 +233,16 @@ function AccountsPage({
           {/* 签到已并入「完成任务」：不再单独放「一键签到」按钮，避免同一件事两个入口
               （与设置页移除两个运营周期开关同一原则）。手动签到仍可从账号卡片菜单触发。 */}
           <DshButton size="small" theme="light" icon={<DshIconRefresh />} loading={loading} onClick={reload}>{t('refresh')}</DshButton>
+          {/* 「查看日志」刻意不带 loading/disabled：它只是打开抽屉看已有内容
+              （上一轮结果或正在执行的轮次），任何时候都该点得动。 */}
+          <DshButton
+            size="small"
+            theme="light"
+            icon={<DshIconList />}
+            onClick={() => { setLogOpen(true) }}
+          >
+            {t('growthLogOpen')}
+          </DshButton>
         </div>
       </div>
       {rows.length === 0 ? (
