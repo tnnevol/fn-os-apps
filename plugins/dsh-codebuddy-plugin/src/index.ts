@@ -45,6 +45,10 @@ export { buildStorage, clearStorage, getStoragePath, loadStorage, saveStorage } 
 export type { CodeBuddyStorage } from './host/storage.ts'
 export { fetchUsage, fetchPersonalUsage, fetchEnterpriseUsage, parseUsage } from './host/usage.ts'
 export type { UsageSnapshot, UsageWindow } from './host/usage.ts'
+export { acceptGrowthTasks, claimGrowthTask, isAutomatableGrowthTask, listGrowthTasks } from './host/growth-tasks.ts'
+export type { GrowthClaimResult, GrowthTask } from './host/growth-tasks.ts'
+export { beginGrowthRun, finishGrowthRun, loadGrowthRunState, saveGrowthRunState } from './host/growth-run.ts'
+export type { GrowthRunState } from './host/growth-run.ts'
 export { collectCodeBuddyTokenStats } from './host/token-stats.ts'
 export type {
   CodeBuddyTokenStatsRequest,

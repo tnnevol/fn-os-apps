@@ -14,11 +14,20 @@
 .dsh-codebuddy-accounts-head-actions {
   display: inline-flex;
   align-items: center;
-  /* 允许换行：动作区现含「自动切换 + 自动签到 + 自动旅行 + 刷新」四个控件，
-     窄屏一行放不下，不给 wrap 会横向溢出并把页面撑出滚动。 */
+  /* 允许换行：动作区现含「自动切换 + 一键签到 + 刷新」控件，窄屏一行放不下，
+     不给 wrap 会横向溢出并把页面撑出滚动。 */
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 8px;
+}
+
+/* 区块头左端的主操作对：「添加账号」+「完成任务」。
+   两者是一组主操作，按需求固定 10px 间距（与区块头 lead 的 12px 标题间距区分）。 */
+.dsh-codebuddy-accounts-head-primary {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 /* Multi-account roster: the section title row carries the add-account button,
@@ -406,7 +415,10 @@
    列表用行式台账而不是卡片网格：每行一条资源包，状态由左侧色条与用量
    进度表达，右侧对齐剩余/总量，数字走等宽以便纵向比较。
    ========================================================================== */
-.dsh-codebuddy-resource-modal { width: min(640px, 92vw); }
+/* 弹框尺寸：内容现在含三个 Tab（身份 / 用量 / 成长任务）。成长任务每行都有
+   标题 + code + 进度 + 操作，640px 会让操作列折行；因此放宽到 Semi
+   `size="large"`（920px）的档位，窄屏仍由 92vw 兜住。 */
+.dsh-codebuddy-resource-modal { width: min(920px, 92vw); }
 
 .dsh-codebuddy-resource-dialog { display: flex; flex-direction: column; gap: 14px; }
 
@@ -506,7 +518,7 @@
 .dsh-codebuddy-resource-list {
   display: flex;
   flex-direction: column;
-  max-height: min(52vh, 420px);
+  max-height: min(52vh, 620px);
   overflow-y: auto;
 }
 

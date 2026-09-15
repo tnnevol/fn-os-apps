@@ -1,0 +1,71 @@
+/* 成长任务列表：渲染在账号信息弹框的「成长任务」Tab 内，只展示单个账号。
+   内部再分「未完成 / 已完成」两栏（button 型二级 Tab），因此这里不再需要按
+   账号分组的卡片网格，改为一条紧凑的纵向列表。
+   刷新按钮位于列表内部（工具栏右侧）——弹框里够不到页面级按钮。 */
+
+.dsh-codebuddy-growth-task-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 0 2px;
+}
+
+/* 工具栏：左侧说明、右侧刷新。与任务行同样左右贴齐，滚动时刷新按钮始终在顶部。 */
+.dsh-codebuddy-growth-task-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--dsw-alias-border-l3);
+}
+
+/* 二级 Tab 的按钮条：与「用量信息」下的资源状态 Tab 同一处理——button 型自带
+   浅底，在弹框白底上偏灰，故只留一点底部间距与列表拉开节奏。
+   （Semi 给 `.semi-tabs-content` 的 5px 上内边距不动：与资源状态 Tab 保持一致。） */
+.dsh-codebuddy-growth-task-list .semi-tabs-bar {
+  margin-bottom: 2px;
+}
+
+.dsh-codebuddy-growth-task-row,
+.dsh-codebuddy-growth-task-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 滚动容器：与「用量信息」的资源列表同一口径（`.dsh-codebuddy-resource-list`
+   的 min(52vh, 620px) + overflow-y）。任务数多时只滚列表本身，工具栏、Tab 条与
+   弹框整体高度保持稳定，不会把弹框撑高。 */
+.dsh-codebuddy-growth-task-body {
+  display: flex;
+  flex-direction: column;
+  max-height: min(52vh, 620px);
+  overflow-y: auto;
+}
+
+.dsh-codebuddy-growth-task-row {
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--dsw-alias-border-l3);
+}
+
+.dsh-codebuddy-growth-task-row:last-of-type {
+  border-bottom: none;
+}
+
+/* 主体列：标题、任务 code、不可自动化原因各占一行。min-width: 0 让长文案
+   在窄屏收缩而不是把操作列挤出弹框。 */
+.dsh-codebuddy-growth-task-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 2px;
+}
+
+.dsh-codebuddy-growth-task-meta {
+  flex-shrink: 0;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  font-size: 12px;
+}

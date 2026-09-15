@@ -7,6 +7,7 @@
 @use 'add-account-modal' as *;
 @use 'usage-status' as *;
 @use 'token-panel' as *;
+@use 'growth-tasks' as *;
 
 /* 全局 base：设置页（CodeBuddySection）通用的区块 / 标题 / 描述 / 行 / 动作
    基础样式。各组件样式按文件拆分，见下方 @use。 */

@@ -28,6 +28,9 @@ import {
 import { getCheckinStatus, performCheckin, fetchUsage } from './usage.ts'
 import { BackoffGate, mapWithConcurrency, RunGuard } from './concurrency.ts'
 import { claimTravel, departTravel, fetchTravelLocations, fetchTravelStatus } from './travel.ts'
+import { acceptGrowthTasks, claimGrowthTask, isAutomatableGrowthTask, listGrowthTasks } from './growth-tasks.ts'
+import { runGrowthTaskAction } from './growth-actions.ts'
+import { beginGrowthRun, finishGrowthRun, loadGrowthRunState } from './growth-run.ts'
 import { getLoginAccount, pollAuthToken, requestAuthState } from './codebuddy.ts'
 import {
   clearStorage,
@@ -66,6 +69,22 @@ function isNoBuddyError(message: string): boolean {
  * 退化成串行、太大则给 meter 平面造成瞬时压力；4 是这两者之间的折中。
  */
 const CONCURRENCY = 4
+const GROWTH_POLL_ATTEMPTS = 4
+const GROWTH_POLL_GAP_MS = 3_000
+
+function waitForGrowthPoll(signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(signal.reason ?? new Error('aborted'))
+      return
+    }
+    const timer = setTimeout(resolve, GROWTH_POLL_GAP_MS)
+    signal?.addEventListener('abort', () => {
+      clearTimeout(timer)
+      reject(signal.reason ?? new Error('aborted'))
+    }, { once: true })
+  })
+}
 
 type ConnectionService = {
   rpc: {
@@ -686,6 +705,7 @@ export class CodeBuddyAuthService {
   )
   private autoSwitchTimer: ReturnType<typeof setInterval> | undefined
   private readonly autoSwitchGuard = new RunGuard('auto-switch')
+  private readonly growthTasksGuard = new RunGuard('growth-tasks')
 
   /** 把已持久化的偏好推到 host 侧的门与周期。 */
   setAutoSwitchConfig(enabled: boolean, thresholdPct: number): void {
@@ -821,6 +841,16 @@ export class CodeBuddyAuthService {
         return ok(await this.checkin(id, signal))
       }
       case 'checkinAll': return ok(await this.checkinAll(signal))
+      case 'growthTasks': return ok(await this.growthTasksAll(signal))
+      case 'growthRun': {
+        const raw = typeof payload === 'object' && payload !== null ? payload as { id?: unknown, taskCode?: unknown } : undefined
+        const id = typeof raw?.id === 'string' ? raw.id : ''
+        const taskCode = typeof raw?.taskCode === 'string' ? raw.taskCode : ''
+        if (id.length === 0 || taskCode.length === 0) return err('invalid-request', 'growthRun requires id and taskCode')
+        return ok(await this.growthRunOne(id, taskCode, signal))
+      }
+      case 'growthRunAll': return ok(await this.growthRunAll(signal))
+      case 'growthRunStatus': return ok(await this.growthRunStatus())
       case 'creditExpiry': return ok(await this.creditExpiryAll(signal))
       case 'tokenStats': {
         const raw = typeof payload === 'object' && payload !== null
@@ -1592,6 +1622,171 @@ export class CodeBuddyAuthService {
   /** 面板：一键全部签到。 */
   async checkinAll(signal?: AbortSignal): Promise<unknown> {
     return this.checkin(undefined, signal)
+  }
+
+  /** 面板：读取全部账号的成长任务列表；单账号失败不阻断其他账号。 */
+  async growthTasksAll(signal?: AbortSignal): Promise<unknown> {
+    const rows = await this.forEachAccount(async item => {
+      if (item.expired) {
+        return { id: item.id, name: item.name, client: item.client, tasks: [], error: 'refresh token expired' }
+      }
+      try {
+        const tasks = await listGrowthTasks(item.identity, signal)
+        return { id: item.id, name: item.name, client: item.client, tasks }
+      } catch (error) {
+        return {
+          id: item.id,
+          name: item.name,
+          client: item.client,
+          tasks: [],
+          error: error instanceof Error ? error.message : String(error),
+        }
+      }
+    }, signal)
+    return { accounts: rows }
+  }
+
+  /**
+   * 管理后台单条成长任务执行：只处理指定账号与任务，不触发其它账号。
+   *
+   * 运行状态落盘（`beginGrowthRun`/`finishGrowthRun`），刷新页面后客户端能
+   * 从宿主恢复 loading，不会把正在跑的任务显示成可再次点击。
+   */
+  async growthRunOne(id: string, taskCode: string, signal?: AbortSignal): Promise<unknown> {
+    const guard = this.growthTasksGuard.tryAcquire()
+    if (guard === undefined) return { status: 'skipped', error: 'growth task run already in progress' }
+    await beginGrowthRun('one', { accountId: id, taskCode })
+    try {
+      const rows = await this.forEachAccount(async item => {
+        if (item.id !== id) return undefined
+        if (item.expired) return { id: item.id, name: item.name, client: item.client, status: 'error', items: [], error: 'refresh token expired' }
+        const tasks = await listGrowthTasks(item.identity, signal)
+        const task = tasks.find(candidate => candidate.taskCode === taskCode)
+        if (task === undefined) return { id: item.id, name: item.name, client: item.client, status: 'error', items: [], error: 'task not found' }
+        if (!isAutomatableGrowthTask(task)) {
+          return { id: item.id, name: item.name, client: item.client, status: 'ok', items: [{ code: task.taskCode, status: 'unsupported', current: task.current, target: task.target, error: task.automationReason ?? 'manual task' }] }
+        }
+        if (task.acceptStatus !== 'accepted' && task.acceptStatus !== 'completed') {
+          await acceptGrowthTasks(item.identity, [task.taskCode], signal)
+        }
+        let latest = task
+        if (!latest.claimable) {
+          const action = await runGrowthTaskAction(item.identity, task.taskCode, task.current, task.target, signal)
+          if (!action.supported) return { id: item.id, name: item.name, client: item.client, status: 'ok', items: [{ code: task.taskCode, status: 'unsupported', current: task.current, target: task.target, error: action.message }] }
+          for (let attempt = 0; attempt < GROWTH_POLL_ATTEMPTS; attempt += 1) {
+            if (attempt > 0) await waitForGrowthPoll(signal)
+            const refreshed = await listGrowthTasks(item.identity, signal)
+            latest = refreshed.find(candidate => candidate.taskCode === task.taskCode) ?? latest
+            if (latest.claimable || latest.claimed) break
+          }
+        }
+        if (!latest.claimable) return { id: item.id, name: item.name, client: item.client, status: 'ok', items: [{ code: task.taskCode, status: 'pending', current: latest.current, target: latest.target }] }
+        const claim = await claimGrowthTask(item.identity, task.taskCode, signal)
+        return { id: item.id, name: item.name, client: item.client, status: 'ok', items: [{ code: task.taskCode, status: claim.alreadyClaimed ? 'already' : 'claimed', credit: claim.credit, energy: claim.energy }] }
+      }, signal)
+      const account = rows.find(row => row !== undefined)
+      const outcome = account === undefined ? { status: 'error', error: 'account not found' } : account
+      await finishGrowthRun(`${taskCode}:${String((outcome as { status?: unknown }).status ?? 'unknown')}`)
+      return outcome
+    } catch (error) {
+      await finishGrowthRun(`${taskCode}:error`).catch(() => {})
+      return { status: 'error', error: error instanceof Error ? error.message : String(error) }
+    } finally {
+      guard.release()
+    }
+  }
+
+  /** 管理后台读取当前成长任务执行状态（刷新页面后恢复 loading 用）。 */
+  async growthRunStatus(): Promise<unknown> {
+    const state = await loadGrowthRunState()
+    if (state === undefined) return { running: false, inFlight: this.growthTasksGuard.isRunning }
+    // 内存与磁盘取或：进程内正在跑但还没落盘的瞬间也不该显示成空闲。
+    return { ...state, running: state.running || this.growthTasksGuard.isRunning }
+  }
+
+  /**
+   * 管理后台「一键完成成长任务」：报名、执行已移植动作、轮询进度并领奖。
+   * 未移植动作明确返回 unsupported，不会被误当成完成，也不会进入隐藏的副作用路径。
+   */
+  async growthRunAll(signal?: AbortSignal): Promise<unknown> {
+    const guard = this.growthTasksGuard.tryAcquire()
+    if (guard === undefined) return { status: 'skipped', accounts: [] }
+    await beginGrowthRun('all')
+    try {
+      const rows = await this.forEachAccount(async item => {
+        if (item.expired) {
+          return { id: item.id, name: item.name, client: item.client, status: 'error', items: [], error: 'refresh token expired' }
+        }
+        try {
+          const tasks = await listGrowthTasks(item.identity, signal)
+          const pending = tasks.filter(isAutomatableGrowthTask)
+          const acceptCodes = pending
+            .filter(task => task.acceptStatus !== 'accepted' && task.acceptStatus !== 'completed')
+            .map(task => task.taskCode)
+          let acceptError: string | undefined
+          try {
+            await acceptGrowthTasks(item.identity, acceptCodes, signal)
+          } catch (error) {
+            acceptError = error instanceof Error ? error.message : String(error)
+          }
+          const items = [] as Array<Record<string, unknown>>
+          for (const task of pending) {
+            let latest = task
+            if (!latest.claimable) {
+              try {
+                const action = await runGrowthTaskAction(item.identity, task.taskCode, task.current, task.target, signal)
+                if (!action.supported) {
+                  items.push({ code: task.taskCode, status: 'unsupported', current: task.current, target: task.target, error: action.message })
+                  continue
+                }
+                for (let attempt = 0; attempt < GROWTH_POLL_ATTEMPTS; attempt += 1) {
+                  if (attempt > 0) await waitForGrowthPoll(signal)
+                  const refreshed = await listGrowthTasks(item.identity, signal)
+                  latest = refreshed.find(candidate => candidate.taskCode === task.taskCode) ?? latest
+                  if (latest.claimable || latest.claimed) break
+                }
+              } catch (error) {
+                items.push({ code: task.taskCode, status: 'error', current: task.current, target: task.target, error: error instanceof Error ? error.message : String(error) })
+                continue
+              }
+            }
+            if (!latest.claimable) {
+              items.push({ code: task.taskCode, status: 'pending', current: latest.current, target: latest.target })
+              continue
+            }
+            try {
+              const claim = await claimGrowthTask(item.identity, task.taskCode, signal)
+              items.push({
+                code: task.taskCode,
+                status: claim.alreadyClaimed ? 'already' : 'claimed',
+                credit: claim.credit,
+                energy: claim.energy,
+              })
+            } catch (error) {
+              items.push({ code: task.taskCode, status: 'error', error: error instanceof Error ? error.message : String(error) })
+            }
+          }
+          const itemFailed = items.some(result => result.status === 'error')
+          return {
+            id: item.id,
+            name: item.name,
+            client: item.client,
+            status: acceptError === undefined && !itemFailed ? 'ok' : 'partial',
+            items,
+            ...acceptError === undefined ? {} : { acceptError },
+          }
+        } catch (error) {
+          return { id: item.id, name: item.name, client: item.client, status: 'error', items: [], error: error instanceof Error ? error.message : String(error) }
+        }
+      }, signal)
+      await finishGrowthRun(`all:${rows.length} accounts`)
+      return { status: 'ok', accounts: rows }
+    } catch (error) {
+      await finishGrowthRun('all:error').catch(() => {})
+      throw error
+    } finally {
+      guard.release()
+    }
   }
 
   /** 面板：全部账号的积分资源与到期（复用 meter 平面的 usage 快照）。 */

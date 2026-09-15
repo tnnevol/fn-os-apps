@@ -23,13 +23,17 @@ import {
 import type { ClassifiedResource, ResourceLifecycle } from '../resource-history.ts'
 import { identityRows } from '../identity.ts'
 import type { PanelAccountRow, Translate } from '../../types/client/panel-types'
+import type { ConnectionRpc } from '../rpc.ts'
 import { formatCredit } from './loading-shared.tsx'
 import { RESOURCE_LIFECYCLE_META_IMPL, ResourceGroupImpl } from './resource-row.tsx'
+import { GrowthTaskList } from './growth-task-list.tsx'
 
-export function AccountResourcesModalImpl({ row, items, t, onClose }: {
+export function AccountResourcesModalImpl({ row, items, t, rpc, notify, onClose }: {
   row: PanelAccountRow | undefined
   items: ClassifiedResource[]
   t: Translate
+  rpc: ConnectionRpc
+  notify: (ok: boolean, text: string) => void
   onClose: () => void
 }): ReactNode {
   const [topKey, setTopKey] = useState<TopTab>('identity')
@@ -90,6 +94,7 @@ export function AccountResourcesModalImpl({ row, items, t, onClose }: {
       title={t('accountInfoTitle')}
       visible={row !== undefined}
       footer={null}
+      size="large"
       onCancel={onClose}
       className="dsh-codebuddy-resource-modal"
     >
@@ -154,6 +159,12 @@ export function AccountResourcesModalImpl({ row, items, t, onClose }: {
                   ))}
                 </DshTabs>
               </div>
+            </DshTabs.TabPane>
+            <DshTabs.TabPane
+              itemKey="growth"
+              tab={<span className="dsh-codebuddy-resource-tab">{t('growthTasksTitle')}</span>}
+            >
+              <GrowthTaskList rpc={rpc} t={t} accountId={row.id} notify={notify} />
             </DshTabs.TabPane>
           </DshTabs>
         </div>

@@ -30,18 +30,19 @@ import {
 } from '@tnnevol/dsh-semi-ui'
 
 import { CODEBUDDY_AUTH_CHANNEL } from '../contracts/constants.ts'
-import type { ConnectionRpc, AccountsResult } from './rpc.ts'
+import type { ConnectionRpc, AccountsResult, GrowthRunResult } from './rpc.ts'
 import { describeRpcError } from './rpc.ts'
 import type { PanelRoute } from './panel-route.ts'
 import { classifyResources, forgetResources, recordResources, resourceHistoryStore, resourcesFrom } from './resource-history.ts'
 import type { ClassifiedResource } from './resource-history.ts'
 import { TokenStatsStore } from './store/token-stats.ts'
 import {
-  $autoCheckin, $autoSwitch, $autoTravel,
+  $autoSwitch,
 } from './store/usage-prefs.ts'
 import { sortSegmentsByValueDesc } from './segment-bar.ts'
 import { formatUpdatedAt } from './format-time.ts'
 import { accountEpoch, subscribeAccountEpoch } from './store/account-epoch.ts'
+import { checkinButtonState } from './checkin-state.ts'
 import { DEFAULT_TOKEN_RANGE, DEFAULT_TREND_RANGE, optionsFor, rangeLabel as rangeLabelOf, type TokenRangeKey } from './token-range.ts'
 import { CodeBuddyLogo } from '../components/CodeBuddyLogo.tsx'
 import { AddAccountModal } from '../components/AddAccountModal.tsx'
@@ -53,9 +54,7 @@ import { AccountCardImpl as AccountCard } from './ui/account-card.tsx'
 import { AccountResourcesModalImpl as AccountResourcesModal } from './ui/account-resources-modal.tsx'
 import { ActivityGridImpl as ActivityGrid } from './ui/activity-grid.tsx'
 import {
-  AutoCheckinToggleImpl as AutoCheckinToggle,
   AutoSwitchToggleImpl as AutoSwitchToggle,
-  AutoTravelToggleImpl as AutoTravelToggle,
 } from './ui/auto-toggles.tsx'
 import {
   BreakdownListImpl as BreakdownList,
@@ -71,6 +70,7 @@ import {
   StatMetric,
 } from './ui/loading-shared.tsx'
 import { DshIconLabAvatar, DshIconLabChart } from '@tnnevol/dsh-semi-ui'
+import { $growthRunning, hydrateGrowthRunState, markGrowthRunning } from './store/growth-run.ts'
 
 import type { AccountCardLabels, PanelAccountRow, TokenStats, Translate } from '../types/client/panel-types'
 
@@ -100,9 +100,17 @@ function AccountsPage({
     rpc, 'panelStatus', `${rosterTick}|${accountVersion}`,
   )
   const [busyId, setBusyId] = useState<string | undefined>(undefined)
+  const [checkinAllBusy, setCheckinAllBusy] = useState(false)
+  /** 签到重入标志（ref 而非 state，见 checkinAll 说明）。 */
+  const checkinAllBusyRef = useRef(false)
+  /** 「完成任务」重入标志（同上：loading 不拦点击）。 */
+  const runAllGrowthRef = useRef(false)
   const [resourceTarget, setResourceTarget] = useState<PanelAccountRow | undefined>(undefined)
-  // 三个 auto* 偏好的展示 / 同步 host 都封装在 hook 里——这样本页与设置页同源。
-  const { autoCheckin: autoCheckinOn, autoSwitch: autoSwitchOn, autoTravel: autoTravelOn } = useAutoPrefs(rpc)
+  // Host 侧仍提供自动周期的状态给账号卡片，但管理面板不再展示两个自动周期配置开关。
+  const { autoCheckin: autoCheckinOn, autoSwitch: autoSwitchOn } = useAutoPrefs(rpc)
+  // 「完成任务」的运行态来自宿主落盘状态（见 store/growth-run.ts）：
+  // 刷新页面后仍是 loading，不会因为组件 state 重置而变回可点击。
+  const growthRun = useStore($growthRunning)
 
   // 台账是持久化 nanostores atom，用 useStore 订阅它：
   // 台账一变就重渲染，`resourcesByAccount` 也随之重算——不再需要手工 tick。
@@ -110,6 +118,26 @@ function AccountsPage({
   // 告警；订阅 atom 把外部可变状态变成了 React 看得见的依赖。）
   const ledger = useStore(resourceHistoryStore)
   const rows = data?.accounts ?? []
+  const checkinState = checkinButtonState(rows, checkinAllBusy)
+  /**
+   * 一键签到的 `loading` 与 `disabled` **并存**（按钮同时接受两个属性），
+   * 各自表达一件不同的事，而不是用其中一个顶替另一个：
+   *  - `loading`：本轮签到正在跑 → 转圈，用户看得出「正在做事」；
+   *  - `disabled`：此刻确实不可提交（无账号 / 全部已签到 / 签到状态还没探测完）。
+   *
+   * 这里刻意**不让两者同时为真**：Semi 里 `disabled` 优先级高于 `loading`
+   * （文档原话；源码见 IconButton 的 `loading && !otherProps.disabled`），
+   * 同真时只渲染禁用态、**不出转圈**。把一个「正在跑」的态叠上 disabled，等于
+   * 把用户要的 loading 效果吃掉。所以：
+   *  - 执行中只给 loading，重复点击由 `checkinAll()` 的重入判断挡住；
+   *  - 「探测中」只给 disabled（状态未知时提交会误触发全量请求），并用
+   *    loading 文案说明原因。
+   */
+  const checkinExecuting = checkinState === 'executing'
+  const checkinProbing = checkinState === 'probing'
+  const checkinUnavailable = checkinState === 'unavailable'
+  const checkinLoading = checkinExecuting
+  const checkinDisabled = checkinProbing || checkinUnavailable
 
   // 每次探测都把实时资源包并入本地台账（写持久化 store 是副作用，放 effect）。
   useEffect(() => {
@@ -119,6 +147,9 @@ function AccountsPage({
       recordResources(row.id, liveResourcesOf(row))
     }
   }, [rows])
+
+  // 挂载时从宿主采纳成长任务运行态：页面刷新后宿主仍在跑时按钮保持 loading。
+  useEffect(() => { void hydrateGrowthRunState(rpc) }, [rpc])
 
   // 每个账号的分类资源包（可使用 → 已用完 → 已过期），卡片与弹框共用。
   // 从 `ledger` 快照读取（纯函数），因此依赖完整：台账变更既触发重渲染、
@@ -143,10 +174,58 @@ function AccountsPage({
     }
   }
 
+  const checkinAll = async (): Promise<void> => {
+    // 重入 guard：Semi 的 loading 不拦点击（只有 disabled 才拦），而执行中我们
+    // 刻意只给 loading，所以必须在这里挡第二轮。用 ref 而不是 state：
+    // setState 是异步的，连点两下时第二下可能在重渲染前就进来了。
+    if (checkinAllBusyRef.current || checkinDisabled) return
+    checkinAllBusyRef.current = true
+    setCheckinAllBusy(true)
+    const result = await rpc.call<{ accounts: Array<{ id: string, result?: string, error?: string, skipped?: boolean }> }>(CODEBUDDY_AUTH_CHANNEL, 'checkinAll', {})
+    checkinAllBusyRef.current = false
+    setCheckinAllBusy(false)
+    if (!result.ok) {
+      notify(false, describeRpcError(result))
+      return
+    }
+    const success = result.value.accounts.filter(item => item.result === 'success').length
+    const skipped = result.value.accounts.filter(item => item.result === 'already' || item.skipped === true).length
+    const failed = result.value.accounts.filter(item => item.result === 'error').length
+    notify(failed === 0, `${t('checkinDone')} ${success}; ${t('checkinSkipped')} ${skipped}${failed > 0 ? `; ${t('checkinFailedCount')} ${failed}` : ''}`)
+    onCheckinChange()
+    reload()
+  }
+
   const switchOne = async (id: string): Promise<void> => {
     const result = await rpc.call<AccountsResult>(CODEBUDDY_AUTH_CHANNEL, 'switchAccount', { id })
     if (result.ok) { notify(true, t('switchDone')); reload() }
     else { notify(false, describeRpcError(result)) }
+  }
+
+  /**
+   * 「完成任务」：触发全账号成长任务队列。
+   *
+   * 进入 loading 而不直接禁用是刻意的——执行要跑几十秒，禁用态看不出「正在做事」。
+   * 运行态写到共享 store 并落盘宿主，刷新页面后会从宿主恢复 loading。
+   * 因为 loading 不拦点击，重入由这里的 ref 判断挡住（比读 store 快照可靠：
+   * store 值要等重渲染才反映到闭包里）。
+   */
+  const runAllGrowth = async (): Promise<void> => {
+    if (runAllGrowthRef.current || growthRun.running) return
+    runAllGrowthRef.current = true
+    markGrowthRunning()
+    try {
+      const result = await rpc.call<GrowthRunResult>(CODEBUDDY_AUTH_CHANNEL, 'growthRunAll', {})
+      if (!result.ok) {
+        notify(false, result.error.message)
+        return
+      }
+      notify(true, t('growthRunDone'))
+    } finally {
+      runAllGrowthRef.current = false
+      // 无论成功失败都以宿主状态收尾，避免按钮永久停在 loading。
+      await hydrateGrowthRunState(rpc)
+    }
   }
 
   if (loading && data === undefined) return <PageLoading variant="accounts" />
@@ -158,24 +237,44 @@ function AccountsPage({
       <div className="dsh-codebuddy-panel-section-head">
         <div className="dsh-codebuddy-accounts-head-lead">
           <div className="dsh-codebuddy-panel-section-title"><strong>{t('accountsTitle')}</strong><span>{rows.length}</span></div>
-          <DshButton size="small" theme="solid" type="primary" disabled={loginWaiting} onClick={onAddAccount}>
-            {loginWaiting ? t('signingIn') : t('createUser')}
-          </DshButton>
+          <div className="dsh-codebuddy-accounts-head-primary">
+            <DshButton size="small" theme="solid" type="primary" disabled={loginWaiting} onClick={onAddAccount}>
+              {loginWaiting ? t('signingIn') : t('createUser')}
+            </DshButton>
+            {/* 「完成任务」紧贴「添加账号」右侧（10px 间距，见 accounts.scss）。
+                颜色风格与「添加账号」一致：同为主操作，用 solid + primary，
+                而不是次级动作区里的 light 按钮，否则同组两个按钮会被读成不同层级。 */}
+            <DshButton
+              size="small"
+              theme="solid"
+              type="primary"
+              loading={growthRun.running}
+              disabled={rows.length === 0}
+              onClick={() => { void runAllGrowth() }}
+            >
+              {t('growthRunAll')}
+            </DshButton>
+          </div>
         </div>
         <div className="dsh-codebuddy-accounts-head-actions">
           <AutoSwitchToggle checked={autoSwitchOn} t={t} onChange={(checked: boolean) => {
             $autoSwitch.set(checked)
             void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoSwitch', { enabled: checked })
           }} />
-          <AutoCheckinToggle checked={autoCheckinOn} t={t} onChange={(checked: boolean) => {
-            $autoCheckin.set(checked)
-            void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoCheckin', { enabled: checked })
-          }} />
-          <AutoTravelToggle checked={autoTravelOn} t={t} onChange={(checked: boolean) => {
-            $autoTravel.set(checked)
-            void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoTravel', { enabled: checked })
-          }} />
-          <DshButton size="small" theme="light" icon={<DshIconRefresh />} onClick={reload}>{t('refresh')}</DshButton>
+          {/* 两个属性并存、各表达一件事：loading = 本轮签到在跑（转圈），
+              disabled = 此刻不可提交（签到状态未探测完 / 全部已签到 / 无账号）。
+              刻意不让两者同时为真——Semi 的 disabled 优先于 loading，同真时
+              转圈不渲染；执行中的重复点击由 checkinAll() 的重入判断挡住。 */}
+          <DshButton
+            size="small"
+            theme="light"
+            loading={checkinLoading}
+            disabled={checkinDisabled}
+            onClick={() => { void checkinAll() }}
+          >
+            {checkinProbing ? t('checkinLoading') : t('checkinAll')}
+          </DshButton>
+          <DshButton size="small" theme="light" icon={<DshIconRefresh />} loading={loading} onClick={reload}>{t('refresh')}</DshButton>
         </div>
       </div>
       {rows.length === 0 ? (
@@ -204,6 +303,8 @@ function AccountsPage({
         row={resourceTarget}
         items={resourceTarget === undefined ? [] : resourcesByAccount.get(resourceTarget.id) ?? []}
         t={t}
+        rpc={rpc}
+        notify={notify}
         onClose={() => { setResourceTarget(undefined) }}
       />
     </div>
@@ -293,7 +394,7 @@ function TokenPanel({ title, hint, options, range, onRangeChange, refreshLabel, 
             label={t('tokenRangeLabel')}
             format={(key) => rangeLabelOf(key, t)}
           />
-          <DshIconButton size="small" theme="borderless" type="tertiary" icon={<DshIconRefresh />} aria-label={refreshLabel} onClick={onRefresh} />
+          <DshIconButton size="small" theme="borderless" type="tertiary" icon={<DshIconRefresh />} loading={loading} aria-label={refreshLabel} onClick={onRefresh} />
         </div>
       </div>
       <PanelBody loading={loading}>{children}</PanelBody>
@@ -351,7 +452,7 @@ function TokenStatsPage({ rpc, t }: { rpc: ConnectionRpc, t: Translate }): React
             title={t('tokenNoDataTitle')}
             description={<span>{t('tokenNoDataDesc')}<small>{t('tokenNoDataHint')}</small></span>}
           >
-            <DshButton type="primary" theme="light" icon={<DshIconRefresh />} onClick={overview.reload}>{t('refresh')}</DshButton>
+            <DshButton type="primary" theme="light" icon={<DshIconRefresh />} loading={overview.loading} onClick={overview.reload}>{t('refresh')}</DshButton>
           </DshEmpty>
         </DshCard>
       </div>

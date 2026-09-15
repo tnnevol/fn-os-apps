@@ -1,3 +1,2 @@
 
-
-export type TopTab = 'identity' | 'usage'
+export type TopTab = 'identity' | 'usage' | 'growth'

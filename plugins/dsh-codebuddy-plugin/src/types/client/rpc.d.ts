@@ -62,6 +62,76 @@ export interface AccountsResult {
   current?: AccountView
   accounts: AccountView[]
 }
+
+/** A growth task projected to the browser without live host objects. */
+export interface GrowthTaskView {
+  taskCode: string
+  title?: string
+  description?: string
+  taskDesc?: string
+  credit: number
+  energy: number
+  target: number
+  current: number
+  acceptStatus?: string
+  claimable: boolean
+  claimed: boolean
+  automatable: boolean
+  automationReason?: string
+}
+
+export interface GrowthTaskAccountView {
+  id: string
+  name: string
+  client: string
+  tasks: GrowthTaskView[]
+  error?: string
+}
+
+export interface GrowthTasksResult {
+  accounts: GrowthTaskAccountView[]
+}
+
+export interface GrowthRunItem {
+  code: string
+  status: 'pending' | 'already' | 'claimed' | 'unsupported' | 'error'
+  current?: number
+  target?: number
+  credit?: number
+  energy?: number
+  error?: string
+}
+
+export interface GrowthRunAccountResult {
+  id: string
+  name: string
+  client: string
+  status: 'ok' | 'partial' | 'error'
+  items: GrowthRunItem[]
+  error?: string
+  acceptError?: string
+}
+
+export interface GrowthRunResult {
+  accounts: GrowthRunAccountResult[]
+}
+
+/**
+ * Host-persisted growth task run state.
+ *
+ * The browser reads this on mount so a page refresh does not turn an in-flight
+ * run back into a clickable button. `running` is true while the host is working.
+ */
+export interface GrowthRunStateView {
+  running: boolean
+  mode?: 'all' | 'one'
+  accountId?: string
+  taskCode?: string
+  startedAt?: number
+  finishedAt?: number
+  summary?: string
+  inFlight?: boolean
+}
 /** The startLogin result shape. */
 export interface LoginStart {
   authUrl: string

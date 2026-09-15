@@ -1,5 +1,5 @@
 import type { RpcErr } from '../types/client/rpc'
-export type { RpcOk, RpcErr, RpcResult, ConnectionRpc, AuthStatus, AccountView, AccountsResult, LoginStart, LoginPoll, UsageWindow, UsageResult } from '../types/client/rpc'
+export type { RpcOk, RpcErr, RpcResult, ConnectionRpc, AuthStatus, AccountView, AccountsResult, GrowthTaskView, GrowthTaskAccountView, GrowthTasksResult, GrowthRunItem, GrowthRunAccountResult, GrowthRunResult, GrowthRunStateView, LoginStart, LoginPoll, UsageWindow, UsageResult } from '../types/client/rpc'
 
 
 /** Turn an RPC failure into a readable string. */

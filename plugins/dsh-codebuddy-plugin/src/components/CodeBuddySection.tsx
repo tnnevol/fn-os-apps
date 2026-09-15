@@ -84,8 +84,6 @@ export function CodeBuddySection({ rpc, t, panelRoute, close }: CodeBuddySection
   const showUsage = useStore($showUsage)
   const autoSwitch = useStore($autoSwitch)
   const autoSwitchPct = useStore($autoSwitchThreshold)
-  const autoCheckin = useStore($autoCheckin)
-  const autoTravel = useStore($autoTravel)
   const [editTarget, setEditTarget] = useState<string | undefined>(undefined)
   const [editNote, setEditNote] = useState('')
   // 各账号剩余额度快照（设置页用户信息面板展示；来源 panelStatus）。
@@ -237,16 +235,6 @@ export function CodeBuddySection({ rpc, t, panelRoute, close }: CodeBuddySection
     $autoSwitch.set(enabled)
     void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoSwitch', { enabled, thresholdPct: autoSwitchPct })
   }, [rpc, autoSwitchPct])
-
-  const toggleAutoCheckin = useCallback((enabled: boolean) => {
-    $autoCheckin.set(enabled)
-    void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoCheckin', { enabled })
-  }, [rpc])
-
-  const toggleAutoTravel = useCallback((enabled: boolean) => {
-    $autoTravel.set(enabled)
-    void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoTravel', { enabled })
-  }, [rpc])
 
   const changeAutoSwitchThreshold = useCallback((pct: number) => {
     // 走归一化写入：Slider 可能给出小数，直接 set 会让内存与存储不一致。
@@ -614,24 +602,6 @@ export function CodeBuddySection({ rpc, t, panelRoute, close }: CodeBuddySection
             />
             <span className="dsh-codebuddy-pref-slider-value">{autoSwitchPct}%</span>
           </div>
-        </DshForm.Slot>
-        <DshForm.Slot
-          label={<PreferenceLabel title={t('autoCheckin')} description={t('autoCheckinDesc')} />}
-        >
-          <DshSwitch
-            checked={autoCheckin}
-            onChange={(checked: boolean) => { toggleAutoCheckin(checked) }}
-            aria-label={t('autoCheckin')}
-          />
-        </DshForm.Slot>
-        <DshForm.Slot
-          label={<PreferenceLabel title={t('travelAuto')} description={t('travelAutoDesc')} />}
-        >
-          <DshSwitch
-            checked={autoTravel}
-            onChange={(checked: boolean) => { toggleAutoTravel(checked) }}
-            aria-label={t('travelAuto')}
-          />
         </DshForm.Slot>
         <DshForm.Slot
           label={<PreferenceLabel title={t('showUsage')} description={t('showUsageDesc')} />}

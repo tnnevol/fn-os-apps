@@ -1,8 +1,8 @@
 ---
 id: PLAN-FNOS-005
 title: PLAN-FNOS-005 CodeBuddy 插件移植成长任务与任务中心
-description: 实施 FNOS-005-01 至 FNOS-005-04：移植 workbuddy2api-panel 的成长任务列表/报名/领奖与任务中心全账号扫描、执行队列，复用 CodeBuddy 既有账号凭据与上报链路。
-status: planned
+description: 实施 FNOS-005-01 至 FNOS-005-07：移植成长任务与任务中心，并提供管理后台一键签到、一键完成成长任务快捷操作；复用 CodeBuddy 既有账号凭据与上报链路。
+status: completed
 owner: tnnevol
 planDate: 2026-09-14
 targetVersion: 5.4.0
@@ -16,9 +16,9 @@ lastVerified: 2026-09-14
 | 计划编号 | PLAN-FNOS-005 |
 | 计划日期 | 2026-09-14 |
 | 对应需求 | [FNOS-005 CodeBuddy 插件移植成长任务与任务中心](/requirements/FNOS-005-codebuddy-growth-tasks) |
-| 本轮功能 | `FNOS-005-01` 至 `FNOS-005-04`：成长任务列表与状态、单任务/一键完成 + 自动领奖、任务中心扫描与执行队列、不可自动化任务指引 |
-| 移植来源 | `workbuddy2api-panel`（`/Users/tnnevol/workspace/fork-pj/workbuddy2api-panel`） |
-| 计划状态 | <Badge type="info" text="规划中" /> |
+| 本轮功能 | `FNOS-005-01` 至 `FNOS-005-07`：成长任务列表与状态、单任务/一键完成 + 自动领奖、任务中心扫描与执行队列、不可自动化任务指引、Host 配置展示边界、管理后台一键签到、管理后台一键完成成长任务 |
+| 移植来源 | `workbuddy2api-panel`（`~/workspace/fork-pj/workbuddy2api-panel`） |
+| 计划状态 | <Badge type="tip" text="已完成" /> |
 
 ## 计划目标
 
@@ -31,7 +31,9 @@ lastVerified: 2026-09-14
 | 上游任务接口 | `plugins/dsh-codebuddy-plugin/src/host`（新增 growth tasks 客户端） | 移植列表/报名/领奖端点与字段口径，复用现有 AccessToken 与上报签名 |
 | 成长任务执行 | `plugins/dsh-codebuddy-plugin/src/host` | 单任务推进（行为事件上报 → 轮询进度 → 自动领奖），与现有 per-account 锁互斥 |
 | 任务中心 | `plugins/dsh-codebuddy-plugin/src/client` + host | 全账号扫描、执行队列状态机、实时进度 |
-| 面板 UI | `plugins/dsh-codebuddy-plugin/src/client` | 成长任务列表、执行队列、不可自动化项指引 |
+| 面板 UI | `plugins/dsh-codebuddy-plugin/src/client` | 成长任务列表、执行队列、不可自动化项指引；不展示自动签到/自动旅行配置 |
+| Host 配置边界 | `plugins/dsh-codebuddy-plugin/src/host`、`src/client/ui` | 不新增或透出自动签到、自动旅行两个配置项，不修改既有偏好行为 |
+| 管理后台操作区 | `plugins/dsh-codebuddy-plugin/src/client` + host RPC | 提供一键签到与一键完成成长任务按钮，按真实账号状态决定按钮可用性 |
 
 本轮不移植 `workbuddy2api-panel` 的账号池、Web 面板、Redis 镜像与开学季活动；不引入独立后端进程。
 
@@ -39,7 +41,7 @@ lastVerified: 2026-09-14
 
 ### P1：成长任务列表与状态
 
-状态：<Badge type="info" text="规划中" />
+状态：<Badge type="tip" text="已完成" />
 
 | 任务 ID | 对应验收 | 实现内容 | 验收 |
 | --- | --- | --- | --- |
@@ -48,7 +50,7 @@ lastVerified: 2026-09-14
 
 ### P1：单任务/一键完成 + 自动领奖
 
-状态：<Badge type="info" text="规划中" />
+状态：<Badge type="tip" text="已完成" />
 
 | 任务 ID | 对应验收 | 实现内容 | 验收 |
 | --- | --- | --- | --- |
@@ -57,7 +59,7 @@ lastVerified: 2026-09-14
 
 ### P1：任务中心扫描与队列
 
-状态：<Badge type="info" text="规划中" />
+状态：<Badge type="tip" text="已完成" />
 
 | 任务 ID | 对应验收 | 实现内容 | 验收 |
 | --- | --- | --- | --- |
@@ -66,23 +68,80 @@ lastVerified: 2026-09-14
 
 ### P2：不可自动化任务指引
 
-状态：<Badge type="info" text="规划中" />
+状态：<Badge type="tip" text="已完成" />
 
 | 任务 ID | 对应验收 | 实现内容 | 验收 |
 | --- | --- | --- | --- |
 | PLAN-FNOS-005-T04-01 | FNOS-005-04-AC-01 | 排除 `Expert_Philanthropy` 等并展示原因与操作说明 | 不进入自动执行路径 |
 
+### P1：Host 侧配置展示边界
+
+状态：<Badge type="tip" text="已完成" />
+
+| 任务 ID | 对应验收 | 实现内容 | 验收 |
+| --- | --- | --- | --- |
+| PLAN-FNOS-005-T05-01 | FNOS-005-05-AC-01/02 | 成长任务相关 Host/UI 不新增、不渲染「自动签到」「自动旅行」配置，也不修改既有偏好 | 页面无两个开关，且既有偏好行为保持不变 |
+
+### P1：管理后台一键签到
+
+状态：<Badge type="tip" text="已完成" />
+
+| 任务 ID | 对应验收 | 实现内容 | 验收 |
+| --- | --- | --- | --- |
+| PLAN-FNOS-005-T06-01 | FNOS-005-06-AC-01 | 汇总全部账号真实签到状态，全部已签到时禁用置灰；存在未签到账号且状态已加载时激活，加载中显示 loading | 按真实状态切换按钮，不误触发全量请求 |
+| PLAN-FNOS-005-T06-02 | FNOS-005-06-AC-02/03 | 点击仅执行未签到账号，跳过已签到/企业账号/不支持账号/探测失败账号，完成后回读真实状态并防重复点击 | 跳过与失败原因可见，按钮和账号卡片状态更新 |
+
+### P1：管理后台「完成任务」按钮
+
+状态：<Badge type="tip" text="已完成" />
+
+| 任务 ID | 对应验收 | 实现内容 | 验收 |
+| --- | --- | --- | --- |
+| PLAN-FNOS-005-T07-01 | FNOS-005-07-AC-01/02/04 | 按钮放在「添加账号」右侧（间距 10px）、文案「完成任务」，点击进入 loading 并触发全账号可自动化任务队列；不可自动化项排除，运行中防重复触发 | 按钮位置与 loading 交互正确，执行状态可见 |
+| PLAN-FNOS-005-T07-02 | FNOS-005-07-AC-03 | 队列结束后回读真实成长任务状态和自动领奖结果 | 展示最终进度与到账结果 |
+
+### P1：个人成长任务收拢到账号信息弹框
+
+状态：<Badge type="tip" text="已完成" />
+
+| 任务 ID | 对应验收 | 实现内容 | 验收 |
+| --- | --- | --- | --- |
+| PLAN-FNOS-005-T08-01 | FNOS-005-08-AC-01/02 | 账号信息弹框在「用量信息」后新增「成长任务」Tab，只渲染当前账号；弹框加大一档 | 个人详情不再出现在页面级区块，弹框不溢出 |
+| PLAN-FNOS-005-T08-02 | FNOS-005-08-AC-03 | 刷新按钮移入成长任务 Tab 内部；移除页面级成长任务区块与其刷新入口 | 弹框内可独立刷新 |
+| PLAN-FNOS-005-T08-03 | FNOS-005-08-AC-04 | 任务列表容器限定 `min(52vh, 620px)` 高度并 `overflow-y: auto`，与用量信息资源列表同口径；工具栏留在容器外 | 任务多时列表内滚动，弹框高度稳定 |
+| PLAN-FNOS-005-T08-04 | FNOS-005-08-AC-05/06 | 列表内新增「未完成 / 已完成」二级 button Tab（默认未完成、各带数量与空态）；分组抽为纯函数，只按 `claimed` 判定 | 达标未领奖仍留在未完成栏 |
+
+### P1：成长任务执行状态持久化
+
+状态：<Badge type="tip" text="已完成" />
+
+| 任务 ID | 对应验收 | 实现内容 | 验收 |
+| --- | --- | --- | --- |
+| PLAN-FNOS-005-T09-01 | FNOS-005-09-AC-01 | 宿主在 begin/finish 时原子落盘运行状态，并新增 `growthRunStatus` RPC；客户端 mount 时采纳 | 刷新页面后按钮保持 loading |
+| PLAN-FNOS-005-T09-02 | FNOS-005-09-AC-02 | 结束以宿主状态收尾解除 loading；孤儿 running 超预算判定为已结束 | 不出现永久 loading，也不出现刷新后按钮复活 |
+
 ## 完成状态
 
 | 阶段 | 状态 | 完成条件 |
 | --- | --- | --- |
-| P1 成长任务列表与状态 | <Badge type="info" text="规划中" /> | 列表只读展示进度/奖励/可自动化/已领取，不可自动化项有说明 |
-| P1 单任务/一键完成 + 自动领奖 | <Badge type="info" text="规划中" /> | 行为事件推进 + 轮询达标 + 自动领奖 + 幂等 |
-| P1 任务中心扫描与队列 | <Badge type="info" text="规划中" /> | 全账号扫描 + 执行队列状态机 + 实时进度 |
-| P2 不可自动化任务指引 | <Badge type="info" text="规划中" /> | 排除并展示说明 |
+| P1 成长任务列表与状态 | <Badge type="tip" text="已完成" /> | 列表只读展示进度/奖励/可自动化/已领取，不可自动化项有说明 |
+| P1 单任务/一键完成 + 自动领奖 | <Badge type="tip" text="已完成" /> | 行为事件推进 + 轮询达标 + 自动领奖 + 幂等 |
+| P1 任务中心扫描与队列 | <Badge type="tip" text="已完成" /> | 全账号扫描 + 执行队列状态机 + 实时进度 |
+| P2 不可自动化任务指引 | <Badge type="tip" text="已完成" /> | 排除并展示说明 |
+| P1 Host 侧配置展示边界 | <Badge type="tip" text="已完成" /> | 不展示、不新增、不修改自动签到/自动旅行配置 |
+| P1 管理后台一键签到 | <Badge type="tip" text="已完成" /> | 全已签到禁用，有未签到激活；只处理未签到账号并回读状态 |
+| P1 管理后台「完成任务」按钮 | <Badge type="tip" text="已完成" /> | 紧贴「添加账号」右侧、loading 交互，触发队列并回读结果 |
+| P1 个人成长任务收拢到弹框 | <Badge type="tip" text="已完成" /> | 弹框成长任务 Tab、弹框加大、刷新入 Tab、列表限高可滚动、未完成/已完成分栏、页面级区块移除 |
+| P1 执行状态持久化 | <Badge type="tip" text="已完成" /> | 运行态落盘宿主，刷新后仍为 loading，结束后解除 |
 
 ## 变更记录
 
 | 日期 | 变更 | 说明 |
 | --- | --- | --- |
 | 2026-09-14 | 建立 PLAN-FNOS-005 | 配套 FNOS-005 建立实施计划骨架，范围锁定成长任务与任务中心；开学季活动不在本轮 |
+| 2026-09-14 | 补充 Host 侧配置展示边界 | 新增 T05-01，约束成长任务移植不得展示、不新增、不修改既有自动签到/自动旅行配置行为 |
+| 2026-09-14 | 新增管理后台快捷操作 | 新增 T06-01/T06-02 一键签到与 T07-01/T07-02 一键完成成长任务，明确按钮状态、跳过规则、防重复和结果回读 |
+| 2026-09-14 | PLAN-FNOS-005 完成实现与自验 | 全部阶段任务已落地；插件 56 个测试文件/670 条测试、构建、根全量检查和 CodeBuddy/WorkBuddy 实际账号列表接口测试通过 |
+| 2026-09-14 | 调整成长任务 UI 与执行状态 | 新增 T08-01/T08-02（个人详情入弹框 Tab、弹框加大、刷新入 Tab）与 T09-01/T09-02（运行态落盘宿主、刷新后保持 loading）；T07 改为「完成任务」按钮并移到「添加账号」右侧、点击 loading |
+| 2026-09-14 | 成长任务列表限高滚动 | 新增 T08-03：列表容器限定 `min(52vh, 620px)` 并 `overflow-y: auto`，与用量信息资源列表同口径；同时把「完成任务」按钮配色对齐「添加账号」 |
+| 2026-09-14 | 成长任务列表分栏 | 新增 T08-04：Tab 内再分「未完成 / 已完成」两栏（默认未完成），分组抽为纯函数并只按 `claimed` 判定 |
