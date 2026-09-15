@@ -74,6 +74,18 @@
    任务执行日志抽屉（SideSheet placement="bottom"）
    --------------------------------------------------------------------------- */
 
+/* 底部留白：让终端块与抽屉下边缘不完全贴齐。
+   Semi 默认给 body 的是 `padding: 0 24px`（vertical 0），这里只补下边距。
+
+   刻意**不**在这里加 `box-sizing`：`.semi-sidesheet-body` 是 `flex: 1` 的弹性项，
+   flex 布局在计算其外侧尺寸时已计入 padding，因此这 15px 不会造成溢出或裁切
+   （已用浏览器实测：加 padding-bottom 前后 `scrollHeight === clientHeight`，
+   内容盒高度仅相应减少 15px）。真正需要 `border-box` 的是下面那个
+   `height: 100%` 的子元素——它按 content-box 算时会被自身 padding 顶出容器。 */
+.dsh-codebuddy-growth-log-sheet .semi-sidesheet-body {
+  padding-bottom: 15px;
+}
+
 /* 抽屉内容区：纵向排列，占满 body 高度。
    刻意**不**整体滚动：标题与状态行常驻，只有下面的日志块滚。
 

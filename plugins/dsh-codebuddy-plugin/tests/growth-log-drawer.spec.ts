@@ -162,6 +162,16 @@ describe('抽屉观感与滚动', () => {
     expect(time).not.toBe(account)
   })
 
+  it('抽屉底部留 15px（作用在 .semi-sidesheet-body 上）', () => {
+    const GROWTH_SCSS = readFileSync(`${ROOT}/styles/growth-tasks.scss`, 'utf8')
+    // 必须用后代选择器且限定在本组件的 sheet 类下：className 落在 .semi-sidesheet
+    // 外壳上，body 是其后代；不加限定会污染其它使用 SideSheet 的地方。
+    const rule = /\.dsh-codebuddy-growth-log-sheet\s+\.semi-sidesheet-body\s*\{([^}]*)\}/.exec(GROWTH_SCSS)?.[1] ?? ''
+    expect(rule).toMatch(/padding-bottom:\s*15px/)
+    // 只补下边距，不覆盖 Semi 的左右 24px。
+    expect(rule).not.toMatch(/padding:\s*0/)
+  })
+
   it('内容区用 border-box，避免「内容没超出也出滚动条」', () => {
     const GROWTH_SCSS = readFileSync(`${ROOT}/styles/growth-tasks.scss`, 'utf8')
     const body = /\.dsh-codebuddy-growth-log-body\s*\{([^}]*)\}/.exec(GROWTH_SCSS)?.[1] ?? ''

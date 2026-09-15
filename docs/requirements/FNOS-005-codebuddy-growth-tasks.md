@@ -180,6 +180,7 @@ lastVerified: 2026-09-14
 - `FNOS-005-10-AC-06`：抽屉占视口下半部分（`50vh`），上半部分为半透明磨砂蒙层（DSH 的 `--dsw-alias-bg-mask-1` + `backdrop-filter: blur`），被遮住的账号卡片仍可辨认。
 - `FNOS-005-10-AC-07`：日志区固定高度并在内部滚动；抽屉的标题与状态行常驻，长日志不把标题顶出视口；内容未超出高度时**不得**出现滚动条（内容区 `box-sizing: border-box`，Semi 的 `.semi-sidesheet-body` 自带 `overflow: auto`，按 content-box 算会被 padding 顶出假滚动条）。
 - `FNOS-005-10-AC-09`：滚动条与其底色处于**同一视觉面板**（深色终端外壳），不复用「外层滚动 + 内层 `pre` 变色」的分离结构——否则滚动条会落在另一种背景上、看起来像溢出。
+- `FNOS-005-10-AC-11`：抽屉内容与下边缘留 15px 间距（`.semi-sidesheet-body` 的 `padding-bottom`，作用域限定在本组件）；该间距不得造成内容溢出或裁切。
 - `FNOS-005-10-AC-10`：日志状态按语义着色（成功绿 / 失败红 / 待办黄 / 进行中蓝 / 跳过灰），未登记状态回落为中性色，不误标成功或失败。
 - `FNOS-005-10-AC-08`：「查看日志」按钮不带 `loading` / `disabled`，随时可点。
 
@@ -218,3 +219,4 @@ lastVerified: 2026-09-14
 | 2026-09-14 | 日志抽屉观感与入口调整 | 抽屉改为占半屏（50vh）且上半屏用 DSH mask token 做半透明磨砂；日志区固定高度内部滚动；去掉「准备中」空态改为具体起始日志（开始/读取任务列表/结束）；恢复常驻「查看日志」按钮且不带 loading/disabled |
 | 2026-09-14 | 修掉日志抽屉的假滚动条 | 内容区补 `box-sizing: border-box` + `overflow: hidden`：无全局 border-box 重置时，`height:100%` 加 8px padding 会比容器高 8px，导致日志很短也出现滚动条 |
 | 2026-09-14 | 日志改用终端风格 | 弃用 `CodeHighlight`（只接收纯字符串、Semi 未加载任何 Prism 语言词法，无法分段着色）改为自渲染逐行；深色底与滚动条同在一层，修掉「滚动条落在另一种背景上像溢出」；时间/账号/状态分别着色 |
+| 2026-09-14 | 抽屉底部留白 15px | `.semi-sidesheet-body` 补 `padding-bottom: 15px`（限本组件作用域，保留 Semi 的左右 24px）；已用浏览器实测不产生溢出或裁切 |
