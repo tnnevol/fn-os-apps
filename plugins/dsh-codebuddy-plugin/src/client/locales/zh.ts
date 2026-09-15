@@ -165,7 +165,6 @@ export const zh: { [Key in CodeBuddyLocaleKey]: string } = {
   tokenNoSession: '暂无会话用量',
   tokenNoDataTitle: '还没有 CodeBuddy Token 活动',
   tokenNoDataDesc: '使用 CodeBuddy 模型发起一次对话，首个模型响应完成后会在这里显示用量。',
-  tokenNoDataHint: '仅统计已保存到 DSH 会话中的 CodeBuddy 调用。',
   refresh: '刷新',
   panelOpen: '打开 CodeBuddy 管理面板',
   autoSwitchPct: '切换阈值',

@@ -418,11 +418,13 @@ function TokenStatsPage({ rpc, t }: { rpc: ConnectionRpc, t: Translate }): React
       <div className="dsh-codebuddy-panel-page dsh-codebuddy-panel-tokens">
         <DshCard className="dsh-codebuddy-token-empty-card">
           <DshEmpty
-            image={<DshIconCommand size="extra-large" />}
+            image={<CodeBuddyLogo size={64} />}
             title={t('tokenNoDataTitle')}
-            description={<span>{t('tokenNoDataDesc')}<small>{t('tokenNoDataHint')}</small></span>}
+            description={t('tokenNoDataDesc')}
           >
-            <DshButton type="primary" theme="light" icon={<DshIconRefresh />} loading={overview.loading} onClick={overview.reload}>{t('refresh')}</DshButton>
+            <div className="dsh-codebuddy-token-empty-action">
+              <DshButton type="primary" theme="light" icon={<DshIconRefresh />} loading={overview.loading} onClick={overview.reload}>{t('refresh')}</DshButton>
+            </div>
           </DshEmpty>
         </DshCard>
       </div>

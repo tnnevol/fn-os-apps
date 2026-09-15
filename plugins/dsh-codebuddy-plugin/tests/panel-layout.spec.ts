@@ -46,6 +46,22 @@ const TOKEN_SCSS = readFileSync(
  *  从 index.scss 迁入 panel-shell.scss（PANEL_SCSS 读取的就是它）。 */
 const SHELL_SCSS = PANEL_SCSS
 
+describe('Token 空状态视觉与操作', () => {
+  it('使用彩色 CodeBuddy Logo，不再显示命令符号', () => {
+    const emptyStart = PANEL.indexOf("if (!hasAnyActivity)")
+    const empty = PANEL.slice(emptyStart, PANEL.indexOf("const cacheRateOf", emptyStart))
+    expect(empty).toContain('<CodeBuddyLogo size={64} />')
+    expect(empty).not.toContain('DshIconCommand size="extra-large"')
+  })
+
+  it('移除仅统计已保存会话的提示，并给刷新动作独立的居中容器', () => {
+    expect(PANEL).not.toContain('tokenNoDataHint')
+    expect(PANEL).toContain('dsh-codebuddy-token-empty-action')
+    expect(TOKEN_SCSS).toMatch(/\.dsh-codebuddy-token-empty-action\s*\{[^}]*display:\s*flex/)
+    expect(TOKEN_SCSS).toMatch(/\.dsh-codebuddy-token-empty-action\s*\{[^}]*justify-content:\s*center/)
+  })
+})
+
 describe('面板布局使用 Semi Layout 组件', () => {
   const shell = PANEL.slice(PANEL.indexOf('return (\n    <div className="dsh-codebuddy-panel"'))
 

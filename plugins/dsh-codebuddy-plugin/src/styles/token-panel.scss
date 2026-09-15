@@ -194,6 +194,11 @@
   color: var(--dcb-signal);
   font-size: 52px;
 }
+.dsh-codebuddy-token-empty-card .dsh-codebuddy-token-empty-action {
+  display: flex;
+  width: 100%;
+  justify-content: center;
+}
 .dsh-codebuddy-token-empty-card .semi-empty-title { color: var(--dsw-alias-label-primary); }
 .dsh-codebuddy-token-empty-card .semi-empty-description { color: var(--dsw-alias-label-secondary); }
 .dsh-codebuddy-token-empty-card .semi-empty-description span { display: grid; gap: 8px; line-height: 1.6; }

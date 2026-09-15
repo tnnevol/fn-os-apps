@@ -166,7 +166,6 @@ export const en = {
   tokenNoSession: 'No session usage',
   tokenNoDataTitle: 'No CodeBuddy token activity yet',
   tokenNoDataDesc: 'Start a conversation with a CodeBuddy model. Usage will appear here after the first completed model response.',
-  tokenNoDataHint: 'Only CodeBuddy calls saved in DSH sessions are included.',
   refresh: 'Refresh',
   panelOpen: 'Open CodeBuddy panel',
   autoSwitchPct: 'Switch threshold',
