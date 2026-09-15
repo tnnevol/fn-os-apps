@@ -38,6 +38,8 @@ export {
   DshBadge,
   DshTabs,
   DshList,
+  DshSideSheet,
+  DshCodeHighlight,
   DshAvatarGroup,
   DshScrollItem,
   DshIconChangelog,

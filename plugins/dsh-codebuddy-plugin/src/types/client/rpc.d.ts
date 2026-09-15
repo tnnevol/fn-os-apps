@@ -117,6 +117,20 @@ export interface GrowthRunResult {
 }
 
 /**
+ * One line of the growth task execution log.
+ *
+ * The host appends these as it processes each task, so the browser can show
+ * concrete progress instead of only "running".
+ */
+export interface GrowthRunLogEntryView {
+  at: number
+  account: string
+  code: string
+  status: string
+  message?: string
+}
+
+/**
  * Host-persisted growth task run state.
  *
  * The browser reads this on mount so a page refresh does not turn an in-flight
@@ -131,6 +145,8 @@ export interface GrowthRunStateView {
   finishedAt?: number
   summary?: string
   inFlight?: boolean
+  /** 逐条执行日志（按发生顺序）；抽屉据此展示具体做了什么。 */
+  log?: GrowthRunLogEntryView[]
 }
 /** The startLogin result shape. */
 export interface LoginStart {

@@ -24,7 +24,7 @@ import type { ReactNode } from 'react'
 import { useStore } from '@nanostores/react'
 import {
   DshButton, DshCard, DshEmpty, DshIconButton,
-  DshIconArrowLeft, DshIconCommand, DshIconElementStroked, DshIconRefresh,
+  DshIconArrowLeft, DshIconCommand, DshIconElementStroked, DshIconList, DshIconRefresh,
   DshIconUser, DshInput, DshLayout, DshModal, DshNav, DshTag, DshToast,
   DshTooltip,
 } from '@tnnevol/dsh-semi-ui'
@@ -53,6 +53,7 @@ import { useAutoPrefs } from './hooks/use-auto-prefs.ts'
 import { AccountCardImpl as AccountCard } from './ui/account-card.tsx'
 import { AccountResourcesModalImpl as AccountResourcesModal } from './ui/account-resources-modal.tsx'
 import { ActivityGridImpl as ActivityGrid } from './ui/activity-grid.tsx'
+import { GrowthRunDrawer } from './ui/growth-run-drawer.tsx'
 import {
   AutoCheckinToggleImpl as AutoCheckinToggle,
   AutoSwitchToggleImpl as AutoSwitchToggle,
@@ -107,6 +108,8 @@ function AccountsPage({
   const checkinAllBusyRef = useRef(false)
   /** 「完成任务」重入标志（同上：loading 不拦点击）。 */
   const runAllGrowthRef = useRef(false)
+  /** 执行日志抽屉是否展开（点「完成任务」自动展开，也可手动开关）。 */
+  const [logOpen, setLogOpen] = useState(false)
   const [resourceTarget, setResourceTarget] = useState<PanelAccountRow | undefined>(undefined)
   // 三个 auto* 偏好的展示 / 同步 host 都封装在 hook 里——这样本页与设置页同源。
   const { autoCheckin: autoCheckinOn, autoSwitch: autoSwitchOn, autoTravel: autoTravelOn } = useAutoPrefs(rpc)
@@ -216,6 +219,8 @@ function AccountsPage({
     if (runAllGrowthRef.current || growthRun.running) return
     runAllGrowthRef.current = true
     markGrowthRunning()
+    // 点「完成任务」就展开日志抽屉：执行要跑几十秒，用户需要看到进度而不是干等。
+    setLogOpen(true)
     try {
       const result = await rpc.call<GrowthRunResult>(CODEBUDDY_AUTH_CHANNEL, 'growthRunAll', {})
       if (!result.ok) {
@@ -285,6 +290,17 @@ function AccountsPage({
             {checkinProbing ? t('checkinLoading') : t('checkinAll')}
           </DshButton>
           <DshButton size="small" theme="light" icon={<DshIconRefresh />} loading={loading} onClick={reload}>{t('refresh')}</DshButton>
+          {/* 日志抽屉的手动入口：跑完后用户仍可打开回看最近一轮。
+              执行中该按钮也显示 loading，与「完成任务」同源（$growthRunning）。 */}
+          <DshButton
+            size="small"
+            theme="light"
+            icon={<DshIconList />}
+            loading={growthRun.running}
+            onClick={() => { setLogOpen(true) }}
+          >
+            {t('growthLogOpen')}
+          </DshButton>
         </div>
       </div>
       {rows.length === 0 ? (
@@ -317,6 +333,7 @@ function AccountsPage({
         notify={notify}
         onClose={() => { setResourceTarget(undefined) }}
       />
+      <GrowthRunDrawer rpc={rpc} t={t} visible={logOpen} onClose={() => { setLogOpen(false) }} />
     </div>
   )
 }

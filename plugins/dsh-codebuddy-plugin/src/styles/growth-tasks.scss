@@ -69,3 +69,31 @@
   flex-wrap: wrap;
   font-size: 12px;
 }
+
+/* ---------------------------------------------------------------------------
+   任务执行日志抽屉（SideSheet placement="bottom"）
+   --------------------------------------------------------------------------- */
+
+/* 抽屉内容区：日志可能很长，整体纵向可滚；内边距与弹框内的列表对齐。 */
+.dsh-codebuddy-growth-log-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: 100%;
+  padding: 4px 2px;
+  overflow-y: auto;
+}
+
+/* 日志正文：等宽 + 不折行 + 横向可滚。
+   日志每行是「时间 账号 任务 状态 说明」，折行会把一条记录切成两行、更难扫读；
+   横向滚动让长说明（错误堆栈、HTTP 文案）保持在同一行里。 */
+.dsh-codebuddy-growth-log-sheet .semi-codeHighlight {
+  font-size: 12px;
+}
+
+.dsh-codebuddy-growth-log-sheet pre,
+.dsh-codebuddy-growth-log-sheet code {
+  white-space: pre;
+  overflow-x: auto;
+  font-family: var(--dsw-font-family-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+}

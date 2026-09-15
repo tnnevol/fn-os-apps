@@ -118,3 +118,96 @@ describe('逐任务在跑状态隔离', () => {
     expect(isGrowthTaskRunning([], hostState, 'acct-1', 'chat_5')).toBe(false)
   })
 })
+
+describe('执行日志格式化', () => {
+  it('按行输出时间 / 账号 / 任务 / 状态 / 说明', async () => {
+    const { formatGrowthRunLog } = await import('../src/client/store/growth-run.ts')
+    const text = formatGrowthRunLog([
+      { at: new Date(2026, 0, 2, 3, 4, 5).getTime(), account: '4993', code: 'chat_5', status: 'claimed', message: '领奖 +100 积分 +0 能量' },
+    ])
+    // 单条时 code 宽度即自身长度（不额外补空格）；状态列补到 11 字符。
+    expect(text).toBe('03:04:05 [4993] chat_5  claimed    领奖 +100 积分 +0 能量')
+  })
+
+  it('任务 code 补齐到最长者，让状态列对齐', async () => {
+    const { formatGrowthRunLog } = await import('../src/client/store/growth-run.ts')
+    const at = new Date(2026, 0, 2, 0, 0, 0).getTime()
+    const lines = formatGrowthRunLog([
+      { at, account: 'a', code: 'chat_5', status: 'pending', message: 'x' },
+      { at, account: 'a', code: 'Expert_team_use_3', status: 'error', message: 'y' },
+    ]).split('\n')
+    // 两行的状态列起始位置必须相同（按最长 code 补齐）。
+    expect(lines[0]!.indexOf('pending')).toBe(lines[1]!.indexOf('error'))
+  })
+
+  it('无日志或空数组返回空串（调用方据此显示空态）', async () => {
+    const { formatGrowthRunLog } = await import('../src/client/store/growth-run.ts')
+    expect(formatGrowthRunLog(undefined)).toBe('')
+    expect(formatGrowthRunLog([])).toBe('')
+  })
+
+  it('省略 message 时不留下尾部空格', async () => {
+    const { formatGrowthRunLog } = await import('../src/client/store/growth-run.ts')
+    const text = formatGrowthRunLog([
+      { at: new Date(2026, 0, 2, 0, 0, 0).getTime(), account: 'a', code: 'chat_5', status: 'claimed' },
+    ])
+    expect(text.endsWith('claimed')).toBe(true)
+  })
+})
+
+describe('日志落盘', () => {
+  it('begin 清空上一轮日志，append 逐条追加', async () => {
+    const { appendGrowthRunLog, beginGrowthRun, loadGrowthRunState } = await import('../src/host/growth-run.ts')
+    await beginGrowthRun('all')
+    await appendGrowthRunLog({ account: 'a', code: 'chat_5', status: 'claimed', message: 'ok' })
+    await appendGrowthRunLog({ account: 'b', code: 'first_buddy', status: 'error', message: 'boom' })
+
+    const state = await loadGrowthRunState()
+    expect(state?.log?.map(entry => entry.code)).toEqual(['chat_5', 'first_buddy'])
+    expect(state?.log?.[0]?.at).toBeTypeOf('number')
+
+    // 新一轮开始必须清空，否则抽屉会把上一轮结果混进来。
+    await beginGrowthRun('all')
+    expect((await loadGrowthRunState())?.log).toEqual([])
+  })
+
+  it('并发追加不丢日志（账号并发 4 时的读-改-写互斥）', async () => {
+    const { appendGrowthRunLog, beginGrowthRun, loadGrowthRunState } = await import('../src/host/growth-run.ts')
+    await beginGrowthRun('all')
+    // 模拟 forEachAccount 并发 4：不串行的话「读-改-写」会互相覆盖。
+    await Promise.all(Array.from({ length: 20 }, (_, i) =>
+      appendGrowthRunLog({ account: `acct-${i}`, code: `task_${i}`, status: 'claimed' })))
+
+    const log = (await loadGrowthRunState())?.log ?? []
+    expect(log).toHaveLength(20)
+    expect(new Set(log.map(entry => entry.code)).size).toBe(20)
+  })
+
+  it('超过上限丢最早的，保留最近进度', async () => {
+    const { appendGrowthRunLog, beginGrowthRun, loadGrowthRunState, MAX_LOG_ENTRIES } = await import('../src/host/growth-run.ts')
+    await beginGrowthRun('all')
+    for (let i = 0; i < MAX_LOG_ENTRIES + 5; i += 1) {
+      await appendGrowthRunLog({ account: 'a', code: `t${i}`, status: 'claimed' })
+    }
+    const log = (await loadGrowthRunState())?.log ?? []
+    expect(log).toHaveLength(MAX_LOG_ENTRIES)
+    // 最早 5 条被丢弃，最新一条仍在。
+    expect(log[0]?.code).toBe('t5')
+    expect(log.at(-1)?.code).toBe(`t${MAX_LOG_ENTRIES + 4}`)
+  })
+
+  it('finish 保留日志并标记结束（不被在途 append 覆盖）', async () => {
+    const { appendGrowthRunLog, beginGrowthRun, finishGrowthRun, loadGrowthRunState } = await import('../src/host/growth-run.ts')
+    await beginGrowthRun('all')
+    // 追加与结束并发入队：finish 必须排在 append 之后，不能把 running 覆盖回 true。
+    await Promise.all([
+      appendGrowthRunLog({ account: 'a', code: 'chat_5', status: 'claimed' }),
+      finishGrowthRun('all:1 accounts'),
+    ])
+
+    const state = await loadGrowthRunState()
+    expect(state?.running).toBe(false)
+    expect(state?.summary).toBe('all:1 accounts')
+    expect(state?.log?.map(entry => entry.code)).toEqual(['chat_5'])
+  })
+})

@@ -28,6 +28,9 @@ describe('DSH Semi UI facade', () => {
       'DshToast',
       'DshTooltip',
       'DshPopover',
+      // 任务执行日志抽屉用到：底部抽屉 + 等宽代码块。
+      'DshSideSheet',
+      'DshCodeHighlight',
     ] as const
 
     for (const exportName of componentExports) {

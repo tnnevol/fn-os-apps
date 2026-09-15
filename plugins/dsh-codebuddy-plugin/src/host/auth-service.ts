@@ -30,7 +30,7 @@ import { BackoffGate, mapWithConcurrency, RunGuard } from './concurrency.ts'
 import { claimTravel, departTravel, fetchTravelLocations, fetchTravelStatus } from './travel.ts'
 import { acceptGrowthTasks, claimGrowthTask, isAutomatableGrowthTask, listGrowthTasks } from './growth-tasks.ts'
 import { runGrowthTaskAction } from './growth-actions.ts'
-import { beginGrowthRun, finishGrowthRun, loadGrowthRunState } from './growth-run.ts'
+import { appendGrowthRunLog, beginGrowthRun, finishGrowthRun, loadGrowthRunState } from './growth-run.ts'
 import { getLoginAccount, pollAuthToken, requestAuthState } from './codebuddy.ts'
 import {
   clearStorage,
@@ -1659,11 +1659,18 @@ export class CodeBuddyAuthService {
     try {
       const rows = await this.forEachAccount(async item => {
         if (item.id !== id) return undefined
-        if (item.expired) return { id: item.id, name: item.name, client: item.client, status: 'error', items: [], error: 'refresh token expired' }
+        if (item.expired) {
+          await appendGrowthRunLog({ account: item.name, code: taskCode, status: 'error', message: 'refresh token expired' }).catch(() => {})
+          return { id: item.id, name: item.name, client: item.client, status: 'error', items: [], error: 'refresh token expired' }
+        }
         const tasks = await listGrowthTasks(item.identity, signal)
         const task = tasks.find(candidate => candidate.taskCode === taskCode)
-        if (task === undefined) return { id: item.id, name: item.name, client: item.client, status: 'error', items: [], error: 'task not found' }
+        if (task === undefined) {
+          await appendGrowthRunLog({ account: item.name, code: taskCode, status: 'error', message: '账号下没有该任务' }).catch(() => {})
+          return { id: item.id, name: item.name, client: item.client, status: 'error', items: [], error: 'task not found' }
+        }
         if (!isAutomatableGrowthTask(task)) {
+          await appendGrowthRunLog({ account: item.name, code: task.taskCode, status: 'unsupported', message: task.automationReason ?? 'manual task' }).catch(() => {})
           return { id: item.id, name: item.name, client: item.client, status: 'ok', items: [{ code: task.taskCode, status: 'unsupported', current: task.current, target: task.target, error: task.automationReason ?? 'manual task' }] }
         }
         if (task.acceptStatus !== 'accepted' && task.acceptStatus !== 'completed') {
@@ -1672,7 +1679,10 @@ export class CodeBuddyAuthService {
         let latest = task
         if (!latest.claimable) {
           const action = await runGrowthTaskAction(item.identity, task.taskCode, task.current, task.target, signal)
-          if (!action.supported) return { id: item.id, name: item.name, client: item.client, status: 'ok', items: [{ code: task.taskCode, status: 'unsupported', current: task.current, target: task.target, error: action.message }] }
+          if (!action.supported) {
+            await appendGrowthRunLog({ account: item.name, code: task.taskCode, status: 'unsupported', message: action.message }).catch(() => {})
+            return { id: item.id, name: item.name, client: item.client, status: 'ok', items: [{ code: task.taskCode, status: 'unsupported', current: task.current, target: task.target, error: action.message }] }
+          }
           for (let attempt = 0; attempt < GROWTH_POLL_ATTEMPTS; attempt += 1) {
             if (attempt > 0) await waitForGrowthPoll(signal)
             const refreshed = await listGrowthTasks(item.identity, signal)
@@ -1680,9 +1690,21 @@ export class CodeBuddyAuthService {
             if (latest.claimable || latest.claimed) break
           }
         }
-        if (!latest.claimable) return { id: item.id, name: item.name, client: item.client, status: 'ok', items: [{ code: task.taskCode, status: 'pending', current: latest.current, target: latest.target }] }
+        if (!latest.claimable) {
+          await appendGrowthRunLog({ account: item.name, code: task.taskCode, status: 'pending', message: `进度 ${latest.current}/${latest.target}，未达标` }).catch(() => {})
+          return { id: item.id, name: item.name, client: item.client, status: 'ok', items: [{ code: task.taskCode, status: 'pending', current: latest.current, target: latest.target }] }
+        }
         const claim = await claimGrowthTask(item.identity, task.taskCode, signal)
-        return { id: item.id, name: item.name, client: item.client, status: 'ok', items: [{ code: task.taskCode, status: claim.alreadyClaimed ? 'already' : 'claimed', credit: claim.credit, energy: claim.energy }] }
+        const status = claim.alreadyClaimed ? 'already' : 'claimed'
+        await appendGrowthRunLog({
+          account: item.name,
+          code: task.taskCode,
+          status,
+          ...claim.alreadyClaimed
+            ? { message: '奖励此前已领取' }
+            : { message: `领奖 +${claim.credit} 积分 +${claim.energy} 能量` },
+        }).catch(() => {})
+        return { id: item.id, name: item.name, client: item.client, status: 'ok', items: [{ code: task.taskCode, status, credit: claim.credit, energy: claim.energy }] }
       }, signal)
       const account = rows.find(row => row !== undefined)
       const outcome = account === undefined ? { status: 'error', error: 'account not found' } : account
@@ -1714,7 +1736,9 @@ export class CodeBuddyAuthService {
     await beginGrowthRun('all')
     try {
       const rows = await this.forEachAccount(async item => {
+        // 账号级日志：让抽屉里能看到「这个号被跳过/失败了」而不只是没有输出。
         if (item.expired) {
+          await appendGrowthRunLog({ account: item.name, code: '-', status: 'error', message: 'refresh token expired' }).catch(() => {})
           return { id: item.id, name: item.name, client: item.client, status: 'error', items: [], error: 'refresh token expired' }
         }
         try {
@@ -1726,8 +1750,12 @@ export class CodeBuddyAuthService {
           let acceptError: string | undefined
           try {
             await acceptGrowthTasks(item.identity, acceptCodes, signal)
+            if (acceptCodes.length > 0) {
+              await appendGrowthRunLog({ account: item.name, code: '-', status: 'accepted', message: `报名 ${acceptCodes.length} 个任务` }).catch(() => {})
+            }
           } catch (error) {
             acceptError = error instanceof Error ? error.message : String(error)
+            await appendGrowthRunLog({ account: item.name, code: '-', status: 'error', message: `报名失败：${acceptError}` }).catch(() => {})
           }
           const items = [] as Array<Record<string, unknown>>
           for (const task of pending) {
@@ -1736,6 +1764,7 @@ export class CodeBuddyAuthService {
               try {
                 const action = await runGrowthTaskAction(item.identity, task.taskCode, task.current, task.target, signal)
                 if (!action.supported) {
+                  await appendGrowthRunLog({ account: item.name, code: task.taskCode, status: 'unsupported', message: action.message }).catch(() => {})
                   items.push({ code: task.taskCode, status: 'unsupported', current: task.current, target: task.target, error: action.message })
                   continue
                 }
@@ -1746,24 +1775,38 @@ export class CodeBuddyAuthService {
                   if (latest.claimable || latest.claimed) break
                 }
               } catch (error) {
-                items.push({ code: task.taskCode, status: 'error', current: task.current, target: task.target, error: error instanceof Error ? error.message : String(error) })
+                const message = error instanceof Error ? error.message : String(error)
+                await appendGrowthRunLog({ account: item.name, code: task.taskCode, status: 'error', message }).catch(() => {})
+                items.push({ code: task.taskCode, status: 'error', current: task.current, target: task.target, error: message })
                 continue
               }
             }
             if (!latest.claimable) {
+              await appendGrowthRunLog({ account: item.name, code: task.taskCode, status: 'pending', message: `进度 ${latest.current}/${latest.target}，未达标` }).catch(() => {})
               items.push({ code: task.taskCode, status: 'pending', current: latest.current, target: latest.target })
               continue
             }
             try {
               const claim = await claimGrowthTask(item.identity, task.taskCode, signal)
+              const status = claim.alreadyClaimed ? 'already' : 'claimed'
+              await appendGrowthRunLog({
+                account: item.name,
+                code: task.taskCode,
+                status,
+                ...claim.alreadyClaimed
+                  ? { message: '奖励此前已领取' }
+                  : { message: `领奖 +${claim.credit} 积分 +${claim.energy} 能量` },
+              }).catch(() => {})
               items.push({
                 code: task.taskCode,
-                status: claim.alreadyClaimed ? 'already' : 'claimed',
+                status,
                 credit: claim.credit,
                 energy: claim.energy,
               })
             } catch (error) {
-              items.push({ code: task.taskCode, status: 'error', error: error instanceof Error ? error.message : String(error) })
+              const message = error instanceof Error ? error.message : String(error)
+              await appendGrowthRunLog({ account: item.name, code: task.taskCode, status: 'error', message: `领奖失败：${message}` }).catch(() => {})
+              items.push({ code: task.taskCode, status: 'error', error: message })
             }
           }
           const itemFailed = items.some(result => result.status === 'error')
@@ -1776,7 +1819,9 @@ export class CodeBuddyAuthService {
             ...acceptError === undefined ? {} : { acceptError },
           }
         } catch (error) {
-          return { id: item.id, name: item.name, client: item.client, status: 'error', items: [], error: error instanceof Error ? error.message : String(error) }
+          const message = error instanceof Error ? error.message : String(error)
+          await appendGrowthRunLog({ account: item.name, code: '-', status: 'error', message }).catch(() => {})
+          return { id: item.id, name: item.name, client: item.client, status: 'error', items: [], error: message }
         }
       }, signal)
       await finishGrowthRun(`all:${rows.length} accounts`)

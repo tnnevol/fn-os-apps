@@ -62,6 +62,16 @@ export { default as DshAvatar } from '@douyinfe/semi-ui/lib/es/avatar/index'
 export { default as DshBadge } from '@douyinfe/semi-ui/lib/es/badge/index'
 export { default as DshTabs } from '@douyinfe/semi-ui/lib/es/tabs/index'
 export { default as DshList } from '@douyinfe/semi-ui/lib/es/list/index'
+/**
+ * 侧边抽屉与代码高亮。
+ *
+ * `SideSheet` 承载「任务执行日志」这类不打断主流程的次级面板：`placement` 支持
+ * top/right/bottom/left（`bottom` 即从下方滑出的抽屉，默认高度 448）。
+ * `CodeHighlight` 内部用 Prism 着色；语言未注册时退化为纯文本——Prism 对未知
+ * language 取到空 grammar 后直接返回原文，因此传 `log` 这类自定义语言名是安全的。
+ */
+export { default as DshSideSheet } from '@douyinfe/semi-ui/lib/es/sideSheet/index'
+export { default as DshCodeHighlight } from '@douyinfe/semi-ui/lib/es/codeHighlight/index'
 export { default as DshAvatarGroup } from '@douyinfe/semi-ui/lib/es/avatar/avatarGroup'
 export { default as DshScrollItem } from '@douyinfe/semi-ui/lib/es/scrollList/scrollItem'
 export { default as DshIconSearch } from '@douyinfe/semi-icons/lib/es/icons/IconSearch.js'

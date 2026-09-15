@@ -18,7 +18,7 @@
 
 import { atom } from 'nanostores'
 import { CODEBUDDY_AUTH_CHANNEL } from '../../contracts/constants.ts'
-import type { ConnectionRpc, GrowthRunStateView } from '../rpc.ts'
+import type { ConnectionRpc, GrowthRunLogEntryView, GrowthRunStateView } from '../rpc.ts'
 
 /** 宿主侧的全量/单项执行状态（落盘，刷新后可恢复）。 */
 export const $growthRunning = atom<GrowthRunStateView>({ running: false })
@@ -89,6 +89,38 @@ export async function hydrateGrowthRunState(rpc: ConnectionRpc): Promise<GrowthR
   // 宿主已结束：清掉本地在跑集合，避免清理失败时按钮永久 loading。
   if (!result.value.running) $growthTaskInFlight.set([])
   return result.value
+}
+
+/** 按行格式化一条日志的时间戳（HH:MM:SS，本地时区）。 */
+function formatLogTime(at: number): string {
+  const date = new Date(at)
+  const pad = (value: number): string => (value < 10 ? `0${value}` : String(value))
+  return `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
+}
+
+/**
+ * 把日志条目渲染成等宽文本，供 `CodeHighlight` 展示。
+ *
+ * 每行形如 `12:34:56 [账号] 任务code  状态  说明`，用空格对齐而不是表格：
+ * 抽屉里是原始日志块（方案 A），对齐由等宽字体保证，复制出去也是可读的纯文本。
+ *
+ * @param entries - 宿主返回的日志条目。
+ * @returns 多行文本；无条目时返回空串（调用方据此显示空态）。
+ */
+export function formatGrowthRunLog(entries: readonly GrowthRunLogEntryView[] | undefined): string {
+  if (entries === undefined || entries.length === 0) return ''
+  // 任务 code 对齐到最长者：日志里 code 长度不一（chat_5 与 Expert_team_use_3），
+  // 不补齐会让状态列参差不齐、很难扫读。
+  const codeWidth = entries.reduce((max, entry) => Math.max(max, entry.code.length), 0)
+  return entries
+    .map(entry => {
+      const time = formatLogTime(entry.at)
+      const account = `[${entry.account}]`
+      const code = entry.code.padEnd(codeWidth, ' ')
+      const status = entry.status.padEnd(11, ' ')
+      return `${time} ${account} ${code}  ${status}${entry.message ?? ''}`.trimEnd()
+    })
+    .join('\n')
 }
 
 /**
