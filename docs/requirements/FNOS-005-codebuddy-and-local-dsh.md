@@ -1,21 +1,21 @@
 ---
 id: FNOS-005
-title: FNOS-005 CodeBuddy 插件移植成长任务与任务中心
-description: 将 workbuddy2api-panel 中的 CodeBuddy 成长任务能力（任务列表、一键完成、自动领奖）与任务中心（全账号扫描、执行队列）移植到本仓库 CodeBuddy 插件。
+title: FNOS-005 CodeBuddy 成长任务移植与仓库内 DSH 开发环境
+description: 将 workbuddy2api-panel 中的 CodeBuddy 成长任务能力（任务列表、一键完成、自动领奖）与任务中心（全账号扫描、执行队列）移植到本仓库 CodeBuddy 插件，并在仓库内安装固定版本 dsh CLI、由 start 以仓库根 .dsh 作为 DSH_HOME 启动本地 DSH Web。
 status: completed
 owner: tnnevol
 targetVersion: 5.4.0
-lastVerified: 2026-09-14
+lastVerified: 2026-09-15
 ---
 
-# FNOS-005 CodeBuddy 插件移植成长任务与任务中心
+# FNOS-005 CodeBuddy 成长任务移植与仓库内 DSH 开发环境
 
 | 项目 | 内容 |
 | --- | --- |
 | 需求编号 | FNOS-005 |
 | 提出日期 | 2026-09-14 |
 | 需求状态 | <Badge type="tip" text="已完成" /> |
-| 关联计划 | [PLAN-FNOS-005 CodeBuddy 插件移植成长任务与任务中心](/plans/PLAN-FNOS-005-codebuddy-growth-tasks) |
+| 关联计划 | [PLAN-FNOS-005 CodeBuddy 成长任务移植与仓库内 DSH 开发环境](/plans/PLAN-FNOS-005-codebuddy-and-local-dsh) |
 | 移植来源 | `workbuddy2api-panel`（`~/workspace/fork-pj/workbuddy2api-panel`） |
 
 ## 需求背景与目标
@@ -23,6 +23,12 @@ lastVerified: 2026-09-14
 `workbuddy2api-panel` 已实现 CodeBuddy/WorkBuddy「成长计划」的纯 API 自动化：`internal/upstream/tasks.go` 封装了成长任务的列表（`GET /v2/activity/growth/tasks`）、报名（`POST .../accept`）与领奖（`POST /activity/growth/tasks/<code>/claim`），`internal/panel/taskcenter.go` 提供「任务中心」——全账号扫描 + 执行队列（账号内串行、账号间并发）。18 个成长任务中 17 个可纯 API 完成，仅 `Expert_Philanthropy` 需真实捐款、不可自动化。
 
 本需求把上述能力移植到本仓库的 CodeBuddy 插件（`plugins/dsh-codebuddy-plugin`）：在插件内复用 CodeBuddy 既有账号凭据与上报链路，提供成长任务列表、单任务/一键自动完成 + 自动领奖，以及任务中心的全账号扫描与执行队列。开学季活动（`school.go`/开学季独立视图）不在本轮范围，另立需求。
+
+### 本地 DSH 开发环境
+
+插件的调试依赖本机运行的 DSH Web。此前开发者必须自行用全局 `dsh` 启动，并手工决定 `DSH_HOME`：全局安装的版本未必等于仓库锁定版本，profile 又会落在 `$HOME/.dsh`，与仓库的插件版本、工作区和文档脱节，既无法复现 FPK 里的运行时基线，也容易污染个人 DSH 数据。
+
+本需求同时把 DSH 开发环境纳入仓库：根依赖声明与 FPK 相同的 `@deepseek-ai/dsh@0.1.5-rc.2`，`fn-apps-cli start` 增加「DSH Web」启动目标，并以仓库根 `.dsh` 作为该实例的 `DSH_HOME`，让 profile、凭据、会话和本地插件调试数据都留在检出目录内。
 
 ### 移植依据
 
@@ -43,8 +49,18 @@ lastVerified: 2026-09-14
 - 「自动签到」「自动旅行」两个开关只保留在**管理面板**（运营周期的唯一入口）；**设置页不再渲染它们**（设置页偏好区只保留自动切换、切换阈值、显示额度余量）。
   本需求不新增、不复制这两个配置项；管理面板的开关负责启停 Host 运营周期，拨动即时同步 Host。
   （演变过程见变更记录：曾两处都展示、也曾两处都删除。）
+- **自动签到是「定时间隔」而不是定时钟点**：Host 用 `setInterval` 每 **30 分钟**跑一轮，
+  并在启动时**立即先跑一轮**（不等第一个间隔）；不是「每天 09:00 / 21:00 各一次」那种时刻排程。
+  对每个账号先查签到状态，已签到直接跳过（`already`），因此多跑几轮是无副作用且幂等的。
+  该节奏与参考实现 `workbuddy-switch` 的 `CHECKIN_RECOVERY_INTERVAL`（`30 * 60` 秒）一致。
+  连续 3 轮**全部账号都失败**才进入退避（冷却 30 分钟起、按 2 倍递增、上限 8 倍），
+  冷却期满自动恢复，不设永久停止。
+- 其余运营周期同样按固定间隔：旅行派发 30 分钟、旅行领奖 15 分钟、自动切换 1 分钟。
 - 签到与派猫猫旅行**并入「完成任务」**：点击后对每个账号先按依赖序执行成长任务（领养前置），再签到、再推进旅行；已签到、旅行在途或今日已旅行的一律跳过，不重复执行。动作区不再单设「一键签到」按钮（手动单账号签到仍在账号卡片菜单）。
 - 管理后台增加「一键完成成长任务」按钮：触发全账号可自动化成长任务执行队列，并展示执行状态与结果。
+- 仓库根目录通过 `pnpm install` 安装与 FPK 运行时基线一致的 `dsh` CLI，插件调试不再依赖全局安装。
+- `fn-apps-cli start` 提供「启动 DSH Web」目标，并以仓库根 `.dsh` 作为该实例的 `DSH_HOME`；profile、凭据、会话和本地状态不写入开发者的 `$HOME/.dsh`。
+- 启动本地 DSH Web 时自动把本仓库的插件链接进该 profile，使新克隆的检出目录无需手工安装插件即可调试；`@tnnevol/dsh-fnos` 属于 FPK 专用集成，不进入本地 profile。
 
 ## 涉及范围
 
@@ -57,6 +73,12 @@ lastVerified: 2026-09-14
 | 运营周期开关边界 | `plugins/dsh-codebuddy-plugin/src/client/ui`、`src/components` | 两个开关只在管理面板；设置页不渲染它们，避免同一件事两个入口 |
 | 管理后台操作区 | `plugins/dsh-codebuddy-plugin/src/client` + host RPC | 提供「完成任务」按钮：串起成长任务（领养前置）、签到与旅行；分别跳过已完成项 |
 | 测试与文档 | `plugins/dsh-codebuddy-plugin/tests`、`docs/development` | 移植差异、测试与验收记录 |
+| 根依赖清单 | `package.json`、`pnpm-lock.yaml` | 声明并锁定仓库级 `@deepseek-ai/dsh` 版本 |
+| 依赖安装策略 | `pnpm-workspace.yaml` | 明确 DSH 原生依赖使用预编译产物，安装脚本拒绝策略显式化，保持 `pnpm install` 非交互 |
+| 任务入口 CLI | `tooling/fn-os-apps-cli/src/commands/start.ts`、`src/core/turbo.ts`、`src/core/process.ts`、`src/config/paths.ts`、`src/ui/prompts.ts` | DSH Web 启动目标、本地 CLI 解析、`DSH_HOME` 注入与子进程环境构造 |
+| 本地 DSH_HOME | 仓库根 `.dsh/`（不提交） | 保存本地 profile、凭据、会话和插件调试状态 |
+| 本地 profile 内置 | `tooling/fn-os-apps-cli/src/core/local-profile.ts` | 启动前构建并链接仓库插件进 `.dsh` profile，排除 FNOS 专用插件 |
+| 忽略规则 | `.gitignore` | 排除 `.dsh/` |
 
 ## 功能列表
 
@@ -72,6 +94,10 @@ lastVerified: 2026-09-14
 | FNOS-005-08 | P1 | 个人成长任务收拢到账号信息弹框 | 成长任务作为账号信息弹框「用量信息」之后的新 Tab，仅展示该账号；弹框尺寸加大一档；刷新按钮在 Tab 内部 | <Badge type="tip" text="已完成" /> |
 | FNOS-005-09 | P1 | 执行状态持久化 | 执行中状态写入宿主，刷新页面后按钮仍保持 loading，直到宿主报告结束 | <Badge type="tip" text="已完成" /> |
 | FNOS-005-10 | P1 | 任务执行日志抽屉 | 点「完成任务」或单项「完成」都展开底部抽屉（占下半屏、上半屏磨砂），用终端风格逐条展示日志；点下即显示该任务日志；全量执行时单项按钮禁用 | <Badge type="tip" text="已完成" /> |
+| FNOS-005-11 | P1 | 仓库内安装 DSH CLI | 在仓库根执行 `pnpm install` 后，`node_modules/.bin/dsh --version` 输出与根依赖一致的版本，无需全局安装 | <Badge type="tip" text="已完成" /> |
+| FNOS-005-12 | P1 | start 增加本地 DSH Web 启动目标 | 执行 `pnpm run start` 可在交互多选中选择「DSH Web」，或用 `pnpm run start -- --web` 直接启动；本地端口固定 3150 | <Badge type="tip" text="已完成" /> |
+| FNOS-005-13 | P1 | 本地 DSH_HOME 指向仓库根 .dsh | 启动后的 profile、凭据和会话位于 `<仓库根>/.dsh`，`$HOME/.dsh` 不被本次启动写入 | <Badge type="tip" text="已完成" /> |
+| FNOS-005-14 | P1 | 仓库插件内置进本地 profile | 启动本地 DSH Web 时自动把仓库插件链接进 `.dsh` profile，无需手工 `dsh plugin add`；`@tnnevol/dsh-fnos` 不内置 | <Badge type="tip" text="已完成" /> |
 
 ## 交互和行为约束
 
@@ -101,11 +127,32 @@ lastVerified: 2026-09-14
 - Semi Button 的 `disabled` 优先级高于 `loading`（两者同真时只渲染禁用态、不渲染转圈），因此「正在执行」这一态不得叠加 `disabled`；由于 `loading` 本身不拦截点击，执行中按钮的重复触发必须由处理函数内的重入判断挡住。
 - 移植行为只在已登录且持有有效 AccessToken 的账号上执行；凭据缺失或刷新失败时明确报错，不静默跳过。
 
+### 本地 DSH 开发环境
+
+- 根依赖版本必须与 FPK 运行时基线一致（当前 `0.1.5-rc.2`）；基线升级时两者同步修改，不允许本地开发环境长期偏离 FPK。
+- DSH Web 与「Harness 插件」「项目文档」并列显示在同一个启动多选提示中；选择被取消时不启动任何目标。
+- DSH Web 与「Harness 插件」「项目文档」可以任意组合同时启动，并始终保留 Turbo 的 TUI：三者由 `start` 交给**同一个 `turbo watch`**，DSH Web 作为仓库根任务 `//#dev:web` 与 `dev` 并列显示在同一个 TUI 中。不得为了让两者共存而关闭 TUI，也不得在 Turbo 之外另起第二个前台进程。
+- 启动命令必须在子进程环境中注入 `DSH_HOME=<仓库根>/.dsh`，并清除从调用者继承的 DSH 会话身份（`DSH_SESSION_ID`、`DSH_SHELL`、`DSH_WEB_URL`），使本地实例是独立进程而不是当前会话的嵌套视图。
+- `HOME` 不做改写：系统级工具缓存（npm、pnpm、编辑器等）继续使用开发者账号的默认位置，只有 DSH 自有状态被收敛到仓库内。
+- 本地 DSH Web 固定使用 3150 端口，与 FPK 网关固定的 `127.0.0.1:3080` 区分；两者可以在同一台开发机上同时运行。
+- 启动使用仓库 `node_modules/.bin/dsh`，不依赖全局 `dsh`；本地 CLI 缺失时报可诊断错误并提示先执行 `pnpm install`。
+- 未选择 DSH Web 时的行为不变：插件与文档仍由 `turbo watch dev` 统一调度，文档端口仍为 9876。
+- `.dsh/` 只保存本地运行状态，不提交到版本库；其中的凭据权限由 DSH 自身维护。
+- DSH 的原生依赖（node-pty、koffi）在仓库安装中使用包内预编译产物，因此 `pnpm-workspace.yaml` 显式拒绝其安装脚本，`pnpm install` 保持非交互且不要求本机编译工具链。
+- 本地 DSH 开发环境只涉及仓库开发工具链，不修改 FPK 应用、网关、插件运行时行为，也不改变 FPK 中 dsh CLI 的私有安装策略。
+- 本地 profile 内置是幂等的：已链接且已列入 `dsh.profile.bundles` 的插件不重复安装；链接必须经 DSH CLI 完成，因为只有 CLI 会把新插件同步进 bundle 列表、使其成为一层 patch layer。
+- 链接前必须先构建插件：profile 通过包 `exports` 解析入口，入口指向 git 忽略的 `lib/`，缺少产物时链入的是无法加载的包。
+- `@tnnevol/dsh-fnos` 不进入本地 profile：它注册 fnOS 设置命名空间、fnOS JS SDK 桥与网关前缀路由，脱离 fnOS 宿主没有可提供的能力。
+- 本地内置只影响 `.dsh` profile，不改变 FPK 的插件清单、内置归档与安装策略。
+
 ## 不在本次范围内
 
 - 开学季活动（`school.go` 及其独立状态卡/全账号闭环/抽奖）：能力来自同一来源但属独立活动，另立需求实施。
 - `workbuddy2api-panel` 的账号池轮转、Web 面板、Redis 镜像、定时签到/旅行/保活等与本功能无关的能力。
 - 对来源未覆盖任务的逆向（如 `Expert_Philanthropy` 真实捐款回执），本需求不尝试绕过。
+- 不修改 DSH 官方源码、profile 组合或 DSH CLI 自身的启动参数语义。
+- 不为本地 DSH Web 提供守护、开机启动、进程管理或端口冲突自动切换。
+- 不把仓库 `.dsh` profile 打包进 FPK，也不在 FPK 中复用本地的 profile 与凭据。
 
 ## 验收条件与完成状态
 
@@ -138,6 +185,8 @@ lastVerified: 2026-09-14
 
 - `FNOS-005-05-AC-01`：管理面板动作区提供「自动签到」「自动旅行」开关，拨动即时同步 Host 并启停对应运营周期。
 - `FNOS-005-05-AC-02`：设置页偏好区不渲染这两个开关，只保留自动切换、切换阈值、显示额度余量；同一配置项不出现两个入口。
+- `FNOS-005-05-AC-03`：自动签到按**固定间隔**执行——开启后立即执行一轮，之后每 **30 分钟**一轮（`setInterval`），不是每日定时钟点。已签到账号查状态后跳过，不重复提交。
+- `FNOS-005-05-AC-04`：连续 3 轮「全部账号都失败」才进入退避；退避只放慢重试（冷却 30 分钟起、指数递增、上限 8 倍），冷却期满自动恢复，不得永久停止周期。其余周期间隔为：旅行派发 30 分钟、旅行领奖 15 分钟、自动切换 1 分钟。
 
 ### FNOS-005-06 验收条件
 
@@ -186,11 +235,39 @@ lastVerified: 2026-09-14
 - `FNOS-005-10-AC-11`：抽屉内容与下边缘留 15px 间距（`.semi-sidesheet-body` 的 `padding-bottom`，作用域限定在本组件）；该间距不得造成内容溢出或裁切。
 - `FNOS-005-10-AC-12`：日志足够丰富——每条任务在「开始执行」、动作完成、等待上游计分、未达标、领奖各阶段都有记录；签到与旅行各自先记「查询…」再记结果，长请求期间不出现静默段。
 - `FNOS-005-10-AC-13`：仍在进行的那一行有等待动效（呼吸 + 跳动小点），且只作用于最后一行；遵循 `prefers-reduced-motion`，该偏好下不播放动画。
+- `FNOS-005-10-AC-17`：日志列表使用**虚拟滚动**（Semi `Table` 的 `virtualized`，底层 `react-window`），只渲染可视区间；行高固定为常量，滚动位置与内容不得错位。Semi 的 `List` / `ScrollList` 不提供虚拟化，因此不采用。
+- `FNOS-005-10-AC-18`：宿主日志缓存**只保留「本次 + 上次」两轮**，更早的整轮直接丢弃；**不得**按条数裁剪（按条裁剪会静默丢掉早期账号的日志）。抽屉提供本次/上次两个页签，没有上一轮时不显示页签。
 - `FNOS-005-10-AC-14`：抽屉的层级必须高于 Semi `Modal` 的默认 `zIndex: 1000`（弹框内触发的执行不能被弹框盖住）；抽屉在发起单项执行 RPC **之前**打开，以便看到执行过程而非只有结果。
 - `FNOS-005-10-AC-15`：点单项「完成」后抽屉**立刻**显示该任务的具体日志（本地先落一条「开始执行…」），不得停留在空态或上一轮内容；宿主一旦写出本轮日志，本地记录即让位，不重复显示。
 - `FNOS-005-10-AC-16`：点击「完成任务」进入全量执行期间，成长任务列表中的所有单项「完成」按钮一律禁用（宿主只有一个执行队列，点单项只会被拒）；单项执行之间**不**互相禁用。禁用与 loading 不得同时出现（Semi 的 `disabled` 会吃掉 spinner）。
 - `FNOS-005-10-AC-10`：日志状态按结局着色——**未完成为红**（零进度，或执行失败）、**完成或跳过为绿**（已领奖、今日已签到/已旅行、不支持自动化）、**完成一半为黄**（有进度未达标、旅行在途）、**进行中为蓝**（过程标记，不算结局）；未登记状态回落为中性色。
 - `FNOS-005-10-AC-08`：「查看日志」按钮不带 `loading` / `disabled`，随时可点。
+
+### FNOS-005-11 验收条件
+
+- `FNOS-005-11-AC-01`：仓库根 `pnpm install` 后 `node_modules/.bin/dsh --version` 输出 `0.1.5-rc.2`，与 FPK 运行时基线一致。
+- `FNOS-005-11-AC-02`：`pnpm install` 在无编译器、无交互的机器上完成，不因 DSH 原生依赖安装脚本中断。
+
+### FNOS-005-12 验收条件
+
+- `FNOS-005-12-AC-01`：`pnpm run start` 的启动多选包含「DSH Web」，选择后 DSH Web 在本机可访问。
+- `FNOS-005-12-AC-02`：`pnpm run start -- --web` 直接启动 DSH Web，输出的访问地址端口为 3150。
+- `FNOS-005-12-AC-03`：同时选择 DSH Web 与「Harness 插件」/「项目文档」时三者一起启动，并显示在同一个 Turbo TUI 中（各占一行）；DSH Web 与文档服务分别可访问。
+- `FNOS-005-12-AC-04`：未选择 DSH Web 时，插件 watch 与文档服务仍按原路径由 `turbo watch dev` 启动，文档端口保持 9876。
+
+### FNOS-005-13 验收条件
+
+- `FNOS-005-13-AC-01`：DSH Web 启动后，profile 与运行状态出现在 `<仓库根>/.dsh` 下。
+- `FNOS-005-13-AC-02`：`$HOME/.dsh` 下 profile、凭据和会话不因本次启动被创建或改写。
+- `FNOS-005-13-AC-03`：`git status` 不显示 `.dsh/`，仓库根 `.dsh` 不进入版本库。
+- `FNOS-005-13-AC-04`：启动使用仓库 `node_modules/.bin/dsh`；本地 CLI 缺失时报可诊断错误并提示先执行 `pnpm install`，不落回全局 `dsh`。
+
+### FNOS-005-14 验收条件
+
+- `FNOS-005-14-AC-01`：删除仓库 `.dsh` 后执行 `pnpm run start -- --web`，CLI 先构建并链接仓库插件，DSH Web 启动后这些插件均已加载。
+- `FNOS-005-14-AC-02`：链接经 DSH CLI 完成，`dsh --profile web --dump-config` 中每个内置插件各成一行 patch layer。
+- `FNOS-005-14-AC-03`：重复启动不重复安装，已链接且已在 bundle 列表中的插件被跳过。
+- `FNOS-005-14-AC-04`：本地 profile 的依赖与 `dsh.profile.bundles` 均不含 `@tnnevol/dsh-fnos`。
 
 ### 状态看板
 
@@ -206,6 +283,10 @@ lastVerified: 2026-09-14
 | 个人成长任务收拢到弹框 | <Badge type="tip" text="已完成" /> | 账号信息弹框成长任务 Tab、弹框加大、刷新入 Tab、未完成/已完成分栏 | 已完成；实现、测试和构建通过 |
 | 执行状态持久化 | <Badge type="tip" text="已完成" /> | 运行态落盘宿主，刷新后恢复 loading | 已完成；实现、测试和构建通过 |
 | 任务执行日志抽屉 | <Badge type="tip" text="已完成" /> | 底部 SideSheet（50vh、上半屏磨砂）+ 终端风格日志（深底亮字、分字段着色）；日志区内部滚动；含「查看日志」按钮 | 已完成；实现、测试和通过构建 |
+| 仓库内安装 DSH CLI | <Badge type="tip" text="已完成" /> | 根依赖声明与 FPK 同版本的 `@deepseek-ai/dsh`，补声明 pnpm 布局下不可解析的 `dsh-llm-pi-ai`，原生依赖安装脚本显式拒绝 | 已完成；本机安装、启动与版本核对通过 |
+| start 增加本地 DSH Web 启动目标 | <Badge type="tip" text="已完成" /> | `--web` 与交互多选新增「DSH Web」，固定 3150 端口，与 Turbo watch 目标互斥 | 已完成；本机启动、端口与组合拒绝均实测通过 |
+| 本地 DSH_HOME 指向仓库根 .dsh | <Badge type="tip" text="已完成" /> | 子进程注入 `DSH_HOME=<仓库根>/.dsh`，清除继承的 DSH 会话身份，`.dsh/` 加入忽略规则 | 已完成；profile 落点与忽略规则实测通过 |
+| 仓库插件内置进本地 profile | <Badge type="tip" text="已完成" /> | 启动前用 Turbo 构建并经 DSH CLI 链接；已在 bundle 中的跳过；排除 `@tnnevol/dsh-fnos` | 已完成；清空 `.dsh` 后全流程实测通过，二次启动幂等 |
 
 ## 变更记录
 
@@ -219,6 +300,7 @@ lastVerified: 2026-09-14
 | 2026-09-14 | 成长任务列表限定高度并可滚动 | 列表容器与「用量信息」资源列表同口径（`min(52vh, 620px)` + `overflow-y: auto`），超出时列表内滚动；「完成任务」按钮配色对齐「添加账号」（solid + primary） |
 | 2026-09-14 | 修正 loading 与 disabled 的用法 | 两者改为并存、各表达一件事（loading=进行中，disabled=不可提交），不再二选一；单项任务按钮状态互不影响；因 Semi 的 disabled 优先级高于 loading，执行态不叠 disabled，重入改由处理函数内的 ref 判断挡住 |
 | 2026-09-14 | 成长任务列表分未完成 / 已完成两栏 | 「成长任务」Tab 内新增二级 button Tab（未完成/已完成），默认停在未完成；分组只看 `claimed`，达标未领奖仍属未完成；两栏各自带数量与空态 |
+| 2026-09-15 | 补充签到节奏说明 | 明确自动签到是「开启即跑一轮 + 每 30 分钟一轮」的定时间隔（对齐 workbuddy-switch 的 `CHECKIN_RECOVERY_INTERVAL`），并记录退避阈值与其余周期间隔；新增 AC-03/AC-04（当时实现已如此，本次只是把既有行为写进规格） |
 | 2026-09-14 | 撤销隐藏运营周期开关 | 实施中曾把两个开关从管理面板与设置页一并移除，导致开关不可见、Host 周期默认仍开启却由历史 localStorage 隐式决定；先恢复两处 |
 | 2026-09-14 | 最终定位：开关只在管理面板 | 「自动签到」「自动旅行」保留在管理面板（唯一入口，控制 Host 任务启停），设置页不再渲染；FNOS-005-05 与两条验收条件按此改写 |
 | 2026-09-14 | 新增任务执行日志抽屉 | FNOS-005-10：点「完成任务」自动展开底部 SideSheet，用 CodeHighlight 逐条展示日志；宿主每条处理完即追加落盘（串行、有上限），抽屉在执行中轮询追更 |
@@ -231,4 +313,11 @@ lastVerified: 2026-09-14
 | 2026-09-14 | 领养前置为第一 + 日志着色与等待动效 | `first_buddy` 提到执行顺序首位（它自带上报，无需 `chat_5` 先跑）；日志按结局着色（未完成红/完成跳过绿/一半黄/进行中蓝）；补齐开始执行、等待计分、签到与旅行的查询日志，并给最后一行加等待动效 |
 | 2026-09-14 | 旅行增加领养前置 | 自动旅行与「完成任务」在派发前先查 `buddy/info`，无猫则先领养再旅行；用「显式 null」判定无猫以免误触发；门槛未达标记当日不再重试 |
 | 2026-09-14 | 单项任务复用日志抽屉 | 弹框内单项「完成」也在发起 RPC 前打开同一抽屉（同一份宿主日志）；抽屉 zIndex 提到 1010 以避免被 Modal 盖住 |
+| 2026-09-15 | 日志改虚拟滚动 + 缓存两轮 | 日志列表改用 Semi `Table` 虚拟化（行高固定、实测宽高）；宿主缓存从「200 条上限丢最早」改为「仅保留本次与上次两轮」，消除早期账号日志被静默裁掉的问题 |
 | 2026-09-14 | 单项日志立刻可见 + 全量执行禁用单项 | 点单项「完成」时本地先落一条「开始执行…」（宿主落盘后自动让位），抽屉不再显示空态；「完成任务」期间禁用全部单项按钮；收尾顺序改为先解 loading、再以宿主为准、最后清乐观记录 |
+| 2026-09-15 | 并入本地 DSH 开发环境 | 需求主题扩展为「CodeBuddy 成长任务移植与仓库内 DSH 开发环境」（文档与计划文件同步改名），新增 FNOS-005-11/12/13：仓库内安装固定版本 dsh CLI、`start` 增加本地 DSH Web 目标、以仓库根 `.dsh` 作为 `DSH_HOME` |
+| 2026-09-15 | 明确端口与组合约束 | 本地 DSH Web 固定 3150，避免与 FPK 网关的 3080 冲突；起初约束 DSH Web 不能与插件 watch/文档服务同时启动 |
+| 2026-09-15 | 允许 DSH Web 与其他目标同时启动 | 原「必须单独选择」的约束被用户使用反馈证伪，改为可与插件/文档并行；FNOS-005-12-AC-03 同步改写 |
+| 2026-09-15 | 改回保留 TUI 的实现 | 首次修复用 `--ui=stream` 关掉 TUI 换取并行，属错误修法（用户要求保留 TUI 多任务形态）。改为把 DSH Web 做成 Turbo 根任务 `//#dev:web`，与 `dev` 交给同一个 `turbo watch`，TUI 保留且各占一行；因 Turbo 严格模式会剥掉未声明的 `DSH_HOME`，该任务声明 `passThroughEnv` |
+| 2026-09-15 | 补齐依赖安装策略 | 记录 DSH 原生依赖使用预编译产物、`allowBuilds` 显式拒绝安装脚本的原因，避免 `pnpm install` 因被忽略的构建脚本失败；补声明 pnpm 隔离布局下不可解析的 `@deepseek-ai/dsh-llm-pi-ai` |
+| 2026-09-15 | 新增 FNOS-005-14 | 本地 DSH Web 启动时自动把仓库插件内置进 `.dsh` profile（先 Turbo 构建，再经 `dsh plugin --profile web add` 链接）；按用户要求排除 FPK 专用的 `@tnnevol/dsh-fnos` |

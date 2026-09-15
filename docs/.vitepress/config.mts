@@ -133,8 +133,8 @@ const requirementsSidebar = [
         link: '/requirements/FNOS-004-dsh-015-rc2-adaptation'
       },
       {
-        text: 'FNOS-005 CodeBuddy 成长任务移植',
-        link: '/requirements/FNOS-005-codebuddy-growth-tasks'
+        text: 'FNOS-005 CodeBuddy 成长任务与本地 DSH',
+        link: '/requirements/FNOS-005-codebuddy-and-local-dsh'
       },
     ]
   }
@@ -162,8 +162,8 @@ const plansSidebar = [
         link: '/plans/PLAN-FNOS-004-dsh-015-rc2-adaptation'
       },
       {
-        text: 'PLAN-FNOS-005 CodeBuddy 成长任务移植',
-        link: '/plans/PLAN-FNOS-005-codebuddy-growth-tasks'
+        text: 'PLAN-FNOS-005 CodeBuddy 成长任务与本地 DSH',
+        link: '/plans/PLAN-FNOS-005-codebuddy-and-local-dsh'
       },
     ]
   }
