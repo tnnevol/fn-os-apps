@@ -167,18 +167,29 @@
    注意 className 落在 Table 的**最外层**（`semi-table-wrapper`）而不是
    `.semi-table` 根上，所以这里一律用后代选择器；裸的 `.table.semi-table`
    永远匹配不到。 */
+.dsh-codebuddy-growth-log-table {
+  width: 100% !important;
+  height: 100%;
+  background-color: #11151c !important;
+  color: #cbd3dc !important;
+  font-family: inherit !important;
+  font-size: inherit !important;
+  line-height: inherit !important;
+}
+
 .dsh-codebuddy-growth-log-table .semi-table,
 .dsh-codebuddy-growth-log-table .semi-table-container,
 .dsh-codebuddy-growth-log-table .semi-table-body,
+.dsh-codebuddy-growth-log-table .semi-table-fixed,
 .dsh-codebuddy-growth-log-table .semi-table-tbody,
 .dsh-codebuddy-growth-log-table .semi-table-row,
 .dsh-codebuddy-growth-log-table .semi-table-row-cell {
-  background: transparent;
+  background-color: transparent !important;
 }
 
 .dsh-codebuddy-growth-log-table .semi-table-container,
 .dsh-codebuddy-growth-log-table .semi-table-body {
-  border: 0;
+  border: 0 !important;
 }
 
 /* Tabs 只用来切换「本次 / 上次」，它的内容区里没有内容（真正的日志在
@@ -192,18 +203,20 @@
 }
 
 .dsh-codebuddy-growth-log-table .semi-table-row-cell {
-  border: 0;
-  padding: 0 8px;
+  border: 0 !important;
+  padding: 0 8px !important;
   /* 行高必须是固定值：虚拟化按 `itemSize` 计算可视区间，
      单元格若因换行变高，滚动位置与实际内容会错位。 */
-  height: 24px;
-  line-height: 24px;
+  height: 24px !important;
+  line-height: 24px !important;
   white-space: pre;
   overflow: hidden;
+  box-sizing: border-box;
+  color: inherit !important;
 }
 
 .dsh-codebuddy-growth-log-table .semi-table-row:hover .semi-table-row-cell {
-  background: rgba(255, 255, 255, 0.04);
+  background-color: rgba(255, 255, 255, 0.04) !important;
 }
 
 /* 列宽由 JS 侧的 COLUMN_WIDTH 固定（虚拟化要求确定宽度），这里只保证不折行。 */

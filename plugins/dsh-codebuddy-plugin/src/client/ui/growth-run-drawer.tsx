@@ -53,17 +53,18 @@ const DRAWER_Z_INDEX = 1010
  */
 const LOG_ROW_HEIGHT = 24
 
-/** 各列宽度：定宽才能让虚拟滚动与横向滚动都算得准。 */
+/** 固定列宽度；说明列会按终端实际宽度动态填充。 */
 const COLUMN_WIDTH = {
-  time: 78,
-  account: 168,
-  code: 168,
-  status: 92,
+  time: 96,
+  account: 180,
+  code: 220,
+  status: 112,
   message: 520,
 } as const
 
-/** 表格总宽度（各列之和）；虚拟化要求横向滚动区有确定宽度。 */
-const TABLE_WIDTH = COLUMN_WIDTH.time + COLUMN_WIDTH.account + COLUMN_WIDTH.code + COLUMN_WIDTH.status + COLUMN_WIDTH.message
+const FIXED_COLUMN_WIDTH = COLUMN_WIDTH.time + COLUMN_WIDTH.account + COLUMN_WIDTH.code + COLUMN_WIDTH.status
+/** 终端过窄时仍保留一个可读的最小说明列宽度。 */
+const MIN_TABLE_WIDTH = FIXED_COLUMN_WIDTH + COLUMN_WIDTH.message
 
 /**
  * 上半部分蒙层的「磨砂玻璃」样式。
@@ -222,6 +223,15 @@ export function GrowthRunDrawer({ rpc, t, visible, onClose }: {
 
   const terminalRef = useRef<HTMLDivElement | null>(null)
   const { width, height } = useMeasuredSize(terminalRef, visible)
+  /**
+   * Semi 虚拟化内部会把所有列宽相加作为虚拟行宽，而不是自动拉伸到 wrapper。
+   * 因此说明列按实际容器宽度补足，避免宽屏日志右侧出现一整块裸背景。
+   */
+  const tableWidth = Math.max(MIN_TABLE_WIDTH, width)
+  const columns = useMemo(
+    () => createLogColumns(Math.max(COLUMN_WIDTH.message, tableWidth - FIXED_COLUMN_WIDTH)),
+    [tableWidth],
+  )
 
   return (
     <DshSideSheet
@@ -261,7 +271,7 @@ export function GrowthRunDrawer({ rpc, t, visible, onClose }: {
             : (
               <DshTable
                 className="dsh-codebuddy-growth-log-table"
-                columns={LOG_COLUMNS}
+                columns={columns}
                 dataSource={rows}
                 rowKey="key"
                 pagination={false}
@@ -271,7 +281,7 @@ export function GrowthRunDrawer({ rpc, t, visible, onClose }: {
                 {...height > 0 && width > 0
                   ? {
                       virtualized: { itemSize: LOG_ROW_HEIGHT },
-                      scroll: { y: height, x: TABLE_WIDTH },
+                      scroll: { y: height, x: tableWidth },
                       style: { width },
                     }
                   : {}}
@@ -287,45 +297,49 @@ export function GrowthRunDrawer({ rpc, t, visible, onClose }: {
 }
 
 /**
- * 列定义放在组件外：Semi `Table` 内部对 `columns`/`dataSource` 做**浅比较**，
+ * 列定义工厂放在组件外：Semi `Table` 内部对 `columns`/`dataSource` 做**浅比较**，
  * 每次渲染新建字面量会触发多余的内部更新（官方 FAQ 明确提醒）。
+ *
+ * 说明列宽由调用方按容器宽度计算，保证虚拟化内部的 row width 与可见区域一致。
  */
-const LOG_COLUMNS = [
-  {
-    title: '时间',
-    dataIndex: 'time',
-    width: COLUMN_WIDTH.time,
-    render: (text: string) => <span className="dsh-codebuddy-growth-log-time">{text}</span>,
-  },
-  {
-    title: '账号',
-    dataIndex: 'account',
-    width: COLUMN_WIDTH.account,
-    render: (text: string) => <span className="dsh-codebuddy-growth-log-account">{text}</span>,
-  },
-  {
-    title: '任务',
-    dataIndex: 'code',
-    width: COLUMN_WIDTH.code,
-    render: (text: string) => <span className="dsh-codebuddy-growth-log-code">{text}</span>,
-  },
-  {
-    title: '状态',
-    dataIndex: 'status',
-    width: COLUMN_WIDTH.status,
-    render: (text: string, record: LogRow) => (
-      <span className={`dsh-codebuddy-growth-log-status is-${record.tone}`}>
-        {record.live ? <span className="dsh-codebuddy-growth-log-dots" aria-hidden /> : null}
-        {text.trim()}
-      </span>
-    ),
-  },
-  {
-    title: '说明',
-    dataIndex: 'message',
-    width: COLUMN_WIDTH.message,
-    render: (text: string | undefined) => (
-      text === undefined ? null : <span className="dsh-codebuddy-growth-log-message">{text}</span>
-    ),
-  },
-]
+function createLogColumns(messageWidth: number) {
+  return [
+    {
+      title: '时间',
+      dataIndex: 'time',
+      width: COLUMN_WIDTH.time,
+      render: (text: string) => <span className="dsh-codebuddy-growth-log-time">{text}</span>,
+    },
+    {
+      title: '账号',
+      dataIndex: 'account',
+      width: COLUMN_WIDTH.account,
+      render: (text: string) => <span className="dsh-codebuddy-growth-log-account">{text}</span>,
+    },
+    {
+      title: '任务',
+      dataIndex: 'code',
+      width: COLUMN_WIDTH.code,
+      render: (text: string) => <span className="dsh-codebuddy-growth-log-code">{text}</span>,
+    },
+    {
+      title: '状态',
+      dataIndex: 'status',
+      width: COLUMN_WIDTH.status,
+      render: (text: string, record: LogRow) => (
+        <span className={`dsh-codebuddy-growth-log-status is-${record.tone}`}>
+          {record.live ? <span className="dsh-codebuddy-growth-log-dots" aria-hidden /> : null}
+          {text.trim()}
+        </span>
+      ),
+    },
+    {
+      title: '说明',
+      dataIndex: 'message',
+      width: messageWidth,
+      render: (text: string | undefined) => (
+        text === undefined ? null : <span className="dsh-codebuddy-growth-log-message">{text}</span>
+      ),
+    },
+  ]
+}

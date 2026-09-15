@@ -145,6 +145,17 @@ describe('抽屉观感与滚动', () => {
     expect(DRAWER).toMatch(/height > 0 && width > 0/)
   })
 
+  it('虚拟化行宽跟随终端宽度，避免右侧露出裸背景', () => {
+    expect(DRAWER).toMatch(/const tableWidth = Math\.max\(MIN_TABLE_WIDTH, width\)/)
+    expect(DRAWER).toMatch(/createLogColumns\(Math\.max\(COLUMN_WIDTH\.message, tableWidth - FIXED_COLUMN_WIDTH\)\)/)
+    expect(DRAWER).toMatch(/scroll:\s*\{\s*y:\s*height,\s*x:\s*tableWidth\s*\}/)
+    const GROWTH_SCSS = readFileSync(`${ROOT}/styles/growth-tasks.scss`, 'utf8')
+    // wrapper 与虚拟化内部 fixed row 都必须是终端深色；默认 Semi 背景不能泄漏。
+    expect(GROWTH_SCSS).toContain('background-color: #11151c !important')
+    expect(GROWTH_SCSS).toContain('background-color: transparent !important')
+    expect(GROWTH_SCSS).toContain('padding: 0 8px !important')
+  })
+
   it('Table 选择器是后代选择器（className 落在最外层 wrapper 上）', () => {
     const GROWTH_SCSS = readFileSync(`${ROOT}/styles/growth-tasks.scss`, 'utf8')
     // Semi Table 把 className 放在最外层 `.semi-table-wrapper`，不在 `.semi-table` 根上，
