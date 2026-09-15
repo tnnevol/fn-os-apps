@@ -102,3 +102,62 @@ describe('宿主持久化日志', () => {
     expect(STORE).toMatch(/padEnd\(codeWidth/)
   })
 })
+
+/**
+ * 签到与旅行已并入「完成任务」。
+ *
+ * 合并的三条硬约束（都是用户明确要求或事实依赖）：
+ *  1. 领养（first_buddy）必须先于旅行——它产出的 Buddy 是派发前提；
+ *  2. 签到/旅行各自「执行中或已执行则跳过」，不重复执行；
+ *  3. 动作区不再有独立「一键签到」按钮（避免同一件事两个入口）。
+ */
+describe('签到与旅行并入成长任务流程', () => {
+  const HOST = readFileSync(`${ROOT}/host/auth-service.ts`, 'utf8')
+
+  it('growthRunAll 串入签到与旅行步骤', () => {
+    const start = HOST.indexOf('async growthRunAll')
+    const body = HOST.slice(start, start + 9000)
+    expect(body).toContain('checkinOneAccount')
+    expect(body).toContain('travelOneAccount')
+    // 日志里能看到这两步（抽屉据此展示）。
+    expect(body).toContain("code: '签到'")
+    expect(body).toContain("code: '旅行'")
+  })
+
+  it('任务按依赖序执行：领安排在最前', () => {
+    const start = HOST.indexOf('async growthRunAll')
+    const body = HOST.slice(start, start + 2000)
+    expect(body).toContain('sortGrowthTasksByOrder')
+  })
+
+  it('旅行在领养之后（领养产出 Buddy 才能派发）', () => {
+    const start = HOST.indexOf('async growthRunAll')
+    const body = HOST.slice(start, start + 9000)
+    // 领养在任务循环内（sortGrowthTasksByOrder 已保证），旅行在循环之后。
+    const loopEnd = body.indexOf('签到与旅行收尾')
+    expect(loopEnd).toBeGreaterThan(-1)
+    expect(body.indexOf('travelOneAccount')).toBeGreaterThan(loopEnd)
+  })
+
+  it('签到已签到即跳过，不重复提交', () => {
+    const start = HOST.indexOf('private async checkinOneAccount')
+    const body = HOST.slice(start, start + 1200)
+    expect(body).toContain('status.todayCheckedIn) return { id, name, result: \'already\' }')
+  })
+
+  it('旅行在途或今日已旅行即跳过，不重复派发', () => {
+    const start = HOST.indexOf('private async travelOneAccount')
+    const body = HOST.slice(start, start + 1600)
+    expect(body).toContain("status.state === 'traveling') return { id, name, result: 'traveling' }")
+    expect(body).toContain("return { id, name, result: 'daily-limit' }")
+  })
+
+  it('企业账号签到与旅行都跳过', () => {
+    for (const method of ['checkinOneAccount', 'travelOneAccount']) {
+      const start = HOST.indexOf(`private async ${method}`)
+      const body = HOST.slice(start, start + 600)
+      expect(body).toContain("identity.enterpriseId !== undefined")
+      expect(body).toContain("result: 'skipped'")
+    }
+  })
+})

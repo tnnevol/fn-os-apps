@@ -28,7 +28,7 @@ import {
 import { getCheckinStatus, performCheckin, fetchUsage } from './usage.ts'
 import { BackoffGate, mapWithConcurrency, RunGuard } from './concurrency.ts'
 import { claimTravel, departTravel, fetchTravelLocations, fetchTravelStatus } from './travel.ts'
-import { acceptGrowthTasks, claimGrowthTask, isAutomatableGrowthTask, listGrowthTasks } from './growth-tasks.ts'
+import { acceptGrowthTasks, claimGrowthTask, isAutomatableGrowthTask, listGrowthTasks, sortGrowthTasksByOrder } from './growth-tasks.ts'
 import { runGrowthTaskAction } from './growth-actions.ts'
 import { appendGrowthRunLog, beginGrowthRun, finishGrowthRun, loadGrowthRunState } from './growth-run.ts'
 import { getLoginAccount, pollAuthToken, requestAuthState } from './codebuddy.ts'
@@ -531,6 +531,80 @@ export class CodeBuddyAuthService {
       if (result.unsupported === true) return { ok: false, error: lastError }
     }
     return { ok: false, error: lastError }
+  }
+
+  /**
+   * 单账号签到（供「完成任务」串联使用）。
+   *
+   * 与自动周期同源：先查状态，已签到直接返回 `already`（**不重复提交**），
+   * 企业账号返回 `skipped`。失败不抛错——签到只是成长流程的前置步骤之一，
+   * 不该因为它中止后续任务。
+   *
+   * @param id - 账号本地 id（仅用于日志/结果标识）。
+   * @param name - 账号展示名。
+   * @param endpoint - 该账号的服务根。
+   * @param identity - 该账号的身份。
+   */
+  private async checkinOneAccount(
+    id: string,
+    name: string,
+    endpoint: string,
+    identity: CodeBuddyIdentity,
+  ): Promise<{ id: string, name: string, result: string, error?: string }> {
+    if (identity.enterpriseId !== undefined) return { id, name, result: 'skipped' }
+    try {
+      const status = await getCheckinStatus(endpoint, identity)
+      if (status.ok && status.todayCheckedIn) return { id, name, result: 'already' }
+      if (!status.ok) return { id, name, result: 'error', ...status.error === undefined ? {} : { error: status.error } }
+      const done = await performCheckin(endpoint, identity)
+      if (done.ok) return { id, name, result: done.already === true ? 'already' : 'success' }
+      return { id, name, result: 'error', ...done.error === undefined ? {} : { error: done.error } }
+    } catch (error) {
+      return { id, name, result: 'error', error: error instanceof Error ? error.message : String(error) }
+    }
+  }
+
+  /**
+   * 单账号旅行推进（供「完成任务」串联使用）。
+   *
+   * 与派发周期同源，复用 `claimArrived` / `departAtAnyLocation`：
+   *  - `traveling` → `traveling`（在途，跳过，不重复派发）；
+   *  - `arrived` → 领取奖励；
+   *  - `idle` + `daily_limit_reached` → `daily-limit`（今日已旅行，跳过）；
+   *  - `idle` → 尝试派发；没有猫猫返回 `no-buddy`（可重试，不算失败）。
+   *
+   * **必须先领养猫猫**：没有 Buddy 时派发只会被服务端拒（`no active buddy`），
+   * 所以调用方把领养排在旅行之前。
+   */
+  private async travelOneAccount(
+    id: string,
+    name: string,
+    endpoint: string,
+    identity: CodeBuddyIdentity,
+  ): Promise<{ id: string, name: string, result: string, rewardCredit?: number, error?: string }> {
+    if (identity.enterpriseId !== undefined) return { id, name, result: 'skipped' }
+    try {
+      const status = await fetchTravelStatus(endpoint, identity)
+      if (!status.ok) {
+        if (status.unsupported === true) return { id, name, result: 'skipped' }
+        return { id, name, result: 'error', ...status.error === undefined ? {} : { error: status.error } }
+      }
+      if (status.state === 'traveling') return { id, name, result: 'traveling' }
+      if (status.state === 'arrived') {
+        const claimed = await this.claimArrived(id, endpoint, identity, status.recordId)
+        if (claimed.ok) return { id, name, result: 'claimed', ...claimed.rewardCredit === undefined ? {} : { rewardCredit: claimed.rewardCredit } }
+        if (claimed.busy === true) return { id, name, result: 'claiming' }
+        return { id, name, result: 'error', ...claimed.error === undefined ? {} : { error: claimed.error } }
+      }
+      if (status.dailyLimitReached) return { id, name, result: 'daily-limit' }
+      const departed = await this.departAtAnyLocation(endpoint, identity)
+      if (departed.ok) return { id, name, result: 'departed' }
+      if (departed.already === true) return { id, name, result: 'traveling' }
+      if (departed.noBuddy === true) return { id, name, result: 'no-buddy' }
+      return { id, name, result: 'error', ...departed.error === undefined ? {} : { error: departed.error } }
+    } catch (error) {
+      return { id, name, result: 'error', error: error instanceof Error ? error.message : String(error) }
+    }
   }
 
   /** 只查状态、不改状态：面板展示用（不触发派发）。 */
@@ -1743,7 +1817,8 @@ export class CodeBuddyAuthService {
         }
         try {
           const tasks = await listGrowthTasks(item.identity, signal)
-          const pending = tasks.filter(isAutomatableGrowthTask)
+          // 按依赖序排列：领养（first_buddy）必须先执行，它产出的 Buddy 是旅行前提。
+          const pending = sortGrowthTasksByOrder(tasks.filter(isAutomatableGrowthTask))
           const acceptCodes = pending
             .filter(task => task.acceptStatus !== 'accepted' && task.acceptStatus !== 'completed')
             .map(task => task.taskCode)
@@ -1809,6 +1884,48 @@ export class CodeBuddyAuthService {
               items.push({ code: task.taskCode, status: 'error', error: message })
             }
           }
+
+          /**
+           * 签到与旅行收尾。
+           *
+           * 放在成长任务**之后**：领养（first_buddy）已在上面的循环里执行完，
+           * 它产出的 Buddy 正是旅行派发的前提。两者都复用与自动周期同源的
+           * 单账号实现，因此在跑或已完成的会自然跳过（签到 `already`、
+           * 旅行 `traveling` / `daily-limit`），不会重复执行。
+           */
+          const endpoint = item.endpoint
+          const checkin = await this.checkinOneAccount(item.id, item.name, endpoint, item.identity)
+          await appendGrowthRunLog({
+            account: item.name,
+            code: '签到',
+            status: checkin.result,
+            message: checkin.result === 'already'
+              ? '今日已签到，跳过'
+              : checkin.result === 'skipped'
+                ? '企业账号不支持签到'
+                : checkin.result === 'success' ? '签到成功' : checkin.error ?? '签到失败',
+          }).catch(() => {})
+          items.push({ code: '签到', status: checkin.result, ...checkin.error === undefined ? {} : { error: checkin.error } })
+
+          const travel = await this.travelOneAccount(item.id, item.name, endpoint, item.identity)
+          await appendGrowthRunLog({
+            account: item.name,
+            code: '旅行',
+            status: travel.result,
+            message: travel.result === 'traveling'
+              ? '旅行中，跳过（不重复派发）'
+              : travel.result === 'daily-limit'
+                ? '今日已旅行，跳过'
+                : travel.result === 'claimed'
+                  ? `领取旅行奖励 +${travel.rewardCredit ?? 0} 积分`
+                  : travel.result === 'departed'
+                    ? '已派猫猫出门旅行'
+                    : travel.result === 'no-buddy'
+                      ? '暂无猫猫（需先完成领养任务）'
+                      : travel.result === 'skipped' ? '企业账号无成长中心' : travel.error ?? '旅行失败',
+          }).catch(() => {})
+          items.push({ code: '旅行', status: travel.result, ...travel.error === undefined ? {} : { error: travel.error } })
+
           const itemFailed = items.some(result => result.status === 'error')
           return {
             id: item.id,

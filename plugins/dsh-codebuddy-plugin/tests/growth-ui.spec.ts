@@ -156,19 +156,19 @@ describe('loading 与 disabled 共存', () => {
     expect(toolbar).not.toMatch(/disabled=/)
   })
 
-  it('一键签到：进行中给 loading，不可提交给 disabled', () => {
-    // 锚在 onClick 那一行：`checkinAll()` 在注释里也出现过，用 indexOf 会取错位置。
-    const at = PANEL.indexOf("onClick={() => { void checkinAll() }}")
-    expect(at).toBeGreaterThan(-1)
-    const button = PANEL.slice(Math.max(0, at - 300), at)
-    expect(button).toMatch(/loading=\{checkinLoading\}/)
-    expect(button).toMatch(/disabled=\{checkinDisabled\}/)
-    expect(PANEL).not.toContain('checkinAllDisabled')
+  it('签到已并入「完成任务」：动作区不再有独立的一键签到按钮', () => {
+    // 用户要求把签到合并进成长任务流程，动作区因此去掉独立按钮，避免同一件事
+    // 两个入口。手动签到仍保留在账号卡片菜单里（`checkin` RPC）。
+    expect(PANEL).not.toContain("onClick={() => { void checkinAll() }}")
+    expect(PANEL).not.toContain("t('checkinAll')")
+    expect(PANEL).not.toContain('checkinButtonState')
+    // 卡片菜单的单账号签到入口仍在。
+    expect(PANEL).toContain('onCheckin')
   })
 
-  it('签到状态模型区分「执行中」与「探测中」，让两者能同时表达', () => {
-    const STATE = readFileSync(`${ROOT}/client/checkin-state.ts`, 'utf8')
-    expect(STATE).toMatch(/CheckinButtonState = 'executing' \| 'probing' \| 'enabled' \| 'unavailable'/)
+  it('签到状态模型已随独立按钮一起移除（不留死代码）', () => {
+    expect(existsSync(`${ROOT}/client/checkin-state.ts`)).toBe(false)
+    // 合并后不再需要判断一键签到按钮的启用态。
   })
 
   it('刷新按钮的重入由处理函数自己挡', () => {

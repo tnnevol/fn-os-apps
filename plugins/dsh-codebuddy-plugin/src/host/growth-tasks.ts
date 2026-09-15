@@ -35,9 +35,25 @@ export interface GrowthClaimResult {
   energy: number
 }
 
-const AUTOMATABLE_TASKS = new Set([
+/**
+ * 任务执行顺序（依赖序）。
+ *
+ * 上游 API 的返回顺序**没有任何依赖保证**（实测 `first_buddy` 排在第 13 位、
+ * `chat_5` 第 14 位），而这两条有真实的先后约束：
+ *
+ *  - `first_buddy`（领养第一只 Buddy）是**前置任务**：它需要当日活跃上报解锁，
+ *    且产生的 Buddy 是「派猫猫旅行」的前提——没有猫猫时旅行派发会被服务端拒绝
+ *    （`no active buddy`），所以领养必须先于旅行；
+ *  - `chat_5` 做 5 次活跃上报，放在领养之前能为门槛补齐当日活跃度
+ *    （来源项目注释：「first_buddy 依赖活跃上报解锁」）。
+ *
+ * 其余任务彼此独立，保持原有相对顺序即可。
+ */
+const AUTOMATABLE_TASK_ORDER = [
+  // ── 前置：活跃上报 + 领养（领养产出旅行所需的 Buddy） ──
   'chat_5',
   'first_buddy',
+  // ── 其余可自动化任务 ──
   'Model_chat_GLM5.2',
   'RichMeow_Chat',
   'Buddy_App',
@@ -53,7 +69,35 @@ const AUTOMATABLE_TASKS = new Set([
   'skill_1',
   'Expert_lighthouse',
   'black_cat',
-])
+] as const
+
+const AUTOMATABLE_TASKS = new Set<string>(AUTOMATABLE_TASK_ORDER)
+
+/** 领养任务的 code：它是「派猫猫旅行」的前置，必须卡在旅行之前执行。 */
+export const ADOPTION_TASK_CODE = 'first_buddy'
+
+/**
+ * 把一个账号的可自动化任务按依赖序排列。
+ *
+ * 不在顺序表里的任务排在最后（保持彼此的原始相对顺序）：新任务上线时不会插队，
+ * 也不会因为没登记就消失。
+ *
+ * @param tasks - 待排序的任务（通常是已过滤的可自动化任务）。
+ * @returns 新数组（不修改入参）。
+ */
+export function sortGrowthTasksByOrder<T extends { taskCode: string }>(tasks: readonly T[]): T[] {
+  const rankOf = (code: string): number => {
+    const index = AUTOMATABLE_TASK_ORDER.indexOf(code as typeof AUTOMATABLE_TASK_ORDER[number])
+    return index === -1 ? AUTOMATABLE_TASK_ORDER.length : index
+  }
+  // 稳定排序：同 rank 的保持原顺序（Array.prototype.sort 自 ES2019 起稳定）。
+  return [...tasks].sort((left, right) => rankOf(left.taskCode) - rankOf(right.taskCode))
+}
+
+/** 该任务是否为领养任务（旅行的前置）。 */
+export function isAdoptionTask(taskCode: string): boolean {
+  return taskCode === ADOPTION_TASK_CODE
+}
 
 function headers(identity: CodeBuddyIdentity): Record<string, string> {
   return {

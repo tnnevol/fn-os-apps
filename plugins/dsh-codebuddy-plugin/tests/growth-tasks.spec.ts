@@ -83,3 +83,41 @@ describe('CodeBuddy growth task upstream API', () => {
     expect(init.headers).toMatchObject({ 'x-client-platform': 'web' })
   })
 })
+
+describe('任务执行顺序（领养前置）', () => {
+  it('领养排在最前：它产出的 Buddy 是旅行派发的前提', async () => {
+    const { sortGrowthTasksByOrder } = await import('../src/host/growth-tasks.ts')
+    // 故意给出与依赖相反的顺序（API 实测 first_buddy 在第 13 位）。
+    const sorted = sortGrowthTasksByOrder([
+      { taskCode: 'expert_5' },
+      { taskCode: 'first_buddy' },
+      { taskCode: 'template_5' },
+      { taskCode: 'chat_5' },
+    ])
+    // chat_5（活跃上报）→ first_buddy（领养）→ 其余按登记顺序（template_5 先于 expert_5）。
+    expect(sorted.map(task => task.taskCode)).toEqual(['chat_5', 'first_buddy', 'template_5', 'expert_5'])
+  })
+
+  it('未登记的新任务排在最后，不插队也不会消失', async () => {
+    const { sortGrowthTasksByOrder } = await import('../src/host/growth-tasks.ts')
+    const sorted = sortGrowthTasksByOrder([
+      { taskCode: 'brand_new_task' },
+      { taskCode: 'first_buddy' },
+      { taskCode: 'another_new' },
+    ])
+    expect(sorted.map(task => task.taskCode)).toEqual(['first_buddy', 'brand_new_task', 'another_new'])
+  })
+
+  it('不改动入参（返回新数组）', async () => {
+    const { sortGrowthTasksByOrder } = await import('../src/host/growth-tasks.ts')
+    const input = [{ taskCode: 'expert_5' }, { taskCode: 'first_buddy' }]
+    sortGrowthTasksByOrder(input)
+    expect(input.map(task => task.taskCode)).toEqual(['expert_5', 'first_buddy'])
+  })
+
+  it('isAdoptionTask 只认领养任务', async () => {
+    const { isAdoptionTask } = await import('../src/host/growth-tasks.ts')
+    expect(isAdoptionTask('first_buddy')).toBe(true)
+    expect(isAdoptionTask('chat_5')).toBe(false)
+  })
+})

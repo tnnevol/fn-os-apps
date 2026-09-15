@@ -42,7 +42,6 @@ import {
 import { sortSegmentsByValueDesc } from './segment-bar.ts'
 import { formatUpdatedAt } from './format-time.ts'
 import { accountEpoch, subscribeAccountEpoch } from './store/account-epoch.ts'
-import { checkinButtonState } from './checkin-state.ts'
 import { DEFAULT_TOKEN_RANGE, DEFAULT_TREND_RANGE, optionsFor, rangeLabel as rangeLabelOf, type TokenRangeKey } from './token-range.ts'
 import { CodeBuddyLogo } from '../components/CodeBuddyLogo.tsx'
 import { AddAccountModal } from '../components/AddAccountModal.tsx'
@@ -103,10 +102,7 @@ function AccountsPage({
     rpc, 'panelStatus', `${rosterTick}|${accountVersion}`,
   )
   const [busyId, setBusyId] = useState<string | undefined>(undefined)
-  const [checkinAllBusy, setCheckinAllBusy] = useState(false)
-  /** 签到重入标志（ref 而非 state，见 checkinAll 说明）。 */
-  const checkinAllBusyRef = useRef(false)
-  /** 「完成任务」重入标志（同上：loading 不拦点击）。 */
+  /** 「完成任务」重入标志（loading 不拦点击，必须自己挡）。 */
   const runAllGrowthRef = useRef(false)
   /** 执行日志抽屉是否展开（点「完成任务」自动展开，也可手动开关）。 */
   const [logOpen, setLogOpen] = useState(false)
@@ -123,26 +119,6 @@ function AccountsPage({
   // 告警；订阅 atom 把外部可变状态变成了 React 看得见的依赖。）
   const ledger = useStore(resourceHistoryStore)
   const rows = data?.accounts ?? []
-  const checkinState = checkinButtonState(rows, checkinAllBusy)
-  /**
-   * 一键签到的 `loading` 与 `disabled` **并存**（按钮同时接受两个属性），
-   * 各自表达一件不同的事，而不是用其中一个顶替另一个：
-   *  - `loading`：本轮签到正在跑 → 转圈，用户看得出「正在做事」；
-   *  - `disabled`：此刻确实不可提交（无账号 / 全部已签到 / 签到状态还没探测完）。
-   *
-   * 这里刻意**不让两者同时为真**：Semi 里 `disabled` 优先级高于 `loading`
-   * （文档原话；源码见 IconButton 的 `loading && !otherProps.disabled`），
-   * 同真时只渲染禁用态、**不出转圈**。把一个「正在跑」的态叠上 disabled，等于
-   * 把用户要的 loading 效果吃掉。所以：
-   *  - 执行中只给 loading，重复点击由 `checkinAll()` 的重入判断挡住；
-   *  - 「探测中」只给 disabled（状态未知时提交会误触发全量请求），并用
-   *    loading 文案说明原因。
-   */
-  const checkinExecuting = checkinState === 'executing'
-  const checkinProbing = checkinState === 'probing'
-  const checkinUnavailable = checkinState === 'unavailable'
-  const checkinLoading = checkinExecuting
-  const checkinDisabled = checkinProbing || checkinUnavailable
 
   // 每次探测都把实时资源包并入本地台账（写持久化 store 是副作用，放 effect）。
   useEffect(() => {
@@ -177,28 +153,6 @@ function AccountsPage({
       onCheckinChange()
       reload()
     }
-  }
-
-  const checkinAll = async (): Promise<void> => {
-    // 重入 guard：Semi 的 loading 不拦点击（只有 disabled 才拦），而执行中我们
-    // 刻意只给 loading，所以必须在这里挡第二轮。用 ref 而不是 state：
-    // setState 是异步的，连点两下时第二下可能在重渲染前就进来了。
-    if (checkinAllBusyRef.current || checkinDisabled) return
-    checkinAllBusyRef.current = true
-    setCheckinAllBusy(true)
-    const result = await rpc.call<{ accounts: Array<{ id: string, result?: string, error?: string, skipped?: boolean }> }>(CODEBUDDY_AUTH_CHANNEL, 'checkinAll', {})
-    checkinAllBusyRef.current = false
-    setCheckinAllBusy(false)
-    if (!result.ok) {
-      notify(false, describeRpcError(result))
-      return
-    }
-    const success = result.value.accounts.filter(item => item.result === 'success').length
-    const skipped = result.value.accounts.filter(item => item.result === 'already' || item.skipped === true).length
-    const failed = result.value.accounts.filter(item => item.result === 'error').length
-    notify(failed === 0, `${t('checkinDone')} ${success}; ${t('checkinSkipped')} ${skipped}${failed > 0 ? `; ${t('checkinFailedCount')} ${failed}` : ''}`)
-    onCheckinChange()
-    reload()
   }
 
   const switchOne = async (id: string): Promise<void> => {
@@ -276,19 +230,8 @@ function AccountsPage({
             $autoTravel.set(checked)
             void rpc.call(CODEBUDDY_AUTH_CHANNEL, 'autoTravel', { enabled: checked })
           }} />
-          {/* 两个属性并存、各表达一件事：loading = 本轮签到在跑（转圈），
-              disabled = 此刻不可提交（签到状态未探测完 / 全部已签到 / 无账号）。
-              刻意不让两者同时为真——Semi 的 disabled 优先于 loading，同真时
-              转圈不渲染；执行中的重复点击由 checkinAll() 的重入判断挡住。 */}
-          <DshButton
-            size="small"
-            theme="light"
-            loading={checkinLoading}
-            disabled={checkinDisabled}
-            onClick={() => { void checkinAll() }}
-          >
-            {checkinProbing ? t('checkinLoading') : t('checkinAll')}
-          </DshButton>
+          {/* 签到已并入「完成任务」：不再单独放「一键签到」按钮，避免同一件事两个入口
+              （与设置页移除两个运营周期开关同一原则）。手动签到仍可从账号卡片菜单触发。 */}
           <DshButton size="small" theme="light" icon={<DshIconRefresh />} loading={loading} onClick={reload}>{t('refresh')}</DshButton>
         </div>
       </div>
