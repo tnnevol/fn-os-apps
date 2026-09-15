@@ -35,10 +35,9 @@
     "build": "tsdown",
     "dev": "tsdown",
     "typecheck": "tsc -p tsconfig.json",
-    "test:unit": "vitest run --config vitest.config.ts",
-    "test": "pnpm run test:unit",
-    "check": "pnpm run typecheck && pnpm run test:unit",
-    "prepublishOnly": "pnpm run check"
+    "check": "pnpm run typecheck && pnpm run test",
+    "prepublishOnly": "pnpm run check",
+    "test": "vitest run --config vitest.config.ts"
   },
   "peerDependencies": {
     "react": "catalog:",

@@ -21,8 +21,7 @@
 | `pnpm run publish` | 交互选择并发布 DSH 插件 npm 包（当前 `rc`） | 可选 |
 | `pnpm run release:notes` | 使用 `changelogithub` 生成 Release | 否 |
 | `pnpm run typecheck` | 通过 Turbo 执行所有包的类型检查 | 否 |
-| `pnpm run test:unit` | 通过 Turbo 执行单元测试 | 否 |
-| `pnpm run test` | `test:unit` 的兼容别名 | 否 |
+| `pnpm run test` | 通过 Turbo 执行单元测试 | 否 |
 | `pnpm run docs:preview` | 预览已经构建好的 VitePress 站点 | 否 |
 
 CLI 也提供一个仅用于 CI 或网关构建的入口：
@@ -213,7 +212,7 @@ pnpm run start -- --plugin fnos
 pnpm run check -- --packages --plugins
 ```
 
-插件的 `build`、`typecheck`、`test:unit` 和 `check` 写在各自的 `package.json`。Turbo 会根据 workspace 依赖先处理 `@tnnevol/dsh-semi-ui`，不要在根脚本中手工复制依赖步骤。
+插件的 `build`、`typecheck`、`test` 和 `check` 写在各自的 `package.json`。Turbo 会根据 workspace 依赖先处理 `@tnnevol/dsh-semi-ui`，不要在根脚本中手工复制依赖步骤。
 
 ## 文档开发
 
@@ -245,8 +244,7 @@ pnpm run docs:preview
     "build": "pnpm exec fn-apps-cli build",
     "version": "pnpm exec fn-apps-cli version",
     "typecheck": "turbo run typecheck",
-    "test:unit": "turbo run test:unit",
-    "test": "turbo run test:unit",
+    "test": "turbo run test",
     "check": "pnpm exec fn-apps-cli check",
     "publish": "pnpm exec fn-apps-cli publish",
     "release:notes": "pnpm exec fn-apps-cli release:notes"
@@ -261,9 +259,8 @@ pnpm run docs:preview
 | `build` | `fn-apps-cli` → `turbo run build` | `^build` 先构建 workspace 依赖 |
 | `start` | `fn-apps-cli` → `turbo watch dev` | 统一传入 docs/插件 filters，TUI 分别显示持续任务；watch 任务自行完成初始构建 |
 | `typecheck` | 根脚本 → `turbo run typecheck` | `^typecheck` 先检查依赖 |
-| `test:unit` | 根脚本 → `turbo run test:unit` | 先完成当前包 `build` |
-| `test` | 根脚本 → `turbo run test:unit` | 当前仓库的兼容别名 |
-| `check` | `fn-apps-cli` → 直接检查 + `turbo run check` | 汇总 `typecheck`、`build`、`test:unit` |
+| `test` | 根脚本 → `turbo run test` | 先完成当前包 `build` |
+| `check` | `fn-apps-cli` → 直接检查 + `turbo run check` | 汇总 `typecheck`、`build`、`test` |
 
 完整调度图和每个任务的分支见 [Package 任务与 Turbo](./package-tasks-and-turbo)。
 

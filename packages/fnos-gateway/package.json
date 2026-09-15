@@ -36,10 +36,9 @@
     "build:node": "tsdown",
     "build:app": "pnpm run build:bridge && tsdown --config tsdown.app.config.ts",
     "typecheck": "tsc -p tsconfig.json",
-    "pretest:unit": "pnpm run build:bridge",
-    "test:unit": "vitest run --config vitest.config.ts",
-    "test": "pnpm run test:unit",
-    "check": "pnpm run typecheck && pnpm run test:unit"
+    "check": "pnpm run typecheck && pnpm run test",
+    "test": "vitest run --config vitest.config.ts",
+    "pretest": "pnpm run build:bridge"
   },
   "dependencies": {
     "connect": "catalog:",

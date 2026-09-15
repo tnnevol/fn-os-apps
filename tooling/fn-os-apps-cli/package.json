@@ -13,10 +13,9 @@
   "scripts": {
     "build": "tsdown",
     "typecheck": "tsc -p tsconfig.json",
-    "test:unit": "vitest run --config vitest.config.ts",
-    "test": "pnpm run test:unit",
-    "check": "pnpm run typecheck && pnpm run test:unit",
-    "prepare": "tsdown"
+    "check": "pnpm run typecheck && pnpm run test",
+    "prepare": "tsdown",
+    "test": "vitest run --config vitest.config.ts"
   },
   "dependencies": {
     "@clack/prompts": "catalog:",

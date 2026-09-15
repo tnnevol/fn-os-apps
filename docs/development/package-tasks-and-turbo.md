@@ -8,7 +8,7 @@
 | --- | --- | --- |
 | 用户入口 | 根 `package.json` | 提供稳定、简短的 `start`、`build`、`check`、`version` 等命令；不重复实现包任务 |
 | 任务路由 | `tooling/fn-os-apps-cli/` | `program.ts` 暴露 Commander 实例，各 `commands/*.ts` 注册命令并实现 action，处理交互提示、参数解析、文档构建、版本维护和 Turbo 调用 |
-| 任务编排 | `turbo.json` | 声明 `build`、`start`（内部调度 `dev`）、`typecheck`、`test:unit`、`check` 的依赖、缓存和输出 |
+| 任务编排 | `turbo.json` | 声明 `build`、`start`（内部调度 `dev`）、`typecheck`、`test`、`check` 的依赖、缓存和输出 |
 | 实际任务 | 各 workspace 的 `package.json` | 执行 `tsdown`、`tsc`、`vitest` 等包自己的任务 |
 
 根脚本是入口，不是实现层。例如：
@@ -26,7 +26,7 @@
 
 ## Turbo 任务调度步骤
 
-每次 CLI 调用 Turbo 后，Turbo 不会简单地按目录顺序执行脚本，而是先解析过滤范围和 workspace 依赖，再按任务图调度。以 `check` 为例，`build`、`typecheck` 和 `test:unit` 会按照 `turbo.json` 中的依赖关系执行；没有依赖关系的就绪任务可以并行运行。
+每次 CLI 调用 Turbo 后，Turbo 不会简单地按目录顺序执行脚本，而是先解析过滤范围和 workspace 依赖，再按任务图调度。以 `check` 为例，`build`、`typecheck` 和 `test` 会按照 `turbo.json` 中的依赖关系执行；没有依赖关系的就绪任务可以并行运行。
 
 下方流程图使用 D2 的 `direction: down` 自动布局：主流程从上到下，分支从分叉节点向两侧平铺，不手工固定行列。菱形节点表示状态选择，边上的“是/否”“命中/未命中”表示不同分支。这样既保留了具体命令、依赖和状态，又让布局随任务图自动调整。
 
@@ -60,9 +60,8 @@ restore -> summary
 - `build` 通过 `^build` 先调度 workspace 依赖的构建。
 - `dev` 通过 `^dev` 先完成依赖包的 `dev`；被依赖包用 `persistent: false` 做一次性构建，插件自身保持常驻并在 `interruptible: true` 下随依赖变化重启。
 - `typecheck` 通过 `^typecheck` 先调度依赖包的类型检查。
-- `test:unit` 依赖当前包的 `build`，避免测试使用过期产物。
-- `test` 与 `test:unit` 同义，仅作为兼容别名保留相同依赖；两者都不再串联执行，避免同一次 vitest 跑两遍。
-- `check` 依赖当前包的 `build` 与依赖包的 `typecheck`（`^typecheck`）；各包的 `check` 脚本本身已经是 `typecheck && test:unit`，因此不再把 `typecheck`、`test:unit` 同时写进 `dependsOn`，否则同一件事会被调度两次。
+- `test` 依赖当前包的 `build`，避免测试使用过期产物。
+- `check` 依赖当前包的 `build` 与依赖包的 `typecheck`（`^typecheck`）；各包的 `check` 脚本本身已经是 `typecheck && test`，因此不再把 `typecheck`、`test` 同时写进 `dependsOn`，否则同一件事会被调度两次。
 - `lint` 是仓库级根任务（`//#lint`）：ESLint 只使用根 `eslint.config.ts`，没有包定义 `lint` 脚本，写成普通任务只会匹配到空集。
 - `build` 声明 `env: ["NODE_ENV"]`：插件客户端 bundle 在 tsdown 里用 `process.env.NODE_ENV` 做 `define`，不声明会让不同 `NODE_ENV` 共用同一份缓存。
 - `docs` 包的 `build` 用包级 `turbo.json` 覆盖 `outputs` 为 `.vitepress/dist/**`，并用 `$TURBO_EXTENDS$` 继承根任务的 `env` 后追加 `D2_BIN`：VitePress 的实际产物不在 `dist/`，`D2_BIN` 又决定 D2 图能否渲染，两者都必须参与缓存。
@@ -216,16 +215,16 @@ status -> result: 是
 status -> fail: 否
 ```
 
-### `test:unit`
+### `test`
 
-`test:unit` 由根脚本直接调用 Turbo，先满足当前包的 `build` 依赖，再启动 Vitest。
+`test` 由根脚本直接调用 Turbo，先满足当前包的 `build` 依赖，再启动 Vitest。
 
 ```d2
 direction: down
 
-command: "pnpm run test:unit"
-turbo: "turbo run test:unit --filter=目标..."
-graph: "读取 test:unit 任务图"
+command: "pnpm run test"
+turbo: "turbo run test --filter=目标..."
+graph: "读取 test 任务图"
 build: "dependsOn：先完成当前包 build"
 run: "vitest run --config vitest.config.ts"
 status: {
@@ -242,7 +241,7 @@ status -> fail: 否
 
 ### `test`
 
-`test` 同样由根脚本直接调用 Turbo，并先等待 `test:unit` 完成。
+`test` 同样由根脚本直接调用 Turbo，并先等待 `test` 完成。
 
 ```d2
 direction: down
@@ -250,7 +249,7 @@ direction: down
 command: "pnpm run test"
 turbo: "turbo run test --filter=目标..."
 graph: "读取 test 任务图"
-unit: "dependsOn：先完成 test:unit"
+unit: "dependsOn：先完成 test"
 run: "执行 package.json 的 test"
 status: {
   label: "测试通过？"
@@ -287,7 +286,7 @@ turbo: "turbo run check --filter=packages/plugins"
 turboGraph: "展开 check 依赖图"
 build: "dependsOn：build"
 typecheck: "dependsOn：^typecheck（仅依赖包）"
-checkRun: "执行各包 package.json 的 check（内含 typecheck 与 test:unit）"
+checkRun: "执行各包 package.json 的 check（内含 typecheck 与 test）"
 summary: "汇总所有检查结果"
 status: {
   label: "检查通过？"

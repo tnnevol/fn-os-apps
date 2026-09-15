@@ -28,10 +28,6 @@
     "//#lint": {
       "outputs": []
     },
-    "test:unit": {
-      "dependsOn": ["build"],
-      "outputs": []
-    },
     "test": {
       "dependsOn": ["build"],
       "outputs": []
