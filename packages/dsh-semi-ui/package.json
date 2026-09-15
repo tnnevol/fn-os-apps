@@ -10,7 +10,7 @@
     "access": "public"
   },
   "license": "AGPL-3.0-only",
-  "homepage": "https://github.com/tnnevol/fn-os-apps/tree/main/packages/dsh-semi-ui",
+  "homepage": "https://fnapps-doc.tnnevol.cn/plugins/dsh-semi-ui.html",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/tnnevol/fn-os-apps.git",

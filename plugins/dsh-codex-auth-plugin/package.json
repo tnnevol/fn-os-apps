@@ -6,7 +6,7 @@
   "description": "Standalone ChatGPT OAuth account management for DeepSeek Harness.",
   "author": "tnnevol",
   "license": "AGPL-3.0-only",
-  "homepage": "https://github.com/tnnevol/fn-os-apps/tree/main/plugins/dsh-codex-auth-plugin",
+  "homepage": "https://fnapps-doc.tnnevol.cn/plugins/dsh-codex-auth.html",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/tnnevol/fn-os-apps.git",
