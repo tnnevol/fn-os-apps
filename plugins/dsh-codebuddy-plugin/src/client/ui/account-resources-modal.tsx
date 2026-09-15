@@ -28,13 +28,15 @@ import { formatCredit } from './loading-shared.tsx'
 import { RESOURCE_LIFECYCLE_META_IMPL, ResourceGroupImpl } from './resource-row.tsx'
 import { GrowthTaskList } from './growth-task-list.tsx'
 
-export function AccountResourcesModalImpl({ row, items, t, rpc, notify, onClose }: {
+export function AccountResourcesModalImpl({ row, items, t, rpc, notify, onClose, onOpenLog }: {
   row: PanelAccountRow | undefined
   items: ClassifiedResource[]
   t: Translate
   rpc: ConnectionRpc
   notify: (ok: boolean, text: string) => void
   onClose: () => void
+  /** 单项任务执行时打开日志抽屉（抽屉挂在面板层，见 panel.tsx）。 */
+  onOpenLog?: () => void
 }): ReactNode {
   const [topKey, setTopKey] = useState<TopTab>('identity')
   const [statusKey, setStatusKey] = useState<ResourceLifecycle>('usable')
@@ -164,7 +166,13 @@ export function AccountResourcesModalImpl({ row, items, t, rpc, notify, onClose 
               itemKey="growth"
               tab={<span className="dsh-codebuddy-resource-tab">{t('growthTasksTitle')}</span>}
             >
-              <GrowthTaskList rpc={rpc} t={t} accountId={row.id} notify={notify} />
+              <GrowthTaskList
+                rpc={rpc}
+                t={t}
+                accountId={row.id}
+                notify={notify}
+                {...onOpenLog === undefined ? {} : { onOpenLog }}
+              />
             </DshTabs.TabPane>
           </DshTabs>
         </div>

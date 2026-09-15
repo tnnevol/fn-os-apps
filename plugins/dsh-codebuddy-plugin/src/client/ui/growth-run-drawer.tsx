@@ -31,6 +31,16 @@ import type { Translate } from '../../types/client/panel-types'
 const DRAWER_HEIGHT = '50vh'
 
 /**
+ * 抽屉的层级。
+ *
+ * 必须**高于 Semi Modal 的默认 `zIndex: 1000`**：成长任务的单项「完成」按钮在
+ * 账号信息弹框里，点它也会打开这个抽屉——两者层级相同的话，后挂载的那层会盖住
+ * 另一层（Semi 的 Portal 复用容器，靠挂载顺序决定谁在上，并不稳定）。
+ * 取 1010 与仓库里 toast 的层级口径一致。
+ */
+const DRAWER_Z_INDEX = 1010
+
+/**
  * 上半部分蒙层的「磨砂玻璃」样式。
  *
  * 颜色取 DSH 自己的蒙层 token（`--dsw-alias-bg-mask-1`，浅色 `#0000003d`、
@@ -101,6 +111,7 @@ export function GrowthRunDrawer({ rpc, t, visible, onClose }: {
       title={t('growthLogTitle')}
       placement="bottom"
       height={DRAWER_HEIGHT}
+      zIndex={DRAWER_Z_INDEX}
       visible={visible}
       onCancel={onClose}
       maskStyle={FROSTED_MASK_STYLE}

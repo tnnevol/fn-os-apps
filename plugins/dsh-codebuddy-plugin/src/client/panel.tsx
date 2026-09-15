@@ -274,6 +274,7 @@ function AccountsPage({
         rpc={rpc}
         notify={notify}
         onClose={() => { setResourceTarget(undefined) }}
+        onOpenLog={() => { setLogOpen(true) }}
       />
       <GrowthRunDrawer rpc={rpc} t={t} visible={logOpen} onClose={() => { setLogOpen(false) }} />
     </div>

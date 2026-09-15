@@ -208,6 +208,35 @@ describe('抽屉观感与滚动', () => {
   })
 })
 
+describe('单项任务也复用同一份日志', () => {
+  it('单项「完成」执行时打开抽屉，且复用同一份日志', () => {
+    const LIST = readFileSync(`${ROOT}/client/ui/growth-task-list.tsx`, 'utf8')
+    // 打开抽屉必须在发起 RPC **之前**：单项里也有耗时的（领养、专家链），
+    // 等 RPC 回来再打开就只剩结果、看不到过程。
+    const openAt = LIST.indexOf('onOpenLog?.()')
+    const callAt = LIST.indexOf("'growthRun'")
+    expect(openAt).toBeGreaterThan(-1)
+    expect(callAt).toBeGreaterThan(-1)
+    expect(openAt).toBeLessThan(callAt)
+  })
+
+  it('onOpenLog 由面板经弹框透传（抽屉挂在面板层，不在弹框内）', () => {
+    const LIST = readFileSync(`${ROOT}/client/ui/growth-task-list.tsx`, 'utf8')
+    const MODAL = readFileSync(`${ROOT}/client/ui/account-resources-modal.tsx`, 'utf8')
+    // 列表接收回调；弹框接收并继续透传；面板提供实现（setLogOpen）。
+    expect(LIST).toContain('onOpenLog?: () => void')
+    expect(MODAL).toContain('onOpenLog?: () => void')
+    expect(MODAL).toContain('onOpenLog')
+    expect(PANEL).toMatch(/onOpenLog=\{\(\) => \{ setLogOpen\(true\) \}\}/)
+  })
+
+  it('抽屉层级高于 Semi Modal，避免被弹框盖住', () => {
+    // 两者默认 zIndex 都是 1000，同层时会由挂载顺序决定谁在上、并不稳定。
+    expect(DRAWER).toMatch(/const DRAWER_Z_INDEX = 1010/)
+    expect(DRAWER).toMatch(/zIndex=\{DRAWER_Z_INDEX\}/)
+  })
+})
+
 describe('展开时的日志接线', () => {
   it('点「完成任务」自动展开抽屉', () => {
     const start = PANEL.indexOf('const runAllGrowth = async')

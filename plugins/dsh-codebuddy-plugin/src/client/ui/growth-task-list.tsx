@@ -36,12 +36,14 @@ type GrowthTabKey = 'pending' | 'done'
  * @param t - 翻译函数。
  * @param accountId - 目标账号本地 id。
  * @param notify - 结果提示。
+ * @param onOpenLog - 执行单项任务时打开日志抽屉（复用同一份宿主日志）。
  */
-export function GrowthTaskList({ rpc, t, accountId, notify }: {
+export function GrowthTaskList({ rpc, t, accountId, notify, onOpenLog }: {
   rpc: ConnectionRpc
   t: Translate
   accountId: string | undefined
   notify: (ok: boolean, text: string) => void
+  onOpenLog?: () => void
 }): ReactNode {
   const [tasks, setTasks] = useState<GrowthTaskView[]>([])
   const [error, setError] = useState<string | undefined>(undefined)
@@ -82,6 +84,13 @@ export function GrowthTaskList({ rpc, t, accountId, notify }: {
     // 且**只挡自己**——其它任务不受影响。
     if (inFlight.includes(growthTaskKey(accountId, taskCode))) return
     markGrowthTaskRunning(accountId, taskCode)
+    /**
+     * 与「完成任务」同一处理：先把抽屉打开，再看结果。
+     *
+     * 放在发起 RPC **之前**——单项任务里也有耗时的（领养、专家链），
+     * 等 RPC 回来再打开就只剩结果、看不到过程了。
+     */
+    onOpenLog?.()
     try {
       const result = await rpc.call(CODEBUDDY_AUTH_CHANNEL, 'growthRun', { id: accountId, taskCode })
       if (!result.ok) {
