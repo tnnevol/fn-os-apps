@@ -93,26 +93,104 @@
   padding: 4px 2px;
 }
 
+/* 终端外壳：**深色底与滚动条在这一层**（滚动也在这层的子元素上），
+   这样滚动条不会落在与日志不同的另一种背景上、显得「溢出」。
+
+   配色是固定的终端观感（不跟随 DSH 主题）：深底 + 亮字在明暗两种主题下都成立，
+   而主题化的浅色代码块正是上一次「滚动条与背景分离」的成因。 */
+.dsh-codebuddy-growth-log-terminal {
+  flex: 1;
+  min-height: 0;
+  box-sizing: border-box;
+  border-radius: 6px;
+  background: #11151c;
+  color: #cbd3dc;
+  font-family: var(--dsw-font-family-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 12px;
+  line-height: 1.6;
+  /* 滚动条常驻槽位会占宽度；用一个只在本组件内生效的细滚动条，避免右侧留白跳变。 */
+  scrollbar-width: thin;
+  scrollbar-color: #3b4451 transparent;
+}
+
 /* 日志滚动区：固定占满剩余高度并内部滚动。
    `min-height: 0` 是必须的——flex 子项默认 `min-height: auto`，会被内容撑开，
    `overflow` 便永远不生效（长日志会把抽屉整体顶高而不是内部滚动）。 */
 .dsh-codebuddy-growth-log-scroll {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
+  height: 100%;
+  overflow: auto;
+  padding: 8px 10px;
+  box-sizing: border-box;
 }
 
-/* 日志正文：等宽 + 不折行 + 横向可滚。
-   日志每行是「时间 账号 任务 状态 说明」，折行会把一条记录切成两行、更难扫读；
-   横向滚动让长说明（错误堆栈、HTTP 文案）保持在同一行里。 */
-.dsh-codebuddy-growth-log-sheet .semi-codeHighlight {
-  font-size: 12px;
+/* Webkit 细滚动条：与终端底色同系，缩略用中性灰。 */
+.dsh-codebuddy-growth-log-scroll::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
 }
 
-.dsh-codebuddy-growth-log-sheet pre,
-.dsh-codebuddy-growth-log-sheet code {
+.dsh-codebuddy-growth-log-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.dsh-codebuddy-growth-log-scroll::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 6px;
+  background-clip: content-box;
+  background-color: #3b4451;
+}
+
+.dsh-codebuddy-growth-log-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: #4d5765;
+}
+
+.dsh-codebuddy-growth-log-empty {
+  margin: 0;
+  color: #7c8798;
+}
+
+/* 行：用 grid 固定各列宽度，时间/账号/code/状态纵向对齐。
+   说明列 `minmax(0, 1fr)` + 不折行，长文案靠横向滚动而不是折行——
+   折行会把一条记录切成两行、更难扫读。 */
+.dsh-codebuddy-growth-log-lines {
+  margin: 0;
+  padding: 0;
+  list-style: none;
   white-space: pre;
-  overflow-x: auto;
-  font-family: var(--dsw-font-family-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  min-width: fit-content;
 }
+
+.dsh-codebuddy-growth-log-line {
+  display: grid;
+  grid-template-columns: auto auto auto auto minmax(0, 1fr);
+  gap: 8px;
+}
+
+/* 时间：暗青，模仿终端的低优先级元信息。 */
+.dsh-codebuddy-growth-log-time {
+  color: #6d8fa6;
+}
+
+/* 账号：青绿，与时间区分开，方便按账号扫读（用户点名的「用户名不同颜色」）。 */
+.dsh-codebuddy-growth-log-account {
+  color: #4ec9b0;
+}
+
+/* 任务 code：中性浅灰，是每行的主体标识。 */
+.dsh-codebuddy-growth-log-code {
+  color: #d7dde5;
+}
+
+/* 说明：稍暗，避免与任务 code 抢注意力。 */
+.dsh-codebuddy-growth-log-message {
+  color: #9aa6b5;
+  white-space: pre-wrap;
+}
+
+/* 状态按色调上色：成功绿、失败红、待办黄、进行中蓝、跳过灰。
+   与上游语义一一对应（见 log-presentation.ts 的 statusTone）。 */
+.dsh-codebuddy-growth-log-status.is-ok { color: #4ec9b0; }
+.dsh-codebuddy-growth-log-status.is-error { color: #f14c4c; }
+.dsh-codebuddy-growth-log-status.is-warn { color: #d7ba7d; }
+.dsh-codebuddy-growth-log-status.is-info { color: #569cd6; }
+.dsh-codebuddy-growth-log-status.is-muted { color: #7c8798; }

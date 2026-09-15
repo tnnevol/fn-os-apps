@@ -65,10 +65,13 @@ export { default as DshList } from '@douyinfe/semi-ui/lib/es/list/index'
 /**
  * 侧边抽屉与代码高亮。
  *
- * `SideSheet` 承载「任务执行日志」这类不打断主流程的次级面板：`placement` 支持
- * top/right/bottom/left（`bottom` 即从下方滑出的抽屉，默认高度 448）。
- * `CodeHighlight` 内部用 Prism 着色；语言未注册时退化为纯文本——Prism 对未知
- * language 取到空 grammar 后直接返回原文，因此传 `log` 这类自定义语言名是安全的。
+ * `SideSheet` 承载不打断主流程的次级面板：`placement` 支持 top/right/bottom/left
+ * （`bottom` 即从下方滑出的抽屉；`maskStyle` 可做半透明磨砂蒙层）。
+ *
+ * `CodeHighlight` 内部用 Prism 着色，但要注意它的两个事实：**只接收纯字符串**
+ * （渲染成 `<code>{code}</code>`，无法注入分段标记），且 Semi 只注册了 Prism core、
+ * 没有加载任何语言词法——未知 language 取到空 grammar 后退化为纯文本。
+ * 因此它适合「整块代码着色」，不适合「按字段分段着色」；后者需要自己渲染。
  */
 export { default as DshSideSheet } from '@douyinfe/semi-ui/lib/es/sideSheet/index'
 export { default as DshCodeHighlight } from '@douyinfe/semi-ui/lib/es/codeHighlight/index'

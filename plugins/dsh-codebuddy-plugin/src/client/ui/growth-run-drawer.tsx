@@ -1,19 +1,19 @@
 /**
  * 任务执行日志抽屉。
  *
- * 方案 A：从管理后台下方滑出的 `SideSheet`，内部用 `CodeHighlight` 展示等宽原始
- * 日志。日志内容来自宿主逐条落盘的 `GrowthRunState.log`（见 `host/growth-run.ts`），
- * 因此「执行中逐条冒出」与「跑完回看」是同一份数据。
+ * 从管理后台下方滑出的 `SideSheet`，内部是**终端风格**的日志视图。日志内容来自
+ * 宿主逐条落盘的 `GrowthRunState.log`（见 `host/growth-run.ts`），因此「执行中逐条
+ * 冒出」与「跑完回看」是同一份数据。
  *
- * 四个刻意的选择：
+ * 三个刻意的选择：
  *  - **抽屉占屏幕下半部分**（`50vh`）：日志是横向长行（时间 + 账号 + 任务 + 状态），
  *    左右抽屉会把每行挤到折行，底部抽屉宽度才够；占一半高度则让上半部分仍能看到面板；
- *  - **上半部分磨砂蒙层**：`maskStyle` 上做半透明 + `backdrop-filter: blur`，
+ *  - **上半部分磨砂蒙层**：`maskStyle` 做半透明 + `backdrop-filter: blur`，
  *    被遮住的账号卡片仍然可辨，而不是压成一片死黑；
- *  - **日志区固定高度、内部滚动**：抽屉本身不整体滚动（标题与状态行始终可见），
- *    只有日志块滚，长日志不会把标题顶出视口；
- *  - **语言传 `log`**：Prism 没有 log 词法，取到空 grammar 会退化为纯文本（不报错），
- *    这正是我们要的——日志本身不需要着色，等宽对齐就够了。
+ *  - **不用 `CodeHighlight`，自己渲染逐行**：Semi 只注册了 Prism core、没有加载任何
+ *    语言词法（连 `log` 都没有），且 `CodeHighlight` 只接收纯字符串、无法注入分段
+ *    标记——要按「时间/账号/状态」分段上色只能自己渲染。等宽字体与数据侧补齐
+ *    （见 `log-presentation.ts`）保证列对齐。
  *
  * @module dsh-codebuddy/ui/growth-run-drawer
  */
@@ -21,9 +21,10 @@
 import type { CSSProperties, ReactNode } from 'react'
 import { useEffect, useMemo, useState } from 'react'
 import { useStore } from '@nanostores/react'
-import { DshCodeHighlight, DshSideSheet } from '@tnnevol/dsh-semi-ui'
+import { DshSideSheet } from '@tnnevol/dsh-semi-ui'
 import type { ConnectionRpc, GrowthRunStateView } from '../rpc.ts'
-import { $growthRunning, GROWTH_RUN_POLL_MS, formatGrowthRunLog, hydrateGrowthRunState } from '../store/growth-run.ts'
+import { $growthRunning, GROWTH_RUN_POLL_MS, hydrateGrowthRunState } from '../store/growth-run.ts'
+import { growthLogLines, statusTone } from '../log-presentation.ts'
 import type { Translate } from '../../types/client/panel-types'
 
 /** 抽屉高度：占视口下半部分，上半部分留给面板（配合磨砂蒙层仍可辨认）。 */
@@ -73,7 +74,7 @@ export function GrowthRunDrawer({ rpc, t, visible, onClose }: {
    *
    * 只在**展开且正在跑**时轮询：关着的时候没必要请求；跑完就停，避免空转。
    * **先立刻拉一次再起定时器**：否则点开抽屉后要干等一个轮询周期才有内容，
-   * 那段时间就是用户看到的「准备中」。
+   * 那段时间就是用户看到的空态。
    */
   useEffect(() => {
     if (!visible || !running.running) return
@@ -93,7 +94,7 @@ export function GrowthRunDrawer({ rpc, t, visible, onClose }: {
     void hydrateGrowthRunState(rpc).then((next) => { if (next !== undefined) setState(next) })
   }, [rpc, visible])
 
-  const text = useMemo(() => formatGrowthRunLog(state?.log), [state?.log])
+  const lines = useMemo(() => growthLogLines(state?.log), [state?.log])
 
   return (
     <DshSideSheet
@@ -108,11 +109,26 @@ export function GrowthRunDrawer({ rpc, t, visible, onClose }: {
       <div className="dsh-codebuddy-growth-log-body">
         {/* 状态行常驻：让「正在执行」与日志滚动互不影响。 */}
         {running.running ? <p className="dsh-codebuddy-muted">{t('growthLogRunning')}</p> : null}
-        {/* 日志区固定高度 + 内部滚动（见 styles/growth-tasks.scss）。 */}
-        <div className="dsh-codebuddy-growth-log-scroll">
-          {text.length === 0
-            ? <p className="dsh-codebuddy-muted">{t('growthLogEmpty')}</p>
-            : <DshCodeHighlight code={text} language="log" lineNumber />}
+        {/* 终端：深色底、亮色字，按段着色。整块（含滚动条）使用同一底色，
+            避免滚动条落在另一种背景上显得「溢出」（见 styles/growth-tasks.scss）。 */}
+        <div className="dsh-codebuddy-growth-log-terminal">
+          <div className="dsh-codebuddy-growth-log-scroll">
+            {lines.length === 0
+              ? <p className="dsh-codebuddy-growth-log-empty">{t('growthLogEmpty')}</p>
+              : (
+                <ol className="dsh-codebuddy-growth-log-lines">
+                  {lines.map(line => (
+                    <li key={`${line.at}-${line.account}-${line.code}`} className="dsh-codebuddy-growth-log-line">
+                      <span className="dsh-codebuddy-growth-log-time">{line.time}</span>
+                      <span className="dsh-codebuddy-growth-log-account">{line.account}</span>
+                      <span className="dsh-codebuddy-growth-log-code">{line.code}</span>
+                      <span className={`dsh-codebuddy-growth-log-status is-${statusTone(line.status)}`}>{line.status.trim()}</span>
+                      {line.message === undefined ? null : <span className="dsh-codebuddy-growth-log-message">{line.message}</span>}
+                    </li>
+                  ))}
+                </ol>
+              )}
+          </div>
         </div>
       </div>
     </DshSideSheet>

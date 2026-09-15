@@ -27,11 +27,27 @@ describe('日志抽屉组件', () => {
     expect(DRAWER).toMatch(/placement="bottom"/)
   })
 
-  it('用 CodeHighlight 展示等宽日志，语言为自定义 log', () => {
-    expect(DRAWER).toContain('<DshCodeHighlight')
-    expect(DRAWER).toMatch(/language="log"/)
-    // 行号便于对照「第几条」，与 Semi 默认一致但显式写出更清楚。
-    expect(DRAWER).toMatch(/lineNumber/)
+  it('自己渲染逐行（CodeHighlight 无法按段着色）', () => {
+    // Semi 只注册 Prism core、没加载任何语言词法（连 log 都没有），且
+    // CodeHighlight 只接收纯字符串、无法注入分段标记；要按「时间/账号/状态」
+    // 分段上色只能自己渲染。
+    expect(DRAWER).not.toContain('<DshCodeHighlight')
+    expect(DRAWER).toContain('growthLogLines')
+    expect(DRAWER).toContain('dsh-codebuddy-growth-log-line')
+  })
+
+  it('时间、账号、任务、状态各是一个可独立着色的元素', () => {
+    for (const cls of [
+      'dsh-codebuddy-growth-log-time',
+      'dsh-codebuddy-growth-log-account',
+      'dsh-codebuddy-growth-log-code',
+      'dsh-codebuddy-growth-log-status',
+      'dsh-codebuddy-growth-log-message',
+    ]) {
+      expect(DRAWER).toContain(cls)
+    }
+    // 状态用色调类名（is-ok / is-error …）驱动颜色。
+    expect(DRAWER).toMatch(/is-\$\{statusTone\(line\.status\)\}/)
   })
 
   it('只在展开且执行中轮询，跑完与收起都要停', () => {
@@ -103,16 +119,47 @@ describe('抽屉观感与滚动', () => {
 
   it('日志区固定高度 + 内部滚动，抽屉本身不整体滚动', () => {
     const GROWTH_SCSS = readFileSync(`${ROOT}/styles/growth-tasks.scss`, 'utf8')
-    const scroll = /\.dsh-codebuddy-growth-log-scroll\s*\{([^}]*)\}/.exec(GROWTH_SCSS)?.[1] ?? ''
-    expect(scroll).toMatch(/flex:\s*1/)
+    const terminal = /\.dsh-codebuddy-growth-log-terminal\s*\{([^}]*)\}/.exec(GROWTH_SCSS)?.[1] ?? ''
+    expect(terminal).toMatch(/flex:\s*1/)
     // min-height: 0 是 flex 子项内部滚动生效的前提（默认 auto 会被内容撑开）。
-    expect(scroll).toMatch(/min-height:\s*0/)
-    expect(scroll).toMatch(/overflow-y:\s*auto/)
+    expect(terminal).toMatch(/min-height:\s*0/)
+    const scroll = /\.dsh-codebuddy-growth-log-scroll\s*\{([^}]*)\}/.exec(GROWTH_SCSS)?.[1] ?? ''
+    expect(scroll).toMatch(/overflow:\s*auto/)
     const body = /\.dsh-codebuddy-growth-log-body\s*\{([^}]*)\}/.exec(GROWTH_SCSS)?.[1] ?? ''
     expect(body).toMatch(/min-height:\s*0/)
     // 外层不该自己滚动——否则标题与状态行会被一起滚走。
     expect(body).not.toMatch(/overflow-y:\s*auto/)
     expect(DRAWER).toContain('dsh-codebuddy-growth-log-scroll')
+  })
+
+  it('滚动条与深色背景同在一层（避免滚动条看起来「溢出」）', () => {
+    const GROWTH_SCSS = readFileSync(`${ROOT}/styles/growth-tasks.scss`, 'utf8')
+    // 底色在外壳、滚动在子元素，两者同属一块视觉面板；不复用 Semi 代码块那种
+    // 「外层滚动 + 内层 pre 变色」的分离结构（正是上次问题的成因）。
+    const terminal = /\.dsh-codebuddy-growth-log-terminal\s*\{([^}]*)\}/.exec(GROWTH_SCSS)?.[1] ?? ''
+    expect(terminal).toMatch(/background:\s*#11151c/)
+    expect(terminal).toMatch(/scrollbar-color/)
+    // 深色滚动条样式限定在本插件命名空间内，不污染其它滚动区。
+    expect(GROWTH_SCSS).toMatch(/\.dsh-codebuddy-growth-log-scroll::-webkit-scrollbar/)
+    expect(GROWTH_SCSS).not.toMatch(/^\s*\.semi-codeHighlight\s*\{/m)
+  })
+
+  it('配色是深底亮字：背景深、前景亮', () => {
+    const GROWTH_SCSS = readFileSync(`${ROOT}/styles/growth-tasks.scss`, 'utf8')
+    const terminal = /\.dsh-codebuddy-growth-log-terminal\s*\{([^}]*)\}/.exec(GROWTH_SCSS)?.[1] ?? ''
+    // 深底
+    expect(terminal).toMatch(/background:\s*#11151c/)
+    // 亮字（前景明显偏亮）
+    const fg = /color:\s*#([0-9a-f]{6})/i.exec(terminal)?.[1] ?? ''
+    const channels = [0, 2, 4].map(i => Number.parseInt(fg.slice(i, i + 2), 16))
+    const avg = channels.reduce((sum, value) => sum + value, 0) / channels.length
+    expect(avg).toBeGreaterThan(150)
+    // 时间与账号必须是**不同**颜色（用户点名要求）。
+    const time = /\.dsh-codebuddy-growth-log-time\s*\{\s*color:\s*(#[0-9a-f]{6})/i.exec(GROWTH_SCSS)?.[1] ?? ''
+    const account = /\.dsh-codebuddy-growth-log-account\s*\{\s*color:\s*(#[0-9a-f]{6})/i.exec(GROWTH_SCSS)?.[1] ?? ''
+    expect(time).not.toBe('')
+    expect(account).not.toBe('')
+    expect(time).not.toBe(account)
   })
 
   it('内容区用 border-box，避免「内容没超出也出滚动条」', () => {
@@ -142,9 +189,8 @@ describe('展开时的日志接线', () => {
     expect(body).toContain('setLogOpen(true)')
   })
 
-  it('两侧都在 dsh-semi-ui 中导出（面板不能直接依赖 semi-ui 内部路径）', () => {
+  it('SideSheet 经 dsh-semi-ui 导出（面板不直接依赖 semi-ui 内部路径）', () => {
     expect(COMPONENTS).toContain('DshSideSheet')
-    expect(COMPONENTS).toContain('DshCodeHighlight')
   })
 })
 
@@ -168,8 +214,12 @@ describe('宿主持久化日志', () => {
 
   it('客户端把日志格式化成等宽文本', () => {
     expect(STORE).toContain('export function formatGrowthRunLog')
+    // 渲染改由 log-presentation 的逐行数据驱动，纯文本只是它的拼接结果。
+    expect(STORE).toContain('growthLogLines')
     // code 列补齐，让状态列对齐。
-    expect(STORE).toMatch(/padEnd\(codeWidth/)
+    // 补齐在 log-presentation.ts（渲染与纯文本共用同一份逐行数据）。
+    const PRESENTATION = readFileSync(`${ROOT}/client/log-presentation.ts`, 'utf8')
+    expect(PRESENTATION).toMatch(/padEnd\(codeWidth/)
   })
 })
 
