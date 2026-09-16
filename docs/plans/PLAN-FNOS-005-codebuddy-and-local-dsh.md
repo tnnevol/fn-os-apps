@@ -1,12 +1,12 @@
 ---
 id: PLAN-FNOS-005
 title: PLAN-FNOS-005 CodeBuddy 成长任务移植与仓库内 DSH 开发环境
-description: 实施 FNOS-005-01 至 FNOS-005-13：移植成长任务与任务中心，提供管理后台一键签到、「完成任务」按钮与任务执行日志抽屉；并在仓库内安装固定版本 dsh CLI，让 start 以仓库根 .dsh 作为 DSH_HOME 启动本地 DSH Web。
+description: 实施 FNOS-005-01 至 FNOS-005-14：移植成长任务与任务中心，提供管理后台一键签到、「完成任务」按钮与任务执行日志抽屉；并在仓库内安装固定版本 dsh CLI，让 start 以仓库根 .dsh 作为 DSH_HOME 启动本地 DSH Web，并自动内置仓库插件。
 status: completed
 owner: tnnevol
 planDate: 2026-09-14
 targetVersion: 5.4.0
-lastVerified: 2026-09-15
+lastVerified: 2026-09-16
 ---
 
 # PLAN-FNOS-005 CodeBuddy 成长任务移植与仓库内 DSH 开发环境
@@ -16,7 +16,7 @@ lastVerified: 2026-09-15
 | 计划编号 | PLAN-FNOS-005 |
 | 计划日期 | 2026-09-14 |
 | 对应需求 | [FNOS-005 CodeBuddy 成长任务移植与仓库内 DSH 开发环境](/requirements/FNOS-005-codebuddy-and-local-dsh) |
-| 本轮功能 | `FNOS-005-01` 至 `FNOS-005-13`：成长任务列表与状态、单任务/一键完成 + 自动领奖、任务中心扫描与执行队列、不可自动化任务指引、运营周期开关收拢到管理面板、「完成任务」按钮、个人成长任务收拢到弹框、执行状态持久化、任务执行日志抽屉，以及仓库内 DSH CLI、本地 DSH Web 启动目标与本地 `DSH_HOME` |
+| 本轮功能 | `FNOS-005-01` 至 `FNOS-005-14`：成长任务列表与状态、单任务/一键完成 + 自动领奖、任务中心扫描与执行队列、不可自动化任务指引、运营周期开关收拢到管理面板、「完成任务」按钮、个人成长任务收拢到弹框、执行状态持久化、任务执行日志抽屉，以及仓库内 DSH CLI、本地 DSH Web 启动目标、本地 `DSH_HOME` 与仓库插件自动内置 |
 | 移植来源 | `workbuddy2api-panel`（`~/workspace/fork-pj/workbuddy2api-panel`） |
 | 上游依据 | `@deepseek-ai/dsh@0.1.5-rc.2`（与 FPK 运行时基线一致） |
 | 计划状态 | <Badge type="tip" text="已完成" /> |

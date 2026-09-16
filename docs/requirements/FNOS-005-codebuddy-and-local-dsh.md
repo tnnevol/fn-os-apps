@@ -1,11 +1,11 @@
 ---
 id: FNOS-005
 title: FNOS-005 CodeBuddy 成长任务移植与仓库内 DSH 开发环境
-description: 将 workbuddy2api-panel 中的 CodeBuddy 成长任务能力（任务列表、一键完成、自动领奖）与任务中心（全账号扫描、执行队列）移植到本仓库 CodeBuddy 插件，并在仓库内安装固定版本 dsh CLI、由 start 以仓库根 .dsh 作为 DSH_HOME 启动本地 DSH Web。
+description: 将 workbuddy2api-panel 中的 CodeBuddy 成长任务能力（任务列表、一键完成、自动领奖）与任务中心（全账号扫描、执行队列）移植到本仓库 CodeBuddy 插件，并在仓库内安装固定版本 dsh CLI、由 start 以仓库根 .dsh 作为 DSH_HOME 启动本地 DSH Web，自动内置仓库插件。
 status: completed
 owner: tnnevol
 targetVersion: 5.4.0
-lastVerified: 2026-09-15
+lastVerified: 2026-09-16
 ---
 
 # FNOS-005 CodeBuddy 成长任务移植与仓库内 DSH 开发环境
@@ -321,3 +321,4 @@ lastVerified: 2026-09-15
 | 2026-09-15 | 改回保留 TUI 的实现 | 首次修复用 `--ui=stream` 关掉 TUI 换取并行，属错误修法（用户要求保留 TUI 多任务形态）。改为把 DSH Web 做成 Turbo 根任务 `//#dev:web`，与 `dev` 交给同一个 `turbo watch`，TUI 保留且各占一行；因 Turbo 严格模式会剥掉未声明的 `DSH_HOME`，该任务声明 `passThroughEnv` |
 | 2026-09-15 | 补齐依赖安装策略 | 记录 DSH 原生依赖使用预编译产物、`allowBuilds` 显式拒绝安装脚本的原因，避免 `pnpm install` 因被忽略的构建脚本失败；补声明 pnpm 隔离布局下不可解析的 `@deepseek-ai/dsh-llm-pi-ai` |
 | 2026-09-15 | 新增 FNOS-005-14 | 本地 DSH Web 启动时自动把仓库插件内置进 `.dsh` profile（先 Turbo 构建，再经 `dsh plugin --profile web add` 链接）；按用户要求排除 FPK 专用的 `@tnnevol/dsh-fnos` |
+| 2026-09-16 | FNOS-005 验收完成 | FNOS-005-01 至 FNOS-005-14 全部功能均已验证通过，需求状态与验收记录确认完成 |
