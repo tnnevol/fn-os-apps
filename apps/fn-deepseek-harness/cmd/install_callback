@@ -22,20 +22,14 @@ DSH_PROFILE_DIRECTORY="${DSH_HOME}/profiles/web"
 PROXY_SCRIPT="${APP_DEST}/gateway-proxy.mjs"
 NPM_USER_CONFIG_FILE="${DSH_HOME}/.npmrc"
 LEGACY_NPM_REGISTRY_FILE="${APP_HOME}/.fn-deepseek-harness/npm-registry"
-APP_UID="${TRIM_UID:-}"
-APP_GROUP="${TRIM_GROUPNAME:-}"
-ID_BIN="/usr/bin/id"
-ENV_BIN="/usr/bin/env"
-STAT_BIN="/usr/bin/stat"
-CHOWN_BIN="/usr/bin/chown"
-RUNUSER_BIN=""
 
 export DSH_HOME
 export HOME="${APP_HOME}"
 export NPM_CONFIG_CACHE="${DSH_HOME}/.npm-cache"
 export NPM_CONFIG_PREFIX
 export NPM_CONFIG_USERCONFIG="${NPM_USER_CONFIG_FILE}"
-export PATH="${NODE_BIN}:${NPM_CONFIG_PREFIX}/bin:${PATH}"
+export PNPM_CONFIG_STORE_DIR="${PNPM_STORE_DIR}"
+export PATH="${NODE_BIN}:${NPM_CONFIG_PREFIX}/bin:/usr/bin:/bin"
 
 log_message() {
     local level="$1"
@@ -53,13 +47,13 @@ log_error() {
 
 select_npm() {
     [ -x "${NPM_BIN}" ] || fail_install "npm is not available in the nodejs_v24 runtime"
-    NPM_VERSION="$(run_as_app_user "${NPM_BIN}" --version 2>/dev/null || true)"
+    NPM_VERSION="$("${NPM_BIN}" --version 2>/dev/null || true)"
     log_info "Using npm ${NPM_VERSION:-unknown} for DSH and plugin installation."
 }
 
 installed_pnpm_version() {
     [ -x "${PNPM_BIN}" ] || return 0
-    run_as_app_user "${PNPM_BIN}" --version 2>/dev/null || true
+    "${PNPM_BIN}" --version 2>/dev/null || true
 }
 
 has_required_pnpm() {
@@ -67,7 +61,7 @@ has_required_pnpm() {
 }
 
 global_package_root() {
-    run_as_app_user "${NPM_BIN}" root -g 2>/dev/null || true
+    "${NPM_BIN}" root -g 2>/dev/null || true
 }
 
 resolve_dsh_package_dir() {
@@ -85,60 +79,9 @@ fail_install() {
     exit 1
 }
 
-prepare_app_user() {
-    [ -x "${ID_BIN}" ] && [ -x "${ENV_BIN}" ] && [ -x "${STAT_BIN}" ] && [ -x "${CHOWN_BIN}" ] ||
-        fail_install "Required user and ownership utilities are unavailable"
-    if [ -n "${APP_UID}" ]; then
-        case "${APP_UID}" in
-        *[!0-9]* | 0) fail_install "TRIM_UID is invalid; cannot select the DSH application user" ;;
-        esac
-    fi
-    [ -n "${APP_UID}" ] || fail_install "TRIM_UID is not available; cannot select the DSH application user"
-    if [ -z "${APP_GROUP}" ]; then
-        APP_GROUP="$(${ID_BIN} -gn "${APP_UID}" 2>/dev/null || true)"
-    fi
-    [ -n "${APP_GROUP}" ] || fail_install "TRIM_GROUPNAME is not available; cannot protect DSH profile ownership"
-    for candidate in /usr/sbin/runuser /usr/bin/runuser; do
-        if [ -x "${candidate}" ]; then
-            RUNUSER_BIN="${candidate}"
-            break
-        fi
-    done
-    [ -n "${RUNUSER_BIN}" ] || fail_install "runuser is required to manage DSH as the application user"
-
-    if [ "$(${ID_BIN} -u)" = "0" ]; then
-        mkdir -p "${DSH_HOME}" || fail_install "Unable to create the DSH application home"
-        "${CHOWN_BIN}" -R "${APP_UID}:${APP_GROUP}" "${DSH_HOME}" ||
-            fail_install "Unable to assign DSH application home to ${APP_UID}:${APP_GROUP}"
-    else
-        [ "$(${ID_BIN} -u)" = "${APP_UID}" ] ||
-            fail_install "Install callback must run as UID ${APP_UID} or root"
-    fi
-}
-
-run_as_app_user() {
-    if [ "$(${ID_BIN} -u)" = "${APP_UID}" ]; then
-        HOME="${DSH_HOME}" DSH_HOME="${DSH_HOME}" \
-            NPM_CONFIG_CACHE="${DSH_HOME}/.npm-cache" \
-            NPM_CONFIG_PREFIX="${NPM_CONFIG_PREFIX}" \
-            NPM_CONFIG_USERCONFIG="${NPM_USER_CONFIG_FILE}" \
-            PNPM_CONFIG_STORE_DIR="${PNPM_STORE_DIR}" \
-            PATH="${NODE_BIN}:${NPM_CONFIG_PREFIX}/bin:/usr/bin:/bin" "$@"
-        return
-    fi
-    "${RUNUSER_BIN}" --user "${APP_UID}" --group "${APP_GROUP}" -- \
-        "${ENV_BIN}" HOME="${DSH_HOME}" DSH_HOME="${DSH_HOME}" \
-        NPM_CONFIG_CACHE="${DSH_HOME}/.npm-cache" \
-        NPM_CONFIG_PREFIX="${NPM_CONFIG_PREFIX}" \
-        NPM_CONFIG_USERCONFIG="${NPM_USER_CONFIG_FILE}" \
-        PNPM_CONFIG_STORE_DIR="${PNPM_STORE_DIR}" \
-        PATH="${NODE_BIN}:${NPM_CONFIG_PREFIX}/bin:/usr/bin:/bin" "$@"
-}
-
 remove_legacy_pnpm_store_config() {
     [ -f "${NPM_USER_CONFIG_FILE}" ] || return 0
-    run_as_app_user "${ENV_BIN}" \
-        PNPM_USER_CONFIG_FILE="${NPM_USER_CONFIG_FILE}" \
+    PNPM_USER_CONFIG_FILE="${NPM_USER_CONFIG_FILE}" \
         "${NODE_BIN}/node" -e '
 const fs = require("node:fs")
 const path = require("node:path")
@@ -160,7 +103,7 @@ fs.renameSync(temporaryPath, configPath)
 read_persisted_npm_registry() {
     local registry
     if [ -f "${NPM_USER_CONFIG_FILE}" ]; then
-        registry="$(run_as_app_user "${NPM_BIN}" config get registry --location=user 2>/dev/null || true)"
+        registry="$("${NPM_BIN}" config get registry --location=user 2>/dev/null || true)"
     elif [ -f "${LEGACY_NPM_REGISTRY_FILE}" ]; then
         registry="$(tr -d '[:space:]' <"${LEGACY_NPM_REGISTRY_FILE}" 2>/dev/null || true)"
     fi
@@ -168,7 +111,7 @@ read_persisted_npm_registry() {
 }
 
 persist_npm_registry() {
-    run_as_app_user "${NPM_BIN}" config set registry "${NPM_REGISTRY}" --location=user ||
+    "${NPM_BIN}" config set registry "${NPM_REGISTRY}" --location=user ||
         fail_install "Unable to persist npm registry in ${NPM_USER_CONFIG_FILE}"
 }
 
@@ -201,8 +144,7 @@ try {
 }
 
 persist_pnpm_store_dir() {
-    run_as_app_user "${ENV_BIN}" \
-        PNPM_STORE_DIR="${PNPM_STORE_DIR}" \
+    PNPM_STORE_DIR="${PNPM_STORE_DIR}" \
         PNPM_USER_CONFIG_FILE="${NPM_USER_CONFIG_FILE}" \
         PNPM_STORE_FILE="${PNPM_STORE_FILE}" \
         "${NODE_BIN}/node" -e '
@@ -245,6 +187,7 @@ configure_pnpm_store() {
     else
         log_info "Using the persistent pnpm store ${PNPM_STORE_DIR}."
     fi
+    PNPM_CONFIG_STORE_DIR="${PNPM_STORE_DIR}"
     persist_pnpm_store_dir
 }
 
@@ -298,7 +241,7 @@ run_dsh_plugin() {
     local package_spec="$2"
     validate_plugin_spec "${package_spec}"
     log_info "Running dsh plugin --profile web ${action} ${package_spec}."
-    run_as_app_user "${DSH_BIN}" plugin --profile web "${action}" "${package_spec}"
+    "${DSH_BIN}" plugin --profile web "${action}" "${package_spec}"
 }
 
 install_published_dsh_plugins() {
@@ -372,8 +315,7 @@ patch_dsh_attachment_local() {
 
     log_info "Patching installed @deepseek-ai/dsh-attachment-local@${attachment_local_version} for DSH ${DSH_VERSION}."
 
-    run_as_app_user "${ENV_BIN}" \
-        DSH_ATTACHMENT_LOCAL_DIR="${DSH_PACKAGE_DIR}/node_modules/@deepseek-ai/dsh-attachment-local" \
+    DSH_ATTACHMENT_LOCAL_DIR="${DSH_PACKAGE_DIR}/node_modules/@deepseek-ai/dsh-attachment-local" \
         DSH_ATTACHMENT_LOCAL_VERSION="${attachment_local_version}" \
         TRIM_PKGVAR="${TRIM_PKGVAR}" \
         "${NODE_BIN}/node" "${DSH_ATTACHMENT_PATCH_SCRIPT}" ||
@@ -426,8 +368,7 @@ run_node_pty_script() {
     [ -f "${DSH_NODE_PTY_SCRIPT}" ] ||
         fail_install "The FPK node-pty installer is not available at ${DSH_NODE_PTY_SCRIPT}"
 
-    run_as_app_user "${ENV_BIN}" \
-        DSH_HOME="${DSH_HOME}" \
+    DSH_HOME="${DSH_HOME}" \
         DSH_VERSION="${DSH_VERSION}" \
         DSH_VERSION_FILE="${DSH_VERSION_FILE}" \
         DSH_NATIVE_BUNDLE="${APP_DEST}/native/node-pty" \
@@ -446,7 +387,7 @@ run_node_pty_script() {
 has_required_dsh() {
     [ -x "${DSH_BIN}" ] || return 1
     [ "$(read_package_version "${DSH_PACKAGE_DIR}/package.json")" = "${DSH_VERSION}" ] || return 1
-    [ "$(run_as_app_user "${DSH_BIN}" --version 2>/dev/null || true)" = "${DSH_VERSION}" ]
+    [ "$("${DSH_BIN}" --version 2>/dev/null || true)" = "${DSH_VERSION}" ]
 }
 
 has_bundled_node_pty() {
@@ -460,11 +401,10 @@ main() {
         fail_install "nodejs_v24 runtime is not available at ${NODE_BIN}"
     fi
 
-    prepare_app_user
     remove_legacy_pnpm_store_config
     select_npm
 
-    run_as_app_user /bin/mkdir -p "${DSH_HOME}/.npm-cache" "${NPM_CONFIG_PREFIX}" "${HOME}" ||
+    /bin/mkdir -p "${DSH_HOME}/.npm-cache" "${NPM_CONFIG_PREFIX}" "${HOME}" ||
         fail_install "Unable to prepare the dsh package manager directories"
 
     NPM_REGISTRY="${wizard_npm_registry:-$(read_persisted_npm_registry)}"
@@ -475,7 +415,7 @@ main() {
         log_info "Using locally installed pnpm@${PNPM_VERSION}; installation skipped."
     else
         log_info "Installing pnpm@${PNPM_VERSION} globally for DSH plugin management."
-        run_as_app_user "${NPM_BIN}" install "pnpm@${PNPM_VERSION}" -g --ignore-scripts ||
+        "${NPM_BIN}" install "pnpm@${PNPM_VERSION}" -g --ignore-scripts ||
             fail_install "Unable to install pnpm@${PNPM_VERSION}"
     fi
     [ "$(installed_pnpm_version)" = "${PNPM_VERSION}" ] ||
@@ -500,7 +440,7 @@ main() {
             log_info "No usable local ${DSH_PACKAGE}@${DSH_VERSION}; installing the required version."
         fi
         log_info "Installing ${DSH_PACKAGE}@${DSH_VERSION} globally from ${NPM_REGISTRY}..."
-        if ! run_as_app_user "${NPM_BIN}" install "${DSH_PACKAGE}@${DSH_VERSION}" -g --ignore-scripts; then
+        if ! "${NPM_BIN}" install "${DSH_PACKAGE}@${DSH_VERSION}" -g --ignore-scripts; then
             fail_install "Failed to install ${DSH_PACKAGE}@${DSH_VERSION} from ${NPM_REGISTRY}"
         fi
         NPM_GLOBAL_ROOT="$(global_package_root)"
@@ -525,10 +465,10 @@ main() {
     run_node_pty_script "${RUN_NODE_PTY_DEPENDENCY_SCRIPTS}"
     patch_dsh_attachment_local
     configure_pnpm_store
-    if [ ! -x "${DSH_BIN}" ] || ! run_as_app_user "${DSH_BIN}" --help >/dev/null 2>&1; then
+    if [ ! -x "${DSH_BIN}" ] || ! "${DSH_BIN}" --help >/dev/null 2>&1; then
         fail_install "dsh installation verification failed: dsh --help"
     fi
-    DSH_REPORTED_VERSION="$(run_as_app_user "${DSH_BIN}" --version 2>/dev/null || true)"
+    DSH_REPORTED_VERSION="$("${DSH_BIN}" --version 2>/dev/null || true)"
     [ "${DSH_REPORTED_VERSION}" = "${DSH_VERSION}" ] ||
         fail_install "dsh --version reported ${DSH_REPORTED_VERSION:-unknown}; expected ${DSH_VERSION}"
 

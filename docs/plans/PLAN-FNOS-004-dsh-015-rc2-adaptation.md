@@ -246,7 +246,7 @@ DSH 0.1.5-rc.2 发布包
 
 ### P0：应用私有 dsh CLI 运行边界
 
-1. `install_callback` 不创建公开 wrapper，也不在 `config/resource` 注册 `usr-local-linker`；真实 CLI 固定在应用私有 `${TRIM_PKGHOME}/.npm-global/bin/dsh`，所有安装阶段命令由 `run_as_app_user` 以应用包用户执行。
+1. `install_callback` 不创建公开 wrapper，也不在 `config/resource` 注册 `usr-local-linker`；真实 CLI 固定在应用私有 `${TRIM_PKGHOME}/.npm-global/bin/dsh`。安装回调直接依赖 fnOS `config/privilege` 的 `run-as=package`，只初始化 DSH/npm/pnpm 所需环境，不自行检查 UID/GID、修复所有权或切换用户。
 2. 取消公开入口的依据是平台能力：fnOS 上 `runuser` 以非 root 执行报 `may not be used by non-root users`，指定 `--group` 报 `only root can specify alternative groups`，`su` 需要密码，`setpriv` 报 `Operation not permitted`，且需求禁止 setuid 与不受控 sudo。没有可用切换机制时，任何普通用户调用都会以调用者身份运行，违反身份约束，因此不暴露入口。
 3. 网关以应用包用户直接启动 `dsh web --no-open`，并自行固定 `DSH_HOME`、`HOME`、`PATH`、`NPM_CONFIG_CACHE`、`NPM_CONFIG_PREFIX`、`NPM_CONFIG_USERCONFIG`、`XDG_CONFIG_HOME`，不依赖调用者环境。
 4. 构建校验必须拒绝重新引入 wrapper 的产物：`cmd/install_callback` 不得出现 `CLI_WRAPPER` / `setup_cli_wrapper`，`config/resource` 不得出现 `usr-local-linker` 或 `/bin/dsh`。
