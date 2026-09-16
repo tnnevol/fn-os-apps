@@ -279,7 +279,12 @@ export class WebProcessController {
       await writeFile(this.options.startingPidFile, String(spawned.pid), { mode: 0o600 })
       spawned.once('exit', () => {
         if (this.child === spawned) this.child = undefined
-        void readPid(this.options.pidFile).then(current => current === spawned.pid ? rm(this.options.pidFile, { force: true }) : undefined)
+        void readPid(this.options.pidFile)
+          .then(current => current === spawned.pid ? rm(this.options.pidFile, { force: true }) : undefined)
+          .catch(() => {
+            // Child-exit cleanup is best effort; never turn a stale pid-file
+            // failure into an unhandled rejection in the gateway process.
+          })
       })
       const deadline = Date.now() + (this.options.healthTimeoutMs ?? DEFAULT_HEALTH_TIMEOUT_MS)
       while (Date.now() < deadline) {

@@ -33,6 +33,8 @@ export async function* parseSse(
   // 保持直观。
   const queue: string[] = []
   let ended = false
+  let pumpFailed = false
+  let pumpError: unknown
   let resolveWake: (() => void) | undefined
 
   const parser = createParser({
@@ -56,7 +58,15 @@ export async function* parseSse(
     }
   }
 
-  const pumping = pump()
+  // Observe pump failures immediately. Waiting until the generator's `finally`
+  // would leave a rejected promise unhandled while the consumer is asleep in
+  // the wake promise, which is fatal under dsh's fail-loud rejection policy.
+  const pumping = pump().catch(error => {
+    pumpFailed = true
+    pumpError = error
+    ended = true
+    resolveWake?.()
+  })
 
   try {
     while (true) {
@@ -65,6 +75,7 @@ export async function* parseSse(
         yield data
         if (data === DONE) return
       }
+      if (pumpFailed) throw pumpError
       if (ended) {
         throw new LlmError('CodeBuddy SSE stream ended without [DONE]', 'STREAM_CLOSED')
       }
@@ -78,8 +89,8 @@ export async function* parseSse(
     await reader.cancel().catch(() => {
       // 流可能已经关闭；取消尽力而为。
     })
-    await pumping.catch(() => {
-      // 读取错误经 `pumping` 浮现；生成器已经抛出。
-    })
+    // `pumping` has an attached rejection handler above and therefore always
+    // settles here after recording the reader failure for the consumer loop.
+    await pumping
   }
 }
