@@ -1,7 +1,7 @@
 {
   "name": "fn-os-apps",
   "type": "module",
-  "version": "5.4.0",
+  "version": "5.4.1",
   "private": true,
   "packageManager": "pnpm@11.16.0",
   "description": "飞牛 fnOS 应用 Monorepo",

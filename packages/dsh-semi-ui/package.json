@@ -2,7 +2,7 @@
   "name": "@tnnevol/dsh-semi-ui",
   "displayName": "DSH Semi UI",
   "type": "module",
-  "version": "5.4.0",
+  "version": "5.4.1",
   "description": "Shared Semi Design components themed for DeepSeek Harness.",
   "author": "tnnevol",
   "documentation": "https://fnapps-doc.tnnevol.cn/plugins/",
