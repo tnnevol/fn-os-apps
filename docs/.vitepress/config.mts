@@ -136,6 +136,10 @@ const requirementsSidebar = [
         text: 'FNOS-005 CodeBuddy 成长任务与本地 DSH',
         link: '/requirements/FNOS-005-codebuddy-and-local-dsh'
       },
+      {
+        text: 'FNOS-006 安装脚本与安装流程优化',
+        link: '/requirements/FNOS-006-installation-script-optimization'
+      },
     ]
   }
 ]
@@ -164,6 +168,10 @@ const plansSidebar = [
       {
         text: 'PLAN-FNOS-005 CodeBuddy 成长任务与本地 DSH',
         link: '/plans/PLAN-FNOS-005-codebuddy-and-local-dsh'
+      },
+      {
+        text: 'PLAN-FNOS-006 安装脚本与安装流程优化',
+        link: '/plans/PLAN-FNOS-006-installation-script-optimization'
       },
     ]
   }
