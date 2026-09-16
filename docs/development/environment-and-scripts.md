@@ -117,7 +117,7 @@ fnpack build
 pnpm run build -- --fpk --app <app-name>
 ```
 
-交互式构建时执行 `pnpm run build`，选择 **FPK** 后可以多选应用。选择 `fn-deepseek-harness` 时，CLI 会先通过 `build:gateway` 构建 Gateway，再执行该应用的 `fnpack build`。
+交互式构建时执行 `pnpm run build`，选择 **FPK** 后可以多选应用。选择 `fn-deepseek-harness` 时，CLI 会先通过 `build:gateway` 构建 Gateway，再询问是否将 node-pty native 文件内置到 FPK（默认是），选择内置时会在 Linux 构建机上执行 native 准备脚本，最后执行该应用的 `fnpack build`。非交互构建可显式使用 `--bundle-dsh-native` 或 `--skip-bundle-dsh-native`。
 
 FPK 产物生成在应用目录中，不要提交 `.fpk` 或临时构建目录。应用依赖的 Node.js、Python、镜像和中间件必须通过 Manifest、资源配置或 fnOS 安装流程声明，不能依赖开发机环境。
 

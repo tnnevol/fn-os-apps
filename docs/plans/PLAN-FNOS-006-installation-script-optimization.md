@@ -71,12 +71,19 @@ packages/fnos-gateway/src/install-callback-helper/index.ts
 
 ### P0：统一安装辅助入口
 
-状态：<Badge type="info" text="规划中" />
+状态：<Badge type="tip" text="已完成" />
 
 | 任务 ID | 对应验收 | 实现内容 | 验收 |
 | --- | --- | --- | --- |
 | PLAN-FNOS-006-T01-01 | FNOS-006-01 | 将 helper 入口和通用文件操作整理为 TypeScript 模块 | 类型检查和 lint 通过，未知命令返回非零 |
 | PLAN-FNOS-006-T01-02 | FNOS-006-01、06 | 在 tsdown 应用配置中增加 helper 入口，固定输出路径并加入生成文件忽略规则 | Node 24 可执行，FPK 中包含 helper |
+
+验证结果：
+
+- `packages/fnos-gateway/src/install-callback-helper/` 已拆分为 `index.ts`、`common.ts`、`node-pty.ts` 和 `attachment-patch.ts`。
+- `tsdown.app.config.ts` 固定输出 `apps/fn-deepseek-harness/app/scripts/install-callback-helper.mjs`（约 19 KB，425 行），重复构建结果稳定。
+- 未知子命令返回非零（实测退出码 1），`package-version` 等子命令在 Node 24 下可用。
+- 已包含 `prepare-node-pty` 与 `patch-attachment-local` 子命令；旧 `install-node-pty.sh` 和 `patch-dsh-attachment-local.mjs` 已删除。
 
 ### P0：收敛 node-pty 与 attachment 流程
 
@@ -90,22 +97,36 @@ packages/fnos-gateway/src/install-callback-helper/index.ts
 
 ### P0：简化安装回调
 
-状态：<Badge type="info" text="规划中" />
+状态：<Badge type="tip" text="已完成" />
 
 | 任务 ID | 对应验收 | 实现内容 | 验收 |
 | --- | --- | --- | --- |
 | PLAN-FNOS-006-T03-01 | FNOS-006-02、05 | 删除回调中的 `node -e`、重复 JSON 解析函数和身份切换逻辑 | 回调只保留流程编排，不出现旧权限工具和内联 Node 模板 |
 | PLAN-FNOS-006-T03-02 | FNOS-006-02、06 | 为 helper 缺失、Node 不可用和子命令失败补充阶段性错误 | `TRIM_TEMP_LOGFILE` 能收到明确错误，生命周期返回非零 |
 
+验证结果：
+
+- `cmd/install_callback` 中 `node -e` 计数为 0，大段内联 JavaScript 与重复 JSON 解析函数已移除。
+- 回调只保留环境读取、步骤顺序、`run_install_callback_helper` 调用、`fail_install` 错误退出，以及 helper 缺失与 Node 不可用的阶段检查。
+- 回调不再出现 `runuser`、`chown`、`TRIM_UID`、`TRIM_GROUPNAME` 或 `APP_UID`/`APP_GROUP`；身份由 `config/privilege` 的 `run-as=package` 提供。
+- `bash -n apps/fn-deepseek-harness/cmd/install_callback` 与 `node --check` 均通过；`pnpm --filter @tnnevol/fnos-gateway check` 通过（54 项测试）。
+
 ### P0：CodeBuddy 流式中止稳定性
 
-状态：<Badge type="warning" text="待完成" />
+状态：<Badge type="tip" text="已完成" />
 
 | 任务 ID | 对应验收 | 实现内容 | 验收 |
 | --- | --- | --- | --- |
 | PLAN-FNOS-006-T05-01 | FNOS-006-07 | 在 `parseSse` 中立即观察 reader pump 的拒绝，记录失败并唤醒等待中的消费者 | 上游中止时流结束并返回可处理错误，不再永久等待或产生 unhandled rejection |
 | PLAN-FNOS-006-T05-02 | FNOS-006-07 | 为 CodeBuddy 账号刷新、模型目录读取和自动签到/旅行/切换周期的浮空 promise 增加 rejection 收口 | 单次网络、凭据或存储失败只记录错误，不触发 DSH 进程退出 |
 | PLAN-FNOS-006-T05-03 | FNOS-006-07 | 增加 SSE、延迟拒绝和中止场景回归测试，并重新构建 CodeBuddy bundle | CodeBuddy 插件测试和构建通过，构建产物包含修复 |
+
+验证结果：
+
+- `PLAN-FNOS-006-T05-01`、`T05-02`、`T05-03` 均已完成。
+- `pnpm --filter @tnnevol/dsh-codebuddy check`、`pnpm --filter @tnnevol/dsh-codebuddy build`、`pnpm run check -- --all`、`pnpm run build -- --docs` 通过；CodeBuddy 812 项测试通过。
+- 端到端中止复现通过：思考中停止会话后流以 `AbortError` 干净结束，DSH 进程继续运行。
+- 真实使用环境已确认「思考中停止会话不再导致 DSH 客户端服务停止」。
 
 ### P1：回归验证与发布
 
@@ -180,10 +201,10 @@ pnpm --filter @tnnevol/dsh-codebuddy build
 
 | 阶段 | 状态 | 完成条件 |
 | --- | --- | --- |
-| P0 统一安装辅助入口 | <Badge type="info" text="规划中" /> | TypeScript 模块、tsdown 入口和 FPK 输出路径完成 |
+| P0 统一安装辅助入口 | <Badge type="tip" text="已完成" /> | TypeScript 模块、tsdown 固定输出和 Node 24 可执行产物均完成 |
 | P0 node-pty 与 attachment 流程 | <Badge type="info" text="规划中" /> | 原有功能迁移并通过回归测试 |
-| P0 安装回调瘦身 | <Badge type="info" text="规划中" /> | 无内联 Node 模板和自定义身份切换 |
-| P0 CodeBuddy 流式中止稳定性 | <Badge type="warning" text="待完成" /> | 本地 CodeBuddy 812 项测试、构建和中止复现已通过，待真实目标环境验证 |
+| P0 安装回调瘦身 | <Badge type="tip" text="已完成" /> | `node -e` 清零、旧脚本移除、权限交由 `run-as=package` |
+| P0 CodeBuddy 流式中止稳定性 | <Badge type="tip" text="已完成" /> | 代码、812 项插件测试、构建、端到端中止复现和真实环境验证均通过 |
 | P1 回归验证与发布 | <Badge type="info" text="规划中" /> | 全量检查、FPK 构建和真实 NAS 验收通过 |
 
 ## 变更记录
@@ -191,4 +212,6 @@ pnpm --filter @tnnevol/dsh-codebuddy build
 | 日期 | 变更 |
 | --- | --- |
 | 2026-09-16 | 建立 PLAN-FNOS-006，规划安装辅助脚本统一、安装回调瘦身、node-pty 与 attachment 流程收敛，以及构建和 NAS 验收。 |
-| 2026-09-16 | 增加 PLAN-FNOS-006-T05-01 至 T05-03 | 将 CodeBuddy 思考中停止会话的 SSE 中止、刷新/目录读取和周期任务 rejection 收口纳入 P0；本地 812 项测试和端到端中止验证通过，待真实 NAS 验收。 |
+| 2026-09-16 | 增加 PLAN-FNOS-006-T05-01 至 T05-03：将 CodeBuddy 思考中停止会话的 SSE 中止、刷新/目录读取和周期任务 rejection 收口纳入 P0；本地 812 项测试和端到端中止验证通过，待真实 NAS 验收。 |
+| 2026-09-16 | T05 阶段验收通过：CodeBuddy 流式中止稳定性在真实使用环境确认，思考中停止会话不再导致 DSH 客户端服务停止；阶段状态改为“已完成”。 |
+| 2026-09-16 | T01、T03 阶段完成：统一安装辅助入口与简化安装回调完成，helper 模块化编译产物落地（19 KB/425 行，未知子命令退出码 1），回调 `node -e` 计数为 0 且不再处理身份切换；阶段状态改为“已完成”。 |

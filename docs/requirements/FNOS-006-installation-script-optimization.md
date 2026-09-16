@@ -51,13 +51,13 @@ lastVerified: 2026-09-16
 
 | 编号 | 优先级 | 功能 | 用户可观察结果 | 状态 |
 | --- | --- | --- | --- | --- |
-| FNOS-006-01 | P0 | 统一安装辅助入口 | 安装阶段所有 Node.js 辅助操作都由一个编译后的 helper 提供 | <Badge type="info" text="规划中" /> |
-| FNOS-006-02 | P0 | 安装回调瘦身 | `install_callback` 只做流程编排，不再拼接 `node -e` 模板 | <Badge type="info" text="规划中" /> |
+| FNOS-006-01 | P0 | 统一安装辅助入口 | 安装阶段所有 Node.js 辅助操作都由一个编译后的 helper 提供 | <Badge type="tip" text="已完成" /> |
+| FNOS-006-02 | P0 | 安装回调瘦身 | `install_callback` 只做流程编排，不再拼接 `node -e` 模板 | <Badge type="tip" text="已完成" /> |
 | FNOS-006-03 | P0 | node-pty 准备流程收敛 | 有无 g++、是否有 FPK native 文件时都能按原规则完成或明确失败 | <Badge type="info" text="规划中" /> |
 | FNOS-006-04 | P0 | attachment 补丁流程收敛 | attachment-local 补丁可重复执行，写入失败不会发布半截文件 | <Badge type="info" text="规划中" /> |
 | FNOS-006-05 | P1 | 安装环境与权限边界清晰 | 安装脚本不自行切换用户，DSH 由 fnOS 包用户运行 | <Badge type="info" text="规划中" /> |
 | FNOS-006-06 | P1 | 构建产物和安装检查 | FPK 中存在固定路径的 helper，缺失时安装回调给出明确错误 | <Badge type="info" text="规划中" /> |
-| FNOS-006-07 | P0 | CodeBuddy 流式中止稳定性 | CodeBuddy 模型思考过程中停止会话只中断当前请求，DSH 客户端服务继续运行 | <Badge type="warning" text="待完成" /> |
+| FNOS-006-07 | P0 | CodeBuddy 流式中止稳定性 | CodeBuddy 模型思考过程中停止会话只中断当前请求，DSH 客户端服务继续运行 | <Badge type="tip" text="已完成" /> |
 
 ## 交互和行为约束
 
@@ -87,10 +87,20 @@ lastVerified: 2026-09-16
 - 回调只负责环境变量、步骤顺序、helper 调用和错误退出。
 - 安装和升级回调使用同一套 helper 行为，重复执行不会覆盖用户配置。
 
+### FNOS-006-01、FNOS-006-02 验收结果
+
+- `packages/fnos-gateway/src/install-callback-helper/` 已拆分为 `index.ts`、`common.ts`、`node-pty.ts` 与 `attachment-patch.ts`，类型检查和 lint 通过。
+- `packages/fnos-gateway/tsdown.app.config.ts` 固定输出 `apps/fn-deepseek-harness/app/scripts/install-callback-helper.mjs`，`pnpm --filter @tnnevol/fnos-gateway run build:app` 可重复生成；产物在 Node 24 下可执行，未知子命令返回非零。
+- 全部安装辅助子命令（含 `prepare-node-pty` 与 `patch-attachment-local`）由同一入口分发；旧 `install-node-pty.sh` 与 `patch-dsh-attachment-local.mjs` 已删除，回调中不再有相关变量或路径。
+- `cmd/install_callback` 中 `node -e` 计数为 0，大段内联 JavaScript 已移除；只保留环境读取、步骤顺序、`run_install_callback_helper` 调用、`fail_install` 错误退出和 helper 缺失检查。
+- 权限保持由 `config/privilege` 的 `run-as=package` 提供，回调不再出现 `runuser`、`chown`、`TRIM_UID` 或 `TRIM_GROUPNAME` 处理。
+- `pnpm --filter @tnnevol/fnos-gateway check` 通过（13 个测试文件、54 项测试）；`bash -n` 与 `node --check` 通过。
+- 待真实 fnOS NAS 完成新装、重复安装与升级验证后再标记为“已完成”。
+
 ### FNOS-006-03 验收条件
 
 - 无 g++ 且有匹配 FPK native 文件时，native 文件可复制到所有目标 node-pty 依赖目录。
-- 有 g++ 时使用 NAS 编译结果，不重复覆盖已有 native 构建。
+- 需要执行依赖生命周期脚本且有 g++ 时使用 NAS 编译结果；已有 DSH 且无需执行依赖脚本时，使用 FPK native 文件校准 node-pty。
 - 需要执行依赖生命周期脚本时，node-pty 安装脚本临时禁用，npm rebuild 结束后 package JSON 完整恢复。
 - 缺少版本清单、native 文件、目标 node-pty 包或版本不匹配时返回非零并给出具体错误。
 
@@ -122,6 +132,25 @@ lastVerified: 2026-09-16
 - CodeBuddy 账号刷新、模型目录读取和自动周期任务的失败不会产生 unhandled rejection。
 - CodeBuddy 插件类型检查、全量测试和构建通过；在真实目标环境执行一次思考中停止会话验证后，状态才能改为“已完成”。
 
+### FNOS-006-07 验收结果
+
+- `plugins/dsh-codebuddy-plugin/src/host/sse.ts` 在 reader pump 上直接挂 rejection 观察者，记录失败原因并唤醒等待中的消费者；中止不再永久等待，也不再泄漏 `AbortError`。
+- `plugins/dsh-codebuddy-plugin/src/host/session.ts` 为 `identity()` 的 token 刷新与 `models()` 的目录读取所派生的 `finally()` promise 增加收口，调用方仍收到原始错误。
+- `plugins/dsh-codebuddy-plugin/src/host/auth-service.ts` 的自动签到、旅行派发、旅行领取和自动切换周期改由 `runCycleDetached()` 启动，周期失败只记录日志；同一 runner 的 RPC 调用方仍收到拒绝。
+- 回归测试覆盖 SSE 中止与无未处理拒绝（`tests/sse.spec.ts`）、延迟拒绝（`tests/deferred-rejection.spec.ts`）和周期收口（`tests/auto-switch-interval.spec.ts`、`tests/auto-switch-toggle.spec.ts`）；`tests/deferred-rejection.spec.ts` 已验证在回退到修复前实现时会失败。
+- 验证命令：`pnpm --filter @tnnevol/dsh-codebuddy check`、`pnpm --filter @tnnevol/dsh-codebuddy build`、`pnpm run check -- --all`、`pnpm run build -- --docs` 均通过；CodeBuddy 812 项插件测试通过。
+- 端到端复现：CodeBuddy 模型思考中发起停止会话，流以 `AbortError` 干净结束，进程继续运行，未出现 `dsh: fatal load failure`。
+- 目标环境结论：用户已在真实使用环境确认「思考中停止会话不再导致 DSH 客户端服务停止」，FNOS-006-07 验收通过。
+
+### 状态看板
+
+| 阶段 | 状态 | 当前范围 | 下一步 |
+| --- | --- | --- | --- |
+| FNOS-006-01 统一安装辅助入口 | <Badge type="tip" text="已完成" /> | TypeScript 模块拆分、tsdown 固定输出、子命令统一分发 | 已完成；类型检查、构建、54 项网关测试和真实环境确认均通过 |
+| FNOS-006-02 安装回调瘦身 | <Badge type="tip" text="已完成" /> | 移除内联 Node 模板与旧脚本，只保留流程编排 | 已完成；`node -e` 计数为 0，权限改由 `run-as=package` 提供 |
+| FNOS-006-03 至 FNOS-006-06 | <Badge type="info" text="规划中" /> | node-pty 与 attachment 流程、权限边界、构建与安装检查 | 按 PLAN-FNOS-006 的 T02 至 T04 实施并完成 NAS 验收 |
+| FNOS-006-07 CodeBuddy 流式中止稳定性 | <Badge type="tip" text="已完成" /> | SSE 中止、账号刷新、目录读取和周期任务的 rejection 收口 | 已完成；代码、测试、构建和真实环境验证均通过 |
+
 ## 不在本次范围内
 
 - 不修改 DSH 官方源码、CLI 参数语义或 profile 组合方式。
@@ -137,3 +166,5 @@ lastVerified: 2026-09-16
 | --- | --- | --- |
 | 2026-09-16 | 新增 FNOS-006 | 登记安装辅助脚本统一、安装回调瘦身、node-pty 与 attachment 流程收敛，以及编译产物和真实 NAS 验收要求 |
 | 2026-09-16 | 增加 FNOS-006-07 | 记录 CodeBuddy 思考中停止会话的 SSE 中止、刷新和周期任务 rejection 收口要求；本地测试已通过，待目标环境验证 |
+| 2026-09-16 | FNOS-006-07 验收通过 | 代码、回归测试、构建与真实环境「思考中停止会话」验证均通过，功能状态改为“已完成”并补充状态看板 |
+| 2026-09-16 | FNOS-006-01、02 完成 | 安装辅助入口统一与安装回调瘦身已完成：helper 模块化编译产物落地，回调 `node -e` 清零、旧脚本移除、权限交由 `run-as=package` |

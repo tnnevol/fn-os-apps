@@ -125,7 +125,7 @@ export async function publishedPlugins(path: string): Promise<void> {
   const plugins = Array.isArray(manifest.plugins) ? manifest.plugins as PluginManifestEntry[] : []
   for (const plugin of plugins) {
     if (typeof plugin.name === 'string' && typeof plugin.version === 'string') {
-      console.log(`${plugin.name}\t${plugin.version}`)
+      process.stdout.write(`${plugin.name}\t${plugin.version}\n`)
     }
   }
 }

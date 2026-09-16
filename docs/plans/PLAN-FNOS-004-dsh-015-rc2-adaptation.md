@@ -203,7 +203,7 @@ DSH 0.1.5-rc.2 发布包
 | 任务 ID | 对应验收 | 实现内容 | 验收 |
 | --- | --- | --- | --- |
 | PLAN-FNOS-004-T03-01 | FNOS-004-01-AC-09 | 更新 `cmd/install_callback` 的 DSH 版本常量和版本校验，沿用 `${TRIM_*}` 路径，不重建或清空用户 profile | 新安装可得到精确 `0.1.5-rc.2`；已有用户数据目录不被删除或重置 |
-| PLAN-FNOS-004-T03-02 | FNOS-004-01-AC-10 | 更新 native 配置文件名、`prepare-dsh-native.sh` 默认值和 `build-dsh-fn.yml` 的准备/重命名步骤 | workflow 输出的 FPK 文件名带 `dsh-0.1.5-rc.2`，native 文件来自同一依赖树 |
+| PLAN-FNOS-004-T03-02 | FNOS-004-01-AC-10 | 更新 native 配置文件名、`prepare-dsh-native.sh` 默认值、构建 CLI 的 node-pty 内置选项和 `build-dsh-fn.yml` 参数 | workflow 输出的 FPK 文件名带 `dsh-0.1.5-rc.2`，构建流程自动准备并内置同一依赖树的 native 文件 |
 | PLAN-FNOS-004-T03-03 | FNOS-004-01-AC-11 | 更新 DSH 版本相关应用与开发文档，区分当前运行基线和历史变更记录 | 用户文档、开发文档、需求和计划中的当前版本一致；不提前写入本轮未实施的插件安装行为 |
 
 ### P1：组合入口与目标环境验证

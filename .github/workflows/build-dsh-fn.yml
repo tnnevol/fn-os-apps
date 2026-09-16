@@ -45,9 +45,6 @@ jobs:
       - name: Install repository build dependencies
         run: pnpm install --filter @tnnevol/fnos-gateway... --filter @tnnevol/fn-os-apps-cli --frozen-lockfile
 
-      - name: Build bundled fnOS gateway
-        run: pnpm exec fn-apps-cli build:gateway
-
       - name: Install fnpack
         run: |
           curl -fsSL https://static2.fnnas.com/fnpack/fnpack-1.2.1-linux-amd64 -o fnpack
@@ -55,32 +52,19 @@ jobs:
           sudo mv fnpack /usr/local/bin/fnpack
           fnpack --help
 
-      - name: Prepare DSH 0.1.5-rc.2 native dependency
-        id: prepare_dsh
-        working-directory: apps/fn-deepseek-harness
-        timeout-minutes: 20
-        env:
-          NATIVE_CONFIG_FILE: ${{ github.workspace }}/.github/config/dsh-native-0.1.5-rc.2.env
-          NPM_REGISTRY: https://registry.npmjs.org/
-          NPM_COMMAND_TIMEOUT_SECONDS: 900
-          NODE_GYP_TIMEOUT_SECONDS: 900
-          NPM_FETCH_TIMEOUT_MS: 120000
-          NPM_FETCH_RETRIES: 2
-        run: bash ../../.github/scripts/prepare-dsh-native.sh
-
       # 只编译 DSH 应用本身，不把仓库内的 DSH 插件打进 FPK。插件由用户在应用内
       # 通过 `dsh plugin` 从 npm 安装，FPK 不再随包分发插件归档。
       #
-      # `--skip-bundle-dsh-plugins` 是必填的：缺省时 `selectDshPluginBundle`
-      # 会落到交互式确认，CI 会一直等输入直到超时。
+      # `--bundle-dsh-native` 会在 FPK 构建流程中准备并内置 node-pty native 文件；
+      # `--skip-bundle-dsh-plugins` 禁止进入插件内置询问，保证 CI 非交互执行。
       - name: Build fn-deepseek-harness FPK
-        run: pnpm run build -- --fpk --app fn-deepseek-harness --skip-bundle-dsh-plugins
+        run: pnpm run build -- --fpk --app fn-deepseek-harness --bundle-dsh-native --skip-bundle-dsh-plugins
 
       - name: Rename FPK with DSH version
         id: rename
         working-directory: apps/fn-deepseek-harness
         env:
-          DSH_VERSION: ${{ steps.prepare_dsh.outputs.dsh_version }}
+          DSH_VERSION: 0.1.5-rc.2
         run: |
           set -euo pipefail
 

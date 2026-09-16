@@ -383,6 +383,9 @@ importers:
 
   packages/fnos-gateway:
     dependencies:
+      commander:
+        specifier: 'catalog:'
+        version: 14.0.1
       connect:
         specifier: 'catalog:'
         version: 3.7.0(supports-color@7.2.0)

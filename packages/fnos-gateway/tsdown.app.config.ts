@@ -18,6 +18,6 @@ export default {
   dts: false,
   clean: false,
   plugins: [bridgeSourcePlugin()],
-  noExternal: ['connect', 'http-proxy-middleware'],
+  noExternal: ['commander', 'connect', 'http-proxy-middleware'],
   outExtension: () => ({ js: '.mjs' }),
 } satisfies UserConfig

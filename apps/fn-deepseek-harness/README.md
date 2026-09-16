@@ -63,7 +63,7 @@ DSH Web 每次启动都会生成新的 launch Token。网关先写入临时文�
 
 ## DSH native 依赖构建
 
-GitHub Actions 在构建 `fn-deepseek-harness` 时会执行 [`.github/scripts/prepare-dsh-native.sh`](../../.github/scripts/prepare-dsh-native.sh)，构建参数维护在 [`.github/config/dsh-native-0.1.5-rc.2.env`](../../.github/config/dsh-native-0.1.5-rc.2.env)：
+构建 `fn-deepseek-harness` 时，`fn-apps-cli build --bundle-dsh-native` 会执行 [`.github/scripts/prepare-dsh-native.sh`](../../.github/scripts/prepare-dsh-native.sh)，构建参数维护在 [`.github/config/dsh-native-0.1.5-rc.2.env`](../../.github/config/dsh-native-0.1.5-rc.2.env)。GitHub Actions 使用同一个构建入口：
 
 1. 读取固定的 DSH、Node.js、node-pty 和 node-gyp 版本参数，不再在 workflow 中解析完整 DSH 依赖树；
 2. 在 Node.js v24、带有 g++/make/python3 的 Linux runner 中直接安装并编译 `node-pty@1.2.0-beta.15`；
@@ -116,6 +116,6 @@ fn-deepseek-harness-v<app-version>-dsh-0.1.5-rc.2.fpk
 fnpack build
 ```
 
-通过仓库 CLI 构建正式 FPK 时使用 `--bundle-dsh-plugins`。该选项只内置仓库可解析的本地插件；清单中的三方插件不会被复制到 FPK，安装回调仍通过 DSH CLI 单独安装。`dshmarket@1.46.1` 只在清单中固定版本，不进入 FPK；缺少时通过精确版本 registry 安装，已安装时跳过。
+通过仓库 CLI 构建正式 FPK 时使用 `--bundle-dsh-native` 内置 node-pty native 文件；如需内置仓库插件，再追加 `--bundle-dsh-plugins`，否则使用 `--skip-bundle-dsh-plugins`。清单中的三方插件不会被复制到 FPK，安装回调仍通过 DSH CLI 单独安装。`dshmarket@1.46.1` 只在清单中固定版本，不进入 FPK；缺少时通过精确版本 registry 安装，已安装时跳过。
 
-带内置 native 依赖的正式包仅由 tag workflow 生成。本地执行 `fnpack build` 不会调用 native 依赖准备脚本；该脚本位于 `.github/scripts/`，仅供 GitHub Actions 在 Linux runner 上构建正式包使用。
+带内置 native 依赖的正式包需要在具备 g++、make 和 python3 的 Linux 构建机上生成。本地直接执行 `fnpack build` 不会调用 native 依赖准备脚本；从仓库根目录使用 `fn-apps-cli build` 并选择内置 node-pty 时，构建流程会调用该脚本。

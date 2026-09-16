@@ -11,14 +11,18 @@ import { optionValue } from '../core/args.js'
 import { addBooleanArgs, addOptionalValueArg } from '../core/command-args.js'
 import { runCommand } from '../core/process.js'
 import { runTurbo } from '../core/turbo.js'
-import { askBuildSelection, askBundleDshPlugins, askFpkApps, askPlugins } from '../ui/prompts.js'
+import { askBuildSelection, askBundleDshNative, askBundleDshPlugins, askFpkApps, askPlugins } from '../ui/prompts.js'
 
+const DSH_APP_NAME = 'fn-deepseek-harness'
 const DSH_PUBLISHED_PLUGIN_MANIFEST = 'app/published-dsh-plugins.json'
 const DSH_BUNDLED_PLUGIN_DIRECTORY = 'app/bundled-dsh-plugins'
 const DSH_VERSION = '0.1.5-rc.2'
 const PNPM_VERSION = '11.7.0'
 const DSHMARKET_VERSION = '1.46.1'
 const DSH_NATIVE_CONFIG = '.github/config/dsh-native-0.1.5-rc.2.env'
+const DSH_NATIVE_PREP_SCRIPT = '.github/scripts/prepare-dsh-native.sh'
+const DSH_NATIVE_BUNDLE_DIRECTORY = 'app/native/node-pty'
+const DSH_NATIVE_VERSION_FILES = ['app/dsh-version', 'app/node-pty-versions'] as const
 
 type PublishedDshPluginManifest = {
   plugins?: Array<{ name?: unknown, version?: unknown }>
@@ -182,11 +186,65 @@ async function selectDshPluginBundle(apps: FpkApp[], args: string[]): Promise<bo
   return requested ?? askBundleDshPlugins()
 }
 
+function requestedDshNativeBundle(args: string[]): boolean | undefined {
+  const include = args.includes('--bundle-dsh-native')
+  const skip = args.includes('--skip-bundle-dsh-native')
+  if (include && skip) throw new Error('Cannot combine --bundle-dsh-native and --skip-bundle-dsh-native')
+  if (include) return true
+  if (skip) return false
+  return undefined
+}
+
+async function selectDshNativeBundle(apps: FpkApp[], args: string[]): Promise<boolean | undefined> {
+  if (!apps.some(app => app.name === DSH_APP_NAME)) return false
+  const requested = requestedDshNativeBundle(args)
+  return requested ?? askBundleDshNative()
+}
+
+async function prepareDshNativeBundle(app: FpkApp, include: boolean): Promise<void> {
+  if (app.name !== DSH_APP_NAME) return
+
+  const appDirectory = join(repositoryRoot, 'apps', app.name)
+  const nativeDirectory = join(appDirectory, DSH_NATIVE_BUNDLE_DIRECTORY)
+  const versionFiles = DSH_NATIVE_VERSION_FILES.map(file => join(appDirectory, file))
+  if (!include) {
+    await rm(nativeDirectory, { recursive: true, force: true })
+    await Promise.all(versionFiles.map(file => rm(file, { force: true })))
+    console.log('Skipping node-pty native files; the NAS must provide g++ during installation.')
+    return
+  }
+
+  if (process.platform !== 'linux') {
+    throw new Error('node-pty native files must be prepared on a Linux build runner; select No on this platform or use the CI workflow')
+  }
+  const nativePrepScript = join(repositoryRoot, DSH_NATIVE_PREP_SCRIPT)
+  if (!existsSync(nativePrepScript)) {
+    throw new Error(`node-pty native preparation script is unavailable: ${nativePrepScript}`)
+  }
+  console.log('Preparing node-pty native files for the FPK.')
+  await runCommand('bash', [nativePrepScript], appDirectory, {
+    env: {
+      ...process.env,
+      APP_DIR: appDirectory,
+      NATIVE_CONFIG_FILE: join(repositoryRoot, DSH_NATIVE_CONFIG),
+    },
+  })
+
+  const missing = [
+    ...(existsSync(nativeDirectory) ? [] : [nativeDirectory]),
+    ...versionFiles.filter(file => !existsSync(file)),
+  ]
+  if (missing.length > 0) {
+    throw new Error(`node-pty native preparation completed without required files: ${missing.join(', ')}`)
+  }
+  console.log('Including prepared node-pty native files in the FPK.')
+}
+
 function listFpkApps(): FpkApp[] {
   return readFpkApps()
 }
 
-async function buildFpkApps(apps: FpkApp[], options: { bundleDshPlugins?: boolean } = {}): Promise<void> {
+async function buildFpkApps(apps: FpkApp[], options: { bundleDshNative?: boolean, bundleDshPlugins?: boolean } = {}): Promise<void> {
   if (apps.some(app => app.requiresGateway)) {
     const gatewayName = readGatewayName()
     if (gatewayName === undefined) throw new Error('Unable to resolve the fnOS Gateway package')
@@ -194,6 +252,7 @@ async function buildFpkApps(apps: FpkApp[], options: { bundleDshPlugins?: boolea
   }
   for (const app of apps) {
     await validateDshReleaseInputs(app)
+    await prepareDshNativeBundle(app, options.bundleDshNative === true)
     await prepareDshPluginBundle(app, options.bundleDshPlugins === true)
     console.log(`\nBuilding FPK: ${app.name}`)
     await runCommand('fnpack', ['build'], join(repositoryRoot, 'apps', app.name))
@@ -225,8 +284,11 @@ export async function runBuild(args: string[]): Promise<void> {
   if (args.includes('--fpk')) {
     const apps = await selectFpkApps(app)
     if (apps !== undefined) {
+      const bundleDshNative = await selectDshNativeBundle(apps, args)
       const bundleDshPlugins = await selectDshPluginBundle(apps, args)
-      if (bundleDshPlugins !== undefined) await buildFpkApps(apps, { bundleDshPlugins })
+      if (bundleDshNative !== undefined && bundleDshPlugins !== undefined) {
+        await buildFpkApps(apps, { bundleDshNative, bundleDshPlugins })
+      }
     }
     return
   }
@@ -245,13 +307,14 @@ export async function runBuild(args: string[]): Promise<void> {
 
   const pluginFilters = selection.includes('plugins') ? await selectPluginFilters() : undefined
   const fpkApps = selection.includes('fpk') ? await selectFpkApps() : undefined
+  const bundleDshNative = fpkApps === undefined ? false : await selectDshNativeBundle(fpkApps, args)
   const bundleDshPlugins = fpkApps === undefined ? false : await selectDshPluginBundle(fpkApps, args)
-  if (fpkApps !== undefined && bundleDshPlugins === undefined) return
+  if (fpkApps !== undefined && (bundleDshNative === undefined || bundleDshPlugins === undefined)) return
 
   const tasks: Promise<void>[] = []
   if (pluginFilters !== undefined) tasks.push(runTurbo(['build'], pluginFilters))
-  if (fpkApps !== undefined && bundleDshPlugins !== undefined) {
-    tasks.push(buildFpkApps(fpkApps, { bundleDshPlugins }))
+  if (fpkApps !== undefined && bundleDshNative !== undefined && bundleDshPlugins !== undefined) {
+    tasks.push(buildFpkApps(fpkApps, { bundleDshNative, bundleDshPlugins }))
   }
   if (selection.includes('docs')) tasks.push(runDocsBuild())
   await Promise.all(tasks)
@@ -267,6 +330,8 @@ program
   .option('--app <app>', 'select one FPK application')
   .option('--bundle-dsh-plugins', 'include published DSH plugins in the FPK')
   .option('--skip-bundle-dsh-plugins', 'do not include published DSH plugins in the FPK')
+  .option('--bundle-dsh-native', 'include prepared node-pty native files in the FPK')
+  .option('--skip-bundle-dsh-native', 'do not include node-pty native files in the FPK')
   .option('--docs', 'build documentation')
   .action(async (options: OptionValues) => {
     const args: string[] = []
@@ -274,6 +339,8 @@ program
     addBooleanArgs(args, options, ['fpk', 'docs'])
     if (options.bundleDshPlugins) args.push('--bundle-dsh-plugins')
     if (options.skipBundleDshPlugins) args.push('--skip-bundle-dsh-plugins')
+    if (options.bundleDshNative) args.push('--bundle-dsh-native')
+    if (options.skipBundleDshNative) args.push('--skip-bundle-dsh-native')
     if (options.app !== undefined) args.push('--app', options.app)
     await runBuild(args)
   })

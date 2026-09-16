@@ -41,6 +41,7 @@
     "pretest": "pnpm run build:bridge"
   },
   "dependencies": {
+    "commander": "catalog:",
     "connect": "catalog:",
     "http-proxy-middleware": "catalog:"
   },

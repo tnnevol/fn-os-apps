@@ -144,3 +144,15 @@ export async function askBundleDshPlugins(): Promise<boolean | undefined> {
   }
   return result
 }
+
+export async function askBundleDshNative(): Promise<boolean | undefined> {
+  const result = await confirm({
+    message: '是否将 node-pty 内置到 FPK 包中？',
+    initialValue: true,
+  })
+  if (isCancel(result)) {
+    cancel('已取消 FPK 构建')
+    return undefined
+  }
+  return result
+}

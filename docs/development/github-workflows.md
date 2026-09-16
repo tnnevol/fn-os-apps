@@ -304,11 +304,9 @@ pnpm exec fn-apps-cli build --fpk --app <app-name>
 
 `build-dsh-fn.yml` 的顺序不能省略：
 
-1. 安装 Gateway 构建依赖。
-2. 执行 `pnpm exec fn-apps-cli build:gateway`。
-3. 根据 `.github/config/dsh-native-0.1.5-rc.2.env` 准备 native 依赖。
-4. 执行 `pnpm exec fn-apps-cli build --fpk --app fn-deepseek-harness --bundle-dsh-plugins`。
-5. 按 Release Tag 和 DSH 版本重命名并上传 FPK。
+1. 安装 Gateway 和 FPK 构建依赖。
+2. 执行 `pnpm exec fn-apps-cli build --fpk --app fn-deepseek-harness --bundle-dsh-native --skip-bundle-dsh-plugins`，由构建流程先编译 Gateway，再按 `.github/config/dsh-native-0.1.5-rc.2.env` 准备并内置 native 依赖。
+3. 按 Release Tag 和 DSH 版本重命名并上传 FPK。
 
 ### 4. 发布 Release
 

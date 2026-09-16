@@ -17,6 +17,10 @@ export default antfu(
       '**/.turbo/**',
       '**/coverage/**',
       'packages/fnos-gateway/src/client/bridge.ts',
+      // fn-deepseek-harness 的网关和安装辅助入口由构建过程生成。
+      'apps/fn-deepseek-harness/app/gateway-proxy.mjs',
+      'apps/fn-deepseek-harness/app/rolldown-runtime-*.mjs',
+      'apps/fn-deepseek-harness/app/scripts/install-callback-helper.mjs',
     ],
   },
   {

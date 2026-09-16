@@ -3,14 +3,12 @@ import { constants, readFileSync } from 'node:fs'
 import { access, chmod, copyFile, mkdir, mkdtemp, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { readJson } from './common.ts'
+import { createLogger, fail } from './logger.ts'
 
-function logMessage(level: string, message: string): string {
-  const timestamp = new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '')
-  return `[${timestamp}] [install-node-pty] [${level}] ${message}`
-}
+const logger = createLogger('install-node-pty')
 
 function failNodePty(message: string): never {
-  throw new Error(logMessage('ERROR', message))
+  return fail('install-node-pty', message)
 }
 
 function requiredEnv(name: string): string {
@@ -125,25 +123,25 @@ async function runDshDependencyScripts(
 ): Promise<void> {
   let backups: PackageBackup[] = []
   if (compilerAvailable) {
-    console.log(logMessage('INFO', 'g++ detected; running node-pty lifecycle scripts without the native compilation patch.'))
+    logger.info('g++ detected; running node-pty lifecycle scripts without the native compilation patch.')
   } else {
     backups = await disableNodePtyInstallScripts(packageFiles, backupDir)
-    console.log(logMessage('INFO', `Temporarily disabling lifecycle scripts for ${packageFiles.length} node-pty package(s); other DSH dependency scripts remain enabled.`))
-    console.log(logMessage('INFO', 'Running DSH dependency lifecycle scripts with node-pty native compilation disabled.'))
+    logger.info(`Temporarily disabling lifecycle scripts for ${packageFiles.length} node-pty package(s); other DSH dependency scripts remain enabled.`)
+    logger.info('Running DSH dependency lifecycle scripts with node-pty native compilation disabled.')
   }
 
   const startedAt = Date.now()
-  console.log(logMessage('INFO', 'START: npm rebuild --global --foreground-scripts'))
+  logger.info('START: npm rebuild --global --foreground-scripts')
   const result = spawnSync(npmBin, ['rebuild', '--global', '--ignore-scripts=false', '--foreground-scripts'], {
     stdio: 'inherit',
   })
   const elapsed = Math.floor((Date.now() - startedAt) / 1000)
-  if (result.error) console.error(result.error.message)
+  if (result.error) logger.error(result.error.message)
   const status = result.status ?? 1
   if (status === 0) {
-    console.log(logMessage('INFO', `DONE: npm rebuild --global --foreground-scripts (${elapsed}s)`))
+    logger.info(`DONE: npm rebuild --global --foreground-scripts (${elapsed}s)`)
   } else {
-    console.error(logMessage('ERROR', `FAILED: npm rebuild --global --foreground-scripts (exit=${status}, elapsed=${elapsed}s)`))
+    logger.error(`FAILED: npm rebuild --global --foreground-scripts (exit=${status}, elapsed=${elapsed}s)`)
   }
 
   if (!compilerAvailable) {
@@ -156,7 +154,7 @@ async function runDshDependencyScripts(
   }
   await rm(backupDir, { recursive: true, force: true })
   if (status !== 0) failNodePty('Failed to run DSH dependency lifecycle scripts')
-  console.log(logMessage('INFO', 'DSH dependency lifecycle scripts completed.'))
+  logger.info('DSH dependency lifecycle scripts completed.')
 }
 
 async function copyDirectoryContents(source: string, target: string): Promise<void> {
@@ -208,7 +206,7 @@ async function installBundledNodePty(packageFiles: string[], versions: string[],
       failNodePty(`Installed dsh dependency tree is missing node-pty ${expectedVersion}`)
     }
   }
-  console.log(logMessage('INFO', `Installed bundled node-pty versions: ${[...foundVersions].join(',')}.`))
+  logger.info(`Installed bundled node-pty versions: ${[...foundVersions].join(',')}.`)
 }
 
 export async function prepareNodePty(): Promise<void> {
@@ -265,7 +263,7 @@ export async function prepareNodePty(): Promise<void> {
       if (error instanceof Error && error.message.startsWith('[')) throw error
       failNodePty(`The FPK DSH version file is not available: ${dshVersionFile}`)
     }
-    console.log(logMessage('INFO', `Preparing node-pty native files for DSH ${dshVersion}.`))
+    logger.info(`Preparing node-pty native files for DSH ${dshVersion}.`)
   }
 
   const compilerAvailable = hasCompiler()
@@ -279,16 +277,16 @@ export async function prepareNodePty(): Promise<void> {
     else await rm(backupDir, { recursive: true, force: true })
 
     if (hasBundledNodePty) {
-      if (!compilerAvailable || runDependencyScripts) {
+      if (!compilerAvailable || !runDependencyScripts) {
         await installBundledNodePty(packageFiles, versions, nativeBundle)
       } else {
-        console.log(logMessage('INFO', 'g++ detected; using the node-pty native build from the NAS environment.'))
+        logger.info('g++ detected; using the node-pty native build from the NAS environment.')
       }
     } else {
-      console.log(logMessage('INFO', 'Using the node-pty native build from the NAS environment.'))
+      logger.info('Using the node-pty native build from the NAS environment.')
     }
   } finally {
     await rm(backupDir, { recursive: true, force: true })
   }
-  console.log(logMessage('INFO', 'node-pty preparation completed.'))
+  logger.info('node-pty preparation completed.')
 }
