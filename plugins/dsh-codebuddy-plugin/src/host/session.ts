@@ -226,10 +226,14 @@ export class CodeBuddySession {
     if (inFlight !== undefined) return inFlight
     const started = this.refresh(storage, entry, this.generation)
     this.refreshing.set(key, started)
+    // `finally()` returns a NEW promise that rejects with the same reason when
+    // `started` does, so leaving it unobserved would surface as an unhandled
+    // rejection even though the caller handles `started`. Swallow only that
+    // derived promise's rejection here; `started` still rejects for the caller.
     void started.finally(() => {
       // 只清自己那一槽：期间可能已有别的账号/代际的刷新在跑。
       if (this.refreshing.get(key) === started) this.refreshing.delete(key)
-    })
+    }).catch(() => undefined)
     return started
   }
 
@@ -522,9 +526,11 @@ export class CodeBuddySession {
     if (inFlight !== undefined) return inFlight
     const started = this.readModels(signal)
     this.catalogRead.set(key, started)
+    // See `identity()`: the promise returned by `finally()` carries the same
+    // rejection as `started`, and must not escape unobserved.
     void started.finally(() => {
       if (this.catalogRead.get(key) === started) this.catalogRead.delete(key)
-    })
+    }).catch(() => undefined)
     return started
   }
 

@@ -315,13 +315,25 @@ export class CodeBuddyAuthService {
     return { status: 'ok', accounts: rows }
   }
 
+  /**
+   * Run one periodic cycle from a detached timer, never letting its rejection
+   * escape. The runners are also awaited by RPC handlers, which own their own
+   * error reporting, so only these timer call sites swallow the outcome.
+   */
+  private runCycleDetached(label: string, run: () => Promise<unknown>): void {
+    void run().catch(error => {
+      this.logger?.warn?.(`dsh-codebuddy: ${label} cycle failed`)
+      this.logger?.warn?.(error)
+    })
+  }
+
   /** 启动周期性自动签到（启动时执行一次，之后每 30 分钟一次，
    *  对应 workbuddy-switch 的 CHECKIN_RECOVERY_INTERVAL）。 */
   startAutoCheckinCycle(): void {
     if (this.disposed) return
     if (this.autoCheckinTimer !== undefined) return
-    void this.runAutoCheckinCycle()
-    this.autoCheckinTimer = setInterval(() => { void this.runAutoCheckinCycle() }, 30 * 60_000)
+    this.runCycleDetached('auto-checkin', () => this.runAutoCheckinCycle())
+    this.autoCheckinTimer = setInterval(() => { this.runCycleDetached('auto-checkin', () => this.runAutoCheckinCycle()) }, 30 * 60_000)
   }
 
   stopAutoCheckinCycle(): void {
@@ -804,14 +816,14 @@ export class CodeBuddyAuthService {
   startTravelCycle(): void {
     if (this.disposed) return
     if (this.travelTimer === undefined) {
-      void this.runTravelCycle()
-      this.travelTimer = setInterval(() => { void this.runTravelCycle() }, 30 * 60_000)
+      this.runCycleDetached('auto-travel dispatch', () => this.runTravelCycle())
+      this.travelTimer = setInterval(() => { this.runCycleDetached('auto-travel dispatch', () => this.runTravelCycle()) }, 30 * 60_000)
     }
     if (this.travelClaimTimer === undefined) {
       // 这里刻意不立即执行：派发周期的启动轮已经处理过 arrived 账号，
       // 两个周期同时起步会让同一账号在启动瞬间被领取两次。重启后「不空等
       // 15 分钟」由派发周期的启动轮保证。
-      this.travelClaimTimer = setInterval(() => { void this.runTravelClaimCycle() }, 15 * 60_000)
+      this.travelClaimTimer = setInterval(() => { this.runCycleDetached('auto-travel claim', () => this.runTravelClaimCycle()) }, 15 * 60_000)
     }
   }
 
@@ -944,7 +956,7 @@ export class CodeBuddyAuthService {
   startAutoSwitchCycle(): void {
     if (this.disposed) return
     if (this.autoSwitchTimer !== undefined) return
-    this.autoSwitchTimer = setInterval(() => { void this.runAutoSwitchCycle() }, AUTO_SWITCH_INTERVAL_MS)
+    this.autoSwitchTimer = setInterval(() => { this.runCycleDetached('auto-switch', () => this.runAutoSwitchCycle()) }, AUTO_SWITCH_INTERVAL_MS)
   }
 
   stopAutoSwitchCycle(): void {

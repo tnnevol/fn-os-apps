@@ -99,7 +99,9 @@ describe('③ 只有一个轮询，客户端那个是只读的', () => {
     // host 是全进程唯一持有账号状态的地方，轮询必须在这里。
     const cycles = [...SERVICE.matchAll(/setInterval\(/g)].length
     console.log(`  host 侧 setInterval 数量: ${cycles}（自动签到/旅行派发/旅行领取/自动切换）`)
-    expect(SERVICE).toMatch(/setInterval\(\(\) => \{ void this\.runAutoSwitchCycle\(\) \}/)
+    // 周期拒绝必须经 runCycleDetached 收口，不能是裸 `void this.run...`：
+    // dsh 的 fail-loud 会把逃逸的拒绝变成整个进程 exit(1)。
+    expect(SERVICE).toMatch(/setInterval\(\(\) => \{ this\.runCycleDetached\('auto-switch', \(\) => this\.runAutoSwitchCycle\(\)\) \}/)
   })
 
   it('客户端唯一的定时器是「用量指示器」，且只调只读端点', () => {
