@@ -35,7 +35,7 @@ lastVerified: 2026-09-14
 | Codex Auth 插件 | `plugins/dsh-codex-auth-plugin` | 迁移 attachment、LLM、`pi-ai` 和模型目录接缝；作为内置插件随 FPK 分发并保持老用户数据可用；`conversation.input.right` 的用量图标按选中模型供应商显隐 |
 | CodeBuddy 插件 | `plugins/dsh-codebuddy-plugin` | 迁移 LLM 流式、文件块和附件接缝；`conversation.input.right` 的用量图标在 `showUsage` 之上叠加选中模型供应商条件 |
 | Semi UI 插件 | `packages/dsh-semi-ui`、`plugins/dsh-semi-ui-showcase-plugin` | 迁移共享 UI、layout、slots 和 renderer 接缝 |
-| FPK 应用 | `apps/fn-deepseek-harness/cmd/install_callback`、`config/resource`、`config/privilege`、`manifest` | 安装并校验 `0.1.5-rc.2` DSH 运行时，真实 CLI 保留在应用私有目录且不注册系统命令，不清理 `DSH_HOME` |
+| FPK 应用 | `apps/fn-deepseek-harness/cmd/install_callback`、`app/scripts/install-callback-helper.mjs`、`config/resource`、`config/privilege`、`manifest` | 安装并校验 `0.1.5-rc.2` DSH 运行时，真实 CLI 保留在应用私有目录且不注册系统命令，不清理 `DSH_HOME`；安装辅助入口由 `packages/fnos-gateway/src/install-callback-helper/` 编译生成 |
 | FPK 插件策略 | `apps/fn-deepseek-harness/app/published-dsh-plugins.json`、`app/bundled-dsh-plugins` | 在 FPK 清单和内置目录中包含 Codex，改由 DSH CLI 管理插件，同时保护老用户已有数据 |
 | Native 构建 | `.github/config/`、`.github/scripts/prepare-dsh-native.sh`、`.github/workflows/build-dsh-fn.yml` | 使用新 DSH 依赖树准备 native 产物并生成版本化 FPK |
 | 文档与测试 | `docs/development/`、`docs/apps/`、插件测试目录 | 记录迁移差异、测试命令和本地/NAS 证据 |
@@ -237,7 +237,7 @@ DSH 0.1.5-rc.2 发布包
 
 ### P0：DSH CLI 插件管理流程
 
-1. `install_callback` 先确认 Node.js、应用包用户和运行目录，再将向导选择的 npm 源持久化到 `${DSH_HOME}/.npmrc`，将 pnpm store 路径持久化到 `${DSH_HOME}/.pnpm-store-dir`，随后准备精确版本 DSH 与 `pnpm@11.7.0`。
+1. `install_callback` 先确认 Node.js、安装辅助入口和运行目录，再将向导选择的 npm 源持久化到 `${DSH_HOME}/.npmrc`，将 pnpm store 路径持久化到 `${DSH_HOME}/.pnpm-store-dir`，随后准备精确版本 DSH 与 `pnpm@11.7.0`。
 2. 按 `published-dsh-plugins.json` 读取插件名称和精确版本，对缺失插件执行 `dsh plugin --profile web add <package>@<version>`，对版本变化执行精确 update；缺失 profile 由官方 CLI 自动初始化。
 3. 对 dshmarket 先检查 profile 包清单和实际包目录；缺失时执行 `dsh plugin --profile web add dshmarket@1.46.1`，已存在时跳过，不因为版本不同而覆盖。构建阶段不复制 dshmarket，registry 安装失败直接报告错误，不使用 FPK 内置回退包。
 4. DSH CLI 在 profile 目录中调用 pnpm，并负责写入依赖和 reconcile `dsh.profile.bundles`；应用不再复制插件、手工初始化 profile 或手工修改 bundle 列表。

@@ -14,8 +14,7 @@ DSH_VERSION="0.1.5-rc.2"
 PNPM_VERSION="11.7.0"
 PNPM_BIN="${NPM_CONFIG_PREFIX}/bin/pnpm"
 DSH_VERSION_FILE="${APP_DEST}/dsh-version"
-DSH_NODE_PTY_SCRIPT="${APP_DEST}/scripts/install-node-pty.sh"
-DSH_ATTACHMENT_PATCH_SCRIPT="${APP_DEST}/scripts/patch-dsh-attachment-local.mjs"
+DSH_INSTALL_CALLBACK_HELPER="${APP_DEST}/scripts/install-callback-helper.mjs"
 DSH_PUBLISHED_PLUGIN_MANIFEST="${APP_DEST}/published-dsh-plugins.json"
 DSH_BUNDLED_PLUGIN_DIRECTORY="${APP_DEST}/bundled-dsh-plugins"
 DSH_PROFILE_DIRECTORY="${DSH_HOME}/profiles/web"
@@ -79,25 +78,14 @@ fail_install() {
     exit 1
 }
 
+run_install_callback_helper() {
+    "${NODE_BIN}/node" "${DSH_INSTALL_CALLBACK_HELPER}" "$@"
+}
+
 remove_legacy_pnpm_store_config() {
     [ -f "${NPM_USER_CONFIG_FILE}" ] || return 0
-    PNPM_USER_CONFIG_FILE="${NPM_USER_CONFIG_FILE}" \
-        "${NODE_BIN}/node" -e '
-const fs = require("node:fs")
-const path = require("node:path")
-const configPath = process.env.PNPM_USER_CONFIG_FILE
-if (!configPath) process.exit(2)
-const source = fs.readFileSync(configPath, "utf8")
-const lines = source.split(/\r?\n/)
-const filtered = lines.filter(line => !/^\s*store-dir\s*=/.test(line))
-if (filtered.length === lines.length) process.exit(0)
-while (filtered.at(-1) === "") filtered.pop()
-const mode = fs.statSync(configPath).mode & 0o777
-const temporaryPath = `${configPath}.tmp-${process.pid}`
-fs.writeFileSync(temporaryPath, `${filtered.join("\n")}\n`, { mode })
-fs.chmodSync(temporaryPath, mode)
-fs.renameSync(temporaryPath, configPath)
-' || fail_install "Unable to remove legacy pnpm store-dir from ${NPM_USER_CONFIG_FILE}"
+    run_install_callback_helper remove-legacy-pnpm-store-config "${NPM_USER_CONFIG_FILE}" ||
+        fail_install "Unable to remove legacy pnpm store-dir from ${NPM_USER_CONFIG_FILE}"
 }
 
 read_persisted_npm_registry() {
@@ -118,64 +106,20 @@ persist_npm_registry() {
 profile_dependency_version() {
     local package_name="$1"
     [ -f "${DSH_PROFILE_DIRECTORY}/package.json" ] || return 0
-    PACKAGE_NAME="${package_name}" "${NODE_BIN}/node" -e '
-const fs = require("node:fs")
-const name = process.env.PACKAGE_NAME
-try {
-    const manifest = JSON.parse(fs.readFileSync(process.argv[1], "utf8"))
-    const dependencies = { ...(manifest.dependencies || {}), ...(manifest.devDependencies || {}) }
-    const value = dependencies[name]
-    if (typeof value === "string") process.stdout.write(value)
-} catch {}
-' "${DSH_PROFILE_DIRECTORY}/package.json" 2>/dev/null || true
+    run_install_callback_helper profile-dependency-version \
+        "${DSH_PROFILE_DIRECTORY}/package.json" "${package_name}" 2>/dev/null || true
 }
 
 profile_store_dir() {
     local modules_file="${DSH_PROFILE_DIRECTORY}/node_modules/.modules.yaml"
     [ -f "${modules_file}" ] || return 0
-    "${NODE_BIN}/node" -e '
-const fs = require("node:fs")
-try {
-    const text = fs.readFileSync(process.argv[1], "utf8")
-    const value = text.match(/^storeDir:\s*(.+?)\s*$/m)?.[1]
-    if (value) process.stdout.write(value.replace(/\/v\d+\/?$/, ""))
-} catch {}
-' "${modules_file}" 2>/dev/null || true
+    run_install_callback_helper profile-store-dir "${modules_file}" 2>/dev/null || true
 }
 
 persist_pnpm_store_dir() {
-    PNPM_STORE_DIR="${PNPM_STORE_DIR}" \
-        PNPM_USER_CONFIG_FILE="${NPM_USER_CONFIG_FILE}" \
-        PNPM_STORE_FILE="${PNPM_STORE_FILE}" \
-        "${NODE_BIN}/node" -e '
-const fs = require("node:fs")
-const path = require("node:path")
-const configPath = process.env.PNPM_USER_CONFIG_FILE
-const storeDir = process.env.PNPM_STORE_DIR
-const storeFile = process.env.PNPM_STORE_FILE
-if (!configPath || !storeDir || !storeFile) process.exit(2)
-fs.mkdirSync(path.dirname(storeFile), { recursive: true })
-let storeMode = 0o600
-try { storeMode = fs.statSync(storeFile).mode & 0o777 } catch {}
-const storeTemporaryPath = `${storeFile}.tmp-${process.pid}`
-fs.writeFileSync(storeTemporaryPath, `${storeDir}\n`, { mode: storeMode })
-fs.chmodSync(storeTemporaryPath, storeMode)
-fs.renameSync(storeTemporaryPath, storeFile)
-
-let source = ""
-try { source = fs.readFileSync(configPath, "utf8") } catch (error) { if (error?.code !== "ENOENT") throw error }
-const lines = source.split(/\r?\n/).filter(line => !/^\s*store-dir\s*=/.test(line))
-if (lines.length !== source.split(/\r?\n/).length) {
-    while (lines.at(-1) === "") lines.pop()
-    let configMode = 0o600
-    try { configMode = fs.statSync(configPath).mode & 0o777 } catch {}
-    fs.mkdirSync(path.dirname(configPath), { recursive: true })
-    const configTemporaryPath = `${configPath}.tmp-${process.pid}`
-    fs.writeFileSync(configTemporaryPath, `${lines.join("\n")}\n`, { mode: configMode })
-    fs.chmodSync(configTemporaryPath, configMode)
-    fs.renameSync(configTemporaryPath, configPath)
-}
-' || fail_install "Unable to persist pnpm store directory outside npm config"
+    run_install_callback_helper persist-pnpm-store-dir \
+        "${NPM_USER_CONFIG_FILE}" "${PNPM_STORE_DIR}" "${PNPM_STORE_FILE}" ||
+        fail_install "Unable to persist pnpm store directory outside npm config"
 }
 
 configure_pnpm_store() {
@@ -276,25 +220,14 @@ install_published_dsh_plugins() {
         else
             log_info "Keeping installed ${plugin_name}@${current_version}; exact version already matches."
         fi
-    done < <("${NODE_BIN}/node" -e '
-const fs = require("node:fs")
-const manifest = JSON.parse(fs.readFileSync(process.argv[1], "utf8"))
-for (const plugin of manifest.plugins || []) {
-  if (typeof plugin.name === "string" && typeof plugin.version === "string") console.log(`${plugin.name}\t${plugin.version}`)
-}
-' "${DSH_PUBLISHED_PLUGIN_MANIFEST}")
+    done < <(run_install_callback_helper published-plugins "${DSH_PUBLISHED_PLUGIN_MANIFEST}")
 
     local dshmarket_version
     dshmarket_version="$(installed_plugin_version dshmarket)"
     if [ -n "${dshmarket_version}" ]; then
         log_info "Keeping installed dshmarket@${dshmarket_version}; the third-party plugin is install-once and non-destructive."
     else
-        dshmarket_version="$("${NODE_BIN}/node" -e '
-const fs = require("node:fs")
-const manifest = JSON.parse(fs.readFileSync(process.argv[1], "utf8"))
-const plugin = (manifest.bundled || []).find(value => value?.name === "dshmarket")
-if (typeof plugin?.version === "string") process.stdout.write(plugin.version)
-' "${DSH_PUBLISHED_PLUGIN_MANIFEST}")"
+        dshmarket_version="$(run_install_callback_helper bundled-plugin-version "${DSH_PUBLISHED_PLUGIN_MANIFEST}" dshmarket)"
         [ -n "${dshmarket_version}" ] || fail_install "dshmarket is missing from the plugin manifest"
         run_dsh_plugin add "dshmarket@${dshmarket_version}" ||
             fail_install "Unable to install dshmarket@${dshmarket_version} with the dsh CLI"
@@ -303,8 +236,6 @@ if (typeof plugin?.version === "string") process.stdout.write(plugin.version)
 
 patch_dsh_attachment_local() {
     local attachment_package_json attachment_local_version
-    [ -f "${DSH_ATTACHMENT_PATCH_SCRIPT}" ] ||
-        fail_install "The dsh attachment patch script is not available at ${DSH_ATTACHMENT_PATCH_SCRIPT}"
     [ -n "${TRIM_PKGVAR:-}" ] ||
         fail_install "TRIM_PKGVAR is not available; cannot patch dsh attachment persistence"
 
@@ -318,32 +249,14 @@ patch_dsh_attachment_local() {
     DSH_ATTACHMENT_LOCAL_DIR="${DSH_PACKAGE_DIR}/node_modules/@deepseek-ai/dsh-attachment-local" \
         DSH_ATTACHMENT_LOCAL_VERSION="${attachment_local_version}" \
         TRIM_PKGVAR="${TRIM_PKGVAR}" \
-        "${NODE_BIN}/node" "${DSH_ATTACHMENT_PATCH_SCRIPT}" ||
+        "${NODE_BIN}/node" "${DSH_INSTALL_CALLBACK_HELPER}" patch-attachment-local ||
         fail_install "Unable to patch dsh attachment persistence"
 }
 
 read_package_version() {
     local package_json="$1"
     [ -f "${package_json}" ] || return 0
-    "${NODE_BIN}/node" -e '
-const fs = require("node:fs")
-try {
-    const value = JSON.parse(fs.readFileSync(process.argv[1], "utf8")).version
-    if (typeof value === "string") process.stdout.write(value)
-} catch {}
-' "${package_json}" 2>/dev/null || true
-}
-
-read_package_name() {
-    local package_json="$1"
-    [ -f "${package_json}" ] || return 0
-    "${NODE_BIN}/node" -e '
-const fs = require("node:fs")
-try {
-    const value = JSON.parse(fs.readFileSync(process.argv[1], "utf8")).name
-    if (typeof value === "string") process.stdout.write(value)
-} catch {}
-' "${package_json}" 2>/dev/null || true
+    run_install_callback_helper package-version "${package_json}" 2>/dev/null || true
 }
 
 read_trimmed_file() {
@@ -365,8 +278,6 @@ validate_install_configuration() {
 
 run_node_pty_script() {
     local run_dependency_scripts="$1"
-    [ -f "${DSH_NODE_PTY_SCRIPT}" ] ||
-        fail_install "The FPK node-pty installer is not available at ${DSH_NODE_PTY_SCRIPT}"
 
     DSH_HOME="${DSH_HOME}" \
         DSH_VERSION="${DSH_VERSION}" \
@@ -380,7 +291,7 @@ run_node_pty_script() {
         PACKAGE_MANAGER="npm" \
         PACKAGE_MANAGER_BIN="${NPM_BIN}" \
         DSH_RUN_DEPENDENCY_SCRIPTS="${run_dependency_scripts}" \
-        /bin/bash "${DSH_NODE_PTY_SCRIPT}" ||
+        "${NODE_BIN}/node" "${DSH_INSTALL_CALLBACK_HELPER}" prepare-node-pty ||
         fail_install "Unable to prepare the bundled node-pty dependencies"
 }
 
@@ -400,6 +311,8 @@ main() {
     if [ ! -x "${NODE_BIN}/node" ]; then
         fail_install "nodejs_v24 runtime is not available at ${NODE_BIN}"
     fi
+    [ -f "${DSH_INSTALL_CALLBACK_HELPER}" ] ||
+        fail_install "The install callback helper is not available at ${DSH_INSTALL_CALLBACK_HELPER}"
 
     remove_legacy_pnpm_store_config
     select_npm

@@ -45,8 +45,9 @@ apps/fn-deepseek-harness/app/dsh-version
 apps/fn-deepseek-harness/app/node-pty-version
 apps/fn-deepseek-harness/app/node-pty-versions
 apps/fn-deepseek-harness/app/native/node-pty/
-# fnOS gateway bundle is generated from packages/fnos-gateway before FPK build
+# fnOS gateway bundle and install helper are generated from packages/fnos-gateway before FPK build
 apps/fn-deepseek-harness/app/gateway-proxy.mjs
+apps/fn-deepseek-harness/app/scripts/install-callback-helper.mjs
 # Optional local DSH plugin bundle is generated immediately before FPK build
 apps/fn-deepseek-harness/app/bundled-dsh-plugins/
 # VitePress 构建产物

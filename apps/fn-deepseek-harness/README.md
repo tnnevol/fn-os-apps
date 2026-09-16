@@ -10,7 +10,7 @@
 
 ## 启动方式
 
-发布的 FPK 固定适配 `@deepseek-ai/dsh@0.1.5-rc.2`，并固定预编译 `node-pty@1.2.0-beta.15`。安装回调会先在应用自己的 npm 全局目录中检查 `pnpm@11.7.0` 和 `@deepseek-ai/dsh@0.1.5-rc.2` 的可执行文件及实际版本；固定版本已经安装且 CLI 版本校验通过时直接复用并跳过安装，只有缺失、不可执行或版本不匹配时才安装固定版本。安装完成后，回调会从已安装 DSH 依赖树读取 `@deepseek-ai/dsh-attachment-local` 的实际版本，再应用 fnOS 持久化补丁，不假设它与 DSH 使用相同版本号。`app/scripts/install-node-pty.sh` 会暂时跳过 node-pty 的 native 生命周期脚本，执行 DSH 依赖树中其他包的生命周期脚本，再写入构建机生成的 native 文件，因此 NAS 不需要安装 g++ 或重新编译。
+发布的 FPK 固定适配 `@deepseek-ai/dsh@0.1.5-rc.2`，并固定预编译 `node-pty@1.2.0-beta.15`。安装回调会先在应用自己的 npm 全局目录中检查 `pnpm@11.7.0` 和 `@deepseek-ai/dsh@0.1.5-rc.2` 的可执行文件及实际版本；固定版本已经安装且 CLI 版本校验通过时直接复用并跳过安装，只有缺失、不可执行或版本不匹配时才安装固定版本。安装完成后，回调会从已安装 DSH 依赖树读取 `@deepseek-ai/dsh-attachment-local` 的实际版本，再应用 fnOS 持久化补丁，不假设它与 DSH 使用相同版本号。`install-callback-helper.mjs` 负责 node-pty native 文件准备：在没有 g++ 时暂时跳过 node-pty 的 native 生命周期脚本，执行其他依赖生命周期脚本，再写入构建机生成的 native 文件，因此 NAS 不需要重新编译。
 
 FPK 只处理 [`app/published-dsh-plugins.json`](app/published-dsh-plugins.json) 中声明的插件。安装顺序固定为 Node.js → DSH → `pnpm@11.7.0` → `dsh plugin --profile web`；缺失 profile 由官方 CLI 首次执行插件命令时自动初始化。插件安装、更新和移除统一使用 `dsh plugin --profile web add/update/remove`，不再调用自定义插件安装脚本。构建选择内置插件时，只将仓库中存在的本地插件制成 npm 包归档打入 FPK，并由 DSH CLI 使用 `file:` spec 安装运行依赖；旧版同版本 `link:` 安装会在升级时重装归档。三方插件不进入内置目录，仍单独按精确版本安装。当前清单包含 `@tnnevol/dsh-codex-auth@0.1.5-rc.2`、`@tnnevol/dsh-fnos@0.1.5-rc.2` 和三方插件 `dshmarket@1.46.1`；dshmarket 不进入 FPK，安装阶段由 DSH CLI 单独安装，已安装时跳过，不覆盖、降级或删除用户版本。Codex 必须随 FPK 内置：registry 上 `latest`/`rc` 的 Codex 基线分别为 `0.1.0-rc.7` 和 `0.1.2-rc.1`，在 DSH `0.1.5-rc.2` 上会因 `@deepseek-ai/dsh-settings` 不再导出 `settingsNamespace` 而使 DSH Web 启动失败，因此构建校验会拒绝缺少 Codex 的清单。升级老用户不会删除已有 Codex 凭据、模型配置和 profile bundle。
 

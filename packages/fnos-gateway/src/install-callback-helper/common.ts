@@ -1,21 +1,34 @@
-#!/usr/bin/env node
-
 import { chmod, mkdir, readFile, rename, stat, writeFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
 
-async function readJson(path) {
+export type JsonObject = Record<string, unknown>
+
+type PluginManifestEntry = {
+  name?: unknown
+  version?: unknown
+}
+
+function asJsonObject(value: unknown): JsonObject | undefined {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
+    ? value as JsonObject
+    : undefined
+}
+
+export async function readJson(path: string): Promise<JsonObject | undefined> {
   try {
-    return JSON.parse(await readFile(path, 'utf8'))
+    return asJsonObject(JSON.parse(await readFile(path, 'utf8')))
   } catch {
     return undefined
   }
 }
 
-async function readJsonStrict(path) {
-  return JSON.parse(await readFile(path, 'utf8'))
+export async function readJsonStrict(path: string): Promise<JsonObject> {
+  const value = asJsonObject(JSON.parse(await readFile(path, 'utf8')))
+  if (value === undefined) throw new Error(`Expected a JSON object at ${path}`)
+  return value
 }
 
-async function fileMode(path, fallback) {
+async function fileMode(path: string, fallback: number): Promise<number> {
   try {
     return (await stat(path)).mode & 0o777
   } catch {
@@ -23,14 +36,14 @@ async function fileMode(path, fallback) {
   }
 }
 
-async function requiredFileMode(path) {
+async function requiredFileMode(path: string): Promise<number> {
   return (await stat(path)).mode & 0o777
 }
 
-async function removeLegacyPnpmStoreConfig(configPath) {
+export async function removeLegacyPnpmStoreConfig(configPath: string): Promise<void> {
   const source = await readFile(configPath, 'utf8')
   const lines = source.split(/\r?\n/)
-  const filtered = lines.filter((line) => !/^\s*store-dir\s*=/.test(line))
+  const filtered = lines.filter(line => !/^\s*store-dir\s*=/.test(line))
   if (filtered.length === lines.length) return
 
   while (filtered.at(-1) === '') filtered.pop()
@@ -41,7 +54,11 @@ async function removeLegacyPnpmStoreConfig(configPath) {
   await rename(temporaryPath, configPath)
 }
 
-async function persistPnpmStoreDir(configPath, storeDir, storeFile) {
+export async function persistPnpmStoreDir(
+  configPath: string,
+  storeDir: string,
+  storeFile: string,
+): Promise<void> {
   if (!configPath || !storeDir || !storeFile) {
     throw new Error('persist-pnpm-store-dir requires config, store, and store-file paths')
   }
@@ -57,11 +74,11 @@ async function persistPnpmStoreDir(configPath, storeDir, storeFile) {
   try {
     source = await readFile(configPath, 'utf8')
   } catch (error) {
-    if (error?.code !== 'ENOENT') throw error
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
   }
 
   const originalLines = source.split(/\r?\n/)
-  const lines = originalLines.filter((line) => !/^\s*store-dir\s*=/.test(line))
+  const lines = originalLines.filter(line => !/^\s*store-dir\s*=/.test(line))
   if (lines.length === originalLines.length) return
 
   while (lines.at(-1) === '') lines.pop()
@@ -73,20 +90,27 @@ async function persistPnpmStoreDir(configPath, storeDir, storeFile) {
   await rename(configTemporaryPath, configPath)
 }
 
-async function packageField(path, field) {
+export async function packageField(path: string, field: string): Promise<void> {
   const packageJson = await readJson(path)
   const value = packageJson?.[field]
   if (typeof value === 'string') process.stdout.write(value)
 }
 
-async function profileDependencyVersion(path, packageName) {
+export async function profileDependencyVersion(path: string, packageName: string): Promise<void> {
   const manifest = await readJson(path)
-  const dependencies = { ...(manifest?.dependencies || {}), ...(manifest?.devDependencies || {}) }
+  const dependencies = {
+    ...(manifest?.dependencies !== null && typeof manifest?.dependencies === 'object'
+      ? manifest.dependencies as JsonObject
+      : {}),
+    ...(manifest?.devDependencies !== null && typeof manifest?.devDependencies === 'object'
+      ? manifest.devDependencies as JsonObject
+      : {}),
+  }
   const value = dependencies[packageName]
   if (typeof value === 'string') process.stdout.write(value)
 }
 
-async function profileStoreDir(path) {
+export async function profileStoreDir(path: string): Promise<void> {
   try {
     const text = await readFile(path, 'utf8')
     const value = text.match(/^storeDir:\s*(.+?)\s*$/m)?.[1]
@@ -96,51 +120,19 @@ async function profileStoreDir(path) {
   }
 }
 
-async function publishedPlugins(path) {
+export async function publishedPlugins(path: string): Promise<void> {
   const manifest = await readJsonStrict(path)
-  for (const plugin of manifest.plugins || []) {
-    if (typeof plugin?.name === 'string' && typeof plugin?.version === 'string') {
+  const plugins = Array.isArray(manifest.plugins) ? manifest.plugins as PluginManifestEntry[] : []
+  for (const plugin of plugins) {
+    if (typeof plugin.name === 'string' && typeof plugin.version === 'string') {
       console.log(`${plugin.name}\t${plugin.version}`)
     }
   }
 }
 
-async function bundledPluginVersion(path, packageName) {
+export async function bundledPluginVersion(path: string, packageName: string): Promise<void> {
   const manifest = await readJsonStrict(path)
-  const plugin = (manifest.bundled || []).find((value) => value?.name === packageName)
+  const bundled = Array.isArray(manifest.bundled) ? manifest.bundled as PluginManifestEntry[] : []
+  const plugin = bundled.find(value => value.name === packageName)
   if (typeof plugin?.version === 'string') process.stdout.write(plugin.version)
 }
-
-async function main() {
-  const [command, ...args] = process.argv.slice(2)
-  switch (command) {
-    case 'remove-legacy-pnpm-store-config':
-      await removeLegacyPnpmStoreConfig(args[0])
-      break
-    case 'persist-pnpm-store-dir':
-      await persistPnpmStoreDir(args[0], args[1], args[2])
-      break
-    case 'package-version':
-      await packageField(args[0], 'version')
-      break
-    case 'profile-dependency-version':
-      await profileDependencyVersion(args[0], args[1])
-      break
-    case 'profile-store-dir':
-      await profileStoreDir(args[0])
-      break
-    case 'published-plugins':
-      await publishedPlugins(args[0])
-      break
-    case 'bundled-plugin-version':
-      await bundledPluginVersion(args[0], args[1])
-      break
-    default:
-      throw new Error(`Unknown install callback helper command: ${command || '(missing)'}`)
-  }
-}
-
-main().catch((error) => {
-  console.error(error instanceof Error ? error.message : String(error))
-  process.exitCode = 1
-})

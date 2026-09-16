@@ -48,8 +48,9 @@ DSH 在 fnOS 中运行后，还有几处使用体验需要调整。Codex 登录�
 | Codex 插件 | `plugins/dsh-codex-auth-plugin` | 控制登录状态和用量窗口显示 |
 | fnOS 插件 | `plugins/dsh-fnos-plugin` | 处理 NAS 引用和三方插件 API URL 反代配置 |
 | 共享 UI | `packages/dsh-semi-ui`、待新增总览插件 | 展示共享组件和主题效果 |
-| 网关源码包 | `packages/fnos-gateway` | 使用 `connect`、`http-proxy-middleware` 和 tsdown 维护网关源码、独立浏览器 Bridge 与构建入口 |
+| 网关源码包 | `packages/fnos-gateway` | 使用 `connect`、`http-proxy-middleware` 和 tsdown 维护网关源码、独立浏览器 Bridge 与构建入口；构建插件位于 `packages/fnos-gateway/plugins/` |
 | FPK 网关产物 | `apps/fn-deepseek-harness/app/gateway-proxy.mjs` | 监听 fnOS Unix Socket，代理 DSH HTTP、WebSocket 和流式请求 |
+| FPK 安装辅助产物 | `apps/fn-deepseek-harness/app/scripts/install-callback-helper.mjs` | 由网关包 tsdown 入口生成，供安装回调执行 DSH、node-pty 和 attachment 初始化逻辑 |
 | 项目文档与任务工具 | `docs/`、根 `package.json`、`turbo.json`、`tooling/fn-os-apps-cli/` | 记录需求、任务编排、版本/构建询问和发布日志 |
 
 ## 功能列表
@@ -96,7 +97,7 @@ DSH 在 fnOS 中运行后，还有几处使用体验需要调整。Codex 登录�
 - Semi UI 总览插件使用 `@tnnevol/dsh-semi-ui` 的公开组件，并覆盖浅色和深色主题。
 - 设置中的插件卡片只保留总览入口；点击后进入 `#/plugins/semi-ui`。总览页面使用 DSH `shell.overlay` 插槽呈现，不覆盖 `conversation`、`sidebar` 等 single slot。
 - 总览路由支持浏览器前进、后退和刷新；关闭总览时返回进入前的 DSH 页面。未安装插件时该 Hash 不得影响 DSH 正常启动。
-- 网关源码放在 `packages/fnos-gateway`，使用 tsdown 将依赖打包到 `apps/fn-deepseek-harness/app/gateway-proxy.mjs`；NAS 安装阶段不再安装网关的 npm 依赖。
+- 网关源码放在 `packages/fnos-gateway`，使用 tsdown 将网关和安装辅助入口分别打包到 `apps/fn-deepseek-harness/app/gateway-proxy.mjs` 与 `apps/fn-deepseek-harness/app/scripts/install-callback-helper.mjs`；NAS 安装阶段不再安装网关的 npm 依赖。
 - 浏览器注入代码必须放在独立 `.js` 文件中维护，不在 TypeScript 中保留 `BRIDGE_SCRIPT_BODY` 一类大段模板字符串。默认由构建插件使用 `fs` 读取源文件并作为虚拟模块内联到单文件 ESM，NAS 运行时不读取仓库源码路径。
 - HTML 默认直接注入构建后的 Bridge 内容；若以后改用 `<script src>`，必须由网关提供稳定的内部静态路由，并将对应资源纳入 FPK，不允许引用 `packages/` 源码目录。
 - 网关监听 `app/ui/config` 声明的 `app.sock`，统一网关公开路径保持 `/app/fn-deepseek-harness`，上游固定为 DSH 回环地址 `127.0.0.1:3080`。

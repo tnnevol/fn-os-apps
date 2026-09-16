@@ -36,8 +36,9 @@ lastVerified: 2026-09-12
 | 模块 | 计划入口 | 实现责任 |
 | --- | --- | --- |
 | 网关源码包 | `packages/fnos-gateway` | 维护 `connect` 中间件、代理、内容改写、独立浏览器 Bridge、动态路径和生命周期 |
-| 网关构建 | `packages/fnos-gateway/tsdown.app.config.ts` | 构建期读取 Bridge JS，并将 CLI 入口和运行依赖打包为单个 ESM 文件 |
+| 网关构建 | `packages/fnos-gateway/tsdown.app.config.ts` | 构建期读取 Bridge JS，并将 CLI 入口和安装回调辅助入口分别打包为 ESM 文件 |
 | FPK 网关产物 | `apps/fn-deepseek-harness/app/gateway-proxy.mjs` | 作为生成文件随 FPK 分发，不在 NAS 安装依赖 |
+| FPK 安装辅助产物 | `apps/fn-deepseek-harness/app/scripts/install-callback-helper.mjs` | 由网关包构建生成，供安装回调执行 DSH、node-pty 和 attachment 初始化逻辑 |
 | FPK 入口配置 | `apps/fn-deepseek-harness/app/ui/config` | 保持 `/app/fn-deepseek-harness` 和 `app.sock` 的统一网关声明 |
 | FPK 进程管理 | `apps/fn-deepseek-harness/cmd/main`、网关控制中间件 | 以网关承载应用状态，分别启停网关和 DSH Web，维护启动锁、临时 PID 与健康检查 |
 | fnOS 插件 Host | `plugins/dsh-fnos-plugin/src/` | 扩展设置 schema，校验路径并原子生成白名单 JSON |
@@ -58,12 +59,19 @@ DSH 和 fnOS 官方项目只作为契约参考，不修改、不提交上游补�
 packages/fnos-gateway/
 ├── src/
 │   ├── client/
-│   │   └── bridge.js          # 浏览器端 Bridge，可独立检查和测试
-│   ├── bridge-script.ts       # 注入标签、运行时配置和安全序列化
-│   ├── proxy.ts               # HTTP、WebSocket 与响应改写
-│   └── cli.ts                 # FPK 网关入口
+│   │   └── bridge.js                         # 浏览器端 Bridge，可独立检查和测试
+│   ├── install-callback-helper/
+│   │   ├── index.ts                          # 安装辅助入口与命令分发
+│   │   ├── common.ts                         # JSON、pnpm 与插件清单处理
+│   │   ├── node-pty.ts                       # node-pty native 文件与生命周期处理
+│   │   └── attachment-patch.ts               # attachment-local 持久化补丁
+│   ├── bridge-script.ts                      # 注入标签、运行时配置和安全序列化
+│   ├── proxy.ts                              # HTTP、WebSocket 与响应改写
+│   └── cli.ts                                # FPK 网关入口
+├── plugins/
+│   └── bridge-plugin.ts                      # 构建期 Bridge 虚拟模块插件
 ├── tsdown.config.ts
-└── tsdown.app.config.ts       # 构建期读取 bridge.js 并生成单文件产物
+└── tsdown.app.config.ts                      # 构建网关和安装辅助产物
 ```
 
 `bridge.js` 是浏览器代码的唯一源码。`bridge-script.ts` 不再保存完整脚本模板，只负责取得构建期导入的文本、注入经过 `JSON.stringify` 序列化的运行时配置，并生成安全的 `<script>` 标签。
@@ -73,9 +81,11 @@ packages/fnos-gateway/
 ```text
 apps/fn-deepseek-harness/
 ├── app/
-│   ├── gateway-proxy.mjs      # tsdown 生成的单文件 ESM 网关
+│   ├── gateway-proxy.mjs                    # tsdown 生成的单文件 ESM 网关
+│   ├── scripts/
+│   │   └── install-callback-helper.mjs      # tsdown 生成的安装辅助入口
 │   └── ui/
-│       └── config             # gatewayPrefix + gatewaySocket
+│       └── config                           # gatewayPrefix + gatewaySocket
 └── cmd/
     └── main                   # 进程启停和状态检测
 ```
@@ -416,7 +426,7 @@ SSE 路由由网关自身处理，不转发到 DSH。它经过 fnOS 统一网关
 | 任务 ID | 对应功能 | 实现内容 | 状态 |
 | --- | --- | --- | --- |
 | PLAN-FNOS-002-T04-01 | FNOS-002-04 | 完成 `packages/fnos-gateway` 分层，使用 `connect` 组织中间件、使用 `http-proxy-middleware` 代理 HTTP 与 WebSocket | <Badge type="tip" text="已完成" /> |
-| PLAN-FNOS-002-T04-02 | FNOS-002-04 | 配置 tsdown 库构建和 FPK 构建，将单文件 ESM 产出到 `apps/fn-deepseek-harness/app/gateway-proxy.mjs` | <Badge type="tip" text="已完成" /> |
+| PLAN-FNOS-002-T04-02 | FNOS-002-04 | 配置 tsdown 库构建和 FPK 构建，将网关和安装回调辅助入口分别产出到 `apps/fn-deepseek-harness/app/gateway-proxy.mjs` 与 `apps/fn-deepseek-harness/app/scripts/install-callback-helper.mjs` | <Badge type="tip" text="已完成" /> |
 | PLAN-FNOS-002-T04-03 | FNOS-002-04 | 保留前缀剥离、Header 过滤、Location/HTML/CSS/JS 改写、SSE 心跳和优雅退出 | <Badge type="tip" text="已完成" /> |
 | PLAN-FNOS-002-T04-04 | FNOS-002-04 | 在 fnOS 插件设置中增加三方插件 API URL 反代规则的草稿、添加、删除、保存和放弃交互 | <Badge type="tip" text="已完成" /> |
 | PLAN-FNOS-002-T04-05 | FNOS-002-04 | fnOS 插件 Host 校验设置并原子生成 `${TRIM_PKGVAR}/gateway/path-allowlist.json` | <Badge type="tip" text="已完成" /> |
@@ -708,12 +718,13 @@ pnpm --filter @tnnevol/fnos-gateway run build
 pnpm --filter @tnnevol/fnos-gateway run build:app
 ```
 
-构建后检查 `apps/fn-deepseek-harness/app/gateway-proxy.mjs`：
+构建后检查以下 FPK 产物：
 
-- 是 Node 24 可运行的单文件 ESM。
-- 不引用仓库 `node_modules`、源码相对路径或 NAS 不存在的依赖。
-- 已包含 Bridge 内容，不在 NAS 运行时读取 `packages/fnos-gateway/src/client/bridge.js`，也不会同时执行内联脚本和 `<script src>` 版本。
-- 输出位置与 `cmd/main` 的 `PROXY_SCRIPT` 一致。
+- `apps/fn-deepseek-harness/app/gateway-proxy.mjs` 是 Node 24 可运行的单文件 ESM。
+- `apps/fn-deepseek-harness/app/scripts/install-callback-helper.mjs` 是 Node 24 可运行的单文件 ESM。
+- 两个产物不引用仓库 `node_modules`、源码相对路径或 NAS 不存在的依赖。
+- 网关产物已包含 Bridge 内容，不在 NAS 运行时读取 `packages/fnos-gateway/src/client/bridge.js`，也不会同时执行内联脚本和 `<script src>` 版本。
+- 输出位置分别与 `cmd/main` 的 `PROXY_SCRIPT` 和 `cmd/install_callback` 的辅助脚本路径一致。
 - `app/ui/config` 继续声明 `gatewayPrefix` 和 `gatewaySocket: "app.sock"`。
 
 ### fnOS 插件检查

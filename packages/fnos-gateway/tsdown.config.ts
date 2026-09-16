@@ -1,5 +1,5 @@
 import type { UserConfig } from 'tsdown'
-import { bridgeSourcePlugin } from './build/bridge-plugin.ts'
+import { bridgeSourcePlugin } from './plugins/bridge-plugin.ts'
 
 export default {
   entry: 'src/index.ts',
