@@ -113,8 +113,15 @@ export async function profileDependencyVersion(path: string, packageName: string
 export async function profileStoreDir(path: string): Promise<void> {
   try {
     const text = await readFile(path, 'utf8')
-    const value = text.match(/^storeDir:\s*(.+?)\s*$/m)?.[1]
-    if (value) process.stdout.write(value.replace(/\/v\d+\/?$/, ''))
+    let value: unknown
+    try {
+      value = (JSON.parse(text) as { storeDir?: unknown }).storeDir
+    } catch {
+      value = text.match(/^storeDir:\s*(.+?)\s*$/m)?.[1]
+    }
+    if (typeof value === 'string' && value.length > 0) {
+      process.stdout.write(value.replace(/\/v\d+\/?$/, ''))
+    }
   } catch {
     // A missing or malformed pnpm metadata file means no reusable store.
   }
