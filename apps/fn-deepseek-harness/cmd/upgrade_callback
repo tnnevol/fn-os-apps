@@ -9,7 +9,8 @@ NPM_CONFIG_PREFIX="${DSH_HOME}/.npm-global"
 NPM_BIN="${NODE_BIN}/npm"
 NPM_USER_CONFIG_FILE="${DSH_HOME}/.npmrc"
 LEGACY_NPM_REGISTRY_FILE="${APP_HOME}/.fn-deepseek-harness/npm-registry"
-INSTALL_CALLBACK="${TRIM_APPDEST}/cmd/install_callback"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+INSTALL_CALLBACK="${SCRIPT_DIR}/install_callback"
 
 export DSH_HOME
 export HOME="${APP_HOME}"
