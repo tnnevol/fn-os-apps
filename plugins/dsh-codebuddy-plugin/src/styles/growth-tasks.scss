@@ -1,7 +1,8 @@
 /* 成长任务列表：渲染在账号信息弹框的「成长任务」Tab 内，只展示单个账号。
    内部再分「未完成 / 已完成」两栏（button 型二级 Tab），因此这里不再需要按
    账号分组的卡片网格，改为一条紧凑的纵向列表。
-   刷新按钮位于列表内部（工具栏右侧）——弹框里够不到页面级按钮。 */
+   刷新与「一键完成」都在列表内部（工具栏右侧）——弹框里够不到页面级按钮；
+   一键完成在左、刷新在右：先动手、后取数。 */
 
 .dsh-codebuddy-growth-task-list {
   display: flex;
@@ -10,7 +11,8 @@
   padding: 4px 0 2px;
 }
 
-/* 工具栏：左侧说明、右侧刷新。与任务行同样左右贴齐，滚动时刷新按钮始终在顶部。 */
+/* 工具栏：左侧说明、右侧动作组（一键完成 + 刷新）。与任务行同样左右贴齐，
+   滚动时两个按钮始终在顶部。 */
 .dsh-codebuddy-growth-task-toolbar {
   display: flex;
   align-items: center;
@@ -18,6 +20,16 @@
   gap: 12px;
   padding-bottom: 8px;
   border-bottom: 1px solid var(--dsw-alias-border-l3);
+}
+
+/* 动作组：一键完成在左、刷新在右。`flex-shrink: 0` 让窄屏下按钮不被说明文字
+   挤扁（说明列自己收缩即可）；`white-space: nowrap` 避免按钮文案折成两行。 */
+.dsh-codebuddy-growth-task-actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
 }
 
 /* 二级 Tab 的按钮条：与「用量信息」下的资源状态 Tab 同一处理——button 型自带

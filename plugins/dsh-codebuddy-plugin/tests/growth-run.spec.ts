@@ -111,11 +111,87 @@ describe('逐任务在跑状态隔离', () => {
     expect(isGrowthTaskRunning([], hostState, 'acct-2', 'chat_5')).toBe(false)
   })
 
-  it('全量执行状态不把单个任务判为在跑（避免行内按钮误 loading）', async () => {
+  it('账号级整轮执行把该账号名下任务都判为在跑，其他账号不受影响', async () => {
+    const { isGrowthTaskRunning } = await import('../src/client/store/growth-run.ts')
+    // 「一键完成」用 mode='one' + taskCode='all'，落盘时 accountsIds 含该账号，
+    // 而 taskCodes 不含（前者是账号级、后者只在单项时写入）。
+    const hostState = { running: true, mode: 'one' as const, accountId: 'acct-1', taskCode: 'all', accountIds: ['acct-1'] }
+
+    expect(isGrowthTaskRunning([], hostState, 'acct-1', 'chat_5')).toBe(true)
+    expect(isGrowthTaskRunning([], hostState, 'acct-1', 'first_buddy')).toBe(true)
+    // 其他账号不在在跑集合里 → 不受影响。
+    expect(isGrowthTaskRunning([], hostState, 'acct-2', 'chat_5')).toBe(false)
+  })
+
+  it('全量执行（无账号明细）不把任何具体任务判为在跑', async () => {
     const { isGrowthTaskRunning } = await import('../src/client/store/growth-run.ts')
     const hostState = { running: true, mode: 'all' as const }
 
     expect(isGrowthTaskRunning([], hostState, 'acct-1', 'chat_5')).toBe(false)
+  })
+})
+
+/**
+ * 禁用范围（用户明确要求）。
+ *
+ * 规则：某个账号在跑任务时，**只有该账号**的任务按钮与账号管理页的「完成任务」
+ * 禁用；其他账号的按钮保持可点，且点下去会真实执行（宿主按账号加锁）。
+ *
+ * 这组用例是本次改动最核心的行为约束，因此单独成 describe。
+ */
+describe('禁用范围以账号为界', () => {
+  /** 宿主正在跑 acct-1 的单项任务。 */
+  const oneTask = { running: true, mode: 'one' as const, accountId: 'acct-1', taskCode: 'chat_5', accountIds: ['acct-1'], taskCodes: { 'acct-1': 'chat_5' } }
+
+  it('在跑的那一条任务禁用（避免重复提交同一个任务）', async () => {
+    const { isGrowthTaskDisabled } = await import('../src/client/store/growth-run.ts')
+    expect(isGrowthTaskDisabled([], oneTask, 'acct-1', 'chat_5')).toBe(true)
+  })
+
+  it('同账号的其它任务**不禁用**：单项执行之间互不影响', async () => {
+    const { isGrowthTaskDisabled } = await import('../src/client/store/growth-run.ts')
+    expect(isGrowthTaskDisabled([], oneTask, 'acct-1', 'first_buddy')).toBe(false)
+  })
+
+  it('其它账号的任务**不禁用**（这是用户明确要求的一条）', async () => {
+    const { isGrowthTaskDisabled } = await import('../src/client/store/growth-run.ts')
+    expect(isGrowthTaskDisabled([], oneTask, 'acct-2', 'chat_5')).toBe(false)
+    expect(isGrowthTaskDisabled([], oneTask, 'acct-2', 'first_buddy')).toBe(false)
+  })
+
+  it('账号级整轮执行时该账号全部任务禁用，其他账号仍不禁用', async () => {
+    const { isGrowthTaskDisabled } = await import('../src/client/store/growth-run.ts')
+    const round = { running: true, mode: 'one' as const, accountId: 'acct-1', taskCode: 'all', accountIds: ['acct-1'] }
+    expect(isGrowthTaskDisabled([], round, 'acct-1', 'chat_5')).toBe(true)
+    expect(isGrowthTaskDisabled([], round, 'acct-1', 'expert_5')).toBe(true)
+    expect(isGrowthTaskDisabled([], round, 'acct-2', 'chat_5')).toBe(false)
+  })
+
+  it('本账号「一键完成」按钮：该账号在跑时禁用，其他账号不受影响', async () => {
+    const { isAccountRunDisabled } = await import('../src/client/store/growth-run.ts')
+    expect(isAccountRunDisabled(oneTask, 'acct-1')).toBe(true)
+    expect(isAccountRunDisabled(oneTask, 'acct-2')).toBe(false)
+    // 本地刚发起、宿主还没落盘的瞬间也要禁用（避免双触发）。
+    expect(isAccountRunDisabled({ running: false }, 'acct-1', ['acct-1'])).toBe(true)
+    expect(isAccountRunDisabled({ running: false }, 'acct-2', ['acct-1'])).toBe(false)
+  })
+
+  it('账号管理页「完成任务」：任一账号在跑就禁用', async () => {
+    const { isRunAllDisabled } = await import('../src/client/store/growth-run.ts')
+    expect(isRunAllDisabled(oneTask)).toBe(true)
+    // 全量执行在跑同样禁用。
+    expect(isRunAllDisabled({ running: true, mode: 'all' as const })).toBe(true)
+    // 本地刚发起单账号一键完成、宿主还没落盘：也要禁用（否则会重叠触发）。
+    expect(isRunAllDisabled({ running: false }, ['acct-1'])).toBe(true)
+  })
+
+  it('空闲时可点；依据是宿主状态（刷新页面后依旧成立）', async () => {
+    const { isRunAllDisabled, isGrowthTaskDisabled, isAccountRunDisabled } = await import('../src/client/store/growth-run.ts')
+    expect(isRunAllDisabled({ running: false })).toBe(false)
+    expect(isGrowthTaskDisabled([], { running: false }, 'acct-1', 'chat_5')).toBe(false)
+    expect(isAccountRunDisabled({ running: false }, 'acct-1')).toBe(false)
+    // 宿主报告在跑（例如刷新页面后采纳的状态）→ 依旧禁用，不依赖组件 state。
+    expect(isRunAllDisabled({ running: true, accountIds: ['acct-9'] })).toBe(true)
   })
 })
 
@@ -235,6 +311,46 @@ describe('日志落盘', () => {
     expect(retainedLogRounds({})).toHaveLength(0)
   })
 
+  it('并行账号加入时**不**清空本轮日志（否则先开始的账号日志被整轮挤掉）', async () => {
+    const { appendGrowthRunLog, beginGrowthRun, growthRunRegistry, loadGrowthRunState } = await import('../src/host/growth-run.ts')
+    // 第一个账号开始 → 滚动轮次、写自己的日志。
+    growthRunRegistry.add('acct-1')
+    await beginGrowthRun('one', { accountId: 'acct-1', taskCode: 'chat_5' })
+    await appendGrowthRunLog({ account: 'A', code: 'chat_5', status: 'claimed' })
+    // 第二个账号并行开始 → 只刷新在途集合，不得把上一条日志降级/清空。
+    growthRunRegistry.add('acct-2')
+    await beginGrowthRun('one', { accountId: 'acct-2', taskCode: 'chat_5' })
+
+    const state = await loadGrowthRunState()
+    expect(state?.log?.map(entry => entry.account)).toEqual(['A'])
+    // 两个账号都被登记为在跑（磁盘快照也带上）。
+    expect(state?.accountIds?.sort()).toEqual(['acct-1', 'acct-2'])
+    growthRunRegistry.remove('acct-1')
+    growthRunRegistry.remove('acct-2')
+  })
+
+  it('并行账号加入时保留上一轮的 previousLog，不被抹掉', async () => {
+    const { appendGrowthRunLog, beginGrowthRun, finishGrowthRun, growthRunRegistry, loadGrowthRunState } = await import('../src/host/growth-run.ts')
+    // 先造一轮「上次」的历史。
+    growthRunRegistry.add('acct-0')
+    await beginGrowthRun('all')
+    await appendGrowthRunLog({ account: 'old', code: 'round1', status: 'claimed' })
+    growthRunRegistry.remove('acct-0')
+    await finishGrowthRun('all:1')
+
+    // 新一轮由两个并行账号组成。
+    growthRunRegistry.add('acct-1')
+    await beginGrowthRun('one', { accountId: 'acct-1', taskCode: 'chat_5' })
+    growthRunRegistry.add('acct-2')
+    await beginGrowthRun('one', { accountId: 'acct-2', taskCode: 'chat_5' })
+
+    const state = await loadGrowthRunState()
+    // 上一轮被降级为 previousLog，第二个 begin 不能把它抹掉。
+    expect(state?.previousLog?.map(entry => entry.code)).toEqual(['round1'])
+    growthRunRegistry.remove('acct-1')
+    growthRunRegistry.remove('acct-2')
+  })
+
   it('finish 保留日志并标记结束（不被在途 append 覆盖）', async () => {
     const { appendGrowthRunLog, beginGrowthRun, finishGrowthRun, loadGrowthRunState } = await import('../src/host/growth-run.ts')
     await beginGrowthRun('all')
@@ -303,16 +419,27 @@ describe('本地乐观日志与全量执行禁用', () => {
     expect(selectGrowthRunView(undefined, undefined, 'x')).toBeUndefined()
   })
 
-  it('全量执行期间禁用单项按钮', async () => {
-    const { isBlockedByRunAll } = await import('../src/client/store/growth-run.ts')
-    expect(isBlockedByRunAll({ running: true, mode: 'all' }, [])).toBe(true)
+  it('本账号一键完成在跑时，其任务行也显示进行中', async () => {
+    const { isGrowthTaskRunning } = await import('../src/client/store/growth-run.ts')
+    // 本地刚点下一键完成、宿主还没落盘：靠 accountInFlight 表达。
+    expect(isGrowthTaskRunning([], { running: false }, 'acct-1', 'chat_5', ['acct-1'])).toBe(true)
+    expect(isGrowthTaskRunning([], { running: false }, 'acct-2', 'chat_5', ['acct-1'])).toBe(false)
   })
 
-  it('单项执行不禁用其它单项', async () => {
-    const { isBlockedByRunAll } = await import('../src/client/store/growth-run.ts')
-    expect(isBlockedByRunAll({ running: true, mode: 'one', accountId: 'a', taskCode: 't' }, [])).toBe(false)
-    // 本地刚发起单项、宿主还是上一轮的 mode='all'：不该被误禁。
-    expect(isBlockedByRunAll({ running: true, mode: 'all' }, ['a:t'])).toBe(false)
-    expect(isBlockedByRunAll({ running: false }, [])).toBe(false)
+  it('宿主已接管后本地一键完成记录被清掉（避免永久 loading）', async () => {
+    const { hydrateGrowthRunState, markGrowthAccountRunning, $growthAccountInFlight, $growthTaskInFlight } = await import('../src/client/store/growth-run.ts')
+    markGrowthAccountRunning('acct-1')
+    expect($growthAccountInFlight.get()).toEqual(['acct-1'])
+    // 宿主报告该账号在跑 → 本地记录让位（宿主已是权威）。
+    await hydrateGrowthRunState({
+      call: async () => ({ ok: true, value: { running: true, accountIds: ['acct-1'] } }),
+    } as never)
+    expect($growthAccountInFlight.get()).toEqual([])
+    // 宿主报告空闲 → 全部本地集合清空，按钮不会永久 loading。
+    await hydrateGrowthRunState({
+      call: async () => ({ ok: true, value: { running: false } }),
+    } as never)
+    expect($growthTaskInFlight.get()).toEqual([])
+    expect($growthAccountInFlight.get()).toEqual([])
   })
 })

@@ -72,8 +72,9 @@ import {
   StatMetric,
 } from './ui/loading-shared.tsx'
 import { DshIconLabAvatar, DshIconLabChart } from '@tnnevol/dsh-semi-ui'
-import { $growthRunning, hydrateGrowthRunState, markGrowthRunning } from './store/growth-run.ts'
-
+import {
+  $growthAccountInFlight, $growthRunning, hydrateGrowthRunState, isRunAllDisabled, markGrowthRunning,
+} from './store/growth-run.ts'
 import type { AccountCardLabels, PanelAccountRow, TokenStats, Translate } from '../types/client/panel-types'
 
 export type { AccountCardLabels, PanelAccountRow, TokenStats, Translate }
@@ -109,9 +110,25 @@ function AccountsPage({
   const [resourceTarget, setResourceTarget] = useState<PanelAccountRow | undefined>(undefined)
   // 三个 auto* 偏好的展示 / 同步 host 都封装在 hook 里——这样本页与设置页同源。
   const { autoCheckin: autoCheckinOn, autoSwitch: autoSwitchOn, autoTravel: autoTravelOn } = useAutoPrefs(rpc)
-  // 「完成任务」的运行态来自宿主落盘状态（见 store/growth-run.ts）：
+  // 「完成任务」的运行态来自宿主（落盘 + 进程内账号锁表，见 store/growth-run.ts）：
   // 刷新页面后仍是 loading，不会因为组件 state 重置而变回可点击。
   const growthRun = useStore($growthRunning)
+  const accountInFlight = useStore($growthAccountInFlight)
+  /**
+   * 本轮是否由**本入口**（全账号「完成任务」）触发。
+   *
+   * `mode: 'all'` 是这个入口独有的标记：单账号「一键完成」与单项执行都走
+   * `mode: 'one'`（见 host 的 `beginGrowthRun` 调用点）。用它区分是为了让
+   * `loading` 只表达「我这一轮在跑」，而把「别的账号在跑」留给 `disabled` ——
+   * 两个属性各表达一件事。
+   *
+   * 刻意**不**附加「已有账号被登记」这类条件：`beginGrowthRun` 落盘发生在第一个
+   * 账号被登记之前，加上它会让点击后的那一瞬间落到 `loading=false` + `disabled=true`，
+   * 正是「点击变成直接禁用」这个被明确否决的表现。
+   */
+  const runAllRunning = growthRun.running === true && growthRun.mode === 'all'
+  /** 任一账号在跑成长任务即禁用本入口（全账号范围不该与正在跑的一轮重叠）。 */
+  const runAllDisabled = isRunAllDisabled(growthRun, accountInFlight)
 
   // 台账是持久化 nanostores atom，用 useStore 订阅它：
   // 台账一变就重渲染，`resourcesByAccount` 也随之重算——不再需要手工 tick。
@@ -204,13 +221,22 @@ function AccountsPage({
             </DshButton>
             {/* 「完成任务」紧贴「添加账号」右侧（10px 间距，见 accounts.scss）。
                 颜色风格与「添加账号」一致：同为主操作，用 solid + primary，
-                而不是次级动作区里的 light 按钮，否则同组两个按钮会被读成不同层级。 */}
+                而不是次级动作区里的 light 按钮，否则同组两个按钮会被读成不同层级。
+                禁用依据是**宿主的运行状态**（`isRunAllDisabled`）：任一账号有成长
+                任务在跑就禁用这个全账号入口，刷新页面后同样成立；被禁的只是这一个
+                入口——其他账号自己的「完成」「一键完成」仍可点，且会真实执行。 */}
             <DshButton
               size="small"
               theme="solid"
               type="primary"
-              loading={growthRun.running}
-              disabled={rows.length === 0}
+              // loading 与 disabled 并存、各表达一件事：
+              //   loading  = 本按钮触发的那轮全账号执行在跑（mode 'all' 是本入口
+              //              独有的标记，单账号一键完成与单项执行用的是 mode 'one'）；
+              //   disabled = 已有任何账号在跑成长任务——包括其他账号的单账号执行。
+              // 用不同条件喂两个属性是必须的：Semi 的 disabled 优先级高于 loading，
+              // 同一条件会只在「自己这轮」把转圈吃掉。
+              loading={runAllRunning}
+              disabled={rows.length === 0 || (runAllDisabled && !runAllRunning)}
               onClick={() => { void runAllGrowth() }}
             >
               {t('growthRunAll')}

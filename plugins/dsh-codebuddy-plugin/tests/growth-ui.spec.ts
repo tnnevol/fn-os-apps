@@ -102,30 +102,33 @@ describe('成长任务收拢到账号信息弹框', () => {
 describe('单个任务按钮互不影响', () => {
   it('每个任务行只按自己的在跑状态决定 loading', () => {
     // 逐任务判断：不能用全局 running 决定所有任务按钮。
-    expect(LIST).toContain('isGrowthTaskRunning(inFlight, running, accountId, task.taskCode)')
-    expect(LIST).toMatch(/loading=\{taskRunning\}/)
+    expect(LIST).toContain('isGrowthTaskRunning(inFlight, running, accountId, task.taskCode, accountInFlight)')
+    expect(LIST).toMatch(/taskRunning \? \{ loading: true \}/)
   })
 
-  it('单项按钮只按自身状态 loading，不因别的任务在跑而禁用', () => {
-    // 旧写法 `disabled={running.running && !isRunningTask(...)}` 会让一个任务
-    // 执行时把其余任务按钮全部压成不可点，正是要移除的行为。
-    // 现在只允许受「全量执行」影响（那时宿主队列被占，点单项也只会被拒）。
-    // 断言必须**限定在单项按钮**上：工具栏刷新按钮另有自己的条件，
+  it('单项按钮的禁用只看本任务与本账号，不因别的账号在跑而禁用', () => {
+    // 规则抽到 store 的纯函数里（`isGrowthTaskDisabled`），因此这里只断言组件
+    // 用的是那个函数，而不是自己写一套条件——把规则写在组件里就没人能单测它。
+    // 断言必须**限定在单项按钮**上：工具栏的一键完成/刷新按钮另有自己的条件，
     // 对整个文件断言会把它误判为违规。
-    const at = LIST_CODE.indexOf('loading={taskRunning}')
+    // 从「本任务的禁用判定」取到按钮的属性组（跨过 title/code/标签的一段）。
+    const at = LIST_CODE.indexOf('const taskDisabled = isGrowthTaskDisabled(')
     expect(at).toBeGreaterThan(-1)
-    const button = LIST_CODE.slice(Math.max(0, at - 300), at + 100)
-    expect(button).toContain('disabled={blockedByRunAll}')
-    // 不得回退成「别人在跑就禁我」。
-    expect(button).not.toContain('running.running')
+    const end = LIST_CODE.indexOf('{t(\'growthRunOne\')}', at)
+    expect(end).toBeGreaterThan(at)
+    const button = LIST_CODE.slice(at, end)
+    expect(button).toContain('disabled: taskDisabled')
+    expect(button).toContain('isGrowthTaskDisabled(inFlight, running, accountId, task.taskCode, accountInFlight)')
   })
 
-  it('全量执行期间禁用所有单项按钮，单项执行不互相影响', () => {
-    // 规则在 store 里，单独可测（见 growth-run.spec.ts 的 isBlockedByRunAll）。
-    expect(STORE).toContain('export function isBlockedByRunAll')
-    expect(LIST_CODE).toContain('isBlockedByRunAll(running, inFlight)')
-    // 本地刚发起单项时不该被上一轮的 mode='all' 误禁。
-    expect(STORE).toMatch(/if \(inFlight\.length > 0\) return false/)
+  it('禁用规则是 store 里的纯函数，可被单测直接覆盖', () => {
+    // 三条规则各有专门用例（见 growth-run.spec.ts 的「禁用范围以账号为界」）。
+    expect(STORE).toContain('export function isGrowthTaskDisabled')
+    expect(STORE).toContain('export function isAccountRunDisabled')
+    expect(STORE).toContain('export function isRunAllDisabled')
+    expect(LIST_CODE).toContain('isGrowthTaskDisabled(inFlight, running, accountId, task.taskCode, accountInFlight)')
+    expect(LIST_CODE).toContain('isAccountRunDisabled(running, accountId ?? \'\', accountInFlight)')
+    expect(PANEL_CODE).toContain('isRunAllDisabled(growthRun, accountInFlight)')
   })
 
   it('store 用集合记录逐任务在跑状态，而非单个全局标记', () => {
@@ -142,15 +145,22 @@ describe('单个任务按钮互不影响', () => {
   })
 
   it('收尾顺序：先解 loading，再以宿主为准，最后清乐观记录', () => {
-    const start = LIST.indexOf('const runOne')
-    const body = LIST.slice(start, LIST.indexOf('const groups', start))
-    const clearAt = body.indexOf('clearGrowthTaskRunning(accountId, taskCode)')
-    const hydrateAt = body.indexOf('await hydrateGrowthRunState(rpc)')
-    const optimisticAt = body.indexOf('clearGrowthOptimistic()', hydrateAt)
-    expect(clearAt).toBeGreaterThan(-1)
+    // 收尾抽到 settle（单项与一键完成共用），顺序在它内部。
+    const settleAt = LIST.indexOf('const settle = useCallback')
+    expect(settleAt).toBeGreaterThan(-1)
+    const settle = LIST.slice(settleAt, LIST.indexOf('const runOne', settleAt))
+    const hydrateAt = settle.indexOf('await hydrateGrowthRunState(rpc)')
+    const optimisticAt = settle.indexOf('clearGrowthOptimistic()', hydrateAt)
+    expect(hydrateAt).toBeGreaterThan(-1)
     // hydrate 会自己清乐观记录；提前清会让抽屉闪一下上一轮的旧日志。
-    expect(hydrateAt).toBeGreaterThan(clearAt)
     expect(optimisticAt).toBeGreaterThan(hydrateAt)
+    // runOne 里先解本行 loading，再调用 settle。
+    const start = LIST.indexOf('const runOne')
+    const body = LIST.slice(start, LIST.indexOf('const runAccount', start))
+    const clearAt = body.indexOf('clearGrowthTaskRunning(accountId, taskCode)')
+    const callAt = body.indexOf('await settle()')
+    expect(clearAt).toBeGreaterThan(-1)
+    expect(callAt).toBeGreaterThan(clearAt)
   })
 
   it('点下按钮立刻记本地乐观日志（宿主落盘前就有内容）', () => {
@@ -171,14 +181,23 @@ describe('单个任务按钮互不影响', () => {
 
 describe('loading 与 disabled 共存', () => {
   it('两个属性各表达一件事，而不是二选一', () => {
-    // 「完成任务」是**执行**动作，两个属性并存：
-    //   loading = 本轮队列在跑；disabled = 一个账号都没有（真实不可用）。
+    // 「完成任务」是**执行**动作，两个属性并存且条件不同：
+    //   loading  = 本入口触发的那一轮在跑（mode 'all'）；
+    //   disabled = 无账号可操作，或已有账号在跑成长任务（全账号范围不该重叠）。
     const clickAt = PANEL_CODE.indexOf('void runAllGrowth()')
-    const button = PANEL_CODE.slice(Math.max(0, clickAt - 400), clickAt)
-    expect(button).toMatch(/loading=\{growthRun\.running\}/)
-    expect(button).toMatch(/disabled=\{rows\.length === 0\}/)
-    // 「完成任务」两个属性条件不同，不存在 disabled 吃掉 loading 的问题。
-    expect(button).not.toMatch(/disabled=\{growthRun\.running\}/)
+    const button = PANEL_CODE.slice(Math.max(0, clickAt - 500), clickAt)
+    expect(button).toMatch(/loading=\{runAllRunning\}/)
+    expect(button).toMatch(/disabled=\{rows\.length === 0 \|\| \(runAllDisabled && !runAllRunning\)\}/)
+    // loading 与 disabled 由不同条件喂入，不存在 disabled 吃掉 loading 的问题。
+    expect(button).not.toMatch(/disabled=\{runAllRunning\}/)
+  })
+
+  it('禁用依据是宿主状态（刷新页面后依旧禁用）', () => {
+    // 只凭本页组件 state 会让刷新页面后出现「实际在跑却可点」。
+    expect(PANEL).toContain('useStore($growthRunning)')
+    expect(PANEL_CODE).toContain('isRunAllDisabled(growthRun, accountInFlight)')
+    // 本入口的 loading 标记取自宿主 mode 'all'，不是本地 state。
+    expect(PANEL_CODE).toMatch(/growthRun\.mode === 'all'/)
   })
 
   it('成长任务刷新只给 loading：只读取数没有需要禁用的状态', () => {
@@ -205,8 +224,16 @@ describe('loading 与 disabled 共存', () => {
 
   it('刷新按钮的重入由处理函数自己挡', () => {
     expect(LIST).toContain('reloadingRef')
-    const start = LIST.indexOf('const reload')
-    expect(LIST.slice(start, start + 400)).toMatch(/if \(reloadingRef\.current\) return/)
+    const start = LIST.indexOf('const reload = useCallback')
+    expect(LIST.slice(start, start + 700)).toMatch(/if \(reloadingRef\.current\) return/)
+  })
+
+  it('一键完成的重入也由处理函数自己挡（loading 不拦点击）', () => {
+    expect(LIST).toContain('runAccountRef')
+    const start = LIST.indexOf('const runAccount = async')
+    expect(start).toBeGreaterThan(-1)
+    const body = LIST.slice(start, start + 400)
+    expect(body).toMatch(/if \(runAccountRef\.current\) return/)
   })
 })
 
@@ -217,9 +244,11 @@ describe('执行动作统一用 loading 而非禁用', () => {
 
   it('「完成任务」按钮用 loading', () => {
     const clickAt = PANEL.indexOf('void runAllGrowth()')
-    const button = PANEL.slice(Math.max(0, clickAt - 400), clickAt)
-    expect(button).toMatch(/loading=\{growthRun\.running\}/)
-    expect(button).not.toMatch(/disabled=\{growthRun\.running\}/)
+    const button = PANEL.slice(Math.max(0, clickAt - 500), clickAt)
+    // loading 只表达「本入口触发的那一轮在跑」；disabled 表达「已有账号在跑」。
+    // 两个条件必须不同：同一条件喂两者时 Semi 的 disabled 会吃掉转圈。
+    expect(button).toMatch(/loading=\{runAllRunning\}/)
+    expect(button).toMatch(/disabled=\{rows\.length === 0 \|\| \(runAllDisabled && !runAllRunning\)\}/)
   })
 })
 
@@ -250,7 +279,7 @@ describe('完成任务按钮', () => {
     const primary = PANEL.slice(PANEL.indexOf('dsh-codebuddy-accounts-head-primary'))
     const addButton = primary.slice(0, primary.indexOf('onAddAccount'))
     const growthClickAt = primary.indexOf('void runAllGrowth()')
-    const growthButton = primary.slice(Math.max(0, growthClickAt - 400), growthClickAt)
+    const growthButton = primary.slice(Math.max(0, growthClickAt - 900), growthClickAt)
     expect(addButton).toMatch(/theme="solid"/)
     expect(addButton).toMatch(/type="primary"/)
     expect(growthButton).toMatch(/theme="solid"/)
@@ -269,9 +298,10 @@ describe('完成任务按钮', () => {
     // 按钮 JSX 从 onClick 绑定处向前取，包含它的属性组（必须用去注释源码，
     // 否则注释里的示例写法会挤占窗口）。
     const clickAt = PANEL_CODE.indexOf('void runAllGrowth()')
-    const growthButton = PANEL_CODE.slice(Math.max(0, clickAt - 400), clickAt)
-    expect(growthButton).toContain('loading={growthRun.running}')
-    expect(growthButton).not.toMatch(/disabled=\{growthRun\.running\}/)
+    const growthButton = PANEL_CODE.slice(Math.max(0, clickAt - 500), clickAt)
+    expect(growthButton).toContain('loading={runAllRunning}')
+    // 不得用「本轮在跑」这一个条件同时喂 loading 与 disabled。
+    expect(growthButton).not.toMatch(/disabled=\{runAllRunning\}/)
   })
 
   it('运行中重复点击被挡住（loading 不拦点击，靠 ref guard）', () => {
@@ -295,8 +325,13 @@ describe('运行态持久化', () => {
   })
 
   it('执行结束以宿主状态收尾，避免永久 loading', () => {
-    const start = LIST.indexOf('const runOne')
-    const body = LIST.slice(start, LIST.indexOf('const groups', start))
-    expect(body).toContain('hydrateGrowthRunState')
+    // 两条路径（单项、一键完成）都经 settle → hydrateGrowthRunState。
+    const start = LIST.indexOf('const settle = useCallback')
+    expect(start).toBeGreaterThan(-1)
+    expect(LIST.slice(start, start + 300)).toContain('hydrateGrowthRunState')
+    const runOne = LIST.indexOf('const runOne')
+    const runAccount = LIST.indexOf('const runAccount = async')
+    expect(LIST.slice(runOne, runAccount)).toContain('await settle()')
+    expect(LIST.slice(runAccount, LIST.indexOf('const groups', runAccount))).toContain('await settle()')
   })
 })

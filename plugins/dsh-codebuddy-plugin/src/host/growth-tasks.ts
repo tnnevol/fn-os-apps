@@ -2,6 +2,7 @@
 
 import { CODEBUDDY_ENDPOINT } from '../contracts/constants.ts'
 import type { CodeBuddyIdentity } from './codebuddy.ts'
+import { accountRiskHeaders, growthThrottle, wait } from './risk-headers.ts'
 
 const TASKS_BASE = `${CODEBUDDY_ENDPOINT}/v2/activity/growth/tasks`
 const CLAIM_BASE = 'https://www.workbuddy.cn/activity/growth/tasks'
@@ -103,10 +104,7 @@ function headers(identity: CodeBuddyIdentity): Record<string, string> {
     Authorization: `Bearer ${identity.accessToken}`,
     'X-Domain': identity.domain,
     'X-User-Id': identity.uid,
-    ...(identity.enterpriseId === undefined ? {} : {
-      'X-Enterprise-Id': identity.enterpriseId,
-      'X-Tenant-Id': identity.enterpriseId,
-    }),
+    ...accountRiskHeaders(identity),
   }
 }
 
@@ -218,10 +216,22 @@ export async function acceptGrowthTasks(
   signal?: AbortSignal,
 ): Promise<void> {
   if (taskCodes.length === 0) return
-  await requestJson(TASKS_BASE + '/accept', identity, {
-    method: 'POST',
-    body: JSON.stringify({ task_codes: taskCodes }),
-  }, signal)
+  /**
+   * 分片提交并按来源的 1.05s 口径限速。
+   *
+   * 来源对其 `task_codes` 批量接口按 20 个一批、批间 1.05s 发送：报名虽然不
+   * 产生进度，但一次性把十几二十个 code 塞进一个请求属于异常流量形态，会被
+   * 上游按风控处理。分片还让单个坏 code 不至于拖垮整批。
+   */
+  const batch = 20
+  for (let start = 0; start < taskCodes.length; start += batch) {
+    const codes = taskCodes.slice(start, start + batch)
+    await requestJson(TASKS_BASE + '/accept', identity, {
+      method: 'POST',
+      body: JSON.stringify({ task_codes: codes }),
+    }, signal)
+    if (start + batch < taskCodes.length) await wait(growthThrottle.acceptGapMs, signal)
+  }
 }
 
 /** 领取单个已达标任务奖励；重复领取按成功处理。 */

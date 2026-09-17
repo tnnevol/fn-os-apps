@@ -26,11 +26,13 @@ import {
 } from '../contracts/constants.ts'
 
 import { getCheckinStatus, performCheckin, fetchUsage } from './usage.ts'
-import { BackoffGate, mapWithConcurrency, RunGuard } from './concurrency.ts'
+import { BackoffGate, AccountLocks, mapWithConcurrency, RunGuard } from './concurrency.ts'
+import { growthThrottle, wait } from './risk-headers.ts'
 import { adoptBuddy, claimTravel, departTravel, fetchTravelLocations, fetchTravelStatus, hasBuddy } from './travel.ts'
 import { acceptGrowthTasks, claimGrowthTask, isAutomatableGrowthTask, listGrowthTasks, sortGrowthTasksByOrder } from './growth-tasks.ts'
+import type { GrowthTask } from './growth-tasks.ts'
 import { reportGrowthActivity, runGrowthTaskAction } from './growth-actions.ts'
-import { appendGrowthRunLog, beginGrowthRun, finishGrowthRun, loadGrowthRunState } from './growth-run.ts'
+import { appendGrowthRunLog, beginGrowthRun, finishGrowthRun, growthRunRegistry, loadGrowthRunState, mergeGrowthRunState } from './growth-run.ts'
 import { getLoginAccount, pollAuthToken, requestAuthState } from './codebuddy.ts'
 import {
   clearStorage,
@@ -54,6 +56,21 @@ import type { UsageSnapshot, UsageWindow } from './usage.ts'
 import { collectCodeBuddyTokenStats, type CodeBuddyTokenStatsRequest } from './token-stats.ts'
 
 /**
+ * 成长任务执行所需的账号事实子集。
+ *
+ * 单独成类型而不是在方法签名里写内联对象：一是两处（单账号/全量）共用同一
+ * 形状；二是内联对象会让 JSDoc 规则要求逐个列出属性，而那些字段的含义属于
+ * `forEachAccount` 的返回值文档，重复一遍只会两边漂移。
+ */
+interface GrowthAccountFacts {
+  id: string
+  name: string
+  client: CodeBuddyClientId
+  identity: CodeBuddyIdentity
+  expired: boolean
+}
+
+/**
  * 派发失败是否为「该账号没有猫猫」。
  *
  * 只认服务端文案（对照 workbuddy-switch 的 `classify_depart_error`）。
@@ -69,21 +86,15 @@ function isNoBuddyError(message: string): boolean {
  * 退化成串行、太大则给 meter 平面造成瞬时压力；4 是这两者之间的折中。
  */
 const CONCURRENCY = 4
+/**
+ * 达标回读的轮询次数（间隔取自 `growthThrottle.pollGapMs`，与来源口径一致）。
+ * 总预算约 12 秒，覆盖上游异步计分的最坏观测延迟。
+ */
 const GROWTH_POLL_ATTEMPTS = 4
-const GROWTH_POLL_GAP_MS = 3_000
 
+/** 等一次回读间隔（可取消）。间隔本身在 `risk-headers` 里集中定义。 */
 function waitForGrowthPoll(signal?: AbortSignal): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (signal?.aborted) {
-      reject(signal.reason ?? new Error('aborted'))
-      return
-    }
-    const timer = setTimeout(resolve, GROWTH_POLL_GAP_MS)
-    signal?.addEventListener('abort', () => {
-      clearTimeout(timer)
-      reject(signal.reason ?? new Error('aborted'))
-    }, { once: true })
-  })
+  return wait(growthThrottle.pollGapMs, signal)
 }
 
 type ConnectionService = {
@@ -891,7 +902,21 @@ export class CodeBuddyAuthService {
   )
   private autoSwitchTimer: ReturnType<typeof setInterval> | undefined
   private readonly autoSwitchGuard = new RunGuard('auto-switch')
+  /**
+   * 「全部账号一键完成」的防重入标志。
+   *
+   * 只保护**这一个入口**：成长任务本身改为按账号互斥（见
+   * {@link growthAccountLocks}），因此单账号执行与它并行是允许的。
+   */
   private readonly growthTasksGuard = new RunGuard('growth-tasks')
+  /**
+   * 成长任务的**账号级**互斥锁。
+   *
+   * 为什么不是一把全局锁：界面要求「在跑的那个账号禁用、其他账号照常可点」。
+   * 全局锁下其他账号的按钮看起来可点，点下去却只会被判重拒绝——用户看到的是
+   * 「按钮能点但没反应」。按账号加锁后，不同账号的成长任务可以真正并行。
+   */
+  private readonly growthAccountLocks = new AccountLocks('growth-account')
 
   /** 把已持久化的偏好推到 host 侧的门与周期。 */
   setAutoSwitchConfig(enabled: boolean, thresholdPct: number): void {
@@ -1036,6 +1061,12 @@ export class CodeBuddyAuthService {
         return ok(await this.growthRunOne(id, taskCode, signal))
       }
       case 'growthRunAll': return ok(await this.growthRunAll(signal))
+      case 'growthRunAccount': {
+        const raw = typeof payload === 'object' && payload !== null ? payload as { id?: unknown } : undefined
+        const id = typeof raw?.id === 'string' ? raw.id : ''
+        if (id.length === 0) return err('invalid-request', 'growthRunAccount requires id')
+        return ok(await this.growthRunAccount(id, signal))
+      }
       case 'growthRunStatus': return ok(await this.growthRunStatus())
       case 'creditExpiry': return ok(await this.creditExpiryAll(signal))
       case 'tokenStats': {
@@ -1833,53 +1864,225 @@ export class CodeBuddyAuthService {
   }
 
   /**
-   * 管理后台单条成长任务执行：只处理指定账号与任务，不触发其它账号。
+   * 单账号成长任务执行的核心：报名、执行已移植动作、有界回读、领奖。
    *
-   * 运行状态落盘（`beginGrowthRun`/`finishGrowthRun`），刷新页面后客户端能
-   * 从宿主恢复 loading，不会把正在跑的任务显示成可再次点击。
+   * **报告语义是这里最容易出错的地方**：「动作已发送」不等于「任务已完成」。
+   * 上游计分是异步的——行为事件上报成功（HTTP 200）之后进度要数秒才刷新，
+   * 而且有些动作（判据不对、被风控丢弃）永远不会让进度动。用户看到的
+   * 「跑完了但实际没跑完」正是把前者当成后者汇报出来的。因此这里：
+   *  - 回读是**有界轮询**而不是一次读取；
+   *  - 轮询结束仍未达标就如实记 `pending`（并带进度，前端据此区分「没开始」
+   *    与「做了一半」），绝不写 `claimed`/`already`；
+   *  - 未移植的动作记 `unsupported`，也不计入完成。
+   *
+   * 只读任务列表一次（而不是每个任务各拉一次）后按依赖序执行：领养
+   * （`first_buddy`）必须最先跑，它产出的 Buddy 是旅行派发的前提。
+   *
+   * @param item - 目标账号（含身份与展示名）。
+   * @param only - 只执行这一个任务 code；缺省表示执行全部可自动化任务。
+   * @returns 该账号的逐项结果与汇总状态。
    */
-  async growthRunOne(id: string, taskCode: string, signal?: AbortSignal): Promise<unknown> {
-    const guard = this.growthTasksGuard.tryAcquire()
-    if (guard === undefined) return { status: 'skipped', error: 'growth task run already in progress' }
-    await beginGrowthRun('one', { accountId: id, taskCode })
-    try {
-      const rows = await this.forEachAccount(async item => {
-        if (item.id !== id) return undefined
-        if (item.expired) {
-          await appendGrowthRunLog({ account: item.name, code: taskCode, status: 'error', message: 'refresh token expired' }).catch(() => {})
-          return { id: item.id, name: item.name, client: item.client, status: 'error', items: [], error: 'refresh token expired' }
-        }
-        const tasks = await listGrowthTasks(item.identity, signal)
-        const task = tasks.find(candidate => candidate.taskCode === taskCode)
-        if (task === undefined) {
-          await appendGrowthRunLog({ account: item.name, code: taskCode, status: 'error', message: '账号下没有该任务' }).catch(() => {})
-          return { id: item.id, name: item.name, client: item.client, status: 'error', items: [], error: 'task not found' }
-        }
-        if (!isAutomatableGrowthTask(task)) {
-          await appendGrowthRunLog({ account: item.name, code: task.taskCode, status: 'unsupported', message: task.automationReason ?? 'manual task' }).catch(() => {})
-          return { id: item.id, name: item.name, client: item.client, status: 'ok', items: [{ code: task.taskCode, status: 'unsupported', current: task.current, target: task.target, error: task.automationReason ?? 'manual task' }] }
-        }
-        if (task.acceptStatus !== 'accepted' && task.acceptStatus !== 'completed') {
-          await acceptGrowthTasks(item.identity, [task.taskCode], signal)
-        }
-        let latest = task
-        if (!latest.claimable) {
+  private async runGrowthForAccount(
+    item: GrowthAccountFacts,
+    only?: string,
+    signal?: AbortSignal,
+  ): Promise<{
+    id: string
+    name: string
+    client: CodeBuddyClientId
+    status: 'ok' | 'partial' | 'error'
+    items: Array<Record<string, unknown>>
+    error?: string
+    acceptError?: string
+    /** 仍未领奖的任务数（含动作不支持与未达标）。 */
+    pending: number
+  }> {
+    if (item.expired) {
+      await appendGrowthRunLog({ account: item.name, code: only ?? '-', status: 'error', message: '刷新凭据已过期，请在设置页重新登录该账号' }).catch(() => {})
+      return { id: item.id, name: item.name, client: item.client, status: 'error', items: [], error: 'refresh token expired', pending: 1 }
+    }
+    await appendGrowthRunLog({ account: item.name, code: '开始', status: 'running', message: '读取任务列表…' }).catch(() => {})
+    const tasks = await listGrowthTasks(item.identity, signal)
+
+    // 单项执行：目标任务不在该账号下时明确报错（而不是静默什么都不做）。
+    if (only !== undefined) {
+      const task = tasks.find(candidate => candidate.taskCode === only)
+      if (task === undefined) {
+        await appendGrowthRunLog({ account: item.name, code: only, status: 'error', message: '账号下没有该任务' }).catch(() => {})
+        return { id: item.id, name: item.name, client: item.client, status: 'error', items: [], error: 'task not found', pending: 1 }
+      }
+      if (task.claimed) {
+        await appendGrowthRunLog({ account: item.name, code: only, status: 'already', message: '奖励此前已领取' }).catch(() => {})
+        return { id: item.id, name: item.name, client: item.client, status: 'ok', items: [{ code: only, status: 'already' }], pending: 0 }
+      }
+      if (!isAutomatableGrowthTask(task)) {
+        const reason = task.automationReason ?? '该任务需手动完成'
+        await appendGrowthRunLog({ account: item.name, code: task.taskCode, status: 'unsupported', message: reason }).catch(() => {})
+        return { id: item.id, name: item.name, client: item.client, status: 'ok', items: [{ code: task.taskCode, status: 'unsupported', current: task.current, target: task.target, error: reason }], pending: 1 }
+      }
+      const items = await this.runGrowthTasks(item, [task], signal)
+      const failed = items.some(result => result.status === 'error')
+      const pending = items.filter(result => result.status !== 'claimed' && result.status !== 'already').length
+      return {
+        id: item.id,
+        name: item.name,
+        client: item.client,
+        status: failed ? 'partial' : 'ok',
+        items,
+        pending,
+      }
+    }
+
+    // 全量：只取可自动化且未领取的任务，按依赖序排列。
+    const pendingTasks = sortGrowthTasksByOrder(tasks.filter(isAutomatableGrowthTask))
+    if (pendingTasks.length === 0) {
+      await appendGrowthRunLog({ account: item.name, code: '-', status: 'already', message: '没有待完成的自动化任务' }).catch(() => {})
+      return { id: item.id, name: item.name, client: item.client, status: 'ok', items: [], pending: 0 }
+    }
+
+    // 批量报名：未报名时行为上报不计数（上游对 not_accepted 的任务不推进进度）。
+    const acceptCodes = pendingTasks
+      .filter(task => task.acceptStatus !== 'accepted' && task.acceptStatus !== 'completed')
+      .map(task => task.taskCode)
+    let acceptError: string | undefined
+    if (acceptCodes.length > 0) {
+      try {
+        await acceptGrowthTasks(item.identity, acceptCodes, signal)
+        await appendGrowthRunLog({ account: item.name, code: '-', status: 'accepted', message: `报名 ${acceptCodes.length} 个任务` }).catch(() => {})
+      } catch (error) {
+        // 报名失败不阻塞行为上报（判据是行为事件，不是报名状态），但要留痕。
+        acceptError = error instanceof Error ? error.message : String(error)
+        await appendGrowthRunLog({ account: item.name, code: '-', status: 'error', message: `报名失败：${acceptError}` }).catch(() => {})
+      }
+    }
+
+    const items = await this.runGrowthTasks(item, pendingTasks, signal)
+    const failed = items.some(result => result.status === 'error')
+    const pending = items.filter(result => result.status !== 'claimed' && result.status !== 'already').length
+    return {
+      id: item.id,
+      name: item.name,
+      client: item.client,
+      status: acceptError === undefined && !failed ? 'ok' : 'partial',
+      items,
+      pending,
+      ...acceptError === undefined ? {} : { acceptError },
+    }
+  }
+
+  /**
+   * 依次执行一串任务：动作 → 有界回读 → 达标领奖；未达标如实记 `pending`。
+   *
+   * @param item - 目标账号。
+   * @param tasks - 已按依赖序排列的可自动化任务。
+   * @returns 逐项结果。
+   */
+  private async runGrowthTasks(
+    item: GrowthAccountFacts,
+    tasks: readonly GrowthTask[],
+    signal?: AbortSignal,
+  ): Promise<Array<Record<string, unknown>>> {
+    const items: Array<Record<string, unknown>> = []
+    for (const task of tasks) {
+      // 已完成的任务直接跳过（幂等：不重复消耗上游配额）。
+      if (task.claimed) {
+        items.push({ code: task.taskCode, status: 'already' })
+        continue
+      }
+      let latest = task
+      if (!latest.claimable) {
+        try {
+          // 先记「开始执行」：动作内部可能有真实对话/多次上报，耗时可观。
+          // 带上当前进度，前端据此把「没开始（红）」与「做了一半（黄）」分开。
+          await appendGrowthRunLog({
+            account: item.name,
+            code: task.taskCode,
+            status: 'running',
+            message: `执行中（当前 ${task.current}/${task.target}）`,
+            current: task.current,
+            target: task.target,
+          }).catch(() => {})
           const action = await runGrowthTaskAction(item.identity, task.taskCode, task.current, task.target, signal)
           if (!action.supported) {
-            await appendGrowthRunLog({ account: item.name, code: task.taskCode, status: 'unsupported', message: action.message }).catch(() => {})
-            return { id: item.id, name: item.name, client: item.client, status: 'ok', items: [{ code: task.taskCode, status: 'unsupported', current: task.current, target: task.target, error: action.message }] }
+            // 动作没移植：明确记 unsupported，绝不算完成。
+            await appendGrowthRunLog({
+              account: item.name,
+              code: task.taskCode,
+              status: 'unsupported',
+              message: action.message,
+              current: task.current,
+              target: task.target,
+            }).catch(() => {})
+            items.push({ code: task.taskCode, status: 'unsupported', current: task.current, target: task.target, error: action.message })
+            continue
           }
+          await appendGrowthRunLog({
+            account: item.name,
+            code: task.taskCode,
+            status: 'running',
+            message: action.message,
+            current: task.current,
+            target: task.target,
+          }).catch(() => {})
+          // 上游计分是异步的：回读要有耐心，并把「还在等」写进日志，
+          // 否则这一段静默期看起来像卡住了。
           for (let attempt = 0; attempt < GROWTH_POLL_ATTEMPTS; attempt += 1) {
-            if (attempt > 0) await waitForGrowthPoll(signal)
+            if (attempt > 0) {
+              await appendGrowthRunLog({
+                account: item.name,
+                code: task.taskCode,
+                status: 'waiting',
+                message: `等待上游计分（第 ${attempt}/${GROWTH_POLL_ATTEMPTS - 1} 次回读）`,
+              }).catch(() => {})
+              await waitForGrowthPoll(signal)
+            }
             const refreshed = await listGrowthTasks(item.identity, signal)
             latest = refreshed.find(candidate => candidate.taskCode === task.taskCode) ?? latest
             if (latest.claimable || latest.claimed) break
           }
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error)
+          await appendGrowthRunLog({
+            account: item.name,
+            code: task.taskCode,
+            status: 'error',
+            message,
+            current: task.current,
+            target: task.target,
+          }).catch(() => {})
+          items.push({ code: task.taskCode, status: 'error', current: task.current, target: task.target, error: message })
+          continue
         }
-        if (!latest.claimable) {
-          await appendGrowthRunLog({ account: item.name, code: task.taskCode, status: 'pending', message: `进度 ${latest.current}/${latest.target}，未达标` }).catch(() => {})
-          return { id: item.id, name: item.name, client: item.client, status: 'ok', items: [{ code: task.taskCode, status: 'pending', current: latest.current, target: latest.target }] }
-        }
+      }
+      if (latest.claimed) {
+        await appendGrowthRunLog({
+          account: item.name,
+          code: task.taskCode,
+          status: 'already',
+          message: '已达标，奖励此前已领取',
+          current: latest.current,
+          target: latest.target,
+        }).catch(() => {})
+        items.push({ code: task.taskCode, status: 'already', current: latest.current, target: latest.target })
+        continue
+      }
+      if (!latest.claimable) {
+        // 进度信息同时进 message 与结构化字段：前者给人看，后者定颜色。
+        // 这是「跑完了但没跑完」的如实表达——动作已经发过了，但没达标。
+        await appendGrowthRunLog({
+          account: item.name,
+          code: task.taskCode,
+          status: 'pending',
+          message: latest.current > 0
+            ? `进度 ${latest.current}/${latest.target}，未达标（已完成一半，可稍后重试）`
+            : `进度 0/${latest.target}，未完成（动作已发送但上游未计分，可稍后重试）`,
+          current: latest.current,
+          target: latest.target,
+        }).catch(() => {})
+        items.push({ code: task.taskCode, status: 'pending', current: latest.current, target: latest.target })
+        continue
+      }
+      try {
         const claim = await claimGrowthTask(item.identity, task.taskCode, signal)
         const status = claim.alreadyClaimed ? 'already' : 'claimed'
         await appendGrowthRunLog({
@@ -1887,38 +2090,130 @@ export class CodeBuddyAuthService {
           code: task.taskCode,
           status,
           ...claim.alreadyClaimed
-            ? { message: '奖励此前已领取' }
-            : { message: `领奖 +${claim.credit} 积分 +${claim.energy} 能量` },
+            ? { message: '已达标，奖励此前已领取' }
+            : { message: `已达标并领奖：+${claim.credit} 积分 +${claim.energy} 能量` },
+          current: latest.current,
+          target: latest.target,
         }).catch(() => {})
-        return { id: item.id, name: item.name, client: item.client, status: 'ok', items: [{ code: task.taskCode, status, credit: claim.credit, energy: claim.energy }] }
+        items.push({ code: task.taskCode, status, credit: claim.credit, energy: claim.energy })
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error)
+        await appendGrowthRunLog({ account: item.name, code: task.taskCode, status: 'error', message: `领奖失败：${message}` }).catch(() => {})
+        items.push({ code: task.taskCode, status: 'error', error: message })
+      }
+    }
+    return items
+  }
+
+  /**
+   * 管理后台单条成长任务执行：只处理指定账号与任务，不触发其它账号。
+   *
+   * **互斥以账号为界**（`growthAccountLocks`）：同一账号的单项与一键完成互斥，
+   * 不同账号可并行。这样界面才能做到「在跑的账号禁用、其他账号照常可点」——
+   * 全局单队列下其他账号的按钮看起来可点却会被宿主拒绝。
+   */
+  async growthRunOne(id: string, taskCode: string, signal?: AbortSignal): Promise<unknown> {
+    const lock = this.growthAccountLocks.tryAcquire(id)
+    if (lock === undefined) {
+      return { status: 'skipped', error: '该账号已有成长任务在执行，请等本轮结束后再试' }
+    }
+    growthRunRegistry.add(id, taskCode)
+    await beginGrowthRun('one', { accountId: id, taskCode })
+    try {
+      const rows = await this.forEachAccount(async item => {
+        if (item.id !== id) return undefined
+        return this.runGrowthForAccount(item, taskCode, signal)
       }, signal)
       const account = rows.find(row => row !== undefined)
-      const outcome = account === undefined ? { status: 'error', error: 'account not found' } : account
-      await finishGrowthRun(`${taskCode}:${String((outcome as { status?: unknown }).status ?? 'unknown')}`)
+      const outcome = account === undefined
+        ? { id, name: id, client: 'cli' as CodeBuddyClientId, status: 'error' as const, items: [], error: 'account not found', pending: 1 }
+        : account
+      // 先注销登记再落盘结束：否则磁盘快照会把刚跑完的账号仍写成在跑
+      // （`finishGrowthRun` 以登记表为准），刷新页面后按钮会卡在禁用态。
+      growthRunRegistry.remove(id)
+      await finishGrowthRun(`${taskCode}:${outcome.status}`)
       return outcome
     } catch (error) {
+      growthRunRegistry.remove(id)
       await finishGrowthRun(`${taskCode}:error`).catch(() => {})
       return { status: 'error', error: error instanceof Error ? error.message : String(error) }
     } finally {
-      guard.release()
+      // 幂等：正常路径已经注销，这里只是异常路径的兜底。
+      growthRunRegistry.remove(id)
+      lock.release()
+    }
+  }
+
+  /**
+   * 单账号「一键完成」：对该账号的**全部**可自动化任务执行一遍
+   * （报名 → 行为上报 → 进度回读 → 自动领奖），不触碰其他账号。
+   *
+   * 与 {@link growthRunAll} 的区别只在范围：这里只处理一个账号，因此可以与其他
+   * 账号并发执行（账号锁是按账号的）。执行结束后按账号回读真实状态。
+   */
+  async growthRunAccount(id: string, signal?: AbortSignal): Promise<unknown> {
+    const lock = this.growthAccountLocks.tryAcquire(id)
+    if (lock === undefined) {
+      return { status: 'skipped', error: '该账号已有成长任务在执行，请等本轮结束后再试' }
+    }
+    growthRunRegistry.add(id)
+    await beginGrowthRun('one', { accountId: id, taskCode: 'all' })
+    await appendGrowthRunLog({ account: '-', code: '开始', status: 'running', message: '开始执行该账号的可自动化成长任务' }).catch(() => {})
+    try {
+      const rows = await this.forEachAccount(async item => {
+        if (item.id !== id) return undefined
+        return this.runGrowthForAccount(item, undefined, signal)
+      }, signal)
+      const account = rows.find(row => row !== undefined)
+      const outcome = account === undefined
+        ? { id, name: id, client: 'cli' as CodeBuddyClientId, status: 'error' as const, items: [], error: 'account not found', pending: 1 }
+        : account
+      await appendGrowthRunLog({
+        account: outcome.name,
+        code: '结束',
+        status: outcome.pending > 0 ? 'pending' : 'done',
+        message: outcome.pending > 0
+          ? `该账号执行结束，仍有 ${outcome.pending} 项未完成`
+          : '该账号全部可自动化任务已完成',
+      }).catch(() => {})
+      growthRunRegistry.remove(id)
+      await finishGrowthRun(`account:${outcome.status}`)
+      return outcome
+    } catch (error) {
+      await appendGrowthRunLog({
+        account: '-',
+        code: '结束',
+        status: 'error',
+        message: error instanceof Error ? error.message : String(error),
+      }).catch(() => {})
+      growthRunRegistry.remove(id)
+      await finishGrowthRun('account:error').catch(() => {})
+      return { status: 'error', error: error instanceof Error ? error.message : String(error) }
+    } finally {
+      growthRunRegistry.remove(id)
+      lock.release()
     }
   }
 
   /** 管理后台读取当前成长任务执行状态（刷新页面后恢复 loading 用）。 */
   async growthRunStatus(): Promise<unknown> {
     const state = await loadGrowthRunState()
-    if (state === undefined) return { running: false, inFlight: this.growthTasksGuard.isRunning }
-    // 内存与磁盘取或：进程内正在跑但还没落盘的瞬间也不该显示成空闲。
-    return { ...state, running: state.running || this.growthTasksGuard.isRunning }
+    // 以进程内登记表为权威合并磁盘快照：磁盘只反映最后一次写入，
+    // 并行执行时会漏掉其他仍在跑的账号（见 mergeGrowthRunState）。
+    return mergeGrowthRunState(state)
   }
 
   /**
    * 管理后台「一键完成成长任务」：报名、执行已移植动作、轮询进度并领奖。
-   * 未移植动作明确返回 unsupported，不会被误当成完成，也不会进入隐藏的副作用路径。
+   * 未移植动作明确返回 unsupported，不会被误当成完成；未达标如实记 pending。
+   *
+   * 账号之间可以并行（每账号一把锁），但**本入口自身同时只跑一轮**：
+   * 它是「全部账号」这个范围，重复触发没有意义。已在执行的账号会被跳过并留痕，
+   * 而不是让整轮失败。
    */
   async growthRunAll(signal?: AbortSignal): Promise<unknown> {
     const guard = this.growthTasksGuard.tryAcquire()
-    if (guard === undefined) return { status: 'skipped', accounts: [] }
+    if (guard === undefined) return { status: 'skipped', error: '已有「完成任务」在执行', accounts: [] }
     await beginGrowthRun('all')
     // 立刻落一条「开始」：否则从点击到第一个账号返回结果之间，抽屉里没有任何
     // 内容，用户只看到一个空态或「准备中」——那段时间正是最需要反馈的时候。
@@ -1927,142 +2222,26 @@ export class CodeBuddyAuthService {
       const rows = await this.forEachAccount(async item => {
         // 账号级日志：让抽屉里能看到「这个号被跳过/失败了」而不只是没有输出。
         if (item.expired) {
-          await appendGrowthRunLog({ account: item.name, code: '-', status: 'error', message: 'refresh token expired' }).catch(() => {})
-          return { id: item.id, name: item.name, client: item.client, status: 'error', items: [], error: 'refresh token expired' }
+          await appendGrowthRunLog({ account: item.name, code: '-', status: 'error', message: '刷新凭据已过期，请在设置页重新登录该账号' }).catch(() => {})
+          return { id: item.id, name: item.name, client: item.client, status: 'error', items: [], error: 'refresh token expired', pending: 1 }
         }
-        // 每个账号开始处理时先落一条：拉任务列表等网络往返期间也有具体日志。
-        await appendGrowthRunLog({ account: item.name, code: '开始', status: 'running', message: '读取任务列表…' }).catch(() => {})
+        // 该账号已被单项执行/单账号一键完成占用：跳过并说明，不并发重跑。
+        const lock = this.growthAccountLocks.tryAcquire(item.id)
+        if (lock === undefined) {
+          await appendGrowthRunLog({ account: item.name, code: '-', status: 'skipped', message: '该账号已有成长任务在执行，本轮跳过' }).catch(() => {})
+          return { id: item.id, name: item.name, client: item.client, status: 'ok', items: [], pending: 0, skipped: true }
+        }
+        growthRunRegistry.add(item.id)
         try {
-          const tasks = await listGrowthTasks(item.identity, signal)
-          // 按依赖序排列：领养（first_buddy）必须先执行，它产出的 Buddy 是旅行前提。
-          const pending = sortGrowthTasksByOrder(tasks.filter(isAutomatableGrowthTask))
-          const acceptCodes = pending
-            .filter(task => task.acceptStatus !== 'accepted' && task.acceptStatus !== 'completed')
-            .map(task => task.taskCode)
-          let acceptError: string | undefined
-          try {
-            await acceptGrowthTasks(item.identity, acceptCodes, signal)
-            if (acceptCodes.length > 0) {
-              await appendGrowthRunLog({ account: item.name, code: '-', status: 'accepted', message: `报名 ${acceptCodes.length} 个任务` }).catch(() => {})
-            }
-          } catch (error) {
-            acceptError = error instanceof Error ? error.message : String(error)
-            await appendGrowthRunLog({ account: item.name, code: '-', status: 'error', message: `报名失败：${acceptError}` }).catch(() => {})
-          }
-          const items = [] as Array<Record<string, unknown>>
-          for (const task of pending) {
-            let latest = task
-            if (!latest.claimable) {
-              try {
-                // 先记「开始执行」：动作内部可能有真实对话/多次上报，耗时可观。
-                // 带上当前进度，前端据此把「没开始（红）」与「做了一半（黄）」分开。
-                await appendGrowthRunLog({
-                  account: item.name,
-                  code: task.taskCode,
-                  status: 'running',
-                  message: `执行中（当前 ${task.current}/${task.target}）`,
-                  current: task.current,
-                  target: task.target,
-                }).catch(() => {})
-                const action = await runGrowthTaskAction(item.identity, task.taskCode, task.current, task.target, signal)
-                if (!action.supported) {
-                  await appendGrowthRunLog({
-                    account: item.name,
-                    code: task.taskCode,
-                    status: 'unsupported',
-                    message: action.message,
-                    current: task.current,
-                    target: task.target,
-                  }).catch(() => {})
-                  items.push({ code: task.taskCode, status: 'unsupported', current: task.current, target: task.target, error: action.message })
-                  continue
-                }
-                await appendGrowthRunLog({
-                  account: item.name,
-                  code: task.taskCode,
-                  status: 'running',
-                  message: action.message,
-                  current: task.current,
-                  target: task.target,
-                }).catch(() => {})
-                // 上游计分是异步的：回读要有耐心，并把「还在等」写进日志，
-                // 否则这一段静默期看起来像卡住了。
-                for (let attempt = 0; attempt < GROWTH_POLL_ATTEMPTS; attempt += 1) {
-                  if (attempt > 0) {
-                    await appendGrowthRunLog({
-                      account: item.name,
-                      code: task.taskCode,
-                      status: 'waiting',
-                      message: `等待上游计分（第 ${attempt}/${GROWTH_POLL_ATTEMPTS - 1} 次回读）`,
-                    }).catch(() => {})
-                    await waitForGrowthPoll(signal)
-                  }
-                  const refreshed = await listGrowthTasks(item.identity, signal)
-                  latest = refreshed.find(candidate => candidate.taskCode === task.taskCode) ?? latest
-                  if (latest.claimable || latest.claimed) break
-                }
-              } catch (error) {
-                const message = error instanceof Error ? error.message : String(error)
-                await appendGrowthRunLog({
-                  account: item.name,
-                  code: task.taskCode,
-                  status: 'error',
-                  message,
-                  current: task.current,
-                  target: task.target,
-                }).catch(() => {})
-                items.push({ code: task.taskCode, status: 'error', current: task.current, target: task.target, error: message })
-                continue
-              }
-            }
-            if (!latest.claimable) {
-              // 进度信息同时进 message 与结构化字段：前者给人看，后者定颜色。
-              await appendGrowthRunLog({
-                account: item.name,
-                code: task.taskCode,
-                status: 'pending',
-                message: latest.current > 0
-                  ? `进度 ${latest.current}/${latest.target}，未达标（已完成一半）`
-                  : `进度 0/${latest.target}，未完成`,
-                current: latest.current,
-                target: latest.target,
-              }).catch(() => {})
-              items.push({ code: task.taskCode, status: 'pending', current: latest.current, target: latest.target })
-              continue
-            }
-            try {
-              const claim = await claimGrowthTask(item.identity, task.taskCode, signal)
-              const status = claim.alreadyClaimed ? 'already' : 'claimed'
-              await appendGrowthRunLog({
-                account: item.name,
-                code: task.taskCode,
-                status,
-                ...claim.alreadyClaimed
-                  ? { message: '已达标，奖励此前已领取' }
-                  : { message: `已达标并领奖：+${claim.credit} 积分 +${claim.energy} 能量` },
-                current: latest.current,
-                target: latest.target,
-              }).catch(() => {})
-              items.push({
-                code: task.taskCode,
-                status,
-                credit: claim.credit,
-                energy: claim.energy,
-              })
-            } catch (error) {
-              const message = error instanceof Error ? error.message : String(error)
-              await appendGrowthRunLog({ account: item.name, code: task.taskCode, status: 'error', message: `领奖失败：${message}` }).catch(() => {})
-              items.push({ code: task.taskCode, status: 'error', error: message })
-            }
-          }
+          const result = await this.runGrowthForAccount(item, undefined, signal)
 
           /**
            * 签到与旅行收尾。
            *
            * 放在成长任务**之后**：领养（first_buddy）已在上面的循环里执行完，
-           * 它产出的 Buddy 正是旅行派发的前提。两者都复用与自动周期同源的
-           * 单账号实现，因此在跑或已完成的会自然跳过（签到 `already`、
-           * 旅行 `traveling` / `daily-limit`），不会重复执行。
+           * 它产出的 Buddy 正是旅行派发的前提。两者都复用与自动周期同源的单账号
+           * 实现，因此在跑或已完成的会自然跳过（签到 `already`、旅行 `traveling`
+           * / `daily-limit`），不会重复执行。
            */
           const endpoint = item.endpoint
           // 这两步各是一次网络往返，先记「开始」让等待可见。
@@ -2078,7 +2257,7 @@ export class CodeBuddyAuthService {
                 ? '企业账号不支持签到，跳过'
                 : checkin.result === 'success' ? '签到成功，额度已重置' : checkin.error ?? '签到失败',
           }).catch(() => {})
-          items.push({ code: '签到', status: checkin.result, ...checkin.error === undefined ? {} : { error: checkin.error } })
+          result.items.push({ code: '签到', status: checkin.result, ...checkin.error === undefined ? {} : { error: checkin.error } })
 
           await appendGrowthRunLog({ account: item.name, code: '旅行', status: 'running', message: '确认猫猫档案…' }).catch(() => {})
           const travel = await this.travelOneAccount(item.id, item.name, endpoint, item.identity)
@@ -2104,31 +2283,26 @@ export class CodeBuddyAuthService {
                           ? '暂无猫猫（需先完成领养任务）'
                           : travel.result === 'skipped' ? '企业账号无成长中心' : travel.error ?? '旅行失败',
           }).catch(() => {})
-          items.push({ code: '旅行', status: travel.result, ...travel.error === undefined ? {} : { error: travel.error } })
+          result.items.push({ code: '旅行', status: travel.result, ...travel.error === undefined ? {} : { error: travel.error } })
 
-          const itemFailed = items.some(result => result.status === 'error')
-          return {
-            id: item.id,
-            name: item.name,
-            client: item.client,
-            status: acceptError === undefined && !itemFailed ? 'ok' : 'partial',
-            items,
-            ...acceptError === undefined ? {} : { acceptError },
-          }
-        } catch (error) {
-          const message = error instanceof Error ? error.message : String(error)
-          await appendGrowthRunLog({ account: item.name, code: '-', status: 'error', message }).catch(() => {})
-          return { id: item.id, name: item.name, client: item.client, status: 'error', items: [], error: message }
+          if (checkin.result === 'error' || travel.result === 'error') result.status = 'partial'
+          return result
+        } finally {
+          growthRunRegistry.remove(item.id)
+          lock.release()
         }
       }, signal)
+      const unfinished = rows.reduce((sum, row) => sum + (row.pending ?? 0), 0)
       await appendGrowthRunLog({
         account: '-',
         code: '结束',
-        status: 'done',
-        message: `全部完成，共处理 ${rows.length} 个账号`,
+        status: unfinished > 0 ? 'pending' : 'done',
+        message: unfinished > 0
+          ? `全部完成，共处理 ${rows.length} 个账号；仍有 ${unfinished} 项未完成（见上方 pending 行）`
+          : `全部完成，共处理 ${rows.length} 个账号`,
       }).catch(() => {})
       await finishGrowthRun(`all:${rows.length} accounts`)
-      return { status: 'ok', accounts: rows }
+      return { status: 'ok', accounts: rows, pending: unfinished }
     } catch (error) {
       // 整轮崩溃也要留痕：否则抽屉里只看得到中断前的日志、没有失败原因。
       await appendGrowthRunLog({

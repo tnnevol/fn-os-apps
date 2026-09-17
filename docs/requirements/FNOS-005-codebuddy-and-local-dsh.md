@@ -1,11 +1,11 @@
 ---
 id: FNOS-005
 title: FNOS-005 CodeBuddy 成长任务移植与仓库内 DSH 开发环境
-description: 将 workbuddy2api-panel 中的 CodeBuddy 成长任务能力（任务列表、一键完成、自动领奖）与任务中心（全账号扫描、执行队列）移植到本仓库 CodeBuddy 插件，并在仓库内安装固定版本 dsh CLI、由 start 以仓库根 .dsh 作为 DSH_HOME 启动本地 DSH Web，自动内置仓库插件。
+description: 将 workbuddy2api-panel 中的 CodeBuddy 成长任务能力（任务列表、单账号/全账号一键完成、自动领奖）与任务中心（全账号扫描、执行队列）移植到本仓库 CodeBuddy 插件，对齐来源的出站风控指纹与节流口径，并在仓库内安装固定版本 dsh CLI、由 start 以仓库根 .dsh 作为 DSH_HOME 启动本地 DSH Web，自动内置仓库插件。
 status: completed
 owner: tnnevol
 targetVersion: 5.4.0
-lastVerified: 2026-09-16
+lastVerified: 2026-09-17
 ---
 
 # FNOS-005 CodeBuddy 成长任务移植与仓库内 DSH 开发环境
@@ -98,6 +98,8 @@ lastVerified: 2026-09-16
 | FNOS-005-12 | P1 | start 增加本地 DSH Web 启动目标 | 执行 `pnpm run start` 可在交互多选中选择「DSH Web」，或用 `pnpm run start -- --web` 直接启动；本地端口固定 3150 | <Badge type="tip" text="已完成" /> |
 | FNOS-005-13 | P1 | 本地 DSH_HOME 指向仓库根 .dsh | 启动后的 profile、凭据和会话位于 `<仓库根>/.dsh`，`$HOME/.dsh` 不被本次启动写入 | <Badge type="tip" text="已完成" /> |
 | FNOS-005-14 | P1 | 仓库插件内置进本地 profile | 启动本地 DSH Web 时自动把仓库插件链接进 `.dsh` profile，无需手工 `dsh plugin add`；`@tnnevol/dsh-fnos` 不内置 | <Badge type="tip" text="已完成" /> |
+| FNOS-005-15 | P1 | 单账号「一键完成」与跨账号执行互斥 | 账号信息弹框「成长任务」Tab 的刷新按钮旁新增「一键完成」，只跑该账号全部可自动化任务；该账号在跑时账号管理页的「完成任务」（全账号）按钮禁用，其他账号的单项「完成」与本按钮保持可点 | <Badge type="tip" text="已完成" /> |
+| FNOS-005-16 | P1 | 风控指纹对齐与「跑完但没完成」修复 | 出站请求对齐来源的客户端指纹头族与节流节奏；专家类任务改用服务端真实 chat requestId 判据；执行结束后按账号回读真实任务状态并如实汇报未完成项，不再只看「任务跑完」 | <Badge type="tip" text="已完成" /> |
 
 ## 交互和行为约束
 
@@ -126,6 +128,14 @@ lastVerified: 2026-09-16
 - `loading` 与 `disabled` 是**两个独立属性、可以并存**，各表达一件不同的事：`loading` 表示动作正在进行，`disabled` 表示此刻确实不可提交。不得把两者当成互斥的二选一，也不得用同一个条件同时喂给两者。
 - Semi Button 的 `disabled` 优先级高于 `loading`（两者同真时只渲染禁用态、不渲染转圈），因此「正在执行」这一态不得叠加 `disabled`；由于 `loading` 本身不拦截点击，执行中按钮的重复触发必须由处理函数内的重入判断挡住。
 - 移植行为只在已登录且持有有效 AccessToken 的账号上执行；凭据缺失或刷新失败时明确报错，不静默跳过。
+- **单账号「一键完成」在弹框内，不是页面级按钮**：「成长任务」Tab 的刷新按钮**左侧**新增「一键完成」；它只跑当前账号的全部可自动化任务（含报名 → 行为上报 → 进度回读 → 自动领奖），不触碰其他账号。
+- **运行中的禁用范围以账号为界**：某账号正在执行成长任务（单项或一键完成）时，账号管理页的「完成任务」（全账号）按钮禁用；该账号自身的单项「完成」按钮也禁用。**其他账号**的单项「完成」按钮与弹框「一键完成」按钮**不得**因此变灰——它们可以真实执行，而不是点了被宿主拒绝。宿主因此必须按账号加锁，而不是只有一个全局队列。
+- **账号管理页「完成任务」的禁用依据是宿主运行状态**：任一账号有成长任务在跑（含刷新页面后从宿主采纳的状态）即禁用；不得只依据本页组件 state，否则刷新页面后会出现「实际在跑却可点」。
+- 宿主对同一账号的成长任务执行互斥（单项与一键完成共用一把账号锁）；不同账号之间可并行，互不阻塞。
+- 出站行为上报与任务动作，凡有来源实测口径可对齐的，必须对齐：客户端指纹头族（`User-Agent`、`X-Product`、`X-Domain`、`X-User-Id`、`X-CodeBuddy-Request`、按账号稳定派生的 `X-Machine-ID` / `X-Session-ID`）、连续上报的间隔（对齐来源的 1.05s 口径）、专家召唤链之间的间隔、以及账号之间的限速。
+- 判据必须与来源一致：专家类任务（`expert_5`、`Expert_team_use_3`、`Expert_lighthouse`）的 `expert_actual_use` 必须 JOIN 一次**真实对话**返回的服务端 `requestId`，自造 requestId 不计数；桌面链事件载荷按来源的完整字段集发送，不用最小字段集。
+- **「跑完」不等于「完成」**：任务动作返回成功（HTTP 200）只说明上报被受理，上游计分是异步的。执行结束后必须按账号回读真实任务状态，把仍未达标（`current < target`）的任务如实写成 `pending` 并计入结果，不得把「动作已发送」汇报成「任务已完成」。宿主日志必须让人能分辨「没开始做」「做了一半」「已完成」。
+- 报告失败的账号要给出可见原因（凭据过期、任务不存在、动作未移植、上游报错、未达标分别不同），不静默吞掉。
 
 ### 本地 DSH 开发环境
 
@@ -269,6 +279,27 @@ lastVerified: 2026-09-16
 - `FNOS-005-14-AC-03`：重复启动不重复安装，已链接且已在 bundle 列表中的插件被跳过。
 - `FNOS-005-14-AC-04`：本地 profile 的依赖与 `dsh.profile.bundles` 均不含 `@tnnevol/dsh-fnos`。
 
+### FNOS-005-15 验收条件
+
+- `FNOS-005-15-AC-01`：账号信息弹框「成长任务」Tab 的工具栏里，「一键完成」按钮位于刷新按钮**左侧**（先一键完成、后刷新），文案可辨识。
+- `FNOS-005-15-AC-02`：点「一键完成」只对当前账号执行全部可自动化任务（报名 → 行为上报 → 进度回读 → 自动领奖），不读取也不触碰其他账号；执行前打开同一份日志抽屉。
+- `FNOS-005-15-AC-03`：某账号正在执行成长任务时，账号管理页的「完成任务」（全账号）按钮处于禁用态；禁用依据是**宿主运行状态**，刷新页面后仍然禁用，直到宿主报告结束。
+- `FNOS-005-15-AC-04`：该账号自身的单项「完成」按钮在同一轮执行期间禁用（它已有任务在跑）；**其他账号**的单项「完成」按钮与弹框「一键完成」按钮保持可点，不被误禁。
+- `FNOS-005-15-AC-05`：宿主按账号互斥——同账号的单项执行与一键完成互斥（重复触发返回冲突），不同账号可并行执行且互不阻塞。
+- `FNOS-005-15-AC-06`：「一键完成」按钮用 `loading` 表达本账号执行中（`disabled` 只保留给真实不可用状态），且重入由处理函数内的判断挡住（Semi 的 loading 不拦截点击）。
+- `FNOS-005-15-AC-07`：单账号执行结束后按宿主状态收尾，按钮不永久停在 loading；宿主重启留下的孤儿 running 同样被判为已结束。
+
+### FNOS-005-16 验收条件
+
+- `FNOS-005-16-AC-01`：行为上报与任务动作的出站请求对齐来源指纹头族：桌面链带 `User-Agent`（WorkBuddy 三段式）、`X-Product: SaaS`、`X-Domain` 与 `X-User-Id`；billing/growth 域补齐 `X-CodeBuddy-Request: 1` 与按 uid 稳定派生的 `X-Machine-ID` / `X-Session-ID`（跨重启恒定、账号间互异）。
+- `FNOS-005-16-AC-02`：连续上报（`chat_5` 补报、模板链、夜间补足）的条间间隔对齐来源的 1.05s 口径；专家召唤链复用来源的 6s 间隔；账号之间在批量执行时有限速，避免瞬时并发打满上游。
+- `FNOS-005-16-AC-03`：`expert_5` / `Expert_team_use_3` / `Expert_lighthouse` 的 `expert_actual_use` 使用**真实对话**返回的服务端 `requestId`（`cmb-` 前缀 32 hex 或裸 32 hex）；对话未返回该 id 时该专家计入失败而不是用自造 id 充数；`Expert_lighthouse` 使用 `mode: "LOCAL"` 且 `type` 为空、`cost: 0` 的判据形态。
+- `FNOS-005-16-AC-04`：桌面链事件载荷使用来源的完整字段集（`agent_task_created` 的 `has_repo`/`has_connector`/`has_template`/`has_expert`/`has_skill` 等、`chat_message_response` 的 token 与 `finishReason`、`chat_request_response` 的成功态），不用最小字段集；`skill_1` 的 `chat_message_response.finishReason` 为 `tool_calls` 以表达技能加载语义。
+- `FNOS-005-16-AC-05`：`Library_read` 的 web 事件带来源口径的 `pageURL`、`elementId`/`elementName` 与浏览器 UA；`template_5` 发送 5 组不同模板的事件；`Hp_Appearance` 先调 `appearance/set` 再上报 `appearance_skin_apply`。
+- `FNOS-005-16-AC-06`：**执行结束后按账号回读真实任务状态**：仍 `current < target` 的任务写为 `pending` 并带进度（`current`/`target`），日志区分「零进度＝没开始」与「有进度＝做了一半」；「动作已发送」不得汇报为「已完成」。
+- `FNOS-005-16-AC-07`：全账号与单账号执行的结果都按账号给出可见结论（已领奖 / 已达标未领奖 / 未达标 / 动作未移植 / 上游报错 / 凭据过期），并统计未完成数；任一账号失败不阻断其他账号。
+- `FNOS-005-16-AC-08`：移植后插件 typecheck、单元测试与构建全部通过；新增/修订的测试覆盖账号级互斥、禁用范围、指纹头、节流间隔与「未达标如实汇报」。
+
 ### 状态看板
 
 | 阶段 | 状态 | 当前范围 | 下一步 |
@@ -287,6 +318,8 @@ lastVerified: 2026-09-16
 | start 增加本地 DSH Web 启动目标 | <Badge type="tip" text="已完成" /> | `--web` 与交互多选新增「DSH Web」，固定 3150 端口，与 Turbo watch 目标互斥 | 已完成；本机启动、端口与组合拒绝均实测通过 |
 | 本地 DSH_HOME 指向仓库根 .dsh | <Badge type="tip" text="已完成" /> | 子进程注入 `DSH_HOME=<仓库根>/.dsh`，清除继承的 DSH 会话身份，`.dsh/` 加入忽略规则 | 已完成；profile 落点与忽略规则实测通过 |
 | 仓库插件内置进本地 profile | <Badge type="tip" text="已完成" /> | 启动前用 Turbo 构建并经 DSH CLI 链接；已在 bundle 中的跳过；排除 `@tnnevol/dsh-fnos` | 已完成；清空 `.dsh` 后全流程实测通过，二次启动幂等 |
+| 单账号「一键完成」与跨账号互斥 | <Badge type="tip" text="已完成" /> | 弹框内刷新左侧新增「一键完成」；宿主改按账号加锁，运行中禁用全账号按钮与该账号单项按钮，其他账号不受影响 | 已完成；实现与构建通过，账号级互斥与禁用范围由单测守住 |
+| 风控指纹对齐与「跑完但没完成」修复 | <Badge type="tip" text="已完成" /> | 对齐来源指纹头族与节流间隔；专家类任务改用真实 chat requestId；桌面链补全事件载荷；执行后按账号回读并如实汇报未达标项 | 已完成；实现与构建通过，动作契约与汇报语义由单测守住 |
 
 ## 变更记录
 
@@ -322,3 +355,5 @@ lastVerified: 2026-09-16
 | 2026-09-15 | 补齐依赖安装策略 | 记录 DSH 原生依赖使用预编译产物、`allowBuilds` 显式拒绝安装脚本的原因，避免 `pnpm install` 因被忽略的构建脚本失败；补声明 pnpm 隔离布局下不可解析的 `@deepseek-ai/dsh-llm-pi-ai` |
 | 2026-09-15 | 新增 FNOS-005-14 | 本地 DSH Web 启动时自动把仓库插件内置进 `.dsh` profile（先 Turbo 构建，再经 `dsh plugin --profile web add` 链接）；按用户要求排除 FPK 专用的 `@tnnevol/dsh-fnos` |
 | 2026-09-16 | FNOS-005 验收完成 | FNOS-005-01 至 FNOS-005-14 全部功能均已验证通过，需求状态与验收记录确认完成 |
+| 2026-09-17 | 新增 FNOS-005-15 | 弹框「成长任务」Tab 的刷新左侧新增单账号「一键完成」；宿主由全局单队列改为按账号互斥，使「该账号在跑时禁用全账号按钮、其他账号不受影响」可真实成立（否则其他账号可点但会被宿主拒绝） |
+| 2026-09-17 | 新增 FNOS-005-16 | 逐条比对来源 `workbuddy2api-panel` 后补齐风控与判据差异：指纹头族（`X-CodeBuddy-Request`/`X-Machine-ID`/`X-Session-ID`/桌面 UA）、上报与召唤链节流、`expert_actual_use` 必须 JOIN 真实 chat requestId、桌面链完整事件载荷；并明确「按账号回读真实状态、未达标如实汇报」的语义 |

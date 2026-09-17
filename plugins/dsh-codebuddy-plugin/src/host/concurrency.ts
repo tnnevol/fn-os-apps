@@ -60,6 +60,65 @@ export class RunGuard {
 }
 
 /**
+ * 按账号的互斥锁表（「同账号串行、不同账号并行」）。
+ *
+ * 与 {@link RunGuard} 的区别是关键：`RunGuard` 是**全局**单标志——一个账号在跑
+ * 就把所有账号都挡在外面。成长任务的界面语义要求「在跑的那个账号禁用、其他
+ * 账号照常可点」，全局标志满足不了：其他账号的按钮看起来可点，点下去却会被
+ * 宿主拒绝，用户看到的是「按钮能点但没反应」。
+ *
+ * 因此这里为每个账号各持一把锁：
+ *  - `tryAcquire(id)` 拿不到说明**该账号**已有执行在途（返回 `undefined`）；
+ *  - 其他账号拿的是另一把锁，互不影响，可以真正并行。
+ *
+ * 释放语义与 `RunGuard` 一致：句柄只可释放一次，重复释放不会误清掉后续占用者。
+ */
+export class AccountLocks {
+  private readonly locks = new Map<string, { released: boolean }>()
+
+  constructor(private readonly label: string) {}
+
+  /** 便于诊断：`[label]` 前缀。 */
+  get name(): string {
+    return this.label
+  }
+
+  /** 该账号是否有执行在途。 */
+  has(id: string): boolean {
+    return this.locks.has(id)
+  }
+
+  /** 当前在跑的账号 id（稳定顺序）。 */
+  ids(): string[] {
+    return [...this.locks.keys()]
+  }
+
+  /** 是否有任何账号在执行。 */
+  get running(): boolean {
+    return this.locks.size > 0
+  }
+
+  /**
+   * 尝试占用该账号。成功返回只可释放一次的句柄；已被占用返回 `undefined`。
+   * 调用方必须 `try { ... } finally { handle.release() }`。
+   */
+  tryAcquire(id: string): RunHandle | undefined {
+    if (this.locks.has(id)) return undefined
+    const record = { released: false }
+    this.locks.set(id, record)
+    return {
+      release: (): void => {
+        // 幂等：重复 release 不会误清掉后来的占用者。
+        if (record.released) return
+        record.released = true
+        // 只有当前登记的仍是自己时才删除（避免误删重新获取的那把）。
+        if (this.locks.get(id) === record) this.locks.delete(id)
+      },
+    }
+  }
+}
+
+/**
  * 连续全失败时的退避闸门：失败到阈值后**暂时**跳过后续轮次，冷却期满自动放行重试。
  *
  * 与「到阈值就永久 standby」的区别是关键：那种写法一旦计数器到了上限，后续

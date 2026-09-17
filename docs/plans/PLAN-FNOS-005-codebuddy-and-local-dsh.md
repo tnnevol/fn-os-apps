@@ -1,12 +1,12 @@
 ---
 id: PLAN-FNOS-005
 title: PLAN-FNOS-005 CodeBuddy 成长任务移植与仓库内 DSH 开发环境
-description: 实施 FNOS-005-01 至 FNOS-005-14：移植成长任务与任务中心，提供管理后台一键签到、「完成任务」按钮与任务执行日志抽屉；并在仓库内安装固定版本 dsh CLI，让 start 以仓库根 .dsh 作为 DSH_HOME 启动本地 DSH Web，并自动内置仓库插件。
+description: 实施 FNOS-005-01 至 FNOS-005-16：移植成长任务与任务中心，提供管理后台「完成任务」按钮、弹框内单账号「一键完成」与任务执行日志抽屉，对齐来源的风控指纹与节流口径并修复「跑完但没完成」；并在仓库内安装固定版本 dsh CLI，让 start 以仓库根 .dsh 作为 DSH_HOME 启动本地 DSH Web，并自动内置仓库插件。
 status: completed
 owner: tnnevol
 planDate: 2026-09-14
 targetVersion: 5.4.0
-lastVerified: 2026-09-16
+lastVerified: 2026-09-17
 ---
 
 # PLAN-FNOS-005 CodeBuddy 成长任务移植与仓库内 DSH 开发环境
@@ -16,7 +16,7 @@ lastVerified: 2026-09-16
 | 计划编号 | PLAN-FNOS-005 |
 | 计划日期 | 2026-09-14 |
 | 对应需求 | [FNOS-005 CodeBuddy 成长任务移植与仓库内 DSH 开发环境](/requirements/FNOS-005-codebuddy-and-local-dsh) |
-| 本轮功能 | `FNOS-005-01` 至 `FNOS-005-14`：成长任务列表与状态、单任务/一键完成 + 自动领奖、任务中心扫描与执行队列、不可自动化任务指引、运营周期开关收拢到管理面板、「完成任务」按钮、个人成长任务收拢到弹框、执行状态持久化、任务执行日志抽屉，以及仓库内 DSH CLI、本地 DSH Web 启动目标、本地 `DSH_HOME` 与仓库插件自动内置 |
+| 本轮功能 | `FNOS-005-01` 至 `FNOS-005-16`：成长任务列表与状态、单任务/一键完成 + 自动领奖、任务中心扫描与执行队列、不可自动化任务指引、运营周期开关收拢到管理面板、「完成任务」按钮、个人成长任务收拢到弹框、执行状态持久化、任务执行日志抽屉、单账号「一键完成」与跨账号互斥、风控指纹对齐与「跑完但没完成」修复，以及仓库内 DSH CLI、本地 DSH Web 启动目标、本地 `DSH_HOME` 与仓库插件自动内置 |
 | 移植来源 | `workbuddy2api-panel`（`~/workspace/fork-pj/workbuddy2api-panel`） |
 | 上游依据 | `@deepseek-ai/dsh@0.1.5-rc.2`（与 FPK 运行时基线一致） |
 | 计划状态 | <Badge type="tip" text="已完成" /> |
@@ -211,6 +211,42 @@ lastVerified: 2026-09-16
 | 同时选择互斥目标 | 报错并退出，不启动任何目标 |
 | 本地 Web 端口被占用 | 由 DSH 自身报 `EADDRINUSE` 并退出，CLI 原样透传 |
 
+### P1：单账号「一键完成」与跨账号执行互斥
+
+状态：<Badge type="tip" text="已完成" />
+
+| 任务 ID | 对应验收 | 实现内容 | 验收 |
+| --- | --- | --- | --- |
+| PLAN-FNOS-005-T15-01 | FNOS-005-15-AC-01/02/06 | 「成长任务」Tab 工具栏在刷新按钮**左侧**加「一键完成」，只对当前账号执行全部可自动化任务（报名 → 上报 → 回读 → 领奖）；点下即展开同一份日志抽屉；用 `loading` 表达本账号执行中并由处理函数挡住重入 | 按钮位置与文案正确，只影响本账号，重入被挡 |
+| PLAN-FNOS-005-T15-02 | FNOS-005-15-AC-03/04/05/07 | 宿主把「单一全局 `growthTasksGuard`」改为**按账号互斥**（同账号单项与一键完成共用一把锁，不同账号并行）；`growthRunStatus` 因此上报哪些账号在跑；客户端据此禁用账号管理页「完成任务」与该账号的单项按钮，其他账号保持可点；结束以宿主状态收尾 | 运行中禁用范围以账号为界，刷新页面后仍成立，无永久 loading |
+| PLAN-FNOS-005-T15-03 | FNOS-005-15-AC-03/04 | 运行态模型从「单个 mode/accountId」升级为「运行中账号集合 + 全量轮次」，`isBlockedByRunAll` 与单项判断改读该集合；落盘兼容旧状态文件 | 旧状态文件仍可读，禁用范围判定由单测守住 |
+
+### P1：风控指纹对齐与「跑完但没完成」修复
+
+状态：<Badge type="tip" text="已完成" />
+
+| 任务 ID | 对应验收 | 实现内容 | 验收 |
+| --- | --- | --- | --- |
+| PLAN-FNOS-005-T16-01 | FNOS-005-16-AC-01 | 行为上报与 growth/billing 域出站补齐来源头族：`X-CodeBuddy-Request: 1`、按 uid 稳定派生的 `X-Machine-ID` / `X-Session-ID`（跨重启恒定、账号间互异）、桌面链三段式 UA 与 `X-Product`/`X-Domain` | 头族与来源一致，派生 Id 稳定且按账号互异 |
+| PLAN-FNOS-005-T16-02 | FNOS-005-16-AC-02 | 对齐节流口径：连续上报间隔 1.05s（`chat_5` 补报、模板链、夜间补足）、专家召唤链 6s、账号之间限速；`accept` 批量报名保持批间节流 | 间隔为可测常量，批量执行不瞬时打满上游 |
+| PLAN-FNOS-005-T16-03 | FNOS-005-16-AC-03/05 | 专家类任务改用**真实对话**返回的服务端 `requestId`（`cmb-`/裸 32 hex 校验），拿不到即计失败而不是自造 id；`Expert_lighthouse` 用 `mode:"LOCAL"`、`type` 空、`cost:0`；`Library_read` / `template_5` / `Hp_Appearance` 按来源判据形态发送 | 判据与来源一致，自造 id 不再出现 |
+| PLAN-FNOS-005-T16-04 | FNOS-005-16-AC-04 | 桌面链事件载荷补全为来源的完整字段集（`agent_task_created` 能力标志组、`chat_message_response` token 与 `finishReason`、`chat_request_response` 成功态、`codebuddy.*` 关联键）；`skill_1` 的 `finishReason` 用 `tool_calls` | 载荷字段集与来源一致，不用最小字段集 |
+| PLAN-FNOS-005-T16-05 | FNOS-005-16-AC-06/07 | 执行结束后按账号回读真实任务状态：未达标写 `pending` + 进度（区分零进度与做了一半），「动作已发送」不汇报为「已完成」；失败原因分类可见；未完成数计入结果，单账号失败不阻断其他账号 | 日志与结果如实反映未完成项 |
+
+### 详细交互：单账号「一键完成」
+
+1. 用户在账号管理页点账号卡片打开「账户信息」弹框，切到「成长任务」Tab。
+2. 工具栏出现「一键完成」与「刷新」两个按钮，一键完成在左。点「一键完成」后按钮进入 loading，并立即展开底部日志抽屉（复用与「完成任务」同一份宿主日志）。
+3. 宿主只对该账号加锁并执行全部可自动化任务；其他账号此刻点「一键完成」或单项「完成」仍可真实执行（不同账号可并行）。
+4. 同一时间，账号管理页的「完成任务」（全账号）按钮变为禁用，直到本账号执行结束。
+5. 执行结束后按宿主状态收尾：按钮解除 loading，任务列表自动重载真实进度。
+
+| 错误情况 | 表现 |
+| --- | --- |
+| 该账号已有成长任务在跑 | 宿主返回冲突，按钮不进入 loading，提示已有执行在途 |
+| 凭据已过期 | 该账号结果标 `error` 并写明 `refresh token expired`，不静默跳过 |
+| 任务动作未移植 | 该任务标 `unsupported` 并展示原因，不计入完成 |
+
 ## 完成状态
 
 | 阶段 | 状态 | 完成条件 |
@@ -229,6 +265,8 @@ lastVerified: 2026-09-16
 | P1 start 增加本地 DSH Web 启动目标 | <Badge type="tip" text="已完成" /> | `--web` 与交互多选可用；固定 3150；与 Turbo watch 目标互斥 |
 | P1 本地 DSH_HOME 指向仓库根 .dsh | <Badge type="tip" text="已完成" /> | 启动注入 `DSH_HOME`；profile 落在仓库内；`.dsh/` 不进入版本库 |
 | P1 仓库插件内置进本地 profile | <Badge type="tip" text="已完成" /> | 先构建再经 DSH CLI 链接；已在 bundle 中的跳过；排除 `@tnnevol/dsh-fnos` |
+| P1 单账号「一键完成」与跨账号互斥 | <Badge type="tip" text="已完成" /> | 弹框内刷新左侧新增按钮；宿主按账号加锁；运行中禁用全账号按钮与该账号单项按钮，其他账号不受影响 |
+| P1 风控指纹对齐与「跑完但没完成」修复 | <Badge type="tip" text="已完成" /> | 头族与节流对齐来源；专家类任务用真实 chat requestId；按账号回读并如实汇报未达标 |
 
 ## 变更记录
 
@@ -262,3 +300,5 @@ lastVerified: 2026-09-16
 | 2026-09-15 | 补齐依赖安装策略 | T11-02 补 `@deepseek-ai/dsh-llm-pi-ai` 根依赖以修复 profile 首次启动的 `ERR_MODULE_NOT_FOUND`；T11-03 用 `allowBuilds` 显式拒绝原生依赖安装脚本，保持 `pnpm install` 非交互 |
 | 2026-09-15 | 回归验证 | CLI typecheck/build 通过；`tests/start.spec.ts` 与 `tests/version.spec.ts` 共 10 条用例通过；`pnpm run start -- --web` 实测输出 3150 地址，`--web --docs` 组合报错退出 |
 | 2026-09-15 | 仓库插件内置进本地 profile | 新增 T14：启动 DSH Web 前先用 Turbo 构建、再经 `dsh plugin --profile web add` 把仓库插件链接进本地 profile，使新克隆的检出目录也能直接进入带插件的 DSH Web；按用户要求排除 `@tnnevol/dsh-fnos` |
+| 2026-09-17 | 新增 T15：单账号「一键完成」与按账号互斥 | 用户要求弹框内提供单账号一键完成、且该账号在跑时禁用账号管理页「完成任务」而其他账号不禁用。原实现是单一全局 `growthTasksGuard`，其他账号按钮虽可点但会被宿主判重拒绝——因此必须把宿主改成按账号加锁（T15-02），否则「其他账号不禁用」只是表面成立。运行态模型随之从单个 `mode/accountId` 升级为账号集合（T15-03） |
+| 2026-09-17 | 新增 T16：风控指纹对齐与「跑完但没完成」修复 | 用户反馈「任务跑完了但实际没跑完，要到弹框里一个个点」。逐条比对来源后确认两类差异：① 出站指纹与节流未对齐（缺 `X-CodeBuddy-Request`/`X-Machine-ID`/`X-Session-ID`、上报间隔与账号限速缺失），未对齐时上游可能受理但静默不计分；② 部分判据与来源不一致（专家类自造 requestId 不计数、`Expert_lighthouse` 的 mode/type/cost 形态、桌面链字段集不足）。同时把「动作已发送」与「任务已完成」在结果与日志里彻底分开（T16-05） |

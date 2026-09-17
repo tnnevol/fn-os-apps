@@ -322,7 +322,9 @@ describe('宿主持久化日志', () => {
 
   it('begin 清空上一轮日志，finish 保留本轮日志', () => {
     const begin = HOST_RUN.slice(HOST_RUN.indexOf('export async function beginGrowthRun'), HOST_RUN.indexOf('export async function appendGrowthRunLog'))
-    expect(begin).toContain('log: []')
+    // 滚动轮次时清空本轮日志；并行账号加入时不滚动（见 rollRound 的说明）。
+    expect(begin).toContain('log: rollRound ? [] : previous?.log ?? []')
+    expect(begin).toContain('const rollRound = growthRunRegistry.ids().length <= 1')
     const finish = HOST_RUN.slice(HOST_RUN.indexOf('export async function finishGrowthRun'))
     expect(finish).toContain('log: previous.log')
   })
@@ -360,19 +362,22 @@ describe('签到与旅行并入成长任务流程', () => {
   })
 
   it('长请求有等待日志，不出现静默期', () => {
-    const start = HOST.indexOf('async growthRunAll')
-    const body = HOST.slice(start, start + 14000)
+    // 任务循环已抽到 runGrowthTasks（单账号执行的核心），等待/回读日志在那里。
+    const start = HOST.indexOf('private async runGrowthTasks')
+    const body = HOST.slice(start, start + 6000)
     // 任务动作前后都落日志，回读等待期间也落一条。
     expect(body).toContain("status: 'waiting'")
     expect(body).toMatch(/等待上游计分/)
-    // 签到与旅行各自先记「开始」再记结果。
-    expect(body).toMatch(/查询签到状态/)
-    expect(body).toMatch(/确认猫猫档案/)
+    // 签到与旅行各自先记「开始」再记结果（仍在 growthRunAll 内，因为它还要
+    // 按账号加锁，签到/旅行属于「全量」收尾）。
+    const runAll = HOST.slice(HOST.indexOf('async growthRunAll'), HOST.indexOf('async growthRunAll') + 14000)
+    expect(runAll).toMatch(/查询签到状态/)
+    expect(runAll).toMatch(/确认猫猫档案/)
   })
 
   it('进度写进结构化字段，供前端区分「没开始」与「做了一半」', () => {
-    const start = HOST.indexOf('async growthRunAll')
-    const body = HOST.slice(start, start + 14000)
+    const start = HOST.indexOf('private async runGrowthTasks')
+    const body = HOST.slice(start, start + 6000)
     // pending 分支必须同时带 current/target，否则前端无法上色。
     const pendingAt = body.indexOf("status: 'pending'")
     expect(pendingAt).toBeGreaterThan(-1)
@@ -382,8 +387,9 @@ describe('签到与旅行并入成长任务流程', () => {
   })
 
   it('任务按依赖序执行：领安排在最前', () => {
-    const start = HOST.indexOf('async growthRunAll')
-    const body = HOST.slice(start, start + 2000)
+    // 排序在单账号执行核心（runGrowthForAccount）里，单项与全量两条路径共用。
+    const start = HOST.indexOf('private async runGrowthForAccount')
+    const body = HOST.slice(start, start + 6000)
     expect(body).toContain('sortGrowthTasksByOrder')
   })
 

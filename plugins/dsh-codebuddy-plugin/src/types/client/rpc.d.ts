@@ -110,10 +110,23 @@ export interface GrowthRunAccountResult {
   items: GrowthRunItem[]
   error?: string
   acceptError?: string
+  /**
+   * 仍未领奖的任务数（含动作不支持与未达标）。
+   *
+   * 用途是把「动作已发送」与「任务已完成」分开：`status: 'ok'` 只说明这一轮
+   * 没有报错，`pending > 0` 才说明仍有任务没完成。
+   */
+  pending?: number
+  /** 该账号因已有任务在执行而被本轮跳过（不是失败）。 */
+  skipped?: boolean
 }
 
 export interface GrowthRunResult {
+  status?: 'ok' | 'skipped' | 'error'
   accounts: GrowthRunAccountResult[]
+  /** 本轮全部账号合计仍未完成的任务数。 */
+  pending?: number
+  error?: string
 }
 
 /**
@@ -144,6 +157,15 @@ export interface GrowthRunStateView {
   mode?: 'all' | 'one'
   accountId?: string
   taskCode?: string
+  /**
+   * 当前正在执行成长任务的账号本地 id 集合。
+   *
+   * 宿主对成长任务按账号互斥，因此同一时刻可能有多个账号在跑。界面据此判断
+   * 「哪些账号的按钮该禁用」——只知道一个账号无法表达「A、B 在跑、C 空闲」。
+   */
+  accountIds?: string[]
+  /** 单项执行的账号 → 任务 code 映射（全量执行不含该账号的条目）。 */
+  taskCodes?: Record<string, string>
   startedAt?: number
   finishedAt?: number
   summary?: string
