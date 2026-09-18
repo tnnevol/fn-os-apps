@@ -40,10 +40,6 @@ fnpack --help
 
 ## iframe 页面资源异常
 
-如果页面能打开但静态资源、API 或 EventSource 失败，检查 `app/ui/config`、统一网关前缀以及应用代理对以下路径的处理：
-
-- `/api`
-- `/plugins`
-- `/plugins/events`
+如果页面能打开但静态资源、API 或 EventSource 失败，检查 `app/ui/config` 的入口类型与代理路径，确认请求前缀和应用实际监听路径一致。
 
 同时确认浏览器开发者工具中的响应类型与请求路径，避免将 API 或 SSE 请求错误返回为 HTML。

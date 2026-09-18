@@ -87,7 +87,7 @@ export function checkSddDocs(root: string): string[] {
   for (const required of [
     path.join(docsRoot, 'requirements', 'index.md'),
     path.join(docsRoot, 'plans', 'index.md'),
-    path.join(docsRoot, 'guide', 'sdd-workflow.md'),
+    path.join(docsRoot, 'development', 'sdd-workflow.md'),
     path.join(docsRoot, 'validation', 'README.md'),
   ]) {
     if (!fs.existsSync(required)) errors.push(`required SDD file does not exist: ${relative(required)}`)

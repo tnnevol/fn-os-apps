@@ -10,7 +10,7 @@ hero:
   actions:
     - theme: brand
       text: 快速开始
-      link: /guide/quick-start
+      link: /development/quick-start
     - theme: alt
       text: 浏览应用
       link: /apps/

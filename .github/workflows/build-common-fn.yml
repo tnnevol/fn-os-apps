@@ -40,10 +40,6 @@ jobs:
               echo "Skipping ${APP} (no manifest)"
               continue
             fi
-            if [ "$APP" = "fn-deepseek-harness" ]; then
-              echo "Skipping ${APP} (built by build-dsh-fn.yml)"
-              continue
-            fi
             APPS_JSON="${APPS_JSON}${APPS_JSON:+,}\"${APP}\""
           done
 

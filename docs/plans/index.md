@@ -32,8 +32,8 @@ PLAN-FNOS-###-需求主题.md
 编号前缀使用计划编号 `PLAN-FNOS-###`，其中 `FNOS-###` 必须与对应需求编号一致；需求主题应与对应需求文档一致：
 
 ~~~text
-docs/requirements/FNOS-001-dsh-fnos-adaptation.md
-docs/plans/PLAN-FNOS-001-dsh-fnos-adaptation.md
+docs/requirements/FNOS-001-app-runtime-settings.md
+docs/plans/PLAN-FNOS-001-app-runtime-settings.md
 ~~~
 
 ### Frontmatter、标题和元信息
@@ -42,11 +42,11 @@ docs/plans/PLAN-FNOS-001-dsh-fnos-adaptation.md
 
 ~~~yaml
 ---
-title: PLAN-FNOS-001 DSH 飞牛 NAS 适配
-description: DeepSeek Harness 在飞牛 fnOS 中的应用和专用插件适配实施计划。
+title: PLAN-FNOS-001 应用运行设置统一
+description: 为目标 FPK 应用补齐应用设置入口的实施计划。
 ---
 
-# PLAN-FNOS-001 DSH 飞牛 NAS 适配
+# PLAN-FNOS-001 应用运行设置统一
 ~~~
 
 一级标题后使用元信息表，字段固定为：
@@ -63,8 +63,8 @@ description: DeepSeek Harness 在飞牛 fnOS 中的应用和专用插件适配�
 每篇计划文档按以下顺序编写，章节名称保持一致：
 
 1. 计划目标：说明本次实施的结果、技术边界和明确不修改的上游范围。
-2. 实现范围和边界：用模块表说明目录、入口和责任；标出应用、Host、Client、网关、文档和测试的边界。
-3. 目标架构和数据流：使用流程图、文本图或时序描述请求从宿主到应用、插件和 API 的路径。
+2. 实现范围和边界：用模块表说明目录、入口和责任；标出应用、向导、文档和测试的边界。
+3. 目标架构和数据流：使用流程图、文本图或时序描述请求从宿主到应用和 API 的路径。
 4. 分阶段任务：按需求中的 P0/P1 等优先级拆分具体任务，只列出已进入当前计划的阶段。
 5. 详细交互：描述页面入口、状态、按钮、权限、成功/失败反馈和返回路径；用户流程必须可据此实现和验收。
 6. 数据、权限和错误处理：说明持久化、敏感信息、权限边界、错误分类和重试策略。
@@ -80,11 +80,9 @@ description: DeepSeek Harness 在飞牛 fnOS 中的应用和专用插件适配�
 
 | 模块 | 计划入口 | 实现责任 |
 | --- | --- | --- |
-| 应用/FPK | 目录或脚本 | 生命周期、网关、资源和权限 |
-| Host 插件 | Host 入口 | 服务端权限、API、敏感信息和错误转换 |
-| Client 插件 | Client 入口 | 页面注册、用户交互和状态展示 |
+| 应用/FPK | 目录或脚本 | 生命周期、资源和权限 |
 | 应用配置 | manifest/config | 最小 Scope、共享目录和宿主配置 |
-| 网关 | 网关入口 | 页面、API、插件和 SSE 的访问路径 |
+| 用户向导 | wizard 目录 | 安装与运行设置的字段、默认值和校验 |
 | 文档/测试 | docs 或测试目录 | 验证、排查和发布检查 |
 
 官方项目只作为契约、行为和兼容性参考时，必须明确“只参考、不修改、不提交上游补丁”。
@@ -106,7 +104,7 @@ description: DeepSeek Harness 在飞牛 fnOS 中的应用和专用插件适配�
 | 已完成 | 当前计划任务和目标环境验证均已完成 |
 | 待完成 | 实现或本地验证已完成，但目标环境仍未验收 |
 | 规划中 | 已进入计划，尚未完成实现 |
-| 待验证 | 依赖 SDK、宿主、权限或 DSH seam 的事实确认 |
+| 待验证 | 依赖 SDK、宿主或权限的事实确认 |
 
 计划不使用“后续计划”作为阶段。尚未排期的内容应留在需求文档，待新计划建立后再加入。
 
@@ -132,7 +130,6 @@ description: DeepSeek Harness 在飞牛 fnOS 中的应用和专用插件适配�
 | --- | --- |
 | fnOS JS SDK | npm 包链接、使用的方法、宿主限制和官方调用文档 |
 | fnOS API/Scope | API 名称、Scope、调用端（Host/Client）和官方 API 文档 |
-| DSH 官方项目 | 对应 profile、插件或 seam 的源码/文档链接，以及是否修改上游 |
 | 构建或发布工具 | 版本要求、命令或官方文档链接 |
 
 参考资料应放在 参考资料 章节；关键 API 也可以在对应任务或交互步骤旁边就近链接。不能只写“参考官方文档”而不提供链接。
@@ -141,8 +138,8 @@ description: DeepSeek Harness 在飞牛 fnOS 中的应用和专用插件适配�
 
 计划必须区分：
 
-- 插件级 typecheck、单元测试和构建。
-- 应用级 FPK 构建、安装、启动、网关、权限和资源验证。
+- 工具链级 typecheck、单元测试和构建。
+- 应用级 FPK 构建、安装、启动、权限和资源验证。
 - 目标 NAS 环境的真实功能验收，尤其是主题、授权、SSE 和宿主事件。
 - 文档构建和内部链接检查。
 - 升级对用户配置、数据、授权和旧版本兼容性的影响。

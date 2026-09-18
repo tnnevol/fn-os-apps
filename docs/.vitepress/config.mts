@@ -68,7 +68,6 @@ const appItems = [
   { text: 'Memos', link: '/apps/fn-memos' },
   { text: 'MoviePilot', link: '/apps/fn-moviepilot' },
   { text: 'Hermes Agent', link: '/apps/fn-hermes-agent' },
-  { text: 'DeepSeek Harness', link: '/apps/fn-deepseek-harness' },
   { text: 'uv', link: '/apps/fn-uv' },
   { text: 'NVM', link: '/apps/fn-nvm' },
   { text: 'Oh My Zsh', link: '/apps/fn-ohmyzsh' },
@@ -82,10 +81,22 @@ const appItems = [
   { text: '禅道', link: '/apps/fn-zentao' }
 ]
 
+const startItems = [
+  { text: '快速开始', link: '/development/quick-start' },
+  { text: '仓库结构', link: '/development/repository-structure' },
+  { text: 'SDD 维护规范', link: '/development/sdd-workflow' },
+  { text: 'SDD 模式转换报告', link: '/development/sdd-transition-report' }
+]
+
 const developmentSidebar = [
   {
     text: '开发指南',
     items: [
+      {
+        text: '开始使用',
+        collapsed: false,
+        items: startItems
+      },
       { text: '开发环境与脚本', link: '/development/environment-and-scripts' },
       { text: 'Package 任务与 Turbo', link: '/development/package-tasks-and-turbo' },
       { text: 'GitHub Workflow', link: '/development/github-workflows' },
@@ -114,76 +125,14 @@ const developmentSidebar = [
 const requirementsSidebar = [
   {
     text: '需求清单',
-    items: [
-      { text: '规范', link: '/requirements/' },
-      {
-        text: 'FNOS-001 DSH 飞牛 NAS 适配',
-        link: '/requirements/FNOS-001-dsh-fnos-adaptation'
-      },
-      {
-        text: 'FNOS-002 DSH 应用与插件优化',
-        link: '/requirements/FNOS-002-dsh-app-plugin-optimization'
-      },
-      {
-        text: 'FNOS-003 FPK 应用运行设置统一',
-        link: '/requirements/FNOS-003-fpk-runtime-settings'
-      },
-      {
-        text: 'FNOS-004 DSH 0.1.5-rc.2 适配',
-        link: '/requirements/FNOS-004-dsh-015-rc2-adaptation'
-      },
-      {
-        text: 'FNOS-005 CodeBuddy 成长任务与本地 DSH',
-        link: '/requirements/FNOS-005-codebuddy-and-local-dsh'
-      },
-      {
-        text: 'FNOS-006 安装脚本与安装流程优化',
-        link: '/requirements/FNOS-006-installation-script-optimization'
-      },
-    ]
+    items: [{ text: '规范', link: '/requirements/' }]
   }
 ]
 
 const plansSidebar = [
   {
     text: '详细计划',
-    items: [
-      { text: '规范', link: '/plans/' },
-      {
-        text: 'PLAN-FNOS-001 DSH 飞牛 NAS 适配',
-        link: '/plans/PLAN-FNOS-001-dsh-fnos-adaptation'
-      },
-      {
-        text: 'PLAN-FNOS-002 DSH 应用与插件优化',
-        link: '/plans/PLAN-FNOS-002-dsh-app-plugin-optimization'
-      },
-      {
-        text: 'PLAN-FNOS-003 FPK 应用运行设置统一',
-        link: '/plans/PLAN-FNOS-003-fpk-runtime-settings'
-      },
-      {
-        text: 'PLAN-FNOS-004 DSH 0.1.5-rc.2 适配与 FPK 运行修复',
-        link: '/plans/PLAN-FNOS-004-dsh-015-rc2-adaptation'
-      },
-      {
-        text: 'PLAN-FNOS-005 CodeBuddy 成长任务与本地 DSH',
-        link: '/plans/PLAN-FNOS-005-codebuddy-and-local-dsh'
-      },
-      {
-        text: 'PLAN-FNOS-006 安装脚本与安装流程优化',
-        link: '/plans/PLAN-FNOS-006-installation-script-optimization'
-      },
-    ]
-  }
-]
-
-const testCasesSidebar = [
-  {
-    text: '测试用例',
-    items: [
-      { text: '规范', link: '/test-cases/' },
-      { text: 'FNOS-002 测试用例明细', link: '/test-cases/FNOS-002-test-cases' }
-    ]
+    items: [{ text: '规范', link: '/plans/' }]
   }
 ]
 
@@ -211,44 +160,16 @@ export default defineConfig({
     },
     version: packageJson.version,
     nav: [
-      { text: '开始使用', link: '/guide/quick-start' },
+      { text: '开发指南', link: '/development/quick-start' },
       { text: '应用文档', link: '/apps/' },
-      { text: 'Harness 插件', link: '/plugins/' },
-      { text: '开发指南', link: '/development/environment-and-scripts' },
       { text: '需求清单', link: '/requirements/' },
-      { text: '详细计划', link: '/plans/' },
-      { text: '测试用例', link: '/test-cases/' }
+      { text: '详细计划', link: '/plans/' }
     ],
     sidebar: {
-      '/guide/': [
-        {
-          text: '开始使用',
-          items: [
-            { text: '快速开始', link: '/guide/quick-start' },
-            { text: '仓库结构', link: '/guide/repository-structure' },
-            { text: 'SDD 维护规范', link: '/guide/sdd-workflow' },
-            { text: 'SDD 模式转换报告', link: '/guide/sdd-transition-report' }
-          ]
-        }
-      ],
       '/apps/': [
         {
           text: '应用文档',
           items: appItems
-        }
-      ],
-      '/plugins/': [
-        {
-          text: 'Harness 插件',
-          items: [
-            { text: '插件总览', link: '/plugins/' },
-            { text: 'dsh-fnos', link: '/plugins/dsh-fnos' },
-            { text: 'dsh-codex-auth', link: '/plugins/dsh-codex-auth' },
-            { text: 'dsh-codebuddy', link: '/plugins/dsh-codebuddy' },
-            { text: 'DSH Semi UI', link: '/plugins/dsh-semi-ui' },
-            { text: 'Semi UI 组件总览', link: '/plugins/semi-ui' },
-            { text: 'DSH Semi UI 总览', link: '/plugins/dsh-semi-ui-showcase' }
-          ]
         }
       ],
       '/development/': developmentSidebar,
@@ -256,7 +177,6 @@ export default defineConfig({
       '/troubleshooting': developmentSidebar,
       '/requirements/': requirementsSidebar,
       '/plans/': plansSidebar,
-      '/test-cases/': testCasesSidebar,
       '/contributing': developmentSidebar
     },
     outline: {

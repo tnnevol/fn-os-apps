@@ -43,8 +43,8 @@ FNOS-###-需求主题.md
 示例：
 
 ~~~text
-docs/requirements/FNOS-001-dsh-fnos-adaptation.md
-docs/requirements/FNOS-002-dsh-workspace-access.md
+docs/requirements/FNOS-001-app-runtime-settings.md
+docs/requirements/FNOS-002-package-install-flow.md
 ~~~
 
 ### Frontmatter、标题和元信息
@@ -53,11 +53,11 @@ docs/requirements/FNOS-002-dsh-workspace-access.md
 
 ~~~yaml
 ---
-title: FNOS-001 DSH 飞牛 NAS 适配
-description: DeepSeek Harness 在飞牛 fnOS 中的应用、插件和 NAS 能力适配需求。
+title: FNOS-001 应用运行设置统一
+description: 为需要运行参数的 fnOS FPK 应用补齐应用设置入口。
 ---
 
-# FNOS-001 DSH 飞牛 NAS 适配
+# FNOS-001 应用运行设置统一
 ~~~
 
 一级标题后使用元信息表，字段固定为：
@@ -100,7 +100,7 @@ description: DeepSeek Harness 在飞牛 fnOS 中的应用、插件和 NAS 能力
 
 | 优先级 | 含义 |
 | --- | --- |
-| P0 | 应用或插件的运行基线，未完成会影响核心可用性 |
+| P0 | 应用的运行基线，未完成会影响核心可用性 |
 | P1 | 当前需求确定要实现的主要功能，可在 P0 稳定后实施 |
 | P2 | 已记录但尚未进入当前实施阶段的扩展需求 |
 
@@ -111,7 +111,7 @@ description: DeepSeek Harness 在飞牛 fnOS 中的应用、插件和 NAS 能力
 | 已完成 | 代码、必要构建和目标环境验收均已完成 |
 | 待完成 | 已有代码或本地验证，但目标环境尚未验收完成 |
 | 规划中 | 已确认要实现，但实现尚未完成；通常已进入计划 |
-| 待验证 | 依赖 SDK、宿主或 DSH seam 等技术事实，需验证后才能确定实现方式 |
+| 待验证 | 依赖 SDK、fnOS 宿主接口等技术事实，需验证后才能确定实现方式 |
 | 待确认 | 需求边界或交互方式尚未确认，未进入当前计划 |
 | 后续计划 | 需求已登记，但尚未进入当前计划；不得在计划文档中展开实现任务 |
 
@@ -136,30 +136,6 @@ description: DeepSeek Harness 在飞牛 fnOS 中的应用、插件和 NAS 能力
 - 历史需求整合后，整合文档作为当前唯一版本，重新使用当前有效编号；已迁移的历史 Markdown 内容应删除或停止作为现行入口维护。
 - 需求清单只维护规范和当前整合结果，不复制应用或插件的实现说明。
 
-## 当前需求整合结果
-
-截至 2026-08-24，历史上明确标记为规划、后续或待评估的 fnOS/DSH 适配内容已统一纳入 [FNOS-001：DSH 飞牛 NAS 适配](/requirements/FNOS-001-dsh-fnos-adaptation)，该需求的 P0/P1 已完成目标环境验证：
-
-| 历史内容 | 当前归属 | 状态 |
-| --- | --- | --- |
-| fnOS 主题桥接 | FNOS-001-02 | 已完成验证 |
-| fnOS 应用入口、统一网关和访问权限 | FNOS-001-01 | 已完成验证 |
-| FPK 安装阶段集成 DSH 插件 | FNOS-001-09 | 已完成验证 |
-| 授权目录展示、添加、删除和刷新 | FNOS-001-04 | 已完成验证 |
-| 工作区快捷跳转已授权 fnOS 目录 | FNOS-001-10 | 已完成验证 |
-| 内容输入框选择 NAS 目录和文件 | FNOS-001-11 | 已完成验证 |
-| 上下文文件访问适配 | FNOS-001-12 | 已完成验证 |
-| 后续 fnOS JS SDK 能力 | FNOS-001-08 | 后续计划 |
-
 ## 当前需求文档
 
-| 编号 | 需求文档 | 状态 |
-| --- | --- | --- |
-| FNOS-001 | [DSH 飞牛 NAS 适配](/requirements/FNOS-001-dsh-fnos-adaptation) | P0/P1 已完成验证 |
-| FNOS-002 | [DSH 应用与插件优化](/requirements/FNOS-002-dsh-app-plugin-optimization)（含版本统一、Codex 状态、NAS 引用、共享 UI、FPK 网关和 DSH Web 恢复） | 已完成 |
-| FNOS-003 | [FPK 应用运行设置统一](/requirements/FNOS-003-fpk-runtime-settings)（含 FNOS-002 遗留 FPK/NAS 集成验收） | 已完成 |
-| FNOS-004 | [DSH 0.1.5-rc.2 适配与 FPK 运行修复](/requirements/FNOS-004-dsh-015-rc2-adaptation) | 已完成 |
-| FNOS-005 | [CodeBuddy 成长任务移植与仓库内 DSH 开发环境](/requirements/FNOS-005-codebuddy-and-local-dsh)（含仓库内 dsh CLI、本地 DSH Web 与 `.dsh`） | 已完成 |
-| FNOS-006 | [安装脚本与安装流程优化](/requirements/FNOS-006-installation-script-optimization)（统一安装辅助入口、收敛 node-pty 与 attachment 流程） | 规划中 |
-
-当前未发现其他明确的历史待开发需求未登记到需求文档中。新增需求先登记在对应需求文档，确认进入实施后再同步到详细计划；整合完成后，旧的拆分编号不再作为现行需求编号使用。
+暂无现行需求文档。新增需求按上面的规范建立 `docs/requirements/FNOS-###-需求主题.md`，并在本表登记；确认进入实施后再同步到[详细计划](/plans/)。

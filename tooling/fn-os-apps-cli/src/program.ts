@@ -11,12 +11,10 @@ export const program = new Command()
 program.addHelpText('after', `
 Examples:
   fn-apps-cli build
-  fn-apps-cli build --fpk --app fn-deepseek-harness
-  fn-apps-cli build --plugin fnos
+  fn-apps-cli build --fpk --app fn-memos
   fn-apps-cli build --docs
-  fn-apps-cli start --web
+  fn-apps-cli start --docs
   fn-apps-cli check --all
-  fn-apps-cli check --sdd --plugins
-  fn-apps-cli publish --plugin fnos
-  fn-apps-cli version project patch
+  fn-apps-cli check --sdd --docs
+  fn-apps-cli version patch
 `)

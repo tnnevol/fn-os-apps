@@ -102,18 +102,9 @@ jobs:
       release_id: ${{ needs.prepare-release.outputs.release_id }}
     secrets: inherit
 
-  build-dsh:
-    name: Build DeepSeek Harness FPK
-    needs: prepare-release
-    uses: ./.github/workflows/build-dsh-fn.yml
-    with:
-      release_tag: ${{ inputs.release_tag || github.ref_name }}
-      release_id: ${{ needs.prepare-release.outputs.release_id }}
-    secrets: inherit
-
   publish-release:
     name: Publish release
-    needs: [prepare-release, build-common, build-dsh]
+    needs: [prepare-release, build-common]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -167,8 +158,8 @@ jobs:
 
   report-failure:
     name: Report failed release
-    if: ${{ always() && (needs.prepare-release.result != 'success' || needs.build-common.result != 'success' || needs.build-dsh.result != 'success' || needs.publish-release.result != 'success') }}
-    needs: [prepare-release, build-common, build-dsh, publish-release]
+    if: ${{ always() && (needs.prepare-release.result != 'success' || needs.build-common.result != 'success' || needs.publish-release.result != 'success') }}
+    needs: [prepare-release, build-common, publish-release]
     runs-on: ubuntu-latest
     steps:
       - name: Update draft release with failure status
@@ -181,7 +172,6 @@ jobs:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           PREPARE_RESULT: ${{ needs.prepare-release.result }}
           COMMON_RESULT: ${{ needs.build-common.result }}
-          DSH_RESULT: ${{ needs.build-dsh.result }}
           PUBLISH_RESULT: ${{ needs.publish-release.result }}
         run: |
           set -euo pipefail
@@ -195,7 +185,6 @@ jobs:
           |------|------|
           | 创建草稿 Release | ${PREPARE_RESULT} |
           | 构建公共应用 | ${COMMON_RESULT} |
-          | 构建 DeepSeek Harness | ${DSH_RESULT} |
           | 发布 Release | ${PUBLISH_RESULT} |
           EOF
 

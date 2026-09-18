@@ -40,26 +40,15 @@ lib/
 # Turbo 本地缓存
 .turbo/
 
-# fn-deepseek-harness 在 CI 构建时生成的 DSH native 依赖
-apps/fn-deepseek-harness/app/dsh-version
-apps/fn-deepseek-harness/app/node-pty-version
-apps/fn-deepseek-harness/app/node-pty-versions
-apps/fn-deepseek-harness/app/native/node-pty/
-# fnOS gateway bundle and install helper are generated from packages/fnos-gateway before FPK build
-apps/fn-deepseek-harness/app/gateway-proxy.mjs
-apps/fn-deepseek-harness/app/rolldown-runtime-*.mjs
-apps/fn-deepseek-harness/app/scripts/install-callback-helper.mjs
-# Optional local DSH plugin bundle is generated immediately before FPK build
-apps/fn-deepseek-harness/app/bundled-dsh-plugins/
 # VitePress 构建产物
 docs/.vitepress/cache/
 docs/.vitepress/.temp/
 docs/.vitepress/dist/
 
-# DSH 运行时状态（含凭据），不属于本仓库
+# 运行时状态（含凭据），不属于本仓库
 data/
 
-.pnpm-store
-.dsh-worktrees
-# 本地 DSH_HOME（profile、凭据、会话），由 `pnpm run start` 的 DSH Web 使用
+# 本地 DSH_HOME 残留（profile、凭据、会话）；含密钥，绝不入库
 .dsh/
+
+.pnpm-store

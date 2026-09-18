@@ -24,9 +24,3 @@ export function parseVersionOptions(args: string[]): VersionOptions {
     confirm: !args.includes('--yes'),
   }
 }
-
-export function optionValue(args: string[], option: string): string | undefined {
-  const index = args.lastIndexOf(option)
-  const value = index < 0 ? undefined : args[index + 1]
-  return value?.startsWith('-') ? undefined : value
-}

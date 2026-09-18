@@ -12,7 +12,6 @@ on:
       - 'lefthook.yml'
       - 'scripts/**'
       - 'pnpm-lock.yaml'
-      - 'plugins/**'
       - 'apps/**'
       - '.github/pull_request_template.md'
       - '.github/workflows/sdd-check.yml'

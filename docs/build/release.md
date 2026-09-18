@@ -5,14 +5,10 @@
 在工作区干净且应用改动已完成后，使用根目录的 `fn-apps-cli` CLI 执行项目版本升级：
 
 ```bash
-pnpm run version -- project patch
+pnpm run version -- patch
 ```
 
-需要发布功能版本或大版本时，分别使用 `pnpm run version -- project minor` 或 `pnpm run version -- project major`。插件发布必须单独指定插件：
-
-```bash
-pnpm run version -- plugin fnos patch
-```
+需要发布功能版本或大版本时，分别使用 `pnpm run version -- minor` 或 `pnpm run version -- major`。
 
 脚本会创建类似下面的提交和 Tag：
 
@@ -20,17 +16,6 @@ pnpm run version -- plugin fnos patch
 chore: release v5.0.7
 v5.0.7
 ```
-
-## 发布 npm 插件
-
-当前 npm 发布仅支持 `rc` dist-tag。CLI 会先询问要发布的插件，所有选择完成后再统一发布：
-
-```bash
-pnpm run publish
-pnpm run publish -- --plugin fnos
-```
-
-该命令调用各插件的 `publish:rc` 脚本，不会发布共享的 `dsh-semi-ui` 包。
 
 ## 推送并触发构建
 
@@ -49,5 +34,5 @@ git push origin v<版本号>
 
 - 本地 `git diff --check` 通过。
 - 目标应用可以通过 `fnpack build` 构建。
-- 项目/FPK 版本命令涉及的 Manifest 与目标项目版本一致；独立维护版本的应用和插件不要求与根 `package.json` 相同。
+- 项目/FPK 版本命令涉及的 Manifest 与目标项目版本一致；独立维护版本的应用不要求与根 `package.json` 相同。
 - 应用 README、安装向导和文档没有遗留旧版本或旧路径。

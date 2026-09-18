@@ -13,7 +13,7 @@ GitHub Actions 配置位于 `.github/workflows/build-release.yml`，由版本 Ta
 ## 触发方式
 
 ```bash
-pnpm run version -- project patch
+pnpm run version -- patch
 git push origin main
 git push origin v<版本号>
 ```

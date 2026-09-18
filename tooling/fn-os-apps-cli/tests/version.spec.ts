@@ -1,159 +1,87 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
-  askPlugin: vi.fn(),
-  confirm: vi.fn(),
-  select: vi.fn(),
-  text: vi.fn(),
   readFile: vi.fn(),
   writeFile: vi.fn(),
-  spawnSync: vi.fn(),
   readPackageInfo: vi.fn(),
   versionBump: vi.fn(),
 }))
 
 vi.mock('@clack/prompts', () => ({
-  intro: vi.fn(),
-  outro: vi.fn(),
-  confirm: mocks.confirm,
+  confirm: vi.fn(),
   isCancel: vi.fn(() => false),
-  select: mocks.select,
-  text: mocks.text,
+  select: vi.fn(),
+  text: vi.fn(),
 }))
 vi.mock('node:fs/promises', () => ({
   readFile: mocks.readFile,
   writeFile: mocks.writeFile,
 }))
-vi.mock('node:fs', async importOriginal => ({
-  ...(await importOriginal<typeof import('node:fs')>()),
-  existsSync: vi.fn((path: unknown) => String(path).endsWith('published-dsh-plugins.json')),
-}))
-vi.mock('node:child_process', () => ({ spawnSync: mocks.spawnSync }))
 vi.mock('bumpp', () => ({ versionBump: mocks.versionBump }))
 vi.mock('../src/core/package.js', () => ({ readPackageInfo: mocks.readPackageInfo }))
-vi.mock('../src/ui/prompts.js', async importOriginal => ({
-  ...(await importOriginal<typeof import('../src/ui/prompts.js')>()),
-  askPlugin: mocks.askPlugin,
-}))
 
 const { runVersion } = await import('../src/commands/version.js')
 
-const targets = [
-  {
-    value: 'codex',
-    label: 'Codex Auth',
-    name: '@tnnevol/dsh-codex-auth',
-    filter: '@tnnevol/dsh-codex-auth...',
-    path: 'plugins/dsh-codex-auth-plugin/package.json',
-    slug: 'dsh-codex-auth',
-  },
-  {
-    value: 'fnos',
-    label: 'fnOS',
-    name: '@tnnevol/dsh-fnos',
-    filter: '@tnnevol/dsh-fnos...',
-    path: 'plugins/dsh-fnos-plugin/package.json',
-    slug: 'dsh-fnos',
-  },
-]
-
-describe('plugin version command', () => {
+describe('project version command', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mocks.askPlugin.mockResolvedValue(targets)
-    mocks.readPackageInfo.mockImplementation(async (path: string) => ({
-      name: path.includes('codex-auth') ? '@tnnevol/dsh-codex-auth' : '@tnnevol/dsh-fnos',
-      version: '1.2.3',
-    }))
-    mocks.versionBump.mockResolvedValue({ currentVersion: '1.2.3', newVersion: '1.2.4' })
-    mocks.select.mockResolvedValue('patch')
-    mocks.text.mockResolvedValue('1.2.3')
-    mocks.confirm.mockResolvedValue(true)
-    mocks.readFile.mockImplementation(async (path: string) => path.endsWith('published-dsh-plugins.json')
-      ? JSON.stringify({
-          version: 1,
-          plugins: [
-            { name: '@tnnevol/dsh-codex-auth', version: '1.2.2' },
-            { name: '@tnnevol/dsh-fnos', version: '1.2.2' },
-          ],
-        })
-      : JSON.stringify({ name: 'plugin', version: '1.2.3' }))
-    mocks.spawnSync.mockReturnValue({ status: 0, error: undefined, stderr: '', stdout: '' })
-  })
-
-  it('updates selected plugin packages and the published plugin manifest in one commit', async () => {
-    await runVersion(['plugin', '--yes'])
-
-    expect(mocks.versionBump).not.toHaveBeenCalled()
-    const writtenPaths = mocks.writeFile.mock.calls.map(call => String(call[0]))
-    expect(writtenPaths.filter(path => path.endsWith('/package.json'))).toHaveLength(2)
-    expect(writtenPaths.filter(path => path.endsWith('published-dsh-plugins.json'))).toHaveLength(2)
-    expect(mocks.spawnSync).toHaveBeenNthCalledWith(1, 'git', ['add', '--', ...targets.map(target => target.path), 'apps/fn-deepseek-harness/app/published-dsh-plugins.json'], expect.any(Object))
-    expect(mocks.spawnSync).toHaveBeenNthCalledWith(2, 'git', ['commit', '-m', 'chore(plugin): release selected plugins v1.2.4'], expect.any(Object))
-  })
-
-  it('updates one plugin and synchronizes its matching manifest entry', async () => {
-    mocks.askPlugin.mockResolvedValue([targets[1]])
-    mocks.readPackageInfo.mockResolvedValue({ name: '@tnnevol/dsh-fnos', version: '1.2.3' })
-    await runVersion(['plugin', '--yes'])
-
-    expect(mocks.writeFile).toHaveBeenCalledTimes(2)
-    expect(mocks.spawnSync).toHaveBeenNthCalledWith(2, 'git', ['commit', '-m', 'chore(plugin): release @tnnevol/dsh-fnos v1.2.4'], expect.any(Object))
-  })
-
-  it('accepts a custom version from the interactive release prompt', async () => {
-    mocks.askPlugin.mockResolvedValue([targets[1]])
-    mocks.readPackageInfo.mockResolvedValue({ name: '@tnnevol/dsh-fnos', version: '1.2.3' })
-    mocks.select.mockResolvedValue('custom')
-    mocks.text.mockResolvedValue('2.0.0-beta.1')
-
-    await runVersion(['plugin', '--no-commit', '--yes'])
-
-    expect(mocks.text).toHaveBeenCalledWith(expect.objectContaining({
-      message: '输入新的版本号',
-      initialValue: '1.2.3',
-      validate: expect.any(Function),
-    }))
-    const textOptions = mocks.text.mock.calls[0]?.[0] as { validate: (value: string) => string | undefined }
-    expect(textOptions.validate('invalid')).toBe('无效的插件版本号')
-    expect(textOptions.validate(' v2.0.0 ')).toBeUndefined()
-    const writtenPackage = mocks.writeFile.mock.calls.find(call => String(call[0]).endsWith('package.json'))
-    expect(writtenPackage?.[1]).toContain('2.0.0-beta.1')
-  })
-
-  it('rejects a combined release when plugin versions differ', async () => {
-    mocks.readPackageInfo
-      .mockResolvedValueOnce({ name: '@tnnevol/dsh-codex-auth', version: '1.2.3' })
-      .mockResolvedValueOnce({ name: '@tnnevol/dsh-fnos', version: '1.2.2' })
-
-    await expect(runVersion(['plugin'])).rejects.toThrow('same current version')
-    expect(mocks.versionBump).not.toHaveBeenCalled()
-  })
-
-  it('does not commit when --no-commit is provided', async () => {
-    await runVersion(['plugin', '--no-commit', '--yes'])
-
-    expect(mocks.writeFile).toHaveBeenCalled()
-    expect(mocks.spawnSync).not.toHaveBeenCalled()
-  })
-
-  it('aligns the docs package, Harness manifest, and docs example for project releases', async () => {
     mocks.readPackageInfo.mockResolvedValue({ name: 'fn-os-apps', version: '1.2.3' })
+    mocks.versionBump.mockResolvedValue({ currentVersion: '1.2.3', newVersion: '1.2.4' })
     mocks.readFile.mockImplementation(async (path: string) => {
-      if (path.endsWith('docs/package.json')) return JSON.stringify({ name: '@tnnevol/fn-os-apps-docs', version: '1.2.2' })
-      if (path.endsWith('apps/fn-deepseek-harness/manifest')) return 'version               = 1.2.2\n'
+      if (path.endsWith('docs/package.json')) return JSON.stringify({ name: '@tnnevol/fn-os-apps-docs', version: '1.2.3' })
       if (path.endsWith('docs/development/manifest.md')) return 'version               = 1.2.1\n'
       return JSON.stringify({ name: 'package', version: '1.2.3' })
     })
+  })
 
-    await runVersion(['project', 'patch', '--no-commit', '--no-tag', '--yes'])
+  it('bumps the project version files with the requested release', async () => {
+    await runVersion(['patch', '--no-commit', '--no-tag', '--yes'])
+
+    expect(mocks.versionBump).toHaveBeenCalledWith(expect.objectContaining({
+      currentVersion: '1.2.3',
+      release: 'patch',
+      commit: false,
+      tag: false,
+      push: false,
+    }))
+    expect(mocks.versionBump.mock.calls[0]?.[0].files).toEqual(expect.arrayContaining([
+      'package.json',
+      'docs/package.json',
+      'docs/development/manifest.md',
+    ]))
+  })
+
+  it('aligns the docs example text file before bumping', async () => {
+    await runVersion(['patch', '--no-commit', '--no-tag', '--yes'])
 
     const writtenPaths = mocks.writeFile.mock.calls.map(call => String(call[0]))
-    expect(writtenPaths.filter(path => path.endsWith('docs/package.json'))).toHaveLength(1)
-    expect(writtenPaths.filter(path => path.endsWith('apps/fn-deepseek-harness/manifest'))).toHaveLength(1)
     expect(writtenPaths.filter(path => path.endsWith('docs/development/manifest.md'))).toHaveLength(1)
-    expect(mocks.versionBump).toHaveBeenCalledWith(expect.objectContaining({
-      files: expect.arrayContaining(['docs/package.json', 'docs/development/manifest.md']),
-    }))
+    const written = mocks.writeFile.mock.calls.find(call => String(call[0]).endsWith('docs/development/manifest.md'))
+    expect(written?.[1]).toContain('version               = 1.2.3')
+  })
+
+  it('aligns the docs workspace package when it drifts from the root version', async () => {
+    mocks.readFile.mockImplementation(async (path: string) => {
+      if (path.endsWith('docs/package.json')) return JSON.stringify({ name: '@tnnevol/fn-os-apps-docs', version: '1.2.2' })
+      if (path.endsWith('docs/development/manifest.md')) return 'version               = 1.2.3\n'
+      return JSON.stringify({ name: 'package', version: '1.2.3' })
+    })
+
+    await runVersion(['patch', '--no-commit', '--no-tag', '--yes'])
+
+    const written = mocks.writeFile.mock.calls.find(call => String(call[0]).endsWith('docs/package.json'))
+    expect(written?.[1]).toContain('1.2.3')
+  })
+
+  it('does not rewrite the docs package when it already matches', async () => {
+    await runVersion(['patch', '--no-commit', '--no-tag', '--yes'])
+
+    const writtenPaths = mocks.writeFile.mock.calls.map(call => String(call[0]))
+    expect(writtenPaths.filter(path => path.endsWith('docs/package.json'))).toHaveLength(0)
+  })
+
+  it('rejects unknown version options', async () => {
+    await expect(runVersion(['patch', '--nope'])).rejects.toThrow('Unknown version option')
+    expect(mocks.versionBump).not.toHaveBeenCalled()
   })
 })

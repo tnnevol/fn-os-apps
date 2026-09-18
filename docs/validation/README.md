@@ -13,8 +13,8 @@ description: fnOS Apps 的 NAS、FPK、安装升级和发布环境验收记录�
 
 ```yaml
 ---
-feature: FNOS-001-10
-acceptance: FNOS-001-10-AC-01
+feature: FNOS-001-01
+acceptance: FNOS-001-01-AC-01
 environment: fnOS NAS
 fnosVersion: <版本>
 appVersion: <FPK 版本>
@@ -32,9 +32,8 @@ status: passed|failed|blocked
 4. 遗留问题、回滚方式和下一步；
 5. 验收人和最终结论。
 
-当前 FNOS-001 的真实 NAS 记录应按功能 ID 分开，完成后回写对应需求和计划状态。
+同一需求的真实 NAS 记录按功能 ID 分开，完成后回写对应需求和计划状态。
 
 ## 当前记录
 
-- [FNOS-002 NAS 浏览器验收记录（2026-09-01）](/validation/FNOS-002-nas-2026-09-01)
-- [FNOS-004-08 DSH 客户端验收记录（2026-09-13）](/validation/FNOS-004-08-dsh-client-2026-09-13)
+暂无验收记录。

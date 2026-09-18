@@ -68,17 +68,11 @@ service_port          = 5230
 
 ## 版本管理
 
-项目/FPK 版本和插件版本分开维护。Manifest 属于项目/FPK 版本范围时使用：
+`apps/*/manifest` 的 `version` 由项目版本命令统一维护：
 
 ```bash
-pnpm run version -- project patch
-pnpm run version -- project minor
-```
-
-只维护某个 Harness 插件时，不要让插件版本流程隐式修改应用 Manifest：
-
-```bash
-pnpm run version -- plugin fnos patch
+pnpm run version -- patch
+pnpm run version -- minor
 ```
 
 需要只修改文件、不创建提交和 Tag 时追加 `--no-commit --no-tag`。版本变更前后都要检查对应的升级兼容和回滚说明。

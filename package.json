@@ -18,17 +18,13 @@
     "docs:preview": "vitepress preview docs",
     "test": "turbo run test",
     "check": "pnpm exec fn-apps-cli check",
-    "publish": "pnpm exec fn-apps-cli publish",
     "release:notes": "pnpm exec fn-apps-cli release:notes",
-    "prepare": "lefthook install",
-    "dev:web": "pnpm exec dsh web --no-open --port 3150"
+    "prepare": "lefthook install"
   },
   "devDependencies": {
     "@antfu/eslint-config": "catalog:",
     "@commitlint/cli": "catalog:",
     "@commitlint/config-conventional": "catalog:",
-    "@deepseek-ai/dsh": "catalog:",
-    "@deepseek-ai/dsh-llm-pi-ai": "catalog:dsh",
     "@eslint-react/eslint-plugin": "catalog:",
     "@miletorix/vitepress-image-viewer": "catalog:",
     "@tnnevol/fn-os-apps-cli": "workspace:*",
