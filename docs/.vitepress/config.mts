@@ -90,13 +90,12 @@ const startItems = [
 
 const developmentSidebar = [
   {
+    text: '开始使用',
+    items: startItems
+  },
+  {
     text: '开发指南',
     items: [
-      {
-        text: '开始使用',
-        collapsed: false,
-        items: startItems
-      },
       { text: '开发环境与脚本', link: '/development/environment-and-scripts' },
       { text: 'Package 任务与 Turbo', link: '/development/package-tasks-and-turbo' },
       { text: 'GitHub Workflow', link: '/development/github-workflows' },
