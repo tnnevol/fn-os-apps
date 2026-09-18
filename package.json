@@ -39,7 +39,6 @@
     "tsx": "catalog:",
     "turbo": "catalog:",
     "vitepress": "catalog:",
-    "vitepress-plugin-d2": "catalog:",
     "vitest": "catalog:"
   }
 }

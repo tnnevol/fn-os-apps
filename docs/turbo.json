@@ -3,8 +3,7 @@
   "extends": ["//"],
   "tasks": {
     "build": {
-      "outputs": [".vitepress/dist/**"],
-      "env": ["$TURBO_EXTENDS$", "D2_BIN"]
+      "outputs": [".vitepress/dist/**"]
     },
     "dev": {
       "interactive": true

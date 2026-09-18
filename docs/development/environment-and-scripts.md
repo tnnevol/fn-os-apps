@@ -46,7 +46,6 @@
 | Node.js | 24，最低 `>=24.0.0` | `.nvmrc`、根 `package.json#engines` |
 | pnpm | `>=11.16.0`，项目固定 `11.16.0` | 根 `package.json#packageManager`、CI |
 | [fnpack](https://developer.fnnas.com/docs/cli/fnpack/) | 本地 `1.2.3`；CI 构建 Workflow 当前使用 `1.2.1` | 本机 `PATH`、`.github/workflows/build-*.yml` |
-| [D2](https://d2lang.com/tour/install/) | `0.7.1`，仅文档流程图需要 | 本机 `PATH`、文档 Workflow |
 
 初始化环境：
 
@@ -57,7 +56,7 @@ node --version
 pnpm --version
 ```
 
-调整 Node.js、pnpm、fnpack 或 D2 版本时，同时检查 `.nvmrc`、根 `package.json`、相关 Workflow 和本页。CI 的 fnpack 版本目前与本地版本不同，不要在未同步 Workflow 的情况下自行假定两者一致。
+调整 Node.js、pnpm 或 fnpack 版本时，同时检查 `.nvmrc`、根 `package.json`、相关 Workflow 和本页。CI 的 fnpack 版本目前与本地版本不同，不要在未同步 Workflow 的情况下自行假定两者一致。
 
 ## FPK 应用开发
 
@@ -130,11 +129,9 @@ appcenter-cli install-fpk <app-name>.fpk
 
 ## 文档开发
 
-文档由 VitePress 构建，流程图由 `vitepress-plugin-d2` 处理。构建包含 D2 代码块的文档前，确保 `d2 version` 可执行：
+文档由 VitePress 构建，流程图由 `vitepress-mermaid-plugin` 在浏览器端渲染，不依赖任何系统可执行文件：
 
 ```bash
-d2 version
-
 # 启动文档开发服务
 pnpm run start -- --docs
 
@@ -145,7 +142,7 @@ pnpm run build -- --docs
 pnpm run docs:preview
 ```
 
-`start` 是开发服务的唯一根入口；CLI 通过 Turbo 的 `dev` 任务启动 `docs` workspace 的 VitePress 服务，文档开发端口固定为 `9876`。有 TTY 时它进入 `turbo watch`（保留 TUI 与快捷键），没有 TTY 时直接启动 `vitepress dev`，避免 interactive 任务报错。修改 `docs/` 下的 Markdown 后，VitePress 会自动更新页面。D2 图需要系统可执行文件 `d2`；如果它不在 `PATH`，可通过 `D2_BIN=/path/to/d2` 指定。D2 暂不可用时，文档服务会保留原始 D2 代码块而不会启动失败。
+`start` 是开发服务的唯一根入口；CLI 通过 Turbo 的 `dev` 任务启动 `docs` workspace 的 VitePress 服务，文档开发端口固定为 `9876`。有 TTY 时它进入 `turbo watch`（保留 TUI 与快捷键），没有 TTY 时直接启动 `vitepress dev`，避免 interactive 任务报错。修改 `docs/` 下的 Markdown 后，VitePress 会自动更新页面。流程图用 ` ```mermaid ` 代码块编写，由插件转成客户端组件渲染，深色模式会自动切换主题。
 
 ## 根脚本与 Turbo
 

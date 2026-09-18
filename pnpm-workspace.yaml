@@ -26,7 +26,8 @@ catalog:
   tsdown: ^0.22.2
   typescript: ^5.9.3
   vitepress: 1.6.4
-  vitepress-plugin-d2: 1.1.0
+  mermaid: 11.17.2
+  vitepress-mermaid-plugin: 3.0.0
   vitest: ^4.1.8
 
 # 只有确实需要执行安装脚本的依赖才放行。
@@ -36,6 +37,3 @@ allowBuilds:
   '@parcel/watcher': true
   esbuild: true
   lefthook: true
-
-patchedDependencies:
-  vitepress-plugin-d2@1.1.0: patches/vitepress-plugin-d2@1.1.0.patch

@@ -1,6 +1,5 @@
 import { defineConfig } from 'vitepress'
-import d2 from 'vitepress-plugin-d2'
-import { FileType, Layout, Theme } from 'vitepress-plugin-d2/dist/config'
+import { withMermaid } from 'vitepress-mermaid-plugin'
 import packageJson from '../package.json'
 
 const repositoryName = process.env.GITHUB_REPOSITORY?.split('/')[1] || 'fn-os-apps'
@@ -51,16 +50,6 @@ const markStatusTableColumns = (md: Parameters<NonNullable<Parameters<typeof def
 
 const configureMarkdown = (md: Parameters<NonNullable<Parameters<typeof defineConfig>[0]['markdown']>['config']>[0]) => {
   markStatusTableColumns(md)
-  md.use(d2, {
-    layout: Layout.ELK,
-    theme: Theme.NEUTRAL_DEFAULT,
-    darkTheme: Theme.DARK_MUAVE,
-    // 固定 SVG 的固有宽高，避免 image viewer 中 img 无法计算尺寸。
-    scale: 1,
-    // 输出为 img 可识别的 Base64 SVG，由 image viewer 提供放大、拖拽和全屏预览。
-    fileType: FileType.BASE64_SVG,
-    directory: '.vitepress/cache/d2'
-  })
 }
 
 const appItems = [
@@ -135,7 +124,7 @@ const plansSidebar = [
   }
 ]
 
-export default defineConfig({
+export default withMermaid(defineConfig({
   lang: 'zh-CN',
   title: 'fnOS Apps',
   description: '飞牛 fnOS 应用开发、构建与使用文档。',
@@ -144,6 +133,20 @@ export default defineConfig({
     server: {
       port: 9876
     }
+  },
+  // 亮色模式使用 neutral 主题；深色模式由插件在检测到 `.dark` 后自动切到 `dark`。
+  mermaid: {
+    theme: 'neutral',
+    flowchart: {
+      curve: 'basis',
+      useMaxWidth: true
+    },
+    sequence: {
+      useMaxWidth: true
+    }
+  },
+  mermaidPlugin: {
+    class: 'mermaid-diagram'
   },
   head: [['link', { rel: 'icon', href: `${base}icons/site-icon.png` }]],
   cleanUrls: true,
@@ -198,4 +201,4 @@ export default defineConfig({
     },
     lastUpdatedText: '最后更新'
   }
-})
+}))

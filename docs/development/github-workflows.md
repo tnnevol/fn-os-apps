@@ -10,71 +10,47 @@
 - Pull Request 或手动触发质量链路，检查 SDD、文档和包。
 - `v*` Tag 或手动触发文档部署链路，构建并部署 VitePress。
 
-```d2
-direction: down
+```mermaid
+flowchart TD
+  tag["推送 v* Tag"] --> releaseWorkflow[".github/workflows/build-release.yml"] --> prepare["prepare-release：创建或重置草稿 Release"]
+  prepare --> common["build-common：可复用 Workflow"]
+  common --> publish["publish-release：上传完成并生成 Release 说明"]
+  publish --> releaseStatus{"发布链路成功？"}
+  releaseStatus -->|是| releaseDone["发布 Release"]
+  releaseStatus -->|否| releaseFailure["report-failure 保留失败草稿"]
+  prepare -->|失败| releaseFailure
+  common -->|失败| releaseFailure
 
-tag: "推送 v* Tag"
-releaseWorkflow: ".github/workflows/build-release.yml"
-prepare: "prepare-release：创建或重置草稿 Release"
-common: "build-common：可复用 Workflow"
-publish: "publish-release：上传完成并生成 Release 说明"
-releaseStatus: {
-  label: "发布链路成功？"
-  shape: diamond
-}
-releaseDone: "是：发布 Release"
-releaseFailure: "否：report-failure 保留失败草稿"
-
-qualityTrigger: "Pull Request / workflow_dispatch"
-sddWorkflow: ".github/workflows/sdd-check.yml"
-sddRun: "pnpm run check -- --all"
-sddDone: "SDD、文档和包检查完成"
-
-docsTrigger: "v* Tag / workflow_dispatch"
-docsWorkflow: ".github/workflows/deploy-docs.yml"
-docsRun: "pnpm exec fn-apps-cli build --docs"
-pages: "上传 Pages artifact → 部署 GitHub Pages"
-
-tag -> releaseWorkflow -> prepare
-prepare -> common
-common -> publish
-publish -> releaseStatus
-releaseStatus -> releaseDone: 是
-releaseStatus -> releaseFailure: 否
-prepare -> releaseFailure: 失败
-common -> releaseFailure: 失败
-
-qualityTrigger -> sddWorkflow -> sddRun -> sddDone
-docsTrigger -> docsWorkflow -> docsRun -> pages
+  qualityTrigger["Pull Request / workflow_dispatch"] --> sddWorkflow[".github/workflows/sdd-check.yml"] --> sddRun["pnpm run check -- --all"] --> sddDone["SDD、文档和包检查完成"]
+  docsTrigger["v* Tag / workflow_dispatch"] --> docsWorkflow[".github/workflows/deploy-docs.yml"] --> docsRun["pnpm exec fn-apps-cli build --docs"] --> pages["上传 Pages artifact → 部署 GitHub Pages"]
 ```
 
 ## 发布 Job 的时序
 
 `prepare-release` 完成后，`build-common` 作为可复用 Workflow 执行；它完成后 `publish-release` 才继续。
 
-```d2
-shape: sequence_diagram
+```mermaid
+sequenceDiagram
+  participant github as GitHub Actions
+  participant prepare as prepare-release<br/>创建或重置草稿 Release
+  participant common as build-common<br/>可复用 Workflow
+  participant discover as discover<br/>扫描 apps/*/manifest
+  participant commonBuild as matrix build<br/>fnpack build + 上传 FPK
+  participant publish as publish-release<br/>等待构建 Job
+  participant notes as pnpm run release:notes<br/>调用 changelogithub
+  participant release as GitHub Release
 
-github: GitHub Actions
-prepare: "prepare-release\n创建或重置草稿 Release"
-common: "build-common\n可复用 Workflow"
-discover: "discover\n扫描 apps/*/manifest"
-commonBuild: "matrix build\nfnpack build + 上传 FPK"
-publish: "publish-release\n等待构建 Job"
-notes: "pnpm run release:notes\n调用 changelogithub"
-release: GitHub Release
-
-github -> prepare: push v* Tag
-prepare -> github: release_id
-prepare -> common: workflow_call(release_tag, release_id)
-common -> discover: checkout + 扫描
-discover -> common: matrix
-common -> commonBuild: 每个 matrix.app
-commonBuild -> common: FPK assets uploaded
-common -> publish: completed
-publish -> notes: assets 全部上传后
-notes -> release: changelogithub 执行完成
-release -> github: 发布 Release
+  github->>prepare: push v* Tag
+  prepare->>github: release_id
+  prepare->>common: workflow_call(release_tag, release_id)
+  common->>discover: checkout + 扫描
+  discover->>common: matrix
+  common->>commonBuild: 每个 matrix.app
+  commonBuild->>common: FPK assets uploaded
+  common->>publish: completed
+  publish->>notes: assets 全部上传后
+  notes->>release: changelogithub 执行完成
+  release->>github: 发布 Release
 ```
 
 ### `changelogithub` 的执行时机
@@ -92,37 +68,15 @@ Release 日志不是在 `build-common-fn.yml` 中生成的，而是在 `build-re
 
 ### `build-common-fn.yml` 内部步骤
 
-```d2
-direction: down
-
-workflow: "build-common-fn.yml"
-discover: "discover：checkout 后扫描 apps/*"
-manifestStatus: {
-  label: "存在 manifest？"
-  shape: diamond
-}
-skip: "跳过目录"
-matrix: "生成 app matrix"
-checkout: "matrix job：checkout"
-tooling: "Node 24 + pnpm 11.16"
-cliInstall: "pnpm install --filter @tnnevol/fn-os-apps-cli"
-fnpack: "安装 fnpack 1.2.1"
-cli: "fn-apps-cli build --fpk --app <app>"
-rename: "重命名 <app>-<RELEASE_TAG>.fpk"
-upload: "上传 FPK 到 Release"
-status: {
-  label: "上传成功？"
-  shape: diamond
-}
-done: "是：该应用完成"
-fail: "否：重试 5 次后失败"
-
-workflow -> discover -> manifestStatus
-manifestStatus -> skip: 否
-manifestStatus -> matrix: 是
-matrix -> checkout -> tooling -> cliInstall -> fnpack -> cli -> rename -> upload -> status
-status -> done: 是
-status -> fail: 否
+```mermaid
+flowchart TD
+  workflow["build-common-fn.yml"] --> discover["discover：checkout 后扫描 apps/*"]
+  discover --> manifestStatus{"存在 manifest？"}
+  manifestStatus -->|否| skip["跳过目录"]
+  manifestStatus -->|是| matrix["生成 app matrix"]
+  matrix --> checkout["matrix job：checkout"] --> tooling["Node 24 + pnpm 11.16"] --> cliInstall["pnpm install --filter @tnnevol/fn-os-apps-cli"] --> fnpack["安装 fnpack 1.2.1"] --> cli["fn-apps-cli build --fpk --app &lt;app&gt;"] --> rename["重命名 &lt;app&gt;-&lt;RELEASE_TAG&gt;.fpk"] --> upload["上传 FPK 到 Release"] --> status{"上传成功？"}
+  status -->|是| done["该应用完成"]
+  status -->|否| fail["重试 5 次后失败"]
 ```
 
 `build-common-fn.yml` 只接受 `workflow_call`，不会自行响应 push；它必须由 `build-release.yml` 传入 `release_tag` 和 `release_id`。
@@ -131,65 +85,54 @@ status -> fail: 否
 
 下图只展示运行时真正读取或调用的边界：Workflow 调用 CLI，CLI 再调用 Turbo、VitePress 或 fnpack；应用的 `manifest` 决定是否进入 FPK 矩阵。
 
-```d2
-direction: right
+```mermaid
+flowchart LR
+  subgraph workflows["GitHub Workflows"]
+    release[".github/workflows/build-release.yml"]
+    common[".github/workflows/build-common-fn.yml"]
+    docs[".github/workflows/deploy-docs.yml"]
+    sdd[".github/workflows/sdd-check.yml"]
+  end
 
-workflows: {
-  label: "GitHub Workflows"
-  release: ".github/workflows/build-release.yml"
-  common: ".github/workflows/build-common-fn.yml"
-  docs: ".github/workflows/deploy-docs.yml"
-  sdd: ".github/workflows/sdd-check.yml"
-}
+  subgraph repo["仓库入口与配置"]
+    rootPackage["package.json"]
+    lockfile["pnpm-lock.yaml"]
+    turbo["turbo.json"]
+    docsConfig["docs/.vitepress/config.mts"]
+  end
 
-repo: {
-  label: "仓库入口与配置"
-  rootPackage: "package.json"
-  lockfile: "pnpm-lock.yaml"
-  turbo: "turbo.json"
-  docsConfig: "docs/.vitepress/config.mts"
-}
+  subgraph cli["fn-apps-cli CLI"]
+    commands["tooling/fn-os-apps-cli/src/commands/*.ts"]
+    build["build"]
+    check["check"]
+    releaseNotes["release:notes"]
+  end
 
-cli: {
-  label: "fn-apps-cli CLI"
-  program: "tooling/fn-os-apps-cli/src/program.ts"
-  commands: "tooling/fn-os-apps-cli/src/commands/*.ts"
-  build: "build"
-  check: "check"
-  release: "release:notes"
-}
+  subgraph apps["FPK 应用"]
+    manifests["apps/*/manifest"]
+  end
 
-apps: {
-  label: "FPK 应用"
-  manifests: "apps/*/manifest"
-}
+  subgraph tools["外部工具与发布服务"]
+    fnpack["fnpack 1.2.1（CI）"]
+    github["GitHub Release / Pages API"]
+  end
 
-tools: {
-  label: "外部工具与发布服务"
-  fnpack: "fnpack 1.2.1（CI）"
-  d2: "D2 0.7.1"
-  github: "GitHub Release / Pages API"
-}
-
-workflows.release -> workflows.common: workflow_call
-workflows.release -> cli.release
-workflows.common -> apps.manifests: 扫描 manifest
-workflows.common -> cli.build
-workflows.common -> tools.fnpack
-workflows.common -> tools.github: 上传 FPK
-workflows.docs -> cli.build: --docs
-workflows.docs -> repo.docsConfig
-workflows.docs -> tools.d2
-workflows.docs -> tools.github: Pages
-workflows.sdd -> cli.check: --all
-workflows.sdd -> repo.docsConfig
-workflows.sdd -> tools.d2
-workflows.sdd -> repo.rootPackage
-workflows.sdd -> repo.lockfile
-workflows.sdd -> apps.manifests
-
-cli.build -> repo.turbo
-cli.check -> repo.turbo
+  release -->|workflow_call| common
+  release --> releaseNotes
+  common -->|扫描 manifest| manifests
+  common --> build
+  common --> fnpack
+  common -->|上传 FPK| github
+  docs -->|--docs| build
+  docs --> docsConfig
+  docs --> github
+  sdd -->|--all| check
+  sdd --> docsConfig
+  sdd --> rootPackage
+  sdd --> lockfile
+  sdd --> manifests
+  build --> turbo
+  check --> turbo
 ```
 
 ## 各 Workflow 的职责
@@ -198,8 +141,8 @@ cli.check -> repo.turbo
 | --- | --- | --- | --- |
 | `build-release.yml` | 推送 `v*` Tag | 创建草稿 Release、调用 FPK 构建、发布 Release | `github.ref_name`、Release ID |
 | `build-common-fn.yml` | 仅 `workflow_call` | 扫描应用并按矩阵构建、重命名、上传 FPK | `release_tag`、`release_id` |
-| `deploy-docs.yml` | `v*` Tag / 手动 | 构建 VitePress 并部署 GitHub Pages | D2、`DOCS_BASE=/` |
-| `sdd-check.yml` | Pull Request / 手动 | 执行完整 SDD、文档和包检查 | 变更路径、D2 |
+| `deploy-docs.yml` | `v*` Tag / 手动 | 构建 VitePress 并部署 GitHub Pages | `DOCS_BASE=/` |
+| `sdd-check.yml` | Pull Request / 手动 | 执行完整 SDD、文档和包检查 | 变更路径 |
 
 ## 发布链路
 
@@ -233,10 +176,9 @@ pnpm run release:notes
 
 ## 文档与 SDD 链路
 
-文档和 SDD Workflow 都需要 D2，因为页面包含 `d2` 代码块：
+文档和 SDD Workflow 都不需要额外安装图形工具：Mermaid 图由插件在浏览器端渲染。
 
 ```bash
-d2 version
 pnpm run build -- --docs
 pnpm run check -- --all
 ```
@@ -251,7 +193,7 @@ pnpm run check -- --all
 - [ ] 可复用 Workflow 的输入、输出和 `needs` 关系保持一致。
 - [ ] FPK 构建继续通过 `fn-apps-cli` 和 `fnpack`，不在 Workflow 中复制 CLI 逻辑。
 - [ ] 版本和 fnpack 版本来源与配置文件保持一致。
-- [ ] 文档或 D2 改动通过 `pnpm run build -- --docs`。
+- [ ] 文档或流程图改动通过 `pnpm run build -- --docs`。
 - [ ] 提交前运行 `pnpm run check -- --all`。
 - [ ] 不把 `.fpk`、native 临时目录或 GitHub Token 写入仓库。
 
