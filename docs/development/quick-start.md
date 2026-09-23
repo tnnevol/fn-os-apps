@@ -23,11 +23,8 @@ pnpm install
 ## 启动开发服务
 
 ```bash
-# 交互选择 DSH 插件或文档服务
+# 启动文档开发服务（当前唯一目标）
 pnpm run start
-
-# 直接启动文档服务
-pnpm run start -- --docs
 ```
 
 默认会启动本地开发服务器，修改 `docs/` 下的 Markdown 后页面会自动更新。

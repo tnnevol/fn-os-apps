@@ -8,7 +8,12 @@
     "build": "vitepress build"
   },
   "devDependencies": {
+    "@braintree/sanitize-url": "catalog:",
     "@miletorix/vitepress-image-viewer": "catalog:",
+    "cytoscape": "catalog:",
+    "cytoscape-cose-bilkent": "catalog:",
+    "dayjs": "catalog:",
+    "debug": "catalog:",
     "mermaid": "catalog:",
     "vitepress": "catalog:",
     "vitepress-mermaid-plugin": "catalog:"

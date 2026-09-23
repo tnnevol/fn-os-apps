@@ -73,8 +73,7 @@ const appItems = [
 const startItems = [
   { text: '快速开始', link: '/development/quick-start' },
   { text: '仓库结构', link: '/development/repository-structure' },
-  { text: 'SDD 维护规范', link: '/development/sdd-workflow' },
-  { text: 'SDD 模式转换报告', link: '/development/sdd-transition-report' }
+  { text: 'SDD 维护规范', link: '/development/sdd-workflow' }
 ]
 
 const developmentSidebar = [
@@ -130,6 +129,12 @@ export default withMermaid(defineConfig({
   description: '飞牛 fnOS 应用开发、构建与使用文档。',
   base,
   vite: {
+    resolve: {
+      alias: [{
+        find: /^dayjs$/,
+        replacement: 'dayjs/esm/index'
+      }]
+    },
     server: {
       port: 9876
     }
