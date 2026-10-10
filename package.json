@@ -18,6 +18,7 @@
     "docs:preview": "vitepress preview docs",
     "test": "turbo run test",
     "check": "pnpm exec fn-apps-cli check",
+    "icons": "node scripts/generate-icons.mjs",
     "release:notes": "pnpm exec fn-apps-cli release:notes",
     "prepare": "lefthook install"
   },
@@ -33,6 +34,7 @@
     "eslint": "catalog:",
     "eslint-plugin-react-refresh": "catalog:",
     "globals": "catalog:",
+    "jimp": "catalog:",
     "jsonc-eslint-parser": "catalog:",
     "lefthook": "catalog:",
     "lint-staged": "catalog:",
