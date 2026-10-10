@@ -1,0 +1,14 @@
+appname               = fn-it-tools
+version               = 6.0.0
+display_name          = IT-Tools
+desc                  = 为开发人员提供方便的在线工具集合，涵盖加密、转换、Web、开发等常用小工具
+platform              = x86
+source                = thirdparty
+maintainer            = Corentin Th
+maintainer_url        = https://it-tools.tech
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-it-tools.Application
+disable_authorization_path = true

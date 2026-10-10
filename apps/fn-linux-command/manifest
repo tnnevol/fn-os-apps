@@ -1,0 +1,14 @@
+appname               = fn-linux-command
+version               = 6.0.0
+display_name          = Linux Command
+desc                  = Linux 命令大全搜索工具，收录 580 多个常用命令的手册与详解
+platform              = x86
+source                = thirdparty
+maintainer            = jaywcjlove
+maintainer_url        = https://github.com/jaywcjlove/linux-command
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-linux-command.Application
+disable_authorization_path = true

@@ -1,0 +1,7 @@
+services:
+  linux-command:
+    container_name: fn-linux-command
+    image: wcjiang/linux-command:1.22.0
+    ports:
+      - "${APP_PORT}:3000"
+    restart: always

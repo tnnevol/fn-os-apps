@@ -1,0 +1,14 @@
+appname               = fn-adminer
+version               = 6.0.0
+display_name          = Adminer
+desc                  = 轻量级数据库管理工具，通过单一 Web 界面管理 MySQL、PostgreSQL、SQLite 等数据库
+platform              = x86
+source                = thirdparty
+maintainer            = Adminer
+maintainer_url        = https://www.adminer.org
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-adminer.Application
+disable_authorization_path = true

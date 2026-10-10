@@ -1,0 +1,8 @@
+{
+    "defaults":
+    {
+        "run-as": "package"
+    },
+    "username": "docker-fn-it-tools",
+    "groupname": "docker-fn-it-tools"
+}

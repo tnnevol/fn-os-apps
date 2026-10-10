@@ -1,0 +1,13 @@
+{
+  ".url": {
+    "fn-it-tools.Application": {
+      "title": "IT-Tools",
+      "icon": "images/icon_{0}.png",
+      "type": "url",
+      "protocol": "http",
+      "port": "${APP_PORT}",
+      "url": "/",
+      "allUsers": false
+    }
+  }
+}

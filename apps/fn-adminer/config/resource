@@ -1,0 +1,12 @@
+{
+    "docker-project":
+    {
+        "projects":
+        [
+            {
+                "name": "fn-adminer",
+                "path": "docker"
+            }
+        ]
+    }
+}

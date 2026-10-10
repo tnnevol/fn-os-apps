@@ -1,0 +1,7 @@
+services:
+  adminer:
+    container_name: fn-adminer
+    image: adminer:6.1.1-standalone
+    ports:
+      - "${APP_PORT}:8080"
+    restart: always

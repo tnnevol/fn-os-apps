@@ -1,0 +1,12 @@
+{
+    "docker-project":
+    {
+        "projects":
+        [
+            {
+                "name": "fn-linux-command",
+                "path": "docker"
+            }
+        ]
+    }
+}
