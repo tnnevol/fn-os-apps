@@ -1,0 +1,11 @@
+services:
+  llama-cpp:
+    container_name: fn-llama-cpp
+    image: ghcr.io/ggml-org/llama.cpp:server
+    command: ${START_COMMAND}
+    ports:
+      - "${APP_PORT}:8080"
+    restart: unless-stopped
+    volumes:
+      # 用户在向导中填写的模型目录，只读挂载，应用不应修改模型文件
+      - "${MODEL_PATH}:/models:ro"

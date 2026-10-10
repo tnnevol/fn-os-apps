@@ -1,0 +1,16 @@
+services:
+  browserless:
+    container_name: fn-browserless
+    image: ghcr.io/browserless/chrome:v2.57.0
+    ports:
+      - "${APP_PORT}:3000"
+    restart: always
+    ulimits:
+      core:
+        hard: 0
+        soft: 0
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/pressure"]
+      interval: 30s
+      timeout: 10s
+      retries: 3

@@ -1,0 +1,7 @@
+services:
+  cyberchef:
+    container_name: fn-cyberchef
+    image: ghcr.io/gchq/cyberchef:11.5.0
+    ports:
+      - "${APP_PORT}:8080"
+    restart: always

@@ -1,0 +1,7 @@
+services:
+  web-check:
+    container_name: fn-web-check
+    image: lissy93/web-check:2.3.2
+    ports:
+      - "${APP_PORT}:3000"
+    restart: always

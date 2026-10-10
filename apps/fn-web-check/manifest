@@ -1,0 +1,14 @@
+appname               = fn-web-check
+version               = 6.0.0
+display_name          = Web-Check
+desc                  = 用于分析任何网站的多合一 OSINT 工具，汇总 DNS、SSL、头部与威胁情报等信息
+platform              = x86
+source                = thirdparty
+maintainer            = Lissy93
+maintainer_url        = https://github.com/lissy93/web-check
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-web-check.Application
+disable_authorization_path = true

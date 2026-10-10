@@ -1,0 +1,11 @@
+services:
+  zabbix-agent:
+    container_name: fn-zabbix-agent
+    image: zabbix/zabbix-agent:alpine-7.4.5
+    environment:
+      - ZBX_HOSTNAME=${ZABBIX_HOSTNAME}
+      - ZBX_SERVER_HOST=${ZABBIX_SERVER}
+      - ZBX_SERVER_PORT=${ZABBIX_SERVER_PORT}
+    ports:
+      - "${APP_PORT}:10050"
+    restart: always

@@ -1,0 +1,14 @@
+appname               = fn-browserless
+version               = 6.0.0
+display_name          = Browserless
+desc                  = 在 Docker 中部署无头浏览器，供网页抓取、截图与 PDF 生成等自动化任务调用
+platform              = x86
+source                = thirdparty
+maintainer            = Browserless
+maintainer_url        = https://github.com/browserless/browserless
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-browserless.Application
+disable_authorization_path = true

@@ -1,0 +1,13 @@
+services:
+  chatgpt-next-web:
+    container_name: fn-chatgpt-next-web
+    image: yidadaa/chatgpt-next-web:v2.16.1
+    environment:
+      - OPENAI_API_KEY=${API_KEY}
+      - CODE=${SECRET_KEY}
+      - PROXY_URL=${PROXY}
+      - BASE_URL=${API_BASE_URL}
+      - WHITE_WEBDAV_ENDPOINTS=${WHITE_WEBDAV_ENDPOINTS}
+    ports:
+      - "${APP_PORT}:3000"
+    restart: always

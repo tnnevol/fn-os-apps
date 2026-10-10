@@ -1,0 +1,8 @@
+services:
+  memcached:
+    container_name: fn-memcached
+    image: memcached:1.6.22-alpine3.18
+    command: memcached -m ${MEM_CACHED}
+    ports:
+      - "${APP_PORT}:11211"
+    restart: always

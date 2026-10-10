@@ -1,0 +1,12 @@
+appname               = fn-zabbix-agent
+version               = 6.0.0
+display_name          = Zabbix Agent
+desc                  = 面向 IT 和 OT 的通用开源可观测性方案客户端，把本机指标上报给 Zabbix Server
+platform              = x86
+source                = thirdparty
+maintainer            = Zabbix
+maintainer_url        = https://github.com/zabbix/zabbix
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+disable_authorization_path = true

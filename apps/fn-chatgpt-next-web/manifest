@@ -1,0 +1,14 @@
+appname               = fn-chatgpt-next-web
+version               = 6.0.0
+display_name          = ChatGPT-Next-Web
+desc                  = 一键拥有你自己的跨平台 ChatGPT/Gemini 应用，支持自定义 API 地址与访问密码
+platform              = x86
+source                = thirdparty
+maintainer            = Yidadaa
+maintainer_url        = https://github.com/Yidadaa/ChatGPT-Next-Web
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-chatgpt-next-web.Application
+disable_authorization_path = true

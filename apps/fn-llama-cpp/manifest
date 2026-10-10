@@ -1,0 +1,14 @@
+appname               = fn-llama-cpp
+version               = 6.0.0
+display_name          = llama.cpp
+desc                  = 使用 GGUF 模型运行本地大语言模型推理服务，并提供 OpenAI 兼容接口
+platform              = x86
+source                = thirdparty
+maintainer            = ggml-org
+maintainer_url        = https://github.com/ggml-org/llama.cpp
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-llama-cpp.Application
+disable_authorization_path = true

@@ -1,0 +1,6 @@
+services:
+  cloudflared:
+    container_name: fn-cloudflared
+    image: cloudflare/cloudflared:2026.10.0
+    command: tunnel --no-autoupdate run --token ${token}
+    restart: always
