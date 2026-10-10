@@ -36,4 +36,8 @@ status: passed|failed|blocked
 
 ## 当前记录
 
-暂无验收记录。
+| 记录 | 环境 | 状态 | 说明 |
+| --- | --- | --- | --- |
+| [FNOS-001 真实环境验收记录（2026-10-09）](/validation/FNOS-001-fnos-nas-2026-10-09) | fnOS NAS（目标设备） | 阻塞 | 阶段一（清单与规约）的本地核对部分已执行；设备端用例因 `appcenter-cli` 权限阻塞未执行 |
+
+用例定义见 [FNOS-001 1Panel 应用转换测试用例](/testing/FNOS-001-test-cases)。
