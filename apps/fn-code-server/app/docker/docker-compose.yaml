@@ -1,0 +1,19 @@
+services:
+  code:
+    container_name: fn-code-server
+    image: linuxserver/code-server:4.140.0
+    environment:
+      # TRIM_UID/TRIM_GID 由 fnOS 注入，指向本应用的包用户；
+      # 不可沿用上游硬编码的 1000（目标 NAS 上 1000 通常是登录用户，会导致数据目录写不进去）
+      - PUID=${TRIM_UID}
+      - PGID=${TRIM_GID}
+      - TZ=${TIME_ZONE}
+      - PASSWORD=${WEB_PASSWORD}
+      - SUDO_PASSWORD=${SUDO_PASSWORD}
+      - DEFAULT_WORKSPACE=/config/workspace
+    ports:
+      - "${APP_PORT}:8443"
+    restart: always
+    volumes:
+      # 工作区与编辑器配置，落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）
+      - "${TRIM_PKGVAR}/data:/config"

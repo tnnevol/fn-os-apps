@@ -1,0 +1,7 @@
+{
+    "defaults": {
+        "run-as": "package"
+    },
+    "username": "docker-fn-2fauth",
+    "groupname": "docker-fn-2fauth"
+}

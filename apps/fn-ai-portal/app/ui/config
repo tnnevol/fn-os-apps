@@ -1,0 +1,13 @@
+{
+  ".url": {
+    "fn-ai-portal.Application": {
+      "title": "1Panel AI 门户",
+      "icon": "images/icon_{0}.png",
+      "type": "url",
+      "protocol": "http",
+      "port": "${APP_PORT}",
+      "url": "/",
+      "allUsers": false
+    }
+  }
+}

@@ -1,0 +1,14 @@
+appname               = fn-artalk
+version               = 6.0.0
+display_name          = Artalk
+desc                  = 一款简洁的自托管评论系统，可嵌入任意网站使用
+platform              = x86
+source                = thirdparty
+maintainer            = ArtalkJS
+maintainer_url        = https://github.com/ArtalkJS/Artalk
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-artalk.Application
+disable_authorization_path = true

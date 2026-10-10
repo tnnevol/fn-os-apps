@@ -1,0 +1,14 @@
+appname               = fn-certimate
+version               = 6.0.0
+display_name          = Certimate
+desc                  = 一个安全、简便的 SSL 证书管理解决方案，支持自动申请与续期
+platform              = x86
+source                = thirdparty
+maintainer            = usual2970
+maintainer_url        = https://github.com/usual2970/certimate
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-certimate.Application
+disable_authorization_path = true

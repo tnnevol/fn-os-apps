@@ -1,0 +1,14 @@
+appname               = fn-answer
+version               = 6.0.0
+display_name          = Answer
+desc                  = 适用于任何规模团队的问答平台软件，支持提问、回答与内容协作
+platform              = x86
+source                = thirdparty
+maintainer            = answerdev
+maintainer_url        = https://github.com/answerdev/answer
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-answer.Application
+disable_authorization_path = true

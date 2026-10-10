@@ -1,0 +1,10 @@
+services:
+  clawswarm:
+    container_name: fn-clawswarm
+    image: 1panel/clawswarm:v1.0.5
+    ports:
+      - "${APP_PORT}:18080"
+    restart: always
+    volumes:
+      # 编排配置与运行数据，落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）
+      - "${TRIM_PKGVAR}/data:/opt/clawswarm"

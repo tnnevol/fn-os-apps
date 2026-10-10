@@ -1,0 +1,14 @@
+appname               = fn-maxkb
+version               = 6.0.0
+display_name          = MaxKB
+desc                  = 强大易用的企业级智能体平台，支持知识库问答与大模型接入
+platform              = x86
+source                = thirdparty
+maintainer            = 1Panel
+maintainer_url        = https://github.com/1Panel-dev/MaxKB
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-maxkb.Application
+disable_authorization_path = true

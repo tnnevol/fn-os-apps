@@ -1,0 +1,14 @@
+appname               = fn-clawswarm
+version               = 6.0.0
+display_name          = ClawSwarm
+desc                  = 面向 OpenClaw 的开源群体智能协作编排系统
+platform              = x86
+source                = thirdparty
+maintainer            = 1Panel
+maintainer_url        = https://github.com/1Panel-dev/ClawSwarm
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-clawswarm.Application
+disable_authorization_path = true

@@ -1,0 +1,14 @@
+appname               = fn-ai-portal
+version               = 6.0.0
+display_name          = 1Panel AI 门户
+desc                  = 面向 1Panel 企业版，为用户提供自助式的 API Key 管理、技能市场和 MCP 市场能力
+platform              = x86
+source                = thirdparty
+maintainer            = 1Panel
+maintainer_url        = https://github.com/1Panel-dev/AI-Portal
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-ai-portal.Application
+disable_authorization_path = true

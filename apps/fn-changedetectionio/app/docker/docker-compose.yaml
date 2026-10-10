@@ -1,0 +1,10 @@
+services:
+  changedetection:
+    container_name: fn-changedetectionio
+    image: dgtlmoon/changedetection.io:0.60.8
+    ports:
+      - "${APP_PORT}:5000"
+    restart: always
+    volumes:
+      # 监控目标与历史快照，落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）
+      - "${TRIM_PKGVAR}/data:/datastore"

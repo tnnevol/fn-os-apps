@@ -1,0 +1,14 @@
+appname               = fn-gotify
+version               = 6.0.0
+display_name          = Gotify
+desc                  = 简单的服务器来发送和接收消息，提供 Web 界面与消息推送 API
+platform              = x86
+source                = thirdparty
+maintainer            = gotify
+maintainer_url        = https://github.com/gotify/server
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-gotify.Application
+disable_authorization_path = true

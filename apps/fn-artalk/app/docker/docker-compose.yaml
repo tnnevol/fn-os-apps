@@ -1,0 +1,15 @@
+services:
+  artalk:
+    container_name: fn-artalk
+    image: artalk/artalk-go:2.10
+    environment:
+      - ATK_SITE_DEFAULT=${ATK_SITE_DEFAULT}
+      - ATK_SITE_URL=${ATK_SITE_URL}
+      - ATK_LOCALE=${ATK_LOCALE}
+      - TZ=${TIME_ZONE}
+    ports:
+      - "${APP_PORT}:23366"
+    restart: always
+    volumes:
+      # 评论数据与配置，落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）
+      - "${TRIM_PKGVAR}/data:/data"

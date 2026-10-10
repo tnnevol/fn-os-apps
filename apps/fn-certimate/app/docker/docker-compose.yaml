@@ -1,0 +1,15 @@
+services:
+  certimate:
+    container_name: fn-certimate
+    image: certimate/certimate:v0.4.34
+    environment:
+      - http_proxy=${HTTP_PROXY}
+      - https_proxy=${HTTPS_PROXY}
+      - NO_PROXY=${NO_PROXY}
+      - TZ=${TIME_ZONE}
+    ports:
+      - "${APP_PORT}:8090"
+    restart: unless-stopped
+    volumes:
+      # 证书与配置数据，落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）
+      - "${TRIM_PKGVAR}/data:/app/pb_data"

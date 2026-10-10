@@ -1,0 +1,14 @@
+appname               = fn-bytebase
+version               = 6.0.0
+display_name          = Bytebase
+desc                  = 开源数据库 DevOps 解决方案，面向团队提供数据库变更与权限管理
+platform              = x86
+source                = thirdparty
+maintainer            = Bytebase
+maintainer_url        = https://github.com/bytebase/bytebase
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-bytebase.Application
+disable_authorization_path = true

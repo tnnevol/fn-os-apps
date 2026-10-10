@@ -1,0 +1,10 @@
+services:
+  qinglong:
+    container_name: fn-qinglong
+    image: whyour/qinglong:2.22.0-debian
+    ports:
+      - "${APP_PORT}:5700"
+    restart: always
+    volumes:
+      # 任务脚本与运行数据，落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）
+      - "${TRIM_PKGVAR}/data:/ql/data"

@@ -1,0 +1,14 @@
+appname               = fn-freshrss
+version               = 6.0.0
+display_name          = FreshRSS
+desc                  = 自托管的 RSS 和 Atom 源聚合器，支持多用户与全文抓取
+platform              = x86
+source                = thirdparty
+maintainer            = FreshRSS
+maintainer_url        = https://github.com/FreshRSS/FreshRSS
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-freshrss.Application
+disable_authorization_path = true

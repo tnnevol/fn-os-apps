@@ -1,0 +1,24 @@
+services:
+  app:
+    container_name: fn-ai-portal
+    image: 1panel/ai-portal:v1.0.8
+    environment:
+      - INIT_ADMIN_PASSWORD=${INIT_ADMIN_PASSWORD}
+      - PANEL_BASE_URL=${PANEL_BASE_URL}
+      - PANEL_API_KEY=${PANEL_API_KEY}
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - "-e"
+        - "require('http').get('http://localhost:3000/api/health', (r) => r.statusCode === 200 ? process.exit(0) : process.exit(1)).on('error', () => process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      start_period: 40s
+      retries: 3
+    ports:
+      - "${APP_PORT}:3000"
+    restart: always
+    volumes:
+      # 门户数据，落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）
+      - "${TRIM_PKGVAR}/data:/app/data"

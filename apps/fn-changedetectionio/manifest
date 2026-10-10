@@ -1,0 +1,14 @@
+appname               = fn-changedetectionio
+version               = 6.0.0
+display_name          = Changedetection.io
+desc                  = 免费开源网站变更检测、网站观察、补货监控和通知服务
+platform              = x86
+source                = thirdparty
+maintainer            = dgtlmoon
+maintainer_url        = https://github.com/dgtlmoon/changedetection.io
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-changedetectionio.Application
+disable_authorization_path = true

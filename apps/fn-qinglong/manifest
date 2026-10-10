@@ -1,0 +1,14 @@
+appname               = fn-qinglong
+version               = 6.0.0
+display_name          = 青龙
+desc                  = 定时任务管理平台，支持在线编写和运行 Python3、JavaScript、Shell 等脚本
+platform              = x86
+source                = thirdparty
+maintainer            = whyour
+maintainer_url        = https://github.com/whyour/qinglong
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-qinglong.Application
+disable_authorization_path = true

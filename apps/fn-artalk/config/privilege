@@ -1,0 +1,7 @@
+{
+    "defaults": {
+        "run-as": "package"
+    },
+    "username": "docker-fn-artalk",
+    "groupname": "docker-fn-artalk"
+}

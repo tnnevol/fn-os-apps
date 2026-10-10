@@ -1,0 +1,14 @@
+appname               = fn-2fauth
+version               = 6.0.0
+display_name          = 2FAuth
+desc                  = 管理双因素身份验证（2FA）帐户并生成安全代码的 Web 应用程序
+platform              = x86
+source                = thirdparty
+maintainer            = Bubka
+maintainer_url        = https://github.com/Bubka/2FAuth
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-2fauth.Application
+disable_authorization_path = true

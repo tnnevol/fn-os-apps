@@ -1,0 +1,14 @@
+appname               = fn-code-server
+version               = 6.0.0
+display_name          = code-server
+desc                  = 浏览器中的 VS Code，可在任意设备上通过网页使用完整的开发环境
+platform              = x86
+source                = thirdparty
+maintainer            = Coder
+maintainer_url        = https://github.com/coder/code-server
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-code-server.Application
+disable_authorization_path = true

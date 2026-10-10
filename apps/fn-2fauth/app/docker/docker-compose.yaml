@@ -1,0 +1,23 @@
+services:
+  2fauth:
+    container_name: fn-2fauth
+    image: 2fauth/2fauth:8.0.2
+    environment:
+      - APP_NAME=${APP_NAME}
+      - APP_KEY=${APP_KEY}
+      - APP_URL=${APP_URL}
+      - IS_DEMO_APP=false
+      - LOG_CHANNEL=daily
+      - LOG_LEVEL=notice
+      # 上游原值 /srv/database/database.sqlite 不在挂载目录内，会导致容器重建即丢数据；
+      # 改为挂载目录内的路径，由 cmd/install_callback 预创建该子目录
+      - DB_DATABASE=/2fauth/database/sqlite.db
+      - CACHE_DRIVER=file
+      - SESSION_DRIVER=file
+      - AUTHENTICATION_GUARD=web-guard
+    ports:
+      - "${APP_PORT}:8000"
+    restart: always
+    volumes:
+      # SQLite 数据库与配置，落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）
+      - "${TRIM_PKGVAR}/data:/2fauth"

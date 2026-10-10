@@ -1,0 +1,13 @@
+services:
+  linkding:
+    container_name: fn-linkding
+    image: sissbruecker/linkding:1.47.0-plus
+    environment:
+      - LD_SUPERUSER_NAME=${ADMIN_USERNAME}
+      - LD_SUPERUSER_PASSWORD=${ADMIN_PASSWORD}
+    ports:
+      - "${APP_PORT}:9090"
+    restart: always
+    volumes:
+      # 书签数据库，落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）
+      - "${TRIM_PKGVAR}/data:/etc/linkding/data"
