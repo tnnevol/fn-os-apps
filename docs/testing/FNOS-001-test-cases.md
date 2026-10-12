@@ -1263,7 +1263,7 @@ uid 1000 在本机是普通登录用户 tnnevol:x:1000:1001
 
 1. 读取 `app/docker/docker-compose.yaml`，确认 `PUID`/`PGID` 使用 `${TRIM_UID}`/`${TRIM_GID}`，**不是**硬编码 `1000`。
 2. 确认变量名拼写正确（大小写敏感）。
-3. **风险确认**：官方《环境变量》文档列出 `TRIM_UID`/`TRIM_GID`，官方《Docker 案例》在 compose 中明确使用的是 `TRIM_SERVICE_PORT`/`TRIM_APPDEST`/`TRIM_PKGVAR`/`TRIM_DATA_SHARE_PATHS`——**未逐字声明 `TRIM_UID`/`TRIM_GID` 可用于 compose**。若这两个变量在 compose 展开阶段未注入，会被解析为**空字符串**（见下「失败模式实测」）。
+3. **风险确认（依据强度，勿高估）**：官方《环境变量》文档**列出了** `TRIM_UID`/`TRIM_GID`；但官方《Docker 案例》在 compose 中**实际只出现 `${TRIM_APPDEST}`（4 处）与 `${TRIM_SERVICE_PORT}`（1 处）**，**无任何 compose 示例使用 `TRIM_UID`/`TRIM_GID`**。本仓库既有 33 个应用在 compose 使用 `${TRIM_PKGVAR}`，属本仓库用法**旁证**，只能证明「fnOS 会注入部分 `TRIM_*`」，**不能推及** `TRIM_UID`/`TRIM_GID`。若这两个变量在 compose 展开阶段未注入，会被解析为**空字符串**（见下「失败模式实测」）。
 4. 在目标 NAS 上安装后执行回退判断（见下）。
 
 **预期结果**：compose 使用 `${TRIM_UID}`/`${TRIM_GID}`；真机上容器内进程 uid/gid 等于该应用的包用户，且能写入 `${TRIM_PKGVAR}/data`。

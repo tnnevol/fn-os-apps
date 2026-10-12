@@ -67,7 +67,35 @@ const appItems = [
   { text: 'Halo', link: '/apps/fn-halo' },
   { text: '夸克转存', link: '/apps/fn-quark-auto-save' },
   { text: 'New API', link: '/apps/fn-new-api' },
-  { text: '禅道', link: '/apps/fn-zentao' }
+  { text: '禅道', link: '/apps/fn-zentao' },
+  { text: 'IT-Tools', link: '/apps/fn-it-tools' },
+  { text: 'Linux Command', link: '/apps/fn-linux-command' },
+  { text: 'Adminer', link: '/apps/fn-adminer' },
+  { text: 'Browserless', link: '/apps/fn-browserless' },
+  { text: 'ChatGPT-Next-Web', link: '/apps/fn-chatgpt-next-web' },
+  { text: 'cloudflared', link: '/apps/fn-cloudflared' },
+  { text: 'CyberChef', link: '/apps/fn-cyberchef' },
+  { text: 'llama.cpp', link: '/apps/fn-llama-cpp' },
+  { text: 'LobeChat', link: '/apps/fn-lobe-chat' },
+  { text: 'Memcached', link: '/apps/fn-memcached' },
+  { text: 'Web-Check', link: '/apps/fn-web-check' },
+  { text: 'WeChat Markdown Editor', link: '/apps/fn-wechatmarkdowneditor' },
+  { text: 'YesPlayMusic', link: '/apps/fn-yesplaymusic' },
+  { text: 'Zabbix Agent', link: '/apps/fn-zabbix-agent' },
+  { text: '2FAuth', link: '/apps/fn-2fauth' },
+  { text: '1Panel AI 门户', link: '/apps/fn-ai-portal' },
+  { text: 'Answer', link: '/apps/fn-answer' },
+  { text: 'Artalk', link: '/apps/fn-artalk' },
+  { text: 'Bytebase', link: '/apps/fn-bytebase' },
+  { text: 'Certimate', link: '/apps/fn-certimate' },
+  { text: 'Changedetection.io', link: '/apps/fn-changedetectionio' },
+  { text: 'ClawSwarm', link: '/apps/fn-clawswarm' },
+  { text: 'code-server', link: '/apps/fn-code-server' },
+  { text: 'FreshRSS', link: '/apps/fn-freshrss' },
+  { text: 'Gotify', link: '/apps/fn-gotify' },
+  { text: 'linkding', link: '/apps/fn-linkding' },
+  { text: 'MaxKB', link: '/apps/fn-maxkb' },
+  { text: '青龙', link: '/apps/fn-qinglong' }
 ]
 
 const startItems = [
@@ -91,6 +119,8 @@ const developmentSidebar = [
       { text: '生命周期脚本', link: '/development/lifecycle' },
       { text: '权限与入口', link: '/development/permissions' },
       { text: '用户向导', link: '/development/wizard' },
+      { text: '1Panel 转换规约', link: '/development/1panel-conversion' },
+      { text: '1Panel 应用转换清单', link: '/development/1panel-conversion-inventory' },
       { text: '贡献指南', link: '/contributing' }
     ]
   },
@@ -112,14 +142,43 @@ const developmentSidebar = [
 const requirementsSidebar = [
   {
     text: '需求清单',
-    items: [{ text: '规范', link: '/requirements/' }]
+    items: [
+      { text: '规范', link: '/requirements/' },
+      { text: 'FNOS-001 1Panel 应用转换', link: '/requirements/FNOS-001-1panel-app-conversion' }
+    ]
   }
 ]
 
 const plansSidebar = [
   {
     text: '详细计划',
-    items: [{ text: '规范', link: '/plans/' }]
+    items: [
+      { text: '规范', link: '/plans/' },
+      { text: 'PLAN-FNOS-001 1Panel 应用转换执行计划', link: '/plans/PLAN-FNOS-001-1panel-app-conversion' }
+    ]
+  }
+]
+
+const testingSidebar = [
+  {
+    text: '测试用例',
+    items: [
+      { text: '规范', link: '/testing/' },
+      { text: 'FNOS-001 1Panel 应用转换测试用例', link: '/testing/FNOS-001-test-cases' },
+      { text: 'T0 试点第 1 轮报告', link: '/testing/FNOS-001-t0-round1-report' },
+      { text: 'T0 收尾轮报告', link: '/testing/FNOS-001-t0-round2-report' },
+      { text: 'T1 第 1 组报告', link: '/testing/FNOS-001-t1-group1-report' }
+    ]
+  }
+]
+
+const validationSidebar = [
+  {
+    text: '验收记录',
+    items: [
+      { text: '规范', link: '/validation/README' },
+      { text: 'FNOS-001 真实环境验收记录（2026-10-09）', link: '/validation/FNOS-001-fnos-nas-2026-10-09' }
+    ]
   }
 ]
 
@@ -170,7 +229,8 @@ export default withMermaid(defineConfig({
       { text: '开发指南', link: '/development/quick-start' },
       { text: '应用文档', link: '/apps/' },
       { text: '需求清单', link: '/requirements/' },
-      { text: '详细计划', link: '/plans/' }
+      { text: '详细计划', link: '/plans/' },
+      { text: '测试与验收', link: '/testing/' }
     ],
     sidebar: {
       '/apps/': [
@@ -184,6 +244,8 @@ export default withMermaid(defineConfig({
       '/troubleshooting': developmentSidebar,
       '/requirements/': requirementsSidebar,
       '/plans/': plansSidebar,
+      '/testing/': testingSidebar,
+      '/validation/': validationSidebar,
       '/contributing': developmentSidebar
     },
     outline: {
