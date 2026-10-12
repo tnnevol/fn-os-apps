@@ -1,0 +1,10 @@
+services:
+  filecodebox:
+    container_name: fn-filecodebox
+    image: lanol/filecodebox:2.7.1
+    ports:
+      - "${APP_PORT}:12345"
+    restart: always
+    volumes:
+      # 上传文件与配置，落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）
+      - "${TRIM_PKGVAR}/data:/app/data"

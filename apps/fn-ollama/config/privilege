@@ -1,0 +1,7 @@
+{
+    "defaults": {
+        "run-as": "package"
+    },
+    "username": "docker-fn-ollama",
+    "groupname": "docker-fn-ollama"
+}

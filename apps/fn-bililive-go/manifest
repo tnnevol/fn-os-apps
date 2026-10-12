@@ -1,0 +1,14 @@
+appname               = fn-bililive-go
+version               = 6.0.0
+display_name          = Bililive-go
+desc                  = 支持多种直播平台的直播录制工具
+platform              = x86
+source                = thirdparty
+maintainer            = hr3lxphr6j
+maintainer_url        = https://github.com/hr3lxphr6j/bililive-go
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-bililive-go.Application
+disable_authorization_path = true

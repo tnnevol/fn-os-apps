@@ -1,0 +1,12 @@
+appname               = fn-ollama
+version               = 6.0.0
+display_name          = Ollama
+desc                  = 快速部署并开始使用 Kimi、GLM、MiniMax、DeepSeek、gpt-oss、Qwen、Gemma 等多种模型
+platform              = x86
+source                = thirdparty
+maintainer            = Ollama
+maintainer_url        = https://github.com/ollama/ollama
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+disable_authorization_path = true

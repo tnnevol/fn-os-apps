@@ -1,0 +1,14 @@
+appname               = fn-convertx
+version               = 6.0.0
+display_name          = ConvertX
+desc                  = 自托管在线文件转换器，支持多种文档与媒体格式互转
+platform              = x86
+source                = thirdparty
+maintainer            = C4illin
+maintainer_url        = https://github.com/C4illin/ConvertX
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-convertx.Application
+disable_authorization_path = true

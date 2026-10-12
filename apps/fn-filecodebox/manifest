@@ -1,0 +1,14 @@
+appname               = fn-filecodebox
+version               = 6.0.0
+display_name          = FileCodeBox
+desc                  = 轻量、现代的自托管文件分享工具，取件码取件
+platform              = x86
+source                = thirdparty
+maintainer            = vastsa
+maintainer_url        = https://github.com/vastsa/FileCodeBox
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-filecodebox.Application
+disable_authorization_path = true

@@ -1,0 +1,13 @@
+services:
+  convertx:
+    container_name: fn-convertx
+    image: c4illin/convertx:v0.19.0
+    environment:
+      - HTTP_ALLOWED=true
+      - ACCOUNT_REGISTRATION=true
+    ports:
+      - "${APP_PORT}:3000"
+    restart: unless-stopped
+    volumes:
+      # 转换任务与临时文件，落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）
+      - "${TRIM_PKGVAR}/data:/app/data"

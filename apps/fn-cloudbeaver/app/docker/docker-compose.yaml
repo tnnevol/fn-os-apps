@@ -1,0 +1,10 @@
+services:
+  cloudbeaver:
+    container_name: fn-cloudbeaver
+    image: dbeaver/cloudbeaver:26.2.2
+    ports:
+      - "${APP_PORT}:8978"
+    restart: unless-stopped
+    volumes:
+      # 连接配置与工作区数据，落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）
+      - "${TRIM_PKGVAR}/data:/opt/cloudbeaver/workspace"

@@ -1,0 +1,14 @@
+appname               = fn-dosgame
+version               = 6.0.0
+display_name          = 中文 DOS 游戏
+desc                  = 中文 DOS 游戏合集，可在浏览器中直接游玩
+platform              = x86
+source                = thirdparty
+maintainer            = rwv
+maintainer_url        = https://github.com/rwv/chinese-dos-games
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-dosgame.Application
+disable_authorization_path = true

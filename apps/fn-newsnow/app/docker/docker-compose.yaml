@@ -1,0 +1,19 @@
+services:
+  newsnow:
+    container_name: fn-newsnow
+    image: ghcr.io/ourongxing/newsnow:v0.0.41
+    environment:
+      - HOST=0.0.0.0
+      - PORT=4444
+      - NODE_ENV=production
+      - JWT_SECRET=${JWT_SECRET}
+      - G_CLIENT_ID=${G_CLIENT_ID}
+      - G_CLIENT_SECRET=${G_CLIENT_SECRET}
+      - INIT_TABLE=${INIT_TABLE}
+      - ENABLE_CACHE=${ENABLE_CACHE}
+    ports:
+      - "${APP_PORT}:4444"
+    restart: always
+    volumes:
+      # 数据与缓存，落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）
+      - "${TRIM_PKGVAR}/data:/usr/app/.data"

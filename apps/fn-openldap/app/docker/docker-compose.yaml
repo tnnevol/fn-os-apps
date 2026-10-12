@@ -1,0 +1,14 @@
+services:
+  openldap:
+    container_name: fn-openldap
+    image: bitnamilegacy/openldap:2.6.10
+    environment:
+      - LDAP_ROOT=${LDAP_ROOT}
+      - LDAP_ADMIN_USERNAME=${LDAP_ADMIN_USERNAME}
+      - LDAP_ADMIN_PASSWORD=${LDAP_ADMIN_PASSWORD}
+    ports:
+      - "${APP_PORT}:1389"
+    restart: always
+    volumes:
+      # 目录数据库，落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）
+      - "${TRIM_PKGVAR}/data:/bitnami/openldap"

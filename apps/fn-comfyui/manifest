@@ -1,0 +1,14 @@
+appname               = fn-comfyui
+version               = 6.0.0
+display_name          = ComfyUI
+desc                  = 具备可视化节点图界面的强大模块化 AI 创作引擎
+platform              = x86
+source                = thirdparty
+maintainer            = Comfy-Org
+maintainer_url        = https://github.com/Comfy-Org/ComfyUI
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-comfyui.Application
+disable_authorization_path = true

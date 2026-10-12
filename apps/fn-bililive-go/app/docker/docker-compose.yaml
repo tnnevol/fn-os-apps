@@ -1,0 +1,10 @@
+services:
+  bililive-go:
+    container_name: fn-bililive-go
+    image: chigusa/bililive-go:v0.8.3
+    ports:
+      - "${APP_PORT}:8080"
+    restart: always
+    volumes:
+      # 录制配置与录像文件，落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）
+      - "${TRIM_PKGVAR}/data:/srv/bililive"

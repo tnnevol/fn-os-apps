@@ -1,0 +1,13 @@
+services:
+  archivebox:
+    container_name: fn-archivebox
+    image: archivebox/archivebox:0.9.73
+    environment:
+      - ADMIN_USERNAME=${ADMIN_USERNAME}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+    ports:
+      - "${APP_PORT}:5797"
+    restart: always
+    volumes:
+      # 归档内容与索引，落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）
+      - "${TRIM_PKGVAR}/data:/data"

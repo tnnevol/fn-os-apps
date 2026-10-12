@@ -1,0 +1,12 @@
+appname               = fn-openldap
+version               = 6.0.0
+display_name          = OpenLDAP
+desc                  = 开源的 LDAP(Lightweight Directory Access Protocol) 服务软件
+platform              = x86
+source                = thirdparty
+maintainer            = OpenLDAP
+maintainer_url        = https://github.com/openldap/openldap
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+disable_authorization_path = true

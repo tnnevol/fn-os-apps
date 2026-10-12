@@ -1,0 +1,12 @@
+services:
+  ollama:
+    container_name: fn-ollama
+    image: ollama/ollama:0.40.1
+    ports:
+      - "${APP_PORT}:11434"
+    restart: unless-stopped
+    tty: true
+    volumes:
+      # 模型文件与应用状态，落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；
+      # 模型文件较大（单个数 GB），请注意所选存储空间的容量
+      - "${TRIM_PKGVAR}/data:/root/.ollama"

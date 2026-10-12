@@ -1,0 +1,14 @@
+appname               = fn-n8n
+version               = 6.0.0
+display_name          = n8n
+desc                  = 具有原生 AI 能力的 Fair-code 工作流自动化平台，可通过可视化节点编排连接各类服务
+platform              = x86
+source                = thirdparty
+maintainer            = n8n
+maintainer_url        = https://github.com/n8n-io/n8n
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-n8n.Application
+disable_authorization_path = true

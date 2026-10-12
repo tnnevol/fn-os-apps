@@ -1,0 +1,14 @@
+appname               = fn-cloudbeaver
+version               = 6.0.0
+display_name          = CloudBeaver
+desc                  = 云数据库管理器，通过浏览器统一管理多种数据库
+platform              = x86
+source                = thirdparty
+maintainer            = DBeaver
+maintainer_url        = https://github.com/dbeaver/cloudbeaver
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-cloudbeaver.Application
+disable_authorization_path = true

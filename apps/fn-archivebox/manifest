@@ -1,0 +1,14 @@
+appname               = fn-archivebox
+version               = 6.0.0
+display_name          = ArchiveBox
+desc                  = 开源自托管网页存档工具，可把网页保存为可离线检索的归档
+platform              = x86
+source                = thirdparty
+maintainer            = ArchiveBox
+maintainer_url        = https://github.com/ArchiveBox/ArchiveBox
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-archivebox.Application
+disable_authorization_path = true

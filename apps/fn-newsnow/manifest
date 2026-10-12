@@ -1,0 +1,14 @@
+appname               = fn-newsnow
+version               = 6.0.0
+display_name          = NewsNow
+desc                  = 优雅地阅读实时热门新闻
+platform              = x86
+source                = thirdparty
+maintainer            = ourongxing
+maintainer_url        = https://github.com/ourongxing/newsnow
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-newsnow.Application
+disable_authorization_path = true

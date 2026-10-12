@@ -1,0 +1,18 @@
+services:
+  comfyui:
+    container_name: fn-comfyui
+    image: 1panel/comfyui:v0.33.1
+    environment:
+      - COMFYUI_LISTEN=0.0.0.0
+      - COMFYUI_PORT=8188
+    ports:
+      - "${APP_PORT}:8188"
+    restart: always
+    shm_size: "8gb"
+    stop_grace_period: 2m
+    ulimits:
+      memlock: -1
+      stack: 67108864
+    volumes:
+      # 模型、工作流与生成结果，落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）
+      - "${TRIM_PKGVAR}/data:/data"

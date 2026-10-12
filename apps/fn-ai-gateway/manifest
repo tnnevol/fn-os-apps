@@ -1,0 +1,14 @@
+appname               = fn-ai-gateway
+version               = 6.0.0
+display_name          = 1Panel AI 网关
+desc                  = 企业级 AI 统一接入与治理平台
+platform              = x86
+source                = thirdparty
+maintainer            = 1Panel
+maintainer_url        = https://github.com/1Panel-dev/1Panel-Gateway
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-ai-gateway.Application
+disable_authorization_path = true

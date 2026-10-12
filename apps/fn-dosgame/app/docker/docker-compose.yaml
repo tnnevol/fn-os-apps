@@ -1,0 +1,10 @@
+services:
+  dosgame:
+    container_name: fn-dosgame
+    image: firezmc/dosgame-web-docker:v3.9.6
+    ports:
+      - "${APP_PORT}:8090"
+    restart: always
+    volumes:
+      # 游戏库，落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）
+      - "${TRIM_PKGVAR}/data/games_storage:/games_storage"

@@ -1,0 +1,14 @@
+appname               = fn-laya-server
+version               = 6.0.0
+display_name          = Laya Server
+desc                  = Jev 开源替代：自托管的 Laya 决策引擎 API 与控制台
+platform              = x86
+source                = thirdparty
+maintainer            = 1Panel
+maintainer_url        = https://github.com/1Panel-dev/laya-server
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-laya-server.Application
+disable_authorization_path = true
