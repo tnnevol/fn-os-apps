@@ -197,6 +197,7 @@ const developmentSidebar = [
       { text: '用户向导', link: '/development/wizard' },
       { text: '1Panel 转换规约', link: '/development/1panel-conversion' },
       { text: '1Panel 应用转换清单', link: '/development/1panel-conversion-inventory' },
+      { text: '转换踩坑与经验教训', link: '/development/1panel-conversion-lessons' },
       { text: '贡献指南', link: '/contributing' }
     ]
   },

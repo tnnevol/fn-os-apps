@@ -17,6 +17,7 @@ description: fnOS Apps Monorepo 的需求、计划、实现、验证和发布维
 | 真实环境验收证据 | `docs/validation/` |
 | 应用和插件面向用户说明 | `docs/` 下的应用/插件文档 |
 | 跨需求架构决策 | `docs/decisions/`，仅在计划中的决策章节不足以表达时使用 |
+| 转换踩坑与经验教训 | `docs/development/1panel-conversion-lessons.md`，记录实际发生并已修复的问题（规约的补充说明，规则本身以规约为准） |
 
 不新建与 `requirements/`、`plans/` 重复的 `specs/` 或 `stories/` 目录。`apps/*/README.md` 和 `plugins/*/README.md` 保留作历史或兼容参考，不作为现行需求和面向用户文档的权威入口。
 

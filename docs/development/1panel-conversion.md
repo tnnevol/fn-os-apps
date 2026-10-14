@@ -103,7 +103,7 @@ description: 把 1Panel 应用商店应用转换为 fnOS FPK 应用的命名规�
 
 | 上游 | fnOS | 约束 |
 | --- | --- | --- |
-| `PANEL_REDIS_HOST`、`PANEL_REDIS_PORT`、`PANEL_REDIS_ROOT_PASSWORD` | `manifest` 声明 `install_dep_apps=redis`，向导提供 `REDIS_CONN_STRING` | 依赖应用由宿主安装，**不在包内固定地址**；参考 [fn-new-api](/apps/fn-new-api) |
+| `PANEL_REDIS_HOST`、`PANEL_REDIS_PORT`、`PANEL_REDIS_ROOT_PASSWORD` | `manifest` 声明 `install_dep_apps=redis`，向导字段**按应用实际消费方式给** | 依赖应用由宿主安装，**不在包内固定地址**。**单串消费**型给 `REDIS_CONN_STRING`（`redis://host:port`，如 [fn-new-api](/apps/fn-new-api)）；**分字段消费**型给 `REDIS_HOST`/`REDIS_PORT`/`REDIS_PASSWORD`（如 `cloudreve` 的 `CR_CONF_Redis.Server` 只收 host、密码另用 `PANEL_REDIS_ROOT_PASSWORD`）。**把连接串硬塞给分字段消费的应用会得到 `redis://host:port:6379` 这种错值** |
 | `PANEL_VALKEY_ROOT_PASSWORD`、`PANEL_KEYDB_ROOT_PASSWORD` | 同 Redis：`install_dep_apps` + 连接串字段 | 以上游实际中间件类型为准，不要一律写成 redis |
 | `PANEL_MINIO_ROOT_USER`、`PANEL_MINIO_ROOT_PASSWORD` | `install_dep_apps=minio` + 端点与凭据字段 | 见飞牛「中间件服务」文档的约定 |
 
@@ -115,7 +115,7 @@ description: 把 1Panel 应用商店应用转换为 fnOS FPK 应用的命名规�
 | --- | --- | --- |
 | `./data`、`./conf` 等相对挂载 | `${TRIM_PKGVAR}/<子目录>`（目标 NAS 路径 `/var/apps/fn-<app>/var/`） | 禁止把运行数据写进 FPK 安装目录（`TRIM_APPDEST` 只放只读资源）。上游按「行首 `- ` 后接可选引号再接 `./`」口径计为 223 个应用，其中真实 `./` volume 挂载 222 个，差额 1 个是仅出现在 `env_file:` 段的 `zitadel`（该口径不影响分级）；复算方式见[转换清单](/development/1panel-conversion-inventory)的「盘点口径」 |
 | 用户需要直接看到/导入/导出的数据（媒体库、下载目录、书签文件） | `config/resource` 声明 `data-share`，路径从 `TRIM_DATA_SHARE_PATHS` 取 | 声明后卸载向导必须能区分「删应用」与「删用户数据」 |
-| 外部命名卷（`volumes:` 下 `external: true`） | 改为 `${TRIM_PKGVAR}` 绑定挂载 | 上游仅 `maddy-mail`、`synapse` 两处；外部卷在 fnOS 上不会被自动创建 |
+| 命名卷（`volumes:` 下的具名卷，**不论是否 `external: true`**） | 改为 `${TRIM_PKGVAR}` 绑定挂载，并删除顶层 `volumes:` 段 | 两种都要改：**外部卷**（`external: true`）在 fnOS 上不会被自动创建；**托管卷**（无 `external`、无 `driver`）虽会自动创建，但数据落在 `/var/lib/docker/volumes/`，**不在应用数据目录、不在 `uninstall_callback` 的删除范围** → 卸载后残留泄漏。已命中：`synapse`（外部卷）、`discuz`（托管卷 `discuz_data`） |
 | 挂载源是**宿主绝对路径**（`/etc/1panel`、`/showdoc_data` 等） | **删除该行**，其余相对挂载照常改造 | fnOS 上不存在这些路径，保留会导致挂载失败。判据是**挂载源是否为宿主绝对路径**，与是否 1Panel 专属无关。已命中：`ai-gateway`（`/etc/1panel`）、`showdoc`（`/showdoc_data:/showdoc_data_old`，版本迁移遗留） |
 | `PANEL_WEBSITE_DIR` | 需要用户授权目录时用 `TRIM_DATA_ACCESSIBLE_PATHS` / `data-share` | 上游 16 处，集中在 T3 Web 服务器类，需随依赖契约一并决策 |
 
@@ -647,3 +647,4 @@ disable_authorization_path = true
 | 2026-10-14 | 新增「模式 B-2 D 组用户可见数据」与「模式 B-3 单文件挂载与最小种子配置」两节。D 组记录既有 10 个 `data-share` 先例「声明了但未使用」的坑（`TRIM_DATA_SHARE_PATHS` 命中 0、`@appshare` 为空），确立「数据挂共享目录而非 `TRIM_PKGVAR`、恰好声明 1 个、不需 `permission`」，并标注 `TRIM_DATA_SHARE_PATHS` 在 compose 的展开能力待真机验证。B-3 记录 `touch` 空文件导致 `focalboard` JSON 解析失败与 `obsidian_livesync` 认证弱化等实质缺陷，确立自写最小配置而非搬运上游。 |
 | 2026-10-14 | 订正 D 组规则的卷号缺陷：原写「挂载源改为共享目录绝对路径（`/vol<N>/@appshare/…`）」，但 `<N>` 是安装时用户选择的存储卷，写死会在选错卷时失效。改为沿用既有先例 `fn-xiaoya-only` 的 `${TRIM_APPDEST_VOL}/@appshare/fn-<app>/…` 写法，并说明为何不用 `TRIM_DATA_SHARE_PATHS`（多值分隔，无法作单个挂载源且展开能力未验证）。 |
 | 2026-10-14 | 补可变标签判据的**宽匹配**规则与三类命中场景（`:latest` 类、`:master` 类、`alpine-latest` 类、变量插值类）。此前的「标签等于可变值」写法连续漏判三次（`:master`、`alpine-latest`、`${PANEL_DB_TYPE}` 插值），改为「标签串包含可变词或含 `${` 即命中」，并要求选定目标版本前联网确认 tag 存在。 |
+| 2026-10-14 | 订正两条映射：① Redis 字段改为「按应用实际消费方式给」——分字段消费型（如 `cloudreve` 的 `CR_CONF_Redis.Server` 只收 host）用 `REDIS_HOST`/`REDIS_PORT`/`REDIS_PASSWORD`，硬塞连接串会得到 `redis://host:port:6379` 错值；② 命名卷条款从「仅 `external: true`」扩到**全部具名卷**，托管卷虽自动创建但数据落在 `/var/lib/docker/volumes/`，不在 `uninstall_callback` 删除范围，卸载后残留泄漏（`discuz` 即此类）。 |
