@@ -1,0 +1,14 @@
+appname               = fn-verdaccio
+version               = 6.0.0
+display_name          = Verdaccio
+desc                  = 本地私有 npm 注册中心，可代理公共仓库并托管私有包
+platform              = x86
+source                = thirdparty
+maintainer            = Verdaccio
+maintainer_url        = https://github.com/verdaccio/verdaccio
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-verdaccio.Application
+disable_authorization_path = true

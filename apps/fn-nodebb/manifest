@@ -1,0 +1,14 @@
+appname               = fn-nodebb
+version               = 6.0.0
+display_name          = NodeBB
+desc                  = 基于 Node.js 的现代化论坛程序，支持实时通知与插件扩展
+platform              = x86
+source                = thirdparty
+maintainer            = NodeBB
+maintainer_url        = https://github.com/NodeBB/NodeBB
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-nodebb.Application
+disable_authorization_path = true

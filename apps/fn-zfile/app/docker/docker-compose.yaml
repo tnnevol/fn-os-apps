@@ -1,0 +1,12 @@
+services:
+  zfile:
+    container_name: fn-zfile
+    image: zhaojun1998/zfile:5.0.9
+    ports:
+      - "${APP_PORT}:8080"
+    restart: always
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      - "${TRIM_PKGVAR}/data/db:/root/.zfile-v4/db"
+      - "${TRIM_PKGVAR}/data/logs:/root/.zfile-v4/logs"
+      - "${TRIM_PKGVAR}/data/mnt:/data/file"

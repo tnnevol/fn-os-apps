@@ -1,0 +1,14 @@
+appname               = fn-kibana
+version               = 6.0.0
+display_name          = Kibana
+desc                  = 面向 Elasticsearch 的数据分析与可视化平台
+platform              = x86
+source                = thirdparty
+maintainer            = Elastic
+maintainer_url        = https://github.com/elastic/kibana
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-kibana.Application
+disable_authorization_path = true

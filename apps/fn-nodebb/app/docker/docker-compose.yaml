@@ -1,0 +1,13 @@
+services:
+  nodebb:
+    container_name: fn-nodebb
+    image: ghcr.io/nodebb/nodebb:4.16.2
+    ports:
+      - "${APP_PORT}:4567"
+    restart: unless-stopped
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      - "${TRIM_PKGVAR}/data/build:/usr/src/app/build"
+      - "${TRIM_PKGVAR}/data/node_modules:/usr/src/app/node_modules"
+      - "${TRIM_PKGVAR}/data/uploads:/usr/src/app/public/uploads"
+      - "${TRIM_PKGVAR}/data/config:/opt/config"

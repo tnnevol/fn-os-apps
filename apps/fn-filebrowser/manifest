@@ -1,0 +1,14 @@
+appname               = fn-filebrowser
+version               = 6.0.0
+display_name          = File Browser
+desc                  = 网页文件浏览器，可在指定目录下管理、上传与预览文件
+platform              = x86
+source                = thirdparty
+maintainer            = filebrowser
+maintainer_url        = https://github.com/filebrowser/filebrowser
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-filebrowser.Application
+disable_authorization_path = true

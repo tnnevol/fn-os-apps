@@ -1,0 +1,10 @@
+{
+    "docker-project": {
+        "projects": [
+            {
+                "name": "fn-sun-panel",
+                "path": "docker"
+            }
+        ]
+    }
+}

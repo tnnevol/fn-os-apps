@@ -1,0 +1,14 @@
+appname               = fn-stirling-pdf
+version               = 6.0.0
+display_name          = Stirling PDF
+desc                  = 本地托管的 PDF 工具箱，支持合并、拆分、转换与 OCR
+platform              = x86
+source                = thirdparty
+maintainer            = Stirling-Tools
+maintainer_url        = https://github.com/Stirling-Tools/Stirling-PDF
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-stirling-pdf.Application
+disable_authorization_path = true

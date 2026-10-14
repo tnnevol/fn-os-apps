@@ -1,0 +1,10 @@
+services:
+  uptime-kuma:
+    container_name: fn-uptime-kuma
+    image: louislam/uptime-kuma:1.23.17
+    ports:
+      - "${APP_PORT}:3001"
+    restart: always
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      - "${TRIM_PKGVAR}/data:/app/data"

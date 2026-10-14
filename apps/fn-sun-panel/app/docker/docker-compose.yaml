@@ -1,0 +1,12 @@
+services:
+  sun-panel:
+    container_name: fn-sun-panel
+    image: hslr/sun-panel:1.8.1
+    ports:
+      - "${APP_PORT}:3002"
+    restart: always
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      - "${TRIM_PKGVAR}/data/conf:/app/conf"
+      - "${TRIM_PKGVAR}/data/uploads:/app/uploads"
+      - "${TRIM_PKGVAR}/data/database:/app/database"

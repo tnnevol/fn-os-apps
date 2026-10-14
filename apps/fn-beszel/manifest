@@ -1,0 +1,14 @@
+appname               = fn-beszel
+version               = 6.0.0
+display_name          = Beszel
+desc                  = 轻量易用的服务器监控，提供资源占用与历史趋势面板
+platform              = x86
+source                = thirdparty
+maintainer            = henrygd
+maintainer_url        = https://github.com/henrygd/beszel
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-beszel.Application
+disable_authorization_path = true

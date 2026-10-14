@@ -1,0 +1,14 @@
+appname               = fn-tomcat
+version               = 6.0.0
+display_name          = Apache Tomcat
+desc                  = 开源的 Web 服务器与 Servlet 容器，用于运行 Java Web 应用
+platform              = x86
+source                = thirdparty
+maintainer            = Apache
+maintainer_url        = https://github.com/apache/tomcat
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-tomcat.Application
+disable_authorization_path = true

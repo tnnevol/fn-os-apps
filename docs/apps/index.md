@@ -81,6 +81,22 @@
 | <AppIcon name="fn-trendradar" alt="TrendRadar 图标" :size="30" /> | [TrendRadar](./fn-trendradar) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-trendradar) | Docker / x86 | — | [源码](https://github.com/wangyucode/TrendRadar) |
 | <AppIcon name="fn-vane" alt="Vane 图标" :size="30" /> | [Vane](./fn-vane) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-vane) | Docker / x86 | — | [源码](https://github.com/ItzCrazyKns/Vane) |
 | <AppIcon name="fn-waline" alt="Waline 图标" :size="30" /> | [Waline](./fn-waline) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-waline) | Docker / x86 | — | [源码](https://github.com/walinejs/waline) |
+| <AppIcon name="fn-tomcat" alt="Apache Tomcat 图标" :size="30" /> | [Apache Tomcat](./fn-tomcat) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-tomcat) | Docker / x86 | — | [源码](https://github.com/apache/tomcat) |
+| <AppIcon name="fn-beszel" alt="Beszel 图标" :size="30" /> | [Beszel](./fn-beszel) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-beszel) | Docker / x86 | — | [源码](https://github.com/henrygd/beszel) |
+| <AppIcon name="fn-domain-admin" alt="Domain Admin 图标" :size="30" /> | [Domain Admin](./fn-domain-admin) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-domain-admin) | Docker / x86 | — | [源码](https://github.com/mouday/domain-admin) |
+| <AppIcon name="fn-filebrowser" alt="File Browser 图标" :size="30" /> | [File Browser](./fn-filebrowser) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-filebrowser) | Docker / x86 | — | [源码](https://github.com/filebrowser/filebrowser) |
+| <AppIcon name="fn-gatus" alt="Gatus 图标" :size="30" /> | [Gatus](./fn-gatus) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-gatus) | Docker / x86 | — | [源码](https://github.com/TwiN/gatus) |
+| <AppIcon name="fn-kibana" alt="Kibana 图标" :size="30" /> | [Kibana](./fn-kibana) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-kibana) | Docker / x86 | Elasticsearch | [源码](https://github.com/elastic/kibana) |
+| <AppIcon name="fn-nodebb" alt="NodeBB 图标" :size="30" /> | [NodeBB](./fn-nodebb) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-nodebb) | Docker / x86 | — | [源码](https://github.com/NodeBB/NodeBB) |
+| <AppIcon name="fn-onlyoffice" alt="ONLYOFFICE Docs 图标" :size="30" /> | [ONLYOFFICE Docs](./fn-onlyoffice) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-onlyoffice) | Docker / x86 | — | [源码](https://github.com/ONLYOFFICE/DocumentServer) |
+| <AppIcon name="fn-stirling-pdf" alt="Stirling PDF 图标" :size="30" /> | [Stirling PDF](./fn-stirling-pdf) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-stirling-pdf) | Docker / x86 | — | [源码](https://github.com/Stirling-Tools/Stirling-PDF) |
+| <AppIcon name="fn-sun-panel" alt="Sun-Panel 图标" :size="30" /> | [Sun-Panel](./fn-sun-panel) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-sun-panel) | Docker / x86 | — | [源码](https://github.com/hslr-s/sun-panel) |
+| <AppIcon name="fn-twikoo" alt="Twikoo 图标" :size="30" /> | [Twikoo](./fn-twikoo) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-twikoo) | Docker / x86 | — | [源码](https://github.com/twikoojs/twikoo) |
+| <AppIcon name="fn-upage" alt="UPage 图标" :size="30" /> | [UPage](./fn-upage) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-upage) | Docker / x86 | 大模型服务 | [源码](https://github.com/halo-dev/upage) |
+| <AppIcon name="fn-uptime-kuma" alt="Uptime Kuma 图标" :size="30" /> | [Uptime Kuma](./fn-uptime-kuma) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-uptime-kuma) | Docker / x86 | — | [源码](https://github.com/louislam/uptime-kuma) |
+| <AppIcon name="fn-verdaccio" alt="Verdaccio 图标" :size="30" /> | [Verdaccio](./fn-verdaccio) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-verdaccio) | Docker / x86 | — | [源码](https://github.com/verdaccio/verdaccio) |
+| <AppIcon name="fn-wallos" alt="Wallos 图标" :size="30" /> | [Wallos](./fn-wallos) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-wallos) | Docker / x86 | — | [源码](https://github.com/ellite/Wallos) |
+| <AppIcon name="fn-zfile" alt="ZFile 图标" :size="30" /> | [ZFile](./fn-zfile) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-zfile) | Docker / x86 | — | [源码](https://github.com/zhaojun1998/zfile) |
 
 ## 安装方式
 

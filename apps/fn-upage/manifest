@@ -1,0 +1,14 @@
+appname               = fn-upage
+version               = 6.0.0
+display_name          = UPage
+desc                  = 基于大模型的可视化网页构建工具，用自然语言生成页面
+platform              = x86
+source                = thirdparty
+maintainer            = Halo
+maintainer_url        = https://github.com/halo-dev/upage
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-upage.Application
+disable_authorization_path = true

@@ -1,0 +1,14 @@
+appname               = fn-sun-panel
+version               = 6.0.0
+display_name          = Sun-Panel
+desc                  = 服务器与 NAS 导航面板，可自定义首页快捷入口
+platform              = x86
+source                = thirdparty
+maintainer            = hslr
+maintainer_url        = https://github.com/hslr-s/sun-panel
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-sun-panel.Application
+disable_authorization_path = true

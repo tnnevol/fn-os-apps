@@ -1,0 +1,12 @@
+services:
+  tomcat:
+    container_name: fn-tomcat
+    image: bitnamilegacy/tomcat:10.1.43
+    environment:
+      - TOMCAT_PASSWORD=${TOMCAT_PASSWORD}
+    ports:
+      - "${APP_PORT}:8080"
+    restart: always
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      - "${TRIM_PKGVAR}/data:/bitnami/tomcat"

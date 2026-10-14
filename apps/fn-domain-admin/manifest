@@ -1,0 +1,14 @@
+appname               = fn-domain-admin
+version               = 6.0.0
+display_name          = Domain Admin
+desc                  = 域名与 SSL 证书监测平台，到期前提醒续期
+platform              = x86
+source                = thirdparty
+maintainer            = mouday
+maintainer_url        = https://github.com/mouday/domain-admin
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-domain-admin.Application
+disable_authorization_path = true

@@ -1,0 +1,14 @@
+services:
+  filebrowser:
+    container_name: fn-filebrowser
+    image: filebrowser/filebrowser:v2.63.23
+    ports:
+      - "${APP_PORT}:80"
+    restart: always
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      # 可浏览目录。上游用 MOUNT_PATH 让用户填任意宿主路径；fnOS 上无法校验该路径，
+      # 故固定到应用数据目录（见 docs/apps/fn-filebrowser.md「高级配置」）。
+      - "${TRIM_PKGVAR}/data/mnt:/srv"
+      - "${TRIM_PKGVAR}/data/config:/config"
+      - "${TRIM_PKGVAR}/data/database:/database"

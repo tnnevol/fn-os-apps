@@ -1,0 +1,18 @@
+services:
+  upage:
+    container_name: fn-upage
+    image: halohub/upage:1.0.1
+    environment:
+      - LLM_PROVIDER=${LLM_PROVIDER}
+      - PROVIDER_API_KEY=${PROVIDER_API_KEY}
+      - PROVIDER_BASE_URL=${PROVIDER_BASE_URL}
+      - LLM_DEFAULT_MODEL=${LLM_DEFAULT_MODEL}
+      - LLM_MINOR_MODEL=${LLM_MINOR_MODEL}
+    ports:
+      - "${APP_PORT}:3000"
+    restart: always
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      - "${TRIM_PKGVAR}/data/data:/app/data"
+      - "${TRIM_PKGVAR}/data/logs:/app/logs"
+      - "${TRIM_PKGVAR}/data/storage:/app/storage"

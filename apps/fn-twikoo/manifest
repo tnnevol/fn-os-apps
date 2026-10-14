@@ -1,0 +1,14 @@
+appname               = fn-twikoo
+version               = 6.0.0
+display_name          = Twikoo
+desc                  = 简洁安全的静态网站评论系统，数据可自托管
+platform              = x86
+source                = thirdparty
+maintainer            = imaegoo
+maintainer_url        = https://github.com/twikoojs/twikoo
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-twikoo.Application
+disable_authorization_path = true

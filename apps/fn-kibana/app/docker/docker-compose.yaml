@@ -1,0 +1,17 @@
+services:
+  kibana:
+    container_name: fn-kibana
+    image: kibana:8.19.23
+    environment:
+      - SERVER_NAME=kibana
+      - SERVER_HOST=0.0.0.0
+      - SERVER_PORT=5601
+      - I18N_LOCALE=zh-CN
+      - SERVER_SHUTDOWNTIMEOUT=5s
+      - MONITORING_UI_CONTAINER_ELASTICSEARCH_ENABLED=true
+    ports:
+      - "${APP_PORT}:5601"
+    restart: always
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      - "${TRIM_PKGVAR}/data:/usr/share/kibana/data"

@@ -1,0 +1,14 @@
+appname               = fn-gatus
+version               = 6.0.0
+display_name          = Gatus
+desc                  = 面向开发者的健康监控面板，用声明式配置持续探测服务可用性
+platform              = x86
+source                = thirdparty
+maintainer            = TwinProduction
+maintainer_url        = https://github.com/TwiN/gatus
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-gatus.Application
+disable_authorization_path = true

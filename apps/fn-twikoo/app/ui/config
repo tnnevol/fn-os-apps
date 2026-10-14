@@ -1,0 +1,13 @@
+{
+  ".url": {
+    "fn-twikoo.Application": {
+      "title": "Twikoo",
+      "icon": "images/icon_{0}.png",
+      "type": "url",
+      "protocol": "http",
+      "port": "${APP_PORT}",
+      "url": "/",
+      "allUsers": false
+    }
+  }
+}

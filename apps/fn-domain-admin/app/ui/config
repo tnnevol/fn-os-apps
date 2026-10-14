@@ -1,0 +1,13 @@
+{
+  ".url": {
+    "fn-domain-admin.Application": {
+      "title": "Domain Admin",
+      "icon": "images/icon_{0}.png",
+      "type": "url",
+      "protocol": "http",
+      "port": "${APP_PORT}",
+      "url": "/",
+      "allUsers": false
+    }
+  }
+}

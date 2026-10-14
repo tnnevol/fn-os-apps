@@ -1,0 +1,7 @@
+{
+    "defaults": {
+        "run-as": "package"
+    },
+    "username": "docker-fn-sun-panel",
+    "groupname": "docker-fn-sun-panel"
+}

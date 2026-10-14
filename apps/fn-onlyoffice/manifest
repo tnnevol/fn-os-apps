@@ -1,0 +1,14 @@
+appname               = fn-onlyoffice
+version               = 6.0.0
+display_name          = ONLYOFFICE Docs
+desc                  = 免费的在线办公套件，可编辑文档、表格与演示文稿
+platform              = x86
+source                = thirdparty
+maintainer            = ONLYOFFICE
+maintainer_url        = https://github.com/ONLYOFFICE/DocumentServer
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-onlyoffice.Application
+disable_authorization_path = true

@@ -130,7 +130,23 @@ const appItems = [
   { text: 'Tiny RDM', link: '/apps/fn-tinyrdm' },
   { text: 'TrendRadar', link: '/apps/fn-trendradar' },
   { text: 'Vane', link: '/apps/fn-vane' },
-  { text: 'Waline', link: '/apps/fn-waline' }
+  { text: 'Waline', link: '/apps/fn-waline' },
+  { text: 'Apache Tomcat', link: '/apps/fn-tomcat' },
+  { text: 'Beszel', link: '/apps/fn-beszel' },
+  { text: 'Domain Admin', link: '/apps/fn-domain-admin' },
+  { text: 'File Browser', link: '/apps/fn-filebrowser' },
+  { text: 'Gatus', link: '/apps/fn-gatus' },
+  { text: 'Kibana', link: '/apps/fn-kibana' },
+  { text: 'NodeBB', link: '/apps/fn-nodebb' },
+  { text: 'ONLYOFFICE Docs', link: '/apps/fn-onlyoffice' },
+  { text: 'Stirling PDF', link: '/apps/fn-stirling-pdf' },
+  { text: 'Sun-Panel', link: '/apps/fn-sun-panel' },
+  { text: 'Twikoo', link: '/apps/fn-twikoo' },
+  { text: 'UPage', link: '/apps/fn-upage' },
+  { text: 'Uptime Kuma', link: '/apps/fn-uptime-kuma' },
+  { text: 'Verdaccio', link: '/apps/fn-verdaccio' },
+  { text: 'Wallos', link: '/apps/fn-wallos' },
+  { text: 'ZFile', link: '/apps/fn-zfile' }
 ]
 
 const startItems = [

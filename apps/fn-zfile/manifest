@@ -1,0 +1,14 @@
+appname               = fn-zfile
+version               = 6.0.0
+display_name          = ZFile
+desc                  = 基于 Java 的在线网盘程序，把多种存储源统一到一个网页中浏览
+platform              = x86
+source                = thirdparty
+maintainer            = zhaojun1998
+maintainer_url        = https://github.com/zhaojun1998/zfile
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-zfile.Application
+disable_authorization_path = true

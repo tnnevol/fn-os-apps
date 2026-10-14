@@ -1,0 +1,14 @@
+appname               = fn-uptime-kuma
+version               = 6.0.0
+display_name          = Uptime Kuma
+desc                  = 精美的自托管监控工具，跟踪服务在线状态与响应时间
+platform              = x86
+source                = thirdparty
+maintainer            = Louis Lam
+maintainer_url        = https://github.com/louislam/uptime-kuma
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-uptime-kuma.Application
+disable_authorization_path = true

@@ -1,0 +1,11 @@
+services:
+  gatus:
+    container_name: fn-gatus
+    image: twinproduction/gatus:v5.37.0
+    ports:
+      - "${APP_PORT}:8080"
+    restart: always
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      - "${TRIM_PKGVAR}/data/config:/config"
+      - "${TRIM_PKGVAR}/data/data:/data/"

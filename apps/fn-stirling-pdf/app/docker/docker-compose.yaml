@@ -1,0 +1,13 @@
+services:
+  stirling-pdf:
+    container_name: fn-stirling-pdf
+    image: frooodle/s-pdf:3.1.0
+    environment:
+      - DOCKER_ENABLE_SECURITY=false
+    ports:
+      - "${APP_PORT}:8080"
+    restart: always
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      - "${TRIM_PKGVAR}/data/trainingData:/usr/share/tesseract-ocr/5/tessdata"
+      - "${TRIM_PKGVAR}/data/extraConfigs:/configs"

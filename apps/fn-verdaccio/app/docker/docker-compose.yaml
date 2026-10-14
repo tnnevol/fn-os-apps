@@ -1,0 +1,14 @@
+services:
+  verdaccio:
+    container_name: fn-verdaccio
+    image: verdaccio/verdaccio:6.10.5
+    environment:
+      - VERDACCIO_PORT=${APP_PORT}
+    ports:
+      - "${APP_PORT}:${APP_PORT}"
+    restart: always
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      - "${TRIM_PKGVAR}/data/storage:/verdaccio/storage"
+      - "${TRIM_PKGVAR}/data/config:/verdaccio/conf"
+      - "${TRIM_PKGVAR}/data/plugins:/verdaccio/plugins"
