@@ -1,0 +1,3297 @@
+{
+  "schema_version": "2",
+  "source_info": {
+    "name": "飞牛 fnOS 应用 Monorepo",
+    "author": "tnnevol",
+    "homepage": "https://github.com/tnnevol/fn-os-apps",
+    "description": "由 tnnevol 维护的 fnOS 第三方应用源，收录自 1Panel 应用商店的转换成果。"
+  },
+  "apps": {
+    "fn-2fauth": {
+      "display_name": "2FAuth",
+      "desc": "管理双因素身份验证（2FA）帐户并生成安全代码的 Web 应用程序",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-2fauth/ICON.PNG",
+      "readme_url": "./fn-2fauth/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "Bubka",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-2fauth/fn-2fauth_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/Bubka/2FAuth",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-adminer": {
+      "display_name": "Adminer",
+      "desc": "轻量级数据库管理工具，通过单一 Web 界面管理 MySQL、PostgreSQL、SQLite 等数据库",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "编程开发"
+      ],
+      "icon_url": "./fn-adminer/ICON.PNG",
+      "readme_url": "./fn-adminer/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "Adminer",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-adminer/fn-adminer_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://www.adminer.org",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-ai-gateway": {
+      "display_name": "1Panel AI 网关",
+      "desc": "企业级 AI 统一接入与治理平台",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-ai-gateway/ICON.PNG",
+      "readme_url": "./fn-ai-gateway/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "1Panel",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-ai-gateway/fn-ai-gateway_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/1Panel-dev/1Panel-Gateway",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-ai-portal": {
+      "display_name": "1Panel AI 门户",
+      "desc": "面向 1Panel 企业版，为用户提供自助式的 API Key 管理、技能市场和 MCP 市场能力",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-ai-portal/ICON.PNG",
+      "readme_url": "./fn-ai-portal/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "1Panel",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-ai-portal/fn-ai-portal_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/1Panel-dev/AI-Portal",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-answer": {
+      "display_name": "Answer",
+      "desc": "适用于任何规模团队的问答平台软件，支持提问、回答与内容协作",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-answer/ICON.PNG",
+      "readme_url": "./fn-answer/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "answerdev",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-answer/fn-answer_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/answerdev/answer",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-archivebox": {
+      "display_name": "ArchiveBox",
+      "desc": "开源自托管网页存档工具，可把网页保存为可离线检索的归档",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-archivebox/ICON.PNG",
+      "readme_url": "./fn-archivebox/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "ArchiveBox",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-archivebox/fn-archivebox_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/ArchiveBox/ArchiveBox",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-artalk": {
+      "display_name": "Artalk",
+      "desc": "一款简洁的自托管评论系统，可嵌入任意网站使用",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-artalk/ICON.PNG",
+      "readme_url": "./fn-artalk/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "ArtalkJS",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-artalk/fn-artalk_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/ArtalkJS/Artalk",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-beszel": {
+      "display_name": "Beszel",
+      "desc": "轻量易用的服务器监控，提供资源占用与历史趋势面板",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-beszel/ICON.PNG",
+      "readme_url": "./fn-beszel/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "henrygd",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-beszel/fn-beszel_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/henrygd/beszel",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-bililive-go": {
+      "display_name": "Bililive-go",
+      "desc": "支持多种直播平台的直播录制工具",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-bililive-go/ICON.PNG",
+      "readme_url": "./fn-bililive-go/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "hr3lxphr6j",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-bililive-go/fn-bililive-go_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/hr3lxphr6j/bililive-go",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-bitwarden": {
+      "display_name": "Bitwarden",
+      "desc": "Bitwarden 是一款开源密码管理器，可安全存储网站登录信息、信用卡、安全笔记等。",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-bitwarden/ICON.PNG",
+      "readme_url": "./fn-bitwarden/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "bitwarden",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-bitwarden/fn-bitwarden_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://bitwarden.com",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-browserless": {
+      "display_name": "Browserless",
+      "desc": "在 Docker 中部署无头浏览器，供网页抓取、截图与 PDF 生成等自动化任务调用",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-browserless/ICON.PNG",
+      "readme_url": "./fn-browserless/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "Browserless",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-browserless/fn-browserless_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/browserless/browserless",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-bytebase": {
+      "display_name": "Bytebase",
+      "desc": "开源数据库 DevOps 解决方案，面向团队提供数据库变更与权限管理",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-bytebase/ICON.PNG",
+      "readme_url": "./fn-bytebase/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "Bytebase",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-bytebase/fn-bytebase_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/bytebase/bytebase",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-certimate": {
+      "display_name": "Certimate",
+      "desc": "一个安全、简便的 SSL 证书管理解决方案，支持自动申请与续期",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-certimate/ICON.PNG",
+      "readme_url": "./fn-certimate/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "usual2970",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-certimate/fn-certimate_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/usual2970/certimate",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-changedetectionio": {
+      "display_name": "Changedetection.io",
+      "desc": "免费开源网站变更检测、网站观察、补货监控和通知服务",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-changedetectionio/ICON.PNG",
+      "readme_url": "./fn-changedetectionio/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "dgtlmoon",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-changedetectionio/fn-changedetectionio_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/dgtlmoon/changedetection.io",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-chatgpt-next-web": {
+      "display_name": "ChatGPT-Next-Web",
+      "desc": "一键拥有你自己的跨平台 ChatGPT/Gemini 应用，支持自定义 API 地址与访问密码",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-chatgpt-next-web/ICON.PNG",
+      "readme_url": "./fn-chatgpt-next-web/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "Yidadaa",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-chatgpt-next-web/fn-chatgpt-next-web_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/Yidadaa/ChatGPT-Next-Web",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-clawswarm": {
+      "display_name": "ClawSwarm",
+      "desc": "面向 OpenClaw 的开源群体智能协作编排系统",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-clawswarm/ICON.PNG",
+      "readme_url": "./fn-clawswarm/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "1Panel",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-clawswarm/fn-clawswarm_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/1Panel-dev/ClawSwarm",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-cloudbeaver": {
+      "display_name": "CloudBeaver",
+      "desc": "云数据库管理器，通过浏览器统一管理多种数据库",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "编程开发"
+      ],
+      "icon_url": "./fn-cloudbeaver/ICON.PNG",
+      "readme_url": "./fn-cloudbeaver/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "DBeaver",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-cloudbeaver/fn-cloudbeaver_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/dbeaver/cloudbeaver",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-cloudflared": {
+      "display_name": "cloudflared",
+      "desc": "Cloudflare Tunnel 客户端，把内网服务通过隧道发布到公网而无需开放入站端口",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-cloudflared/ICON.PNG",
+      "readme_url": "./fn-cloudflared/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "Cloudflare",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-cloudflared/fn-cloudflared_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/cloudflare/cloudflared",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-code-server": {
+      "display_name": "code-server",
+      "desc": "浏览器中的 VS Code，可在任意设备上通过网页使用完整的开发环境",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "编程开发"
+      ],
+      "icon_url": "./fn-code-server/ICON.PNG",
+      "readme_url": "./fn-code-server/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "Coder",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-code-server/fn-code-server_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/coder/code-server",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-comfyui": {
+      "display_name": "ComfyUI",
+      "desc": "具备可视化节点图界面的强大模块化 AI 创作引擎",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-comfyui/ICON.PNG",
+      "readme_url": "./fn-comfyui/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "Comfy-Org",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-comfyui/fn-comfyui_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/Comfy-Org/ComfyUI",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-convertx": {
+      "display_name": "ConvertX",
+      "desc": "自托管在线文件转换器，支持多种文档与媒体格式互转",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-convertx/ICON.PNG",
+      "readme_url": "./fn-convertx/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "C4illin",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-convertx/fn-convertx_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/C4illin/ConvertX",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-copaw": {
+      "display_name": "CoPaw",
+      "desc": "CoPaw 是面向大模型的智能体协作平台，提供 Web 管理界面",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-copaw/ICON.PNG",
+      "readme_url": "./fn-copaw/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "AgentScope",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-copaw/fn-copaw_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/agentscope-ai/CoPaw",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-cyberchef": {
+      "display_name": "CyberChef",
+      "desc": "浏览器中的数据编码、解码与分析工具，无需上传数据即可完成转换",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-cyberchef/ICON.PNG",
+      "readme_url": "./fn-cyberchef/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "GCHQ",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-cyberchef/fn-cyberchef_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/gchq/CyberChef",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-dashy": {
+      "display_name": "Dashy",
+      "desc": "Dashy 是可自托管的个人导航面板，集中整理常用服务入口",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "生活服务"
+      ],
+      "icon_url": "./fn-dashy/ICON.PNG",
+      "readme_url": "./fn-dashy/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "Lissy93",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-dashy/fn-dashy_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/Lissy93/dashy",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-domain-admin": {
+      "display_name": "Domain Admin",
+      "desc": "域名与 SSL 证书监测平台，到期前提醒续期",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-domain-admin/ICON.PNG",
+      "readme_url": "./fn-domain-admin/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "mouday",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-domain-admin/fn-domain-admin_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/mouday/domain-admin",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-dosgame": {
+      "display_name": "中文 DOS 游戏",
+      "desc": "中文 DOS 游戏合集，可在浏览器中直接游玩",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-dosgame/ICON.PNG",
+      "readme_url": "./fn-dosgame/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "rwv",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-dosgame/fn-dosgame_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/rwv/chinese-dos-games",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-easyimage2": {
+      "display_name": "EasyImage 2.0",
+      "desc": "EasyImage 是简洁的自托管图床，支持多存储后端与图片管理",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-easyimage2/ICON.PNG",
+      "readme_url": "./fn-easyimage2/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "ddsderek",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-easyimage2/fn-easyimage2_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/ddsderek/easyimage",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-filebrowser": {
+      "display_name": "File Browser",
+      "desc": "网页文件浏览器，可在指定目录下管理、上传与预览文件",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-filebrowser/ICON.PNG",
+      "readme_url": "./fn-filebrowser/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "filebrowser",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-filebrowser/fn-filebrowser_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/filebrowser/filebrowser",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-filecodebox": {
+      "display_name": "FileCodeBox",
+      "desc": "轻量、现代的自托管文件分享工具，取件码取件",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-filecodebox/ICON.PNG",
+      "readme_url": "./fn-filecodebox/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "vastsa",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-filecodebox/fn-filecodebox_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/vastsa/FileCodeBox",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-focalboard": {
+      "display_name": "Focalboard",
+      "desc": "Focalboard 是开源的项目与任务管理看板工具",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "编程开发"
+      ],
+      "icon_url": "./fn-focalboard/ICON.PNG",
+      "readme_url": "./fn-focalboard/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "Mattermost",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-focalboard/fn-focalboard_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/mattermost/focalboard",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-freshrss": {
+      "display_name": "FreshRSS",
+      "desc": "自托管的 RSS 和 Atom 源聚合器，支持多用户与全文抓取",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-freshrss/ICON.PNG",
+      "readme_url": "./fn-freshrss/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "FreshRSS",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-freshrss/fn-freshrss_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/FreshRSS/FreshRSS",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-gatus": {
+      "display_name": "Gatus",
+      "desc": "面向开发者的健康监控面板，用声明式配置持续探测服务可用性",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-gatus/ICON.PNG",
+      "readme_url": "./fn-gatus/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "TwinProduction",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-gatus/fn-gatus_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/TwiN/gatus",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-glance": {
+      "display_name": "Glance",
+      "desc": "Glance 是可自托管的仪表盘，把订阅源、服务状态与书签汇总到一页",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-glance/ICON.PNG",
+      "readme_url": "./fn-glance/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "Glance",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-glance/fn-glance_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/glanceapp/glance",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-gotify": {
+      "display_name": "Gotify",
+      "desc": "简单的服务器来发送和接收消息，提供 Web 界面与消息推送 API",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "编程开发"
+      ],
+      "icon_url": "./fn-gotify/ICON.PNG",
+      "readme_url": "./fn-gotify/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "gotify",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-gotify/fn-gotify_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/gotify/server",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-halo": {
+      "display_name": "Halo",
+      "desc": "Halo 是一个简洁、高效的开源建站系统，支持博客、知识库、企业官网等多种场景。",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "编程开发"
+      ],
+      "icon_url": "./fn-halo/ICON.PNG",
+      "readme_url": "./fn-halo/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "halo",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-halo/fn-halo_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://www.halo.run",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-hermes-agent": {
+      "display_name": "Hermes Agent",
+      "desc": "Nous Research开发的Hermes Agent是一个自我改进的AI代理，具有内置学习循环，能够通过经验创建和改进技能。它支持多种平台，包括Telegram、Discord、Slack等，并允许用户选择不同的模型和工具。Hermes Agent可以在多种环境中运行，从低成本的VPS到GPU集群，甚至是无服务器基础设施。它提供了丰富的功能，如自动技能创建、跨会话记忆搜索、计划自动化任务等。",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-hermes-agent/ICON.PNG",
+      "readme_url": "./fn-hermes-agent/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "NousResearch",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": false,
+      "service_port": "${dashboard_port}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-hermes-agent/fn-hermes-agent_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/NousResearch/hermes-agent",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-it-tools": {
+      "display_name": "IT-Tools",
+      "desc": "为开发人员提供方便的在线工具集合，涵盖加密、转换、Web、开发等常用小工具",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-it-tools/ICON.PNG",
+      "readme_url": "./fn-it-tools/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "Corentin Th",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-it-tools/fn-it-tools_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://it-tools.tech",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-jellyfin": {
+      "display_name": "Jellyfin",
+      "desc": "开源媒体系统，用于集中管理和流式播放影音库",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "影音娱乐"
+      ],
+      "icon_url": "./fn-jellyfin/ICON.PNG",
+      "readme_url": "./fn-jellyfin/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "Jellyfin Contributors",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-jellyfin/fn-jellyfin_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/jellyfin/jellyfin",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-kibana": {
+      "display_name": "Kibana",
+      "desc": "面向 Elasticsearch 的数据分析与可视化平台",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-kibana/ICON.PNG",
+      "readme_url": "./fn-kibana/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "Elastic",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-kibana/fn-kibana_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/elastic/kibana",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-kirara-agent": {
+      "display_name": "Kirara Agent",
+      "desc": "Kirara Agent Framework 提供可编排的 AI 智能体运行时",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-kirara-agent/ICON.PNG",
+      "readme_url": "./fn-kirara-agent/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "lss233",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-kirara-agent/fn-kirara-agent_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/lss233/kirara-agent-framework",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-kkfileview": {
+      "display_name": "kkFileView",
+      "desc": "kkFileView 是文件在线预览服务，支持 office、pdf、图片等多种格式",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-kkfileview/ICON.PNG",
+      "readme_url": "./fn-kkfileview/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "kekingcn",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-kkfileview/fn-kkfileview_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/kekingcn/kkFileView",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-kodbox": {
+      "display_name": "Kodbox",
+      "desc": "可道云 Kodbox 是可私有化部署的在线文件管理与协作平台",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-kodbox/ICON.PNG",
+      "readme_url": "./fn-kodbox/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "kodcloud",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-kodbox/fn-kodbox_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/kalcaddle/kodbox",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-komari": {
+      "display_name": "Komari Monitor",
+      "desc": "Komari 是轻量的服务器监控面板，可汇总多台主机的运行状态",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-komari/ICON.PNG",
+      "readme_url": "./fn-komari/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "komari-monitor",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-komari/fn-komari_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/komari-monitor/komari",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-laya-server": {
+      "display_name": "Laya Server",
+      "desc": "Jev 开源替代：自托管的 Laya 决策引擎 API 与控制台",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-laya-server/ICON.PNG",
+      "readme_url": "./fn-laya-server/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "1Panel",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-laya-server/fn-laya-server_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/1Panel-dev/laya-server",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-linkding": {
+      "display_name": "linkding",
+      "desc": "一款自托管的书签管理器，设计简洁、快速且易于部署",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-linkding/ICON.PNG",
+      "readme_url": "./fn-linkding/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "sissbruecker",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-linkding/fn-linkding_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/sissbruecker/linkding",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-linux-command": {
+      "display_name": "Linux Command",
+      "desc": "Linux 命令大全搜索工具，收录 580 多个常用命令的手册与详解",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-linux-command/ICON.PNG",
+      "readme_url": "./fn-linux-command/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "jaywcjlove",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-linux-command/fn-linux-command_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/jaywcjlove/linux-command",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-llama-cpp": {
+      "display_name": "llama.cpp",
+      "desc": "使用 GGUF 模型运行本地大语言模型推理服务，并提供 OpenAI 兼容接口",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "AI赋能"
+      ],
+      "icon_url": "./fn-llama-cpp/ICON.PNG",
+      "readme_url": "./fn-llama-cpp/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "ggml-org",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-llama-cpp/fn-llama-cpp_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/ggml-org/llama.cpp",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-lobe-chat": {
+      "display_name": "LobeChat",
+      "desc": "现代化设计的开源 ChatGPT/LLMs 聊天应用与开发框架，支持多模型接入与插件扩展",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-lobe-chat/ICON.PNG",
+      "readme_url": "./fn-lobe-chat/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "LobeHub",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-lobe-chat/fn-lobe-chat_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/lobehub/lobe-chat",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-localai": {
+      "display_name": "LocalAI",
+      "desc": "LocalAI 是兼容 OpenAI 接口的本地推理服务，可在自有硬件上运行多种模型",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "AI赋能"
+      ],
+      "icon_url": "./fn-localai/ICON.PNG",
+      "readme_url": "./fn-localai/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "LocalAI",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-localai/fn-localai_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/mudler/LocalAI",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-maxkb": {
+      "display_name": "MaxKB",
+      "desc": "强大易用的企业级智能体平台，支持知识库问答与大模型接入",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "AI赋能"
+      ],
+      "icon_url": "./fn-maxkb/ICON.PNG",
+      "readme_url": "./fn-maxkb/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "1Panel",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-maxkb/fn-maxkb_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/1Panel-dev/MaxKB",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-mblog": {
+      "display_name": "MBlog",
+      "desc": "简洁的个人博客系统，支持 Markdown 写作与标签分类",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-mblog/ICON.PNG",
+      "readme_url": "./fn-mblog/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "kingwrcy",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-mblog/fn-mblog_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/kingwrcy/mblog",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-memcached": {
+      "display_name": "Memcached",
+      "desc": "分布式的高速缓存系统，为数据库与动态应用提供内存对象缓存服务",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "编程开发"
+      ],
+      "icon_url": "./fn-memcached/ICON.PNG",
+      "readme_url": "./fn-memcached/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "memcached",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-memcached/fn-memcached_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/memcached/memcached",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-memos": {
+      "display_name": "Memos",
+      "desc": "Memos 是一款轻量级、自托管的笔记工具，支持 Markdown 编写、标签管理和多端同步。",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-memos/ICON.PNG",
+      "readme_url": "./fn-memos/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "Memos Team",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": false,
+      "service_port": "5230",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-memos/fn-memos_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://usememos.com",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-mkdocs-material": {
+      "display_name": "MkDocs Material",
+      "desc": "MkDocs Material 是用于构建文档站点的主题镜像，支持热重载预览",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-mkdocs-material/ICON.PNG",
+      "readme_url": "./fn-mkdocs-material/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "squidfunk",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-mkdocs-material/fn-mkdocs-material_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/squidfunk/mkdocs-material",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-moviepilot": {
+      "display_name": "MoviePilot",
+      "desc": "影视自动化管理工具，支持媒体库管理、智能订阅、自动化整理等功能。",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "影音娱乐"
+      ],
+      "icon_url": "./fn-moviepilot/ICON.PNG",
+      "readme_url": "./fn-moviepilot/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "jxxghp",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": false,
+      "service_port": "${wizard_nginx_port}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-moviepilot/fn-moviepilot_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/jxxghp/MoviePilot",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-mysql_v8": {
+      "display_name": "MySQL v8.4.9",
+      "desc": "MySQL 是全球最流行的开源关系型数据库管理系统，广泛应用于 Web 应用、数据仓库和企业级系统。本应用为 MySQL 8.4.9 原生版本。",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "编程开发"
+      ],
+      "icon_url": "./fn-mysql_v8/ICON.PNG",
+      "readme_url": "./fn-mysql_v8/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "Oracle",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": false,
+      "service_port": "",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-mysql_v8/fn-mysql_v8_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://www.mysql.com",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-n8n": {
+      "display_name": "n8n",
+      "desc": "具有原生 AI 能力的 Fair-code 工作流自动化平台，可通过可视化节点编排连接各类服务",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "AI赋能"
+      ],
+      "icon_url": "./fn-n8n/ICON.PNG",
+      "readme_url": "./fn-n8n/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "n8n",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-n8n/fn-n8n_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/n8n-io/n8n",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-new-api": {
+      "display_name": "New API",
+      "desc": "新一代 AI API 管理与分发平台，支持多模型接入、令牌管理、配额控制等功能",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "AI赋能"
+      ],
+      "icon_url": "./fn-new-api/ICON.PNG",
+      "readme_url": "./fn-new-api/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "QuantumNous",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-new-api/fn-new-api_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/QuantumNous/new-api",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-newsnow": {
+      "display_name": "NewsNow",
+      "desc": "优雅地阅读实时热门新闻",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-newsnow/ICON.PNG",
+      "readme_url": "./fn-newsnow/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "ourongxing",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-newsnow/fn-newsnow_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/ourongxing/newsnow",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-nextcloud": {
+      "display_name": "Nextcloud",
+      "desc": "Nextcloud 是自托管的网盘与协作平台，提供文件同步、共享与在线协作",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-nextcloud/ICON.PNG",
+      "readme_url": "./fn-nextcloud/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "Nextcloud",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-nextcloud/fn-nextcloud_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/nextcloud/server",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-nexus": {
+      "display_name": "Nexus Repository",
+      "desc": "Sonatype Nexus 是制品仓库管理器，支持 Maven、npm、Docker 等多种格式",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "编程开发"
+      ],
+      "icon_url": "./fn-nexus/ICON.PNG",
+      "readme_url": "./fn-nexus/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "Sonatype",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-nexus/fn-nexus_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/sonatype/nexus-public",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-nezha": {
+      "display_name": "Nezha",
+      "desc": "哪吒监控是轻量的服务器监控与探针管理面板",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-nezha/ICON.PNG",
+      "readme_url": "./fn-nezha/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "nezhahq",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-nezha/fn-nezha_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/nezhahq/nezha",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-node-red": {
+      "display_name": "Node-RED",
+      "desc": "Node-RED 是基于流程的编程工具，用于连接硬件、API 与在线服务",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-node-red/ICON.PNG",
+      "readme_url": "./fn-node-red/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "OpenJS Foundation",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-node-red/fn-node-red_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/node-red/node-red",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-nodebb": {
+      "display_name": "NodeBB",
+      "desc": "基于 Node.js 的现代化论坛程序，支持实时通知与插件扩展",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-nodebb/ICON.PNG",
+      "readme_url": "./fn-nodebb/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "NodeBB",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-nodebb/fn-nodebb_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/NodeBB/NodeBB",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-ntfy": {
+      "display_name": "ntfy",
+      "desc": "ntfy 是通过 HTTP 推送通知的自托管服务，支持手机与桌面客户端订阅",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "编程开发"
+      ],
+      "icon_url": "./fn-ntfy/ICON.PNG",
+      "readme_url": "./fn-ntfy/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "binwiederhier",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-ntfy/fn-ntfy_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/binwiederhier/ntfy",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-nvm": {
+      "display_name": "NVM",
+      "desc": "Node.js 版本管理工具，提供 nvm 命令用于安装和切换不同版本的 Node.js。",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-nvm/ICON.PNG",
+      "readme_url": "./fn-nvm/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "nvm-sh",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": false,
+      "service_port": "",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-nvm/fn-nvm_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/nvm-sh/nvm",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-obsidian-livesync": {
+      "display_name": "Obsidian LiveSync",
+      "desc": "Obsidian LiveSync 基于 CouchDB 提供 Obsidian 笔记的实时同步服务",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-obsidian-livesync/ICON.PNG",
+      "readme_url": "./fn-obsidian-livesync/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "vrtmrz",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-obsidian-livesync/fn-obsidian-livesync_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/vrtmrz/obsidian-livesync",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-octop": {
+      "display_name": "Octop",
+      "desc": "腾讯云 Octop 是面向企业的运维自动化与作业编排平台",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-octop/ICON.PNG",
+      "readme_url": "./fn-octop/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "Tencent Cloud",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-octop/fn-octop_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/tencentcloud/octop",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-ohmyzsh": {
+      "display_name": "Oh My Zsh",
+      "desc": "Oh My Zsh 是一个开源、社区驱动的 Zsh 配置管理框架，提供丰富的插件和主题。.zshrc 配置文件在 应用文件/fn-ohmyzsh/.zshrc 中配置",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-ohmyzsh/ICON.PNG",
+      "readme_url": "./fn-ohmyzsh/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "ohmyzsh",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": false,
+      "service_port": "",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-ohmyzsh/fn-ohmyzsh_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://ohmyz.sh",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-ollama": {
+      "display_name": "Ollama",
+      "desc": "快速部署并开始使用 Kimi、GLM、MiniMax、DeepSeek、gpt-oss、Qwen、Gemma 等多种模型",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "AI赋能"
+      ],
+      "icon_url": "./fn-ollama/ICON.PNG",
+      "readme_url": "./fn-ollama/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "Ollama",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-ollama/fn-ollama_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/ollama/ollama",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-ollama-webui": {
+      "display_name": "Open WebUI",
+      "desc": "Open WebUI 是自托管的 AI 对话界面，可对接 Ollama 或兼容 OpenAI 的服务",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "AI赋能"
+      ],
+      "icon_url": "./fn-ollama-webui/ICON.PNG",
+      "readme_url": "./fn-ollama-webui/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "Open WebUI",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-ollama-webui/fn-ollama-webui_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/open-webui/open-webui",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-onlyoffice": {
+      "display_name": "ONLYOFFICE Docs",
+      "desc": "免费的在线办公套件，可编辑文档、表格与演示文稿",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-onlyoffice/ICON.PNG",
+      "readme_url": "./fn-onlyoffice/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "ONLYOFFICE",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-onlyoffice/fn-onlyoffice_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/ONLYOFFICE/DocumentServer",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-openclaw": {
+      "display_name": "OpenClaw",
+      "desc": "OpenClaw 是自托管的 AI 助手网关，统一接入多种大模型服务",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-openclaw/ICON.PNG",
+      "readme_url": "./fn-openclaw/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "1Panel",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-openclaw/fn-openclaw_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/1Panel-dev/openclaw",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-opengist": {
+      "display_name": "Opengist",
+      "desc": "Opengist 是自托管的代码片段分享服务，基于 Git 存储",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "编程开发"
+      ],
+      "icon_url": "./fn-opengist/ICON.PNG",
+      "readme_url": "./fn-opengist/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "thomiceli",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-opengist/fn-opengist_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/thomiceli/opengist",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-openldap": {
+      "display_name": "OpenLDAP",
+      "desc": "开源的 LDAP(Lightweight Directory Access Protocol) 服务软件",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "编程开发"
+      ],
+      "icon_url": "./fn-openldap/ICON.PNG",
+      "readme_url": "./fn-openldap/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "OpenLDAP",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-openldap/fn-openldap_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/openldap/openldap",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-palworld-server-tool": {
+      "display_name": "幻兽帕鲁服务器工具",
+      "desc": "Palworld Server Tool 用于查看与管理帕鲁服务器存档与玩家数据",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "游戏地带"
+      ],
+      "icon_url": "./fn-palworld-server-tool/ICON.PNG",
+      "readme_url": "./fn-palworld-server-tool/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "jokerwho",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-palworld-server-tool/fn-palworld-server-tool_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/zaigie/palworld-server-tool",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-pgadmin4": {
+      "display_name": "pgAdmin 4",
+      "desc": "pgAdmin 是 PostgreSQL 的图形化管理工具，通过浏览器管理数据库",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "编程开发"
+      ],
+      "icon_url": "./fn-pgadmin4/ICON.PNG",
+      "readme_url": "./fn-pgadmin4/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "pgAdmin",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-pgadmin4/fn-pgadmin4_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/pgadmin-org/pgadmin4",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-phpmyadmin": {
+      "display_name": "phpMyAdmin",
+      "desc": "phpMyAdmin 是基于浏览器的 MySQL/MariaDB 管理工具",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "编程开发"
+      ],
+      "icon_url": "./fn-phpmyadmin/ICON.PNG",
+      "readme_url": "./fn-phpmyadmin/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "phpMyAdmin",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-phpmyadmin/fn-phpmyadmin_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/phpmyadmin/phpmyadmin",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-qiandao": {
+      "display_name": "签到框架",
+      "desc": "自动签到框架，支持编写与定时执行各类站点的签到任务",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-qiandao/ICON.PNG",
+      "readme_url": "./fn-qiandao/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "a76yyyy",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-qiandao/fn-qiandao_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/qd-today/qd",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-qinglong": {
+      "display_name": "青龙",
+      "desc": "定时任务管理平台，支持在线编写和运行 Python3、JavaScript、Shell 等脚本",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-qinglong/ICON.PNG",
+      "readme_url": "./fn-qinglong/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "whyour",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-qinglong/fn-qinglong_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/whyour/qinglong",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-quark-auto-save": {
+      "display_name": "夸克转存",
+      "desc": "夸克网盘签到、自动转存、命名整理、推送提醒和刷新媒体库自动化工具",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "生活服务"
+      ],
+      "icon_url": "./fn-quark-auto-save/ICON.PNG",
+      "readme_url": "./fn-quark-auto-save/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "Cp0204",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-quark-auto-save/fn-quark-auto-save_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/Cp0204/quark-auto-save",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-reader": {
+      "display_name": "阅读",
+      "desc": "阅读 是一款开源的在线电子书阅读器，支持多种格式，提供书架管理、阅读进度同步、全文搜索、阅读主题定制等功能。",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "教育学习"
+      ],
+      "icon_url": "./fn-reader/ICON.PNG",
+      "readme_url": "./fn-reader/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "hectorqin",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "4396",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-reader/fn-reader_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/hectorqin/reader",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-showdoc": {
+      "display_name": "ShowDoc",
+      "desc": "ShowDoc 是在线文档与 API 文档管理工具，支持 Markdown 编写与团队协作",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-showdoc/ICON.PNG",
+      "readme_url": "./fn-showdoc/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "star7th",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-showdoc/fn-showdoc_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/star7th/showdoc",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-siyuan": {
+      "display_name": "思源笔记",
+      "desc": "思源笔记是本地优先的隐私知识管理工具，支持块级引用与双向链接",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-siyuan/ICON.PNG",
+      "readme_url": "./fn-siyuan/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "b3log",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-siyuan/fn-siyuan_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/siyuan-note/siyuan",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-stirling-pdf": {
+      "display_name": "Stirling PDF",
+      "desc": "本地托管的 PDF 工具箱，支持合并、拆分、转换与 OCR",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-stirling-pdf/ICON.PNG",
+      "readme_url": "./fn-stirling-pdf/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "Stirling-Tools",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-stirling-pdf/fn-stirling-pdf_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/Stirling-Tools/Stirling-PDF",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-sun-panel": {
+      "display_name": "Sun-Panel",
+      "desc": "服务器与 NAS 导航面板，可自定义首页快捷入口",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-sun-panel/ICON.PNG",
+      "readme_url": "./fn-sun-panel/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "hslr",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-sun-panel/fn-sun-panel_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/hslr-s/sun-panel",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-synapse": {
+      "display_name": "Synapse",
+      "desc": "Synapse 是 Matrix 协议的参考实现，用于搭建自有即时通讯服务器",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-synapse/ICON.PNG",
+      "readme_url": "./fn-synapse/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "Matrix.org",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-synapse/fn-synapse_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/element-hq/synapse",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-tinyrdm": {
+      "display_name": "Tiny RDM",
+      "desc": "Tiny RDM 是现代轻量的 Redis 桌面/网页客户端，支持多种数据类型管理",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "编程开发"
+      ],
+      "icon_url": "./fn-tinyrdm/ICON.PNG",
+      "readme_url": "./fn-tinyrdm/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "tiny-craft",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-tinyrdm/fn-tinyrdm_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/tiny-craft/tiny-rdm",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-tomcat": {
+      "display_name": "Apache Tomcat",
+      "desc": "开源的 Web 服务器与 Servlet 容器，用于运行 Java Web 应用",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "编程开发"
+      ],
+      "icon_url": "./fn-tomcat/ICON.PNG",
+      "readme_url": "./fn-tomcat/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "Apache",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-tomcat/fn-tomcat_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/apache/tomcat",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-trendradar": {
+      "display_name": "TrendRadar",
+      "desc": "TrendRadar 聚合多个平台的热榜，按关键词筛选后推送到通知渠道",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-trendradar/ICON.PNG",
+      "readme_url": "./fn-trendradar/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "wangyucode",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-trendradar/fn-trendradar_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/wangyucode/TrendRadar",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-trilium": {
+      "display_name": "Trilium Notes",
+      "desc": "大纲式笔记应用，用层级结构组织笔记，支持双链与附件",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-trilium/ICON.PNG",
+      "readme_url": "./fn-trilium/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "TriliumNext",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-trilium/fn-trilium_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/triliumnext/trilium",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-twikoo": {
+      "display_name": "Twikoo",
+      "desc": "简洁安全的静态网站评论系统，数据可自托管",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-twikoo/ICON.PNG",
+      "readme_url": "./fn-twikoo/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "imaegoo",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-twikoo/fn-twikoo_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/twikoojs/twikoo",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-upage": {
+      "display_name": "UPage",
+      "desc": "基于大模型的可视化网页构建工具，用自然语言生成页面",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-upage/ICON.PNG",
+      "readme_url": "./fn-upage/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "Halo",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-upage/fn-upage_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/halo-dev/upage",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-uptime-kuma": {
+      "display_name": "Uptime Kuma",
+      "desc": "精美的自托管监控工具，跟踪服务在线状态与响应时间",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-uptime-kuma/ICON.PNG",
+      "readme_url": "./fn-uptime-kuma/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "Louis Lam",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-uptime-kuma/fn-uptime-kuma_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/louislam/uptime-kuma",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-uv": {
+      "display_name": "uv",
+      "desc": "极速 Python 包和项目管理系统，由 Rust 编写。",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-uv/ICON.PNG",
+      "readme_url": "./fn-uv/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "astral-sh",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": false,
+      "service_port": "",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-uv/fn-uv_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/astral-sh/uv",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-vane": {
+      "display_name": "Vane",
+      "desc": "Vane 是自托管的 AI 搜索引擎，聚合多种来源给出带引用的答案",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-vane/ICON.PNG",
+      "readme_url": "./fn-vane/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "ItzCrazyKns",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-vane/fn-vane_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/ItzCrazyKns/Vane",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-verdaccio": {
+      "display_name": "Verdaccio",
+      "desc": "本地私有 npm 注册中心，可代理公共仓库并托管私有包",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "编程开发"
+      ],
+      "icon_url": "./fn-verdaccio/ICON.PNG",
+      "readme_url": "./fn-verdaccio/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "Verdaccio",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-verdaccio/fn-verdaccio_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/verdaccio/verdaccio",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-waline": {
+      "display_name": "Waline",
+      "desc": "Waline 是带后端的评论系统，支持多站点与多种存储后端",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-waline/ICON.PNG",
+      "readme_url": "./fn-waline/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "walinejs",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-waline/fn-waline_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/walinejs/waline",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-wallos": {
+      "display_name": "Wallos",
+      "desc": "开源个人订阅跟踪器，管理周期性支出与续费提醒",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-wallos/ICON.PNG",
+      "readme_url": "./fn-wallos/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "ellite",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-wallos/fn-wallos_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/ellite/Wallos",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-web-check": {
+      "display_name": "Web-Check",
+      "desc": "用于分析任何网站的多合一 OSINT 工具，汇总 DNS、SSL、头部与威胁情报等信息",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-web-check/ICON.PNG",
+      "readme_url": "./fn-web-check/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "Lissy93",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-web-check/fn-web-check_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/lissy93/web-check",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-wechatmarkdowneditor": {
+      "display_name": "WeChat Markdown Editor",
+      "desc": "一款高度简洁的微信 Markdown 编辑器，支持实时预览与一键复制排版结果",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-wechatmarkdowneditor/ICON.PNG",
+      "readme_url": "./fn-wechatmarkdowneditor/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "doocs",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-wechatmarkdowneditor/fn-wechatmarkdowneditor_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/doocs/md",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-xiaoya-only": {
+      "display_name": "小雅",
+      "desc": "小雅网盘是一个基于 Alist 的个人网盘工具，支持多种云存储聚合挂载、在线播放、文件管理等功能。",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "影音娱乐"
+      ],
+      "icon_url": "./fn-xiaoya-only/ICON.PNG",
+      "readme_url": "./fn-xiaoya-only/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "xiaoya",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "5678",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-xiaoya-only/fn-xiaoya-only_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/xiaoyaLL",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-yesplaymusic": {
+      "display_name": "YesPlayMusic",
+      "desc": "高颜值的第三方网易云音乐播放器，支持登录、歌单与歌词显示",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "影音娱乐"
+      ],
+      "icon_url": "./fn-yesplaymusic/ICON.PNG",
+      "readme_url": "./fn-yesplaymusic/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "qier222",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-yesplaymusic/fn-yesplaymusic_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/qier222/YesPlayMusic",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-zabbix-agent": {
+      "display_name": "Zabbix Agent",
+      "desc": "面向 IT 和 OT 的通用开源可观测性方案客户端，把本机指标上报给 Zabbix Server",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-zabbix-agent/ICON.PNG",
+      "readme_url": "./fn-zabbix-agent/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "Zabbix",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-zabbix-agent/fn-zabbix-agent_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/zabbix/zabbix",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-zentao": {
+      "display_name": "禅道",
+      "desc": "禅道是第一款国产的开源项目管理软件，基于敏捷和 Scrum 理念，包含产品管理、项目管理、质量管理、文档管理、办公管理和资产管理等模块",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "编程开发"
+      ],
+      "icon_url": "./fn-zentao/ICON.PNG",
+      "readme_url": "./fn-zentao/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "禅道软件（杭州）有限公司",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${ZENTAO_HTTP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-zentao/fn-zentao_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://www.zentao.net",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-zfile": {
+      "display_name": "ZFile",
+      "desc": "基于 Java 的在线网盘程序，把多种存储源统一到一个网页中浏览",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-zfile/ICON.PNG",
+      "readme_url": "./fn-zfile/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "zhaojun1998",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-zfile/fn-zfile_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/zhaojun1998/zfile",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    }
+  }
+}

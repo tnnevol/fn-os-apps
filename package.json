@@ -19,6 +19,7 @@
     "test": "turbo run test",
     "check": "pnpm exec fn-apps-cli check",
     "icons": "node scripts/generate-icons.mjs",
+    "fnpack": "node scripts/generate-fnpack-json.mjs",
     "release:notes": "pnpm exec fn-apps-cli release:notes",
     "prepare": "lefthook install"
   },
