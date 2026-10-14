@@ -1,0 +1,22 @@
+services:
+  sftpgo:
+    container_name: fn-sftpgo
+    image: drakkan/sftpgo:v2.7.6-alpine
+    environment:
+      - SFTPGO_FTPD__BINDINGS__0__PORT=${FTP_PORT}
+      - SFTPGO_WEBDAVD__BINDINGS__0__PORT=${WEBDAV_PORT}
+      - SFTPGO_SFTPD__BINDINGS__0__PORT=${SFTP_PORT}
+      - SFTPGO_FTPD__BINDINGS__0__FORCE_PASSIVE_IP=${FTP_EXTERNAL_IP}
+      - SFTPGO_FTPD__PASSIVE_PORT_RANGE__START=${PASSIVE_PORT_RANGE_START}
+      - SFTPGO_FTPD__PASSIVE_PORT_RANGE__END=${PASSIVE_PORT_RANGE_END}
+    ports:
+      - "${APP_PORT}:8080"
+      - "${SFTP_PORT}:${SFTP_PORT}"
+      - "${FTP_PORT}:${FTP_PORT}"
+      - "${PASSIVE_PORT_RANGE_START}-${PASSIVE_PORT_RANGE_END}:${PASSIVE_PORT_RANGE_START}-${PASSIVE_PORT_RANGE_END}"
+      - "${WEBDAV_PORT}:${WEBDAV_PORT}"
+    restart: always
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      - "${TRIM_PKGVAR}/data/data:/srv/sftpgo"
+      - "${TRIM_PKGVAR}/data/config:/var/lib/sftpgo"

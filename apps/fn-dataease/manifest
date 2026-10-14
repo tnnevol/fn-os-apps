@@ -1,0 +1,14 @@
+appname               = fn-dataease
+version               = 6.0.0
+display_name          = DataEase
+desc                  = DataEase 是开源的数据可视化分析平台，拖拽式制作图表与仪表板
+platform              = x86
+source                = thirdparty
+maintainer            = DataEase
+maintainer_url        = https://github.com/dataease/dataease
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-dataease.Application
+disable_authorization_path = true

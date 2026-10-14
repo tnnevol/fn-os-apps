@@ -1,0 +1,14 @@
+appname               = fn-zabbix-server
+version               = 6.0.0
+display_name          = Zabbix Server
+desc                  = Zabbix Server 是监控系统服务端，负责采集、计算与告警
+platform              = x86
+source                = thirdparty
+maintainer            = Zabbix
+maintainer_url        = https://github.com/zabbix/zabbix
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-zabbix-server.Application
+disable_authorization_path = true

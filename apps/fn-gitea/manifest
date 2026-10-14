@@ -1,0 +1,14 @@
+appname               = fn-gitea
+version               = 6.0.0
+display_name          = Gitea
+desc                  = Gitea 是轻量的自托管代码托管平台，提供 Git 仓库、协作与 CI 集成
+platform              = x86
+source                = thirdparty
+maintainer            = CommitGo
+maintainer_url        = https://github.com/commitgo/gitea-ee
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-gitea.Application
+disable_authorization_path = true

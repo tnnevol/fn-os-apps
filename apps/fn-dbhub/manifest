@@ -1,0 +1,14 @@
+appname               = fn-dbhub
+version               = 6.0.0
+display_name          = DBHub
+desc                  = DBHub 是数据库通用网关，为多种数据库提供统一的连接与访问入口
+platform              = x86
+source                = thirdparty
+maintainer            = Bytebase
+maintainer_url        = https://github.com/bytebase/dbhub
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-dbhub.Application
+disable_authorization_path = true

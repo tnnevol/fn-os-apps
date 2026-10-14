@@ -1,0 +1,13 @@
+{
+  ".url": {
+    "fn-zabbix-server.Application": {
+      "title": "Zabbix Server",
+      "icon": "images/icon_{0}.png",
+      "type": "url",
+      "protocol": "http",
+      "port": "${APP_PORT}",
+      "url": "/",
+      "allUsers": false
+    }
+  }
+}

@@ -1,0 +1,17 @@
+services:
+  cordys-crm:
+    container_name: fn-cordys-crm
+    image: 1panel/cordys-crm:v1.9.3
+    environment:
+      # 上游写 jdbc:mysql://${CONTAINER_NAME}:3306/... 指向容器自身，但其 compose 未包含 MySQL，
+      # 在 1Panel 下依赖平台另行提供的 MySQL；fnOS 改为向导显式填写外部数据库连接（见转换规约裁决 3）。
+      - "SPRING_DATASOURCE_URL=jdbc:${DB_TYPE}://${DB_HOST}?useUnicode=true&characterEncoding=UTF-8&useSSL=false&allowPublicKeyRetrieval=true"
+      - SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+    ports:
+      - "${APP_PORT}:8081"
+      - "${MCP_PORT}:8082"
+    restart: always
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      - "${TRIM_PKGVAR}/data:/opt/cordys"

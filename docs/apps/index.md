@@ -110,6 +110,18 @@
 | <AppIcon name="fn-phpmyadmin" alt="phpMyAdmin 图标" :size="30" /> | [phpMyAdmin](./fn-phpmyadmin) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-phpmyadmin) | Docker / x86 | MySQL / MariaDB | [源码](https://github.com/phpmyadmin/phpmyadmin) |
 | <AppIcon name="fn-jellyfin" alt="Jellyfin 图标" :size="30" /> | [Jellyfin](./fn-jellyfin) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-jellyfin) | Docker / x86 | — | [源码](https://github.com/jellyfin/jellyfin) |
 | <AppIcon name="fn-trilium" alt="Trilium Notes 图标" :size="30" /> | [Trilium Notes](./fn-trilium) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-trilium) | Docker / x86 | — | [源码](https://github.com/triliumnext/trilium) |
+| <AppIcon name="fn-cordys-crm" alt="Cordys CRM 图标" :size="30" /> | [Cordys CRM](./fn-cordys-crm) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-cordys-crm) | Docker / x86 | MySQL | [源码](https://github.com/1Panel-dev/CordysCRM) |
+| <AppIcon name="fn-dataease" alt="DataEase 图标" :size="30" /> | [DataEase](./fn-dataease) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-dataease) | Docker / x86 | MySQL | [源码](https://github.com/dataease/dataease) |
+| <AppIcon name="fn-dbhub" alt="DBHub 图标" :size="30" /> | [DBHub](./fn-dbhub) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-dbhub) | Docker / x86 | 数据库 | [源码](https://github.com/bytebase/dbhub) |
+| <AppIcon name="fn-dbx" alt="DBX 图标" :size="30" /> | [DBX](./fn-dbx) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-dbx) | Docker / x86 | — | [源码](https://github.com/t8y2/dbx) |
+| <AppIcon name="fn-gitea" alt="Gitea 图标" :size="30" /> | [Gitea](./fn-gitea) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-gitea) | Docker / x86 | MySQL / PostgreSQL | [源码](https://github.com/commitgo/gitea-ee) |
+| <AppIcon name="fn-nginx-proxy-manager" alt="Nginx Proxy Manager 图标" :size="30" /> | [Nginx Proxy Manager](./fn-nginx-proxy-manager) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-nginx-proxy-manager) | Docker / x86 | — | [源码](https://github.com/NginxProxyManager/nginx-proxy-manager) |
+| <AppIcon name="fn-sftpgo" alt="SFTPGo 图标" :size="30" /> | [SFTPGo](./fn-sftpgo) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-sftpgo) | Docker / x86 | — | [源码](https://github.com/drakkan/sftpgo) |
+| <AppIcon name="fn-sqlbot" alt="SQLBot 图标" :size="30" /> | [SQLBot](./fn-sqlbot) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-sqlbot) | Docker / x86 | — | [源码](https://github.com/dataease/SQLBot) |
+| <AppIcon name="fn-umami" alt="Umami 图标" :size="30" /> | [Umami](./fn-umami) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-umami) | Docker / x86 | PostgreSQL | [源码](https://github.com/umami-software/umami) |
+| <AppIcon name="fn-wordpress" alt="WordPress 图标" :size="30" /> | [WordPress](./fn-wordpress) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-wordpress) | Docker / x86 | MySQL / MariaDB | [源码](https://github.com/WordPress/WordPress) |
+| <AppIcon name="fn-zabbix-proxy" alt="Zabbix Proxy 图标" :size="30" /> | [Zabbix Proxy](./fn-zabbix-proxy) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-zabbix-proxy) | Docker / x86 | MySQL / MariaDB | [源码](https://github.com/zabbix/zabbix) |
+| <AppIcon name="fn-zabbix-server" alt="Zabbix Server 图标" :size="30" /> | [Zabbix Server](./fn-zabbix-server) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-zabbix-server) | Docker / x86 | MySQL | [源码](https://github.com/zabbix/zabbix) |
 
 ## 安装方式
 

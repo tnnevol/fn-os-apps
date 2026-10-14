@@ -1,0 +1,28 @@
+services:
+  dataease:
+    container_name: fn-dataease
+    image: registry.cn-qingdao.aliyuncs.com/dataease/dataease:v2.10.27
+    stop_signal: SIGTERM
+    stop_grace_period: 15s
+    environment:
+      # 上游由 1Panel 服务选择器注入 PANEL_DB_*，fnOS 改为向导显式填写
+      - PANEL_DB_HOST=${DB_HOST}
+      - PANEL_DB_PORT=${DB_PORT}
+      - PANEL_DB_USER=${DB_USERNAME}
+      - PANEL_DB_USER_PASSWORD=${DB_PASSWORD}
+      - PANEL_DB_NAME=${DB_NAME}
+      - DE_ADMIN=${DE_ADMIN}
+      - DE_ADMIN_PASSWORD=${DE_ADMIN_PASSWORD}
+    ports:
+      - "${APP_PORT}:8100"
+    restart: always
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      # 容器内目标路径取自所选版本 v2.10.27 的上游编排（该版本是 dataease2.0 路径，不是 3.0）
+      - "${TRIM_PKGVAR}/conf:/opt/apps/config"
+      - "${TRIM_PKGVAR}/logs:/opt/dataease2.0/logs"
+      - "${TRIM_PKGVAR}/data/static-resource:/opt/dataease2.0/data/static-resource"
+      - "${TRIM_PKGVAR}/cache:/opt/dataease2.0/cache"
+      - "${TRIM_PKGVAR}/data/geo:/opt/dataease2.0/data/geo"
+      - "${TRIM_PKGVAR}/data/exportData:/opt/dataease2.0/data/exportData"
+      - "${TRIM_PKGVAR}/data/font:/opt/dataease2.0/data/font"

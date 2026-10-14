@@ -1,0 +1,10 @@
+services:
+  dbhub:
+    container_name: fn-dbhub
+    image: bytebase/dbhub:1.4.0
+    environment:
+      # 上游由 1Panel 服务选择器注入 DBHUB_DB_*，fnOS 改为向导显式填写
+      - "DSN=${DB_TYPE}://${DB_USERNAME}:${DB_PASSWORD}@${DB_HOST}"
+    ports:
+      - "${APP_PORT}:8080"
+    restart: always

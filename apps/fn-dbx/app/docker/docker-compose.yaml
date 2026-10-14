@@ -1,0 +1,13 @@
+services:
+  dbx:
+    container_name: fn-dbx
+    image: t8y2/dbx:0.6.35
+    environment:
+      # 上游把该字段归在 PANEL_DB_* 命名空间下，但它只是本应用自身的访问密码，不是外部数据库凭据
+      - DBX_PASSWORD=${ACCESS_PASSWORD}
+    ports:
+      - "${APP_PORT}:4224"
+    restart: unless-stopped
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      - "${TRIM_PKGVAR}/data:/app/data"

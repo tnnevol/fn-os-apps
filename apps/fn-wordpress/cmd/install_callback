@@ -1,0 +1,31 @@
+#!/bin/bash
+
+### This script is called after the user installs the application.
+
+# 单文件挂载要求源文件在容器启动前就已存在且内容可用（Docker 不会自动创建文件）。
+if [ -z "${TRIM_PKGVAR}" ]; then
+    echo "TRIM_PKGVAR is not set; cannot prepare application data directory" >"${TRIM_TEMP_LOGFILE}"
+    exit 1
+fi
+
+mkdir -p "${TRIM_PKGVAR}/data"
+mkdir -p "${TRIM_PKGVAR}/data/conf"
+
+# 单文件挂载的最小可用配置：只在文件不存在或为空时写入，避免覆盖用户已修改的内容。
+# 种子文件随应用包提供，位于 ${TRIM_APPDEST}/seed/。
+SEED_DIR="${TRIM_APPDEST}/seed"
+if [ ! -s "${TRIM_PKGVAR}/data/conf/uploads.ini" ]; then
+    if [ -f "${SEED_DIR}/data/conf/uploads.ini" ]; then
+        cp "${SEED_DIR}/data/conf/uploads.ini" "${TRIM_PKGVAR}/data/conf/uploads.ini"
+        echo "Seeded config: data/conf/uploads.ini"
+    else
+        echo "Seed file missing: ${SEED_DIR}/data/conf/uploads.ini" >"${TRIM_TEMP_LOGFILE}"
+        exit 1
+    fi
+fi
+
+chmod -R 770 "${TRIM_PKGVAR}/data" 2>/dev/null || true
+
+echo "Prepared application data directory: ${TRIM_PKGVAR}/data"
+
+exit 0

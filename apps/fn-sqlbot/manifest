@@ -1,0 +1,14 @@
+appname               = fn-sqlbot
+version               = 6.0.0
+display_name          = SQLBot
+desc                  = SQLBot 是基于大模型的数据库问答工具，用自然语言查询数据库
+platform              = x86
+source                = thirdparty
+maintainer            = DataEase
+maintainer_url        = https://github.com/dataease/SQLBot
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-sqlbot.Application
+disable_authorization_path = true

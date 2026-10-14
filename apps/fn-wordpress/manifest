@@ -1,0 +1,14 @@
+appname               = fn-wordpress
+version               = 6.0.0
+display_name          = WordPress
+desc                  = WordPress 是广泛使用的内容管理系统，用于搭建博客与网站
+platform              = x86
+source                = thirdparty
+maintainer            = WordPress
+maintainer_url        = https://github.com/WordPress/WordPress
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-wordpress.Application
+disable_authorization_path = true

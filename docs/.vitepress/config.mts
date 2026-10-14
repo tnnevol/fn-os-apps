@@ -159,7 +159,19 @@ const appItems = [
   { text: '幻兽帕鲁服务器工具', link: '/apps/fn-palworld-server-tool' },
   { text: 'phpMyAdmin', link: '/apps/fn-phpmyadmin' },
   { text: 'Jellyfin', link: '/apps/fn-jellyfin' },
-  { text: 'Trilium Notes', link: '/apps/fn-trilium' }
+  { text: 'Trilium Notes', link: '/apps/fn-trilium' },
+  { text: 'Cordys CRM', link: '/apps/fn-cordys-crm' },
+  { text: 'DataEase', link: '/apps/fn-dataease' },
+  { text: 'DBHub', link: '/apps/fn-dbhub' },
+  { text: 'DBX', link: '/apps/fn-dbx' },
+  { text: 'Gitea', link: '/apps/fn-gitea' },
+  { text: 'Nginx Proxy Manager', link: '/apps/fn-nginx-proxy-manager' },
+  { text: 'SFTPGo', link: '/apps/fn-sftpgo' },
+  { text: 'SQLBot', link: '/apps/fn-sqlbot' },
+  { text: 'Umami', link: '/apps/fn-umami' },
+  { text: 'WordPress', link: '/apps/fn-wordpress' },
+  { text: 'Zabbix Proxy', link: '/apps/fn-zabbix-proxy' },
+  { text: 'Zabbix Server', link: '/apps/fn-zabbix-server' }
 ]
 
 const startItems = [

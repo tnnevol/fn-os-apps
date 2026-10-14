@@ -1,0 +1,14 @@
+appname               = fn-zabbix-proxy
+version               = 6.0.0
+display_name          = Zabbix Proxy
+desc                  = Zabbix Proxy 是 Zabbix 的代理端，代服务器采集监控数据
+platform              = x86
+source                = thirdparty
+maintainer            = Zabbix
+maintainer_url        = https://github.com/zabbix/zabbix
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-zabbix-proxy.Application
+disable_authorization_path = true

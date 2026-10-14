@@ -1,0 +1,14 @@
+appname               = fn-sftpgo
+version               = 6.0.0
+display_name          = SFTPGo
+desc                  = SFTPGo 是功能完整的文件传输服务，支持 SFTP、FTP、WebDAV 与网页管理
+platform              = x86
+source                = thirdparty
+maintainer            = drakkan
+maintainer_url        = https://github.com/drakkan/sftpgo
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-sftpgo.Application
+disable_authorization_path = true

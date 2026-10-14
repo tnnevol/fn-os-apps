@@ -1,0 +1,24 @@
+services:
+  gitea:
+    container_name: fn-gitea
+    image: commitgo/gitea-ee:27.3.4
+    environment:
+      # TRIM_UID/TRIM_GID 由 fnOS 注入，指向本应用的包用户；上游硬编码的 1000 在目标 NAS 上通常是登录用户
+      - USER_UID=${TRIM_UID}
+      - USER_GID=${TRIM_GID}
+      - TZ=${TIME_ZONE}
+      # 上游由 1Panel 服务选择器注入 PANEL_DB_*，fnOS 改为向导显式填写
+      - GITEA__database__DB_TYPE=${DB_TYPE}
+      - GITEA__database__HOST=${DB_HOST}:${DB_PORT}
+      - GITEA__database__NAME=${DB_NAME}
+      - GITEA__database__USER=${DB_USERNAME}
+      - GITEA__database__PASSWD=${DB_PASSWORD}
+    ports:
+      - "${APP_PORT}:3000"
+      - "${SSH_PORT}:22"
+    restart: always
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      - "${TRIM_PKGVAR}/data:/data"
+      # 已删除上游的 /etc/timezone、/etc/localtime 宿主路径挂载：
+      # 它们在 fnOS 上不作为应用挂载点使用，时区改由 TZ 环境变量提供（见转换规约「存储与挂载」）

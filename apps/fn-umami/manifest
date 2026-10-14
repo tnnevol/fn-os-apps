@@ -1,0 +1,14 @@
+appname               = fn-umami
+version               = 6.0.0
+display_name          = Umami
+desc                  = Umami 是注重隐私的网站统计分析工具，提供访客、来源与页面数据看板
+platform              = x86
+source                = thirdparty
+maintainer            = Umami
+maintainer_url        = https://github.com/umami-software/umami
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-umami.Application
+disable_authorization_path = true

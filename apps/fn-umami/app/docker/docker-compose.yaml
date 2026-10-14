@@ -1,0 +1,17 @@
+services:
+  umami:
+    container_name: fn-umami
+    image: ghcr.io/umami-software/umami:3.4.0
+    environment:
+      - DATABASE_TYPE=${DB_TYPE}
+      # 上游由 1Panel 服务选择器注入 PANEL_DB_*，fnOS 改为向导显式填写
+      - DATABASE_URL=${DB_TYPE}://${DB_USERNAME}:${DB_PASSWORD}@${DB_HOST}
+      - APP_SECRET=${APP_SECRET}
+    healthcheck:
+      test: ["CMD-SHELL", "curl http://localhost:3000/api/heartbeat"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "${APP_PORT}:3000"
+    restart: always

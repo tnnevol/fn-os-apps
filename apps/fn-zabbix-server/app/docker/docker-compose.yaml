@@ -1,0 +1,42 @@
+services:
+  zabbix-server-mysql:
+    container_name: fn-zabbix-server
+    image: zabbix/zabbix-server-mysql:alpine-7.4.5
+    restart: always
+    environment:
+      - TZ=${TIME_ZONE}
+      # 上游由 1Panel 服务选择器注入 PANEL_DB_*，fnOS 改为向导显式填写
+      - DB_SERVER_HOST=${DB_HOST}
+      - DB_SERVER_PORT=${DB_PORT}
+      - MYSQL_DATABASE=${DB_NAME}
+      - MYSQL_USER=${DB_USERNAME}
+      - MYSQL_PASSWORD=${DB_PASSWORD}
+      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
+      - ZBX_JAVAGATEWAY=zabbix-java-gateway
+    depends_on:
+      - zabbix-java-gateway
+    ports:
+      - "${ZBX_RECEIVE_PORT}:10051"
+
+  zabbix-java-gateway:
+    container_name: fn-zabbix-server-gateway
+    image: zabbix/zabbix-java-gateway:alpine-7.4.5
+    restart: always
+
+  zabbix-web-nginx-mysql:
+    container_name: fn-zabbix-server-nginx
+    image: zabbix/zabbix-web-nginx-mysql:alpine-7.4.5
+    restart: always
+    environment:
+      - TZ=${TIME_ZONE}
+      - ZBX_SERVER_HOST=zabbix-server-mysql
+      - DB_SERVER_HOST=${DB_HOST}
+      - DB_SERVER_PORT=${DB_PORT}
+      - MYSQL_DATABASE=${DB_NAME}
+      - MYSQL_USER=${DB_USERNAME}
+      - MYSQL_PASSWORD=${DB_PASSWORD}
+      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
+    depends_on:
+      - zabbix-server-mysql
+    ports:
+      - "${APP_PORT}:8080"

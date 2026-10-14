@@ -1,0 +1,22 @@
+services:
+  sqlbot:
+    container_name: fn-sqlbot
+    image: dataease/sqlbot:v1.10.2
+    environment:
+      # 上游默认为容器内自带的 PostgreSQL（all-in-one），故不提供外部数据库连接字段
+      - POSTGRES_SERVER=localhost
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=sqlbot
+      - DEFAULT_PWD=${DE_ADMIN}
+      - SECRET_KEY=${SECRET_KEY}
+    ports:
+      - "${APP_PORT}:8000"
+      - "${MCP_PORT}:8001"
+    restart: always
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      - "${TRIM_PKGVAR}/data/sqlbot/excel:/opt/sqlbot/data/excel"
+      - "${TRIM_PKGVAR}/data/sqlbot/file:/opt/sqlbot/data/file"
+      - "${TRIM_PKGVAR}/data/sqlbot/images:/opt/sqlbot/images"
+      - "${TRIM_PKGVAR}/data/sqlbot/logs:/opt/sqlbot/app/logs"
+      - "${TRIM_PKGVAR}/data/postgresql:/var/lib/postgresql/data"

@@ -1,0 +1,14 @@
+appname               = fn-cordys-crm
+version               = 6.0.0
+display_name          = Cordys CRM
+desc                  = Cordys CRM 是开源的客户关系管理系统，提供线索、商机与客户管理
+platform              = x86
+source                = thirdparty
+maintainer            = Cordys
+maintainer_url        = https://github.com/1Panel-dev/CordysCRM
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-cordys-crm.Application
+disable_authorization_path = true

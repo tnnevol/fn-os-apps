@@ -1,0 +1,14 @@
+appname               = fn-nginx-proxy-manager
+version               = 6.0.0
+display_name          = Nginx Proxy Manager
+desc                  = Nginx Proxy Manager 用图形界面管理 Nginx 反向代理与 SSL 证书
+platform              = x86
+source                = thirdparty
+maintainer            = jc21
+maintainer_url        = https://github.com/NginxProxyManager/nginx-proxy-manager
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-nginx-proxy-manager.main
+disable_authorization_path = true
