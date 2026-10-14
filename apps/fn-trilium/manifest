@@ -1,0 +1,14 @@
+appname               = fn-trilium
+version               = 6.0.0
+display_name          = Trilium Notes
+desc                  = 大纲式笔记应用，用层级结构组织笔记，支持双链与附件
+platform              = x86
+source                = thirdparty
+maintainer            = TriliumNext
+maintainer_url        = https://github.com/triliumnext/trilium
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-trilium.Application
+disable_authorization_path = true

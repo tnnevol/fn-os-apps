@@ -1,0 +1,13 @@
+services:
+  trilium:
+    image: triliumnext/trilium:v0.106.0
+    container_name: fn-trilium
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT}:8080"
+    environment:
+      - TRILIUM_DATA_DIR=/home/node/trilium-data
+      - TZ=${TIME_ZONE}
+    volumes:
+      # 笔记数据落目标 NAS 运行时数据目录
+      - "${TRIM_PKGVAR}/data:/home/node/trilium-data"

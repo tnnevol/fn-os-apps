@@ -1,0 +1,8 @@
+{
+    "defaults":
+    {
+        "run-as": "package"
+    },
+    "username": "docker-fn-jellyfin",
+    "groupname": "docker-fn-jellyfin"
+}

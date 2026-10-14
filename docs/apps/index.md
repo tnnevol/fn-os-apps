@@ -108,6 +108,8 @@
 | <AppIcon name="fn-openclaw" alt="OpenClaw 图标" :size="30" /> | [OpenClaw](./fn-openclaw) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-openclaw) | Docker / x86 | 模型服务 | [源码](https://github.com/1Panel-dev/openclaw) |
 | <AppIcon name="fn-palworld-server-tool" alt="幻兽帕鲁服务器工具图标" :size="30" /> | [幻兽帕鲁服务器工具](./fn-palworld-server-tool) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-palworld-server-tool) | Docker / x86 | — | [源码](https://github.com/zaigie/palworld-server-tool) |
 | <AppIcon name="fn-phpmyadmin" alt="phpMyAdmin 图标" :size="30" /> | [phpMyAdmin](./fn-phpmyadmin) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-phpmyadmin) | Docker / x86 | MySQL / MariaDB | [源码](https://github.com/phpmyadmin/phpmyadmin) |
+| <AppIcon name="fn-jellyfin" alt="Jellyfin 图标" :size="30" /> | [Jellyfin](./fn-jellyfin) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-jellyfin) | Docker / x86 | — | [源码](https://github.com/jellyfin/jellyfin) |
+| <AppIcon name="fn-trilium" alt="Trilium Notes 图标" :size="30" /> | [Trilium Notes](./fn-trilium) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-trilium) | Docker / x86 | — | [源码](https://github.com/triliumnext/trilium) |
 
 ## 安装方式
 

@@ -157,7 +157,9 @@ const appItems = [
   { text: 'Obsidian LiveSync', link: '/apps/fn-obsidian-livesync' },
   { text: 'OpenClaw', link: '/apps/fn-openclaw' },
   { text: '幻兽帕鲁服务器工具', link: '/apps/fn-palworld-server-tool' },
-  { text: 'phpMyAdmin', link: '/apps/fn-phpmyadmin' }
+  { text: 'phpMyAdmin', link: '/apps/fn-phpmyadmin' },
+  { text: 'Jellyfin', link: '/apps/fn-jellyfin' },
+  { text: 'Trilium Notes', link: '/apps/fn-trilium' }
 ]
 
 const startItems = [

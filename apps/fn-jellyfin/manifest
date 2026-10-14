@@ -1,0 +1,14 @@
+appname               = fn-jellyfin
+version               = 6.0.0
+display_name          = Jellyfin
+desc                  = 开源媒体系统，用于集中管理和流式播放影音库
+platform              = x86
+source                = thirdparty
+maintainer            = Jellyfin Contributors
+maintainer_url        = https://github.com/jellyfin/jellyfin
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-jellyfin.Application
+disable_authorization_path = true

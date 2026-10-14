@@ -1,0 +1,13 @@
+services:
+  jellyfin:
+    image: jellyfin/jellyfin:10.11.11
+    container_name: fn-jellyfin
+    restart: always
+    ports:
+      - "${APP_PORT}:8096"
+    volumes:
+      # 应用配置落目标 NAS 运行时数据目录
+      - "${TRIM_PKGVAR}/data/config:/config"
+      # 用户自填的媒体库与缓存目录（绝对路径，由向导收集）
+      - "${MEDIA_PATH}:/media/media"
+      - "${CACHE_PATH}:/cache"
