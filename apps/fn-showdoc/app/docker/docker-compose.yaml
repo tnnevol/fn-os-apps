@@ -1,0 +1,13 @@
+services:
+  showdoc:
+    container_name: fn-showdoc
+    image: star7th/showdoc:v3.9.4
+    ports:
+      - "${APP_PORT}:80"
+    restart: always
+    tty: true
+    volumes:
+      # 文档数据与上传附件，落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）
+      - "${TRIM_PKGVAR}/data:/var/www/html"
+      # 已删除上游的 /showdoc_data:/showdoc_data_old 宿主挂载：
+      # 该路径在 fnOS 上不存在，且 _old 后缀表明它是版本迁移用的临时挂载（见转换规约「存储与挂载」）。

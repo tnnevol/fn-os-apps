@@ -1,0 +1,15 @@
+services:
+  dashboard:
+    container_name: fn-tinyrdm
+    image: ghcr.io/tiny-craft/tiny-rdm:1.2.7
+    environment:
+      - ADMIN_USERNAME=${ADMIN_USERNAME}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+    ports:
+      - "${APP_PORT}:8086"
+    restart: always
+    # 上游以 root 运行（user: "0:0"）；按规约「不得用 root 运行」改为包用户
+    user: "${TRIM_UID}:${TRIM_GID}"
+    volumes:
+      # 连接配置与数据，落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）
+      - "${TRIM_PKGVAR}/data:/app/tinyrdm"

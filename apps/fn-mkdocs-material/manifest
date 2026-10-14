@@ -1,0 +1,14 @@
+appname               = fn-mkdocs-material
+version               = 6.0.0
+display_name          = MkDocs Material
+desc                  = MkDocs Material 是用于构建文档站点的主题镜像，支持热重载预览
+platform              = x86
+source                = thirdparty
+maintainer            = squidfunk
+maintainer_url        = https://github.com/squidfunk/mkdocs-material
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-mkdocs-material.Application
+disable_authorization_path = true

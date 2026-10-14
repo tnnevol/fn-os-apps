@@ -1,0 +1,10 @@
+services:
+  vane:
+    container_name: fn-vane
+    image: itzcrazykns1337/vane:v1.12.2
+    ports:
+      - "${APP_PORT}:3000"
+    restart: unless-stopped
+    volumes:
+      # 搜索历史与配置，落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）
+      - "${TRIM_PKGVAR}/data:/home/vane/data"

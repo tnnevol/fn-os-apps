@@ -1,0 +1,14 @@
+appname               = fn-siyuan
+version               = 6.0.0
+display_name          = 思源笔记
+desc                  = 思源笔记是本地优先的隐私知识管理工具，支持块级引用与双向链接
+platform              = x86
+source                = thirdparty
+maintainer            = b3log
+maintainer_url        = https://github.com/siyuan-note/siyuan
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-siyuan.Application
+disable_authorization_path = true

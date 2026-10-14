@@ -1,0 +1,13 @@
+{
+  ".url": {
+    "fn-qiandao.Application": {
+      "title": "签到框架",
+      "icon": "images/icon_{0}.png",
+      "type": "url",
+      "protocol": "http",
+      "port": "${APP_PORT}",
+      "url": "/",
+      "allUsers": false
+    }
+  }
+}

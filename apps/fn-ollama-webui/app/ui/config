@@ -1,0 +1,13 @@
+{
+  ".url": {
+    "fn-ollama-webui.Application": {
+      "title": "Open WebUI",
+      "icon": "images/icon_{0}.png",
+      "type": "url",
+      "protocol": "http",
+      "port": "${APP_PORT}",
+      "url": "/",
+      "allUsers": false
+    }
+  }
+}

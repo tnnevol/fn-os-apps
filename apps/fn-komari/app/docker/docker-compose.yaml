@@ -1,0 +1,12 @@
+services:
+  dashboard:
+    container_name: fn-komari
+    image: ghcr.io/komari-monitor/komari:1.5.1
+    ports:
+      - "${APP_PORT}:25774"
+    restart: always
+    # 上游以 root 运行（user: "0:0"）；按规约「不得用 root 运行」改为包用户
+    user: "${TRIM_UID}:${TRIM_GID}"
+    volumes:
+      # 监控数据，落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）
+      - "${TRIM_PKGVAR}/data:/app/data"

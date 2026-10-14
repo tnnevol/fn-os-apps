@@ -1,0 +1,13 @@
+services:
+  pgadmin4:
+    container_name: fn-pgadmin4
+    image: dpage/pgadmin4:9.18
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=${PGADMIN_DEFAULT_EMAIL}
+      - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_DEFAULT_PASSWORD}
+    ports:
+      - "${APP_PORT}:80"
+    restart: always
+    volumes:
+      # 连接配置与设置，落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）
+      - "${TRIM_PKGVAR}/data:/var/lib/pgadmin"

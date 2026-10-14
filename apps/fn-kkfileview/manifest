@@ -1,0 +1,14 @@
+appname               = fn-kkfileview
+version               = 6.0.0
+display_name          = kkFileView
+desc                  = kkFileView 是文件在线预览服务，支持 office、pdf、图片等多种格式
+platform              = x86
+source                = thirdparty
+maintainer            = kekingcn
+maintainer_url        = https://github.com/kekingcn/kkFileView
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-kkfileview.Application
+disable_authorization_path = true

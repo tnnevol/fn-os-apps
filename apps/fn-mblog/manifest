@@ -1,0 +1,14 @@
+appname               = fn-mblog
+version               = 6.0.0
+display_name          = MBlog
+desc                  = 简洁的个人博客系统，支持 Markdown 写作与标签分类
+platform              = x86
+source                = thirdparty
+maintainer            = kingwrcy
+maintainer_url        = https://github.com/kingwrcy/mblog
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-mblog.Application
+disable_authorization_path = true

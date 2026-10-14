@@ -1,0 +1,14 @@
+appname               = fn-qiandao
+version               = 6.0.0
+display_name          = 签到框架
+desc                  = 自动签到框架，支持编写与定时执行各类站点的签到任务
+platform              = x86
+source                = thirdparty
+maintainer            = a76yyyy
+maintainer_url        = https://github.com/qd-today/qd
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-qiandao.Application
+disable_authorization_path = true

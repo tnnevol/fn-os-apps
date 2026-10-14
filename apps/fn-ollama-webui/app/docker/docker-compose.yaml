@@ -1,0 +1,13 @@
+services:
+  open-webui:
+    container_name: fn-ollama-webui
+    image: ghcr.io/open-webui/open-webui:v0.11.4
+    environment:
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL}
+      - WEBUI_SECRET_KEY=${WEBUI_SECRET_KEY}
+    ports:
+      - "${APP_PORT}:8080"
+    restart: unless-stopped
+    volumes:
+      # 对话记录与用户数据，落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）
+      - "${TRIM_PKGVAR}/data:/app/backend/data"

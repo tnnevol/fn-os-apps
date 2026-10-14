@@ -1,0 +1,10 @@
+services:
+  mkdocs-material:
+    container_name: fn-mkdocs-material
+    image: squidfunk/mkdocs-material:9.7.7
+    ports:
+      - "${APP_PORT}:8000"
+    restart: always
+    volumes:
+      # 文档源文件，落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）
+      - "${TRIM_PKGVAR}/data:/docs"

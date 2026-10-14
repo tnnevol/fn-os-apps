@@ -1,0 +1,7 @@
+services:
+  kkfileview:
+    container_name: fn-kkfileview
+    image: keking/kkfileview:4.1.0
+    ports:
+      - "${APP_PORT}:8012"
+    restart: always

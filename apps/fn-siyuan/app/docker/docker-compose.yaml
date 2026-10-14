@@ -1,0 +1,16 @@
+services:
+  siyuan:
+    container_name: fn-siyuan
+    image: b3log/siyuan:v3.8.6
+    command: ["serve", "--workspace=/siyuan/workspace/", "--accessAuthCode=${ACCESS_AUTH_CODE}"]
+    environment:
+      # TRIM_UID/TRIM_GID 由 fnOS 注入，指向本应用的包用户；上游硬编码的 1000 在目标 NAS 上通常是登录用户
+      - PUID=${TRIM_UID}
+      - PGID=${TRIM_GID}
+      - TZ=${TIME_ZONE}
+    ports:
+      - "${APP_PORT}:6806"
+    restart: unless-stopped
+    volumes:
+      # 笔记工作区，落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）
+      - "${TRIM_PKGVAR}/data:/siyuan/workspace"

@@ -1,0 +1,14 @@
+appname               = fn-localai
+version               = 6.0.0
+display_name          = LocalAI
+desc                  = LocalAI 是兼容 OpenAI 接口的本地推理服务，可在自有硬件上运行多种模型
+platform              = x86
+source                = thirdparty
+maintainer            = LocalAI
+maintainer_url        = https://github.com/mudler/LocalAI
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-localai.Application
+disable_authorization_path = true

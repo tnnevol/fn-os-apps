@@ -1,0 +1,14 @@
+services:
+  node-red:
+    container_name: fn-node-red
+    image: nodered/node-red:5.0.7
+    environment:
+      - TZ=${TIME_ZONE}
+    ports:
+      - "${APP_PORT}:1880"
+    restart: always
+    # 上游以 root 运行（user: root）；按规约「不得用 root 运行」改为包用户
+    user: "${TRIM_UID}:${TRIM_GID}"
+    volumes:
+      # 流程与凭据，落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）
+      - "${TRIM_PKGVAR}/data:/data"

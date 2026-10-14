@@ -1,0 +1,14 @@
+appname               = fn-nexus
+version               = 6.0.0
+display_name          = Nexus Repository
+desc                  = Sonatype Nexus 是制品仓库管理器，支持 Maven、npm、Docker 等多种格式
+platform              = x86
+source                = thirdparty
+maintainer            = Sonatype
+maintainer_url        = https://github.com/sonatype/nexus-public
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-nexus.Application
+disable_authorization_path = true

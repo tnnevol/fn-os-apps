@@ -1,0 +1,12 @@
+services:
+  nexus:
+    container_name: fn-nexus
+    image: sonatype/nexus3:3.96.4
+    environment:
+      - TZ=${TIME_ZONE}
+    ports:
+      - "${APP_PORT}:8081"
+    restart: always
+    volumes:
+      # 制品库与配置，落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）
+      - "${TRIM_PKGVAR}/data:/nexus-data"

@@ -1,0 +1,12 @@
+services:
+  mblog:
+    container_name: fn-mblog
+    image: kingwrcy/mblog:1.1.0
+    environment:
+      - DB_TYPE=-sqlite
+    ports:
+      - "${APP_PORT}:38321"
+    restart: always
+    volumes:
+      # 博客内容与数据库，落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）
+      - "${TRIM_PKGVAR}/data:/opt/mblog"

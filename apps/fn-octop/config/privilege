@@ -1,0 +1,7 @@
+{
+    "defaults": {
+        "run-as": "package"
+    },
+    "username": "docker-fn-octop",
+    "groupname": "docker-fn-octop"
+}

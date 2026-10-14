@@ -1,0 +1,14 @@
+appname               = fn-trendradar
+version               = 6.0.0
+display_name          = TrendRadar
+desc                  = TrendRadar 聚合多个平台的热榜，按关键词筛选后推送到通知渠道
+platform              = x86
+source                = thirdparty
+maintainer            = wangyucode
+maintainer_url        = https://github.com/wangyucode/TrendRadar
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-trendradar.Application
+disable_authorization_path = true

@@ -1,0 +1,14 @@
+appname               = fn-kodbox
+version               = 6.0.0
+display_name          = Kodbox
+desc                  = 可道云 Kodbox 是可私有化部署的在线文件管理与协作平台
+platform              = x86
+source                = thirdparty
+maintainer            = kodcloud
+maintainer_url        = https://github.com/kalcaddle/kodbox
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-kodbox.Application
+disable_authorization_path = true

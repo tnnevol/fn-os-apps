@@ -1,0 +1,14 @@
+appname               = fn-node-red
+version               = 6.0.0
+display_name          = Node-RED
+desc                  = Node-RED 是基于流程的编程工具，用于连接硬件、API 与在线服务
+platform              = x86
+source                = thirdparty
+maintainer            = OpenJS Foundation
+maintainer_url        = https://github.com/node-red/node-red
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-node-red.Application
+disable_authorization_path = true

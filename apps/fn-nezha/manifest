@@ -1,0 +1,14 @@
+appname               = fn-nezha
+version               = 6.0.0
+display_name          = Nezha
+desc                  = 哪吒监控是轻量的服务器监控与探针管理面板
+platform              = x86
+source                = thirdparty
+maintainer            = nezhahq
+maintainer_url        = https://github.com/nezhahq/nezha
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-nezha.Application
+disable_authorization_path = true

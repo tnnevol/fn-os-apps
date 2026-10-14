@@ -1,0 +1,14 @@
+appname               = fn-synapse
+version               = 6.0.0
+display_name          = Synapse
+desc                  = Synapse 是 Matrix 协议的参考实现，用于搭建自有即时通讯服务器
+platform              = x86
+source                = thirdparty
+maintainer            = Matrix.org
+maintainer_url        = https://github.com/element-hq/synapse
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-synapse.Application
+disable_authorization_path = true

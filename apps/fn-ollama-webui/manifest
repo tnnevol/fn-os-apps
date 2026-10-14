@@ -1,0 +1,14 @@
+appname               = fn-ollama-webui
+version               = 6.0.0
+display_name          = Open WebUI
+desc                  = Open WebUI 是自托管的 AI 对话界面，可对接 Ollama 或兼容 OpenAI 的服务
+platform              = x86
+source                = thirdparty
+maintainer            = Open WebUI
+maintainer_url        = https://github.com/open-webui/open-webui
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-ollama-webui.Application
+disable_authorization_path = true

@@ -1,0 +1,14 @@
+appname               = fn-opengist
+version               = 6.0.0
+display_name          = Opengist
+desc                  = Opengist 是自托管的代码片段分享服务，基于 Git 存储
+platform              = x86
+source                = thirdparty
+maintainer            = thomiceli
+maintainer_url        = https://github.com/thomiceli/opengist
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-opengist.Application
+disable_authorization_path = true

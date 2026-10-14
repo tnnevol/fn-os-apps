@@ -1,0 +1,14 @@
+appname               = fn-octop
+version               = 6.0.0
+display_name          = Octop
+desc                  = 腾讯云 Octop 是面向企业的运维自动化与作业编排平台
+platform              = x86
+source                = thirdparty
+maintainer            = Tencent Cloud
+maintainer_url        = https://github.com/tencentcloud/octop
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-octop.Application
+disable_authorization_path = true

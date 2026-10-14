@@ -1,0 +1,10 @@
+{
+    "docker-project": {
+        "projects": [
+            {
+                "name": "fn-pgadmin4",
+                "path": "docker"
+            }
+        ]
+    }
+}

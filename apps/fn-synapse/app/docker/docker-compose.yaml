@@ -1,0 +1,20 @@
+services:
+  synapse:
+    container_name: fn-synapse
+    image: matrixdotorg/synapse:v1.162.0
+    command: run -m synapse.app.homeserver --config-path=/data/homeserver.yaml
+    environment:
+      # TRIM_UID/TRIM_GID 由 fnOS 注入，指向本应用的包用户；上游硬编码的 1000 在目标 NAS 上通常是登录用户
+      - UID=${TRIM_UID}
+      - GID=${TRIM_GID}
+      - TZ=${TIME_ZONE}
+    logging:
+      options:
+        max-size: "10m"
+    ports:
+      - "${APP_PORT}:8008"
+    restart: always
+    volumes:
+      # 房间数据库与配置，落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）
+      # 上游使用外部命名卷 synapse-data，fnOS 上不会被自动创建，故改为绑定挂载
+      - "${TRIM_PKGVAR}/data:/data"

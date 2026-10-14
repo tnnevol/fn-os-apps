@@ -1,0 +1,14 @@
+appname               = fn-waline
+version               = 6.0.0
+display_name          = Waline
+desc                  = Waline 是带后端的评论系统，支持多站点与多种存储后端
+platform              = x86
+source                = thirdparty
+maintainer            = walinejs
+maintainer_url        = https://github.com/walinejs/waline
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-waline.Application
+disable_authorization_path = true

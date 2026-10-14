@@ -1,0 +1,10 @@
+services:
+  opengist:
+    container_name: fn-opengist
+    image: ghcr.io/thomiceli/opengist:1.15.2
+    ports:
+      - "${APP_PORT}:6157"
+    restart: unless-stopped
+    volumes:
+      # 片段仓库与数据库，落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）
+      - "${TRIM_PKGVAR}/data:/opengist"

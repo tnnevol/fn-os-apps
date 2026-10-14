@@ -1,0 +1,13 @@
+{
+  ".url": {
+    "fn-pgadmin4.Application": {
+      "title": "pgAdmin 4",
+      "icon": "images/icon_{0}.png",
+      "type": "url",
+      "protocol": "http",
+      "port": "${APP_PORT}",
+      "url": "/",
+      "allUsers": false
+    }
+  }
+}

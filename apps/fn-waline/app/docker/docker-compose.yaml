@@ -1,0 +1,19 @@
+services:
+  waline:
+    container_name: fn-waline
+    image: lizheming/waline:1.43.4
+    environment:
+      - SQLITE_PATH=/app/data
+      - TZ=${TIME_ZONE}
+      - JWT_TOKEN=${JWT_TOKEN}
+      - COMMENT_AUDIT=${COMMENT_AUDIT}
+      - AUTHOR_EMAIL=${AUTHOR_EMAIL}
+      - SITE_NAME=${SITE_NAME}
+      - SITE_URL=${SITE_URL}
+      - SECURE_DOMAINS=${SECURE_DOMAINS}
+    ports:
+      - "${APP_PORT}:8360"
+    restart: always
+    volumes:
+      # SQLite 数据库，落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）
+      - "${TRIM_PKGVAR}/data:/app/data"

@@ -45,11 +45,13 @@ const TARGETS = [
   { size: 256, file: app => path.join(ROOT, 'docs', 'public', 'icons', `${app}.png`) },
 ]
 
-const HELP = `用法: node scripts/generate-icons.mjs <app...> [--all] [--dry-run] [--force] [--upstream <dir>]
+const HELP = `用法: node scripts/generate-icons.mjs <app...> [--all] [--dry-run] [--force] [--allow-non-square] [--upstream <dir>]
 
   <app...>            上游应用名（如 it-tools），可传多个；自动加 fn- 前缀映射到 apps/fn-<app>/
   --all               自动扫描上游目录中「有 logo.png 且本地已存在 apps/fn-<app>/」的应用
   --force             允许覆盖**已入库（已发布）**的图标
+  --allow-non-square  允许上游图标为非正方形：以 max(宽,高) 为边长居中**补透明边**到正方形
+                      （不裁剪、不拉伸）。默认拒绝非正方形输入。
   --dry-run           只列出将要写入的文件，不实际写入
   --upstream <dir>    指定上游应用根目录（默认 <仓库同级>/appstore/apps，
                       也可用环境变量 FNOS_UPSTREAM_APPS 指定）
@@ -65,6 +67,7 @@ function parseArgs(argv) {
   let all = false
   let dryRun = false
   let force = false
+  let allowNonSquare = false
   let help = false
 
   for (let index = 0; index < argv.length; index++) {
@@ -80,12 +83,13 @@ function parseArgs(argv) {
     if (arg === '--all') { all = true; continue }
     if (arg === '--dry-run') { dryRun = true; continue }
     if (arg === '--force') { force = true; continue }
+    if (arg === '--allow-non-square') { allowNonSquare = true; continue }
     if (arg === '--help') { help = true; continue }
     if (arg.startsWith('--')) throw new Error(`未知选项: ${arg}`)
     apps.push(arg)
   }
 
-  return { all, dryRun, force, help, upstream, apps }
+  return { all, dryRun, force, allowNonSquare, help, upstream, apps }
 }
 
 /** 上游应用根目录：默认取仓库同级的 appstore/apps，可被参数或环境变量覆盖。 */
@@ -135,15 +139,28 @@ function isPublished(app) {
 }
 
 /** 生成单个应用的 5 个图标文件。 */
-async function generate(app, upstreamApps, dryRun) {
+async function generate(app, upstreamApps, dryRun, allowNonSquare) {
   const appname = `fn-${app}`
   const source = path.join(upstreamApps, app, 'logo.png')
   if (!fs.existsSync(source)) throw new Error(`找不到上游图标: ${path.relative(ROOT, source)}`)
 
   const image = await Jimp.read(source)
   const { width, height } = image.bitmap
-  if (width !== height) throw new Error(`上游图标不是正方形: ${width}×${height}`)
+  if (width !== height && !allowNonSquare) {
+    throw new Error(`上游图标不是正方形: ${width}×${height}（如确认可补边处理，请显式加 --allow-non-square）`)
+  }
   if (width < 64) console.warn(`  ⚠ 警告: 上游图标仅 ${width}×${height}，放大到 256 会明显失真`)
+
+  // 非正方形：以 max(宽,高) 为边长居中补透明边到正方形。
+  // 不裁剪（会切掉内容）、不拉伸（会变形）——只补边，视觉上无损。
+  let base = image
+  if (width !== height) {
+    const side = Math.max(width, height)
+    const canvas = new Jimp({ width: side, height: side, color: 0x00000000 })
+    canvas.composite(image, Math.round((side - width) / 2), Math.round((side - height) / 2))
+    base = canvas
+    console.warn(`  ⚠ 上游图标 ${width}×${height} 非正方形，已居中补透明边为 ${side}×${side}`)
+  }
 
   const written = []
   for (const target of TARGETS) {
@@ -151,7 +168,7 @@ async function generate(app, upstreamApps, dryRun) {
     const relative = path.relative(ROOT, file)
     // 每个尺寸都从源图单次重采样，避免多级插值叠加造成的模糊。
     if (!dryRun) {
-      const resized = image.clone().resize({ w: target.size, h: target.size, mode: ResizeStrategy.BICUBIC })
+      const resized = base.clone().resize({ w: target.size, h: target.size, mode: ResizeStrategy.BICUBIC })
       fs.mkdirSync(path.dirname(file), { recursive: true })
       await resized.write(file)
     }
@@ -161,7 +178,7 @@ async function generate(app, upstreamApps, dryRun) {
 }
 
 async function main() {
-  const { all, dryRun, force, help, upstream, apps } = parseArgs(process.argv.slice(2))
+  const { all, dryRun, force, allowNonSquare, help, upstream, apps } = parseArgs(process.argv.slice(2))
   if (help) {
     console.log(HELP)
     return
@@ -195,7 +212,7 @@ async function main() {
     throw new Error('待处理应用的图标均已入库；如确需覆盖请加 --force')
 
   for (const app of targets) {
-    const result = await generate(app, upstreamApps, dryRun)
+    const result = await generate(app, upstreamApps, dryRun, allowNonSquare)
     console.log(`\n${result.appname}  ←  ${result.relativeSource}  (${result.from})`)
     for (const line of result.written) console.log(`  ${dryRun ? '[dry-run] ' : ''}${line}`)
   }

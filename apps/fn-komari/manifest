@@ -1,0 +1,14 @@
+appname               = fn-komari
+version               = 6.0.0
+display_name          = Komari Monitor
+desc                  = Komari 是轻量的服务器监控面板，可汇总多台主机的运行状态
+platform              = x86
+source                = thirdparty
+maintainer            = komari-monitor
+maintainer_url        = https://github.com/komari-monitor/komari
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-komari.Application
+disable_authorization_path = true

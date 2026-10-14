@@ -1,0 +1,10 @@
+services:
+  kirara-agent:
+    container_name: fn-kirara-agent
+    image: lss233/kirara-agent-framework:v3.2.0
+    ports:
+      - "${APP_PORT}:8080"
+    restart: always
+    volumes:
+      # 智能体数据，落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）
+      - "${TRIM_PKGVAR}/data:/app/data"

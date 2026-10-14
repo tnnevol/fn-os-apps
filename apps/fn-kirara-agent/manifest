@@ -1,0 +1,14 @@
+appname               = fn-kirara-agent
+version               = 6.0.0
+display_name          = Kirara Agent
+desc                  = Kirara Agent Framework 提供可编排的 AI 智能体运行时
+platform              = x86
+source                = thirdparty
+maintainer            = lss233
+maintainer_url        = https://github.com/lss233/kirara-agent-framework
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-kirara-agent.Application
+disable_authorization_path = true
