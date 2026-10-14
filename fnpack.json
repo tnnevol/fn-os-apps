@@ -689,6 +689,37 @@
       "distributor": "tnnevol",
       "distributor_url": "https://github.com/tnnevol/fn-os-apps"
     },
+    "fn-cordys-crm": {
+      "display_name": "Cordys CRM",
+      "desc": "Cordys CRM 是开源的客户关系管理系统，提供线索、商机与客户管理",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "生活服务"
+      ],
+      "icon_url": "./fn-cordys-crm/ICON.PNG",
+      "readme_url": "./fn-cordys-crm/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "Cordys",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-cordys-crm/fn-cordys-crm_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/1Panel-dev/CordysCRM",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
     "fn-cyberchef": {
       "display_name": "CyberChef",
       "desc": "浏览器中的数据编码、解码与分析工具，无需上传数据即可完成转换",
@@ -748,6 +779,99 @@
         }
       },
       "maintainer_url": "https://github.com/Lissy93/dashy",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-dataease": {
+      "display_name": "DataEase",
+      "desc": "DataEase 是开源的数据可视化分析平台，拖拽式制作图表与仪表板",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-dataease/ICON.PNG",
+      "readme_url": "./fn-dataease/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "DataEase",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-dataease/fn-dataease_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/dataease/dataease",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-dbhub": {
+      "display_name": "DBHub",
+      "desc": "DBHub 是数据库通用网关，为多种数据库提供统一的连接与访问入口",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "AI赋能"
+      ],
+      "icon_url": "./fn-dbhub/ICON.PNG",
+      "readme_url": "./fn-dbhub/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "Bytebase",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-dbhub/fn-dbhub_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/bytebase/dbhub",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-dbx": {
+      "display_name": "DBX",
+      "desc": "DBX 是轻量的数据库管理工具，通过浏览器连接并管理数据库",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-dbx/ICON.PNG",
+      "readme_url": "./fn-dbx/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "t8y2",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-dbx/fn-dbx_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/t8y2/dbx",
       "distributor": "tnnevol",
       "distributor_url": "https://github.com/tnnevol/fn-os-apps"
     },
@@ -996,6 +1120,37 @@
         }
       },
       "maintainer_url": "https://github.com/TwiN/gatus",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-gitea": {
+      "display_name": "Gitea",
+      "desc": "Gitea 是轻量的自托管代码托管平台，提供 Git 仓库、协作与 CI 集成",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "编程开发"
+      ],
+      "icon_url": "./fn-gitea/ICON.PNG",
+      "readme_url": "./fn-gitea/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "CommitGo",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-gitea/fn-gitea_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/commitgo/gitea-ee",
       "distributor": "tnnevol",
       "distributor_url": "https://github.com/tnnevol/fn-os-apps"
     },
@@ -1929,6 +2084,37 @@
       "distributor": "tnnevol",
       "distributor_url": "https://github.com/tnnevol/fn-os-apps"
     },
+    "fn-nginx-proxy-manager": {
+      "display_name": "Nginx Proxy Manager",
+      "desc": "Nginx Proxy Manager 用图形界面管理 Nginx 反向代理与 SSL 证书",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-nginx-proxy-manager/ICON.PNG",
+      "readme_url": "./fn-nginx-proxy-manager/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "jc21",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-nginx-proxy-manager/fn-nginx-proxy-manager_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/NginxProxyManager/nginx-proxy-manager",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
     "fn-node-red": {
       "display_name": "Node-RED",
       "desc": "Node-RED 是基于流程的编程工具，用于连接硬件、API 与在线服务",
@@ -2549,6 +2735,37 @@
       "distributor": "tnnevol",
       "distributor_url": "https://github.com/tnnevol/fn-os-apps"
     },
+    "fn-sftpgo": {
+      "display_name": "SFTPGo",
+      "desc": "SFTPGo 是功能完整的文件传输服务，支持 SFTP、FTP、WebDAV 与网页管理",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-sftpgo/ICON.PNG",
+      "readme_url": "./fn-sftpgo/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "drakkan",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-sftpgo/fn-sftpgo_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/drakkan/sftpgo",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
     "fn-showdoc": {
       "display_name": "ShowDoc",
       "desc": "ShowDoc 是在线文档与 API 文档管理工具，支持 Markdown 编写与团队协作",
@@ -2608,6 +2825,37 @@
         }
       },
       "maintainer_url": "https://github.com/siyuan-note/siyuan",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-sqlbot": {
+      "display_name": "SQLBot",
+      "desc": "SQLBot 是基于大模型的数据库问答工具，用自然语言查询数据库",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-sqlbot/ICON.PNG",
+      "readme_url": "./fn-sqlbot/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "DataEase",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-sqlbot/fn-sqlbot_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/dataease/SQLBot",
       "distributor": "tnnevol",
       "distributor_url": "https://github.com/tnnevol/fn-os-apps"
     },
@@ -2856,6 +3104,37 @@
         }
       },
       "maintainer_url": "https://github.com/twikoojs/twikoo",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-umami": {
+      "display_name": "Umami",
+      "desc": "Umami 是注重隐私的网站统计分析工具，提供访客、来源与页面数据看板",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-umami/ICON.PNG",
+      "readme_url": "./fn-umami/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "Umami",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-umami/fn-umami_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/umami-software/umami",
       "distributor": "tnnevol",
       "distributor_url": "https://github.com/tnnevol/fn-os-apps"
     },
@@ -3138,6 +3417,37 @@
       "distributor": "tnnevol",
       "distributor_url": "https://github.com/tnnevol/fn-os-apps"
     },
+    "fn-wordpress": {
+      "display_name": "WordPress",
+      "desc": "WordPress 是广泛使用的内容管理系统，用于搭建博客与网站",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "生活服务"
+      ],
+      "icon_url": "./fn-wordpress/ICON.PNG",
+      "readme_url": "./fn-wordpress/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "WordPress",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-wordpress/fn-wordpress_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/WordPress/WordPress",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
     "fn-xiaoya-only": {
       "display_name": "小雅",
       "desc": "小雅网盘是一个基于 Alist 的个人网盘工具，支持多种云存储聚合挂载、在线播放、文件管理等功能。",
@@ -3222,6 +3532,68 @@
           "packages": {
             "x86": {
               "download_url": "./fn-zabbix-agent/fn-zabbix-agent_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/zabbix/zabbix",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-zabbix-proxy": {
+      "display_name": "Zabbix Proxy",
+      "desc": "Zabbix Proxy 是 Zabbix 的代理端，代服务器采集监控数据",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-zabbix-proxy/ICON.PNG",
+      "readme_url": "./fn-zabbix-proxy/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "Zabbix",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-zabbix-proxy/fn-zabbix-proxy_v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://github.com/zabbix/zabbix",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
+    "fn-zabbix-server": {
+      "display_name": "Zabbix Server",
+      "desc": "Zabbix Server 是监控系统服务端，负责采集、计算与告警",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "系统工具"
+      ],
+      "icon_url": "./fn-zabbix-server/ICON.PNG",
+      "readme_url": "./fn-zabbix-server/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "Zabbix",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "./fn-zabbix-server/fn-zabbix-server_v6.0.0.fpk"
             }
           },
           "os_min_version": "1.1.8"
