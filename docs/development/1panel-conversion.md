@@ -316,6 +316,59 @@ environment:
 
 **通用原则**：上游配置**不总是正确的**。发现数据落盘路径不在挂载内、示例占位凭据、平台专属路径等问题时，**修正并登记**，而不是忠实照搬。
 
+### 模式 B-2：D 组用户可见数据（共享目录挂载）
+
+T1 应用的数据默认落在 `${TRIM_PKGVAR}`（私有目录，**文件管理器不可见**）。但**媒体库、网盘、书库**类应用的数据是**用户要直接管理的文件**——用户必须能把媒体放进去、应用也要能读到。这类归 **D 组**，落盘约定与普通 T1 不同。
+
+**踩过的坑（务必先读）**：仓库里曾有 10 个应用（`fn-halo`、`fn-moviepilot`、`fn-reader` 等）在 `config/resource` 声明了 `data-share`，**但没有一处真的使用它**——`grep TRIM_DATA_SHARE_PATHS apps/` 命中 0，且 `/vol4/@appshare/` 为空。实际数据仍全部落在 `${TRIM_PKGVAR}`。**结果是「声明了共享目录，但用户看到的目录永远是空的、应用也不读它」——形同虚设。照抄这个先例会把已知问题复制一遍。**
+
+**正确做法**：
+
+1. **恰好声明 1 个**共享目录：
+   ```json
+   {
+     "data-share": {
+       "shares": [{ "name": "fn-<app>" }]
+     }
+   }
+   ```
+   **只能 1 个**——`TRIM_DATA_SHARE_PATHS` 是 `:` 分隔的多值，**不能直接作为单个绑定挂载源**。
+2. **不需要 `permission`**——官方文档：「一般情况下不需要写 `permission`。只有需要授权其他应用访问该目录时，再声明额外的访问权限」。系统会自动为应用运行用户授予 ACL。
+3. **数据挂载源改为共享目录的绝对路径**（该路径在目标 NAS 上形如 `/vol<N>/@appshare/fn-<app>`），**不再用 `${TRIM_PKGVAR}`**；子目录在 `cmd/install_callback` 预创建。
+4. **文档「运行要求」写明**：共享目录位于文件管理器的 `<存储卷>/@appshare/fn-<app>/`，用户把媒体文件放在那里。
+
+> **待真机验证**：`TRIM_DATA_SHARE_PATHS` 能否在 compose 中展开。`TRIM_PKGVAR` 已实证可用，但两者机制不同，**不能类推**；若未注入会静默传空值（同 `${TRIM_UID}` 的风险）。**验证前不批量做 D 组。**
+
+**注意**：`data-share` 与「用户授权既有目录」（`TRIM_DATA_ACCESSIBLE_PATHS` / `pickSharedFile`）是**两套不同机制**，不要混淆——前者是应用**声明**并由 fnOS 自动创建 + 自动 ACL，后者是管理员**授权已存在的任意目录**。
+
+真机实测参考：`/var/apps/fn-halo/shares/fn-halo` → `/vol4/@appshare/fn-halo`（共享目录），`/var/apps/fn-halo/var` → `/vol4/@appdata/fn-halo`（私有数据目录）。**两者是不同位置。**（注：实际目录名是 `shares` 复数，官方文档写作 `share`，以实际为准。）
+
+### 模式 B-3：单文件挂载与最小种子配置
+
+上游形如 `./data/conf.yml:/app/config.yml` 的**单文件挂载**，源是文件而非目录。两个要点：
+
+**1. 保持文件形态。** `${TRIM_PKGVAR}/data/conf.yml:/app/config.yml`——去掉 `conf.yml` 会挂成目录，应用起不来。
+
+**2. 父目录与文件必须预创建。** Docker 不会为单文件挂载自动创建源文件。`cmd/install_callback` 需 `mkdir -p` 父目录并准备该文件；`TRIM_PKGVAR` 为空时写日志并 `exit 1`（不要让 `mkdir -p ""` 静默失败）。
+
+**3. 空文件不一定是可用的种子——这是实测踩过的坑。** 上游的 `data/` 目录里**自带真实初始内容**，`touch` 出的空文件会导致：
+
+| 应用 | 空文件的后果 |
+| --- | --- |
+| `focalboard` | 空串**不是合法 JSON** → 配置解析失败 |
+| `obsidian_livesync` | `require_valid_user = true` 丢失 → **未认证请求可访问公开端点（安全弱化）** |
+| `dashy` | 上游自带示例仪表盘 → 面板空白 |
+| `glance` | 无 `pages` → 什么都不渲染 |
+| `phpmyadmin` | 上传限制与隐藏系统库配置失效（功能退化，不报错） |
+
+**做法**：自建 `app/seed/` 存放**自己写的最小可用配置**，由 `install_callback` 在文件不存在时拷入 `${TRIM_PKGVAR}`（用户已改过的不覆盖）。
+
+**为什么不直接搬上游的种子文件**：禁止项 4 的立法目的是「不搬运上游的表达」（YAML 注释、README 措辞、表单文案）。**「让应用能正常启动的最小配置」是配置事实而非文案**，但上游 `glance.yml`/`conf.yml` 里含**具体 RSS 源与示例仪表盘**——那是示例数据，本就不该搬。**自己写最小配置同时满足两边**：不碰上游内容，又能修掉上述实质缺陷。
+
+最小配置至少要满足：`focalboard` 给出**合法 JSON 对象**；`obsidian_livesync` **必须含 `require_valid_user = true`**；`glance` 至少一个 `pages` 条目；`dashy` 为可加载的最小 YAML。
+
+**校验判据要升级**：断言「挂载源存在」不够，还要断言「文件非空且格式合法」（至少对 JSON 做解析断言）。
+
 ### 模式 C：T2 资源集成改造（gitea）
 
 上游 `appstore/apps/gitea/27.3.4/docker-compose.yml`：
@@ -564,3 +617,4 @@ disable_authorization_path = true
 | 2026-10-10 | 新增「模式 B 的三个补充裁决」（T1 第 1 组实测）：① `PUID`/`PGID` 改用 `${TRIM_UID}`/`${TRIM_GID}`（真机取证 fnOS 包用户 UID 是动态值、数据目录 mode 770）；② 向导字段按「安装时必须由用户决定」取舍，`gotify` 29 字段收敛为核心 5 个并要求文档留出口；③ 上游数据落盘缺陷（`2fauth` 的 `DB_DATABASE` 在挂载外、`APP_KEY` 为占位示例值）必须修正而非照搬。 |
 | 2026-10-10 | 订正 `${TRIM_UID}`/`${TRIM_GID}` 的依据强度：原表述称「fnOS 在 compose 中会展开 `TRIM_*`（官方 Docker 案例使用 …）」并引用了官方案例，但该案例实际只含 `${TRIM_APPDEST}`/`${TRIM_SERVICE_PORT}`，**未出现 `TRIM_UID`/`TRIM_GID`**，属引用不实。改为「文档列出变量但无 compose 示例」，并补充未注入时的**静默空值**实测输出（`exit=0`、`PUID: ""`）。 |
 | 2026-10-10 | 补两处泛化：① 宿主路径挂载条款判据从「`/etc/1panel` 等 1Panel 路径」改为「**挂载源是否为宿主绝对路径**」，并补录 `showdoc` 的 `/showdoc_data` 案例；② 新增**可变镜像标签**禁令（`:latest`/`:master`/`:main` 等一律不转换），补录 6 个暂缓应用。 |
+| 2026-10-14 | 新增「模式 B-2 D 组用户可见数据」与「模式 B-3 单文件挂载与最小种子配置」两节。D 组记录既有 10 个 `data-share` 先例「声明了但未使用」的坑（`TRIM_DATA_SHARE_PATHS` 命中 0、`@appshare` 为空），确立「数据挂共享目录而非 `TRIM_PKGVAR`、恰好声明 1 个、不需 `permission`」，并标注 `TRIM_DATA_SHARE_PATHS` 在 compose 的展开能力待真机验证。B-3 记录 `touch` 空文件导致 `focalboard` JSON 解析失败与 `obsidian_livesync` 认证弱化等实质缺陷，确立自写最小配置而非搬运上游。 |
