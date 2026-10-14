@@ -334,10 +334,20 @@ T1 应用的数据默认落在 `${TRIM_PKGVAR}`（私有目录，**文件管理�
    ```
    **只能 1 个**——`TRIM_DATA_SHARE_PATHS` 是 `:` 分隔的多值，**不能直接作为单个绑定挂载源**。
 2. **不需要 `permission`**——官方文档：「一般情况下不需要写 `permission`。只有需要授权其他应用访问该目录时，再声明额外的访问权限」。系统会自动为应用运行用户授予 ACL。
-3. **数据挂载源改为共享目录的绝对路径**（该路径在目标 NAS 上形如 `/vol<N>/@appshare/fn-<app>`），**不再用 `${TRIM_PKGVAR}`**；子目录在 `cmd/install_callback` 预创建。
+3. **数据挂载源用 `${TRIM_APPDEST_VOL}/@appshare/fn-<app>/<子目录>`**，**不再用 `${TRIM_PKGVAR}`**；子目录在 `cmd/install_callback` 预创建。
+
+   > **卷号必须用变量，不能写死。** 共享目录落在 `/vol<N>/@appshare/`，而 `<N>` 是**安装时用户选择的存储卷**（我们安装时用的是 `volume-id=4`）。写死 `/vol4/` 会在用户选了别的卷时直接失效。
+   >
+   > 正确写法用 `TRIM_APPDEST_VOL`（应用安装所在存储空间路径），**仓库既有先例 `apps/fn-xiaoya-only/app/docker/docker-compose.yaml` 已在用**：
+   > ```yaml
+   > volumes:
+   >   - ${TRIM_APPDEST_VOL}/@appshare/fn-xiaoya-only/alist/data:/data
+   > ```
+   > **不要用 `TRIM_DATA_SHARE_PATHS`**：它是 `:` 分隔的多值，无法作为单个挂载源；且其能否在 compose 中展开尚未验证（`TRIM_PKGVAR` 已实证可用，但两者机制不同，不能类推）。`${TRIM_APPDEST_VOL}` 是**既有用法**，风险显著更低。
+
 4. **文档「运行要求」写明**：共享目录位于文件管理器的 `<存储卷>/@appshare/fn-<app>/`，用户把媒体文件放在那里。
 
-> **待真机验证**：`TRIM_DATA_SHARE_PATHS` 能否在 compose 中展开。`TRIM_PKGVAR` 已实证可用，但两者机制不同，**不能类推**；若未注入会静默传空值（同 `${TRIM_UID}` 的风险）。**验证前不批量做 D 组。**
+> **待真机验证**：`TRIM_APPDEST_VOL` 在 compose 中的展开（`fn-xiaoya-only` 已用它发布，但该应用的挂载效果未经真机确认）。**验证前不批量做 D 组。**
 
 **注意**：`data-share` 与「用户授权既有目录」（`TRIM_DATA_ACCESSIBLE_PATHS` / `pickSharedFile`）是**两套不同机制**，不要混淆——前者是应用**声明**并由 fnOS 自动创建 + 自动 ACL，后者是管理员**授权已存在的任意目录**。
 
@@ -618,3 +628,4 @@ disable_authorization_path = true
 | 2026-10-10 | 订正 `${TRIM_UID}`/`${TRIM_GID}` 的依据强度：原表述称「fnOS 在 compose 中会展开 `TRIM_*`（官方 Docker 案例使用 …）」并引用了官方案例，但该案例实际只含 `${TRIM_APPDEST}`/`${TRIM_SERVICE_PORT}`，**未出现 `TRIM_UID`/`TRIM_GID`**，属引用不实。改为「文档列出变量但无 compose 示例」，并补充未注入时的**静默空值**实测输出（`exit=0`、`PUID: ""`）。 |
 | 2026-10-10 | 补两处泛化：① 宿主路径挂载条款判据从「`/etc/1panel` 等 1Panel 路径」改为「**挂载源是否为宿主绝对路径**」，并补录 `showdoc` 的 `/showdoc_data` 案例；② 新增**可变镜像标签**禁令（`:latest`/`:master`/`:main` 等一律不转换），补录 6 个暂缓应用。 |
 | 2026-10-14 | 新增「模式 B-2 D 组用户可见数据」与「模式 B-3 单文件挂载与最小种子配置」两节。D 组记录既有 10 个 `data-share` 先例「声明了但未使用」的坑（`TRIM_DATA_SHARE_PATHS` 命中 0、`@appshare` 为空），确立「数据挂共享目录而非 `TRIM_PKGVAR`、恰好声明 1 个、不需 `permission`」，并标注 `TRIM_DATA_SHARE_PATHS` 在 compose 的展开能力待真机验证。B-3 记录 `touch` 空文件导致 `focalboard` JSON 解析失败与 `obsidian_livesync` 认证弱化等实质缺陷，确立自写最小配置而非搬运上游。 |
+| 2026-10-14 | 订正 D 组规则的卷号缺陷：原写「挂载源改为共享目录绝对路径（`/vol<N>/@appshare/…`）」，但 `<N>` 是安装时用户选择的存储卷，写死会在选错卷时失效。改为沿用既有先例 `fn-xiaoya-only` 的 `${TRIM_APPDEST_VOL}/@appshare/fn-<app>/…` 写法，并说明为何不用 `TRIM_DATA_SHARE_PATHS`（多值分隔，无法作单个挂载源且展开能力未验证）。 |
