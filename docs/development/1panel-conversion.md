@@ -125,7 +125,24 @@ description: 把 1Panel 应用商店应用转换为 fnOS FPK 应用的命名规�
 | --- | --- | --- |
 | `networks: - 1panel-network` 与顶层 `networks: 1panel-network: external: true` | **整体删除** | fnOS 由 compose 项目网络接管；上游 257 个应用命中 |
 | `labels: createdBy: "Apps"` | **删除** | 1Panel 应用商店自有标记，fnOS 无对应概念 |
-| 镜像标签为**可变引用**（`:latest`、`:master`、`:main`、`:dev`、`:edge`、`:stable`、无标签） | **不转换**，先选定固定版本再进批次 | 可变标签会随上游更新漂移，构建不可复现。**全量扫描（265 个应用）共命中 14 个**：`affine`(`stable`)、`dvwa`、`excalidraw`、`huginn`、`jsonhero`、`jupyter-notebook`、`koodo-reader`(`master`)、`lsky-pro`、`mcsmanager-daemon`、`mcsmanager-web`、`openvpn`、`palworld`、`redis-commander`、`teable`（均 `:latest`）。**筛选时须用宽判据，不能只匹配 `:latest`** |
+| 镜像标签为**可变引用** | **不转换**，先选定固定版本再进批次 | 可变标签会随上游更新漂移，构建不可复现 |
+| 镜像标签含 `${...}` 变量插值 | **不转换**，先选定具体镜像写死 | 规约禁止未解析插值；须选一个真实存在的完整标签 |
+| 镜像来自 `${IMAGE_NAME}` 等向导变量 | 同上 | 标签不由 compose 固定，无法保证可复现 |
+
+**可变标签的判定必须用「标签串包含可变词」，不能用「标签等于可变值」**：
+
+```text
+❌ 错误：标签等于 latest/master/main/dev/edge/stable
+✅ 正确：标签串中包含这些词即可
+
+zabbix/zabbix-java-gateway:alpine-latest      ← 含 latest，可变
+zabbix/zabbix-server-mysql:alpine-7.4.5      ← 固定
+ghcr.io/umami-software/umami:${PANEL_DB_TYPE}-v2.20.2  ← 变量插值，不可复现
+```
+
+**这个坑已踩三次**（漏 `:master`、漏 `alpine-latest`、漏变量插值）。扫描时用**宽判据**：标签串包含 `latest`/`master`/`main`/`dev`/`edge`/`stable`/`nightly`，**或**含 `${`。
+
+**选定可变标签的目标版本时必须联网确认该 tag 真实存在**，不能凭版本线推断——例如 `zabbix/zabbix-java-gateway:alpine-latest` 应钉到 `alpine-7.4.5`（Docker Hub 实测存在，同一 compose 的 `zabbix-server-mysql` 已是该版本）。
 | `labels: skipStatusCheck: "true"` | **删除** | 1Panel 状态检查专用；多容器迁移任务在 fnOS 侧改为 `cmd/main` 的实际探测逻辑 |
 | `${CONTAINER_NAME}` | 字面量 `fn-<app>` | — |
 | `env_file` | 展开成 compose 内的 `environment` | fnOS 侧不保证 `env_file` 路径存在；上游 4 个应用命中，属 T4 待确认项 |
@@ -629,3 +646,4 @@ disable_authorization_path = true
 | 2026-10-10 | 补两处泛化：① 宿主路径挂载条款判据从「`/etc/1panel` 等 1Panel 路径」改为「**挂载源是否为宿主绝对路径**」，并补录 `showdoc` 的 `/showdoc_data` 案例；② 新增**可变镜像标签**禁令（`:latest`/`:master`/`:main` 等一律不转换），补录 6 个暂缓应用。 |
 | 2026-10-14 | 新增「模式 B-2 D 组用户可见数据」与「模式 B-3 单文件挂载与最小种子配置」两节。D 组记录既有 10 个 `data-share` 先例「声明了但未使用」的坑（`TRIM_DATA_SHARE_PATHS` 命中 0、`@appshare` 为空），确立「数据挂共享目录而非 `TRIM_PKGVAR`、恰好声明 1 个、不需 `permission`」，并标注 `TRIM_DATA_SHARE_PATHS` 在 compose 的展开能力待真机验证。B-3 记录 `touch` 空文件导致 `focalboard` JSON 解析失败与 `obsidian_livesync` 认证弱化等实质缺陷，确立自写最小配置而非搬运上游。 |
 | 2026-10-14 | 订正 D 组规则的卷号缺陷：原写「挂载源改为共享目录绝对路径（`/vol<N>/@appshare/…`）」，但 `<N>` 是安装时用户选择的存储卷，写死会在选错卷时失效。改为沿用既有先例 `fn-xiaoya-only` 的 `${TRIM_APPDEST_VOL}/@appshare/fn-<app>/…` 写法，并说明为何不用 `TRIM_DATA_SHARE_PATHS`（多值分隔，无法作单个挂载源且展开能力未验证）。 |
+| 2026-10-14 | 补可变标签判据的**宽匹配**规则与三类命中场景（`:latest` 类、`:master` 类、`alpine-latest` 类、变量插值类）。此前的「标签等于可变值」写法连续漏判三次（`:master`、`alpine-latest`、`${PANEL_DB_TYPE}` 插值），改为「标签串包含可变词或含 `${` 即命中」，并要求选定目标版本前联网确认 tag 存在。 |

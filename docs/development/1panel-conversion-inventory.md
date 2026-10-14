@@ -90,7 +90,7 @@ description: 1Panel 应用商店 265 个应用的 fnOS 转换分级、改造点�
 | P3 | `wechatmarkdowneditor` | WeChat Markdown Editor | `doocs/md:2.1.0` | 仅命名/网络差异 | 1 |
 | P3 | `yesplaymusic` | YesPlayMusic | `fogforest/yesplaymusic:0.4.9` | 仅命名/网络差异 | 1 |
 
-### T1 状态落盘改造（98 个）
+### T1 状态落盘改造（99 个）
 
 单容器单端口，但状态写在 `./data` 相对目录，必须改到 `${TRIM_PKGVAR}` 或共享目录。
 
@@ -194,14 +194,15 @@ description: 1Panel 应用商店 265 个应用的 fnOS 转换分级、改造点�
 | P3 | `wallos` | Wallos | `bellamy/wallos:5.8.3` | 状态落 `./data` | 1 |
 | P3 | `xiaomusic` | XiaoMusic | `hanxi/xiaomusic:v0.6.1` | 状态落 `./data` | 1 |
 | P3 | `zfile` | ZFile | `zhaojun1998/zfile:5.0.9` | 状态落 `./data` | 1 |
+| P1 | `sqlbot` | SQLBot | `dataease/sqlbot:v1.10.2` | 状态落 `./data`（含容器内自带 PostgreSQL）；多端口×2；仅 amd64。**分级订正**：原 T2，但实测 `PANEL_DB_*`/`DBHUB_DB_*` 命中 0 处，上游注释写明「all-in-one containerized database」，按外部数据库判据应归 T1 | 1 |
 
-### T2 资源集成改造（74 个）
+### T2 资源集成改造（73 个）
 
 需要外部数据库/Redis、多端口、多容器或服务选择器联动字段。
 
 | 优先级 | 上游应用 | 展示名 | 主镜像 | 关键改造点 | 上游版本数 |
 | --- | --- | --- | --- | --- | --- |
-| P1 | `umami` | Umami | `（变量镜像）` | 服务选择器联动；外部数据库 | 2 |
+| P1 | `umami` | Umami | `ghcr.io/umami-software/umami:3.4.0` | 外部数据库（`PANEL_DB_*`）。**版本订正**：原登记「（变量镜像）」不可用——`2.20.2` 的镜像为 `umami:${PANEL_DB_TYPE}-v2.20.2` 含变量插值，规约禁止；`3.4.0` 是唯一无插值版本 | 2 |
 | P1 | `dbhub` | DBHub | `bytebase/dbhub:1.4.0` | 需外部数据库，`DBHUB_DB_*` 连接信息由向导收集 | 1 |
 | P2 | `nginx-proxy-manager` | Nginx Proxy Manager | `jc21/nginx-proxy-manager:2.16.0` | 状态落 `./data`；多端口×3 | 1 |
 | P2 | `sftpgo` | SFTPGo | `drakkan/sftpgo:v2.7.6-alpine` | 状态落 `./data`；多端口×5 | 1 |
@@ -213,7 +214,6 @@ description: 1Panel 应用商店 265 个应用的 fnOS 转换分级、改造点�
 | P2 | `zabbix-proxy` | Zabbix Proxy | `zabbix/zabbix-proxy-mysql:alpine-7.4.5` | 服务选择器联动；外部数据库 | 1 |
 | P2 | `dbx` | DBX | `t8y2/dbx:0.6.35` | 状态落 `./data`；外部数据库 | 1 |
 | P2 | `dataease` | DataEase | `registry.cn-qingdao.aliyuncs.com/dataease/dataease:v2.10.27` | 状态落 `./data`；服务选择器联动；外部数据库 | 2 |
-| P2 | `sqlbot` | SQLBot | `dataease/sqlbot:v1.10.2` | 状态落 `./data`；外部数据库；多端口×2；仅 amd64 | 1 |
 | P2 | `cordys-crm` | Cordys CRM | `1panel/cordys-crm:v1.9.3` | 状态落 `./data`；外部数据库；多端口×2；仅 amd64 | 1 |
 | P3 | `adguardhome` | AdGuardHome | `adguard/adguardhome:v0.107.79` | 状态落 `./data`；多端口×14 | 1 |
 | P3 | `affine` | AFFiNE | `ghcr.io/toeverything/affine:0.27.4` | 状态落 `./data`；服务选择器联动；外部数据库；Redis；多容器×2 | 2 |
@@ -387,11 +387,11 @@ description: 1Panel 应用商店 265 个应用的 fnOS 转换分级、改造点�
 
 本清单由静态扫描生成，扫描口径见「盘点口径」。上游应用新增版本或新增应用后，需要重新扫描并更新计数；不手工维护单个应用的分级。
 
-重新盘点时至少核对：应用总数、`1panel-network` 使用数、`./` 相对挂载数、外部命名卷数、多版本应用数，以及本清单各分级的数量之和是否等于应用总数（14 + 98 + 74 + 46 + 33 = 265）。
+重新盘点时至少核对：应用总数、`1panel-network` 使用数、`./` 相对挂载数、外部命名卷数、多版本应用数，以及本清单各分级的数量之和是否等于应用总数（14 + 99 + 73 + 46 + 33 = 265）。
 
 ### 分级判定条件的互斥性与复算
 
-「分级总览」的七条判定按**第一个命中的条件决定级别**，是有序的互斥级联：一条命中即终止，因此任一应用只属于一个级别，不会同时落入两级。总量守恒（14 + 98 + 74 + 46 + 33 = 265）正是互斥性的检验：只要出现重复归属或遗漏，五个数之和就不等于 265。
+「分级总览」的七条判定按**第一个命中的条件决定级别**，是有序的互斥级联：一条命中即终止，因此任一应用只属于一个级别，不会同时落入两级。总量守恒（14 + 99 + 73 + 46 + 33 = 265）正是互斥性的检验：只要出现重复归属或遗漏，五个数之和就不等于 265。
 
 复算时按同一顺序逐条求值即可，不需要人工判断：
 
@@ -427,7 +427,7 @@ description: 1Panel 应用商店 265 个应用的 fnOS 转换分级、改造点�
 
 ```text
 T0 = 14   T1 = 98   T2 = 74   T3 = 46   T4 = 33
-合计 = 14 + 98 + 74 + 46 + 33 = 265 ✓
+合计 = 14 + 99 + 73 + 46 + 33 = 265 ✓
 ```
 
 复算时重点核对两处曾经出错的判据，它们是口径正确性的探针：
@@ -464,3 +464,4 @@ T0 = 14   T1 = 98   T2 = 74   T3 = 46   T4 = 33
 | 2026-10-10 | 补登 `llama-cpp` 的挂载事实：上游有 `${MODEL_DIR}:/models`（`MODEL_DIR` 默认 `./models`、`edit: true`），原「仅命名/网络差异」表述不完整。**分级不变**（仍 T0，单容器单端口），但转换时需加 `MODEL_PATH` 向导字段与只读挂载。 |
 | 2026-10-10 | 写死 `formFields` 的**读取位置口径**：只在版本级 `appstore/apps/<app>/<version>/data.yml`，顶层 `data.yml` 永不包含（实测 265 个顶层文件命中 0，读错位置会误得「全部无表单」）；多版本按并集取，但实测并集/全部/首个三种取法均得 259（无应用跨版本出现有/无差异）。复算确认 259 在该口径下成立，数字不变。同时新增「已知遗留」章节（登记 `fn-mysql_v8` 下划线命名的历史遗留，有意保留不改）。 |
 | 2026-10-10 | 登记分类维度局限：T1/T2 判据只看挂载形态，未区分「应用内部状态」与「用户可见数据」，致 `zfile`/`komga` 等媒体类应用错落 T1（应属 D 组）。不返工，逐个登记待补 `data-share`。同时确立**多版本应用的选版口径 = 取清单登记版本**（依据：本清单为唯一权威来源；要改版本须改清单，不在实现中偏离）。 |
+| 2026-10-14 | 订正两处：① `umami` 版本登记由「（变量镜像）」改为 `3.4.0`（`2.20.2` 镜像含 `${PANEL_DB_TYPE}` 插值不可复现，`3.4.0` 是唯一无插值版本）；② `sqlbot` 由 T2 移入 T1（实测 `PANEL_DB_*`/`DBHUB_DB_*` 命中 0，上游为容器内自带 PostgreSQL）。T1 计数 +1、T2 计数 −1。 |
