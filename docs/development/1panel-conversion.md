@@ -116,7 +116,7 @@ description: 把 1Panel 应用商店应用转换为 fnOS FPK 应用的命名规�
 | `./data`、`./conf` 等相对挂载 | `${TRIM_PKGVAR}/<子目录>`（目标 NAS 路径 `/var/apps/fn-<app>/var/`） | 禁止把运行数据写进 FPK 安装目录（`TRIM_APPDEST` 只放只读资源）。上游按「行首 `- ` 后接可选引号再接 `./`」口径计为 223 个应用，其中真实 `./` volume 挂载 222 个，差额 1 个是仅出现在 `env_file:` 段的 `zitadel`（该口径不影响分级）；复算方式见[转换清单](/development/1panel-conversion-inventory)的「盘点口径」 |
 | 用户需要直接看到/导入/导出的数据（媒体库、下载目录、书签文件） | `config/resource` 声明 `data-share`，路径从 `TRIM_DATA_SHARE_PATHS` 取 | 声明后卸载向导必须能区分「删应用」与「删用户数据」 |
 | 外部命名卷（`volumes:` 下 `external: true`） | 改为 `${TRIM_PKGVAR}` 绑定挂载 | 上游仅 `maddy-mail`、`synapse` 两处；外部卷在 fnOS 上不会被自动创建 |
-| `/etc/1panel` 等 1Panel 宿主路径挂载 | **删除**，改为应用自己的配置目录 | fnOS 上不存在这些路径；上游 `ai-gateway` 命中 |
+| 挂载源是**宿主绝对路径**（`/etc/1panel`、`/showdoc_data` 等） | **删除该行**，其余相对挂载照常改造 | fnOS 上不存在这些路径，保留会导致挂载失败。判据是**挂载源是否为宿主绝对路径**，与是否 1Panel 专属无关。已命中：`ai-gateway`（`/etc/1panel`）、`showdoc`（`/showdoc_data:/showdoc_data_old`，版本迁移遗留） |
 | `PANEL_WEBSITE_DIR` | 需要用户授权目录时用 `TRIM_DATA_ACCESSIBLE_PATHS` / `data-share` | 上游 16 处，集中在 T3 Web 服务器类，需随依赖契约一并决策 |
 
 ### 网络、标签与其他
@@ -125,6 +125,7 @@ description: 把 1Panel 应用商店应用转换为 fnOS FPK 应用的命名规�
 | --- | --- | --- |
 | `networks: - 1panel-network` 与顶层 `networks: 1panel-network: external: true` | **整体删除** | fnOS 由 compose 项目网络接管；上游 257 个应用命中 |
 | `labels: createdBy: "Apps"` | **删除** | 1Panel 应用商店自有标记，fnOS 无对应概念 |
+| 镜像标签为**可变引用**（`:latest`、`:master`、`:main`、`:dev`、`:edge`、`:stable`、无标签） | **不转换**，先选定固定版本再进批次 | 可变标签会随上游更新漂移，构建不可复现。**全量扫描（265 个应用）共命中 14 个**：`affine`(`stable`)、`dvwa`、`excalidraw`、`huginn`、`jsonhero`、`jupyter-notebook`、`koodo-reader`(`master`)、`lsky-pro`、`mcsmanager-daemon`、`mcsmanager-web`、`openvpn`、`palworld`、`redis-commander`、`teable`（均 `:latest`）。**筛选时须用宽判据，不能只匹配 `:latest`** |
 | `labels: skipStatusCheck: "true"` | **删除** | 1Panel 状态检查专用；多容器迁移任务在 fnOS 侧改为 `cmd/main` 的实际探测逻辑 |
 | `${CONTAINER_NAME}` | 字面量 `fn-<app>` | — |
 | `env_file` | 展开成 compose 内的 `environment` | fnOS 侧不保证 `env_file` 路径存在；上游 4 个应用命中，属 T4 待确认项 |
@@ -562,3 +563,4 @@ disable_authorization_path = true
 | 2026-10-10 | 补入口 ID 长度上限（≤32 字符）与 `appname` 前缀硬校验：`fn-wechatmarkdowneditor.Application`（35 字符）实测打包失败，改用 `.main`（28 字符）通过。实测边界 32 通过 / 33 拒绝。同步补自检清单的无入口应用形态（`app/ui/config` 为 `{}`）。 |
 | 2026-10-10 | 新增「模式 B 的三个补充裁决」（T1 第 1 组实测）：① `PUID`/`PGID` 改用 `${TRIM_UID}`/`${TRIM_GID}`（真机取证 fnOS 包用户 UID 是动态值、数据目录 mode 770）；② 向导字段按「安装时必须由用户决定」取舍，`gotify` 29 字段收敛为核心 5 个并要求文档留出口；③ 上游数据落盘缺陷（`2fauth` 的 `DB_DATABASE` 在挂载外、`APP_KEY` 为占位示例值）必须修正而非照搬。 |
 | 2026-10-10 | 订正 `${TRIM_UID}`/`${TRIM_GID}` 的依据强度：原表述称「fnOS 在 compose 中会展开 `TRIM_*`（官方 Docker 案例使用 …）」并引用了官方案例，但该案例实际只含 `${TRIM_APPDEST}`/`${TRIM_SERVICE_PORT}`，**未出现 `TRIM_UID`/`TRIM_GID`**，属引用不实。改为「文档列出变量但无 compose 示例」，并补充未注入时的**静默空值**实测输出（`exit=0`、`PUID: ""`）。 |
+| 2026-10-10 | 补两处泛化：① 宿主路径挂载条款判据从「`/etc/1panel` 等 1Panel 路径」改为「**挂载源是否为宿主绝对路径**」，并补录 `showdoc` 的 `/showdoc_data` 案例；② 新增**可变镜像标签**禁令（`:latest`/`:master`/`:main` 等一律不转换），补录 6 个暂缓应用。 |
