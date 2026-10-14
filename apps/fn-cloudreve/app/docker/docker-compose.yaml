@@ -1,0 +1,21 @@
+services:
+  cloudreve:
+    container_name: fn-cloudreve
+    image: cloudreve/cloudreve:4.19.1
+    environment:
+      # 上游由 1Panel 服务选择器注入 PANEL_DB_* / PANEL_REDIS_*，fnOS 改为向导显式填写
+      - CR_CONF_Database.Type=${DB_TYPE}
+      - CR_CONF_Database.Host=${DB_HOST}
+      - CR_CONF_Database.Name=${DB_NAME}
+      - CR_CONF_Database.User=${DB_USERNAME}
+      - CR_CONF_Database.Password=${DB_PASSWORD}
+      - CR_CONF_Database.Port=${DB_PORT}
+      # 该应用把 Redis 拆成「地址」与「密码」两个变量消费，故不使用单串 REDIS_CONN_STRING
+      - CR_CONF_Redis.Server=${REDIS_HOST}:6379
+      - CR_CONF_Redis.Password=${REDIS_PASSWORD}
+    ports:
+      - "${APP_PORT}:5212"
+    restart: always
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      - "${TRIM_PKGVAR}/data:/cloudreve/data"

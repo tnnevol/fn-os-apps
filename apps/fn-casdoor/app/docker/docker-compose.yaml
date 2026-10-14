@@ -1,0 +1,16 @@
+services:
+  casdoor:
+    container_name: fn-casdoor
+    image: casbin/casdoor:4.18.0
+    environment:
+      - RUNNING_IN_DOCKER=true
+      # 上游用 CASDOOR_DRIVER_NAME / CASDOOR_DATASOURCE_NAME，由 1Panel 的 scripts/init.sh 生成；
+      # fnOS 无该预启动钩子，故改为向导直接填写驱动与 DSN（见转换规约）。
+      - driverName=${DB_TYPE}
+      - dataSourceName=${DB_DSN}
+    ports:
+      - "${APP_PORT}:8000"
+    restart: always
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      - "${TRIM_PKGVAR}/data/conf:/conf"

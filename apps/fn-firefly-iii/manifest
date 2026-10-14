@@ -1,0 +1,14 @@
+appname               = fn-firefly-iii
+version               = 6.0.0
+display_name          = Firefly III
+desc                  = Firefly III 是自托管的个人财务管理工具，记录收支并生成报表
+platform              = x86
+source                = thirdparty
+maintainer            = Firefly III
+maintainer_url        = https://github.com/firefly-iii/firefly-iii
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-firefly-iii.Application
+disable_authorization_path = true

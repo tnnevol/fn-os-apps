@@ -1,0 +1,26 @@
+services:
+  adguardhome:
+    container_name: fn-adguardhome
+    image: adguard/adguardhome:v0.107.79
+    environment:
+      - TZ=${TIME_ZONE}
+    ports:
+      - "${DNS_PORT}:53/tcp"
+      - "${DNS_PORT}:53/udp"
+      - "${DHCP_PORT_1}:67/udp"
+      - "${DHCP_PORT_2}:68/udp"
+      - "${HTTP_PORT_1}:80/tcp"
+      - "${DOH_PORT}:443/tcp"
+      - "${DOH_PORT}:443/udp"
+      - "${APP_PORT}:3000/tcp"
+      - "${DOT_PORT}:853/tcp"
+      - "${QUIC_PORT_1}:784/udp"
+      - "${DOT_PORT}:853/udp"
+      - "${QUIC_PORT_2}:8853/udp"
+      - "${DNSCRYPT_PORT}:5443/tcp"
+      - "${DNSCRYPT_PORT}:5443/udp"
+    restart: always
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      - "${TRIM_PKGVAR}/data/work:/opt/adguardhome/work"
+      - "${TRIM_PKGVAR}/data/conf:/opt/adguardhome/conf"

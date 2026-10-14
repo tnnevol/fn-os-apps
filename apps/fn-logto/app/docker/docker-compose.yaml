@@ -1,0 +1,15 @@
+services:
+  logto:
+    container_name: fn-logto
+    image: svhd/logto:1.44.0
+    entrypoint: ["sh", "-c", "npm run cli db seed -- --swe && npm run alteration deploy latest && npm start"]
+    environment:
+      - TRUST_PROXY_HEADER=1
+      # 上游由 1Panel 服务选择器注入 PANEL_DB_*，fnOS 改为向导显式填写
+      - DB_URL=postgres://${DB_USERNAME}:${DB_PASSWORD}@${DB_HOST}
+      - ENDPOINT=${LOGTO_ENDPOINT_URL}
+      - ADMIN_ENDPOINT=${LOGTO_ADMIN_ENDPOINT_URL}
+    ports:
+      - "${APP_PORT}:3002"
+      - "${LOGTO_PORT}:3001"
+    restart: always

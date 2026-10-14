@@ -1,0 +1,14 @@
+appname               = fn-blinko
+version               = 6.0.0
+display_name          = Blinko
+desc                  = Blinko 是注重隐私的快速笔记工具，支持 AI 增强检索与标签整理
+platform              = x86
+source                = thirdparty
+maintainer            = Blinko
+maintainer_url        = https://github.com/blinko-space/blinko
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-blinko.Application
+disable_authorization_path = true

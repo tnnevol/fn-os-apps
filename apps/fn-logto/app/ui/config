@@ -1,0 +1,22 @@
+{
+  ".url": {
+    "fn-logto.Application": {
+      "title": "Logto",
+      "icon": "images/icon_{0}.png",
+      "type": "url",
+      "protocol": "http",
+      "port": "${APP_PORT}",
+      "url": "/",
+      "allUsers": false
+    },
+    "fn-logto.logto_port": {
+      "title": "Logto（控制台端口）",
+      "icon": "images/icon_{0}.png",
+      "type": "url",
+      "protocol": "http",
+      "port": "${LOGTO_PORT}",
+      "url": "/",
+      "allUsers": false
+    }
+  }
+}

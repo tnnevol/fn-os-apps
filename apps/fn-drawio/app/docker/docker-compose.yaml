@@ -1,0 +1,8 @@
+services:
+  drawio:
+    container_name: fn-drawio
+    image: jgraph/drawio:32.3.0
+    ports:
+      - "${APP_PORT}:8080"
+      - "${HTTPS_PORT}:8443"
+    restart: unless-stopped

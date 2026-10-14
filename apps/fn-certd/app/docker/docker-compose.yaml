@@ -1,0 +1,11 @@
+services:
+  certd:
+    container_name: fn-certd
+    image: greper/certd:1.45.0
+    ports:
+      - "${APP_PORT}:7001"
+      - "${HTTPS_PORT}:7002"
+    restart: always
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      - "${TRIM_PKGVAR}/data/certd:/app/data"

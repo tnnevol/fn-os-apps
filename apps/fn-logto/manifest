@@ -1,0 +1,14 @@
+appname               = fn-logto
+version               = 6.0.0
+display_name          = Logto
+desc                  = Logto 是面向开发者的身份认证服务，提供 OIDC 登录、用户管理与多租户
+platform              = x86
+source                = thirdparty
+maintainer            = Silverhand
+maintainer_url        = https://github.com/logto-io/logto
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-logto.Application
+disable_authorization_path = true

@@ -1,0 +1,14 @@
+appname               = fn-adguardhome
+version               = 6.0.0
+display_name          = AdGuard Home
+desc                  = AdGuard Home 是全网 DNS 广告过滤器，为家庭网络提供去广告与隐私保护
+platform              = x86
+source                = thirdparty
+maintainer            = AdGuard
+maintainer_url        = https://github.com/AdguardTeam/AdGuardHome
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-adguardhome.Application
+disable_authorization_path = true

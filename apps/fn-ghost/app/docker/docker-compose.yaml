@@ -1,0 +1,19 @@
+services:
+  ghost:
+    container_name: fn-ghost
+    image: ghost:6.69.0
+    environment:
+      - url=${GHOST_URL}
+      - database__client=mysql
+      # 上游由 1Panel 服务选择器注入 PANEL_DB_*，fnOS 改为向导显式填写
+      - database__connection__host=${DB_HOST}
+      - database__connection__port=${DB_PORT}
+      - database__connection__user=${DB_USERNAME}
+      - database__connection__password=${DB_PASSWORD}
+      - database__connection__database=${DB_NAME}
+    ports:
+      - "${APP_PORT}:2368"
+    restart: always
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      - "${TRIM_PKGVAR}/data:/var/lib/ghost/content"

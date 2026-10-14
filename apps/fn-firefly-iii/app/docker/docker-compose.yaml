@@ -1,0 +1,21 @@
+services:
+  firefly-iii:
+    container_name: fn-firefly-iii
+    image: fireflyiii/core:version-6.4.2
+    environment:
+      - APP_KEY=${APP_KEY}
+      # 上游由 1Panel 服务选择器注入 PANEL_DB_*，fnOS 改为向导显式填写
+      - DB_CONNECTION=${DB_TYPE}
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_DATABASE=${DB_NAME}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - APP_URL=${APP_URL}
+      - TRUSTED_PROXIES=**
+    ports:
+      - "${APP_PORT}:8080"
+    restart: always
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      - "${TRIM_PKGVAR}/data/upload:/var/www/html/storage/upload"

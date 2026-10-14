@@ -1,0 +1,14 @@
+appname               = fn-manticoresearch
+version               = 6.0.0
+display_name          = Manticore Search
+desc                  = Manticore Search 是高性能全文搜索引擎，兼容 Sphinx 并支持 SQL 查询
+platform              = x86
+source                = thirdparty
+maintainer            = Manticore Software
+maintainer_url        = https://github.com/manticoresoftware/manticoresearch
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-manticoresearch.Application
+disable_authorization_path = true

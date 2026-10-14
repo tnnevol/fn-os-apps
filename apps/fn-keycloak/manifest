@@ -1,0 +1,14 @@
+appname               = fn-keycloak
+version               = 6.0.0
+display_name          = Keycloak
+desc                  = Keycloak 是开源的身份与访问管理平台，提供单点登录与权限管理
+platform              = x86
+source                = thirdparty
+maintainer            = Red Hat
+maintainer_url        = https://github.com/keycloak/keycloak
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-keycloak.Application
+disable_authorization_path = true

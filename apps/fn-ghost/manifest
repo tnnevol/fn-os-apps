@@ -1,0 +1,14 @@
+appname               = fn-ghost
+version               = 6.0.0
+display_name          = Ghost
+desc                  = Ghost 是专注写作与出版的现代博客平台，内置会员与订阅功能
+platform              = x86
+source                = thirdparty
+maintainer            = Ghost Foundation
+maintainer_url        = https://github.com/TryGhost/Ghost
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-ghost.Application
+disable_authorization_path = true

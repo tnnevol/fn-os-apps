@@ -1,0 +1,29 @@
+services:
+  mattermost:
+    container_name: fn-mattermost
+    image: mattermost/mattermost-team-edition:11.11.1
+    security_opt:
+      - no-new-privileges:true
+    read_only: false
+    tmpfs:
+      - /tmp
+    environment:
+      - TZ=${TIME_ZONE}
+      # 上游由 1Panel 服务选择器注入 PANEL_DB_*，fnOS 改为向导显式填写
+      - MM_SQLSETTINGS_DRIVERNAME=${DB_TYPE}
+      - "MM_SQLSETTINGS_DATASOURCE=${DB_TYPE}://${DB_USERNAME}:${DB_PASSWORD}@${DB_HOST}?sslmode=disable&connect_timeout=10"
+      - MM_BLEVESETTINGS_INDEXDIR=/mattermost/bleve-indexes
+      - MM_SERVICESETTINGS_SITEURL=${SITE_URL}
+    ports:
+      - "${APP_PORT}:8065"
+      - "${CALLS_PORT}:8443/udp"
+      - "${CALLS_PORT}:8443/tcp"
+    restart: always
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      - "${TRIM_PKGVAR}/data/config:/mattermost/config:rw"
+      - "${TRIM_PKGVAR}/data/data:/mattermost/data:rw"
+      - "${TRIM_PKGVAR}/data/logs:/mattermost/logs:rw"
+      - "${TRIM_PKGVAR}/data/plugins:/mattermost/plugins:rw"
+      - "${TRIM_PKGVAR}/data/client/plugins:/mattermost/client/plugins:rw"
+      - "${TRIM_PKGVAR}/data/bleve:/mattermost/bleve-indexes:rw"

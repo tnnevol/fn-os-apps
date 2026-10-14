@@ -1,0 +1,192 @@
+[
+    {
+        "stepTitle": "基础配置",
+        "items": [
+            {
+                "type": "text",
+                "field": "APP_PORT",
+                "label": "Web 访问端口",
+                "initValue": "23001",
+                "required": true,
+                "helpText": "端口号，取值范围 1—65535。",
+                "isHttp": true,
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请填写Web 访问端口"
+                    },
+                    {
+                        "pattern": "^(?:[1-9][0-9]{0,3}|[1-5][0-9]{4}|[6][0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$",
+                        "message": "端口号必须是 1—65535 之间的整数"
+                    }
+                ]
+            },
+            {
+                "type": "text",
+                "field": "TIME_ZONE",
+                "label": "时区",
+                "initValue": "Asia/Shanghai",
+                "helpText": "容器时区，例如 Asia/Shanghai。",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请输入时区"
+                    }
+                ]
+            },
+            {
+                "type": "text",
+                "field": "HTTP_PORT_1",
+                "label": "DNS-over-HTTP 端口（80）",
+                "initValue": "23000",
+                "helpText": "容器内 80 端口的对外映射，用于首次引导与 DoH 以外的 HTTP 访问。",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请填写DNS-over-HTTP 端口（80）"
+                    },
+                    {
+                        "pattern": "^(?:[1-9][0-9]{0,3}|[1-5][0-9]{4}|[6][0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$",
+                        "message": "端口号必须是 1—65535 之间的整数"
+                    }
+                ]
+            },
+            {
+                "type": "text",
+                "field": "DNS_PORT",
+                "label": "DNS 端口",
+                "initValue": "20053",
+                "helpText": "DNS 服务端口（TCP/UDP 53）。**多数系统默认占用 53，若冲突请在向导中改为其它端口，并在客户端相应调整。**",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请填写DNS 端口"
+                    },
+                    {
+                        "pattern": "^(?:[1-9][0-9]{0,3}|[1-5][0-9]{4}|[6][0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$",
+                        "message": "端口号必须是 1—65535 之间的整数"
+                    }
+                ]
+            },
+            {
+                "type": "text",
+                "field": "DHCP_PORT_1",
+                "label": "DHCP 服务端口",
+                "initValue": "20067",
+                "helpText": "DHCP 服务端口（UDP 67）。仅在把本应用当作 DHCP 服务器时才需要。",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请填写DHCP 服务端口"
+                    },
+                    {
+                        "pattern": "^(?:[1-9][0-9]{0,3}|[1-5][0-9]{4}|[6][0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$",
+                        "message": "端口号必须是 1—65535 之间的整数"
+                    }
+                ]
+            },
+            {
+                "type": "text",
+                "field": "DHCP_PORT_2",
+                "label": "DHCP 客户端端口",
+                "initValue": "20068",
+                "helpText": "DHCP 客户端端口（UDP 68）。仅在把本应用当作 DHCP 服务器时才需要。",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请填写DHCP 客户端端口"
+                    },
+                    {
+                        "pattern": "^(?:[1-9][0-9]{0,3}|[1-5][0-9]{4}|[6][0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$",
+                        "message": "端口号必须是 1—65535 之间的整数"
+                    }
+                ]
+            },
+            {
+                "type": "text",
+                "field": "DOH_PORT",
+                "label": "DoH 端口",
+                "initValue": "20443",
+                "helpText": "DNS-over-HTTPS 端口（TCP/UDP 443）。需要证书才能被客户端信任。",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请填写DoH 端口"
+                    },
+                    {
+                        "pattern": "^(?:[1-9][0-9]{0,3}|[1-5][0-9]{4}|[6][0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$",
+                        "message": "端口号必须是 1—65535 之间的整数"
+                    }
+                ]
+            },
+            {
+                "type": "text",
+                "field": "DOT_PORT",
+                "label": "DoT 端口",
+                "initValue": "853",
+                "helpText": "DNS-over-TLS 端口（TCP/UDP 853）。需要证书才能被客户端信任。",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请填写DoT 端口"
+                    },
+                    {
+                        "pattern": "^(?:[1-9][0-9]{0,3}|[1-5][0-9]{4}|[6][0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$",
+                        "message": "端口号必须是 1—65535 之间的整数"
+                    }
+                ]
+            },
+            {
+                "type": "text",
+                "field": "QUIC_PORT_1",
+                "label": "QUIC 端口",
+                "initValue": "20784",
+                "helpText": "DNS-over-QUIC 端口（UDP 784）。",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请填写QUIC 端口"
+                    },
+                    {
+                        "pattern": "^(?:[1-9][0-9]{0,3}|[1-5][0-9]{4}|[6][0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$",
+                        "message": "端口号必须是 1—65535 之间的整数"
+                    }
+                ]
+            },
+            {
+                "type": "text",
+                "field": "QUIC_PORT_2",
+                "label": "备用 QUIC 端口",
+                "initValue": "8853",
+                "helpText": "备用 DNS-over-QUIC 端口（UDP 8853）。",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请填写备用 QUIC 端口"
+                    },
+                    {
+                        "pattern": "^(?:[1-9][0-9]{0,3}|[1-5][0-9]{4}|[6][0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$",
+                        "message": "端口号必须是 1—65535 之间的整数"
+                    }
+                ]
+            },
+            {
+                "type": "text",
+                "field": "DNSCRYPT_PORT",
+                "label": "DNSCrypt 端口",
+                "initValue": "5443",
+                "helpText": "DNSCrypt 端口（TCP/UDP 5443）。",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请填写DNSCrypt 端口"
+                    },
+                    {
+                        "pattern": "^(?:[1-9][0-9]{0,3}|[1-5][0-9]{4}|[6][0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$",
+                        "message": "端口号必须是 1—65535 之间的整数"
+                    }
+                ]
+            }
+        ]
+    }
+]

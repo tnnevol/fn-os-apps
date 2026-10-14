@@ -1,0 +1,14 @@
+appname               = fn-discuz
+version               = 6.0.0
+display_name          = Discuz!
+desc                  = Discuz! 是经典的社区论坛系统，支持版块、用户组与插件扩展
+platform              = x86
+source                = thirdparty
+maintainer            = Tencent
+maintainer_url        = https://github.com/tencentci/discuz
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-discuz.Application
+disable_authorization_path = true

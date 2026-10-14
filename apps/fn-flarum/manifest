@@ -1,0 +1,14 @@
+appname               = fn-flarum
+version               = 6.0.0
+display_name          = Flarum
+desc                  = Flarum 是简洁现代的论坛程序，主打快速与移动端体验
+platform              = x86
+source                = thirdparty
+maintainer            = crazy-max
+maintainer_url        = https://github.com/crazy-max/docker-flarum
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-flarum.Application
+disable_authorization_path = true

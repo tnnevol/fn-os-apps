@@ -1,0 +1,15 @@
+appname               = fn-cloudreve
+version               = 6.0.0
+display_name          = Cloudreve
+desc                  = Cloudreve 是自托管的网盘系统，支持多种存储策略与离线下载
+platform              = x86
+source                = thirdparty
+maintainer            = Cloudreve
+maintainer_url        = https://github.com/cloudreve/Cloudreve
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-cloudreve.Application
+disable_authorization_path = true
+install_dep_apps       = redis

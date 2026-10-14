@@ -1,0 +1,14 @@
+appname               = fn-casdoor
+version               = 6.0.0
+display_name          = Casdoor
+desc                  = Casdoor 是基于 OAuth 2.0 / OIDC 的身份认证与单点登录平台
+platform              = x86
+source                = thirdparty
+maintainer            = Casbin
+maintainer_url        = https://github.com/casdoor/casdoor
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-casdoor.Application
+disable_authorization_path = true

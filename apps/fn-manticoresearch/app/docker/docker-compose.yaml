@@ -1,0 +1,21 @@
+services:
+  manticore:
+    container_name: fn-manticoresearch
+    image: manticoresearch/manticore:29.9.0
+    ulimits:
+      nproc: 65535
+      nofile:
+         soft: 65535
+         hard: 65535
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - "${SQL_PORT}:9306"
+      - "${APP_PORT}:9308"
+    restart: always
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      - "${TRIM_PKGVAR}/data/data:/var/lib/manticore"
+      # 单文件挂载：文件由 cmd/install_callback 预创建并写入最小可用配置（保持文件形态）
+      - "${TRIM_PKGVAR}/data/manticore.conf:/etc/manticoresearch/manticore.conf"

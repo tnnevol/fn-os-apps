@@ -1,0 +1,31 @@
+services:
+  flarum:
+    container_name: fn-flarum
+    image: crazymax/flarum:1.8.19
+    environment:
+      - TZ=${TIME_ZONE}
+      # TRIM_UID/TRIM_GID 由 fnOS 注入，指向本应用的包用户；上游硬编码的 1000 在目标 NAS 上通常是登录用户
+      - PUID=${TRIM_UID}
+      - PGID=${TRIM_GID}
+      - MEMORY_LIMIT=256M
+      - UPLOAD_MAX_SIZE=256M
+      - CLEAR_ENV=yes
+      - OPCACHE_MEM_SIZE=128M
+      - LISTEN_IPV6=true
+      - REAL_IP_FROM=0.0.0.0/32
+      # 上游由 1Panel 服务选择器注入 PANEL_DB_*，fnOS 改为向导显式填写
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_PREFIX=${DB_PREFIX}
+      - DB_NOPREFIX=false
+      - DB_TIMEOUT=60
+      - FLARUM_BASE_URL=${FLARUM_BASE_URL}
+    ports:
+      - "${APP_PORT}:8000"
+    restart: always
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      - "${TRIM_PKGVAR}/data:/data"

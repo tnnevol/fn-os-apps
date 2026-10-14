@@ -171,7 +171,21 @@ const appItems = [
   { text: 'Umami', link: '/apps/fn-umami' },
   { text: 'WordPress', link: '/apps/fn-wordpress' },
   { text: 'Zabbix Proxy', link: '/apps/fn-zabbix-proxy' },
-  { text: 'Zabbix Server', link: '/apps/fn-zabbix-server' }
+  { text: 'Zabbix Server', link: '/apps/fn-zabbix-server' },
+  { text: 'AdGuard Home', link: '/apps/fn-adguardhome' },
+  { text: 'Blinko', link: '/apps/fn-blinko' },
+  { text: 'Casdoor', link: '/apps/fn-casdoor' },
+  { text: 'Certd', link: '/apps/fn-certd' },
+  { text: 'Cloudreve', link: '/apps/fn-cloudreve' },
+  { text: 'Discuz!', link: '/apps/fn-discuz' },
+  { text: 'draw.io', link: '/apps/fn-drawio' },
+  { text: 'Firefly III', link: '/apps/fn-firefly-iii' },
+  { text: 'Flarum', link: '/apps/fn-flarum' },
+  { text: 'Ghost', link: '/apps/fn-ghost' },
+  { text: 'Keycloak', link: '/apps/fn-keycloak' },
+  { text: 'Logto', link: '/apps/fn-logto' },
+  { text: 'Manticore Search', link: '/apps/fn-manticoresearch' },
+  { text: 'Mattermost', link: '/apps/fn-mattermost' }
 ]
 
 const startItems = [

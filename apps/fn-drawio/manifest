@@ -1,0 +1,14 @@
+appname               = fn-drawio
+version               = 6.0.0
+display_name          = draw.io
+desc                  = draw.io 是开源的在线图表工具，用于绘制流程图、架构图与思维导图
+platform              = x86
+source                = thirdparty
+maintainer            = JGraph
+maintainer_url        = https://github.com/jgraph/drawio
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-drawio.Application
+disable_authorization_path = true

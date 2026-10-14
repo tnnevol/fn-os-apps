@@ -1,0 +1,21 @@
+services:
+  keycloak:
+    container_name: fn-keycloak
+    image: keycloak/keycloak:26.8.0
+    command: start
+    environment:
+      - KC_BOOTSTRAP_ADMIN_USERNAME=admin
+      - KC_BOOTSTRAP_ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      # 上游由 1Panel 服务选择器注入 PANEL_DB_*，fnOS 改为向导显式填写
+      - KC_DB=${DB_TYPE}
+      - KC_DB_USERNAME=${DB_USERNAME}
+      - KC_DB_PASSWORD=${DB_PASSWORD}
+      - KC_DB_URL_HOST=${DB_HOST}
+      - KC_DB_URL_PORT=${DB_PORT}
+      - KC_DB_URL_DATABASE=${DB_NAME}
+      - KC_HOSTNAME=${KC_HOSTNAME}
+      - KC_HTTP_ENABLED=true
+      - KC_PROXY_HEADERS=xforwarded
+    ports:
+      - "${APP_PORT}:8080"
+    restart: always

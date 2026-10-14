@@ -1,0 +1,14 @@
+appname               = fn-mattermost
+version               = 6.0.0
+display_name          = Mattermost
+desc                  = Mattermost 是面向团队的自托管协作平台，提供频道、私信与文件共享
+platform              = x86
+source                = thirdparty
+maintainer            = Mattermost
+maintainer_url        = https://github.com/mattermost/mattermost
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-mattermost.Application
+disable_authorization_path = true

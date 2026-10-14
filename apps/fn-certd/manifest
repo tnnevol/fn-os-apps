@@ -1,0 +1,14 @@
+appname               = fn-certd
+version               = 6.0.0
+display_name          = Certd
+desc                  = Certd 是自动化证书管理平台，为域名自动申请与续期 SSL 证书
+platform              = x86
+source                = thirdparty
+maintainer            = Greper
+maintainer_url        = https://github.com/certd/certd
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-certd.Application
+disable_authorization_path = true
