@@ -1,0 +1,12 @@
+appname               = fn-maddy-mail
+version               = 6.0.0
+display_name          = Maddy Mail Server
+desc                  = Maddy 是一体化邮件服务器，内置 SMTP 与 IMAP，无需额外组件
+platform              = x86
+source                = thirdparty
+maintainer            = FoxCpp
+maintainer_url        = https://github.com/foxcpp/maddy
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+disable_authorization_path = true

@@ -1,0 +1,40 @@
+{
+  ".url": {
+    "fn-bettafish.Application": {
+      "title": "BettaFish",
+      "icon": "images/icon_{0}.png",
+      "type": "url",
+      "protocol": "http",
+      "port": "${APP_PORT}",
+      "url": "/",
+      "allUsers": false
+    },
+    "fn-bettafish.query_engine_port": {
+      "title": "BettaFish（查询引擎端口）",
+      "icon": "images/icon_{0}.png",
+      "type": "url",
+      "protocol": "http",
+      "port": "${QUERY_ENGINE_PORT}",
+      "url": "/",
+      "allUsers": false
+    },
+    "fn-bettafish.media_engine_port": {
+      "title": "BettaFish（媒体引擎端口）",
+      "icon": "images/icon_{0}.png",
+      "type": "url",
+      "protocol": "http",
+      "port": "${MEDIA_ENGINE_PORT}",
+      "url": "/",
+      "allUsers": false
+    },
+    "fn-bettafish.insight_engine_port": {
+      "title": "BettaFish（洞察引擎端口）",
+      "icon": "images/icon_{0}.png",
+      "type": "url",
+      "protocol": "http",
+      "port": "${INSIGHT_ENGINE_PORT}",
+      "url": "/",
+      "allUsers": false
+    }
+  }
+}

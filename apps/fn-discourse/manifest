@@ -1,0 +1,15 @@
+appname               = fn-discourse
+version               = 6.0.0
+display_name          = Discourse
+desc                  = Discourse 是现代论坛平台，支持实时讨论、插件与邮件集成
+platform              = x86
+source                = thirdparty
+maintainer            = Bitnami
+maintainer_url        = https://github.com/discourse/discourse
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-discourse.Application
+disable_authorization_path = true
+install_dep_apps       = redis

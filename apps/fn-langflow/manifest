@@ -1,0 +1,14 @@
+appname               = fn-langflow
+version               = 6.0.0
+display_name          = LangFlow
+desc                  = LangFlow 是可视化的大模型应用编排工具，用拖拽方式搭建 Agent 流程
+platform              = x86
+source                = thirdparty
+maintainer            = LangFlow
+maintainer_url        = https://github.com/langflow-ai/langflow
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-langflow.Application
+disable_authorization_path = true

@@ -1,0 +1,25 @@
+services:
+  langbot_plugin_runtime:
+    container_name: fn-langbot-plugin-runtime
+    image: rockchin/langbot:v4.10.11
+    restart: unless-stopped
+    command: ["uv", "run", "-m", "langbot_plugin.cli.__init__", "rt"]
+    environment:
+      - TZ=${TIME_ZONE}
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      - "${TRIM_PKGVAR}/data/plugins:/app/data/plugins"
+
+  langbot:
+    container_name: fn-langbot
+    image: rockchin/langbot:v4.10.11
+    restart: unless-stopped
+    environment:
+      - TZ=${TIME_ZONE}
+    ports:
+      - "${APP_PORT}:5300"
+      - "${LANGBOT_PORT_RANGE}:${LANGBOT_PORT_RANGE}"
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      - "${TRIM_PKGVAR}/data/data:/app/data"
+      - "${TRIM_PKGVAR}/data/plugins:/app/plugins"

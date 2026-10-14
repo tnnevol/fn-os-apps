@@ -136,6 +136,19 @@
 | <AppIcon name="fn-logto" alt="Logto 图标" :size="30" /> | [Logto](./fn-logto) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-logto) | Docker / x86 | PostgreSQL | [源码](https://github.com/logto-io/logto) |
 | <AppIcon name="fn-manticoresearch" alt="Manticore Search 图标" :size="30" /> | [Manticore Search](./fn-manticoresearch) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-manticoresearch) | Docker / x86 | — | [源码](https://github.com/manticoresoftware/manticoresearch) |
 | <AppIcon name="fn-mattermost" alt="Mattermost 图标" :size="30" /> | [Mattermost](./fn-mattermost) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-mattermost) | Docker / x86 | PostgreSQL | [源码](https://github.com/mattermost/mattermost) |
+| <AppIcon name="fn-affine" alt="AFFiNE 图标" :size="30" /> | [AFFiNE](./fn-affine) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-affine) | Docker / x86 | PostgreSQL + Redis | [源码](https://github.com/toeverything/AFFiNE) |
+| <AppIcon name="fn-alist" alt="AList 图标" :size="30" /> | [AList](./fn-alist) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-alist) | Docker / x86 | — | [源码](https://github.com/AlistGo/alist) |
+| <AppIcon name="fn-astrbot" alt="AstrBot 图标" :size="30" /> | [AstrBot](./fn-astrbot) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-astrbot) | Docker / x86 | — | [源码](https://github.com/AstrBotDevs/AstrBot) |
+| <AppIcon name="fn-bettafish" alt="BettaFish 图标" :size="30" /> | [BettaFish](./fn-bettafish) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-bettafish) | Docker / x86 | PostgreSQL / MySQL | [源码](https://github.com/666ghj/BettaFish) |
+| <AppIcon name="fn-discourse" alt="Discourse 图标" :size="30" /> | [Discourse](./fn-discourse) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-discourse) | Docker / x86 | PostgreSQL + Redis | [源码](https://github.com/discourse/discourse) |
+| <AppIcon name="fn-heimdall" alt="Heimdall 图标" :size="30" /> | [Heimdall](./fn-heimdall) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-heimdall) | Docker / x86 | — | [源码](https://github.com/linuxserver/Heimdall) |
+| <AppIcon name="fn-koishi" alt="Koishi 图标" :size="30" /> | [Koishi](./fn-koishi) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-koishi) | Docker / x86 | — | [源码](https://github.com/koishijs/koishi) |
+| <AppIcon name="fn-langbot" alt="LangBot 图标" :size="30" /> | [LangBot](./fn-langbot) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-langbot) | Docker / x86 | — | [源码](https://github.com/langbot-app/LangBot) |
+| <AppIcon name="fn-langflow" alt="LangFlow 图标" :size="30" /> | [LangFlow](./fn-langflow) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-langflow) | Docker / x86 | PostgreSQL | [源码](https://github.com/langflow-ai/langflow) |
+| <AppIcon name="fn-maddy-mail" alt="Maddy Mail Server 图标" :size="30" /> | [Maddy Mail Server](./fn-maddy-mail) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-maddy-mail) | Docker / x86 | — | [源码](https://github.com/foxcpp/maddy) |
+| <AppIcon name="fn-metabase" alt="Metabase 图标" :size="30" /> | [Metabase](./fn-metabase) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-metabase) | Docker / x86 | MySQL | [源码](https://github.com/metabase/metabase) |
+| <AppIcon name="fn-miniflux" alt="Miniflux 图标" :size="30" /> | [Miniflux](./fn-miniflux) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-miniflux) | Docker / x86 | PostgreSQL | [源码](https://github.com/miniflux/v2) |
+| <AppIcon name="fn-mliev-dwz" alt="DWZ 图标" :size="30" /> | [DWZ](./fn-mliev-dwz) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-mliev-dwz) | Docker / x86 | PostgreSQL / MySQL / MariaDB + Redis | [源码](https://github.com/mliev/dwz) |
 
 ## 安装方式
 

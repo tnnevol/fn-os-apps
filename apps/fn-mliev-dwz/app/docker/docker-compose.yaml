@@ -1,0 +1,24 @@
+services:
+  dwz-server:
+    container_name: fn-mliev-dwz
+    image: docker.cnb.cool/mliev/dwz/dwz-server:v2.24.0
+    environment:
+      - TZ=${TIME_ZONE}
+      # 上游由 1Panel 服务选择器注入 PANEL_DB_* / PANEL_REDIS_*，fnOS 改为向导显式填写
+      - DATABASE_DRIVER=${DB_TYPE}
+      - DATABASE_HOST=${DB_HOST}
+      - DATABASE_PORT=${DB_PORT}
+      - DATABASE_DBNAME=${DB_NAME}
+      - DATABASE_USERNAME=${DB_USERNAME}
+      - DATABASE_PASSWORD=${DB_PASSWORD}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - REDIS_DB=${REDIS_DB}
+      - GIN_MODE=release
+    ports:
+      - "${APP_PORT}:8080"
+    restart: always
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      - "${TRIM_PKGVAR}/data/config:/app/config"

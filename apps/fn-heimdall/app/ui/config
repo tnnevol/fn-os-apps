@@ -1,0 +1,13 @@
+{
+  ".url": {
+    "fn-heimdall.Application": {
+      "title": "Heimdall",
+      "icon": "images/icon_{0}.png",
+      "type": "url",
+      "protocol": "http",
+      "port": "${APP_PORT}",
+      "url": "/",
+      "allUsers": false
+    }
+  }
+}

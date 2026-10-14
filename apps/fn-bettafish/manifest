@@ -1,0 +1,14 @@
+appname               = fn-bettafish
+version               = 6.0.0
+display_name          = BettaFish
+desc                  = BettaFish（微舆）是多 Agent 舆情分析助手，从公开信息中还原舆情走向
+platform              = x86
+source                = thirdparty
+maintainer            = 666GHJ
+maintainer_url        = https://github.com/666ghj/BettaFish
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-bettafish.Application
+disable_authorization_path = true

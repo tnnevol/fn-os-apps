@@ -1,0 +1,29 @@
+services:
+  bettafish:
+    container_name: fn-bettafish
+    image: ghcr.io/666ghj/bettafish:v3.0.0
+    environment:
+      # 上游由 1Panel 服务选择器注入 PANEL_DB_*，fnOS 改为向导显式填写
+      - DB_DIALECT=${DB_TYPE}
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_USER=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - PYTHONUNBUFFERED=1
+      - STREAMLIT_SERVER_ENABLE_FILE_WATCHER=false
+    ports:
+      - "${APP_PORT}:5000"
+      - "${QUERY_ENGINE_PORT}:8503"
+      - "${MEDIA_ENGINE_PORT}:8502"
+      - "${INSIGHT_ENGINE_PORT}:8501"
+    restart: always
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      # 上游另有 “- .env:/app/.env” 单文件挂载：该镜像实际不消费 .env 中的配置
+      # （配置均通过上方 environment 传入，且上游仓库不提供该文件），故按上游缺陷修正删除。
+      - "${TRIM_PKGVAR}/data/logs:/app/logs"
+      - "${TRIM_PKGVAR}/data/final_reports:/app/final_reports"
+      - "${TRIM_PKGVAR}/data/insight_engine_streamlit_reports:/app/insight_engine_streamlit_reports"
+      - "${TRIM_PKGVAR}/data/media_engine_streamlit_reports:/app/media_engine_streamlit_reports"
+      - "${TRIM_PKGVAR}/data/query_engine_streamlit_reports:/app/query_engine_streamlit_reports"

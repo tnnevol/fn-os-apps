@@ -1,0 +1,7 @@
+{
+    "defaults": {
+        "run-as": "package"
+    },
+    "username": "docker-fn-miniflux",
+    "groupname": "docker-fn-miniflux"
+}

@@ -1,0 +1,14 @@
+services:
+  langflow:
+    container_name: fn-langflow
+    image: langflowai/langflow:1.12.5
+    environment:
+      # 上游由 1Panel 服务选择器注入 PANEL_DB_*，fnOS 改为向导显式填写
+      - LANGFLOW_DATABASE_URL=postgresql://${DB_USERNAME}:${DB_PASSWORD}@${DB_HOST}
+      - LANGFLOW_CONFIG_DIR=app/langflow
+    ports:
+      - "${APP_PORT}:7860"
+    restart: always
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      - "${TRIM_PKGVAR}/data:/app/langflow"

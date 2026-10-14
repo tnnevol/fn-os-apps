@@ -1,0 +1,14 @@
+appname               = fn-alist
+version               = 6.0.0
+display_name          = AList
+desc                  = AList 是多存储文件列表程序，把本地与云盘统一到一个界面管理
+platform              = x86
+source                = thirdparty
+maintainer            = Xhofe
+maintainer_url        = https://github.com/AlistGo/alist
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-alist.Application
+disable_authorization_path = true

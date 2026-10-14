@@ -1,0 +1,14 @@
+appname               = fn-langbot
+version               = 6.0.0
+display_name          = LangBot
+desc                  = LangBot 是面向大模型的即时通讯机器人平台，支持多平台接入与插件
+platform              = x86
+source                = thirdparty
+maintainer            = RockChinQ
+maintainer_url        = https://github.com/langbot-app/LangBot
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-langbot.Application
+disable_authorization_path = true

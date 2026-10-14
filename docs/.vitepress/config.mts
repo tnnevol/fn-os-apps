@@ -185,7 +185,20 @@ const appItems = [
   { text: 'Keycloak', link: '/apps/fn-keycloak' },
   { text: 'Logto', link: '/apps/fn-logto' },
   { text: 'Manticore Search', link: '/apps/fn-manticoresearch' },
-  { text: 'Mattermost', link: '/apps/fn-mattermost' }
+  { text: 'Mattermost', link: '/apps/fn-mattermost' },
+  { text: 'AFFiNE', link: '/apps/fn-affine' },
+  { text: 'AList', link: '/apps/fn-alist' },
+  { text: 'AstrBot', link: '/apps/fn-astrbot' },
+  { text: 'BettaFish', link: '/apps/fn-bettafish' },
+  { text: 'Discourse', link: '/apps/fn-discourse' },
+  { text: 'Heimdall', link: '/apps/fn-heimdall' },
+  { text: 'Koishi', link: '/apps/fn-koishi' },
+  { text: 'LangBot', link: '/apps/fn-langbot' },
+  { text: 'LangFlow', link: '/apps/fn-langflow' },
+  { text: 'Maddy Mail Server', link: '/apps/fn-maddy-mail' },
+  { text: 'Metabase', link: '/apps/fn-metabase' },
+  { text: 'Miniflux', link: '/apps/fn-miniflux' },
+  { text: 'DWZ', link: '/apps/fn-mliev-dwz' }
 ]
 
 const startItems = [

@@ -1,0 +1,14 @@
+appname               = fn-koishi
+version               = 6.0.0
+display_name          = Koishi
+desc                  = Koishi 是跨平台聊天机器人框架，支持多平台适配与插件生态
+platform              = x86
+source                = thirdparty
+maintainer            = Koishi
+maintainer_url        = https://github.com/koishijs/koishi
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-koishi.Application
+disable_authorization_path = true

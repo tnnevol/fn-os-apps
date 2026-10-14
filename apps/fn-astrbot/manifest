@@ -1,0 +1,14 @@
+appname               = fn-astrbot
+version               = 6.0.0
+display_name          = AstrBot
+desc                  = AstrBot 是多平台聊天机器人框架，支持接入 QQ、微信、企业微信等渠道
+platform              = x86
+source                = thirdparty
+maintainer            = Soulter
+maintainer_url        = https://github.com/AstrBotDevs/AstrBot
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-astrbot.Application
+disable_authorization_path = true

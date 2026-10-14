@@ -1,0 +1,25 @@
+services:
+  metabase:
+    container_name: fn-metabase
+    image: metabase/metabase:v0.64.1
+    environment:
+      # 上游固定使用外部 MySQL 保存应用数据（内置 H2 仅适合单机试用）。
+      # 端口在上游被写死为 3306，此处改为向导字段，避免把用户锁死在默认端口。
+      - MB_DB_TYPE=mysql
+      - MB_DB_HOST=${DB_HOST}
+      - MB_DB_PORT=${DB_PORT}
+      - MB_DB_DBNAME=${DB_NAME}
+      - MB_DB_USER=${DB_USERNAME}
+      - MB_DB_PASS=${DB_PASSWORD}
+    ports:
+      - "${APP_PORT}:3000"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "-I", "http://localhost:3000/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    restart: always
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      - "${TRIM_PKGVAR}/data/metabase:/metabase"
+      - "${TRIM_PKGVAR}/data/metabase-data:/metabase-data"

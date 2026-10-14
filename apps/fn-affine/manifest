@@ -1,0 +1,15 @@
+appname               = fn-affine
+version               = 6.0.0
+display_name          = AFFiNE
+desc                  = AFFiNE 是集成文档、白板与数据库的知识管理平台
+platform              = x86
+source                = thirdparty
+maintainer            = TOEVERYTHING
+maintainer_url        = https://github.com/toeverything/AFFiNE
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-affine.Application
+disable_authorization_path = true
+install_dep_apps       = redis

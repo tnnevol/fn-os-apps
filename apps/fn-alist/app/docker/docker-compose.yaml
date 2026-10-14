@@ -1,0 +1,19 @@
+services:
+  alist:
+    container_name: fn-alist
+    image: xhofe/alist:v3.64.0
+    environment:
+      # TRIM_UID/TRIM_GID 由 fnOS 注入，指向本应用的包用户；
+      # 上游默认 PUID=0/PGID=0（即 root），按规约改为包用户运行。
+      # 若遇到文件权限相关异常，可把下面两行改回 0。
+      - PUID=${TRIM_UID}
+      - PGID=${TRIM_GID}
+      - UMASK=022
+    ports:
+      - "${APP_PORT}:5244"
+      - "${S3_PORT}:5246"
+    restart: always
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      - "${TRIM_PKGVAR}/data/data:/opt/alist/data"
+      - "${TRIM_PKGVAR}/data/mnt:/mnt/data"

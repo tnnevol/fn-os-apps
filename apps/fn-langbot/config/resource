@@ -1,0 +1,10 @@
+{
+    "docker-project": {
+        "projects": [
+            {
+                "name": "fn-langbot",
+                "path": "docker"
+            }
+        ]
+    }
+}

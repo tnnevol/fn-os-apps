@@ -1,0 +1,17 @@
+services:
+  astrbot:
+    container_name: fn-astrbot
+    image: soulter/astrbot:v4.28.2
+    environment:
+      - TZ=${TIME_ZONE}
+    ports:
+      - "${APP_PORT}:6185"
+      - "${WEIXIN_OFFICIAL_PORT}:6194"
+      - "${WECOM_PORT}:6195"
+      - "${QQ_OFFICIAL_PORT}:6196"
+      - "${QQ_PERSONAL_PORT}:6199"
+      - "${WECHAT_PERSONAL_PORT}:11451"
+    restart: always
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      - "${TRIM_PKGVAR}/data:/AstrBot/data"

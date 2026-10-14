@@ -1,0 +1,7 @@
+{
+    "defaults": {
+        "run-as": "package"
+    },
+    "username": "docker-fn-discourse",
+    "groupname": "docker-fn-discourse"
+}

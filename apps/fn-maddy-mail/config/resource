@@ -1,0 +1,10 @@
+{
+    "docker-project": {
+        "projects": [
+            {
+                "name": "fn-maddy-mail",
+                "path": "docker"
+            }
+        ]
+    }
+}

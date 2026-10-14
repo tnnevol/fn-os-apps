@@ -1,0 +1,14 @@
+appname               = fn-metabase
+version               = 6.0.0
+display_name          = Metabase
+desc                  = Metabase 是开源 BI 工具，无需 SQL 即可做数据查询与可视化看板
+platform              = x86
+source                = thirdparty
+maintainer            = Metabase
+maintainer_url        = https://github.com/metabase/metabase
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-metabase.Application
+disable_authorization_path = true

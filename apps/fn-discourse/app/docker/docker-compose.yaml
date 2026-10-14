@@ -1,0 +1,45 @@
+services:
+  discourse:
+    container_name: fn-discourse
+    image: bitnamilegacy/discourse:3.5.0
+    restart: always
+    ports:
+      - "${APP_PORT}:3000"
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      - "${TRIM_PKGVAR}/data/discourse:/bitnami/discourse"
+    environment:
+      - DISCOURSE_HOST=${DISCOURSE_HOST}
+      - DISCOURSE_USERNAME=${DISCOURSE_USERNAME}
+      - DISCOURSE_PASSWORD=${DISCOURSE_PASSWORD}
+      - DISCOURSE_EMAIL=${DISCOURSE_EMAIL}
+      # 上游由 1Panel 服务选择器注入 PANEL_DB_* / PANEL_REDIS_*，fnOS 改为向导显式填写
+      - DISCOURSE_DATABASE_HOST=${DB_HOST}
+      - DISCOURSE_DATABASE_PORT_NUMBER=${DB_PORT}
+      - DISCOURSE_DATABASE_USER=${DB_USERNAME}
+      - DISCOURSE_DATABASE_PASSWORD=${DB_PASSWORD}
+      - DISCOURSE_DATABASE_NAME=${DB_NAME}
+      - DISCOURSE_REDIS_HOST=${REDIS_HOST}
+      - DISCOURSE_REDIS_PASSWORD=${REDIS_PASSWORD}
+      # 已删除上游的 DISCOURSE_SMTP_* 测试占位值（test/0）：它们指向不存在的邮件服务，
+      # 会让发信静默失败。如需邮件功能，请在应用后台或此处按实际 SMTP 参数配置。
+
+  sidekiq:
+    container_name: fn-discourse-sidekiq
+    image: bitnamilegacy/discourse:3.5.0
+    restart: always
+    depends_on:
+      - discourse
+    command: /opt/bitnami/scripts/discourse-sidekiq/run.sh
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      - "${TRIM_PKGVAR}/data/sidekiq:/bitnami/discourse"
+    environment:
+      - DISCOURSE_HOST=${DISCOURSE_HOST}
+      - DISCOURSE_DATABASE_HOST=${DB_HOST}
+      - DISCOURSE_DATABASE_PORT_NUMBER=${DB_PORT}
+      - DISCOURSE_DATABASE_USER=${DB_USERNAME}
+      - DISCOURSE_DATABASE_PASSWORD=${DB_PASSWORD}
+      - DISCOURSE_DATABASE_NAME=${DB_NAME}
+      - DISCOURSE_REDIS_HOST=${REDIS_HOST}
+      - DISCOURSE_REDIS_PASSWORD=${REDIS_PASSWORD}

@@ -1,0 +1,18 @@
+services:
+  maddymail:
+    container_name: fn-maddy-mail
+    image: foxcpp/maddy:0.9.6
+    environment:
+      - MADDY_HOSTNAME=${MAIL_HOSTNAME}
+      - MADDY_DOMAIN=${MAIL_DOMAIN}
+    ports:
+      - "${SMTP_IN_PORT}:25"
+      - "${IMAP4_PORT}:143"
+      - "${SMTP_S_PORT}:465"
+      - "${SMTP_S_PORT2}:587"
+      - "${IMAP4_PORT2}:993"
+    restart: always
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      # 上游使用 external 命名卷 maddydata；外部卷在 fnOS 上不会被自动创建，故改为绑定挂载
+      - "${TRIM_PKGVAR}/data:/data"

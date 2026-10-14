@@ -1,0 +1,12 @@
+services:
+  koishi:
+    container_name: fn-koishi
+    image: koishijs/koishi:v1.16.0
+    environment:
+      - TZ=${TIME_ZONE}
+    ports:
+      - "${APP_PORT}:5140"
+    restart: always
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      - "${TRIM_PKGVAR}/data:/koishi"

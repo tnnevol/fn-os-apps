@@ -1,0 +1,15 @@
+services:
+  miniflux:
+    container_name: fn-miniflux
+    image: miniflux/miniflux:2.3.3
+    environment:
+      # 上游由 1Panel 服务选择器注入 PANEL_DB_*，fnOS 改为向导显式填写
+      - DATABASE_URL=postgres://${DB_USERNAME}:${DB_PASSWORD}@${DB_HOST}?sslmode=disable
+      - RUN_MIGRATIONS=1
+      - CREATE_ADMIN=1
+      - ADMIN_USERNAME=${ADMIN_USERNAME}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - DEBUG=1
+    ports:
+      - "${APP_PORT}:8080"
+    restart: always

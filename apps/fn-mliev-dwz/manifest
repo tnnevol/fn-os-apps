@@ -1,0 +1,15 @@
+appname               = fn-mliev-dwz
+version               = 6.0.0
+display_name          = DWZ
+desc                  = DWZ 是短链接服务，支持自定义短码与访问统计
+platform              = x86
+source                = thirdparty
+maintainer            = Mliev
+maintainer_url        = https://github.com/mliev/dwz
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-mliev-dwz.Application
+disable_authorization_path = true
+install_dep_apps       = redis

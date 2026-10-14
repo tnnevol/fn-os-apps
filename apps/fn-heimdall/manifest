@@ -1,0 +1,14 @@
+appname               = fn-heimdall
+version               = 6.0.0
+display_name          = Heimdall
+desc                  = Heimdall 是应用仪表盘，把常用服务入口集中整理到一个页面
+platform              = x86
+source                = thirdparty
+maintainer            = LinuxServer.io
+maintainer_url        = https://github.com/linuxserver/Heimdall
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-heimdall.Application
+disable_authorization_path = true

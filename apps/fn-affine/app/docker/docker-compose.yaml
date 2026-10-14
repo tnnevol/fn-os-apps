@@ -1,0 +1,37 @@
+services:
+  affine:
+    container_name: fn-affine
+    image: ghcr.io/toeverything/affine:0.27.4
+    restart: unless-stopped
+    environment:
+      # 上游由 1Panel 服务选择器注入 PANEL_DB_* / PANEL_REDIS_*，fnOS 改为向导显式填写
+      - REDIS_SERVER_HOST=${REDIS_HOST}
+      - REDIS_SERVER_PORT=6379
+      - REDIS_SERVER_PASSWORD=${REDIS_PASSWORD}
+      - DATABASE_URL=postgres://${DB_USERNAME}:${DB_PASSWORD}@${DB_HOST}
+      - AFFINE_INDEXER_ENABLED=false
+    depends_on:
+      affine_migration:
+        condition: service_completed_successfully
+    ports:
+      - "${APP_PORT}:3010"
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      - "${TRIM_PKGVAR}/data/storage:/root/.affine/storage"
+      - "${TRIM_PKGVAR}/data/config:/root/.affine/config"
+
+  # 首次启动执行数据库迁移的一次性任务（上游用 “_migration_job” 命名，此处改为连字符以符合命名规约）
+  affine_migration:
+    container_name: fn-affine-migration
+    image: ghcr.io/toeverything/affine:0.27.4
+    command: ["sh", "-c", "node ./scripts/self-host-predeploy.js"]
+    environment:
+      - REDIS_SERVER_HOST=${REDIS_HOST}
+      - REDIS_SERVER_PORT=6379
+      - REDIS_SERVER_PASSWORD=${REDIS_PASSWORD}
+      - DATABASE_URL=postgres://${DB_USERNAME}:${DB_PASSWORD}@${DB_HOST}
+      - AFFINE_INDEXER_ENABLED=false
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      - "${TRIM_PKGVAR}/data/storage:/root/.affine/storage"
+      - "${TRIM_PKGVAR}/data/config:/root/.affine/config"
