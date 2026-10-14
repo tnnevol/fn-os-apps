@@ -1,0 +1,14 @@
+appname               = fn-easyimage2
+version               = 6.0.0
+display_name          = EasyImage 2.0
+desc                  = EasyImage 是简洁的自托管图床，支持多存储后端与图片管理
+platform              = x86
+source                = thirdparty
+maintainer            = ddsderek
+maintainer_url        = https://github.com/ddsderek/easyimage
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-easyimage2.Application
+disable_authorization_path = true

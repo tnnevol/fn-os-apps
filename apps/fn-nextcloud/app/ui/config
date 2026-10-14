@@ -1,0 +1,13 @@
+{
+  ".url": {
+    "fn-nextcloud.Application": {
+      "title": "Nextcloud",
+      "icon": "images/icon_{0}.png",
+      "type": "url",
+      "protocol": "https",
+      "port": "${APP_PORT}",
+      "url": "/",
+      "allUsers": false
+    }
+  }
+}

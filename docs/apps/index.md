@@ -97,6 +97,17 @@
 | <AppIcon name="fn-verdaccio" alt="Verdaccio 图标" :size="30" /> | [Verdaccio](./fn-verdaccio) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-verdaccio) | Docker / x86 | — | [源码](https://github.com/verdaccio/verdaccio) |
 | <AppIcon name="fn-wallos" alt="Wallos 图标" :size="30" /> | [Wallos](./fn-wallos) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-wallos) | Docker / x86 | — | [源码](https://github.com/ellite/Wallos) |
 | <AppIcon name="fn-zfile" alt="ZFile 图标" :size="30" /> | [ZFile](./fn-zfile) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-zfile) | Docker / x86 | — | [源码](https://github.com/zhaojun1998/zfile) |
+| <AppIcon name="fn-copaw" alt="CoPaw 图标" :size="30" /> | [CoPaw](./fn-copaw) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-copaw) | Docker / x86 | — | [源码](https://github.com/agentscope-ai/CoPaw) |
+| <AppIcon name="fn-dashy" alt="Dashy 图标" :size="30" /> | [Dashy](./fn-dashy) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-dashy) | Docker / x86 | — | [源码](https://github.com/Lissy93/dashy) |
+| <AppIcon name="fn-easyimage2" alt="EasyImage 2.0 图标" :size="30" /> | [EasyImage 2.0](./fn-easyimage2) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-easyimage2) | Docker / x86 | — | [源码](https://github.com/ddsderek/easyimage) |
+| <AppIcon name="fn-focalboard" alt="Focalboard 图标" :size="30" /> | [Focalboard](./fn-focalboard) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-focalboard) | Docker / x86 | — | [源码](https://github.com/mattermost/focalboard) |
+| <AppIcon name="fn-glance" alt="Glance 图标" :size="30" /> | [Glance](./fn-glance) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-glance) | Docker / x86 | — | [源码](https://github.com/glanceapp/glance) |
+| <AppIcon name="fn-nextcloud" alt="Nextcloud 图标" :size="30" /> | [Nextcloud](./fn-nextcloud) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-nextcloud) | Docker / x86 | — | [源码](https://github.com/nextcloud/server) |
+| <AppIcon name="fn-ntfy" alt="ntfy 图标" :size="30" /> | [ntfy](./fn-ntfy) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-ntfy) | Docker / x86 | — | [源码](https://github.com/binwiederhier/ntfy) |
+| <AppIcon name="fn-obsidian-livesync" alt="Obsidian LiveSync 图标" :size="30" /> | [Obsidian LiveSync](./fn-obsidian-livesync) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-obsidian-livesync) | Docker / x86 | — | [源码](https://github.com/vrtmrz/obsidian-livesync) |
+| <AppIcon name="fn-openclaw" alt="OpenClaw 图标" :size="30" /> | [OpenClaw](./fn-openclaw) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-openclaw) | Docker / x86 | 模型服务 | [源码](https://github.com/1Panel-dev/openclaw) |
+| <AppIcon name="fn-palworld-server-tool" alt="幻兽帕鲁服务器工具图标" :size="30" /> | [幻兽帕鲁服务器工具](./fn-palworld-server-tool) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-palworld-server-tool) | Docker / x86 | — | [源码](https://github.com/zaigie/palworld-server-tool) |
+| <AppIcon name="fn-phpmyadmin" alt="phpMyAdmin 图标" :size="30" /> | [phpMyAdmin](./fn-phpmyadmin) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-phpmyadmin) | Docker / x86 | MySQL / MariaDB | [源码](https://github.com/phpmyadmin/phpmyadmin) |
 
 ## 安装方式
 

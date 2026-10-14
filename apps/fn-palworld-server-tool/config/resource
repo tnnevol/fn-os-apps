@@ -1,0 +1,10 @@
+{
+    "docker-project": {
+        "projects": [
+            {
+                "name": "fn-palworld-server-tool",
+                "path": "docker"
+            }
+        ]
+    }
+}

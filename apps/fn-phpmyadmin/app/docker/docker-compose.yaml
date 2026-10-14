@@ -1,0 +1,14 @@
+services:
+  phpmyadmin:
+    container_name: fn-phpmyadmin
+    image: phpmyadmin:5.2.3
+    environment:
+      - PMA_ARBITRARY=1
+    ports:
+      - "${APP_PORT}:80"
+    restart: always
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      # 单文件挂载：文件由 cmd/install_callback 预创建，保持文件形态（不能挂成目录）
+      - "${TRIM_PKGVAR}/data/conf.d/uploads.ini:/usr/local/etc/php/conf.d/uploads.ini"
+      - "${TRIM_PKGVAR}/data/conf.inc/config.user.inc.php:/etc/phpmyadmin/config.user.inc.php"

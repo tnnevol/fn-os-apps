@@ -1,0 +1,14 @@
+appname               = fn-palworld-server-tool
+version               = 6.0.0
+display_name          = 幻兽帕鲁服务器工具
+desc                  = Palworld Server Tool 用于查看与管理帕鲁服务器存档与玩家数据
+platform              = x86
+source                = thirdparty
+maintainer            = jokerwho
+maintainer_url        = https://github.com/zaigie/palworld-server-tool
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-palworld-server-tool.main
+disable_authorization_path = true

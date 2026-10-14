@@ -1,0 +1,10 @@
+{
+    "docker-project": {
+        "projects": [
+            {
+                "name": "fn-easyimage2",
+                "path": "docker"
+            }
+        ]
+    }
+}

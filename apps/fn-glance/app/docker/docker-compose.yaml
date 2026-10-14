@@ -1,0 +1,13 @@
+services:
+  glance:
+    container_name: fn-glance
+    image: glanceapp/glance:v0.8.6
+    ports:
+      - "${APP_PORT}:8080"
+    restart: always
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      # 单文件挂载：文件由 cmd/install_callback 预创建，保持文件形态（不能挂成目录）
+      - "${TRIM_PKGVAR}/data/data/glance.yml:/app/config/glance.yml"
+      # 已删除上游的 /etc/timezone、/etc/localtime 宿主路径挂载：
+      # 这两个路径在 fnOS 上不作为应用挂载点使用，时区改由 TZ 环境变量提供（见转换规约「存储与挂载」）

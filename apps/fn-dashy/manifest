@@ -1,0 +1,14 @@
+appname               = fn-dashy
+version               = 6.0.0
+display_name          = Dashy
+desc                  = Dashy 是可自托管的个人导航面板，集中整理常用服务入口
+platform              = x86
+source                = thirdparty
+maintainer            = Lissy93
+maintainer_url        = https://github.com/Lissy93/dashy
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-dashy.Application
+disable_authorization_path = true

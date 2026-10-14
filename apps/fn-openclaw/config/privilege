@@ -1,0 +1,7 @@
+{
+    "defaults": {
+        "run-as": "package"
+    },
+    "username": "docker-fn-openclaw",
+    "groupname": "docker-fn-openclaw"
+}

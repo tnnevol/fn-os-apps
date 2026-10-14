@@ -1,0 +1,16 @@
+services:
+  palworld-server-tool:
+    container_name: fn-palworld-server-tool
+    image: jokerwho/palworld-server-tool:0.12.2
+    ports:
+      - "${APP_PORT}:8080"
+    restart: always
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      # 帕鲁服务器存档目录。上游用 PALWORLD_SAVE_PATH 让用户填任意宿主路径；
+      # fnOS 上无法校验该路径，故固定到应用数据目录（见 docs/apps/fn-palworld-server-tool.md「高级配置」）。
+      - "${TRIM_PKGVAR}/data/save:/app/save"
+      - "${TRIM_PKGVAR}/data/data/backups:/app/backups"
+      # 单文件挂载：文件由 cmd/install_callback 预创建，保持文件形态（不能挂成目录）
+      - "${TRIM_PKGVAR}/data/data/pst.db:/app/pst.db"
+      - "${TRIM_PKGVAR}/data/data/config.db:/app/config.db"

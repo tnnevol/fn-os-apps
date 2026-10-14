@@ -1,0 +1,7 @@
+{
+    "defaults": {
+        "run-as": "package"
+    },
+    "username": "docker-fn-obsidian-livesync",
+    "groupname": "docker-fn-obsidian-livesync"
+}

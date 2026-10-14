@@ -1,0 +1,24 @@
+#!/bin/bash
+
+### This script is called after the user installs the application.
+
+# 单文件挂载要求源文件在容器启动前就已存在且内容可用（Docker 不会自动创建文件）。
+# 这里预创建父目录，并为单文件挂载准备最小可用内容。
+if [ -z "${TRIM_PKGVAR}" ]; then
+    echo "TRIM_PKGVAR is not set; cannot prepare application data directory" >"${TRIM_TEMP_LOGFILE}"
+    exit 1
+fi
+
+mkdir -p "${TRIM_PKGVAR}/data/data"
+mkdir -p "${TRIM_PKGVAR}/data/data/backups"
+mkdir -p "${TRIM_PKGVAR}/data/save"
+
+# 以下单文件挂载由应用自行初始化，这里只需保证文件存在。
+[ -f "${TRIM_PKGVAR}/data/data/pst.db" ] || touch "${TRIM_PKGVAR}/data/data/pst.db"
+[ -f "${TRIM_PKGVAR}/data/data/config.db" ] || touch "${TRIM_PKGVAR}/data/data/config.db"
+
+chmod -R 770 "${TRIM_PKGVAR}/data" 2>/dev/null || true
+
+echo "Prepared application data directory: ${TRIM_PKGVAR}/data"
+
+exit 0

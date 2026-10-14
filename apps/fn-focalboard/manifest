@@ -1,0 +1,14 @@
+appname               = fn-focalboard
+version               = 6.0.0
+display_name          = Focalboard
+desc                  = Focalboard 是开源的项目与任务管理看板工具
+platform              = x86
+source                = thirdparty
+maintainer            = Mattermost
+maintainer_url        = https://github.com/mattermost/focalboard
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-focalboard.Application
+disable_authorization_path = true

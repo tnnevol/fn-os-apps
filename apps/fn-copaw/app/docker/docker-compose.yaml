@@ -1,0 +1,17 @@
+services:
+  copaw:
+    container_name: fn-copaw
+    image: agentscope/qwenpaw:v2.2.1
+    init: true
+    environment:
+      - QWENPAW_AUTH_ENABLED=true
+      - QWENPAW_AUTH_USERNAME=${QWENPAW_AUTH_USERNAME}
+      - QWENPAW_AUTH_PASSWORD=${QWENPAW_AUTH_PASSWORD}
+    ports:
+      - "${APP_PORT}:8088"
+    restart: always
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      - "${TRIM_PKGVAR}/data/data:/app/working"
+      - "${TRIM_PKGVAR}/data/secret:/app/working.secret"
+      - "${TRIM_PKGVAR}/data/backups:/app/working.backups"

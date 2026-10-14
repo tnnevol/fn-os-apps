@@ -1,0 +1,17 @@
+services:
+  dashy:
+    container_name: fn-dashy
+    image: lissy93/dashy:4.7.19
+    environment:
+      - NODE_ENV=production
+      # TRIM_UID/TRIM_GID 由 fnOS 注入，指向本应用的包用户；上游硬编码的 1000 在目标 NAS 上通常是登录用户
+      - UID=${TRIM_UID}
+      - GID=${TRIM_GID}
+    ports:
+      - "${APP_PORT}:8080"
+    restart: always
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      # 单文件挂载：文件由 cmd/install_callback 预创建，保持文件形态（不能挂成目录）
+      - "${TRIM_PKGVAR}/data/data/user-data/conf.yml:/app/user-data/conf.yml"
+      - "${TRIM_PKGVAR}/data/data/item-icons:/app/user-data/item-icons"

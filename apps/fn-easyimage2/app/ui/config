@@ -1,0 +1,13 @@
+{
+  ".url": {
+    "fn-easyimage2.Application": {
+      "title": "EasyImage 2.0",
+      "icon": "images/icon_{0}.png",
+      "type": "url",
+      "protocol": "http",
+      "port": "${APP_PORT}",
+      "url": "/",
+      "allUsers": false
+    }
+  }
+}

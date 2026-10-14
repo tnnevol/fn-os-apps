@@ -1,0 +1,7 @@
+{
+    "defaults": {
+        "run-as": "package"
+    },
+    "username": "docker-fn-palworld-server-tool",
+    "groupname": "docker-fn-palworld-server-tool"
+}

@@ -1,0 +1,14 @@
+appname               = fn-obsidian-livesync
+version               = 6.0.0
+display_name          = Obsidian LiveSync
+desc                  = Obsidian LiveSync 基于 CouchDB 提供 Obsidian 笔记的实时同步服务
+platform              = x86
+source                = thirdparty
+maintainer            = vrtmrz
+maintainer_url        = https://github.com/vrtmrz/obsidian-livesync
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-obsidian-livesync.Application
+disable_authorization_path = true

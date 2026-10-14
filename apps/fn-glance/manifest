@@ -1,0 +1,14 @@
+appname               = fn-glance
+version               = 6.0.0
+display_name          = Glance
+desc                  = Glance 是可自托管的仪表盘，把订阅源、服务状态与书签汇总到一页
+platform              = x86
+source                = thirdparty
+maintainer            = Glance
+maintainer_url        = https://github.com/glanceapp/glance
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-glance.Application
+disable_authorization_path = true

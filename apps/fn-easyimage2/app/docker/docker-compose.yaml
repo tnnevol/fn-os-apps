@@ -1,0 +1,17 @@
+services:
+  easyimage:
+    container_name: fn-easyimage2
+    image: ddsderek/easyimage:v2.8.6
+    environment:
+      - TZ=${TIME_ZONE}
+      - DEBUG=false
+      # TRIM_UID/TRIM_GID 由 fnOS 注入，指向本应用的包用户；上游硬编码的 1000 在目标 NAS 上通常是登录用户
+      - PUID=${TRIM_UID}
+      - PGID=${TRIM_GID}
+    ports:
+      - "${APP_PORT}:80"
+    restart: always
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      - "${TRIM_PKGVAR}/data/data/config:/app/web/config"
+      - "${TRIM_PKGVAR}/data/data/i:/app/web/i"

@@ -1,0 +1,12 @@
+services:
+  focalboard:
+    container_name: fn-focalboard
+    image: mattermost/focalboard:7.11.4
+    ports:
+      - "${APP_PORT}:8000"
+    restart: always
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      # 单文件挂载：文件由 cmd/install_callback 预创建，保持文件形态（不能挂成目录）
+      - "${TRIM_PKGVAR}/data/data/config.json:/opt/focalboard/config.json"
+      - "${TRIM_PKGVAR}/data/data/data:/opt/focalboard/data"

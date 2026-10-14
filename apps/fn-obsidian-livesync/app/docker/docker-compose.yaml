@@ -1,0 +1,15 @@
+services:
+  couchdb:
+    container_name: fn-obsidian-livesync
+    image: couchdb:3.5.2
+    environment:
+      - COUCHDB_USER=${OBSIDIAN_LIVESYNC_USER}
+      - COUCHDB_PASSWORD=${OBSIDIAN_LIVESYNC_USER_PASSWORD}
+    ports:
+      - "${APP_PORT}:5984"
+    restart: always
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      - "${TRIM_PKGVAR}/data/data:/opt/couchdb/data"
+      # 单文件挂载：文件由 cmd/install_callback 预创建，保持文件形态（不能挂成目录）
+      - "${TRIM_PKGVAR}/data/conf/local.ini:/opt/couchdb/etc/local.ini"

@@ -1,0 +1,14 @@
+appname               = fn-openclaw
+version               = 6.0.0
+display_name          = OpenClaw
+desc                  = OpenClaw 是自托管的 AI 助手网关，统一接入多种大模型服务
+platform              = x86
+source                = thirdparty
+maintainer            = 1Panel
+maintainer_url        = https://github.com/1Panel-dev/openclaw
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-openclaw.Application
+disable_authorization_path = true

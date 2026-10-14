@@ -1,0 +1,14 @@
+appname               = fn-nextcloud
+version               = 6.0.0
+display_name          = Nextcloud
+desc                  = Nextcloud 是自托管的网盘与协作平台，提供文件同步、共享与在线协作
+platform              = x86
+source                = thirdparty
+maintainer            = Nextcloud
+maintainer_url        = https://github.com/nextcloud/server
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-nextcloud.Application
+disable_authorization_path = true

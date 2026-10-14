@@ -1,0 +1,14 @@
+appname               = fn-ntfy
+version               = 6.0.0
+display_name          = ntfy
+desc                  = ntfy 是通过 HTTP 推送通知的自托管服务，支持手机与桌面客户端订阅
+platform              = x86
+source                = thirdparty
+maintainer            = binwiederhier
+maintainer_url        = https://github.com/binwiederhier/ntfy
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-ntfy.Application
+disable_authorization_path = true

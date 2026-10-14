@@ -36,6 +36,17 @@ import { Jimp, ResizeStrategy } from 'jimp'
 
 const ROOT = path.resolve(import.meta.dirname, '..')
 
+/**
+ * 由上游应用键推导本地 appname：含下划线时归一为连字符。
+ *
+ * 依据转换规约《派生规则·下划线归一》：`act_runner` → `fn-act-runner`、
+ * `obsidian_livesync` → `fn-obsidian-livesync`。上游目录名仍用原始键定位
+ * `logo.png`，只有本地 appname 做归一 —— 两者若混用会导致图标写到错的目录。
+ */
+function appnameOf(app) {
+  return `fn-${app.replace(/_/g, '-')}`
+}
+
 /** 目标产物：由 size + 路径生成函数组成，全部为正方形。 */
 const TARGETS = [
   { size: 64, file: app => path.join(ROOT, 'apps', app, 'ICON.PNG') },
@@ -112,7 +123,7 @@ function discoverApps(upstreamApps) {
     .filter(entry => entry.isDirectory())
     .map(entry => entry.name)
     .filter(name => fs.existsSync(path.join(upstreamApps, name, 'logo.png')))
-    .filter(name => fs.existsSync(path.join(ROOT, 'apps', `fn-${name}`)))
+    .filter(name => fs.existsSync(path.join(ROOT, 'apps', appnameOf(name))))
     .sort()
 }
 
@@ -140,7 +151,7 @@ function isPublished(app) {
 
 /** 生成单个应用的 5 个图标文件。 */
 async function generate(app, upstreamApps, dryRun, allowNonSquare) {
-  const appname = `fn-${app}`
+  const appname = appnameOf(app)
   const source = path.join(upstreamApps, app, 'logo.png')
   if (!fs.existsSync(source)) throw new Error(`找不到上游图标: ${path.relative(ROOT, source)}`)
 
@@ -200,11 +211,11 @@ async function main() {
 
   // 覆盖保护是全局不变量，与 `--all` / 点名无关：只要图标已入库（已发布），
   // 就必须显式 --force 才允许覆盖。点名不等于有意覆盖已发布资产。
-  const published = force ? [] : candidates.filter(app => isPublished(`fn-${app}`))
+  const published = force ? [] : candidates.filter(app => isPublished(appnameOf(app)))
   const targets = candidates.filter(app => !published.includes(app))
 
   for (const app of published) {
-    console.log(`跳过 fn-${app}: 图标已入库（已发布），如需覆盖请显式加 --force`)
+    console.log(`跳过 ${appnameOf(app)}: 图标已入库（已发布），如需覆盖请显式加 --force`)
   }
   if (published.length > 0)
     console.log(`共跳过 ${published.length} 个已发布应用: ${published.join(', ')}`)

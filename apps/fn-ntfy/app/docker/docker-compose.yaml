@@ -1,0 +1,26 @@
+services:
+  ntfy:
+    container_name: fn-ntfy
+    image: binwiederhier/ntfy:v2.29.0
+    command:
+      - serve
+    environment:
+      - TZ=${TIME_ZONE}
+    # TRIM_UID/TRIM_GID 由 fnOS 注入，指向本应用的包用户；上游把 PUID/PGID 做成向导字段（默认 1000），
+    # 在目标 NAS 上通常是登录用户而非包用户，故固定为包用户。
+    user: "${TRIM_UID}:${TRIM_GID}"
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - wget -q --tries=1 http://localhost:${APP_PORT_INTERNAL}/v1/health -O - | grep -Eo '"healthy"\s*:\s*true' || exit 1
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    ports:
+      - "${APP_PORT}:${APP_PORT_INTERNAL}"
+    restart: always
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      - "${TRIM_PKGVAR}/data/data/cache/ntfy:/var/cache/ntfy"
+      - "${TRIM_PKGVAR}/data/data/ntfy:/etc/ntfy"

@@ -146,7 +146,18 @@ const appItems = [
   { text: 'Uptime Kuma', link: '/apps/fn-uptime-kuma' },
   { text: 'Verdaccio', link: '/apps/fn-verdaccio' },
   { text: 'Wallos', link: '/apps/fn-wallos' },
-  { text: 'ZFile', link: '/apps/fn-zfile' }
+  { text: 'ZFile', link: '/apps/fn-zfile' },
+  { text: 'CoPaw', link: '/apps/fn-copaw' },
+  { text: 'Dashy', link: '/apps/fn-dashy' },
+  { text: 'EasyImage 2.0', link: '/apps/fn-easyimage2' },
+  { text: 'Focalboard', link: '/apps/fn-focalboard' },
+  { text: 'Glance', link: '/apps/fn-glance' },
+  { text: 'Nextcloud', link: '/apps/fn-nextcloud' },
+  { text: 'ntfy', link: '/apps/fn-ntfy' },
+  { text: 'Obsidian LiveSync', link: '/apps/fn-obsidian-livesync' },
+  { text: 'OpenClaw', link: '/apps/fn-openclaw' },
+  { text: '幻兽帕鲁服务器工具', link: '/apps/fn-palworld-server-tool' },
+  { text: 'phpMyAdmin', link: '/apps/fn-phpmyadmin' }
 ]
 
 const startItems = [

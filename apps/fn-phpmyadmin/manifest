@@ -1,0 +1,14 @@
+appname               = fn-phpmyadmin
+version               = 6.0.0
+display_name          = phpMyAdmin
+desc                  = phpMyAdmin 是基于浏览器的 MySQL/MariaDB 管理工具
+platform              = x86
+source                = thirdparty
+maintainer            = phpMyAdmin
+maintainer_url        = https://github.com/phpmyadmin/phpmyadmin
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-phpmyadmin.Application
+disable_authorization_path = true
