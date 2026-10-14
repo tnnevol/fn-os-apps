@@ -16,6 +16,17 @@ const ROOT = path.resolve(import.meta.dirname, '..')
 const APPS_DIR = path.join(ROOT, 'apps')
 const OUT = path.join(ROOT, 'fnpack.json')
 
+/**
+ * Release 下载基址与 tag。
+ *
+ * RELEASE_TAG 取仓库根 package.json 的版本并加 v 前缀——因为 build-common-fn.yml
+ * 产出的资产名是 `<appname>-<RELEASE_TAG>.fpk`，而 RELEASE_TAG 就是 git tag（含 v）。
+ * `pnpm run version` 递增版本后必须重跑本脚本，否则 URL 会指向旧 tag。
+ */
+const PROJECT_VERSION = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf-8')).version
+const RELEASE_TAG = `v${PROJECT_VERSION}`
+const RELEASE_BASE = 'https://github.com/tnnevol/fn-os-apps'
+
 const SOURCE_INFO = {
   name: '飞牛 fnOS 应用 Monorepo',
   author: 'tnnevol',
@@ -229,7 +240,10 @@ for (const appname of appDirs) {
   const release = { packages: {} }
   if (manifest.os_min_version) release.os_min_version = manifest.os_min_version
   release.packages[platform[0]] = {
-    download_url: `./${appname}/${appname}_v${version}.fpk`,
+    // Release 资产名由 build-common-fn.yml 产出：`<appname>-<RELEASE_TAG>.fpk`，
+    // RELEASE_TAG 是 `v<项目版本>`（含 v 前缀）。
+    // 用 /releases/latest/download/ 而非写死具体 tag，发版后客户端自动取到最新包。
+    download_url: `${RELEASE_BASE}/releases/latest/download/${appname}-${RELEASE_TAG}.fpk`,
   }
   app.releases[version] = release
   apps[appname] = app

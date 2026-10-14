@@ -1,4 +1,5 @@
 import { type OptionValues } from 'commander'
+import { existsSync } from 'node:fs'
 import { readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { versionBump } from 'bumpp'
@@ -76,6 +77,27 @@ async function versionProject(options: ReturnType<typeof parseVersionOptions>): 
     confirm: options.confirm,
   })
   console.log(`${current.name}: ${result.currentVersion} -> ${result.newVersion}`)
+  await regenerateFnDepotIndex()
+}
+
+/**
+ * 重生成 FnDepot 源索引。
+ *
+ * 索引里的 `download_url` 带 `v<项目版本>` 的 release tag，版本递增后旧 URL
+ * 会指向上一版的资产包——不同步就会让客户端装到过期的 FPK。
+ */
+async function regenerateFnDepotIndex(): Promise<void> {
+  const script = join(repositoryRoot, 'scripts', 'generate-fnpack-json.mjs')
+  if (!existsSync(script)) return
+  try {
+    const { execFile } = await import('node:child_process')
+    const { promisify } = await import('node:util')
+    await promisify(execFile)(process.execPath, [script], { cwd: repositoryRoot })
+    console.log('已同步 fnpack.json（download_url 指向新的 release tag）')
+  } catch (error) {
+    // 索引同步失败不应让版本提交回滚，但必须显式提示，避免源文件静默过期。
+    console.warn(`警告：fnpack.json 同步失败，请手动执行 pnpm run fnpack：${String(error)}`)
+  }
 }
 
 export async function runVersion(args: string[]): Promise<void> {
