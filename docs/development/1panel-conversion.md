@@ -596,7 +596,13 @@ disable_authorization_path = true
 4. **不得复制上游文件内容**。上游 `LICENSE` 是 GPL-3.0，本仓库是 Apache-2.0。只提取配置事实（镜像标签、端口、卷路径、环境变量名和默认值），不搬运 YAML 注释、README、脚本或表单文案。
 5. **不得修改上游 `appstore/`**，也不向上游提交补丁。它是只读的契约与版本来源。
 6. **不得把同一应用的多份 compose 塞进一个 FPK**。上游 40 个应用有多版本，每个应用只选定一个版本，多版本差异通过升级而非并行入口体现。
-7. **不得在仓库内写入开发机绝对路径**。脚本内定位同目录文件时基于脚本位置推导；fnOS 设备端路径（`TRIM_*`、`/var/apps/...`）可以出现，但要注明它指向目标 NAS。完整规则见 [SDD 规格驱动维护规范](/development/sdd-workflow) 的「路径约束」。
+7. **不得覆盖仓库已有的同名应用**。同步或批量转换前，先核对 `apps/` 下是否已有该应用——无论是原生（`app/server`、`cmd/main` 直接拉起进程）还是 Docker（`app/docker/`）形态，**都视为已存在，不做替换、不覆盖、不并行出两份**。
+
+   判据用**归一化后的名字**比对（`fn-mysql_v8` 的下划线与文档里的 `fn-mysql-v8` 连字符视为同一个），否则会漏判。转换开始时仓库已有 14 个应用，其中 6 个与上游同名：`bitwarden`、`halo`、`hermes-agent`、`memos`、`new-api`、`zentao`——**这 6 个不再转换**，清单在「去掉同名后」列里已扣除。
+
+   确实需要纳入上游的新版本时，**走升级而不是重建**：保留 `manifest.appname` 不变，只更新 `app/docker/` 与 `wizard/`，因为 `appname` 是已安装用户的升级主键，改名会断掉升级路径。
+
+8. **不得在仓库内写入开发机绝对路径**。脚本内定位同目录文件时基于脚本位置推导；fnOS 设备端路径（`TRIM_*`、`/var/apps/...`）可以出现，但要注明它指向目标 NAS。完整规则见 [SDD 规格驱动维护规范](/development/sdd-workflow) 的「路径约束」。
 8. **不得在文档、向导 `helpText`、示例和日志里出现真实密码或 Token**。
 
 ## 自检清单
@@ -650,3 +656,4 @@ disable_authorization_path = true
 | 2026-10-14 | 补可变标签判据的**宽匹配**规则与三类命中场景（`:latest` 类、`:master` 类、`alpine-latest` 类、变量插值类）。此前的「标签等于可变值」写法连续漏判三次（`:master`、`alpine-latest`、`${PANEL_DB_TYPE}` 插值），改为「标签串包含可变词或含 `${` 即命中」，并要求选定目标版本前联网确认 tag 存在。 |
 | 2026-10-14 | 订正两条映射：① Redis 字段改为「按应用实际消费方式给」——分字段消费型（如 `cloudreve` 的 `CR_CONF_Redis.Server` 只收 host）用 `REDIS_HOST`/`REDIS_PORT`/`REDIS_PASSWORD`，硬塞连接串会得到 `redis://host:port:6379` 错值；② 命名卷条款从「仅 `external: true`」扩到**全部具名卷**，托管卷虽自动创建但数据落在 `/var/lib/docker/volumes/`，不在 `uninstall_callback` 删除范围，卸载后残留泄漏（`discuz` 即此类）。 |
 | 2026-10-14 | 补「待确认」条目：**镜像默认 `USER` 与数据目录属主可能不匹配**（约 20 个应用）。`install_callback` 建目录的属主是包用户、mode 770；镜像若以固定非 root 身份运行则无写权限。已用 `fn-node-red` 的 `user: "${TRIM_UID}:${TRIM_GID}"` 先例对齐，但对依赖自身 home 属主的镜像强加可能致其起不来，**故不批量改，列为真机验证第一优先级**。 |
+| 2026-10-15 | 新增禁止项「不得覆盖仓库已有的同名应用」：同步或批量转换前先核对 `apps/` 是否已有该应用（原生或 Docker 形态都算），按归一化名字比对（`fn-mysql_v8` 与 `fn-mysql-v8` 视为同一个）。确需纳入上游新版本时走升级、保留 `appname`，不重建。 |
