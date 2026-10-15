@@ -634,6 +634,28 @@ disable_authorization_path = true
 | `/etc/timezone`、`/etc/localtime` 在 fnOS 宿主上的存在性与权限 | 上游 22 个应用；本规约统一改为 `TZ` 环境变量，需真机确认时区生效 | 待真机验证 |
 | 1Panel 宿主路径（如 `/etc/1panel`）挂载的替代方案 | 影响 `ai-gateway` 等应用的数据目录设计 | 待确认 |
 | 既有 14 个已发布应用的端口校验是否统一为严格正则 | 既有应用普遍用 `^[0-9]+$`（不挡越界），与本规约的 1—65535 严格正则不一致；**本次不回溯**，如需统一须另开需求 | 已登记，由计划维护者决定是否单独排期 |
+| **镜像默认 `USER` 与 `TRIM_PKGVAR` 目录属主不匹配——受影响应用清单** | `install_callback` 建的目录属主是**包用户**、mode `770`；镜像若以**固定非 root 身份**运行则无写权限。已从 registry 实拉镜像 config 与 `/etc/passwd` 逐个核实（**非推测**）：
+
+| 应用 | 镜像 USER | 实测 uid:gid |
+| --- | --- | --- |
+| `fn-2fauth` | `1000:1000` | 1000:1000 |
+| `fn-casdoor` | `1000` | 1000 |
+| `fn-dashy` | `1000:1000` | 1000:1000 |
+| `fn-filebrowser` | `user` | 1000:1000 |
+| `fn-focalboard` | `nobody` | 65534:65534 |
+| `fn-langflow` | `user` | 1000:0 |
+| `fn-nexus` | `nexus` | 200:200 |
+| `fn-nodebb` | `nodebb` | 1001:1001 |
+| `fn-openldap` | `1001` | 1001 |
+| `fn-pgadmin4` | `5050` | 5050 |
+| `fn-rustfs` | `rustfs` | 10001:10001 |
+| `fn-sftpgo` | `1000:1000` | 1000:1000 |
+| `fn-tomcat` | `1001` | 1001 |
+| `fn-verdaccio` | `10001` | 10001 |
+| `fn-ollama-webui` | `0:0` | **实为 root**（性质不同，单列） |
+| `fn-firefly-iii`/`fn-mattermost`/`fn-n8n`/`fn-openclaw`/`fn-stalwart-mail` | 有 USER 名 | **uid 未解析**（`/etc/passwd` 不在扫描的最小 10 层内） |
+
+**对照修法**：仓库已有 4 个应用（`fn-node-red`/`fn-komari`/`fn-tinyrdm` 等）用 `user: "${TRIM_UID}:${TRIM_GID}"` 强制对齐，**但对依赖自身 home 属主的镜像（`pgadmin4`/`nexus`/`mattermost`）强加可能反而起不来**。**是否必然失败仍属推断**——fnOS 若对数据目录授予 ACL、或 `TRIM_UID` 恰为 1000/1001 则可能侥幸可用。**真机验证第一优先级** |
 | **镜像默认 `USER` 与 `TRIM_PKGVAR` 目录属主可能不匹配** | `install_callback` 创建的数据目录属主是**包用户**、mode `770`；若镜像 `config.User` 是**固定非 root 名字或固定 uid**（如 `nexus`、`n8n`(node)、`rustfs`(10001)、`pgadmin4`(5050)、`mattermost`、`focalboard`(nobody) 等），容器进程 uid ≠ 目录属主 uid，而 770 对「既非 owner 又不在 group」的进程**无写权限**。命中约 20 个应用（其中多数已交付）。**尚未断言必然失败**——fnOS 是否对数据目录授予 ACL、`TRIM_UID` 是否会巧合等于镜像 uid 均未验证。**修法需逐个判断**：仓库已有 4 个应用（`fn-node-red`/`fn-komari`/`fn-tinyrdm` 等）用 `user: "${TRIM_UID}:${TRIM_GID}"` 强制对齐，但对 `pgadmin4`/`nexus`/`mattermost` 这类**依赖自身 home 目录属主**的镜像，强加可能反而起不来。**本轮不批量修改**，列为真机专项验证的第一优先级 | 待真机验证；转换时凡使用 `TRIM_PKGVAR` 绑定挂载的应用都要核对镜像默认 `USER`，不匹配必须在应用文档登记为待验证项 |
 | `.fpk` 字节级不可复现 | fnpack 会向包内 `manifest` 注入一行随构建时刻变化的 `checksum`，tar 成员 mtime 也随之变化。实测：同一目录**同一秒内**连续构建结果一致，**跨秒**则 `.fpk` 大小与哈希均不同。`.fpk` 大小/哈希**不能作为验收判据**，CI 也不应做产物哈希断言 | 已知事实；要校验产物请比对解包内容：`app.tgz` 内层解包后 `diff -r` 无输出，顶层 `manifest` 仅 `checksum` 一行不同 |
 
