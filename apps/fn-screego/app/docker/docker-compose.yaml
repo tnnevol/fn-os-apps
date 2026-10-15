@@ -1,0 +1,13 @@
+services:
+  screego:
+    container_name: fn-screego
+    image: ghcr.io/screego/server:1.12.6
+    environment:
+      - SCREEGO_EXTERNAL_IP=${SCREEGO_EXTERNAL_IP}
+      # 上游把该值写死为 50000:50200；此处由向导字段驱动（格式 起始:结束）
+      - SCREEGO_TURN_PORT_RANGE=${SCREEGO_TURN_PORT_RANGE}
+    ports:
+      - "${APP_PORT}:5050"
+      - "${TURN_PORT}:3478"
+      - "${SCREEGO_TURN_PORT_RANGE}:50000-50200/udp"
+    restart: always

@@ -1,0 +1,14 @@
+appname               = fn-redpanda-console
+version               = 6.0.0
+display_name          = Redpanda Console
+desc                  = Redpanda Console 是 Kafka / Redpanda 的 Web 管理界面，用于查看主题与消费组
+platform              = x86
+source                = thirdparty
+maintainer            = Redpanda Data
+maintainer_url        = https://github.com/redpanda-data/console
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-redpanda-console.Application
+disable_authorization_path = true

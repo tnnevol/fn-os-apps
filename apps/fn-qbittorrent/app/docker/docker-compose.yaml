@@ -1,0 +1,22 @@
+services:
+  qbittorrent:
+    container_name: fn-qbittorrent
+    image: linuxserver/qbittorrent:5.2.4
+    environment:
+      - TZ=${TIME_ZONE}
+      # TRIM_UID/TRIM_GID 由 fnOS 注入，指向本应用的包用户；上游硬编码的 1000 在目标 NAS 上通常是登录用户
+      - PUID=${TRIM_UID}
+      - PGID=${TRIM_GID}
+      - UMASK_SET=022
+      # 容器内 WebUI 监听端口与宿主映射端口保持一致（上游即如此设计）
+      - WEBUI_PORT=${APP_PORT}
+      - TORRENTING_PORT=${TORRENTING_PORT}
+    ports:
+      - "${TORRENTING_PORT}:${TORRENTING_PORT}"
+      - "${TORRENTING_PORT}:${TORRENTING_PORT}/udp"
+      - "${APP_PORT}:${APP_PORT}"
+    restart: always
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      - "${TRIM_PKGVAR}/data/config:/config"
+      - "${TRIM_PKGVAR}/data/downloads:/downloads"

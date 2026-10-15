@@ -1,0 +1,19 @@
+services:
+  stalwart-mail:
+    container_name: fn-stalwart-mail
+    image: stalwartlabs/stalwart:v0.16.25-alpine
+    ports:
+      - "${HTTPS_PORT}:443"
+      - "${APP_PORT}:8080"
+      - "${SMTP_PORT}:25"
+      - "${SUBMISSION_PORT}:587"
+      - "${SMTP_SSL_PORT}:465"
+      - "${IMAP_PORT}:143"
+      - "${IMAP_SSL_PORT}:993"
+      - "${POP3_PORT}:110"
+      - "${POP3_SSL_PORT}:995"
+      - "${MANAGESIEVE_PORT}:4190"
+    restart: always
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      - "${TRIM_PKGVAR}/data:/opt/stalwart"

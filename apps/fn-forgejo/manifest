@@ -1,0 +1,14 @@
+appname               = fn-forgejo
+version               = 6.0.0
+display_name          = Forgejo
+desc                  = Forgejo 是轻量的自托管 Git 服务，提供代码托管、Issue 与 CI 集成
+platform              = x86
+source                = thirdparty
+maintainer            = Forgejo
+maintainer_url        = https://codeberg.org/forgejo/forgejo
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-forgejo.Application
+disable_authorization_path = true

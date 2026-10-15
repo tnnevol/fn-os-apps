@@ -1,0 +1,28 @@
+services:
+  forgejo:
+    container_name: fn-forgejo
+    # 上游用 image: ${IMAGE}，该变量由其 scripts/init.sh 写进 .env（tag 为 codeberg.org/forgejo/forgejo:16.0.5）；
+    # fnOS 没有该预启动钩子，故直接写死上游登记的版本标签，不依赖 .env 机制。
+    # 仅提供非 rootless 版本（rootless 变体为 :16.0.5-rootless，属另一 tag，且 fnOS 以包用户运行无需该变体）。
+    image: codeberg.org/forgejo/forgejo:16.0.5
+    environment:
+      # TRIM_UID/TRIM_GID 由 fnOS 注入，指向本应用的包用户；上游硬编码的 1000 在目标 NAS 上通常是登录用户
+      - USER_UID=${TRIM_UID}
+      - USER_GID=${TRIM_GID}
+      # 上游由 1Panel 服务选择器注入 PANEL_DB_*，fnOS 改为向导显式填写
+      - FORGEJO__database__DB_TYPE=${DB_TYPE}
+      # Forgejo 的 database.HOST 需要 host:port 形式，故由两个字段拼接
+      - FORGEJO__database__HOST=${DB_HOST}:${DB_PORT}
+      - FORGEJO__database__NAME=${DB_NAME}
+      - FORGEJO__database__USER=${DB_USERNAME}
+      - FORGEJO__database__PASSWD=${DB_PASSWORD}
+    ports:
+      - "${APP_PORT}:3000"
+      - "${SSH_PORT}:22"
+    restart: always
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      - "${TRIM_PKGVAR}/data:/data"
+      - "${TRIM_PKGVAR}/data/data-rootless/forgejo:/var/lib/gitea"
+      - "${TRIM_PKGVAR}/data/data-rootless/conf:/etc/gitea"
+      # 已删除上游的 /etc/localtime:/etc/localtime:ro：宿主路径挂载按规约不允许

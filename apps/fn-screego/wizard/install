@@ -1,0 +1,73 @@
+[
+    {
+        "stepTitle": "基础配置",
+        "items": [
+            {
+                "type": "text",
+                "field": "APP_PORT",
+                "label": "Web 访问端口",
+                "initValue": "5050",
+                "required": true,
+                "helpText": "端口号，取值范围 1—65535。",
+                "isHttp": true,
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请填写Web 访问端口"
+                    },
+                    {
+                        "pattern": "^(?:[1-9][0-9]{0,3}|[1-5][0-9]{4}|[6][0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$",
+                        "message": "端口号必须是 1—65535 之间的整数"
+                    }
+                ]
+            },
+            {
+                "type": "text",
+                "field": "SCREEGO_EXTERNAL_IP",
+                "label": "对外 IP 地址",
+                "initValue": "",
+                "helpText": "目标 NAS 的对外可访问 IP（TURN 服务对外通告的地址），例如 192.168.1.10。**填错会导致 WebRTC 连接建立失败、画面无法显示。**",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请填写对外 IP 地址"
+                    }
+                ]
+            },
+            {
+                "type": "text",
+                "field": "TURN_PORT",
+                "label": "TURN 端口",
+                "initValue": "3478",
+                "helpText": "TURN 服务的端口（非 HTTP，不建桌面入口）。",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请填写TURN 端口"
+                    },
+                    {
+                        "pattern": "^(?:[1-9][0-9]{0,3}|[1-5][0-9]{4}|[6][0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$",
+                        "message": "端口号必须是 1—65535 之间的整数"
+                    }
+                ]
+            },
+            {
+                "type": "text",
+                "field": "SCREEGO_TURN_PORT_RANGE",
+                "label": "TURN 端口范围",
+                "initValue": "50000-50200",
+                "helpText": "TURN 中转使用的 UDP 端口范围，格式为「起始-结束」，例如 50000-50200。**该范围需在防火墙放行，范围过小会限制并发共享。**",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请填写 TURN 端口范围"
+                    },
+                    {
+                        "pattern": "^[0-9]{1,5}-[0-9]{1,5}$",
+                        "message": "格式不正确，应为「起始-结束」，例如 50000-50200"
+                    }
+                ]
+            }
+        ]
+    }
+]

@@ -1,0 +1,14 @@
+appname               = fn-sentinel-dashboard
+version               = 6.0.0
+display_name          = Sentinel Dashboard
+desc                  = Sentinel Dashboard 是流量控制与熔断降级的实时监控控制台
+platform              = x86
+source                = thirdparty
+maintainer            = BladeX
+maintainer_url        = https://github.com/alibaba/Sentinel
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-sentinel-dashboard.main
+disable_authorization_path = true

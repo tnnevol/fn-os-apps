@@ -1,0 +1,14 @@
+appname               = fn-screego
+version               = 6.0.0
+display_name          = screego
+desc                  = screego 是面向开发者的屏幕共享工具，基于 WebRTC 提供低延迟画面
+platform              = x86
+source                = thirdparty
+maintainer            = screego
+maintainer_url        = https://github.com/screego/server
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-screego.Application
+disable_authorization_path = true

@@ -1,0 +1,7 @@
+{
+    "defaults": {
+        "run-as": "package"
+    },
+    "username": "docker-fn-stalwart-mail",
+    "groupname": "docker-fn-stalwart-mail"
+}

@@ -1,0 +1,105 @@
+[
+    {
+        "stepTitle": "基础配置",
+        "items": [
+            {
+                "type": "text",
+                "field": "HOST_ADDRESS",
+                "label": "对外 IP 地址",
+                "initValue": "",
+                "helpText": "目标 NAS 的对外可访问 IP 地址，例如 192.168.1.10。**这是中继（relay）对外通告的地址，客户端会据此连接；上游默认值 172.17.0.1 是 Docker 内部网桥地址，在 fnOS 上不可用，必须改为实际 IP。** 填错会导致客户端能连上 ID 服务器但无法建立远程连接。",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请填写对外 IP 地址"
+                    }
+                ]
+            },
+            {
+                "type": "text",
+                "field": "NAT_PORT",
+                "label": "NAT 检测端口",
+                "initValue": "21115",
+                "helpText": "NAT 类型检测端口（非 HTTP）。",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请填写NAT 检测端口"
+                    },
+                    {
+                        "pattern": "^(?:[1-9][0-9]{0,3}|[1-5][0-9]{4}|[6][0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$",
+                        "message": "端口号必须是 1—65535 之间的整数"
+                    }
+                ]
+            },
+            {
+                "type": "text",
+                "field": "HBBS_PORT",
+                "label": "ID/信令端口",
+                "initValue": "21116",
+                "helpText": "hbbs 的 ID 注册与信令端口（TCP + UDP，非 HTTP）。**这是客户端连接的必需端口。**",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请填写ID/信令端口"
+                    },
+                    {
+                        "pattern": "^(?:[1-9][0-9]{0,3}|[1-5][0-9]{4}|[6][0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$",
+                        "message": "端口号必须是 1—65535 之间的整数"
+                    }
+                ]
+            },
+            {
+                "type": "text",
+                "field": "HBBR_PORT",
+                "label": "中继端口",
+                "initValue": "21117",
+                "helpText": "hbbr 的中继端口（非 HTTP），用于无法直连时中转流量。",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请填写中继端口"
+                    },
+                    {
+                        "pattern": "^(?:[1-9][0-9]{0,3}|[1-5][0-9]{4}|[6][0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$",
+                        "message": "端口号必须是 1—65535 之间的整数"
+                    }
+                ]
+            },
+            {
+                "type": "text",
+                "field": "WEB_CLIENT_PORT_1",
+                "label": "WebSocket 端口",
+                "initValue": "21118",
+                "helpText": "Web 客户端使用的 WebSocket 端口（非 HTTP）。",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请填写WebSocket 端口"
+                    },
+                    {
+                        "pattern": "^(?:[1-9][0-9]{0,3}|[1-5][0-9]{4}|[6][0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$",
+                        "message": "端口号必须是 1—65535 之间的整数"
+                    }
+                ]
+            },
+            {
+                "type": "text",
+                "field": "WEB_CLIENT_PORT_2",
+                "label": "WebSocket 备用端口",
+                "initValue": "21119",
+                "helpText": "Web 客户端使用的备用 WebSocket 端口（非 HTTP）。",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请填写WebSocket 备用端口"
+                    },
+                    {
+                        "pattern": "^(?:[1-9][0-9]{0,3}|[1-5][0-9]{4}|[6][0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$",
+                        "message": "端口号必须是 1—65535 之间的整数"
+                    }
+                ]
+            }
+        ]
+    }
+]

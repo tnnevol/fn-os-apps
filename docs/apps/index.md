@@ -149,6 +149,16 @@
 | <AppIcon name="fn-metabase" alt="Metabase 图标" :size="30" /> | [Metabase](./fn-metabase) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-metabase) | Docker / x86 | MySQL | [源码](https://github.com/metabase/metabase) |
 | <AppIcon name="fn-miniflux" alt="Miniflux 图标" :size="30" /> | [Miniflux](./fn-miniflux) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-miniflux) | Docker / x86 | PostgreSQL | [源码](https://github.com/miniflux/v2) |
 | <AppIcon name="fn-mliev-dwz" alt="DWZ 图标" :size="30" /> | [DWZ](./fn-mliev-dwz) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-mliev-dwz) | Docker / x86 | PostgreSQL / MySQL / MariaDB + Redis | [源码](https://github.com/mliev/dwz) |
+| <AppIcon name="fn-qbittorrent" alt="qBittorrent 图标" :size="30" /> | [qBittorrent](./fn-qbittorrent) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-qbittorrent) | Docker / x86 | — | [源码](https://github.com/linuxserver/docker-qbittorrent) |
+| <AppIcon name="fn-redpanda-console" alt="Redpanda Console 图标" :size="30" /> | [Redpanda Console](./fn-redpanda-console) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-redpanda-console) | Docker / x86 | Kafka | [源码](https://github.com/redpanda-data/console) |
+| <AppIcon name="fn-rustfs" alt="RustFS 图标" :size="30" /> | [RustFS](./fn-rustfs) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-rustfs) | Docker / x86 | — | [源码](https://github.com/rustfs/rustfs) |
+| <AppIcon name="fn-screego" alt="screego 图标" :size="30" /> | [screego](./fn-screego) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-screego) | Docker / x86 | — | [源码](https://github.com/screego/server) |
+| <AppIcon name="fn-palworld" alt="Palworld Server 图标" :size="30" /> | [Palworld Server](./fn-palworld) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-palworld) | Docker / x86 | — | [源码](https://github.com/thijsvanloef/palworld-server-docker) |
+| <AppIcon name="fn-rocketmq" alt="RocketMQ 图标" :size="30" /> | [RocketMQ](./fn-rocketmq) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-rocketmq) | Docker / x86 | — | [源码](https://github.com/apache/rocketmq) |
+| <AppIcon name="fn-sentinel-dashboard" alt="Sentinel Dashboard 图标" :size="30" /> | [Sentinel Dashboard](./fn-sentinel-dashboard) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-sentinel-dashboard) | Docker / x86 | — | [源码](https://github.com/alibaba/Sentinel) |
+| <AppIcon name="fn-stalwart-mail" alt="Stalwart Mail Server 图标" :size="30" /> | [Stalwart Mail Server](./fn-stalwart-mail) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-stalwart-mail) | Docker / x86 | — | [源码](https://github.com/stalwartlabs/stalwart) |
+| <AppIcon name="fn-forgejo" alt="Forgejo 图标" :size="30" /> | [Forgejo](./fn-forgejo) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-forgejo) | Docker / x86 | MySQL / MariaDB / PostgreSQL | [源码](https://codeberg.org/forgejo/forgejo) |
+| <AppIcon name="fn-rustdesk" alt="RustDesk Server 图标" :size="30" /> | [RustDesk Server](./fn-rustdesk) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-rustdesk) | Docker / x86 | — | [源码](https://github.com/rustdesk/rustdesk-server) |
 
 ## 安装方式
 

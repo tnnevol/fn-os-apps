@@ -1,0 +1,14 @@
+appname               = fn-rustfs
+version               = 6.0.0
+display_name          = RustFS
+desc                  = RustFS 是分布式对象存储系统，兼容 S3 协议并提供管理控制台
+platform              = x86
+source                = thirdparty
+maintainer            = RustFS
+maintainer_url        = https://github.com/rustfs/rustfs
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-rustfs.Application
+disable_authorization_path = true

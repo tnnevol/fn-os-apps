@@ -1,0 +1,72 @@
+services:
+  namesrv:
+    image: apache/rocketmq:5.5.0
+    container_name: fn-rocketmq-namesrv
+    ports:
+      - "${NAMESRV_PORT}:9876"
+    volumes:
+      - "${TRIM_PKGVAR}/data/namesrv/logs:/home/rocketmq/logs"
+    command: sh mqnamesrv
+
+  broker:
+    image: apache/rocketmq:5.5.0
+    container_name: fn-rocketmq-broker
+    depends_on:
+      - namesrv
+    ports:
+      - "${FASTLISTEN_PORT}:10909"
+      - "${LISTEN_PORT}:10911"
+      - "${HALISTEN_PORT}:10912"
+    environment:
+      - NAMESRV_ADDR=namesrv:9876
+    volumes:
+      - "${TRIM_PKGVAR}/data/broker/logs:/home/rocketmq/logs"
+      - "${TRIM_PKGVAR}/data/broker/store:/home/rocketmq/store"
+      - "${TRIM_PKGVAR}/data/broker/conf/broker.conf:/opt/rocketmq-5.2.0/conf/broker.conf"
+    command: sh mqbroker -c /opt/rocketmq-5.2.0/conf/broker.conf
+
+  proxy:
+    image: apache/rocketmq:5.5.0
+    container_name: fn-rocketmq-proxy
+    depends_on:
+      - broker
+    ports:
+      - "${REMOTINGLISTEN_PORT}:8080"
+      - "${GRPCSERVER_PORT}:8081"
+    restart: on-failure
+    environment:
+      - NAMESRV_ADDR=namesrv:9876
+    volumes:
+      - "${TRIM_PKGVAR}/data/proxy/logs:/home/rocketmq/logs"
+      - "${TRIM_PKGVAR}/data/proxy/conf/rmq-proxy.json:/opt/rocketmq-5.2.0/conf/rmq-proxy.json"
+    command: sh mqproxy -pc /opt/rocketmq-5.2.0/conf/rmq-proxy.json
+
+  dashboard:
+    image: apacherocketmq/rocketmq-dashboard:2.1.0
+    container_name: fn-rocketmq
+    depends_on:
+      - namesrv
+    ports:
+      - "${APP_PORT}:8082"
+    restart: on-failure
+    environment:
+      - JAVA_OPTS=-Drocketmq.namesrv.addr=namesrv:9876 -Drocketmq.config.loginRequired=${DASHBOARD_LOGIN_REQUIRED} -Drocketmq.config.authMode=file -Drocketmq.config.dataPath=/dashboard-data
+      - DASHBOARD_USER=${DASHBOARD_USER}
+      - DASHBOARD_PASSWORD=${DASHBOARD_PASSWORD}
+      - SPRING_SECURITY_USER_NAME=${DASHBOARD_USER}
+      - SPRING_SECURITY_USER_PASSWORD=${DASHBOARD_PASSWORD}
+    volumes:
+      - "${TRIM_PKGVAR}/data/dashboard:/dashboard-data"
+    entrypoint:
+      - sh
+      - -c
+      - |
+        mkdir -p /dashboard-data
+        GEN=$$(printf '%s=%s,1\n' "$$DASHBOARD_USER" "$$DASHBOARD_PASSWORD")
+        if [ ! -f /dashboard-data/users.properties ] || [ "$$(cat /dashboard-data/.users.properties.generated 2>/dev/null)" != "$$GEN" ]; then
+          printf '%s\n' "$$GEN" > /dashboard-data/users.properties
+          printf '%s' "$$GEN" > /dashboard-data/.users.properties.generated
+          chmod 600 /dashboard-data/users.properties /dashboard-data/.users.properties.generated
+          echo 'users.properties regenerated from DASHBOARD_USER/DASHBOARD_PASSWORD'
+        fi
+        exec java $$JAVA_OPTS -jar /rocketmq-dashboard.jar

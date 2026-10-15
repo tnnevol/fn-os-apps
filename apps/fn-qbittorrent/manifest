@@ -1,0 +1,14 @@
+appname               = fn-qbittorrent
+version               = 6.0.0
+display_name          = qBittorrent
+desc                  = qBittorrent 是功能完整的 BT 下载客户端，支持 Web 管理界面
+platform              = x86
+source                = thirdparty
+maintainer            = LinuxServer.io
+maintainer_url        = https://github.com/linuxserver/docker-qbittorrent
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-qbittorrent.Application
+disable_authorization_path = true

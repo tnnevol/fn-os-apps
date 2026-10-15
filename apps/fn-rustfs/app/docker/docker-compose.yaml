@@ -1,0 +1,15 @@
+services:
+  rustfs:
+    container_name: fn-rustfs
+    image: rustfs/rustfs:1.0.1
+    environment:
+      - RUSTFS_ACCESS_KEY=${RUSTFS_ACCESS_KEY}
+      - RUSTFS_SECRET_KEY=${RUSTFS_SECRET_KEY}
+      - RUSTFS_CONSOLE_ENABLE=${RUSTFS_CONSOLE_ENABLE}
+    ports:
+      - "${API_PORT}:9000"
+      - "${APP_PORT}:9001"
+    restart: always
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      - "${TRIM_PKGVAR}/data:/data"

@@ -1,0 +1,35 @@
+#!/bin/bash
+
+### This script is called after the user installs the application.
+
+# 本应用有两处单文件挂载（broker.conf 与 rmq-proxy.json），Docker 不会为单文件挂载
+# 自动创建源文件，因此需预创建目录并从包内的最小可用配置播种。
+if [ -z "${TRIM_PKGVAR}" ]; then
+    echo "TRIM_PKGVAR is not set; cannot prepare application data directory" >"${TRIM_TEMP_LOGFILE}"
+    exit 1
+fi
+
+SEED_DIR="${TRIM_APPDEST}/seed"
+FILES="data/broker/conf/broker.conf data/proxy/conf/rmq-proxy.json"
+
+for rel in $FILES; do
+    mkdir -p "${TRIM_PKGVAR}/$(dirname "$rel")"
+    # 只在缺失或为空时播种，不覆盖用户已改过的配置
+    if [ ! -s "${TRIM_PKGVAR}/${rel}" ]; then
+        if [ -f "${SEED_DIR}/${rel}" ]; then
+            cp "${SEED_DIR}/${rel}" "${TRIM_PKGVAR}/${rel}"
+        else
+            echo "Seed file missing: ${SEED_DIR}/${rel}" >"${TRIM_TEMP_LOGFILE}"
+            exit 1
+        fi
+    fi
+done
+
+# 目录型挂载源同样需要预创建，否则 Docker 会以 root 建出属主错误的目录
+for dir in data/namesrv/logs data/broker/logs data/broker/store data/proxy/logs data/dashboard; do
+    mkdir -p "${TRIM_PKGVAR}/${dir}"
+done
+
+chmod -R 770 "${TRIM_PKGVAR}/data" 2>/dev/null || true
+
+exit 0

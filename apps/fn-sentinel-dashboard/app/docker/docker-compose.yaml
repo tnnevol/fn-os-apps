@@ -1,0 +1,8 @@
+services:
+  sentinel-dashboard:
+    container_name: fn-sentinel-dashboard
+    image: bladex/sentinel-dashboard:1.8.10
+    ports:
+      - "${APP_PORT}:8858"
+      - "${COMMUNICATION_PORT}:8719"
+    restart: always

@@ -198,7 +198,17 @@ const appItems = [
   { text: 'Maddy Mail Server', link: '/apps/fn-maddy-mail' },
   { text: 'Metabase', link: '/apps/fn-metabase' },
   { text: 'Miniflux', link: '/apps/fn-miniflux' },
-  { text: 'DWZ', link: '/apps/fn-mliev-dwz' }
+  { text: 'DWZ', link: '/apps/fn-mliev-dwz' },
+  { text: 'Forgejo', link: '/apps/fn-forgejo' },
+  { text: 'Palworld Server', link: '/apps/fn-palworld' },
+  { text: 'qBittorrent', link: '/apps/fn-qbittorrent' },
+  { text: 'Redpanda Console', link: '/apps/fn-redpanda-console' },
+  { text: 'RocketMQ', link: '/apps/fn-rocketmq' },
+  { text: 'RustDesk', link: '/apps/fn-rustdesk' },
+  { text: 'RustFS', link: '/apps/fn-rustfs' },
+  { text: 'screego', link: '/apps/fn-screego' },
+  { text: 'Sentinel Dashboard', link: '/apps/fn-sentinel-dashboard' },
+  { text: 'Stalwart Mail Server', link: '/apps/fn-stalwart-mail' }
 ]
 
 const startItems = [

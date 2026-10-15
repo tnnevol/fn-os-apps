@@ -1,0 +1,13 @@
+appname               = fn-palworld
+version               = 6.0.0
+display_name          = Palworld Server
+desc                  = 幻兽帕鲁专用服务器，提供游戏联机、RCON 远程管理与 REST 接口
+platform              = x86
+source                = thirdparty
+maintainer            = thijsvanloef
+maintainer_url        = https://github.com/thijsvanloef/palworld-server-docker
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+checkport             = false
+disable_authorization_path = true

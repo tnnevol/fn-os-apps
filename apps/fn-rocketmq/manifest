@@ -1,0 +1,14 @@
+appname               = fn-rocketmq
+version               = 6.0.0
+display_name          = RocketMQ
+desc                  = 分布式消息队列中间件，支持事务消息、延迟消息与海量消息存储
+platform              = x86
+source                = thirdparty
+maintainer            = Apache RocketMQ
+maintainer_url        = https://rocketmq.apache.org
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-rocketmq.Application
+disable_authorization_path = true

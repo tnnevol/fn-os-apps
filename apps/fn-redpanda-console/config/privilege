@@ -1,0 +1,7 @@
+{
+    "defaults": {
+        "run-as": "package"
+    },
+    "username": "docker-fn-redpanda-console",
+    "groupname": "docker-fn-redpanda-console"
+}

@@ -1,0 +1,7 @@
+{
+    "defaults": {
+        "run-as": "package"
+    },
+    "username": "docker-fn-sentinel-dashboard",
+    "groupname": "docker-fn-sentinel-dashboard"
+}

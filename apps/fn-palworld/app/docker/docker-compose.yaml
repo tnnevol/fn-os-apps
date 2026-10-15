@@ -1,0 +1,34 @@
+services:
+  palworld-server:
+    image: thijsvanloef/palworld-server-docker:v2.8.0
+    container_name: fn-palworld
+    restart: always
+    ports:
+      - "${GAME_PORT}:8211/udp"
+      - "${RCON_PORT}:25575/tcp"
+      - "${REST_PORT}:8212/tcp"
+      - "${QUERY_PORT}:27015/udp"
+    volumes:
+      - "${TRIM_PKGVAR}/data:/palworld/"
+    environment:
+      - PUID=${TRIM_UID}
+      - PGID=${TRIM_GID}
+      - TZ=${TIME_ZONE}
+      - DISABLE_GENERATE_SETTINGS=${DISABLE_GENERATE_SETTINGS}
+      - PORT=8211
+      - PLAYERS=${MAX_PLAYERS}
+      - MULTITHREADING=${MULTITHREAD_SWITCH}
+      - COMMUNITY=${PUBLIC_SWITCH}
+      - PUBLIC_IP=${PUBLIC_IP}
+      - PUBLIC_PORT=${GAME_PORT}
+      - UPDATE_ON_BOOT=${UPDATE_SWITCH}
+      - ENABLE_PLAYER_LOGGING=${ENABLE_PLAYER_LOGGING}
+      - SERVER_NAME=${SERVER_NAME}
+      - SERVER_DESCRIPTION=${SERVER_DESCRIPTION}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - SERVER_PASSWORD=${SERVER_PASSWORD}
+      - RCON_ENABLED=${RCON_SWITCH}
+      - RCON_PORT=25575
+      - REST_API_ENABLED=${REST_SWITCH}
+      - REST_API_PORT=8212
+      - QUERY_PORT=27015

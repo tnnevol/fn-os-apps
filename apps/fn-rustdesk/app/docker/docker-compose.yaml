@@ -1,0 +1,19 @@
+services:
+  rustdesk-server:
+    container_name: fn-rustdesk
+    image: rustdesk/rustdesk-server-s6:1.1.16
+    environment:
+      # 上游默认 HOST_ADDRESS=172.17.0.1（Docker 网桥地址），在 fnOS 上不可用，改为向导填写实际 IP
+      - "RELAY=${HOST_ADDRESS}:${HBBR_PORT}"
+      - "ENCRYPTED_ONLY=1"
+    ports:
+      - "${NAT_PORT}:21115"
+      - "${HBBS_PORT}:21116"
+      - "${HBBS_PORT}:21116/udp"
+      - "${HBBR_PORT}:21117"
+      - "${WEB_CLIENT_PORT_1}:21118"
+      - "${WEB_CLIENT_PORT_2}:21119"
+    restart: always
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      - "${TRIM_PKGVAR}/data/hbbs:/data"
