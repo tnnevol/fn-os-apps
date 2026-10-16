@@ -671,6 +671,7 @@ disable_authorization_path = true
 | `fn-openldap` | `1001` | 1001 |
 | `fn-pgadmin4` | `5050` | 5050 |
 | `fn-sonarqube` | `sonarqube` | 未解析（2026-10-15 新增） |
+| `fn-redis-commander` | `1000` | 1000:1000（2026-10-16 新增） |
 | `fn-rustfs` | `rustfs` | 10001:10001 |
 | `fn-sftpgo` | `1000:1000` | 1000:1000 |
 | `fn-tomcat` | `1001` | 1001 |
@@ -704,3 +705,4 @@ disable_authorization_path = true
 | 2026-10-15 | 新增禁止项「不得覆盖仓库已有的同名应用」：同步或批量转换前先核对 `apps/` 是否已有该应用（原生或 Docker 形态都算），按归一化名字比对（`fn-mysql_v8` 与 `fn-mysql-v8` 视为同一个）。确需纳入上游新版本时走升级、保留 `appname`，不重建。 |
 | 2026-10-15 | 属主待验证清单补入 `fn-sonarqube`（镜像 `USER=sonarqube`，非 root，且有 3 个由`install_callback` 创建的挂载点），系 T2 第 4 组新增命中项。 |
 | 2026-10-15 | **口径变更（用户裁决）**：镜像标签改为「**1panel 用什么就用什么**」——可变标签（`:latest`/`:master`/`alpine-latest` 等）**不再阻塞转换**，直接沿用上游标签，不再要求联网查 tag 或收敛版本。**但 `${...}` 变量插值仍必须解析**——两者性质不同：插值变量在 fnOS 侧**没有来源**（上游 `init.sh` 生成），不解析就是空值；`:latest` 能解析到具体镜像，只是会漂移。另新增裁决：**运行身份优先非 root（默认用户）**——镜像层默认 root 且无可注入变量时，加 `user: "${TRIM_UID}:${TRIM_GID}"`；**唯一例外是 s6-overlay 类镜像**（`Entrypoint: ["/init"]`），其初始化强依赖 root，加 `user:` 会起不来。 |
+| 2026-10-16 | 属主待验证清单补入 `fn-redis-commander`（镜像层 `USER 1000`，与包用户 uid 9xx 不匹配）。该应用无我们创建的挂载需要写入，故按裁决 B「已是非 root」不改，但**属主匹配仍待真机确认**。 |
