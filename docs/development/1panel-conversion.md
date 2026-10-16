@@ -610,9 +610,19 @@ disable_authorization_path = true
    | 有 `PUID`/`PGID`/`UID`/`GID` 变量 | 改为 `${TRIM_UID}`/`${TRIM_GID}` |
    | 写了 `user: root` | 改为 `user: "${TRIM_UID}:${TRIM_GID}"` |
    | **镜像层默认 root、无可注入变量** | **加 `user: "${TRIM_UID}:${TRIM_GID}"`** |
+   | **镜像层默认 root，但镜像内有自己的 uid 变量**（如 Jupyter 的 `NB_UID`/`NB_GID`） | **改变量**，**不加 `user:`** |
    | **s6-overlay 类镜像**（`Entrypoint: ["/init"]`） | **例外，保持原样**——s6 初始化强依赖 root 做服务注册与目录 chown，加 `user:` 会直接起不来。**须在应用文档写明「镜像默认以 root 运行」让用户知情** |
 
    **判断「镜像层默认 root」必须实拉 registry 的 config blob 查 `config.User`，不能看 compose**——compose 不写 `user:` **不等于**容器不以 root 运行（`USER` 未设置时以镜像默认用户运行，而镜像默认**常常就是 root**）。已实证案例：`rustdesk`/`sentinel-dashboard` 的 `config.User` 为空即 root，而 `rustfs`/`rocketmq` 是有名用户。
+
+   **「镜像内脚本主动降权」与「镜像层直接非 root」要分清**：
+
+   | 形态 | 判定 | 处理 |
+   | --- | --- | --- |
+   | 镜像内脚本以 root 启动、做 chown 后**降权到自己的 uid 变量**（`jupyter-notebook` 的 `start-notebook.sh` + `CHOWN_HOME=yes`） | **有降权机制** | **改变量，不加 `user:`**——加 `user:` 会让非 root 无权执行 `CHOWN_HOME` 的 chown，**直接冲突** |
+   | 镜像内脚本以 root 启动、**由服务自身降权**（`dvwa`/`emlog` 的 Apache dropped privileges） | **有降权机制** | 加 `user:` 可行，**pid/日志目录风险登记真机项** |
+   | 镜像层 `config.User` 是固定名或 uid（`nexus`、`redis-commander`=1000） | **已非 root** | **不改**；与包用户 uid 不匹配的**登记属主清单** |
+   | 镜像层 `config.User` 为空且无降权逻辑 | **默认 root** | **加 `user:`** |
 
    **「Apache/PHP 系镜像必须 root 才能绑 80 端口」不成立**：Docker ≥ 20.3 起容器内默认 `net.ipv4.ip_unprivileged_port_start=0`，非 root **可以**绑定 80。这类镜像的真正风险在 **pid / 日志目录写入**，属**可验证的运行时风险**（与 s6 的结构性依赖不同），因此**按加 `user:` 处理并登记为真机验证项**，不要写成「已解决」。
 4. **不得复制上游文件内容**。上游 `LICENSE` 是 GPL-3.0，本仓库是 Apache-2.0。只提取配置事实（镜像标签、端口、卷路径、环境变量名和默认值），不搬运 YAML 注释、README、脚本或表单文案。
@@ -706,3 +716,4 @@ disable_authorization_path = true
 | 2026-10-15 | 属主待验证清单补入 `fn-sonarqube`（镜像 `USER=sonarqube`，非 root，且有 3 个由`install_callback` 创建的挂载点），系 T2 第 4 组新增命中项。 |
 | 2026-10-15 | **口径变更（用户裁决）**：镜像标签改为「**1panel 用什么就用什么**」——可变标签（`:latest`/`:master`/`alpine-latest` 等）**不再阻塞转换**，直接沿用上游标签，不再要求联网查 tag 或收敛版本。**但 `${...}` 变量插值仍必须解析**——两者性质不同：插值变量在 fnOS 侧**没有来源**（上游 `init.sh` 生成），不解析就是空值；`:latest` 能解析到具体镜像，只是会漂移。另新增裁决：**运行身份优先非 root（默认用户）**——镜像层默认 root 且无可注入变量时，加 `user: "${TRIM_UID}:${TRIM_GID}"`；**唯一例外是 s6-overlay 类镜像**（`Entrypoint: ["/init"]`），其初始化强依赖 root，加 `user:` 会起不来。 |
 | 2026-10-16 | 属主待验证清单补入 `fn-redis-commander`（镜像层 `USER 1000`，与包用户 uid 9xx 不匹配）。该应用无我们创建的挂载需要写入，故按裁决 B「已是非 root」不改，但**属主匹配仍待真机确认**。 |
+| 2026-10-16 | 裁决 B 补子类：**镜像内自带 uid 变量且依赖 root 做 chown 的**（`jupyter-notebook` 的 `NB_UID`/`NB_GID` + `CHOWN_HOME=yes`）→ **改变量、不加 `user:`**。加 `user:` 与 `CHOWN_HOME` 直接冲突（非 root 无权 chown）。同时补入「镜像内降权 / 镜像层非 root / 镜像层默认 root」四类判定表。另修正一处 Lead 的统计 bug：归一化名比对时**只归一化一侧等于没归一化**，导致把已交付的 `obsidian_livesync` 误报为待转换（详见经验教训 1.4）。 |

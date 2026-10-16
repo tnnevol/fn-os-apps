@@ -70,7 +70,29 @@ Packing failed. The entry ID "fn-wechatmarkdowneditor.Application" exceeds the 3
 
 ---
 
-### 1.4 `formFields` 在版本级 `data.yml`（T0）
+### 1.4 归一化名比对：只归一化一侧等于没归一化（Lead）
+
+**现象**：统计"还有哪些应用未转换"时，把 `obsidian_livesync` 报为待转换。**实际它早已交付**（`apps/fn-obsidian-livesync/`，`b539f83` 引入）。
+
+**根因**：仓库存的是**连字符**目录名（`fn-obsidian-livesync`），上游清单写的是**下划线键**（`obsidian_livesync`）。判断「是否已存在」时**只对上游名做了 `_`→`-` 归一化，却没有保证 `repo` 集合本身也归一化**——一步之差，下划线名永远匹配不上。
+
+**为什么危险**：这个 bug **不报错、不告警，只静默给出错误的"待办清单"**。若不是要求"创建前再确认一次"，就会去重复创建一个已经交付的应用——**而禁止项 9 正是为此而写，结果第一个违反它的判据本身就是我写的**。
+
+**修法与结论**：
+
+```python
+norm = lambda x: x.replace('_', '-').lower()
+repo = {norm(d[3:] if d.startswith('fn-') else d) for d in os.listdir('apps')}
+pending = [a for a in upstream if norm(a) not in repo]
+```
+
+**两侧都必须过同一个 `norm`**，且 **`repo` 侧必须是归一化后的集合**（不是原始目录名）。仅归一化查询键是无效的。
+
+**如何避免**：任何"名单比对"脚本，**先对两侧同施一个归一化函数**，再比对；并**用已知的反例自检**（例如断言 `obsidian_livesync` 与 `obsidian-livesync` 视为同一个）。
+
+---
+
+### 1.5 `formFields` 在版本级 `data.yml`（T0）
 
 **现象**：按 `appstore/apps/<app>/data.yml` 读向导字段，得到"全部应用都无表单"的错误结论。
 
@@ -82,7 +104,7 @@ Packing failed. The entry ID "fn-wechatmarkdowneditor.Application" exceeds the 3
 
 ---
 
-### 1.5 可变镜像标签：判据连踩三次（T0/T2）
+### 1.6 可变镜像标签：判据连踩三次（T0/T2）
 
 这是本项目**同一个坑踩了三次**的记录，值得完整保留。
 
@@ -110,7 +132,7 @@ zabbix/zabbix-java-gateway:alpine-latest  →  钉到 alpine-7.4.5
 
 ---
 
-### 1.6 图标：非正方形与 ICO（T0/T1）
+### 1.7 图标：非正方形与 ICO（T0/T1）
 
 | 情况 | 处理 |
 | --- | --- |
