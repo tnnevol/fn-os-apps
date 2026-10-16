@@ -20,6 +20,12 @@ Typecho 是轻量简洁的博客程序，支持 Markdown 与插件扩展。
 | 目标平台 | x86 |
 | 外部依赖 | **外部 MySQL / MariaDB** |
 
+## 运行身份
+
+容器以镜像默认用户（**root**）运行，**未**改为包用户。原因：该镜像的 `init_typecho` 脚本需要`chown -Rf www-data:www-data /app`、写 `/usr/local/etc/php/conf.d/custom.ini`、写 `/etc/localtime` 与 `/etc/timezone`，并在末尾以 `su -p www-data` 降权启动 PHP/Apache——**这些步骤都要求 root 启动**。
+
+应用实际以 `www-data` 运行（由脚本内部降权），但容器进程的初始身份为 root。
+
 ## 安装与使用
 
 安装时设置 Web 访问端口，填写数据库连接信息（地址、端口、库名、用户名、密码分开填写），以及**站点访问地址**与**管理员信息**。

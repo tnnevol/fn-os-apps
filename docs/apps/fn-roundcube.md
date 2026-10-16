@@ -20,6 +20,12 @@ Roundcube 是基于浏览器的 Webmail 客户端，支持 IMAP 与 SMTP。
 | 目标平台 | x86 |
 | 外部依赖 | **外部 MySQL/MariaDB（保存 Webmail 自身数据）+ 一个 IMAP/SMTP 邮箱** |
 
+## 运行身份
+
+容器以镜像默认用户（**root**）运行，**未**改为包用户。原因：该镜像的 `docker-entrypoint.sh` 会执行`chown www-data ${ROUNDCUBEMAIL_TEMP_DIR}`，而该变量在脚本内有默认值 `/tmp/roundcube-temp`，**每次启动都会执行**。非 root 身份下 `chown` 会失败。
+
+应用数据仍落在 `${TRIM_PKGVAR}` 下并由包用户拥有；仅容器内进程身份为 root。
+
 ## 安装与使用
 
 安装时设置 Web 访问端口，填写两类信息：

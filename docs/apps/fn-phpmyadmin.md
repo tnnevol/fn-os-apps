@@ -20,6 +20,12 @@ phpMyAdmin 是基于浏览器的 MySQL/MariaDB 管理工具，可管理数据库
 | 目标平台 | x86 |
 | 额外依赖 | 无（被管理的数据库由用户自行提供） |
 
+## 运行身份
+
+容器以镜像默认用户（**root**）运行，**未**改为包用户。原因：该镜像的 `docker-entrypoint.sh` 在启动时需要写 `/etc/phpmyadmin/config.secret.inc.php`（生成 blowfish 密钥）并对其执行 `chgrp www-data`，两者都要求 root 权限。强制以非 root 运行会导致该步骤失败、应用无法正常初始化。
+
+应用数据仍落在 `${TRIM_PKGVAR}` 下并由包用户拥有；仅容器内进程身份为 root。
+
 ## 安装与使用
 
 安装时设置 Web 访问端口，安装完成后从应用中心打开，填写要连接的主机、用户名与密码即可（本应用不内置数据库）。

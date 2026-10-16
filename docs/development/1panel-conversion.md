@@ -646,6 +646,21 @@ disable_authorization_path = true
    | 镜像层 `config.User` 是固定名或 uid（`nexus`、`redis-commander`=1000） | **已非 root** | **不改**；与包用户 uid 不匹配的**登记属主清单** |
    | 镜像层 `config.User` 为空且无降权逻辑 | **默认 root** | **加 `user:`** |
 
+   **「镜像内脚本有 root 硬依赖」的判定要看 entrypoint 源码，不能只看镜像名**（2026-10-16 补，含 6 个已交付应用的实测结论）：
+
+   | 应用 | 镜像 `USER` | entrypoint 的 root 依赖 | 结论 |
+   | --- | --- | --- | --- |
+   | `fn-sentinel-dashboard` | 空（root） | 无（纯 `java -jar`） | ✅ **加 `user:`** |
+   | `fn-wordpress` | 空（root） | `chown` 仅在属主为 `root:root` 时触发，且带 `\|\| true` | ✅ **加 `user:`** |
+   | `fn-phpmyadmin` | **显式 `root`** | 写 `/etc/phpmyadmin/config.secret.inc.php` + `chgrp www-data` | ❌ **例外**（硬依赖） |
+   | `fn-roundcube` | 空（root） | `chown www-data ${ROUNDCUBEMAIL_TEMP_DIR}`，**该变量脚本内有默认值 `\/tmp/roundcube-temp`，每次启动必执行** | ❌ **例外**（硬依赖） |
+   | `fn-typecho` | 空（root） | `chown -Rf www-data /app`、写 `/usr/local/etc/php/conf.d/`、写 `/etc/localtime`、`su -p www-data` | ❌ **例外**（硬依赖） |
+   | `fn-rustdesk` | 空（root） | s6-overlay（`Entrypoint: ["/init"]`） | ❌ **例外** |
+
+   **判定方法**：拉取镜像层、读出 entrypoint 脚本、**逐行找 `chown`/`chgrp`/`chmod`/写 `/etc/` 与 `/usr/local/etc/`/`su`/`useradd`**。有则归例外并**在应用文档「运行身份」节写明原因**（本轮已为 4 个例外补写）。
+
+   **注意两个易错点**：① `wordpress` 那种**条件式 `chown` + `\|\| true`** 不算硬依赖；② `roundcube` 那种**变量虽未由我们设置、但脚本内有 `:=` 默认值**的，**仍会执行**——只看 compose 里有没有设该变量会误判。
+
    **「Apache/PHP 系镜像必须 root 才能绑 80 端口」不成立**：Docker ≥ 20.3 起容器内默认 `net.ipv4.ip_unprivileged_port_start=0`，非 root **可以**绑定 80。这类镜像的真正风险在 **pid / 日志目录写入**，属**可验证的运行时风险**（与 s6 的结构性依赖不同），因此**按加 `user:` 处理并登记为真机验证项**，不要写成「已解决」。
 4. **不得复制上游文件内容**。上游 `LICENSE` 是 GPL-3.0，本仓库是 Apache-2.0。只提取配置事实（镜像标签、端口、卷路径、环境变量名和默认值），不搬运 YAML 注释、README、脚本或表单文案。
 5. **不得修改上游 `appstore/`**，也不向上游提交补丁。它是只读的契约与版本来源。
@@ -750,3 +765,4 @@ disable_authorization_path = true
 | 2026-10-16 | **D 组方案订正 C→B**：原推荐 `${TRIM_APPDEST_VOL}/@appshare/fn-<app>/`（依据 `fn-xiaoya-only` 先例）**依据不足**。查证官方文档：`TRIM_APPDEST_VOL` 全文仅 1 次（定义句），**不在「Compose 可以使用」的变量表中**，无任何用法示例；而 `TRIM_DATA_SHARE_PATHS` 出现 6 次、**明确列在该表中**、且有官方示例 `${TRIM_DATA_SHARE_PATHS%%:*}`；`@appshare` 在官方文档 **0 次**（属平台实现细节，非文档化契约）。**改用 `${TRIM_DATA_SHARE_PATHS}`**。同时采纳官方 `resource.md:34` 建议：**声明 1 个顶级 share（`fn-<app>`）**，各用途子目录在容器内挂载目标区分。`install_callback` 加 `mkdir -p "${TRIM_DATA_SHARE_PATHS%%:*}"` 兜底。 |
 | 2026-10-16 | **D 组方案订正 B→C（回归）**：同日曾据官方文档把方案改为 `${TRIM_DATA_SHARE_PATHS}`，**随即复核后撤回**——该变量是 `:` 分隔**多值**，无法作单个挂载源（此点在更早的变更记录里已有记载，**是我推翻了自己写下的条款**）。恢复 `${TRIM_APPDEST_VOL}/@appshare/fn-<app>/<子目录>`，并补记其真实依据：用户既有应用 `fn-xiaoya-only` **正在使用**该写法（compose 引用 4 处），其文档给出实际路径 `/vol4/@appshare/fn-xiaoya-only/alist/data/`。**教训：官方文档没写 ≠ 平台不支持；"使用中的用户应用 + 其文档 + 真机观测"强于官方文档描述。反之官方变量表中的变量也不等于能在 compose 当挂载源用。** |
 | 2026-10-16 | 属主待验证清单补入 `fn-ezbookkeeping`（镜像层 `USER 1000:1000`，与包用户 uid 9xx 不匹配）。它有三个挂载需写入（`storage` 共享 + `data`/`log` 私有），属 D 组（task-25）新增命中项。 |
+| 2026-10-16 | **追溯整改（task-22）**：按裁决 B 复核 6 个已交付应用。**2 个加 `user:`**（`fn-wordpress`、`fn-sentinel-dashboard`）；**4 个归例外并在文档补「运行身份」节**——`fn-phpmyadmin`（显式 `USER=root` + 写 `/etc/phpmyadmin/`）、`fn-roundcube`（`chown ${TEMP_DIR}` 且该变量脚本内有默认值、必执行）、`fn-typecho`（`chown -R /app` + 写 `/etc/` + `su`）、`fn-rustdesk`（s6）。**判定方法写入规约：读 entrypoint 源码逐行找 root 操作，不能只看镜像名或 compose 是否设了变量。** |

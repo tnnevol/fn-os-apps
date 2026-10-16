@@ -2,6 +2,10 @@ services:
   sentinel-dashboard:
     container_name: fn-sentinel-dashboard
     image: bladex/sentinel-dashboard:1.8.10
+    # 镜像层未设置 USER（默认 root），且无 PUID/PGID 类变量可注入。
+    # 按规约「运行身份优先非 root」显式指定包用户；该应用无挂载、无状态，
+    # 非 root 下仅需能绑定端口（容器内 8858/8719 均 >1024，无特权需求）。
+    user: "${TRIM_UID}:${TRIM_GID}"
     ports:
       - "${APP_PORT}:8858"
       - "${COMMUNICATION_PORT}:8719"
