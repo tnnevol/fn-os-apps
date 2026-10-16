@@ -1,0 +1,24 @@
+services:
+  teamspeak:
+    container_name: fn-teamspeak
+    image: teamspeak:3.13.8
+    environment:
+      # 上游由 1Panel 服务选择器注入 PANEL_DB_*，fnOS 改为向导显式填写
+      # 插件名由 DB_TYPE 派生：mariadb 对应 ts3db_mariadb（同时支持 MySQL 与 MariaDB）
+      - TS3SERVER_DB_PLUGIN=ts3db_${DB_TYPE}
+      - TS3SERVER_DB_SQLCREATEPATH=create_${DB_TYPE}
+      - TS3SERVER_DB_WAITUNTILREADY=30
+      - TS3SERVER_LICENSE=accept
+      - TS3SERVER_DB_HOST=${DB_HOST}
+      - TS3SERVER_DB_PORT=${DB_PORT}
+      - TS3SERVER_DB_NAME=${DB_NAME}
+      - TS3SERVER_DB_USER=${DB_USERNAME}
+      - TS3SERVER_DB_PASSWORD=${DB_PASSWORD}
+    ports:
+      - "${VOICE_PORT}:9987/udp"
+      - "${QUERY_PORT}:10011"
+      - "${FILETRANSFER_PORT}:30033"
+    restart: always
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      - "${TRIM_PKGVAR}/data:/var/ts3server"

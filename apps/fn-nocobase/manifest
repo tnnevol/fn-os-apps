@@ -1,0 +1,14 @@
+appname               = fn-nocobase
+version               = 6.0.0
+display_name          = NocoBase
+desc                  = NocoBase 是面向开发者的无代码平台，用插件与数据模型快速搭建业务系统
+platform              = x86
+source                = thirdparty
+maintainer            = NocoBase
+maintainer_url        = https://github.com/nocobase/nocobase
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-nocobase.Application
+disable_authorization_path = true

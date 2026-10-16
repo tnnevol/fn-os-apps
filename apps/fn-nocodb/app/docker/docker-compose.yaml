@@ -1,0 +1,13 @@
+services:
+  nocodb:
+    container_name: fn-nocodb
+    image: nocodb/nocodb:0.301.5
+    environment:
+      # 上游把连接信息整段拼成一个 URL，故走「合并」风格（DB_HOST 含 地址:端口/库名）
+      - "NC_DB=${DB_TYPE}://${DB_HOST}?u=${DB_USERNAME}&p=${DB_PASSWORD}"
+    ports:
+      - "${APP_PORT}:8080"
+    restart: always
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      - "${TRIM_PKGVAR}/data:/usr/app/data"

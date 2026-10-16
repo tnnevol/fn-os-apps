@@ -1,0 +1,277 @@
+[
+    {
+        "stepTitle": "基础配置",
+        "items": [
+            {
+                "type": "text",
+                "field": "APP_PORT",
+                "label": "Web 访问端口",
+                "initValue": "11000",
+                "required": true,
+                "helpText": "端口号，取值范围 1—65535。",
+                "isHttp": true,
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请填写Web 访问端口"
+                    },
+                    {
+                        "pattern": "^(?:[1-9][0-9]{0,3}|[1-5][0-9]{4}|[6][0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$",
+                        "message": "端口号必须是 1—65535 之间的整数"
+                    }
+                ]
+            },
+            {
+                "type": "text",
+                "field": "REDIS_HOST",
+                "label": "Redis 地址",
+                "initValue": "",
+                "helpText": "Redis 服务的地址（只填地址，端口固定 6379），例如 192.168.1.10。**如使用飞牛 Redis 应用，请填写其所在地址。** 连接失败时应用启动但消息与在线状态异常。",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请填写Redis 地址"
+                    }
+                ]
+            },
+            {
+                "type": "password",
+                "field": "REDIS_PASSWORD",
+                "label": "Redis 密码",
+                "initValue": "",
+                "helpText": "Redis 的访问密码。",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请填写Redis 密码"
+                    }
+                ]
+            },
+            {
+                "type": "text",
+                "field": "MONGO_HOST",
+                "label": "MongoDB 地址",
+                "initValue": "",
+                "helpText": "MongoDB 服务的地址，例如 192.168.1.10。**本应用不包含 MongoDB，需你自行准备**；连接失败时无法登录。",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请填写MongoDB 地址"
+                    }
+                ]
+            },
+            {
+                "type": "text",
+                "field": "MONGO_PORT",
+                "label": "MongoDB 端口",
+                "initValue": "27017",
+                "helpText": "MongoDB 服务端口，默认 27017。",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请填写MongoDB 端口"
+                    },
+                    {
+                        "pattern": "^(?:[1-9][0-9]{0,3}|[1-5][0-9]{4}|[6][0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$",
+                        "message": "端口号必须是 1—65535 之间的整数"
+                    }
+                ]
+            },
+            {
+                "type": "text",
+                "field": "MONGO_DB",
+                "label": "MongoDB 数据库名",
+                "initValue": "tailchat",
+                "helpText": "Tailchat 使用的 MongoDB 数据库名。",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请填写MongoDB 数据库名"
+                    }
+                ]
+            },
+            {
+                "type": "text",
+                "field": "MONGO_ROOT_USERNAME",
+                "label": "MongoDB 管理员用户名",
+                "initValue": "",
+                "helpText": "连接 MongoDB 使用的管理员账号（需要读写权限）。",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请填写MongoDB 管理员用户名"
+                    }
+                ]
+            },
+            {
+                "type": "password",
+                "field": "MONGO_ROOT_PASSWORD",
+                "label": "MongoDB 管理员密码",
+                "initValue": "",
+                "helpText": "上述管理员账号的密码。",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请填写MongoDB 管理员密码"
+                    }
+                ]
+            },
+            {
+                "type": "text",
+                "field": "MINIO_HOST",
+                "label": "MinIO 地址",
+                "initValue": "",
+                "helpText": "MinIO（对象存储）服务的地址，例如 192.168.1.10。**本应用不包含 MinIO，需你自行准备**；用于存放上传的图片与文件。",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请填写MinIO 地址"
+                    }
+                ]
+            },
+            {
+                "type": "text",
+                "field": "MINIO_API_PORT",
+                "label": "MinIO API 端口",
+                "initValue": "9000",
+                "helpText": "MinIO 的 S3 API 端口，默认 9000。",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请填写MinIO API 端口"
+                    },
+                    {
+                        "pattern": "^(?:[1-9][0-9]{0,3}|[1-5][0-9]{4}|[6][0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$",
+                        "message": "端口号必须是 1—65535 之间的整数"
+                    }
+                ]
+            },
+            {
+                "type": "text",
+                "field": "MINIO_CONSOLE_PORT",
+                "label": "MinIO 控制台端口",
+                "initValue": "9001",
+                "helpText": "MinIO 控制台端口，默认 9001（管理容器使用）。",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请填写MinIO 控制台端口"
+                    },
+                    {
+                        "pattern": "^(?:[1-9][0-9]{0,3}|[1-5][0-9]{4}|[6][0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$",
+                        "message": "端口号必须是 1—65535 之间的整数"
+                    }
+                ]
+            },
+            {
+                "type": "text",
+                "field": "MINIO_ROOT_USERNAME",
+                "label": "MinIO 访问密钥",
+                "initValue": "",
+                "helpText": "MinIO 的访问密钥（Access Key）。",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请填写MinIO 访问密钥"
+                    }
+                ]
+            },
+            {
+                "type": "password",
+                "field": "MINIO_ROOT_PASSWORD",
+                "label": "MinIO 密钥",
+                "initValue": "",
+                "helpText": "MinIO 的密钥（Secret Key）。",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请填写MinIO 密钥"
+                    }
+                ]
+            },
+            {
+                "type": "text",
+                "field": "SECRET",
+                "label": "服务密钥",
+                "initValue": "",
+                "helpText": "用于签发会话的随机字符串。上游默认值是弱占位符，请自行填写。",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请填写服务密钥"
+                    }
+                ]
+            },
+            {
+                "type": "text",
+                "field": "API_URL",
+                "label": "对外访问地址",
+                "initValue": "",
+                "helpText": "本应用的对外访问地址（含协议与端口），例如 http://192.168.1.10:11000。**填错会导致页面跳转与静态资源异常。**",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请填写对外访问地址"
+                    }
+                ]
+            },
+            {
+                "type": "text",
+                "field": "ADMIN_PORT",
+                "label": "管理面板端口",
+                "initValue": "11002",
+                "helpText": "Tailchat 管理面板的访问端口。",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请填写管理面板端口"
+                    },
+                    {
+                        "pattern": "^(?:[1-9][0-9]{0,3}|[1-5][0-9]{4}|[6][0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$",
+                        "message": "端口号必须是 1—65535 之间的整数"
+                    }
+                ]
+            },
+            {
+                "type": "text",
+                "field": "ADMIN_USERNAME",
+                "label": "管理面板用户名",
+                "initValue": "tailchat",
+                "helpText": "管理面板的登录用户名。",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请填写管理面板用户名"
+                    }
+                ]
+            },
+            {
+                "type": "password",
+                "field": "ADMIN_PASSWORD",
+                "label": "管理面板密码",
+                "initValue": "",
+                "helpText": "管理面板的登录密码。上游默认值是弱占位符，请自行设置。",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请填写管理面板密码"
+                    }
+                ]
+            },
+            {
+                "type": "text",
+                "field": "SMTP_SENDER",
+                "label": "发信人地址",
+                "initValue": "",
+                "helpText": "可选，系统邮件的发信人地址，例如 noreply@example.com。"
+            },
+            {
+                "type": "text",
+                "field": "SMTP_URI",
+                "label": "SMTP 连接串",
+                "initValue": "",
+                "helpText": "可选，SMTP 服务的连接串，格式如 smtp://user:pass@smtp.example.com:587。留空则不发送邮件。"
+            }
+        ]
+    }
+]

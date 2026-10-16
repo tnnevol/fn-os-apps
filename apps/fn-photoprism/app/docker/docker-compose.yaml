@@ -1,0 +1,53 @@
+services:
+  photoprism:
+    container_name: fn-photoprism
+    image: photoprism/photoprism:251130-ce
+    working_dir: "/photoprism"
+    environment:
+      - PHOTOPRISM_ADMIN_USER=${ADMIN_USER}
+      - PHOTOPRISM_ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - PHOTOPRISM_AUTH_MODE=password
+      - PHOTOPRISM_SITE_URL=${PHOTOPRISM_EXTERNAL_URL}
+      - PHOTOPRISM_SITE_CAPTION=${SITE_CAPTION}
+      - PHOTOPRISM_SITE_DESCRIPTION=${SITE_DESCRIPTION}
+      - PHOTOPRISM_SITE_AUTHOR=${SITE_AUTHOR}
+      - PHOTOPRISM_ORIGINALS_LIMIT=5000
+      - PHOTOPRISM_HTTP_COMPRESSION=gzip
+      - PHOTOPRISM_LOG_LEVEL=info
+      - PHOTOPRISM_READONLY=false
+      - PHOTOPRISM_EXPERIMENTAL=false
+      - PHOTOPRISM_DISABLE_CHOWN=false
+      - PHOTOPRISM_DISABLE_WEBDAV=false
+      - PHOTOPRISM_DISABLE_SETTINGS=false
+      - PHOTOPRISM_DISABLE_TENSORFLOW=false
+      - PHOTOPRISM_DISABLE_FACES=false
+      - PHOTOPRISM_DISABLE_CLASSIFICATION=false
+      - PHOTOPRISM_DISABLE_VECTORS=false
+      - PHOTOPRISM_DISABLE_RAW=false
+      - PHOTOPRISM_RAW_PRESETS=false
+      - PHOTOPRISM_JPEG_QUALITY=85
+      - PHOTOPRISM_DETECT_NSFW=false
+      - PHOTOPRISM_UPLOAD_NSFW=true
+      # PhotoPrism 只接受特定 uid 区间（50-99、500-600、900-1250 等），
+      # fnOS 的包用户 uid 实测为 9xx，落在支持的 900-1250 区间内。
+      # TRIM_UID/TRIM_GID 由 fnOS 注入，指向本应用的包用户；上游硬编码的 1000 在目标 NAS 上通常是登录用户。
+      - PHOTOPRISM_UID=${TRIM_UID}
+      - PHOTOPRISM_GID=${TRIM_GID}
+      # 上游由 1Panel 服务选择器注入 PANEL_DB_*，fnOS 改为向导显式填写
+      - PHOTOPRISM_DATABASE_DRIVER=mysql
+      - PHOTOPRISM_DATABASE_SERVER=${DB_HOST}:${DB_PORT}
+      - PHOTOPRISM_DATABASE_NAME=${DB_NAME}
+      - PHOTOPRISM_DATABASE_USER=${DB_USERNAME}
+      - PHOTOPRISM_DATABASE_PASSWORD=${DB_PASSWORD}
+    security_opt:
+      - seccomp:unconfined
+      - apparmor:unconfined
+    ports:
+      - "${APP_PORT}:2342"
+    restart: always
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      # 原始照片目录（用户数据）：使用 photoprism 自身的 Web 上传，或按下文「高级配置」提供目录
+      - "${TRIM_PKGVAR}/data/Pictures:/photoprism/originals"
+      # 索引、缩略图与数据库缓存
+      - "${TRIM_PKGVAR}/data/storage:/photoprism/storage"

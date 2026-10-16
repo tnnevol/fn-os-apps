@@ -1,0 +1,14 @@
+appname               = fn-yourls
+version               = 6.0.0
+display_name          = YOURLS
+desc                  = YOURLS 是自托管的短链接服务，支持自定义短码与访问统计
+platform              = x86
+source                = thirdparty
+maintainer            = YOURLS
+maintainer_url        = https://github.com/YOURLS/YOURLS
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-yourls.Application
+disable_authorization_path = true

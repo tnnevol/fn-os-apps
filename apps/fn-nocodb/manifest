@@ -1,0 +1,14 @@
+appname               = fn-nocodb
+version               = 6.0.0
+display_name          = NocoDB
+desc                  = NocoDB 把关系型数据库转换为智能表格，提供类 Airtable 的协作界面
+platform              = x86
+source                = thirdparty
+maintainer            = NocoDB
+maintainer_url        = https://github.com/nocodb/nocodb
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-nocodb.Application
+disable_authorization_path = true

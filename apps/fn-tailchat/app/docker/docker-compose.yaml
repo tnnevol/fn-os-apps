@@ -1,0 +1,49 @@
+services:
+  tailchat:
+    container_name: fn-tailchat
+    image: moonrailgun/tailchat:1.11.18
+    environment:
+      - SERVICEDIR=services,plugins
+      - LOGGER=true
+      - LOGLEVEL=info
+      - PORT=11000
+      # 上游把 Redis 拆成 host 与 password 分别消费，故不使用单串 REDIS_CONN_STRING
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@${REDIS_HOST}:6379
+      - TRANSPORTER=redis://:${REDIS_PASSWORD}@${REDIS_HOST}:6379
+      - MONGO_URL=mongodb://${MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD}@${MONGO_HOST}:${MONGO_PORT}/${MONGO_DB}?authSource=admin
+      - MINIO_URL=${MINIO_HOST}:${MINIO_API_PORT}
+      - MINIO_USER=${MINIO_ROOT_USERNAME}
+      - MINIO_PASS=${MINIO_ROOT_PASSWORD}
+      - SMTP_SENDER=${SMTP_SENDER}
+      - SMTP_URI=${SMTP_URI}
+      - SECRET=${SECRET}
+      - API_URL=${API_URL}
+    ports:
+      - "${APP_PORT}:11000"
+    restart: unless-stopped
+
+  # 管理面板（独立端口，上游用 _admin 后缀命名）
+  tailchat-admin:
+    container_name: fn-tailchat-admin
+    image: moonrailgun/tailchat:1.11.18
+    command: pnpm start:admin
+    environment:
+      - ADMIN_PORT=3000
+      - ADMIN_USER=${ADMIN_USERNAME}
+      - ADMIN_PASS=${ADMIN_PASSWORD}
+      - LOGGER=true
+      - LOGLEVEL=info
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@${REDIS_HOST}:6379
+      - TRANSPORTER=redis://:${REDIS_PASSWORD}@${REDIS_HOST}:6379
+      - MONGO_URL=mongodb://${MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD}@${MONGO_HOST}:${MONGO_PORT}/${MONGO_DB}?authSource=admin
+      # 管理容器连的是 MinIO 控制台端口（上游如此）
+      - MINIO_URL=${MINIO_HOST}:${MINIO_CONSOLE_PORT}
+      - MINIO_USER=${MINIO_ROOT_USERNAME}
+      - MINIO_PASS=${MINIO_ROOT_PASSWORD}
+      - SMTP_SENDER=${SMTP_SENDER}
+      - SMTP_URI=${SMTP_URI}
+      - SECRET=${SECRET}
+      - API_URL=${API_URL}
+    ports:
+      - "${ADMIN_PORT}:3000"
+    restart: unless-stopped

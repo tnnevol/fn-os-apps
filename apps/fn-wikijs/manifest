@@ -1,0 +1,14 @@
+appname               = fn-wikijs
+version               = 6.0.0
+display_name          = Wiki.js
+desc                  = Wiki.js 是现代化的知识库系统，支持 Markdown 编辑与细粒度权限
+platform              = x86
+source                = thirdparty
+maintainer            = Requarks
+maintainer_url        = https://github.com/requarks/wiki
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-wikijs.Application
+disable_authorization_path = true

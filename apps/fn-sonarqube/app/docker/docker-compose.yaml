@@ -1,0 +1,18 @@
+services:
+  sonarqube:
+    container_name: fn-sonarqube
+    image: sonarqube:10.7.0-community
+    environment:
+      # 上游用的是 PANEL_DB_TYPE，但其值域只有 postgresql（SonarQube 9.x 起不再支持 MySQL），
+      # 故按「值域只给合法选项」不做下拉，固定 jdbc:postgresql。
+      - SONAR_JDBC_URL=jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}
+      - SONAR_JDBC_USERNAME=${DB_USERNAME}
+      - SONAR_JDBC_PASSWORD=${DB_PASSWORD}
+    ports:
+      - "${APP_PORT}:9000"
+    restart: always
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      - "${TRIM_PKGVAR}/data/data:/opt/sonarqube/data"
+      - "${TRIM_PKGVAR}/data/extensions:/opt/sonarqube/extensions"
+      - "${TRIM_PKGVAR}/data/logs:/opt/sonarqube/logs"

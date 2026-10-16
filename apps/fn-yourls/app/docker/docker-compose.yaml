@@ -1,0 +1,20 @@
+services:
+  yourls:
+    container_name: fn-yourls
+    image: yourls:1.10.6
+    environment:
+      - YOURLS_SITE=${YOURLS_EXTERNAL_URL}
+      - YOURLS_USER=${ADMIN_USERNAME}
+      - YOURLS_PASS=${ADMIN_PASSWORD}
+      # 上游把 host 与 port 拼在一起、其余分开，故走「分离」风格（两段都需用户填写）
+      - YOURLS_DB_HOST=${DB_HOST}:${DB_PORT}
+      - YOURLS_DB_NAME=${DB_NAME}
+      - YOURLS_DB_USER=${DB_USERNAME}
+      - YOURLS_DB_PASS=${DB_PASSWORD}
+      - YOURLS_DB_PREFIX=${DB_PREFIX}
+    ports:
+      - "${APP_PORT}:8080"
+    restart: always
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      - "${TRIM_PKGVAR}/data:/var/www/html"

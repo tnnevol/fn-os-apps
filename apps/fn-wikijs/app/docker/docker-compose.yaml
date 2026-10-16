@@ -1,0 +1,15 @@
+services:
+  wiki:
+    container_name: fn-wikijs
+    image: requarks/wiki:2.5.316
+    environment:
+      # 上游各配置项分别消费 host/port/name/user/password，故走「分离」风格
+      - DB_TYPE=${DB_TYPE}
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_USER=${DB_USERNAME}
+      - DB_PASS=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+    ports:
+      - "${APP_PORT}:3000"
+    restart: always

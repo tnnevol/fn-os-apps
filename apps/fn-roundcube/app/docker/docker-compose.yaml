@@ -1,0 +1,24 @@
+services:
+  roundcube:
+    container_name: fn-roundcube
+    image: roundcube/roundcubemail:1.7.4-apache
+    environment:
+      # 上游各配置项分别消费 host/port/name/user/password，故走「分离」风格
+      - ROUNDCUBEMAIL_DB_TYPE=${DB_TYPE}
+      - ROUNDCUBEMAIL_DB_HOST=${DB_HOST}
+      - ROUNDCUBEMAIL_DB_PORT=${DB_PORT}
+      - ROUNDCUBEMAIL_DB_NAME=${DB_NAME}
+      - ROUNDCUBEMAIL_DB_USER=${DB_USERNAME}
+      - ROUNDCUBEMAIL_DB_PASSWORD=${DB_PASSWORD}
+      - ROUNDCUBEMAIL_DEFAULT_HOST=${IMAP_SERVER}
+      - ROUNDCUBEMAIL_DEFAULT_PORT=${IMAP_SERVER_PORT}
+      - ROUNDCUBEMAIL_SMTP_SERVER=${SMTP_SERVER}
+      - ROUNDCUBEMAIL_SMTP_PORT=${SMTP_SERVER_PORT}
+      - ROUNDCUBEMAIL_UPLOAD_MAX_FILESIZE=${UPLOAD_MAX_FILESIZE}
+    ports:
+      - "${APP_PORT}:80"
+    restart: always
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      - "${TRIM_PKGVAR}/data/logs:/var/log/apache2"
+      - "${TRIM_PKGVAR}/data:/var/www/html"

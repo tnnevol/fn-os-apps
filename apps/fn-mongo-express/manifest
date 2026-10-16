@@ -1,0 +1,14 @@
+appname               = fn-mongo-express
+version               = 6.0.0
+display_name          = Mongo Express
+desc                  = Mongo Express 是基于 Web 的 MongoDB 管理界面，用于浏览集合与执行查询
+platform              = x86
+source                = thirdparty
+maintainer            = Mongo Express
+maintainer_url        = https://github.com/mongo-express/mongo-express
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-mongo-express.Application
+disable_authorization_path = true

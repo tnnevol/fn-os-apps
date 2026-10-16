@@ -648,6 +648,7 @@ disable_authorization_path = true
 | `fn-nodebb` | `nodebb` | 1001:1001 |
 | `fn-openldap` | `1001` | 1001 |
 | `fn-pgadmin4` | `5050` | 5050 |
+| `fn-sonarqube` | `sonarqube` | 未解析（2026-10-15 新增） |
 | `fn-rustfs` | `rustfs` | 10001:10001 |
 | `fn-sftpgo` | `1000:1000` | 1000:1000 |
 | `fn-tomcat` | `1001` | 1001 |
@@ -679,3 +680,4 @@ disable_authorization_path = true
 | 2026-10-14 | 订正两条映射：① Redis 字段改为「按应用实际消费方式给」——分字段消费型（如 `cloudreve` 的 `CR_CONF_Redis.Server` 只收 host）用 `REDIS_HOST`/`REDIS_PORT`/`REDIS_PASSWORD`，硬塞连接串会得到 `redis://host:port:6379` 错值；② 命名卷条款从「仅 `external: true`」扩到**全部具名卷**，托管卷虽自动创建但数据落在 `/var/lib/docker/volumes/`，不在 `uninstall_callback` 删除范围，卸载后残留泄漏（`discuz` 即此类）。 |
 | 2026-10-14 | 补「待确认」条目：**镜像默认 `USER` 与数据目录属主可能不匹配**（约 20 个应用）。`install_callback` 建目录的属主是包用户、mode 770；镜像若以固定非 root 身份运行则无写权限。已用 `fn-node-red` 的 `user: "${TRIM_UID}:${TRIM_GID}"` 先例对齐，但对依赖自身 home 属主的镜像强加可能致其起不来，**故不批量改，列为真机验证第一优先级**。 |
 | 2026-10-15 | 新增禁止项「不得覆盖仓库已有的同名应用」：同步或批量转换前先核对 `apps/` 是否已有该应用（原生或 Docker 形态都算），按归一化名字比对（`fn-mysql_v8` 与 `fn-mysql-v8` 视为同一个）。确需纳入上游新版本时走升级、保留 `appname`，不重建。 |
+| 2026-10-15 | 属主待验证清单补入 `fn-sonarqube`（镜像 `USER=sonarqube`，非 root，且有 3 个由`install_callback` 创建的挂载点），系 T2 第 4 组新增命中项。 |

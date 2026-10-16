@@ -1,0 +1,23 @@
+services:
+  vexdb:
+    container_name: fn-vexdb
+    image: shuzhiyinhang/vexdb:3.0.0.28146
+    environment:
+      # 这是容器内自带 PostgreSQL 实例的初始化凭据（该应用不使用外部数据库）
+      - GS_USERNAME=${DB_ROOT_USERNAME}
+      - GS_PASSWORD=${DB_ROOT_PASSWORD}
+      - USER_PRIVILEGE=sysadmin
+      - DBCOMPATIBILITY=A
+    ports:
+      - "${APP_PORT}:5432"
+    healthcheck:
+      test: ["CMD", "pg_isready", "-h", "127.0.0.1", "-p", "5432", "-q", "-U", "${DB_ROOT_USERNAME}"]
+      start_period: 20s
+      interval: 30s
+      retries: 5
+      timeout: 5s
+    restart: always
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      - "${TRIM_PKGVAR}/data/data:/home/postgres/data"
+      - "${TRIM_PKGVAR}/data/etc:/home/postgres/vexdb/etc"

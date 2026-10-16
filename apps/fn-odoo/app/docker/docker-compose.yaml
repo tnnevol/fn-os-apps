@@ -1,0 +1,22 @@
+services:
+  odoo:
+    container_name: fn-odoo
+    image: odoo:18.0
+    environment:
+      # 上游只传了 HOST/USER/PASSWORD，未提供端口（隐含 5432）。
+      # 镜像 entrypoint 会读取 PORT 并写入 odoo.conf 的 db_port（已核实镜像内 entrypoint 脚本），
+      # 因此补出端口字段，避免把用户锁死在默认端口。
+      # HOST 支持 host:port 形式，这里同时给出 PORT 以覆盖两种解析路径。
+      - HOST=${DB_HOST}
+      - PORT=${DB_PORT}
+      - USER=${DB_USERNAME}
+      - PASSWORD=${DB_PASSWORD}
+    ports:
+      - "${APP_PORT}:8069"
+    restart: always
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      # 上游未挂载 /etc/odoo，配置会落在容器内、重建即丢失（数据落在挂载外），故补出该挂载
+      - "${TRIM_PKGVAR}/data/etc:/etc/odoo"
+      - "${TRIM_PKGVAR}/data/data:/var/lib/odoo"
+      - "${TRIM_PKGVAR}/data/addons:/mnt/extra-addons"

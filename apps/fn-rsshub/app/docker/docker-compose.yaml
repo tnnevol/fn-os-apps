@@ -1,0 +1,18 @@
+services:
+  rsshub:
+    container_name: fn-rsshub
+    image: diygod/rsshub:chromium-bundled-2026-04-19
+    environment:
+      - NODE_ENV=production
+      - CACHE_TYPE=redis
+      # 上游把 Redis 拆成 host/port/password 分别消费，故不使用单串 REDIS_CONN_STRING
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@${REDIS_HOST}:${REDIS_PORT}/
+      - PUPPETEER_WS_ENDPOINT=ws://${BROWSERLESS_HOST}:${BROWSERLESS_PORT}
+    ports:
+      - "${APP_PORT}:1200"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:1200/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: always

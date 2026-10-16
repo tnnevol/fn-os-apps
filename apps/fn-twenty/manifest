@@ -1,0 +1,15 @@
+appname               = fn-twenty
+version               = 6.0.0
+display_name          = Twenty
+desc                  = Twenty 是现代开源 CRM，提供销售流程、联系人与机会管理
+platform              = x86
+source                = thirdparty
+maintainer            = Twenty
+maintainer_url        = https://github.com/twentyhq/twenty
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-twenty.Application
+disable_authorization_path = true
+install_dep_apps       = redis

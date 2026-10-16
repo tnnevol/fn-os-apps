@@ -1,0 +1,12 @@
+appname               = fn-teamspeak
+version               = 6.0.0
+display_name          = TeamSpeak Server
+desc                  = TeamSpeak 是低延迟语音通讯服务器，广泛用于游戏与团队协作
+platform              = x86
+source                = thirdparty
+maintainer            = TeamSpeak Systems
+maintainer_url        = https://github.com/TeamSpeak-Systems/teamspeak-linux-docker-images
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+disable_authorization_path = true

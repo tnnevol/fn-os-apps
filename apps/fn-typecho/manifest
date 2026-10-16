@@ -1,0 +1,14 @@
+appname               = fn-typecho
+version               = 6.0.0
+display_name          = Typecho
+desc                  = Typecho 是轻量简洁的博客程序，支持 Markdown 与插件扩展
+platform              = x86
+source                = thirdparty
+maintainer            = Typecho
+maintainer_url        = https://github.com/typecho/typecho
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-typecho.Application
+disable_authorization_path = true

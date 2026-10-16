@@ -1,0 +1,15 @@
+appname               = fn-rsshub
+version               = 6.0.0
+display_name          = RSSHub
+desc                  = RSSHub 为几乎所有网站生成 RSS 订阅源，把动态内容接入阅读器
+platform              = x86
+source                = thirdparty
+maintainer            = DIYgod
+maintainer_url        = https://github.com/DIYgod/RSSHub
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-rsshub.Application
+disable_authorization_path = true
+install_dep_apps       = redis:browserless

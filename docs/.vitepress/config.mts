@@ -208,7 +208,24 @@ const appItems = [
   { text: 'RustFS', link: '/apps/fn-rustfs' },
   { text: 'screego', link: '/apps/fn-screego' },
   { text: 'Sentinel Dashboard', link: '/apps/fn-sentinel-dashboard' },
-  { text: 'Stalwart Mail Server', link: '/apps/fn-stalwart-mail' }
+  { text: 'Stalwart Mail Server', link: '/apps/fn-stalwart-mail' },
+  { text: 'Mongo Express', link: '/apps/fn-mongo-express' },
+  { text: 'NocoBase', link: '/apps/fn-nocobase' },
+  { text: 'NocoDB', link: '/apps/fn-nocodb' },
+  { text: 'Odoo', link: '/apps/fn-odoo' },
+  { text: 'PhotoPrism', link: '/apps/fn-photoprism' },
+  { text: 'Planka', link: '/apps/fn-planka' },
+  { text: 'Roundcube', link: '/apps/fn-roundcube' },
+  { text: 'RSSHub', link: '/apps/fn-rsshub' },
+  { text: 'SonarQube', link: '/apps/fn-sonarqube' },
+  { text: 'Sub2API', link: '/apps/fn-sub2api' },
+  { text: 'Tailchat', link: '/apps/fn-tailchat' },
+  { text: 'TeamSpeak Server', link: '/apps/fn-teamspeak' },
+  { text: 'Twenty', link: '/apps/fn-twenty' },
+  { text: 'Typecho', link: '/apps/fn-typecho' },
+  { text: 'VexDB', link: '/apps/fn-vexdb' },
+  { text: 'Wiki.js', link: '/apps/fn-wikijs' },
+  { text: 'YOURLS', link: '/apps/fn-yourls' }
 ]
 
 const startItems = [

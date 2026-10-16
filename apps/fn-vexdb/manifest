@@ -1,0 +1,14 @@
+appname               = fn-vexdb
+version               = 6.0.0
+display_name          = VexDB
+desc                  = VexDB 是兼容 PostgreSQL 的向量数据库，支持向量检索与 SQL 查询
+platform              = x86
+source                = thirdparty
+maintainer            = Shuzhiyinhang
+maintainer_url        = https://www.vexdb.com
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-vexdb.Application
+disable_authorization_path = true

@@ -1,0 +1,14 @@
+appname               = fn-roundcube
+version               = 6.0.0
+display_name          = Roundcube
+desc                  = Roundcube 是基于浏览器的 Webmail 客户端，支持 IMAP 与 SMTP
+platform              = x86
+source                = thirdparty
+maintainer            = Roundcube
+maintainer_url        = https://github.com/roundcube/roundcubemail
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-roundcube.Application
+disable_authorization_path = true

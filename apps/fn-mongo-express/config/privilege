@@ -1,0 +1,7 @@
+{
+    "defaults": {
+        "run-as": "package"
+    },
+    "username": "docker-fn-mongo-express",
+    "groupname": "docker-fn-mongo-express"
+}

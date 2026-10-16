@@ -1,0 +1,99 @@
+[
+    {
+        "stepTitle": "基础配置",
+        "items": [
+            {
+                "type": "text",
+                "field": "APP_PORT",
+                "label": "Web 访问端口",
+                "initValue": "1200",
+                "required": true,
+                "helpText": "端口号，取值范围 1—65535。",
+                "isHttp": true,
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请填写Web 访问端口"
+                    },
+                    {
+                        "pattern": "^(?:[1-9][0-9]{0,3}|[1-5][0-9]{4}|[6][0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$",
+                        "message": "端口号必须是 1—65535 之间的整数"
+                    }
+                ]
+            },
+            {
+                "type": "text",
+                "field": "REDIS_HOST",
+                "label": "Redis 地址",
+                "initValue": "",
+                "helpText": "Redis 服务的地址（只填地址，端口固定 6379），例如 192.168.1.10。**如使用飞牛 Redis 应用，请填写其所在地址。** 连接失败时应用启动但缓存与会话功能异常。",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请填写Redis 地址"
+                    }
+                ]
+            },
+            {
+                "type": "password",
+                "field": "REDIS_PASSWORD",
+                "label": "Redis 密码",
+                "initValue": "",
+                "helpText": "Redis 的访问密码。",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请填写Redis 密码"
+                    }
+                ]
+            },
+            {
+                "type": "text",
+                "field": "REDIS_PORT",
+                "label": "Redis 端口",
+                "initValue": "6379",
+                "helpText": "Redis 服务端口，默认 6379。",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请填写Redis 端口"
+                    },
+                    {
+                        "pattern": "^(?:[1-9][0-9]{0,3}|[1-5][0-9]{4}|[6][0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$",
+                        "message": "端口号必须是 1—65535 之间的整数"
+                    }
+                ]
+            },
+            {
+                "type": "text",
+                "field": "BROWSERLESS_HOST",
+                "label": "Browserless 地址",
+                "initValue": "",
+                "helpText": "Browserless（无头浏览器）服务的地址，例如 192.168.1.10。**部分需要渲染 JavaScript 的路由依赖它**；未安装时这些路由会失败。**本应用依赖飞牛应用中心的 Browserless 应用（`fn-browserless`，默认端口 3000）**，安装本应用时会一并安装依赖。",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请填写Browserless 地址"
+                    }
+                ]
+            },
+            {
+                "type": "text",
+                "field": "BROWSERLESS_PORT",
+                "label": "Browserless 端口",
+                "initValue": "3000",
+                "helpText": "Browserless 服务端口，默认 3000。",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请填写Browserless 端口"
+                    },
+                    {
+                        "pattern": "^(?:[1-9][0-9]{0,3}|[1-5][0-9]{4}|[6][0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$",
+                        "message": "端口号必须是 1—65535 之间的整数"
+                    }
+                ]
+            }
+        ]
+    }
+]

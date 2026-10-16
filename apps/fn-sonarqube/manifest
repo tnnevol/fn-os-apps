@@ -1,0 +1,14 @@
+appname               = fn-sonarqube
+version               = 6.0.0
+display_name          = SonarQube
+desc                  = SonarQube 是代码质量分析平台，检测缺陷、漏洞与代码异味
+platform              = x86
+source                = thirdparty
+maintainer            = SonarSource
+maintainer_url        = https://github.com/SonarSource/sonarqube
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-sonarqube.Application
+disable_authorization_path = true

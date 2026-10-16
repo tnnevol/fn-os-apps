@@ -1,0 +1,166 @@
+[
+    {
+        "stepTitle": "基础配置",
+        "items": [
+            {
+                "type": "text",
+                "field": "APP_PORT",
+                "label": "Web 访问端口",
+                "initValue": "8080",
+                "required": true,
+                "helpText": "端口号，取值范围 1—65535。",
+                "isHttp": true,
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请填写Web 访问端口"
+                    },
+                    {
+                        "pattern": "^(?:[1-9][0-9]{0,3}|[1-5][0-9]{4}|[6][0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$",
+                        "message": "端口号必须是 1—65535 之间的整数"
+                    }
+                ]
+            },
+            {
+                "type": "select",
+                "field": "DB_TYPE",
+                "label": "数据库类型",
+                "initValue": "mysql",
+                "helpText": "用于保存博客数据的数据库类型。**MariaDB 请选此项**（与 MySQL 共用同一适配器）。**当前转换版本不支持 PostgreSQL。**",
+                "options": [
+                    {
+                        "label": "MySQL / MariaDB",
+                        "value": "mysql"
+                    }
+                ],
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请填写数据库类型"
+                    }
+                ]
+            },
+            {
+                "type": "text",
+                "field": "DB_HOST",
+                "label": "数据库地址",
+                "initValue": "",
+                "helpText": "数据库主机地址，只填地址本身（不含端口与库名），例如 192.168.1.10。**连接失败时应用会启动但功能不可用（页面报数据库错误）**。",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请填写数据库地址"
+                    }
+                ]
+            },
+            {
+                "type": "text",
+                "field": "DB_PORT",
+                "label": "数据库端口",
+                "initValue": "3306",
+                "helpText": "数据库端口，取值范围 1—65535，例如 MySQL 默认 3306、PostgreSQL 默认 5432。",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请填写数据库端口"
+                    },
+                    {
+                        "pattern": "^(?:[1-9][0-9]{0,3}|[1-5][0-9]{4}|[6][0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$",
+                        "message": "端口号必须是 1—65535 之间的整数"
+                    }
+                ]
+            },
+            {
+                "type": "text",
+                "field": "DB_NAME",
+                "label": "数据库名",
+                "initValue": "typecho",
+                "helpText": "要使用的数据库名，需已在目标数据库中创建。",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请填写数据库名"
+                    }
+                ]
+            },
+            {
+                "type": "text",
+                "field": "DB_USERNAME",
+                "label": "数据库用户名",
+                "initValue": "typecho",
+                "helpText": "连接该数据库使用的账号，需具备该库的读写权限。",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请填写数据库用户名"
+                    }
+                ]
+            },
+            {
+                "type": "password",
+                "field": "DB_PASSWORD",
+                "label": "数据库密码",
+                "initValue": "",
+                "helpText": "上述账号的密码。不会回显，也不会写入日志。",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请填写数据库密码"
+                    }
+                ]
+            },
+            {
+                "type": "text",
+                "field": "TYPECHO_USER_NAME",
+                "label": "管理员用户名",
+                "initValue": "typecho",
+                "helpText": "博客初始管理员的登录用户名。",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请填写管理员用户名"
+                    }
+                ]
+            },
+            {
+                "type": "password",
+                "field": "TYPECHO_USER_PASSWORD",
+                "label": "管理员密码",
+                "initValue": "",
+                "helpText": "博客初始管理员的登录密码。上游默认值是弱占位符，请自行设置。",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请填写管理员密码"
+                    }
+                ]
+            },
+            {
+                "type": "text",
+                "field": "TYPECHO_USER_MAIL",
+                "label": "管理员邮箱",
+                "initValue": "",
+                "helpText": "博客初始管理员的邮箱地址。",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请填写管理员邮箱"
+                    }
+                ]
+            },
+            {
+                "type": "text",
+                "field": "TYPECHO_EXTERNAL_URL",
+                "label": "站点访问地址",
+                "initValue": "",
+                "helpText": "本应用的对外访问地址（含协议与端口），例如 http://192.168.1.10:8080。**填错会导致页面跳转与静态资源异常。**",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请填写站点访问地址"
+                    }
+                ]
+            }
+        ]
+    }
+]

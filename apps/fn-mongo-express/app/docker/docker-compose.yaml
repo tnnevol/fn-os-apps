@@ -1,0 +1,13 @@
+services:
+  mongo-express:
+    container_name: fn-mongo-express
+    image: mongo-express:1.0.2-20
+    environment:
+      - ME_CONFIG_BASICAUTH=true
+      - ME_CONFIG_BASICAUTH_USERNAME=${BASICAUTH_USERNAME}
+      - ME_CONFIG_BASICAUTH_PASSWORD=${BASICAUTH_PASSWORD}
+      # 上游为 type: service 的服务选择器并自带端口 27017，fnOS 改为向导显式填写
+      - ME_CONFIG_MONGODB_URL=mongodb://${MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD}@${MONGO_HOST}:${MONGO_PORT}
+    ports:
+      - "${APP_PORT}:8081"
+    restart: always

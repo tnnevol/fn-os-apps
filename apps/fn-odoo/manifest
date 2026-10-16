@@ -1,0 +1,14 @@
+appname               = fn-odoo
+version               = 6.0.0
+display_name          = Odoo
+desc                  = Odoo 是开源 ERP，覆盖销售、库存、财务、人事等企业管理模块
+platform              = x86
+source                = thirdparty
+maintainer            = Odoo
+maintainer_url        = https://github.com/odoo/odoo
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-odoo.Application
+disable_authorization_path = true

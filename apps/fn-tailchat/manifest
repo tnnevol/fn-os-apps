@@ -1,0 +1,15 @@
+appname               = fn-tailchat
+version               = 6.0.0
+display_name          = Tailchat
+desc                  = Tailchat 是插件化的即时通讯平台，支持多群组、机器人与应用扩展
+platform              = x86
+source                = thirdparty
+maintainer            = Moonrailgun
+maintainer_url        = https://github.com/msgbyte/tailchat
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-tailchat.Application
+disable_authorization_path = true
+install_dep_apps       = redis

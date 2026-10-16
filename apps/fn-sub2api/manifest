@@ -1,0 +1,15 @@
+appname               = fn-sub2api
+version               = 6.0.0
+display_name          = Sub2API
+desc                  = Sub2API 把多个上游 API 订阅聚合为统一接口，并提供用量与配额管理
+platform              = x86
+source                = thirdparty
+maintainer            = WeiShaw
+maintainer_url        = https://github.com/weishaw/sub2api
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-sub2api.Application
+disable_authorization_path = true
+install_dep_apps       = redis

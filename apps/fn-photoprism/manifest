@@ -1,0 +1,14 @@
+appname               = fn-photoprism
+version               = 6.0.0
+display_name          = PhotoPrism
+desc                  = PhotoPrism 是 AI 驱动的照片管理工具，支持自动分类、人脸识别与 RAW 转换
+platform              = x86
+source                = thirdparty
+maintainer            = PhotoPrism
+maintainer_url        = https://github.com/photoprism/photoprism
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-photoprism.Application
+disable_authorization_path = true

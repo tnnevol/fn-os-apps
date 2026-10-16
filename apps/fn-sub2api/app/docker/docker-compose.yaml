@@ -1,0 +1,40 @@
+services:
+  sub2api:
+    container_name: fn-sub2api
+    image: weishaw/sub2api:0.2.14
+    environment:
+      - TZ=${TIME_ZONE}
+      - AUTO_SETUP=true
+      - SERVER_HOST=0.0.0.0
+      - SERVER_PORT=8080
+      - SERVER_MODE=${SERVER_MODE}
+      - RUN_MODE=${RUN_MODE}
+      # 上游由 1Panel 服务选择器注入 PANEL_DB_* / PANEL_REDIS_*，fnOS 改为向导显式填写
+      - DATABASE_HOST=${DB_HOST}
+      - DATABASE_PORT=${DB_PORT}
+      - DATABASE_USER=${DB_USERNAME}
+      - DATABASE_PASSWORD=${DB_PASSWORD}
+      - DATABASE_DBNAME=${DB_NAME}
+      - DATABASE_SSLMODE=disable
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - REDIS_DB=0
+      - ADMIN_EMAIL=${ADMIN_EMAIL}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRE_HOUR=24
+      - TOTP_ENCRYPTION_KEY=${TOTP_ENCRYPTION_KEY}
+      - UPDATE_PROXY_URL=${UPDATE_PROXY_URL}
+    ports:
+      - "${APP_PORT}:8080"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-T", "5", "-O", "/dev/null", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart: always
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      - "${TRIM_PKGVAR}/data:/app/data"
