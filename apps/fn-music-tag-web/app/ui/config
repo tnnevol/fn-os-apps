@@ -1,0 +1,13 @@
+{
+  ".url": {
+    "fn-music-tag-web.Application": {
+      "title": "Music Tag Web",
+      "icon": "images/icon_{0}.png",
+      "type": "url",
+      "protocol": "http",
+      "port": "${APP_PORT}",
+      "url": "/",
+      "allUsers": false
+    }
+  }
+}

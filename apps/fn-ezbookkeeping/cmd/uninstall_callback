@@ -1,0 +1,17 @@
+#!/bin/bash
+
+### This script is called after the user uninstalls the application.
+
+if [ "$wizard_data_action" = "delete" ]; then
+    echo "Deleting application data..."
+    rm -rf "${TRIM_PKGVAR:?}"
+    rm -rf "${TRIM_PKGHOME:?}"
+    # 共享目录：${VAR:?} 守卫与 fn-xiaoya-only 先例一致（变量为空即中止，避免误删根路径）。
+    rm -rf "${TRIM_APPDEST_VOL:?}/@appshare/fn-ezbookkeeping"
+    echo "Deleted shared directory: ${TRIM_APPDEST_VOL}/@appshare/fn-ezbookkeeping"
+    echo "Application data deleted."
+else
+    echo "Keeping application data for future reinstallation."
+fi
+
+exit 0

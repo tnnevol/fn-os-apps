@@ -1,0 +1,17 @@
+{
+    "docker-project": {
+        "projects": [
+            {
+                "name": "fn-music-tag-web",
+                "path": "docker"
+            }
+        ]
+    },
+    "data-share": {
+        "shares": [
+            {
+                "name": "fn-music-tag-web"
+            }
+        ]
+    }
+}

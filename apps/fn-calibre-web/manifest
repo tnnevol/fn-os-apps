@@ -1,0 +1,14 @@
+appname               = fn-calibre-web
+version               = 6.0.0
+display_name          = Calibre-Web
+desc                  = Calibre-Web 是基于浏览器的电子书库，管理 Calibre 书库并提供在线阅读
+platform              = x86
+source                = thirdparty
+maintainer            = LinuxServer.io
+maintainer_url        = https://github.com/linuxserver/docker-calibre-web
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-calibre-web.Application
+disable_authorization_path = true

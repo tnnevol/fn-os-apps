@@ -1,0 +1,17 @@
+{
+    "docker-project": {
+        "projects": [
+            {
+                "name": "fn-calibre-web",
+                "path": "docker"
+            }
+        ]
+    },
+    "data-share": {
+        "shares": [
+            {
+                "name": "fn-calibre-web"
+            }
+        ]
+    }
+}

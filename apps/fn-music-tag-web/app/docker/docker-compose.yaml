@@ -1,0 +1,16 @@
+services:
+  music-tag-web:
+    container_name: fn-music-tag-web
+    image: xhongc/music_tag_web:2.7.8
+    # 按裁决 B：镜像层默认 root（config.User 为 null），加 user: 以包用户运行
+    user: "${TRIM_UID}:${TRIM_GID}"
+    command: /start
+    ports:
+      - "${APP_PORT}:8001"
+    restart: always
+    volumes:
+# 共享目录（用户可见）：宿主侧只有 1 个 data-share，其下按用途建子目录
+      # 上游为 :rw —— 该应用会把编辑后的标签写回音频文件本身，按规约保留
+      - "${TRIM_APPDEST_VOL}/@appshare/fn-music-tag-web/media:/app/media:rw"
+# 应用私有数据：用户不可见，不与共享目录混用
+      - "${TRIM_PKGVAR}/data:/app/data"

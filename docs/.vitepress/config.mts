@@ -237,7 +237,13 @@ const appItems = [
   { text: 'Koodo Reader', link: '/apps/fn-koodo-reader' },
   { text: '兰空图床', link: '/apps/fn-lsky-pro' },
   { text: 'MCSManager', link: '/apps/fn-mcsmanager-web' },
-  { text: 'Komga', link: '/apps/fn-komga' }
+  { text: 'Komga', link: '/apps/fn-komga' },
+  { text: 'Audiobookshelf', link: '/apps/fn-audiobookshelf' },
+  { text: 'Navidrome', link: '/apps/fn-navidrome' },
+  { text: 'xiaomusic', link: '/apps/fn-xiaomusic' },
+  { text: 'Calibre-Web', link: '/apps/fn-calibre-web' },
+  { text: 'Music Tag Web', link: '/apps/fn-music-tag-web' },
+  { text: 'ezBookkeeping', link: '/apps/fn-ezbookkeeping' }
 ]
 
 const startItems = [

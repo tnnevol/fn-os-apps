@@ -1,0 +1,20 @@
+services:
+  navidrome:
+    container_name: fn-navidrome
+    image: deluan/navidrome:0.64.2
+    # 按裁决 B：上游显式写了 user: 1000:1000，改为 fnOS 包用户
+    user: "${TRIM_UID}:${TRIM_GID}"
+    environment:
+      - ND_SCANSCHEDULE=1h
+      - ND_LOGLEVEL=info
+      - ND_SESSIONTIMEOUT=24h
+      - ND_BASEURL=
+    ports:
+      - "${APP_PORT}:4533"
+    restart: always
+    volumes:
+# 共享目录（用户可见）：宿主侧只有 1 个 data-share，其下按用途建子目录
+      # 上游为 :ro（音乐库只读），按规约保留
+      - "${TRIM_APPDEST_VOL}/@appshare/fn-navidrome/music:/music:ro"
+# 应用私有数据：用户不可见，不与共享目录混用
+      - "${TRIM_PKGVAR}/data:/data"

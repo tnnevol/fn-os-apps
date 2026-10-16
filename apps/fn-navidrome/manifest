@@ -1,0 +1,14 @@
+appname               = fn-navidrome
+version               = 6.0.0
+display_name          = Navidrome
+desc                  = Navidrome 是轻量音乐服务器，支持按标签自动整理音乐库与多端播放
+platform              = x86
+source                = thirdparty
+maintainer            = Deluan
+maintainer_url        = https://github.com/navidrome/navidrome
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-navidrome.Application
+disable_authorization_path = true

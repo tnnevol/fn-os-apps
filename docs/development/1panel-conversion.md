@@ -710,6 +710,7 @@ disable_authorization_path = true
 | `fn-pgadmin4` | `5050` | 5050 |
 | `fn-sonarqube` | `sonarqube` | 未解析（2026-10-15 新增） |
 | `fn-redis-commander` | `1000` | 1000:1000（2026-10-16 新增） |
+| `fn-ezbookkeeping` | `1000:1000` | 1000:1000（2026-10-16 新增） |
 | `fn-rustfs` | `rustfs` | 10001:10001 |
 | `fn-sftpgo` | `1000:1000` | 1000:1000 |
 | `fn-tomcat` | `1001` | 1001 |
@@ -748,3 +749,4 @@ disable_authorization_path = true
 | 2026-10-16 | **D 组解除阻塞（用户裁决）**：`TRIM_APPDEST_VOL` 在 compose 的展开**未经真机确认**，但用户决定**先按方案 C 实施、本轮不做真机测试**。已把已知事实与残留风险（变量为空时会退化为 `/@appshare/...`，**容器仍能起、属静默错误**）如实登记，并写明将来的验证方法（`docker inspect` 看 `Mounts[].Source`）。同时新增禁止项 8：**不得修改 `831b7d3` 之前用户既有的 14 个应用**。 |
 | 2026-10-16 | **D 组方案订正 C→B**：原推荐 `${TRIM_APPDEST_VOL}/@appshare/fn-<app>/`（依据 `fn-xiaoya-only` 先例）**依据不足**。查证官方文档：`TRIM_APPDEST_VOL` 全文仅 1 次（定义句），**不在「Compose 可以使用」的变量表中**，无任何用法示例；而 `TRIM_DATA_SHARE_PATHS` 出现 6 次、**明确列在该表中**、且有官方示例 `${TRIM_DATA_SHARE_PATHS%%:*}`；`@appshare` 在官方文档 **0 次**（属平台实现细节，非文档化契约）。**改用 `${TRIM_DATA_SHARE_PATHS}`**。同时采纳官方 `resource.md:34` 建议：**声明 1 个顶级 share（`fn-<app>`）**，各用途子目录在容器内挂载目标区分。`install_callback` 加 `mkdir -p "${TRIM_DATA_SHARE_PATHS%%:*}"` 兜底。 |
 | 2026-10-16 | **D 组方案订正 B→C（回归）**：同日曾据官方文档把方案改为 `${TRIM_DATA_SHARE_PATHS}`，**随即复核后撤回**——该变量是 `:` 分隔**多值**，无法作单个挂载源（此点在更早的变更记录里已有记载，**是我推翻了自己写下的条款**）。恢复 `${TRIM_APPDEST_VOL}/@appshare/fn-<app>/<子目录>`，并补记其真实依据：用户既有应用 `fn-xiaoya-only` **正在使用**该写法（compose 引用 4 处），其文档给出实际路径 `/vol4/@appshare/fn-xiaoya-only/alist/data/`。**教训：官方文档没写 ≠ 平台不支持；"使用中的用户应用 + 其文档 + 真机观测"强于官方文档描述。反之官方变量表中的变量也不等于能在 compose 当挂载源用。** |
+| 2026-10-16 | 属主待验证清单补入 `fn-ezbookkeeping`（镜像层 `USER 1000:1000`，与包用户 uid 9xx 不匹配）。它有三个挂载需写入（`storage` 共享 + `data`/`log` 私有），属 D 组（task-25）新增命中项。 |

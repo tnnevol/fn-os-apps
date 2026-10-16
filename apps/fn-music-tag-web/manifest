@@ -1,0 +1,14 @@
+appname               = fn-music-tag-web
+version               = 6.0.0
+display_name          = Music Tag Web
+desc                  = Music Tag Web 是音乐标签编辑器，批量整理音频元数据与封面
+platform              = x86
+source                = thirdparty
+maintainer            = xhongc
+maintainer_url        = https://github.com/xhongc/music-tag-web
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-music-tag-web.Application
+disable_authorization_path = true

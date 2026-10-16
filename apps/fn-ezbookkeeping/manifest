@@ -1,0 +1,14 @@
+appname               = fn-ezbookkeeping
+version               = 6.0.0
+display_name          = ezBookkeeping
+desc                  = ezBookkeeping 是轻量记账工具，支持多账户、多币种与报表统计
+platform              = x86
+source                = thirdparty
+maintainer            = mayswind
+maintainer_url        = https://github.com/mayswind/ezbookkeeping
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-ezbookkeeping.Application
+disable_authorization_path = true

@@ -1,0 +1,16 @@
+services:
+  audiobookshelf:
+    container_name: fn-audiobookshelf
+    image: advplyr/audiobookshelf:2.37.1
+    # 按裁决 B：镜像层默认 root（config.User 为 null，Entrypoint 为 tini），加 user: 以包用户运行
+    user: "${TRIM_UID}:${TRIM_GID}"
+    ports:
+      - "${APP_PORT}:80"
+    restart: always
+    volumes:
+# 共享目录（用户可见）：宿主侧只有 1 个 data-share，其下按用途建子目录
+      - "${TRIM_APPDEST_VOL}/@appshare/fn-audiobookshelf/audiobooks:/audiobooks"
+      - "${TRIM_APPDEST_VOL}/@appshare/fn-audiobookshelf/podcasts:/podcasts"
+# 应用私有数据：用户不可见，不与共享目录混用
+      - "${TRIM_PKGVAR}/data/config:/config"
+      - "${TRIM_PKGVAR}/data/metadata:/metadata"

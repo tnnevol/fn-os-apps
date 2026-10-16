@@ -188,6 +188,12 @@
 | <AppIcon name="fn-lsky-pro" alt="兰空图床 图标" :size="30" /> | [兰空图床（Lsky Pro）](./fn-lsky-pro) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-lsky-pro) | Docker / x86 | — | [源码](https://github.com/lsky-org/lsky-pro) |
 | <AppIcon name="fn-mcsmanager-web" alt="MCSManager 图标" :size="30" /> | [MCSManager](./fn-mcsmanager-web) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-mcsmanager-web) | Docker / x86 | — | [源码](https://github.com/MCSManager/MCSManager) |
 | <AppIcon name="fn-komga" alt="Komga 图标" :size="30" /> | [Komga](./fn-komga) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-komga) | Docker / x86 | — | [源码](https://github.com/gotson/komga) |
+| <AppIcon name="fn-audiobookshelf" alt="Audiobookshelf 图标" :size="30" /> | [Audiobookshelf](./fn-audiobookshelf) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-audiobookshelf) | Docker / x86 | — | [源码](https://github.com/advplyr/audiobookshelf) |
+| <AppIcon name="fn-navidrome" alt="Navidrome 图标" :size="30" /> | [Navidrome](./fn-navidrome) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-navidrome) | Docker / x86 | — | [源码](https://github.com/navidrome/navidrome) |
+| <AppIcon name="fn-xiaomusic" alt="xiaomusic 图标" :size="30" /> | [xiaomusic](./fn-xiaomusic) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-xiaomusic) | Docker / x86 | — | [源码](https://github.com/hanxi/xiaomusic) |
+| <AppIcon name="fn-calibre-web" alt="Calibre-Web 图标" :size="30" /> | [Calibre-Web](./fn-calibre-web) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-calibre-web) | Docker / x86 | — | [源码](https://github.com/linuxserver/docker-calibre-web) |
+| <AppIcon name="fn-music-tag-web" alt="Music Tag Web 图标" :size="30" /> | [Music Tag Web](./fn-music-tag-web) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-music-tag-web) | Docker / x86 | — | [源码](https://github.com/xhongc/music-tag-web) |
+| <AppIcon name="fn-ezbookkeeping" alt="ezBookkeeping 图标" :size="30" /> | [ezBookkeeping](./fn-ezbookkeeping) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-ezbookkeeping) | Docker / x86 | — | [源码](https://github.com/mayswind/ezbookkeeping) |
 
 ## 安装方式
 

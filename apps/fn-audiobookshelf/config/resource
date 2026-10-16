@@ -1,0 +1,17 @@
+{
+    "docker-project": {
+        "projects": [
+            {
+                "name": "fn-audiobookshelf",
+                "path": "docker"
+            }
+        ]
+    },
+    "data-share": {
+        "shares": [
+            {
+                "name": "fn-audiobookshelf"
+            }
+        ]
+    }
+}

@@ -1,0 +1,16 @@
+services:
+  xiaomusic:
+    container_name: fn-xiaomusic
+    image: hanxi/xiaomusic:v0.6.1
+    # 按裁决 B：镜像层默认 root（config.User 为 null），加 user: 以包用户运行
+    user: "${TRIM_UID}:${TRIM_GID}"
+    ports:
+      # 上游为 ${HOST_IP}:${PORT}:8090，但 HOST_IP 在 fnOS 侧没有来源（会展开为空）。
+      # 改为不写绑定地址，Docker 默认绑定 0.0.0.0，行为与空值展开一致但为显式表达。
+      - "${APP_PORT}:8090"
+    restart: unless-stopped
+    volumes:
+# 共享目录（用户可见）：宿主侧只有 1 个 data-share，其下按用途建子目录
+      - "${TRIM_APPDEST_VOL}/@appshare/fn-xiaomusic/music:/app/music"
+# 应用私有数据：用户不可见，不与共享目录混用
+      - "${TRIM_PKGVAR}/data/conf:/app/conf"

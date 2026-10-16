@@ -1,0 +1,14 @@
+appname               = fn-audiobookshelf
+version               = 6.0.0
+display_name          = Audiobookshelf
+desc                  = Audiobookshelf 是有声书与播客服务器，支持多端同步收听进度
+platform              = x86
+source                = thirdparty
+maintainer            = advplyr
+maintainer_url        = https://github.com/advplyr/audiobookshelf
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-audiobookshelf.Application
+disable_authorization_path = true
