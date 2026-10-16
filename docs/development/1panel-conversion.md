@@ -373,7 +373,18 @@ T1 应用的数据默认落在 `${TRIM_PKGVAR}`（私有目录，**文件管理�
 
 4. **文档「运行要求」写明**：共享目录位于文件管理器的 `<存储卷>/@appshare/fn-<app>/`，用户把媒体文件放在那里。
 
-> **待真机验证**：`TRIM_APPDEST_VOL` 在 compose 中的展开（`fn-xiaoya-only` 已用它发布，但该应用的挂载效果未经真机确认）。**验证前不批量做 D 组。**
+> **关于 `TRIM_APPDEST_VOL` 的展开（2026-10-16 裁决：先按方案 C 做，不做真机测试）**
+>
+> **已知事实**：
+> - 官方《环境变量》文档定义 `TRIM_APPDEST_VOL` = **「应用安装所在的存储空间路径」**，变量**存在且语义明确**。
+> - 官方《Docker 应用案例》的 compose 示例中出现的 `TRIM_*` 为 `TRIM_APPDEST`、`TRIM_PKGVAR`、`TRIM_SERVICE_PORT`、`TRIM_TEMP_LOGFILE`、`TRIM_DATA_SHARE_PATHS`——**`TRIM_APPDEST_VOL` 在该示例中未出现**。
+> - **既有先例**：`fn-xiaoya-only` 已用该变量发布。
+>
+> **残留风险（如实登记，不隐瞒）**：若 compose 展开时该变量为空，`${TRIM_APPDEST_VOL}/@appshare/...` 会退化成 `/@appshare/...`——**容器仍能启动、应用仍能运行**，但数据落到错误位置。**这是静默错误，不会报错。**
+>
+> **用户裁决**：**先按本方案（C）实施，本轮不做真机验证。** D 组照此转换，风险登记在案。
+>
+> **将来验证方法**：在真机 `docker inspect <container> --format '{{json .Mounts}}'`，看 `Source` 是真实路径还是 `/@appshare/...`。
 
 **注意**：`data-share` 与「用户授权既有目录」（`TRIM_DATA_ACCESSIBLE_PATHS` / `pickSharedFile`）是**两套不同机制**，不要混淆——前者是应用**声明**并由 fnOS 自动创建 + 自动 ACL，后者是管理员**授权已存在的任意目录**。
 
@@ -634,7 +645,13 @@ disable_authorization_path = true
 
    确实需要纳入上游的新版本时，**走升级而不是重建**：保留 `manifest.appname` 不变，只更新 `app/docker/` 与 `wizard/`，因为 `appname` 是已安装用户的升级主键，改名会断掉升级路径。
 
-8. **不得在仓库内写入开发机绝对路径**。脚本内定位同目录文件时基于脚本位置推导；fnOS 设备端路径（`TRIM_*`、`/var/apps/...`）可以出现，但要注明它指向目标 NAS。完整规则见 [SDD 规格驱动维护规范](/development/sdd-workflow) 的「路径约束」。
+8. **不得修改用户既有的应用**。`831b7d3`（`v6.0.0` 发布点）之前已存在的应用，**视为用户既有资产，任何情况下不修改、不重构、不"顺带优化"**。
+
+   该时点的 14 个应用：`fn-bitwarden`、`fn-halo`、`fn-hermes-agent`、`fn-memos`、`fn-moviepilot`、`fn-mysql_v8`、`fn-new-api`、`fn-nvm`、`fn-ohmyzsh`、`fn-quark-auto-save`、`fn-reader`、`fn-uv`、`fn-xiaoya-only`、`fn-zentao`。**实测这些应用在 `831b7d3` 之后改动次数为 0**，规则已然遵守，此处固化为条款。
+
+   判据：`git ls-tree 831b7d3 apps/` 在列即属既有应用。**注意 `fn-xiaoya-only` 是 `TRIM_APPDEST_VOL` 的既有先例**——引用它作为设计依据可以，**但不要改它**。
+
+9. **不得在仓库内写入开发机绝对路径**。脚本内定位同目录文件时基于脚本位置推导；fnOS 设备端路径（`TRIM_*`、`/var/apps/...`）可以出现，但要注明它指向目标 NAS。完整规则见 [SDD 规格驱动维护规范](/development/sdd-workflow) 的「路径约束」。
 8. **不得在文档、向导 `helpText`、示例和日志里出现真实密码或 Token**。
 
 ## 自检清单
@@ -717,3 +734,4 @@ disable_authorization_path = true
 | 2026-10-15 | **口径变更（用户裁决）**：镜像标签改为「**1panel 用什么就用什么**」——可变标签（`:latest`/`:master`/`alpine-latest` 等）**不再阻塞转换**，直接沿用上游标签，不再要求联网查 tag 或收敛版本。**但 `${...}` 变量插值仍必须解析**——两者性质不同：插值变量在 fnOS 侧**没有来源**（上游 `init.sh` 生成），不解析就是空值；`:latest` 能解析到具体镜像，只是会漂移。另新增裁决：**运行身份优先非 root（默认用户）**——镜像层默认 root 且无可注入变量时，加 `user: "${TRIM_UID}:${TRIM_GID}"`；**唯一例外是 s6-overlay 类镜像**（`Entrypoint: ["/init"]`），其初始化强依赖 root，加 `user:` 会起不来。 |
 | 2026-10-16 | 属主待验证清单补入 `fn-redis-commander`（镜像层 `USER 1000`，与包用户 uid 9xx 不匹配）。该应用无我们创建的挂载需要写入，故按裁决 B「已是非 root」不改，但**属主匹配仍待真机确认**。 |
 | 2026-10-16 | 裁决 B 补子类：**镜像内自带 uid 变量且依赖 root 做 chown 的**（`jupyter-notebook` 的 `NB_UID`/`NB_GID` + `CHOWN_HOME=yes`）→ **改变量、不加 `user:`**。加 `user:` 与 `CHOWN_HOME` 直接冲突（非 root 无权 chown）。同时补入「镜像内降权 / 镜像层非 root / 镜像层默认 root」四类判定表。另修正一处 Lead 的统计 bug：归一化名比对时**只归一化一侧等于没归一化**，导致把已交付的 `obsidian_livesync` 误报为待转换（详见经验教训 1.4）。 |
+| 2026-10-16 | **D 组解除阻塞（用户裁决）**：`TRIM_APPDEST_VOL` 在 compose 的展开**未经真机确认**，但用户决定**先按方案 C 实施、本轮不做真机测试**。已把已知事实与残留风险（变量为空时会退化为 `/@appshare/...`，**容器仍能起、属静默错误**）如实登记，并写明将来的验证方法（`docker inspect` 看 `Mounts[].Source`）。同时新增禁止项 8：**不得修改 `831b7d3` 之前用户既有的 14 个应用**。 |
