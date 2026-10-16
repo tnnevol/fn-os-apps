@@ -602,6 +602,19 @@ disable_authorization_path = true
    **例外：`.DS_Store` 属于 macOS 系统垃圾文件，不算「模板自带文件」，可以删除。** fnpack 模板会带入 5 个 `.DS_Store`（`app/`、`app/ui/`、`app/ui/images/`、`cmd/`、`config/` 各一个），其中 `cmd/.DS_Store` 与 `config/.DS_Store` 会被打进 FPK 顶层，其余随 `app/` 进入 `app.tgz`。它们不是 fnpack 模板的结构性文件，保留只会让垃圾文件随包发给用户；本仓库既有 14 个应用也均无此类文件。批量转换时在自检清单确认 `.DS_Store` 计数为 0。
 2. **不得把运行数据写进 FPK 安装目录**。`TRIM_APPDEST` 只放只读资源，可写状态一律落 `${TRIM_PKGVAR}` 或声明的共享目录。
 3. **不得用 root 运行**。默认 `run-as: package` + `docker-fn-<app>`；确需特权时在计划中记录理由，不能靠放宽权限绕过路径或端口配置错误。
+
+   **运行身份的统一裁决（2026-10-15）——「优先使用非 root，即默认用户」**：
+
+   | 上游情形 | 处理 |
+   | --- | --- |
+   | 有 `PUID`/`PGID`/`UID`/`GID` 变量 | 改为 `${TRIM_UID}`/`${TRIM_GID}` |
+   | 写了 `user: root` | 改为 `user: "${TRIM_UID}:${TRIM_GID}"` |
+   | **镜像层默认 root、无可注入变量** | **加 `user: "${TRIM_UID}:${TRIM_GID}"`** |
+   | **s6-overlay 类镜像**（`Entrypoint: ["/init"]`） | **例外，保持原样**——s6 初始化强依赖 root 做服务注册与目录 chown，加 `user:` 会直接起不来。**须在应用文档写明「镜像默认以 root 运行」让用户知情** |
+
+   **判断「镜像层默认 root」必须实拉 registry 的 config blob 查 `config.User`，不能看 compose**——compose 不写 `user:` **不等于**容器不以 root 运行（`USER` 未设置时以镜像默认用户运行，而镜像默认**常常就是 root**）。已实证案例：`rustdesk`/`sentinel-dashboard` 的 `config.User` 为空即 root，而 `rustfs`/`rocketmq` 是有名用户。
+
+   **「Apache/PHP 系镜像必须 root 才能绑 80 端口」不成立**：Docker ≥ 20.3 起容器内默认 `net.ipv4.ip_unprivileged_port_start=0`，非 root **可以**绑定 80。这类镜像的真正风险在 **pid / 日志目录写入**，属**可验证的运行时风险**（与 s6 的结构性依赖不同），因此**按加 `user:` 处理并登记为真机验证项**，不要写成「已解决」。
 4. **不得复制上游文件内容**。上游 `LICENSE` 是 GPL-3.0，本仓库是 Apache-2.0。只提取配置事实（镜像标签、端口、卷路径、环境变量名和默认值），不搬运 YAML 注释、README、脚本或表单文案。
 5. **不得修改上游 `appstore/`**，也不向上游提交补丁。它是只读的契约与版本来源。
 6. **不得把同一应用的多份 compose 塞进一个 FPK**。上游 40 个应用有多版本，每个应用只选定一个版本，多版本差异通过升级而非并行入口体现。
