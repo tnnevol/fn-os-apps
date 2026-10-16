@@ -633,7 +633,13 @@ disable_authorization_path = true
    | 写了 `user: root` | 改为 `user: "${TRIM_UID}:${TRIM_GID}"` |
    | **镜像层默认 root、无可注入变量** | **加 `user: "${TRIM_UID}:${TRIM_GID}"`** |
    | **镜像层默认 root，但镜像内有自己的 uid 变量**（如 Jupyter 的 `NB_UID`/`NB_GID`） | **改变量**，**不加 `user:`** |
-   | **s6-overlay 类镜像**（`Entrypoint: ["/init"]`） | **例外，保持原样**——s6 初始化强依赖 root 做服务注册与目录 chown，加 `user:` 会直接起不来。**须在应用文档写明「镜像默认以 root 运行」让用户知情** |
+   | **镜像初始化强依赖 root**（s6-overlay、supervisord 等） | **例外，保持原样**——加 `user:` 会直接起不来。**须在应用文档写明「镜像默认以 root 运行」让用户知情** |
+
+   **例外条款按「现象」而非「实现」判定（2026-10-16 修正）**：原条款写的是「s6-overlay 类镜像（`Entrypoint: ["/init"]`）」，**那是按实现写的**。实测 `neko` 用 **supervisord**（非 s6）但机制完全相同——`supervisord.conf` 里 `user=root` 启动、各服务按 `%(ENV_USER)s` 降权，且 `chown=root:neko` 要求 root 改 socket 属主。**因此例外的正确判据是「镜像初始化强依赖 root」这一现象，s6 只是其中一种实现。**
+
+   **两个易错点**：
+   - **「镜像层有 `USER` 环境变量」不等于「有可注入的 uid 机制」**。`neko` 的镜像层 `Env` 是 `USER=neko`，但那是**普通环境变量**，`%(ENV_USER)s` 取它只决定降权目标，**改它不改变进程归属**；而 `calibre-web` 的 `PUID`/`PGID`、`jupyter` 的 `NB_UID`/`NB_GID` 是**镜像设计给你改的**，性质不同。
+   - **判据是 entrypoint 源码，不是镜像名或标签**。对照案例：`fn-wordpress` 的条件式 `chown`（仅在属主为 `root:root` 时触发、且带 `\|\| true`）**不算**硬依赖；`fn-roundcube` 的 `chown` 因脚本内有 `${VAR:=default}` 默认值而**每次必执行**，**算**。
 
    **判断「镜像层默认 root」必须实拉 registry 的 config blob 查 `config.User`，不能看 compose**——compose 不写 `user:` **不等于**容器不以 root 运行（`USER` 未设置时以镜像默认用户运行，而镜像默认**常常就是 root**）。已实证案例：`rustdesk`/`sentinel-dashboard` 的 `config.User` 为空即 root，而 `rustfs`/`rocketmq` 是有名用户。
 
@@ -726,6 +732,7 @@ disable_authorization_path = true
 | `fn-sonarqube` | `sonarqube` | 未解析（2026-10-15 新增） |
 | `fn-redis-commander` | `1000` | 1000:1000（2026-10-16 新增） |
 | `fn-ezbookkeeping` | `1000:1000` | 1000:1000（2026-10-16 新增） |
+| `fn-neko` | 镜像层 `USER=neko` | 1000:1000（2026-10-16 新增） |
 | `fn-rustfs` | `rustfs` | 10001:10001 |
 | `fn-sftpgo` | `1000:1000` | 1000:1000 |
 | `fn-tomcat` | `1001` | 1001 |
@@ -766,3 +773,5 @@ disable_authorization_path = true
 | 2026-10-16 | **D 组方案订正 B→C（回归）**：同日曾据官方文档把方案改为 `${TRIM_DATA_SHARE_PATHS}`，**随即复核后撤回**——该变量是 `:` 分隔**多值**，无法作单个挂载源（此点在更早的变更记录里已有记载，**是我推翻了自己写下的条款**）。恢复 `${TRIM_APPDEST_VOL}/@appshare/fn-<app>/<子目录>`，并补记其真实依据：用户既有应用 `fn-xiaoya-only` **正在使用**该写法（compose 引用 4 处），其文档给出实际路径 `/vol4/@appshare/fn-xiaoya-only/alist/data/`。**教训：官方文档没写 ≠ 平台不支持；"使用中的用户应用 + 其文档 + 真机观测"强于官方文档描述。反之官方变量表中的变量也不等于能在 compose 当挂载源用。** |
 | 2026-10-16 | 属主待验证清单补入 `fn-ezbookkeeping`（镜像层 `USER 1000:1000`，与包用户 uid 9xx 不匹配）。它有三个挂载需写入（`storage` 共享 + `data`/`log` 私有），属 D 组（task-25）新增命中项。 |
 | 2026-10-16 | **追溯整改（task-22）**：按裁决 B 复核 6 个已交付应用。**2 个加 `user:`**（`fn-wordpress`、`fn-sentinel-dashboard`）；**4 个归例外并在文档补「运行身份」节**——`fn-phpmyadmin`（显式 `USER=root` + 写 `/etc/phpmyadmin/`）、`fn-roundcube`（`chown ${TEMP_DIR}` 且该变量脚本内有默认值、必执行）、`fn-typecho`（`chown -R /app` + 写 `/etc/` + `su`）、`fn-rustdesk`（s6）。**判定方法写入规约：读 entrypoint 源码逐行找 root 操作，不能只看镜像名或 compose 是否设了变量。** |
+| 2026-10-16 | **裁决 B 例外条款按现象改写**：原写「s6-overlay 类镜像（`Entrypoint: ["/init"]`）」是**按实现**判定；实测 `neko` 用 **supervisord** 但机制相同（`user=root` 启动 + `%(ENV_USER)s` 降权 + `chown=root:neko`），故改为「**镜像初始化强依赖 root**」这一现象。另补两个易错点：① 镜像层 `USER` 环境变量 ≠ 可注入的 uid 机制（`neko` 的 `USER=neko` 只是降权目标）；② 判据是 entrypoint 源码而非镜像名（`wordpress` 的条件式 `chown` + `\|\| true` 不算，`roundcube` 因 `:=` 默认值必执行则算）。 |
+| 2026-10-16 | 属主待验证清单补入 `fn-neko`（镜像内 `neko` 用户固定 uid 1000，与包用户 uid 9xx 不匹配）。该应用归「初始化强依赖 root」例外（supervisord），故运行身份保持原样；其 `/home/neko`（`0700`）的写入能力待真机确认。 |
