@@ -1,0 +1,14 @@
+services:
+  mcsm-web:
+    container_name: fn-mcsmanager-web
+    image: githubyumao/mcsmanager-web:latest
+    # 按裁决 B：镜像层默认 root（config.User 为 null），加 user: 以包用户运行
+    user: "${TRIM_UID}:${TRIM_GID}"
+    ports:
+      - "${APP_PORT}:23333"
+    restart: always
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      # 已删除上游的 /etc/localtime:/etc/localtime:ro：宿主路径挂载按规约不允许
+      - "${TRIM_PKGVAR}/data/web/data:/opt/mcsmanager/web/data"
+      - "${TRIM_PKGVAR}/data/web/logs:/opt/mcsmanager/web/logs"

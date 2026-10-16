@@ -1,0 +1,13 @@
+{
+  ".url": {
+    "fn-lsky-pro.Application": {
+      "title": "兰空图床",
+      "icon": "images/icon_{0}.png",
+      "type": "url",
+      "protocol": "http",
+      "port": "${APP_PORT}",
+      "url": "/",
+      "allUsers": false
+    }
+  }
+}

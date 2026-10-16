@@ -1,0 +1,9 @@
+services:
+  jsonhero:
+    container_name: fn-jsonhero
+    image: henryclw/jsonhero-web:latest
+    # 按裁决 B：镜像层默认 root（config.User 为 null），加 user: 以包用户运行
+    user: "${TRIM_UID}:${TRIM_GID}"
+    ports:
+      - "${APP_PORT}:8787"
+    restart: always

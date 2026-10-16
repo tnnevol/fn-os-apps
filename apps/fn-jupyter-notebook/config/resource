@@ -1,0 +1,10 @@
+{
+    "docker-project": {
+        "projects": [
+            {
+                "name": "fn-jupyter-notebook",
+                "path": "docker"
+            }
+        ]
+    }
+}

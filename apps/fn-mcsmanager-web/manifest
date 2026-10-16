@@ -1,0 +1,14 @@
+appname               = fn-mcsmanager-web
+version               = 6.0.0
+display_name          = MCSManager
+desc                  = MCSManager 是 Minecraft 等游戏服务器的管理面板，支持多实例与权限分配
+platform              = x86
+source                = thirdparty
+maintainer            = MCSManager
+maintainer_url        = https://github.com/MCSManager/MCSManager
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-mcsmanager-web.Application
+disable_authorization_path = true

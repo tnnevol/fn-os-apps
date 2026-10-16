@@ -1,0 +1,13 @@
+services:
+  huginn:
+    container_name: fn-huginn
+    image: ghcr.io/huginn/huginn:latest
+    # 运行身份：镜像层已是非 root（config.User = 1001），按裁决 B 无需再加 user:。
+    # 注意：该固定 uid(1001) 与 fnOS 包用户 uid(9xx) 不同，属已登记的待验证项。
+    ports:
+      - "${APP_PORT}:3000"
+    restart: always
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      # 容器内自带的 MySQL 数据目录（本应用不使用外部数据库）
+      - "${TRIM_PKGVAR}/data:/var/lib/mysql"

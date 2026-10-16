@@ -1,0 +1,14 @@
+appname               = fn-lsky-pro
+version               = 6.0.0
+display_name          = 兰空图床
+desc                  = 兰空图床（Lsky Pro）是自托管的图片托管与图床系统，支持多种存储策略
+platform              = x86
+source                = thirdparty
+maintainer            = HalcyonAzure
+maintainer_url        = https://github.com/lsky-org/lsky-pro
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-lsky-pro.Application
+disable_authorization_path = true

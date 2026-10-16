@@ -1,0 +1,14 @@
+services:
+  komga:
+    container_name: fn-komga
+    image: gotson/komga:1.28.1
+    # 按裁决 B：镜像层默认 root（config.User 为 null），加 user: 以包用户运行。
+    # 上游编排中有一行被注释掉的 “#user: "1000:1000"”，方向与此一致。
+    user: "${TRIM_UID}:${TRIM_GID}"
+    ports:
+      - "${APP_PORT}:25600"
+    restart: unless-stopped
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      - "${TRIM_PKGVAR}/data:/data"
+      - "${TRIM_PKGVAR}/data/config:/config"

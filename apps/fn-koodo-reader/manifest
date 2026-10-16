@@ -1,0 +1,14 @@
+appname               = fn-koodo-reader
+version               = 6.0.0
+display_name          = Koodo Reader
+desc                  = Koodo Reader 是多格式电子书阅读器，支持 EPUB、PDF、MOBI 等格式的云端书库
+platform              = x86
+source                = thirdparty
+maintainer            = Koodo Reader
+maintainer_url        = https://github.com/koodo-reader/koodo-reader
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-koodo-reader.Application
+disable_authorization_path = true

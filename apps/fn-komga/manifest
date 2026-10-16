@@ -1,0 +1,14 @@
+appname               = fn-komga
+version               = 6.0.0
+display_name          = Komga
+desc                  = Komga 是漫画与电子书服务器，提供书架管理、阅读进度与元数据整理
+platform              = x86
+source                = thirdparty
+maintainer            = Gotson
+maintainer_url        = https://github.com/gotson/komga
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-komga.Application
+disable_authorization_path = true

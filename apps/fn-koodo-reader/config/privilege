@@ -1,0 +1,7 @@
+{
+    "defaults": {
+        "run-as": "package"
+    },
+    "username": "docker-fn-koodo-reader",
+    "groupname": "docker-fn-koodo-reader"
+}

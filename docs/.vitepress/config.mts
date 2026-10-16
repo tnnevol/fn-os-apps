@@ -229,7 +229,15 @@ const appItems = [
   { text: 'DVWA', link: '/apps/fn-dvwa' },
   { text: 'Emlog Pro', link: '/apps/fn-emlog' },
   { text: 'Redis Commander', link: '/apps/fn-redis-commander' },
-  { text: 'Teable', link: '/apps/fn-teable' }
+  { text: 'Teable', link: '/apps/fn-teable' },
+  { text: 'Excalidraw', link: '/apps/fn-excalidraw' },
+  { text: 'Huginn', link: '/apps/fn-huginn' },
+  { text: 'JSON Hero', link: '/apps/fn-jsonhero' },
+  { text: 'Jupyter Notebook', link: '/apps/fn-jupyter-notebook' },
+  { text: 'Koodo Reader', link: '/apps/fn-koodo-reader' },
+  { text: '兰空图床', link: '/apps/fn-lsky-pro' },
+  { text: 'MCSManager', link: '/apps/fn-mcsmanager-web' },
+  { text: 'Komga', link: '/apps/fn-komga' }
 ]
 
 const startItems = [

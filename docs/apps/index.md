@@ -180,6 +180,14 @@
 | <AppIcon name="fn-emlog" alt="Emlog Pro 图标" :size="30" /> | [Emlog Pro](./fn-emlog) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-emlog) | Docker / x86 | MySQL / MariaDB | [源码](https://github.com/emlog/emlog) |
 | <AppIcon name="fn-redis-commander" alt="Redis Commander 图标" :size="30" /> | [Redis Commander](./fn-redis-commander) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-redis-commander) | Docker / x86 | Redis | [源码](https://github.com/joeferner/redis-commander) |
 | <AppIcon name="fn-teable" alt="Teable 图标" :size="30" /> | [Teable](./fn-teable) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-teable) | Docker / x86 | PostgreSQL + Redis | [源码](https://github.com/teableio/teable) |
+| <AppIcon name="fn-excalidraw" alt="Excalidraw 图标" :size="30" /> | [Excalidraw](./fn-excalidraw) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-excalidraw) | Docker / x86 | — | [源码](https://github.com/excalidraw/excalidraw) |
+| <AppIcon name="fn-huginn" alt="Huginn 图标" :size="30" /> | [Huginn](./fn-huginn) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-huginn) | Docker / x86 | — | [源码](https://github.com/huginn/huginn) |
+| <AppIcon name="fn-jsonhero" alt="JSON Hero 图标" :size="30" /> | [JSON Hero](./fn-jsonhero) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-jsonhero) | Docker / x86 | — | [源码](https://github.com/henryclw/jsonhero-web) |
+| <AppIcon name="fn-jupyter-notebook" alt="Jupyter Notebook 图标" :size="30" /> | [Jupyter Notebook](./fn-jupyter-notebook) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-jupyter-notebook) | Docker / x86 | — | [源码](https://github.com/jupyter/docker-stacks) |
+| <AppIcon name="fn-koodo-reader" alt="Koodo Reader 图标" :size="30" /> | [Koodo Reader](./fn-koodo-reader) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-koodo-reader) | Docker / x86 | — | [源码](https://github.com/koodo-reader/koodo-reader) |
+| <AppIcon name="fn-lsky-pro" alt="兰空图床 图标" :size="30" /> | [兰空图床（Lsky Pro）](./fn-lsky-pro) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-lsky-pro) | Docker / x86 | — | [源码](https://github.com/lsky-org/lsky-pro) |
+| <AppIcon name="fn-mcsmanager-web" alt="MCSManager 图标" :size="30" /> | [MCSManager](./fn-mcsmanager-web) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-mcsmanager-web) | Docker / x86 | — | [源码](https://github.com/MCSManager/MCSManager) |
+| <AppIcon name="fn-komga" alt="Komga 图标" :size="30" /> | [Komga](./fn-komga) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-komga) | Docker / x86 | — | [源码](https://github.com/gotson/komga) |
 
 ## 安装方式
 

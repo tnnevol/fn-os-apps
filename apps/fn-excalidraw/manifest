@@ -1,0 +1,14 @@
+appname               = fn-excalidraw
+version               = 6.0.0
+display_name          = Excalidraw
+desc                  = Excalidraw 是手绘风格的在线白板，用于画流程图、架构图与草图
+platform              = x86
+source                = thirdparty
+maintainer            = Excalidraw
+maintainer_url        = https://github.com/excalidraw/excalidraw
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-excalidraw.Application
+disable_authorization_path = true

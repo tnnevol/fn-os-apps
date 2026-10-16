@@ -1,0 +1,14 @@
+appname               = fn-jsonhero
+version               = 6.0.0
+display_name          = JSON Hero
+desc                  = JSON Hero 是 JSON 可视化浏览工具，提供树形、列与编辑器多种视图
+platform              = x86
+source                = thirdparty
+maintainer            = Henry
+maintainer_url        = https://github.com/henryclw/jsonhero-web
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-jsonhero.Application
+disable_authorization_path = true

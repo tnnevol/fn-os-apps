@@ -1,0 +1,21 @@
+services:
+  jupyter:
+    container_name: fn-jupyter-notebook
+    image: jupyter/scipy-notebook:latest
+    environment:
+      # NB_UID/NB_GID 是 Jupyter 官方镜像的标准 uid/gid 变量，按裁决 B 改为包用户。
+      # 该镜像设计为以 root 启动、再由 start-notebook.sh 按 CHOWN_HOME 递归调整家目录属主并降权，
+      # 因此这里改「变量」而不是加 user: —— 加 user: 会与非 root 下无法 chown 的 CHOWN_HOME 冲突。
+      - NB_UID=${TRIM_UID}
+      - NB_GID=${TRIM_GID}
+      - CHOWN_HOME=yes
+      - CHOWN_HOME_OPTS=-R
+      - JUPYTER_ENABLE_LAB=yes
+      - JUPYTER_TOKEN=${JUPYTER_TOKEN}
+    command: start-notebook.sh --NotebookApp.custom_display_url=http://localhost:8888
+    ports:
+      - "${APP_PORT}:8888"
+    restart: always
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      - "${TRIM_PKGVAR}/data:/home/jovyan/work"

@@ -1,0 +1,14 @@
+appname               = fn-jupyter-notebook
+version               = 6.0.0
+display_name          = Jupyter Notebook
+desc                  = Jupyter Notebook 是交互式计算环境，用于数据分析、科学计算与教学演示
+platform              = x86
+source                = thirdparty
+maintainer            = Project Jupyter
+maintainer_url        = https://github.com/jupyter/docker-stacks
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-jupyter-notebook.Application
+disable_authorization_path = true

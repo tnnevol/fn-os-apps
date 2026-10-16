@@ -1,0 +1,14 @@
+appname               = fn-huginn
+version               = 6.0.0
+display_name          = Huginn
+desc                  = Huginn 是自动化代理平台，把网站与 API 的变化转化为可编程的事件流
+platform              = x86
+source                = thirdparty
+maintainer            = Huginn
+maintainer_url        = https://github.com/huginn/huginn
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-huginn.Application
+disable_authorization_path = true

@@ -1,0 +1,18 @@
+services:
+  lskypro:
+    container_name: fn-lsky-pro
+    image: halcyonazure/lsky-pro-docker:latest
+    # 按裁决 B：镜像层默认 root（config.User 为 null），加 user: 以包用户运行。
+    # 本镜像为 Apache 系（apachectl -D FOREGROUND）：端口 8089 非特权端口，
+    # 但 pid/日志目录在非 root 下的写入行为需真机确认（已登记为待验证项）。
+    user: "${TRIM_UID}:${TRIM_GID}"
+    environment:
+      # WEB_PORT 是容器内的监听端口，宿主映射为 ${APP_PORT}:8089。
+      # 用户改 APP_PORT 只影响宿主侧，容器内始终监听 8089、映射也对 8089，因此无需同步。
+      - "WEB_PORT=8089"
+    ports:
+      - "${APP_PORT}:8089"
+    restart: always
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      - "${TRIM_PKGVAR}/data:/var/www/html/"
