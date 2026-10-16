@@ -1,0 +1,15 @@
+services:
+  redis-commander:
+    container_name: fn-redis-commander
+    image: rediscommander/redis-commander:latest
+    # 运行身份：镜像层已是非 root（config.User = 1000），按裁决 B 无需再加 user:
+    environment:
+      # 上游用 PANEL_DB_HOST 当 Redis 地址（缺陷），改由向导提供的 REDIS_HOST 驱动
+      # REDIS_HOSTS 格式：<标签>:<主机>:<端口>:<库编号>:<密码>
+      - "REDIS_HOSTS=1panel:${REDIS_HOST}:6379:${REDIS_DB}:${REDIS_PASSWORD}"
+      - HTTP_USER=${COMMANDER_ADMIN}
+      - HTTP_PASSWORD=${COMMANDER_PASSWORD}
+    hostname: redis-commander
+    ports:
+      - "${APP_PORT}:8081"
+    restart: always

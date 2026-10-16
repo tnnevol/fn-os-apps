@@ -1,0 +1,7 @@
+{
+    "defaults": {
+        "run-as": "package"
+    },
+    "username": "docker-fn-redis-commander",
+    "groupname": "docker-fn-redis-commander"
+}

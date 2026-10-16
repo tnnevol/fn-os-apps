@@ -225,7 +225,11 @@ const appItems = [
   { text: 'Typecho', link: '/apps/fn-typecho' },
   { text: 'VexDB', link: '/apps/fn-vexdb' },
   { text: 'Wiki.js', link: '/apps/fn-wikijs' },
-  { text: 'YOURLS', link: '/apps/fn-yourls' }
+  { text: 'YOURLS', link: '/apps/fn-yourls' },
+  { text: 'DVWA', link: '/apps/fn-dvwa' },
+  { text: 'Emlog Pro', link: '/apps/fn-emlog' },
+  { text: 'Redis Commander', link: '/apps/fn-redis-commander' },
+  { text: 'Teable', link: '/apps/fn-teable' }
 ]
 
 const startItems = [

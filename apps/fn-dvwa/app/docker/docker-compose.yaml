@@ -1,0 +1,21 @@
+services:
+  dvwa:
+    container_name: fn-dvwa
+    image: ghcr.io/digininja/dvwa:latest
+    # 按裁决 B：镜像层默认 root（config.User 为 null），加 user: 以包用户运行。
+    # 本应用无挂载，容器内 pid/日志目录由容器可写层承载（端口 80 在 Docker 20.3+ 的非 root 下可绑定）。
+    user: "${TRIM_UID}:${TRIM_GID}"
+    environment:
+      # 上游由 1Panel 服务选择器注入 PANEL_DB_*，fnOS 改为向导显式填写（上游无 DB 类型变量）
+      - DB_SERVER=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_DATABASE=${DB_NAME}
+      - DB_USER=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DEFAULT_SECURITY_LEVEL=${DVWA_SECURITY_LEVEL}
+      - DEFAULT_LOCALE=${DVWA_DEFAULT_LOCALE}
+      - RECAPTCHA_PUBLIC_KEY=${RECAPTCHA_PUBLIC_KEY}
+      - RECAPTCHA_PRIVATE_KEY=${RECAPTCHA_PRIVATE_KEY}
+    ports:
+      - "${APP_PORT}:80"
+    restart: always

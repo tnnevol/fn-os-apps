@@ -1,0 +1,15 @@
+appname               = fn-teable
+version               = 6.0.0
+display_name          = Teable
+desc                  = Teable 是基于 PostgreSQL 的智能表格平台，把数据库变成类 Airtable 的协作界面
+platform              = x86
+source                = thirdparty
+maintainer            = Teable
+maintainer_url        = https://github.com/teableio/teable
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-teable.Application
+disable_authorization_path = true
+install_dep_apps       = redis

@@ -1,0 +1,20 @@
+services:
+  emlog:
+    container_name: fn-emlog
+    image: emlog/emlog:pro-latest-php8.2-nginx
+    # 按裁决 B：镜像层默认 root（config.User 为 null），加 user: 以包用户运行。
+    # 挂载 /app 的属主即包用户，与 TRIM_UID 一致（Apache/Nginx 的 pid/日志目录风险见文档）。
+    user: "${TRIM_UID}:${TRIM_GID}"
+    environment:
+      # 上游由 1Panel 服务选择器注入 PANEL_DB_*，fnOS 改为向导显式填写（上游无 DB 类型/端口变量）
+      - EMLOG_DB_HOST=${DB_HOST}
+      - EMLOG_DB_NAME=${DB_NAME}
+      - EMLOG_DB_USER=${DB_USERNAME}
+      - EMLOG_DB_PASSWORD=${DB_PASSWORD}
+      - EMLOG_DOMAIN_NAME=${EMLOG_DOMAIN_NAME}
+    ports:
+      - "${APP_PORT}:80"
+    restart: always
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      - "${TRIM_PKGVAR}/data:/app"

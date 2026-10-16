@@ -1,0 +1,15 @@
+appname               = fn-redis-commander
+version               = 6.0.0
+display_name          = Redis Commander
+desc                  = Redis Commander 是基于 Web 的 Redis 管理界面，用于浏览键值与执行命令
+platform              = x86
+source                = thirdparty
+maintainer            = Redis Commander
+maintainer_url        = https://github.com/joeferner/redis-commander
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-redis-commander.Application
+disable_authorization_path = true
+install_dep_apps       = redis

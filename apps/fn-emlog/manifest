@@ -1,0 +1,14 @@
+appname               = fn-emlog
+version               = 6.0.0
+display_name          = Emlog Pro
+desc                  = Emlog Pro 是轻量的 PHP 博客系统，提供文章、分类与插件管理
+platform              = x86
+source                = thirdparty
+maintainer            = Emlog
+maintainer_url        = https://github.com/emlog/emlog
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-emlog.Application
+disable_authorization_path = true

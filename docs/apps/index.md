@@ -176,6 +176,10 @@
 | <AppIcon name="fn-vexdb" alt="VexDB 图标" :size="30" /> | [VexDB](./fn-vexdb) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-vexdb) | Docker / x86 | — | [源码](https://www.vexdb.com) |
 | <AppIcon name="fn-wikijs" alt="Wiki.js 图标" :size="30" /> | [Wiki.js](./fn-wikijs) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-wikijs) | Docker / x86 | MySQL / MariaDB / PostgreSQL | [源码](https://github.com/requarks/wiki) |
 | <AppIcon name="fn-yourls" alt="YOURLS 图标" :size="30" /> | [YOURLS](./fn-yourls) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-yourls) | Docker / x86 | MySQL | [源码](https://github.com/YOURLS/YOURLS) |
+| <AppIcon name="fn-dvwa" alt="DVWA 图标" :size="30" /> | [DVWA](./fn-dvwa) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-dvwa) | Docker / x86 | MySQL / MariaDB | [源码](https://github.com/digininja/DVWA) |
+| <AppIcon name="fn-emlog" alt="Emlog Pro 图标" :size="30" /> | [Emlog Pro](./fn-emlog) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-emlog) | Docker / x86 | MySQL / MariaDB | [源码](https://github.com/emlog/emlog) |
+| <AppIcon name="fn-redis-commander" alt="Redis Commander 图标" :size="30" /> | [Redis Commander](./fn-redis-commander) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-redis-commander) | Docker / x86 | Redis | [源码](https://github.com/joeferner/redis-commander) |
+| <AppIcon name="fn-teable" alt="Teable 图标" :size="30" /> | [Teable](./fn-teable) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-teable) | Docker / x86 | PostgreSQL + Redis | [源码](https://github.com/teableio/teable) |
 
 ## 安装方式
 

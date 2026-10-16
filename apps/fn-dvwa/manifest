@@ -1,0 +1,14 @@
+appname               = fn-dvwa
+version               = 6.0.0
+display_name          = DVWA
+desc                  = DVWA 是故意的漏洞演练靶场，用于在隔离环境中练习渗透测试
+platform              = x86
+source                = thirdparty
+maintainer            = DigiNinja
+maintainer_url        = https://github.com/digininja/DVWA
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-dvwa.Application
+disable_authorization_path = true
