@@ -1,0 +1,20 @@
+services:
+  openlist:
+    container_name: fn-openlist
+    # 镜像标签取自上游 scripts/init.sh 的版本登记（该文件在 fnOS 上没有执行钩子，故在此显式写出）。
+    # 变体镜像（-ffmpeg / -aria2 / -aio）由上游按 PRE_INSTALLED 拼接镜像名，本地无法复现，故不提供。
+    image: openlistteam/openlist:v4.2.6
+    # 按裁决 B：上游显式写了 user: "0:0"（强制 root），而镜像层本身是非 root 的 openlist 用户，
+    # 改为 fnOS 包用户属于恢复镜像本意。
+    user: "${TRIM_UID}:${TRIM_GID}"
+    ports:
+      - "${APP_PORT}:5244"
+      - "${S3_PORT}:5246"
+    restart: always
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      - "${TRIM_PKGVAR}/data:/opt/openlist/data"
+    environment:
+      - TZ=${TIME_ZONE}
+      # 上游固定 UMASK=022；保持原样
+      - UMASK=022

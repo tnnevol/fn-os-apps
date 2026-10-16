@@ -1,0 +1,52 @@
+services:
+  neko:
+    container_name: fn-neko
+    image: ${IMAGE_NAME}
+    # 运行身份（不覆写 user:）：本镜像的 supervisord 以 root 启动（supervisord.conf 内 user=root），
+    # 再按 %(ENV_USER)s 把各服务降权到镜像内的 neko 用户（uid 1000）；
+    # 其中 unix_http_server 还有 chown=root:neko，同样要求 root。
+    # 属「镜像初始化强依赖 root」这一类（与 s6-overlay 同因、不同实现），因此按例外保持原样。
+    # 注意：镜像内 neko 是固定 uid 1000，与 fnOS 包用户 uid（9xx）不同，属已登记的待验证项。
+    restart: always
+    # 浏览器对共享内存需求较大；MEM_USE 由向导字段提供
+    shm_size: "${MEM_USE}"
+    ports:
+      - "${APP_PORT}:8080"
+      # WebRTC 的 UDP 端口范围（非网页端口，不创建桌面入口）
+      - "${NEKO_EPR}:${NEKO_EPR}/udp"
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+      - "${TRIM_PKGVAR}/data/downloads:/home/neko/Downloads"
+    environment:
+      - NEKO_SCREEN=${NEKO_SCREEN}
+      - NEKO_PASSWORD=${NEKO_PASSWORD}
+      - NEKO_PASSWORD_ADMIN=${NEKO_PASSWORD_ADMIN}
+      - NEKO_EPR=${NEKO_EPR}
+      - NEKO_ICELITE=${NEKO_ICELITE}
+      - NEKO_CONTROL_PROTECTION=${NEKO_CONTROL_PROTECTION}
+      - NEKO_IMPLICIT_CONTROL=${NEKO_IMPLICIT_CONTROL}
+      - NEKO_LOCKS=${NEKO_LOCKS}
+      - NEKO_NAT1TO1=${NEKO_NAT1TO1}
+      - NEKO_IPFETCH=${NEKO_IPFETCH}
+      - NEKO_ICESERVER=${NEKO_ICESERVER}
+      - NEKO_ICESERVERS=${NEKO_ICESERVERS}
+      - NEKO_VIDEO_CODEC=${NEKO_VIDEO_CODEC}
+      - NEKO_VIDEO_BITRATE=${NEKO_VIDEO_BITRATE}
+      - NEKO_MAX_FPS=${NEKO_MAX_FPS}
+      - NEKO_HWENC=${NEKO_HWENC}
+      - NEKO_AUDIO_CODEC=${NEKO_AUDIO_CODEC}
+      - NEKO_AUDIO_BITRATE=${NEKO_AUDIO_BITRATE}
+      - NEKO_BROADCAST_PIPELINE=${NEKO_BROADCAST_PIPELINE}
+      - NEKO_BROADCAST_URL=${NEKO_BROADCAST_URL}
+      - NEKO_BROADCAST_AUTOSTART=${NEKO_BROADCAST_AUTOSTART}
+      - NEKO_CERT=${NEKO_CERT}
+      - NEKO_KEY=${NEKO_KEY}
+      - NEKO_PROXY=${NEKO_PROXY}
+      - NEKO_PATH_PREFIX=${NEKO_PATH_PREFIX}
+      - NEKO_CORS=${NEKO_CORS}
+      - NEKO_FILE_TRANSFER_ENABLED=${NEKO_FILE_TRANSFER_ENABLED}
+      - NEKO_FILE_TRANSFER_PATH=/home/neko/Downloads
+      - NEKO_DISPLAY=${NEKO_DISPLAY}
+      - NEKO_DEVICE=${NEKO_DEVICE}
+      - NEKO_STATIC=${NEKO_STATIC}
+      - NEKO_WEBRTC_NAT1TO1=${NEKO_WEBRTC_NAT1TO1}

@@ -243,7 +243,10 @@ const appItems = [
   { text: 'xiaomusic', link: '/apps/fn-xiaomusic' },
   { text: 'Calibre-Web', link: '/apps/fn-calibre-web' },
   { text: 'Music Tag Web', link: '/apps/fn-music-tag-web' },
-  { text: 'ezBookkeeping', link: '/apps/fn-ezbookkeeping' }
+  { text: 'ezBookkeeping', link: '/apps/fn-ezbookkeeping' },
+  { text: 'OpenList', link: '/apps/fn-openlist' },
+  { text: 'GSManager', link: '/apps/fn-gsmanager' },
+  { text: 'Neko', link: '/apps/fn-neko' }
 ]
 
 const startItems = [

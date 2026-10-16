@@ -1,0 +1,19 @@
+#!/bin/bash
+
+### This script is called after the user installs the application.
+
+# 目录型挂载源必须预创建：Docker 在源不存在时会以 root 建出目录，属主与容器内运行用户不符，
+# 导致应用对该挂载无写权限。以包用户建出后属主即本应用。
+
+if [ -z "${TRIM_PKGVAR}" ]; then
+    echo "TRIM_PKGVAR is not set; cannot prepare application data directory" >"${TRIM_TEMP_LOGFILE}"
+    exit 1
+fi
+
+mkdir -p "${TRIM_PKGVAR}/data"
+
+chmod -R 770 "${TRIM_PKGVAR}/data" 2>/dev/null || true
+
+echo "Prepared application data directory: ${TRIM_PKGVAR}/data"
+
+exit 0

@@ -1,0 +1,29 @@
+services:
+  management_panel:
+    container_name: fn-gsmanager
+    image: xiaozhu674/gameservermanager:3.14.0
+    # 按裁决 B：上游显式写了 user: root，改为 fnOS 包用户。
+    # 依据：镜像内 /root 是 0775、/root/start.sh 是 0755（作者有意支持非 root 运行），
+    # 且 SteamCMD 官方建议以非 root 运行。
+    user: "${TRIM_UID}:${TRIM_GID}"
+    stdin_open: true
+    tty: true
+    ports:
+      - "${APP_PORT}:3001"
+      - "${GAME_PORT}:27015"
+    restart: unless-stopped
+    volumes:
+    # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样。
+    # 上游把同一份 ./data/data 挂到 4 个目标、./data/file 挂到 2 个目标，此处逐条保持。
+    # 注意：/home/.config、/home/.local、/home/steam/games、/root/steam/games 在镜像内不存在，
+    # 若不在安装时预创建，Docker 会以 root 建出属主错误的目录（install_callback 已处理）。
+      - "${TRIM_PKGVAR}/data/data:/home/.config"
+      - "${TRIM_PKGVAR}/data/data:/home/.local"
+      - "${TRIM_PKGVAR}/data/file:/home/steam/games"
+      - "${TRIM_PKGVAR}/data/data:/root/.config"
+      - "${TRIM_PKGVAR}/data/data:/root/.local"
+      - "${TRIM_PKGVAR}/data/file:/root/steam/games"
+      - "${TRIM_PKGVAR}/data/gsm3:/root/server/data"
+    environment:
+      - SERVER_PORT=3001
+      - TZ=${TIME_ZONE}

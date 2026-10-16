@@ -194,6 +194,9 @@
 | <AppIcon name="fn-calibre-web" alt="Calibre-Web 图标" :size="30" /> | [Calibre-Web](./fn-calibre-web) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-calibre-web) | Docker / x86 | — | [源码](https://github.com/linuxserver/docker-calibre-web) |
 | <AppIcon name="fn-music-tag-web" alt="Music Tag Web 图标" :size="30" /> | [Music Tag Web](./fn-music-tag-web) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-music-tag-web) | Docker / x86 | — | [源码](https://github.com/xhongc/music-tag-web) |
 | <AppIcon name="fn-ezbookkeeping" alt="ezBookkeeping 图标" :size="30" /> | [ezBookkeeping](./fn-ezbookkeeping) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-ezbookkeeping) | Docker / x86 | — | [源码](https://github.com/mayswind/ezbookkeeping) |
+| <AppIcon name="fn-openlist" alt="OpenList 图标" :size="30" /> | [OpenList](./fn-openlist) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-openlist) | Docker / x86 | — | [源码](https://github.com/OpenListTeam/OpenList) |
+| <AppIcon name="fn-gsmanager" alt="GSManager 图标" :size="30" /> | [GSManager](./fn-gsmanager) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-gsmanager) | Docker / x86 | — | [源码](https://github.com/xiaozhu674/gameservermanager) |
+| <AppIcon name="fn-neko" alt="Neko 图标" :size="30" /> | [Neko](./fn-neko) | [GitHub](https://github.com/tnnevol/fn-os-apps/tree/main/apps/fn-neko) | Docker / x86 | — | [源码](https://github.com/m1k1o/neko) |
 
 ## 安装方式
 

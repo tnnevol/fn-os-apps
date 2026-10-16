@@ -1,0 +1,14 @@
+appname               = fn-neko
+version               = 6.0.0
+display_name          = Neko
+desc                  = Neko 是自托管的虚拟浏览器，在容器里运行浏览器并通过 WebRTC 远程使用
+platform              = x86
+source                = thirdparty
+maintainer            = m1k1o
+maintainer_url        = https://github.com/m1k1o/neko
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-neko.Application
+disable_authorization_path = true

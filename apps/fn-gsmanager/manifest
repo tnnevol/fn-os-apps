@@ -1,0 +1,14 @@
+appname               = fn-gsmanager
+version               = 6.0.0
+display_name          = GSManager
+desc                  = GSManager 是游戏服务端管理面板，可视化管理 Steam 等游戏服务器
+platform              = x86
+source                = thirdparty
+maintainer            = xiaozhu674
+maintainer_url        = https://github.com/xiaozhu674/gameservermanager
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-gsmanager.Application
+disable_authorization_path = true
