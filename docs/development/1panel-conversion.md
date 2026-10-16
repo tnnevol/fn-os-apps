@@ -364,27 +364,38 @@ T1 应用的数据默认落在 `${TRIM_PKGVAR}`（私有目录，**文件管理�
 
    > **卷号必须用变量，不能写死。** 共享目录落在 `/vol<N>/@appshare/`，而 `<N>` 是**安装时用户选择的存储卷**（我们安装时用的是 `volume-id=4`）。写死 `/vol4/` 会在用户选了别的卷时直接失效。
    >
-   > 正确写法用 `TRIM_APPDEST_VOL`（应用安装所在存储空间路径），**仓库既有先例 `apps/fn-xiaoya-only/app/docker/docker-compose.yaml` 已在用**：
    > ```yaml
    > volumes:
-   >   - ${TRIM_APPDEST_VOL}/@appshare/fn-xiaoya-only/alist/data:/data
+   >   - ${TRIM_APPDEST_VOL}/@appshare/fn-<app>/<用途子目录>:/<容器内目标>
    > ```
-   > **不要用 `TRIM_DATA_SHARE_PATHS`**：它是 `:` 分隔的多值，无法作为单个挂载源；且其能否在 compose 中展开尚未验证（`TRIM_PKGVAR` 已实证可用，但两者机制不同，不能类推）。`${TRIM_APPDEST_VOL}` 是**既有用法**，风险显著更低。
+   >
+   > **为什么不用 `TRIM_DATA_SHARE_PATHS`**：它是 `:` 分隔的**多值**，无法作为单个绑定挂载源；且其能否在 compose 中展开**未经真机确认**（`TRIM_PKGVAR` 已实证可用，但两者机制不同，**不能类推**）。
+   >
+   > **为什么 `TRIM_APPDEST_VOL` 的依据成立（2026-10-16 复核）**：官方 `fnnas-docs` 中该变量只有 1 处定义、未列在 compose 变量表、`@appshare` 出现 0 次——**但官方文档的描述与平台实际实现存在落差**。真实依据是**用户侧的使用中证据**：
+   > - `apps/fn-xiaoya-only/`（用户既有应用，**正在使用**该写法）的 compose 引用该变量 **4 处**；
+   > - 其应用文档写明实际路径：**「例如应用安装在存储 4，实际目录为 `/vol4/@appshare/fn-xiaoya-only/alist/data/`」**——这是用户侧的实际路径说明，**强于官方文档的描述**；
+   > - 真机观测：`/var/apps/fn-halo/shares/fn-halo` → `/vol4/@appshare/fn-halo`（**实际目录名是 `shares` 复数**，官方文档写作 `share` 单数，**以实际为准**）。
+   >
+   > **教训（值得记住）**：官方文档没写 ≠ 平台不支持。**「正在使用中的用户应用 + 其文档 + 真机观测」是比官方文档更强的证据**；反过来，官方文档里列出的变量（如 `TRIM_DATA_SHARE_PATHS`）也**不等于它就能在 compose 里当挂载源用**（多值问题实实在在存在）。
+
+   **同一 share 下按用途分子目录**：`audiobookshelf` 的多个共享用途写成
+   ```yaml
+   - ${TRIM_APPDEST_VOL}/@appshare/fn-audiobookshelf/audiobooks:/audiobooks
+   - ${TRIM_APPDEST_VOL}/@appshare/fn-audiobookshelf/podcasts:/podcasts
+   ```
+   这样**声明仍只有 1 个 `data-share`**，而用户打开该共享目录即可看到全部内容。**`install_callback` 需 `mkdir -p` 这些子目录**，否则 Docker 会以 root 建出属主错误的目录。
 
 4. **文档「运行要求」写明**：共享目录位于文件管理器的 `<存储卷>/@appshare/fn-<app>/`，用户把媒体文件放在那里。
 
-> **关于 `TRIM_APPDEST_VOL` 的展开（2026-10-16 裁决：先按方案 C 做，不做真机测试）**
+> **关于 `TRIM_APPDEST_VOL` 的展开（2026-10-16 用户裁决：按方案 C 实施，本轮不做真机测试）**
 >
-> **已知事实**：
-> - 官方《环境变量》文档定义 `TRIM_APPDEST_VOL` = **「应用安装所在的存储空间路径」**，变量**存在且语义明确**。
-> - 官方《Docker 应用案例》的 compose 示例中出现的 `TRIM_*` 为 `TRIM_APPDEST`、`TRIM_PKGVAR`、`TRIM_SERVICE_PORT`、`TRIM_TEMP_LOGFILE`、`TRIM_DATA_SHARE_PATHS`——**`TRIM_APPDEST_VOL` 在该示例中未出现**。
-> - **既有先例**：`fn-xiaoya-only` 已用该变量发布。
+> **已知事实**：该变量在官方文档中仅 1 处定义、未列入 compose 变量表；**但用户既有应用 `fn-xiaoya-only` 正在使用它**，且其文档给出了实际路径（`/vol4/@appshare/...`）。
 >
-> **残留风险（如实登记，不隐瞒）**：若 compose 展开时该变量为空，`${TRIM_APPDEST_VOL}/@appshare/...` 会退化成 `/@appshare/...`——**容器仍能启动、应用仍能运行**，但数据落到错误位置。**这是静默错误，不会报错。**
+> **残留风险（如实登记，不隐瞒）**：其在 compose 中的展开**仍未经真机确认**。若展开为空，`${TRIM_APPDEST_VOL}/@appshare/...` 会退化成 `/@appshare/...`——**容器仍能启动、应用仍能运行，但数据落到错误位置，属静默错误、不会报错**。
 >
-> **用户裁决**：**先按本方案（C）实施，本轮不做真机验证。** D 组照此转换，风险登记在案。
+> **将来验证方法**：真机 `docker inspect <container> --format '{{json .Mounts}}'` 看 `Source` 是真实路径还是 `/@appshare/...`。
 >
-> **将来验证方法**：在真机 `docker inspect <container> --format '{{json .Mounts}}'`，看 `Source` 是真实路径还是 `/@appshare/...`。
+> **本轮决策依据**：用户裁决「先按方案 C 做，不用测试」。
 
 **注意**：`data-share` 与「用户授权既有目录」（`TRIM_DATA_ACCESSIBLE_PATHS` / `pickSharedFile`）是**两套不同机制**，不要混淆——前者是应用**声明**并由 fnOS 自动创建 + 自动 ACL，后者是管理员**授权已存在的任意目录**。
 
@@ -735,3 +746,5 @@ disable_authorization_path = true
 | 2026-10-16 | 属主待验证清单补入 `fn-redis-commander`（镜像层 `USER 1000`，与包用户 uid 9xx 不匹配）。该应用无我们创建的挂载需要写入，故按裁决 B「已是非 root」不改，但**属主匹配仍待真机确认**。 |
 | 2026-10-16 | 裁决 B 补子类：**镜像内自带 uid 变量且依赖 root 做 chown 的**（`jupyter-notebook` 的 `NB_UID`/`NB_GID` + `CHOWN_HOME=yes`）→ **改变量、不加 `user:`**。加 `user:` 与 `CHOWN_HOME` 直接冲突（非 root 无权 chown）。同时补入「镜像内降权 / 镜像层非 root / 镜像层默认 root」四类判定表。另修正一处 Lead 的统计 bug：归一化名比对时**只归一化一侧等于没归一化**，导致把已交付的 `obsidian_livesync` 误报为待转换（详见经验教训 1.4）。 |
 | 2026-10-16 | **D 组解除阻塞（用户裁决）**：`TRIM_APPDEST_VOL` 在 compose 的展开**未经真机确认**，但用户决定**先按方案 C 实施、本轮不做真机测试**。已把已知事实与残留风险（变量为空时会退化为 `/@appshare/...`，**容器仍能起、属静默错误**）如实登记，并写明将来的验证方法（`docker inspect` 看 `Mounts[].Source`）。同时新增禁止项 8：**不得修改 `831b7d3` 之前用户既有的 14 个应用**。 |
+| 2026-10-16 | **D 组方案订正 C→B**：原推荐 `${TRIM_APPDEST_VOL}/@appshare/fn-<app>/`（依据 `fn-xiaoya-only` 先例）**依据不足**。查证官方文档：`TRIM_APPDEST_VOL` 全文仅 1 次（定义句），**不在「Compose 可以使用」的变量表中**，无任何用法示例；而 `TRIM_DATA_SHARE_PATHS` 出现 6 次、**明确列在该表中**、且有官方示例 `${TRIM_DATA_SHARE_PATHS%%:*}`；`@appshare` 在官方文档 **0 次**（属平台实现细节，非文档化契约）。**改用 `${TRIM_DATA_SHARE_PATHS}`**。同时采纳官方 `resource.md:34` 建议：**声明 1 个顶级 share（`fn-<app>`）**，各用途子目录在容器内挂载目标区分。`install_callback` 加 `mkdir -p "${TRIM_DATA_SHARE_PATHS%%:*}"` 兜底。 |
+| 2026-10-16 | **D 组方案订正 B→C（回归）**：同日曾据官方文档把方案改为 `${TRIM_DATA_SHARE_PATHS}`，**随即复核后撤回**——该变量是 `:` 分隔**多值**，无法作单个挂载源（此点在更早的变更记录里已有记载，**是我推翻了自己写下的条款**）。恢复 `${TRIM_APPDEST_VOL}/@appshare/fn-<app>/<子目录>`，并补记其真实依据：用户既有应用 `fn-xiaoya-only` **正在使用**该写法（compose 引用 4 处），其文档给出实际路径 `/vol4/@appshare/fn-xiaoya-only/alist/data/`。**教训：官方文档没写 ≠ 平台不支持；"使用中的用户应用 + 其文档 + 真机观测"强于官方文档描述。反之官方变量表中的变量也不等于能在 compose 当挂载源用。** |
