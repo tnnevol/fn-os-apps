@@ -18,6 +18,12 @@
 | T1 | 状态落盘改造（数据落目标 NAS） | 125 |
 | T2 | 资源集成改造（需外部数据库或中间件） | 47 |
 
+**进度：T0 已完成 14/14，T1 已完成 124/125，T2 已完成 47/47** —— 可转换范围 186 个中已交付 **185** 个
+（唯一未转换的 `deepseek-harness` 是本仓库自有应用，按边界不转换）。仓库现有 **193** 个应用，
+差额为用户既有的非 1Panel 应用。T3（46）/ T4（33）需宿主契约与权限模型决策，暂未排期。
+
+所有交付物均通过本地构建与静态核对，**尚未做真机验证**；待验证的主要风险项见转换规约的「待确认」表。
+
 转换过程与踩坑记录见[转换规约](https://fnapps-doc.tnnevol.cn/development/1panel-conversion)与
 [经验教训](https://fnapps-doc.tnnevol.cn/development/1panel-conversion-lessons)。
 
