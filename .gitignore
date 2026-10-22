@@ -52,3 +52,4 @@ data/
 .dsh/
 
 .pnpm-store
+.batch/

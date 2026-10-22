@@ -1,74 +1,60 @@
 /**
  * FNOS-001 批量真机验收器
  *
- * 通道：本地 fnpack build → scp 到 NAS → 复用已登录 Chrome 的会话调用 fnOS 应用中心 HTTP API
- *       → 校验状态与入口 → 卸载 → 清理残留目录 → 取失败日志。
+ * 通道：本地 fnpack build → scp 到 NAS → 用应用中心 HTTP API 安装/查询/卸载
+ *       → 校验状态与入口 → 卸载 → 回收 compose 网络 → 清理残留目录 → 取失败日志。
  *
  * 设计要点（踩坑换来的）：
- *  1. 桥调用单次上限 30 秒：所有 API 调用都拆成短步骤，耗时的等待由 Node 侧轮询。
- *  2. 桥传输会被浏览器回收（扩展后台休眠）：所有状态存在 Node 侧，断线只需重连重试当前步。
- *  3. 状态机在 Node：页面只做「无状态的一次性 API 调用」，页面刷新也不丢进度。
- *  4. 卸载必须发生在入口探测之后：否则探到的端口已随卸载关闭。
+ *  1. 安装/卸载走应用中心 HTTP 接口，鉴权用一份从已登录会话取来的 Cookie（`FNOS_COOKIE`）。
+ *     不再依赖浏览器自动化：桥接会被浏览器回收，长跑必然中断；curl 短往返可重试、可续跑。
+ *  2. 状态机在 Node：每个应用「装 → 等 running → 探入口 → 卸 → 收网络 → 清残留」，逐条落盘。
+ *  3. 卸载必须发生在入口探测之后：否则探到的端口已随卸载关闭。
+ *  4. 平台不回收 compose 网络（`<app>_default`）。每装一个就占一个 /16 网段，累计十几个后
+ *     Docker 默认地址池耗尽，后续安装全部失败（`all predefined address pools have been fully
+ *     subnetted`）。所以每个应用卸载后必须回收网络，并把「平台是否留了网络」记进结果。
+ *  5. 地址池耗尽属于设备环境阻塞，不是转换缺陷：一旦出现立即中止整批，避免把上百个应用记成 FAIL。
  *
  * 判定分级（与 docs/testing/index.md 的口径一致）：
- *   PASS       安装成功 + 状态 running + 入口可访问
- *   FAIL       安装或启动失败，且日志指向转换自身的问题
- *   BLOCKED    依赖外部数据库/中间件、端口被占用等环境原因，不计为转换缺陷
- *   UNVERIFIED 向导必填项无法自动填写，需人工确认
- *   BUILD_FAIL 本地 fnpack build 失败
+ *   PASS        安装成功 + 状态 running + 入口可访问
+ *   FAIL        安装或启动失败，且日志指向转换自身的问题
+ *   BLOCKED     依赖外部数据库/中间件、端口被占用、镜像拉取失败等环境原因，不计为转换缺陷
+ *   ENV_BLOCKED Docker 地址池/守护进程等设备级阻塞，出现即中止整批
+ *   UNVERIFIED  向导必填项无法自动填写，需人工确认
+ *   BUILD_FAIL  本地 fnpack build 失败
  *
- * 敏感信息：设备地址与账号一律来自环境变量（FNOS_HOST / FNOS_SSH_USER），不写死、不落盘。
+ * 敏感信息：设备地址、账号、会话 Cookie 一律来自环境变量，不写死、不落盘。
  *
  * 用法：
- *   FNOS_HOST=... FNOS_SSH_USER=... FNOS_STAGE_DIR=/vol2/1000/fnos-fpk/ \
- *     MIDSCENE_ENV_FILE=/tmp/midscene-fn/.env \
+ *   FNOS_HOST=... FNOS_SSH_USER=... FNOS_STAGE_DIR=/vol2/1000/fnos-fpk/ FNOS_COOKIE='...' \
  *     node scripts/batch-verify.mjs --list-file /tmp/apps.txt --chunk 8
  */
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { createRequire } from 'node:module';
 import fs from 'node:fs';
 import path from 'node:path';
-import os from 'node:os';
 
 const exec = promisify(execFile);
 const argv = process.argv.slice(2);
 const arg = (k, d) => { const i = argv.indexOf(k); return i >= 0 ? argv[i + 1] : d; };
 
-const ENV_FILE = process.env.MIDSCENE_ENV_FILE || '';
-if (ENV_FILE && fs.existsSync(ENV_FILE)) {
-  for (const line of fs.readFileSync(ENV_FILE, 'utf8').split('\n')) {
-    const m = line.match(/^([A-Z_]+)="?([^"]*)"?$/);
-    if (m && !process.env[m[1]]) process.env[m[1]] = m[2];
-  }
-}
-
-function resolveMidscene() {
-  const explicit = process.env.MIDSCENE_MODULE;
-  const local = path.join(process.cwd(), 'node_modules/@midscene/web/dist/lib/bridge-mode/index.js');
-  const localEs = path.join(process.cwd(), 'node_modules/@midscene/web/dist/es/bridge-mode/index.mjs');
-  const npxRoot = path.join(os.homedir(), '.npm/_npx');
-  const npxHit = fs.existsSync(npxRoot)
-    ? fs.readdirSync(npxRoot)
-        .map((d) => path.join(npxRoot, d, 'node_modules/@midscene/web/dist/lib/bridge-mode/index.js'))
-        .find((p) => fs.existsSync(p))
-    : null;
-  const candidates = explicit ? [explicit] : [local, localEs, npxHit].filter((p) => p && fs.existsSync(p));
-  if (!candidates.length) throw new Error('找不到 @midscene/web，请设置 MIDSCENE_MODULE');
-  return createRequire(import.meta.url)(candidates[0]);
-}
-
 const HOST = process.env.FNOS_HOST || '';
 const SSH_USER = process.env.FNOS_SSH_USER || '';
+const COOKIE = process.env.FNOS_COOKIE || '';
 const SSH_OPTS = ['-o', 'BatchMode=yes', '-o', 'ConnectTimeout=8'];
 const STAGE = process.env.FNOS_STAGE_DIR || '';
 const VOLUME_ID = process.env.FNOS_VOLUME_ID || '2';
 const LANG = 'zh-CN';
 const CHUNK = Number(arg('--chunk', '8'));
 const OUT = arg('--out', '/tmp/fnos-batch/results.jsonl');
+// 应用中心走 5666；入口端口与 API 端口不同，入口探测仍用 HOST:servicePort
+const API_BASE = `http://${HOST}:5666`;
 
 if (!HOST || !SSH_USER || !STAGE) {
   console.error('缺少 FNOS_HOST / FNOS_SSH_USER / FNOS_STAGE_DIR 环境变量');
+  process.exit(2);
+}
+if (!COOKIE) {
+  console.error('缺少 FNOS_COOKIE（从已登录浏览器会话取 Cookie 头，含 osrt / ost）');
   process.exit(2);
 }
 
@@ -94,7 +80,7 @@ const crashLog = (tag, e) => {
 process.on('uncaughtException', (e) => { crashLog('uncaughtException', e); process.exit(70); });
 process.on('unhandledRejection', (e) => { crashLog('unhandledRejection', e); process.exit(71); });
 
-// 单实例锁：多实例并行会互相抢占桥端口（3766）并让页内脚本相互污染
+// 单实例锁：多实例并行会互相抢占端口并污染结果文件
 const LOCK = OUT + '.lock';
 if (fs.existsSync(LOCK)) {
   const pid = Number(fs.readFileSync(LOCK, 'utf8').trim());
@@ -111,107 +97,73 @@ process.on('exit', () => { try { fs.unlinkSync(LOCK); } catch { /* 忽略 */ } }
 const sh = (cmd, args, opts) => exec(cmd, args, Object.assign({ maxBuffer: 64 * 1024 * 1024, timeout: 900000 }, opts || {}));
 const ssh = (cmd) => sh('ssh', [...SSH_OPTS, `${SSH_USER}@${HOST}`, cmd]);
 const scp = (local, remote) => sh('scp', ['-q', '-o', 'BatchMode=yes', local, `${SSH_USER}@${HOST}:${remote}`]);
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const curlCode = async (url) => {
   try { const { stdout } = await sh('curl', ['-s', '-o', '/dev/null', '-w', '%{http_code}', '-m', '10', url]); return stdout.trim(); }
   catch { return '000'; }
 };
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-// ---- 页面侧：无状态的一次性 API 调用（每次都是短往返） ----
-const API = (expr) => `(async () => {
-  const LANG = ${JSON.stringify(LANG)};
-  const STAGE = ${JSON.stringify(STAGE)};
-  const VOL = ${JSON.stringify(VOLUME_ID)};
-  const j = async (url, opts) => {
-    const r = await fetch(url, Object.assign({ credentials: 'include' }, opts || {}));
-    const t = await r.text();
-    try { return JSON.parse(t); } catch (e) { return { __raw: t.slice(0, 300) }; }
-  };
-  const post = (url, body) => j(url + '?language=' + LANG, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
-  const get = (url) => j(url + (url.includes('?') ? '&' : '?') + 'language=' + LANG);
-  const out = await ${expr};
-  return JSON.stringify(out);
-})()`;
-
-// 注意：模板字符串里不带 ${} 的标识符是字面文本，不会被 Node 插值——路径必须整体作为字面量
-const callDownloadTask = (app) => API(`post('/app-center/v1/download/task', { packageSourceType:'file', path: ${JSON.stringify(STAGE + app + '.fpk')}, language: LANG })`);
-const callDownloadStatus = (id) => API(`get('/app-center/v1/download/status?downloadTaskId=' + ${JSON.stringify(id)})`);
-const callInstallInfo = (appName, version) => API(`get('/app-center/v1/install/info?version=' + encodeURIComponent(${JSON.stringify(version)}) + '&appName=' + encodeURIComponent(${JSON.stringify(appName)}) + '&packageType=path')`);
-const callInstallTask = (appName, version, params) => API(`post('/app-center/v1/install/task', {
-  appName: ${JSON.stringify(appName)}, version: ${JSON.stringify(version)}, packageType:'path',
-  systemParameters:{ agreedToProtocol:true, installVolumeID:Number(${JSON.stringify(VOLUME_ID)}), dataVolumeId:Number(${JSON.stringify(VOLUME_ID)}), immediateStart:true, apiScope:{} },
-  customParameters: ${JSON.stringify(params)}, language: LANG })`);
-const callInstallStatus = (taskId) => API(`post('/app-center/v1/install/status', { taskId: ${JSON.stringify(taskId)}, language: LANG })`);
-const callInstalledList = () => API(`(async () => { const l = await get('/app-center/v1/app/installed'); return (l && l.data && l.data.list) || []; })()`);
-const callUninstall = (appName) => API(`post('/app-center/v1/uninstall/start', { appName: ${JSON.stringify(appName)}, customParameters:[{ key:'wizard_data_action', value:'delete' }], language: LANG })`);
-
-/** 桥连接与带重试的调用 */
-let agent = null;
-/** fnOS 标签可能因浏览器重启/会话恢复而消失；找不到就自动新开一个，避免整批停摆 */
-async function openTargetTab(agentRef) {
-  const findTarget = async () => {
-    const tabs = await agentRef.getBrowserTabList();
-    return tabs.find((x) => String(x.url || '').includes(HOST));
-  };
-  // 1) 先试页面内 window.open（可能被弹窗拦截）
-  const tabs0 = await agentRef.getBrowserTabList();
-  const any = tabs0[0];
-  if (any) {
-    try {
-      await agentRef.page.setActiveTabId(Number.parseInt(String(any.id), 10), { activate: false });
-      await agentRef.page.evaluateJavaScript(`window.open('http://${HOST}:5666/', '_blank'); return 1;`);
-      for (let i = 0; i < 8; i++) {
-        await sleep(1200);
-        const t = await findTarget();
-        if (t) return t;
-      }
-    } catch { /* 落到 osascript */ }
+/** 一次应用中心 API 调用；短往返 + 超时，失败由上层重试 */
+async function api(pathname, { method = 'GET', body } = {}) {
+  const url = API_BASE + pathname + (pathname.includes('?') ? '&' : '?') + 'language=' + LANG;
+  const args = ['-s', '-m', '30', '-H', `Cookie: ${COOKIE}`];
+  if (method !== 'GET') args.push('-X', method);
+  if (body !== undefined) {
+    args.push('-H', 'Content-Type: application/json', '--data-binary', JSON.stringify(body));
   }
-  // 2) 回退：直接让 Chrome 开新标签（可靠，且不改动已有标签）
-  try {
-    await exec('osascript', ['-e', `tell application "Google Chrome" to tell front window to make new tab with properties {URL:"http://${HOST}:5666/"}`]);
-  } catch { /* 忽略 */ }
-  for (let i = 0; i < 20; i++) {
+  args.push(url);
+  const { stdout } = await sh('curl', args);
+  const text = String(stdout || '');
+  try { return JSON.parse(text); } catch { return { __raw: text.slice(0, 300) }; }
+}
+
+/** 带重试的调用：设备 CPU 紧张或 nginx 瞬时 502 时重试比直接判失败更准 */
+async function apiRetry(pathname, opts, tries = 3) {
+  let last;
+  for (let i = 0; i < tries; i++) {
+    try {
+      const r = await api(pathname, opts);
+      if (r && r.__raw === undefined) return r;
+      last = new Error('返回非 JSON: ' + (r && r.__raw));
+    } catch (e) { last = e; }
     await sleep(1500);
-    const t = await findTarget();
-    if (t) return t;
   }
-  throw new Error('新开 fnOS 标签失败');
-}
-async function connect() {
-  if (agent) { try { await agent.destroy(); } catch { /* 忽略 */ } agent = null; }
-  const { AgentOverChromeBridge } = resolveMidscene();
-  agent = new AgentOverChromeBridge({ enableWaterFlowAnimation: false, serverListeningTimeout: 30000, closeConflictServer: true });
-  const tabs = await agent.getBrowserTabList();
-  let target = tabs.find((t) => String(t.url || '').includes(HOST));
-  if (!target) {
-    console.error('  [tab-gone] 未找到 fnOS 标签，自动新开一个');
-    target = await openTargetTab(agent);
-  }
-  await agent.page.setActiveTabId(Number.parseInt(String(target.id), 10), { activate: false });
-}
-async function api(src) {
-  let last = null;
-  for (let attempt = 0; attempt < 4; attempt++) {
-    try {
-      if (!agent) await connect();
-      if (process.env.FNOS_DEBUG) console.error('[page-src]\n' + src + '\n----');
-      const raw = await agent.page.evaluateJavaScript(src);
-      if (!raw || !raw.result || raw.result.value === undefined) {
-        throw new Error('页内返回异常: ' + JSON.stringify(raw).slice(0, 300));
-      }
-      return JSON.parse(raw.result.value);
-    } catch (e) {
-      last = e;
-      if (process.env.FNOS_DEBUG) console.error(`  [api-err] ${String(e.message || e).slice(0, 300)}`);
-      agent = null;
-      await sleep(1200);
-    }
-  }
-  throw last || new Error('桥调用失败');
+  throw last;
 }
 
-/** 轮询直到条件满足（每次都是一次短调用） */
+const callDownloadTask = (app) => apiRetry('/app-center/v1/download/task', {
+  method: 'POST', body: { packageSourceType: 'file', path: STAGE + app + '.fpk', language: LANG },
+});
+const callDownloadStatus = (id) => apiRetry('/app-center/v1/download/status?downloadTaskId=' + encodeURIComponent(id));
+const callInstallInfo = (appName, version) => apiRetry(
+  `/app-center/v1/install/info?version=${encodeURIComponent(version)}&appName=${encodeURIComponent(appName)}&packageType=path`,
+);
+const callInstallTask = (appName, version, params) => apiRetry('/app-center/v1/install/task', {
+  method: 'POST',
+  body: {
+    appName, version, packageType: 'path',
+    systemParameters: {
+      agreedToProtocol: true,
+      installVolumeID: Number(VOLUME_ID),
+      dataVolumeId: Number(VOLUME_ID),
+      immediateStart: true,
+      apiScope: {},
+    },
+    customParameters: params,
+    language: LANG,
+  },
+});
+const callInstallStatus = (taskId) => apiRetry('/app-center/v1/install/status', { method: 'POST', body: { taskId, language: LANG } });
+const callInstalledList = async () => {
+  const l = await apiRetry('/app-center/v1/app/installed');
+  return (l && l.data && l.data.list) || [];
+};
+const callUninstall = (appName) => apiRetry('/app-center/v1/uninstall/start', {
+  method: 'POST',
+  body: { appName, customParameters: [{ key: 'wizard_data_action', value: 'delete' }], language: LANG },
+});
+
+/** 轮询直到条件满足 */
 async function until(fn, { tries = 240, gap = 1000, label = '' } = {}) {
   for (let i = 0; i < tries; i++) {
     const v = await fn();
@@ -259,16 +211,20 @@ function buildParams(wizardInfo) {
   return { params, unsolved, needsExternal };
 }
 
+/** 设备级阻塞：一旦命中就中止整批，避免把环境问题记成上百个应用缺陷 */
+const ENV_BLOCKER = /all predefined address pools have been fully subnetted|cannot connect to the Docker daemon|permission denied while trying to connect to the Docker daemon|no space left on device|Error response from daemon:.*(?:address pool|daemon)/i;
+
 function verdict(rec) {
+  const blob = `${rec.err || ''} ${rec.installStatus || ''} ${rec.installOutputTail || ''} ${rec.log || ''}`;
   if (rec.stage === 'build') return 'BUILD_FAIL';
   if (rec.stage === 'wizard_unsolvable') return 'UNVERIFIED';
+  if (ENV_BLOCKER.test(blob)) return 'ENV_BLOCKED';
   // 需要外部数据库/中间件的应用：失败是环境问题，不是转换缺陷
   if (rec.needsExternal && rec.installed !== true) return 'BLOCKED';
   if (!rec.installed) {
-    const t = `${rec.err || ''} ${rec.installStatus || ''} ${rec.installOutputTail || ''}`;
-    if (/address already in use|port is already allocated|端口/i.test(t)) return 'BLOCKED';
+    if (/address already in use|port is already allocated|端口/i.test(blob)) return 'BLOCKED';
     // 镜像拉取失败/超时属于环境问题（镜像源、限流、磁盘），不计入转换缺陷
-    if (/Pulling|Already exists|Waiting|Downloading|extracting|error pulling|failed to resolve|manifest unknown|toomanyrequests|timeout/i.test(t)) return 'BLOCKED';
+    if (/Pulling|Already exists|Waiting|Downloading|extracting|error pulling|failed to resolve|manifest unknown|toomanyrequests|timeout/i.test(blob)) return 'BLOCKED';
     return 'FAIL';
   }
   if (rec.appStatus !== 'running') {
@@ -293,22 +249,22 @@ async function testOne(app) {
   const rec = { app, stage: 'start' };
   try {
     // 上一轮残留：测试前先确保未安装
-    const pre = await api(callInstalledList());
+    const pre = await callInstalledList();
     if ((pre || []).some((x) => x.appName === app)) {
-      await api(callUninstall(app));
+      await callUninstall(app);
       await until(async () => {
-        const l = await api(callInstalledList());
+        const l = await callInstalledList();
         return !(l || []).some((x) => x.appName === app);
       }, { tries: 30, gap: 2000, label: 'pre-uninstall' });
       rec.preUninstalled = true;
     }
 
     // 1) 解析安装包
-    const dl = await api(callDownloadTask(app));
+    const dl = await callDownloadTask(app);
     if (!dl || dl.code !== 0) { rec.stage = 'download_task'; rec.err = JSON.stringify(dl).slice(0, 300); return rec; }
     const dlId = dl.data.downloadTaskId;
     const st = await until(async () => {
-      const s = await api(callDownloadStatus(dlId));
+      const s = await callDownloadStatus(dlId);
       return s && s.code === 0 && s.data && (s.data.status === 2 || s.data.status === 3) ? s : null;
     }, { tries: 80, gap: 600, label: 'download' });
     if (st.data.status !== 2) { rec.stage = 'download_status'; rec.err = JSON.stringify(st).slice(0, 300); return rec; }
@@ -317,7 +273,7 @@ async function testOne(app) {
     rec.appName = appName; rec.version = version;
 
     // 2) 向导参数
-    const info = await api(callInstallInfo(appName, version));
+    const info = await callInstallInfo(appName, version);
     if (!info || info.code !== 0 || !info.data || !info.data.wizardInfo) {
       rec.stage = 'install_info'; rec.err = JSON.stringify(info).slice(0, 300); return rec;
     }
@@ -331,12 +287,12 @@ async function testOne(app) {
     rec.params = params.map((p) => p.key);
 
     // 3) 安装
-    const task = await api(callInstallTask(appName, version, params));
+    const task = await callInstallTask(appName, version, params);
     if (!task || task.code !== 0) { rec.stage = 'install_task'; rec.err = JSON.stringify(task).slice(0, 300); return rec; }
     const taskId = task.data && (task.data.taskId || task.data.installTaskId);
     rec.taskId = taskId;
     const last = await until(async () => {
-      const s = await api(callInstallStatus(taskId));
+      const s = await callInstallStatus(taskId);
       const d = s && s.data;
       if (!d) return null;
       if (d.status === 2 || d.status === 3 || /success|failed|completed|error|cancel/i.test(d.message || '')) return s;
@@ -345,14 +301,14 @@ async function testOne(app) {
     rec.installStatus = JSON.stringify(last.data).slice(0, 4000);
     // 拉镜像阶段的失败是环境问题（镜像源/限流），不是转换缺陷：把 outputText 尾部单独留出来
     const outText = (last.data && last.data.outputText) || '';
-    if (outText) rec.installOutputTail = outText.slice(-600);
+    if (outText) rec.installOutputTail = outText.slice(-1200);
     const insOk = last.data.status === 2 || /success/i.test(last.data.message || '');
     rec.installed = !!insOk;
     if (!insOk) { rec.stage = 'install_status'; rec.err = rec.installStatus; return rec; }
 
     // 4) 等待 running
     const item = await until(async () => {
-      const l = await api(callInstalledList());
+      const l = await callInstalledList();
       const it = (l || []).find((x) => x.appName === appName);
       return it && (it.status === 'running' || it.status === 'stopped') ? it : null;
     }, { tries: 15, gap: 2000, label: 'running' });
@@ -381,11 +337,11 @@ async function testOne(app) {
 
     // 6) 卸载（诊断模式 FNOS_KEEP_INSTALLED=1 时保留，便于现场取证）
     if (process.env.FNOS_KEEP_INSTALLED === '1') { rec.stage = 'kept-installed'; return rec; }
-    const ustart = await api(callUninstall(appName));
+    const ustart = await callUninstall(appName);
     rec.uninstalled = !!(ustart && ustart.code === 0);
     if (!rec.uninstalled) rec.uninstallErr = JSON.stringify(ustart).slice(0, 200);
     await until(async () => {
-      const l = await api(callInstalledList());
+      const l = await callInstalledList();
       return !(l || []).some((x) => x.appName === appName);
     }, { tries: 20, gap: 2000, label: 'uninstall' });
     rec.stage = 'done';
@@ -394,6 +350,22 @@ async function testOne(app) {
     rec.err = String((e && e.message) || e).slice(0, 300);
   }
   return rec;
+}
+
+/**
+ * 回收 compose 网络。
+ * 平台卸载后不删除 `<app>_default`，每装一个就永久占掉一个 /16；
+ * 累计十几个后 Docker 默认地址池耗尽，之后所有安装都失败。
+ * 这里顺带把「平台是否留下了网络」记进结果，作为该缺陷的现场证据。
+ */
+async function reclaimNetwork(name) {
+  const net = `${name}_default`;
+  try {
+    const { stdout } = await ssh(`docker network ls --format '{{.Name}}' 2>/dev/null | grep -x '${net}' || true`);
+    const lingered = String(stdout || '').trim().length > 0;
+    if (lingered) await ssh(`docker network rm '${net}' >/dev/null 2>&1 || true`);
+    return lingered;
+  } catch { return null; }
 }
 
 async function main() {
@@ -407,6 +379,11 @@ async function main() {
     for (const app of chunk) {
       const dir = path.resolve(app);
       const name = path.basename(dir);
+      if (!fs.existsSync(dir)) {
+        append({ app: name, stage: 'build', verdict: 'BUILD_FAIL', err: `应用目录不存在: ${dir}` });
+        console.log(`[build-fail] ${name}: 目录不存在`);
+        continue;
+      }
       try {
         await sh('fnpack', ['build'], { cwd: dir });
         const fpk = path.join(dir, `${name}.fpk`);
@@ -429,6 +406,8 @@ async function main() {
           rec.log = String(stdout).slice(0, 2500);
         } catch { rec.log = ''; }
       }
+      // 网络回收（同时取证平台是否留下 compose 网络）
+      rec.networkLingered = await reclaimNetwork(name);
       // 卸载残留清理：包用户无权删除其父目录下的目录项，需由有权限的账号清
       if (process.env.FNOS_SKIP_RESIDUAL_CLEAN === '1') {
         // 实验模式：不清理残留，保留现场供判定平台行为
@@ -446,10 +425,15 @@ async function main() {
 
       rec.verdict = verdict(rec);
       append(rec);
-      console.log(`[${rec.verdict}] ${name} status=${rec.appStatus || '-'} entry=${rec.entryCode || '-'}`);
+      console.log(`[${rec.verdict}] ${name} status=${rec.appStatus || '-'} entry=${rec.entryCode || '-'} net_left=${rec.networkLingered === null ? '?' : (rec.networkLingered ? 'yes' : 'no')}`);
+
+      if (rec.verdict === 'ENV_BLOCKED') {
+        console.error(`[batch] 设备级阻塞，中止整批：${(rec.err || rec.installOutputTail || '').slice(0, 200)}`);
+        console.error('[batch] 处理完设备侧问题后重跑同一命令即可续跑（已完成的应用不会重复测试）');
+        process.exit(5);
+      }
     }
   }
-  if (agent) { try { await agent.destroy(); } catch { /* 忽略 */ } }
   console.log('[batch] 完成，结果写入 ' + OUT);
 }
 
