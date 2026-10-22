@@ -555,7 +555,7 @@ B 组 11 个应用的逐项实测（`顶层` = 非目录条目数）：
 **实际结果**：**通过（2026-10-10 真机执行）**。改用 `trim-cli`（fnOS 应用中心 API）安装，不依赖 `appcenter-cli`。`app install-fpk fn-it-tools.fpk --volume-id 4 --custom-parameters '[{"key":"APP_PORT","value":"40116"}]' --yes` 执行后：
 - `app status fn-it-tools` 返回已注册应用：`title=IT-Tools`、`type=url`、`protocol=http`、`port=40116`、`path=/`，与 `app/ui/config` 一致；
 - `app entry list` 中桌面入口为 `{"fnDomain":"fn-it-tools","protocol":"http","port":"40116","path":"/"}`；
-- `curl http://192.168.119.6:40116/` 返回 `HTTP 200`、2787 bytes、标题 `<title>IT Tools - Handy online tools for developers</title>`；
+- `curl http://${FNOS_HOST}:40116/` 返回 `HTTP 200`、2787 bytes、标题 `<title>IT Tools - Handy online tools for developers</title>`；
 - `ss -tlnp` 显示 `LISTEN 0.0.0.0:40116`，容器真实在跑。
 
 安装前已先执行 `--dry-run`：设备端正确解析 `name=IT-Tools version=6.0.0 docker=true installType=volume hasWizard=true`、`osMinVersion=1.1.8 isSystemVersionMatch=true`，无 guard 拒绝。
@@ -614,13 +614,13 @@ panic: ApplyPermission for '[com.trim.sysinfo com.trim.main]' error, dial unix /
 
 **预期结果**：启动、停止、卸载、重装四步均不报错；重装后应用可打开；选择「保留数据」时原数据可读回。
 
-**实际结果**（2026-10-10 真机执行，设备 `192.168.119.6`，应用 `fn-it-tools`，端口 `40116`）：
+**实际结果**（2026-10-10 真机执行，设备 历史验证设备，应用 `fn-it-tools`，端口 `40116`）：
 
 已通过的部分：
 
 | 步骤 | 命令 / 方法 | 观察结果 |
 | --- | --- | --- |
-| 启动 | `app start fn-it-tools --yes` | `Started app fn-it-tools`；8 秒后 `curl http://192.168.119.6:40116/` → `HTTP 200` |
+| 启动 | `app start fn-it-tools --yes` | `Started app fn-it-tools`；8 秒后 `curl http://${FNOS_HOST}:40116/` → `HTTP 200` |
 | 停止 | `app stop fn-it-tools --yes` | `Stopped app fn-it-tools`；5 秒后同一 `curl` → `HTTP 000`（连接失败），证明容器确实停止、端口已释放 |
 | 重启 | stop → start 循环 | 端口恢复 `HTTP 200` |
 | 卸载（**选「删除所有数据」**） | 由用户在 App Center UI 手工执行 | 应用从已装列表消失（37 项）、端口释放（`HTTP 000`）、`/var/apps/fn-it-tools` 已移除、`@appdata`/`@apphome`/`@appmeta` 三个数据目录占用均归 **0 字节** |
@@ -1016,7 +1016,7 @@ desktop_applaunchname      =
 
 **预期结果**：向导接受自定义端口；第二个应用的入口端口随用户填写值变化；两个应用互不干扰。
 
-**实际结果**：**通过（2026-10-10 真机执行，设备 `192.168.119.6`）**。
+**实际结果**：**通过（2026-10-10 真机执行，设备 历史验证设备）**。
 
 | 应用 | 端口 | 容器监听 | HTTP | 桌面入口 |
 | --- | --- | --- | --- | --- |

@@ -44,7 +44,7 @@ lastVerified: 2026-10-10
 | Node.js | v24.15.0 |
 | fnpack | 1.2.4（由 `PATH` 解析） |
 | Docker Compose | v5.1.0（仅用于 `config` 解析，无 daemon） |
-| 目标 fnOS 设备 | `192.168.119.6:5666`，fnOS `1.2.0800`，kernel `6.18.18.c1126-trim`，x86_64（真机部分） |
+| 目标 fnOS 设备 | `${FNOS_HOST}:5666`，fnOS `1.2.0800`，kernel `6.18.18.c1126-trim`，x86_64（真机部分） |
 | 构建目录 | 临时目录下的源目录副本（本轮用 `mktemp -d`），避免把 `.fpk` 写入受版本控制目录 |
 
 主要命令：
