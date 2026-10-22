@@ -30,6 +30,8 @@ pnpx skills add tnnevol/skills --skill fnnas-docs -g -y
 - 每个 P0/P1 功能应保持需求、验收、计划任务、测试和目标环境证据的可追踪关系；涉及 fnOS 的功能必须区分本地验证和真实 NAS 验收。
 - 面向用户的说明以 `docs/` 为唯一维护入口；`README.md` 只保留项目识别、开发入口或历史兼容内容。
 - 提交前运行 `pnpm run check -- --all` 和与改动相关的构建/测试；文档改动还需运行 `pnpm run build -- --docs` 与 `git diff --check`。
+- **每完成一个任务提交一次**：按任务的逻辑边界拆成独立提交（缺陷修复、工具、文档各自成篇），不把多个任务攒成一个大提交，也不在任务未验证完时提前提交。提交信息说明「为什么改」，而不只是「改了什么」。
+- 提交信息遵循 Conventional Commits（`fix(apps):`、`feat(scripts):`、`docs:` 等），由 commitlint 校验。
 
 完整流程见 [`docs/development/sdd-workflow.md`](docs/development/sdd-workflow.md)。
 
