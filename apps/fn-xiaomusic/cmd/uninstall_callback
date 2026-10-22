@@ -1,15 +1,42 @@
 #!/bin/bash
 
 ### This script is called after the user uninstalls the application.
+###
+### 平台保留 TRIM_PKGVAR / TRIM_PKGHOME 这两个目录本身，应用只删除**自己创建的数据内容**：
+###   - 直接 `rm -rf "${TRIM_PKGVAR:?}"` 会去 unlink 平台管理的目录，父目录 `/vol2/@appdata`
+###     属 root:root 755，包用户无权 unlink，必然 Permission denied；
+###   - 平台也不允许应用删除该目录本身。
+### 因此这里只清空目录内容；若仍有残留（如容器以其它 uid 写入、包用户无权删除的文件），
+### 如实上报残留数量与样本，不谎报成功。
+
+delete_contents() {
+    local d="$1"
+    [ -n "$d" ] || return 0
+    [ -d "$d" ] || return 0
+    rm -rf "$d"/* "$d"/.[!.]* 2>/dev/null
+    local left
+    left="$(ls -A "$d" 2>/dev/null | wc -l | tr -d ' ')"
+    if [ "${left:-0}" != "0" ]; then
+        echo "RESIDUAL_COUNT=$left in $d"
+        ls -A "$d" 2>/dev/null | head -3 | while read -r f; do
+            echo "RESIDUAL_SAMPLE=$d/$f"
+        done
+        return 1
+    fi
+    return 0
+}
 
 if [ "$wizard_data_action" = "delete" ]; then
     echo "Deleting application data..."
-    rm -rf "${TRIM_PKGVAR:?}"
-    rm -rf "${TRIM_PKGHOME:?}"
-    # 共享目录：${VAR:?} 守卫与 fn-xiaoya-only 先例一致（变量为空即中止，避免误删根路径）。
-    rm -rf "${TRIM_APPDEST_VOL:?}/@appshare/fn-xiaomusic"
-    echo "Deleted shared directory: ${TRIM_APPDEST_VOL}/@appshare/fn-xiaomusic"
-    echo "Application data deleted."
+    for d in "${TRIM_PKGVAR:-}" "${TRIM_PKGHOME:-}"; do
+        [ -n "$d" ] || continue
+        [ -d "$d" ] || continue
+        if delete_contents "$d"; then
+            echo "Application data deleted: $d"
+        else
+            echo "Some application data in $d could not be removed; the platform keeps this directory."
+        fi
+    done
 else
     echo "Keeping application data for future reinstallation."
 fi
