@@ -4,10 +4,19 @@
 
 # 2FAuth 的 SQLite 数据库路径已由 DB_DATABASE 指向 ${TRIM_PKGVAR}/data/database/sqlite.db，
 # 这里预创建该子目录并确保包用户可写，避免容器首次启动时因目录缺失而失败。
+# 镜像默认以 uid 1000 运行，与包用户（uid 9xx）不一致：
+#   - 容器需要写权限才能在数据目录里建库；
+#   - 容器建的目录属主是 1000，包用户事后删不掉。
+# 用 ACL 同时解决两件事：授予镜像 uid 访问权，并设置默认 ACL 让容器新建的子目录也带包用户权限。
+IMAGE_UID=1000
+IMAGE_GID=1000
+
 if [ -n "${TRIM_PKGVAR}" ]; then
     mkdir -p "${TRIM_PKGVAR}/data/database"
     chmod 770 "${TRIM_PKGVAR}/data/database" 2>/dev/null || true
-    echo "Prepared 2FAuth database directory: ${TRIM_PKGVAR}/data/database"
+    setfacl -m "u:${IMAGE_UID}:rwx" "${TRIM_PKGVAR}" "${TRIM_PKGVAR}/data" "${TRIM_PKGVAR}/data/database" 2>/dev/null || true
+    setfacl -d -m "u:${TRIM_RUN_UID:-${TRIM_UID}}:rwx" "${TRIM_PKGVAR}" "${TRIM_PKGVAR}/data" 2>/dev/null || true
+    echo "Prepared 2FAuth database directory with ACL for image uid ${IMAGE_UID}: ${TRIM_PKGVAR}/data/database"
 else
     echo "TRIM_PKGVAR is not set; skipping database directory preparation" >"${TRIM_TEMP_LOGFILE}"
     exit 1
