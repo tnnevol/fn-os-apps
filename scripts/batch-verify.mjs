@@ -103,10 +103,16 @@ const curlCode = async (url) => {
   catch { return '000'; }
 };
 
-/** 一次应用中心 API 调用；短往返 + 超时，失败由上层重试 */
+/**
+ * 一次应用中心 API 调用；短往返 + 超时，失败由上层重试。
+ *
+ * 会话失效（HTTP 401/403 或空响应）必须单独识别：接口不再返回 JSON 时，
+ * 若继续按普通失败处理，会把「没登录」记成上百个应用 FAIL——一轮跑下来
+ * 110 条假失败就是这么来的。这里抛出带 sessionExpired 标记的错误，由上层中止整批。
+ */
 async function api(pathname, { method = 'GET', body } = {}) {
   const url = API_BASE + pathname + (pathname.includes('?') ? '&' : '?') + 'language=' + LANG;
-  const args = ['-s', '-m', '30', '-H', `Cookie: ${COOKIE}`];
+  const args = ['-s', '-m', '30', '-H', `Cookie: ${COOKIE}`, '-w', '\n__HTTP__%{http_code}'];
   if (method !== 'GET') args.push('-X', method);
   if (body !== undefined) {
     args.push('-H', 'Content-Type: application/json', '--data-binary', JSON.stringify(body));
@@ -114,7 +120,15 @@ async function api(pathname, { method = 'GET', body } = {}) {
   args.push(url);
   const { stdout } = await sh('curl', args);
   const text = String(stdout || '');
-  try { return JSON.parse(text); } catch { return { __raw: text.slice(0, 300) }; }
+  const m = text.match(/\n__HTTP__(\d{3})\s*$/);
+  const status = m ? m[1] : '';
+  const payload = m ? text.slice(0, m.index) : text;
+  if (['401', '403', '302', '303'].includes(status) || !payload.trim()) {
+    const err = new Error(`会话失效或接口无响应 (HTTP ${status || '空响应'})，需要重新取会话 Cookie`);
+    err.sessionExpired = true;
+    throw err;
+  }
+  try { return JSON.parse(payload); } catch { return { __raw: payload.slice(0, 300), __status: status }; }
 }
 
 /** 带重试的调用：设备 CPU 紧张或 nginx 瞬时 502 时重试比直接判失败更准 */
@@ -125,7 +139,11 @@ async function apiRetry(pathname, opts, tries = 3) {
       const r = await api(pathname, opts);
       if (r && r.__raw === undefined) return r;
       last = new Error('返回非 JSON: ' + (r && r.__raw));
-    } catch (e) { last = e; }
+    } catch (e) {
+      // 会话失效重试没有意义，直接上抛，让主循环中止整批
+      if (e && e.sessionExpired) throw e;
+      last = e;
+    }
     await sleep(1500);
   }
   throw last;
@@ -178,7 +196,23 @@ function buildParams(wizardInfo) {
   const items = (wizardInfo.wizardContent || []).flatMap((s) => (s && s.items) || []);
   const params = [];
   const unsolved = [];
+  const filled = [];
   let needsExternal = false;
+  // 可选：给「站点地址 / 邮箱 / 路径」这类必填项填占位值，使转换本身仍可验证。
+  // 默认关闭——UNVERIFIED 是诚实结论；开启后结果记录 placeholderFilled，便于与真实填写区分。
+  const fillPlaceholders = process.env.FNOS_FILL_PLACEHOLDERS === '1';
+  const candidatesFor = (key) => {
+    const n = String(key).toUpperCase();
+    if (/EMAIL/.test(n)) return ['admin@example.com'];
+    if (/(?:^|_)(?:URL|URI)(?:$|_)/.test(n)) return ['http://example.com', 'https://example.com', 'example.com'];
+    if (/(?:^|_)(?:HOST|DOMAIN)(?:$|_)/.test(n)) return ['example.com', 'http://example.com'];
+    if (/PATH/.test(n)) return ['/vol2/1000'];
+    return ['example.com', 'http://example.com', '/vol2/1000', 'admin@example.com'];
+  };
+  const matches = (pattern, v) => {
+    if (!pattern) return true;
+    try { return new RegExp(pattern).test(v); } catch { return true; }
+  };
   for (const it of items) {
     const key = it.field || it.key; if (!key) continue;
     const rules = it.rules || [];
@@ -198,17 +232,25 @@ function buildParams(wizardInfo) {
       } else if (required && /(?:^|_)(?:DB|REDIS|MONGO|POSTGRES|MYSQL|MARIADB|ELASTIC)(?:$|_)/i.test(key)) {
         // 外部依赖类地址：填本地默认，让「转换本身」仍能被验证（安装、容器起、入口加载）
         val = '127.0.0.1'; needsExternal = true;
+      } else if (required && fillPlaceholders) {
+        const pick = candidatesFor(key).find((c) => matches(pattern, c));
+        if (pick === undefined) { unsolved.push(key + '(required)'); continue; }
+        val = pick; filled.push(key);
       } else if (required) { unsolved.push(key + '(required)'); continue; }
       else { val = ''; }
     }
     val = String(val);
     // 外部依赖占位值不适用用户输入正则（该正则约束的是用户填的域名/IP 形态）
-    if (pattern && !isSecret && !needsExternal) {
-      try { if (!new RegExp(pattern).test(val)) { unsolved.push(key + '(pattern)'); continue; } } catch { /* 放行 */ }
+    if (pattern && !isSecret && !needsExternal && !matches(pattern, val)) {
+      // 占位模式下按候选值再试一次：格式不符不该白白记成待人工确认
+      const pick = fillPlaceholders ? candidatesFor(key).find((c) => matches(pattern, c)) : undefined;
+      if (pick === undefined) { unsolved.push(key + '(pattern)'); continue; }
+      val = pick;
+      if (!filled.includes(key)) filled.push(key);
     }
     params.push({ key, value: val });
   }
-  return { params, unsolved, needsExternal };
+  return { params, unsolved, needsExternal, filled };
 }
 
 /** 设备级阻塞：一旦命中就中止整批，避免把环境问题记成上百个应用缺陷 */
@@ -220,6 +262,8 @@ function verdict(rec) {
   const blob = `${rec.err || ''} ${rec.installStatus || ''} ${rec.installOutputTail || ''} ${rec.log || ''}`;
   if (rec.stage === 'build') return 'BUILD_FAIL';
   if (rec.stage === 'wizard_unsolvable') return 'UNVERIFIED';
+  // 会话失效：整批都做不了，结果不能算作应用结论
+  if (rec.sessionExpired) return 'SESSION_EXPIRED';
   // 服务端忙/安装队列被占：重试后仍被拒，属于设备状态，不是转换缺陷
   if (rec.busy) return 'BLOCKED';
   if (ENV_BLOCKER.test(blob)) return 'ENV_BLOCKED';
@@ -301,7 +345,8 @@ async function testOne(app) {
     if (!info || info.code !== 0 || !info.data || !info.data.wizardInfo) {
       rec.stage = 'install_info'; rec.err = JSON.stringify(info).slice(0, 300); return rec;
     }
-    const { params, unsolved, needsExternal } = buildParams(info.data.wizardInfo);
+    const { params, unsolved, needsExternal, filled } = buildParams(info.data.wizardInfo);
+    if (filled.length) rec.placeholderFilled = filled;
     rec.needsExternal = needsExternal;
     if (unsolved.length) {
       rec.stage = 'wizard_unsolvable'; rec.unsolvable = unsolved;
@@ -374,7 +419,16 @@ async function testOne(app) {
       if (!rec.entryCode || rec.entryCode === '000') {
         try {
           const { stdout } = await ssh(`docker ps -a --format '{{.Names}} | {{.Status}} | {{.Ports}}' 2>/dev/null | grep -E '^${app}' || true`);
-          if (String(stdout).trim()) rec.containers = String(stdout).trim().slice(0, 800);
+          const snap = String(stdout || '').trim();
+          if (snap) rec.containers = snap.slice(0, 800);
+          // 容器日志才是「为什么起不来」的直接证据：重启循环的真因（缺依赖、配置错、
+          // 权限不足）只出现在这里；应用一卸载就再也取不到
+          const first = snap.split('\n')[0].split(' | ')[0].trim();
+          if (first) {
+            const { stdout: logOut } = await ssh(`docker logs --tail 30 '${first}' 2>&1 || true`);
+            const kept = String(logOut || '').trim();
+            if (kept) rec.containerLog = kept.slice(-1500);
+          }
         } catch { /* 忽略 */ }
       }
     } else {
@@ -393,6 +447,7 @@ async function testOne(app) {
     rec.stage = 'done';
   } catch (e) {
     rec.stage = rec.stage === 'start' ? 'exception' : rec.stage;
+    if (e && e.sessionExpired) { rec.stage = 'session_expired'; rec.sessionExpired = true; }
     rec.err = String((e && e.message) || e).slice(0, 300);
   }
   return rec;
@@ -473,6 +528,10 @@ async function main() {
       append(rec);
       console.log(`[${rec.verdict}] ${name} status=${rec.appStatus || '-'} entry=${rec.entryCode || '-'} net_left=${rec.networkLingered === null ? '?' : (rec.networkLingered ? 'yes' : 'no')}`);
 
+      if (rec.verdict === 'SESSION_EXPIRED') {
+        console.error('[batch] 会话已失效，中止整批。重新取一份 Cookie 后重跑同一命令即可续跑');
+        process.exit(6);
+      }
       if (rec.verdict === 'ENV_BLOCKED') {
         console.error(`[batch] 设备级阻塞，中止整批：${(rec.err || rec.installOutputTail || '').slice(0, 200)}`);
         console.error('[batch] 处理完设备侧问题后重跑同一命令即可续跑（已完成的应用不会重复测试）');
