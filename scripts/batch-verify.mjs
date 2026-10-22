@@ -212,7 +212,9 @@ function buildParams(wizardInfo) {
 }
 
 /** 设备级阻塞：一旦命中就中止整批，避免把环境问题记成上百个应用缺陷 */
-const ENV_BLOCKER = /all predefined address pools have been fully subnetted|cannot connect to the Docker daemon|permission denied while trying to connect to the Docker daemon|no space left on device|Error response from daemon:.*(?:address pool|daemon)/i;
+// 只收录「整台设备都装不了」的情形。镜像源不通（如 registry TLS 超时）虽然也让安装失败，
+// 但只影响那一个应用，记 BLOCKED 即可，不能据此中止整批
+const ENV_BLOCKER = /all predefined address pools have been fully subnetted|cannot connect to the Docker daemon|permission denied while trying to connect to the Docker daemon|no space left on device/i;
 
 function verdict(rec) {
   const blob = `${rec.err || ''} ${rec.installStatus || ''} ${rec.installOutputTail || ''} ${rec.log || ''}`;
