@@ -218,6 +218,8 @@ function verdict(rec) {
   const blob = `${rec.err || ''} ${rec.installStatus || ''} ${rec.installOutputTail || ''} ${rec.log || ''}`;
   if (rec.stage === 'build') return 'BUILD_FAIL';
   if (rec.stage === 'wizard_unsolvable') return 'UNVERIFIED';
+  // 服务端忙/安装队列被占：重试后仍被拒，属于设备状态，不是转换缺陷
+  if (rec.busy) return 'BLOCKED';
   if (ENV_BLOCKER.test(blob)) return 'ENV_BLOCKED';
   // 需要外部数据库/中间件的应用：失败是环境问题，不是转换缺陷
   if (rec.needsExternal && rec.installed !== true) return 'BLOCKED';
@@ -245,6 +247,23 @@ function verdict(rec) {
   return 'PASS';
 }
 
+/**
+ * 清掉上一次中断的安装留下的容器。
+ * 安装中途被打断时，容器已经建出来（状态 Created），但应用没有出现在「已安装」列表里，
+ * 于是下一次 install/task 会被服务端以 10500 拒绝——看起来像应用缺陷，其实是设备残留。
+ */
+async function preCleanContainers(name) {
+  try {
+    const { stdout } = await ssh(`docker ps -a --format '{{.Names}}' 2>/dev/null | grep -E '^${name}(-|$)' || true`);
+    const leftovers = String(stdout || '').split('\n').map((s) => s.trim()).filter(Boolean);
+    if (leftovers.length) {
+      const quoted = leftovers.map((n) => `'${n}'`).join(' ');
+      await ssh(`docker rm -f ${quoted} >/dev/null 2>&1 || true`);
+    }
+    return leftovers;
+  } catch { return []; }
+}
+
 async function testOne(app) {
   const rec = { app, stage: 'start' };
   try {
@@ -258,6 +277,9 @@ async function testOne(app) {
       }, { tries: 30, gap: 2000, label: 'pre-uninstall' });
       rec.preUninstalled = true;
     }
+    // 中断安装留下的 Created 容器会让后续安装被拒（10500），先清掉
+    const leftovers = await preCleanContainers(app);
+    if (leftovers.length) rec.preCleaned = leftovers;
 
     // 1) 解析安装包
     const dl = await callDownloadTask(app);
@@ -287,8 +309,18 @@ async function testOne(app) {
     rec.params = params.map((p) => p.key);
 
     // 3) 安装
-    const task = await callInstallTask(appName, version, params);
-    if (!task || task.code !== 0) { rec.stage = 'install_task'; rec.err = JSON.stringify(task).slice(0, 300); return rec; }
+    // 10500 = 服务端忙/上一个应用仍在启动流程（实测：前面有应用卡在 start 时会拒绝新任务），
+    // 等一会儿重试即可，不是应用缺陷
+    let task = await callInstallTask(appName, version, params);
+    for (let i = 0; task && task.code === 10500 && i < 6; i++) {
+      await sleep(10000);
+      task = await callInstallTask(appName, version, params);
+    }
+    if (!task || task.code !== 0) {
+      rec.stage = 'install_task'; rec.err = JSON.stringify(task).slice(0, 300);
+      rec.busy = !!(task && task.code === 10500);
+      return rec;
+    }
     const taskId = task.data && (task.data.taskId || task.data.installTaskId);
     rec.taskId = taskId;
     const last = await until(async () => {
@@ -297,7 +329,8 @@ async function testOne(app) {
       if (!d) return null;
       if (d.status === 2 || d.status === 3 || /success|failed|completed|error|cancel/i.test(d.message || '')) return s;
       return null;
-    }, { tries: 240, gap: 1000, label: 'install' });
+    // 冷缓存下要拉镜像，安装可能持续十几分钟；窗口给足，避免把「还在拉镜像」记成失败
+    }, { tries: 900, gap: 1000, label: 'install' });
     rec.installStatus = JSON.stringify(last.data).slice(0, 4000);
     // 拉镜像阶段的失败是环境问题（镜像源/限流），不是转换缺陷：把 outputText 尾部单独留出来
     const outText = (last.data && last.data.outputText) || '';
@@ -311,7 +344,8 @@ async function testOne(app) {
       const l = await callInstalledList();
       const it = (l || []).find((x) => x.appName === appName);
       return it && (it.status === 'running' || it.status === 'stopped') ? it : null;
-    }, { tries: 15, gap: 2000, label: 'running' });
+    // 应用中心报「已安装」不代表容器已就绪：重镜像（数据库迁移、初始化）要跑一阵才转 running
+    }, { tries: 90, gap: 2000, label: 'running' });
     rec.appStatus = item.status;
     rec.service = item.appServiceInfo ? {
       name: item.appServiceInfo.serviceName, type: item.appServiceInfo.type,
