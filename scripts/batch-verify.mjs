@@ -327,7 +327,9 @@ async function testOne(app) {
       const s = await callInstallStatus(taskId);
       const d = s && s.data;
       if (!d) return null;
-      if (d.status === 2 || d.status === 3 || /success|failed|completed|error|cancel/i.test(d.message || '')) return s;
+      // 终态：2 = 成功；>= 3 = 失败/取消。实测静默失败会返回 status:5、progress:0、
+      // outputText 为空，只认 2/3 会让这类应用白等满 15 分钟，还拿不到失败原因
+      if (d.status === 2 || d.status >= 3 || /success|failed|completed|error|cancel/i.test(d.message || '')) return s;
       return null;
     // 冷缓存下要拉镜像，安装可能持续十几分钟；窗口给足，避免把「还在拉镜像」记成失败
     }, { tries: 900, gap: 1000, label: 'install' });
@@ -365,6 +367,14 @@ async function testOne(app) {
         await sleep(15000);
       }
       console.log(`  [verify] ${app} ${url} -> ${rec.entryCode}`);
+      // 入口打不开时补一份容器现场：区分「容器根本没起」「容器起了但没监听该端口」
+      // 与「端口映射错」，否则 000 只能记成可疑，无法归因
+      if (!rec.entryCode || rec.entryCode === '000') {
+        try {
+          const { stdout } = await ssh(`docker ps -a --format '{{.Names}} | {{.Status}} | {{.Ports}}' 2>/dev/null | grep -E '^${app}' || true`);
+          if (String(stdout).trim()) rec.containers = String(stdout).trim().slice(0, 800);
+        } catch { /* 忽略 */ }
+      }
     } else {
       rec.entryCode = 'n/a';
     }
