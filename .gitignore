@@ -45,8 +45,9 @@ docs/.vitepress/cache/
 docs/.vitepress/.temp/
 docs/.vitepress/dist/
 
-# 运行时状态（含凭据），不属于本仓库
-data/
+# 运行时状态（含凭据），不属于本仓库；只忽略仓库根目录的同名目录，
+# 避免误伤 apps/<app>/app/seed/data/ 这类随包种子配置（它对应 TRIM_PKGVAR 下的相对路径）
+/data/
 
 # 本地 DSH_HOME 残留（profile、凭据、会话）；含密钥，绝不入库
 .dsh/
