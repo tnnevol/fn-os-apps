@@ -58,3 +58,7 @@ appcenter-cli install-local
 ```bash
 appcenter-cli install-fpk <appname>.fpk
 ```
+
+设备端 `appcenter-cli` 因 RPC 权限不可用时，改用 Midscene 驱动 fnOS Web UI
+（`http://<设备 IP>:5666/`）的「应用中心 → 手动安装」完成同一批验证动作，
+完整步骤见[环境与脚本](/development/environment-and-scripts)的「真机验收通道」。

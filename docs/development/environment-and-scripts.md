@@ -85,7 +85,8 @@ fnpack create <app-name> --template docker
 | [fnOS 应用开放平台](https://developer.fnnas.com/) | 平台规则、开放 API 和 fnpack 参考 |
 | `fnpack 1.2.3` | 本地校验应用目录并生成 `.fpk` |
 | fnOS 测试设备 | 验证安装、升级、启动、停止、权限和卸载 |
-| `appcenter-cli` | 在 fnOS 设备上安装和检查应用 |
+| `appcenter-cli` | 在 fnOS 设备端安装和检查应用（需要设备侧 RPC 权限） |
+| Midscene（`@midscene/web`） | 驱动 fnOS Web UI 完成安装、启停、卸载与入口验证（`appcenter-cli` 不可用时的通道） |
 
 确认 fnpack 可用：
 
@@ -114,6 +115,8 @@ FPK 产物生成在应用目录中，不要提交 `.fpk` 或临时构建目录�
 
 ### 在 fnOS 上验证
 
+首选设备端 CLI（需要设备侧 `/run/trim_app_cgi/rpcbroker` 权限）：
+
 ```bash
 cd /path/to/apps/<app-name>
 appcenter-cli install-local
@@ -125,7 +128,73 @@ appcenter-cli list
 appcenter-cli install-fpk <app-name>.fpk
 ```
 
+设备端 CLI 因权限不可用时（启动即 `panic: ... rpcbroker: connect: permission denied`），改用
+**Midscene 驱动 fnOS Web UI**完成同一批验收动作，步骤见
+[真机验收通道](#真机验收通道midscene-驱动-fnOS-web-ui)。
+
 `TRIM_*` 目录和安装向导环境变量只在 fnOS 生命周期中可靠存在。直接在开发机执行 `cmd/main` 或 `cmd/install_callback`，不能替代真实安装验证。
+
+### 真机验收通道（Midscene 驱动 fnOS Web UI）
+
+当设备端 `appcenter-cli` 不可用时，用 Midscene 复用**用户自己已登录的 Chrome**，在 fnOS Web UI
+（`http://<设备 IP>:5666/`）的「应用中心 → 手动安装」里走完安装全流程。
+
+配置只需一条命令，产出四行固定配置（模型由 DSH 本地桥提供，**不需要第三方模型密钥**）：
+
+```bash
+curl -s "http://127.0.0.1:<桥端口>/v1/midscene-env"    # 端口以 /v1/health 的 port 字段为准
+```
+
+把返回的四行写入**运行目录**的 `.env`（Midscene 只加载当前目录的 `.env`），然后：
+
+```bash
+# 连接用户浏览器中的 fnOS 标签页
+npx -y @midscene/web@1 --bridge connect --url "http://<设备 IP>:5666/"
+```
+
+安装与验证动作序列：
+
+| 步骤 | UI 位置 | 观察点 |
+| --- | --- | --- |
+| 1 | 应用中心 → 左侧「手动安装」 | 弹窗内选「从电脑上传」，注入本地 `.fpk` |
+| 2 | 「未经经验证应用的安全提示」 | 弹窗显示应用名，来源为「手动安装」 |
+| 3 | 安装向导「端口配置」 | 端口默认值与取值范围说明（1—65535） |
+| 4 | 安装向导「下一步」 | 安装进度条 |
+| 5 | 应用中心 → 「已安装」 | 卡片按钮为「打开」= 运行中，「启用」= 未运行 |
+| 6 | 桌面图标 / 「打开」 | 入口实际地址应等于向导填写的端口 |
+| 7 | 应用详情 → 卸载 | 卸载向导提供「保留数据 / 删除所有数据」二选一 |
+
+**测试结束后必须清理**：验证完成后，用同一条通道把为测试而安装的应用卸载掉，别把测试残留留在
+设备上：
+
+1. 应用中心 → 已安装 → 点应用名进详情 → 操作按钮旁的小箭头 → 「卸载」；
+2. 系统确认弹窗点「确定」，进入卸载向导；
+3. 选「**删除所有数据**」——测试数据没有保留价值，选「保留数据」会在设备上留下数据目录；
+4. 卸载后**三向复核**：桌面图标已消失 + `curl` 入口地址连接失败（端口已释放）+
+   「已安装」列表中不再有该应用。
+
+清理后应把结论写回[真机验收记录](/validation/README)：设备当前状态必须是「已恢复原状」，
+而不是「保留测试应用」。
+
+**为什么必须看按钮文案而不是安装结果**：端口被占用时，向导的静态校验**不会**拦截（表单阶段无法
+可靠判定运行时占用），最终由 `cmd/main status` 的返回值决定应用中心显示「启用」还是「打开」。
+「已安装」列表里按钮是「启用」，就是端口占用被正确暴露的证据；若显示「打开」而实际不可访问，
+才是需要拦截的缺陷。
+
+**批量验收**：`scripts/batch-verify.mjs` 把上述流程批量化，逐个应用执行
+「构建 → 上传 → 安装 → 入口探测 → 卸载 → 清理残留」，结果以 JSON Lines 逐条落盘。
+用法、判定分级与设备清理纪律见 [批量真机验收规程](/testing/FNOS-001-batch-verification)。
+设备地址、账号、暂存目录全部由环境变量传入（`FNOS_HOST` / `FNOS_SSH_USER` / `FNOS_STAGE_DIR`），
+**不入库、不入文档**。
+
+**注意事项**：
+
+- Bridge 模式会切换用户当前标签页。需静默操作时用 JS SDK 调用
+  `agent.page.setActiveTabId(tabId, { activate: false })` 精确选页。
+- 注入本地文件要用文件选择器通道（`page.registerFileChooserListener` → `accept([路径])`），
+  否则系统文件对话框会阻塞页面、让后续动作全部超时。
+- 证据截图保存到仓库外的临时目录，不提交 `.fpk` 与截图二进制。
+
 
 ## 文档开发
 

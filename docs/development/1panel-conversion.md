@@ -393,7 +393,11 @@ T1 应用的数据默认落在 `${TRIM_PKGVAR}`（私有目录，**文件管理�
 >
 > **残留风险（如实登记，不隐瞒）**：其在 compose 中的展开**仍未经真机确认**。若展开为空，`${TRIM_APPDEST_VOL}/@appshare/...` 会退化成 `/@appshare/...`——**容器仍能启动、应用仍能运行，但数据落到错误位置，属静默错误、不会报错**。
 >
-> **将来验证方法**：真机 `docker inspect <container> --format '{{json .Mounts}}'` 看 `Source` 是真实路径还是 `/@appshare/...`。
+> **将来验证方法**：真机执行下面的命令，看 `Mounts[].Source` 是真实路径还是 `/@appshare/...`：
+>
+> ```bash
+> docker inspect <container> --format '{{json .Mounts}}'
+> ```
 >
 > **本轮决策依据**：用户裁决「先按方案 C 做，不用测试」。
 
@@ -703,6 +707,78 @@ disable_authorization_path = true
 - [ ] 文档内没有开发机绝对路径，设备端路径已注明指向目标 NAS。
 - [ ] `bash -n apps/fn-<app>/cmd/*` 通过；`pnpm run check -- --all`、`pnpm run lint`、`git diff --check` 通过。
 
+### 卸载数据删除的三组实测（2026-10-20 批量验收期间）
+
+| 实验 | 做法 | 结果 | 推论 |
+| --- | --- | --- | --- |
+| ① 平台是否原生删除 | 把某应用 `cmd/uninstall_callback` 改成**空操作**（不删任何东西）再卸载 | 数据目录**仍在**；但卸载回调**确实被调用** | **平台不删数据**，删除责任在应用侧；回调是正确入口，只是写法有问题 |
+| ② 只删内容能否删干净 | 回调改为只 `rm -rf "$DIR"/*`（不做 unlink），以会写入真实数据的应用测试 | **删不干净**：容器以 root 写入的文件（实测 `storage/app/.gitignore`）报 `Permission denied` | 包用户能删**自己拥有的**目录项，但删不动 **root 属主**的文件 |
+| ③ 包用户能否自行提权 | 回调内 `runuser -u "$TRIM_USERNAME" -- rm -rf ...` | `runuser: may not be used by non-root users` | 包用户**无法自行提权**，只能靠平台给的特权位 |
+
+补充事实（同一轮实测）：存储卷为 btrfs + `trimacl`；`/vol2/@appdata`、`/vol2/@apphome` 属 `root:root` `755`；
+**uid ≥ 1000 的普通账号在该卷上可以 unlink 条目，而 uid 9xx 的服务账号（包用户）不行**——
+即平台对「人类账号」与「服务账号」的权限并不对等。
+
+**据此分层的处置方案**（不是「全仓改 Root 模式」）：
+
+| 类别 | 判据 | 数据文件属主 | 需要的改动 |
+| --- | --- | --- | --- |
+| **A 类**：镜像允许非 root 运行 | 镜像默认 `USER` 可降权 | 包用户 | 回调**只删内容 + 如实上报残留**；并补 `user: "${TRIM_UID}:${TRIM_GID}"`（落实 2026-10-15「运行身份优先非 root」裁决）。**不需要 Root 模式** |
+| **B 类**：镜像初始化强依赖 root | s6-overlay / supervisord / 显式 `USER=root`、启动必执行 `chown` | root | **只有这类需要 Root 模式**：生命周期脚本提权删数据，服务进程用 `runuser` 切回包用户（官方权限文档允许「访问包用户无法处理的文件」）。规约已登记的硬依赖例外见「裁决 B 例外表」 |
+
+### 已定案规则（2026-10-21，用户裁定 + 真机验证）
+
+> **应用可以删除自己创建的数据，但不允许删除环境变量对应的目录。**
+
+由此确定卸载回调的写法（已应用到本仓库全部**转换应用**）：
+
+| 项 | 规则 |
+| --- | --- |
+| 删什么 | 只删 `TRIM_PKGVAR` / `TRIM_PKGHOME` **目录内的内容**（含隐藏文件） |
+| 不删什么 | **不删**这两个目录本身——它们由平台管理，应用无权也不允许 unlink（父目录 `/vol2/@appdata` 属 `root:root` `755`） |
+| 残留怎么办 | 删不干净就**如实上报**（「Some application data in ... could not be removed」），**禁止**再打印「Application data deleted.」 |
+| 要不要 Root 模式 | **不要**。删不掉的原因是「文件不是包用户自己创建的」（容器以其它 uid 写入），解法是让容器以包用户身份写数据，而不是给回调提权 |
+| 覆盖范围 | 本仓库 **179 个转换应用**已统一为新写法；`831b7d3` 之前的 **14 个用户既有应用**按禁止项 8 不修改 |
+
+新回调模板（`cmd/uninstall_callback`）：
+
+```bash
+delete_contents() {
+    local d="$1"
+    [ -n "$d" ] || return 0
+    [ -d "$d" ] || return 0
+    rm -rf "$d"/* "$d"/.[!.]* 2>/dev/null
+    [ -z "$(ls -A "$d" 2>/dev/null)" ]
+}
+
+if [ "$wizard_data_action" = "delete" ]; then
+    echo "Deleting application data..."
+    for d in "${TRIM_PKGVAR:-}" "${TRIM_PKGHOME:-}"; do
+        [ -n "$d" ] || continue
+        [ -d "$d" ] || continue
+        if delete_contents "$d"; then
+            echo "Application data deleted: $d"
+        else
+            echo "Some application data in $d could not be removed; the platform keeps this directory."
+        fi
+    done
+else
+    echo "Keeping application data for future reinstallation."
+fi
+```
+
+**真机验证（2026-10-21）**：`fn-it-tools` 装好 → 入口 200 → 卸载（选删除数据）→ 日志逐目录如实输出
+`Application data deleted: /vol2/@appdata/fn-it-tools` 与 `.../fn-it-tools`；核对设备：两个平台目录**仍在**且
+**内容条目数为 0**（平台保留目录、应用只删内容），与规则完全一致。
+
+**由此得到的一条独立结论**：「应用只能删自己创建的数据」——所以要真正删干净，得让**容器以包用户身份写数据**
+（`user: "${TRIM_UID}:${TRIM_GID}"`，即 2026-10-15「运行身份优先非 root」裁决），而不是给回调提权。
+对镜像固定 uid 的应用（见「属主待验证清单」），需在 `install_callback` 里用 ACL 授权镜像 uid，
+并用**默认 ACL**（`setfacl -d -m u:<包用户>:rwx`）让容器后续创建的子目录也带包用户权限，否则仍删不掉。
+
+**必须先做、与权限无关的一项**：把「删除失败却打印 `Application data deleted.`」改成**如实上报**——
+在这之前不得宣称「删除所有数据」已实现。
+
 ## 待确认
 
 以下事实尚未确认，转换时遇到对应场景应先暂停并上报，不要按猜测实现：
@@ -715,6 +791,7 @@ disable_authorization_path = true
 | `/etc/timezone`、`/etc/localtime` 在 fnOS 宿主上的存在性与权限 | 上游 22 个应用；本规约统一改为 `TZ` 环境变量，需真机确认时区生效 | 待真机验证 |
 | 1Panel 宿主路径（如 `/etc/1panel`）挂载的替代方案 | 影响 `ai-gateway` 等应用的数据目录设计 | 待确认 |
 | 既有 14 个已发布应用的端口校验是否统一为严格正则 | 既有应用普遍用 `^[0-9]+$`（不挡越界），与本规约的 1—65535 严格正则不一致；**本次不回溯**，如需统一须另开需求 | 已登记，由计划维护者决定是否单独排期 |
+| **卸载「删除所有数据」实际删不掉，且日志谎报成功** | 见下方「卸载数据删除的三组实测」与「已定案规则」 | **已定案并已实施**（2026-10-21）：应用只删自己创建的数据内容、保留平台目录、如实上报；**不引入 Root 模式** |
 | **镜像默认 `USER` 与 `TRIM_PKGVAR` 目录属主不匹配——受影响应用清单** | `install_callback` 建的目录属主是**包用户**、mode `770`；镜像若以**固定非 root 身份**运行则无写权限。已从 registry 实拉镜像 config 与 `/etc/passwd` 逐个核实（**非推测**）：
 
 | 应用 | 镜像 USER | 实测 uid:gid |
@@ -772,6 +849,7 @@ disable_authorization_path = true
 | 2026-10-16 | **D 组方案订正 C→B**：原推荐 `${TRIM_APPDEST_VOL}/@appshare/fn-<app>/`（依据 `fn-xiaoya-only` 先例）**依据不足**。查证官方文档：`TRIM_APPDEST_VOL` 全文仅 1 次（定义句），**不在「Compose 可以使用」的变量表中**，无任何用法示例；而 `TRIM_DATA_SHARE_PATHS` 出现 6 次、**明确列在该表中**、且有官方示例 `${TRIM_DATA_SHARE_PATHS%%:*}`；`@appshare` 在官方文档 **0 次**（属平台实现细节，非文档化契约）。**改用 `${TRIM_DATA_SHARE_PATHS}`**。同时采纳官方 `resource.md:34` 建议：**声明 1 个顶级 share（`fn-<app>`）**，各用途子目录在容器内挂载目标区分。`install_callback` 加 `mkdir -p "${TRIM_DATA_SHARE_PATHS%%:*}"` 兜底。 |
 | 2026-10-16 | **D 组方案订正 B→C（回归）**：同日曾据官方文档把方案改为 `${TRIM_DATA_SHARE_PATHS}`，**随即复核后撤回**——该变量是 `:` 分隔**多值**，无法作单个挂载源（此点在更早的变更记录里已有记载，**是我推翻了自己写下的条款**）。恢复 `${TRIM_APPDEST_VOL}/@appshare/fn-<app>/<子目录>`，并补记其真实依据：用户既有应用 `fn-xiaoya-only` **正在使用**该写法（compose 引用 4 处），其文档给出实际路径 `/vol4/@appshare/fn-xiaoya-only/alist/data/`。**教训：官方文档没写 ≠ 平台不支持；"使用中的用户应用 + 其文档 + 真机观测"强于官方文档描述。反之官方变量表中的变量也不等于能在 compose 当挂载源用。** |
 | 2026-10-16 | 属主待验证清单补入 `fn-ezbookkeeping`（镜像层 `USER 1000:1000`，与包用户 uid 9xx 不匹配）。它有三个挂载需写入（`storage` 共享 + `data`/`log` 私有），属 D 组（task-25）新增命中项。 |
+| 2026-10-20 | **批量真机验收（FNOS-001）沉淀**：① 走 Midscene 驱动应用中心 Web UI 的批量通道（设备端 `appcenter-cli` 因 rpcbroker 权限不可用），完整流程与判定分级见 [批量真机验收规程](/testing/FNOS-001-batch-verification)；② **向导密钥必须按 `helpText` 写明的位数生成**——`2fauth` 的 `APP_KEY` 要求 32 位随机串，按 17 位生成会被应用中心拒收（错误码 10236）；③ **卸载数据删除实际失败且日志谎报成功**（详见「待确认」表新增条目），影响全部使用同一写法的应用；④ 入口探测必须在卸载**之前**做，且应用中心报 `running` 不等于容器已监听，探针需重试；⑤ 外部依赖类必填字段（`DB_HOST`/`REDIS_HOST` 等）可用本地默认填充以验证转换本身，失败归类为「需外部依赖」而非转换缺陷；⑥ 文档与脚本一律不记录设备地址与凭据。 |
 | 2026-10-16 | **追溯整改（task-22）**：按裁决 B 复核 6 个已交付应用。**2 个加 `user:`**（`fn-wordpress`、`fn-sentinel-dashboard`）；**4 个归例外并在文档补「运行身份」节**——`fn-phpmyadmin`（显式 `USER=root` + 写 `/etc/phpmyadmin/`）、`fn-roundcube`（`chown ${TEMP_DIR}` 且该变量脚本内有默认值、必执行）、`fn-typecho`（`chown -R /app` + 写 `/etc/` + `su`）、`fn-rustdesk`（s6）。**判定方法写入规约：读 entrypoint 源码逐行找 root 操作，不能只看镜像名或 compose 是否设了变量。** |
 | 2026-10-16 | **裁决 B 例外条款按现象改写**：原写「s6-overlay 类镜像（`Entrypoint: ["/init"]`）」是**按实现**判定；实测 `neko` 用 **supervisord** 但机制相同（`user=root` 启动 + `%(ENV_USER)s` 降权 + `chown=root:neko`），故改为「**镜像初始化强依赖 root**」这一现象。另补两个易错点：① 镜像层 `USER` 环境变量 ≠ 可注入的 uid 机制（`neko` 的 `USER=neko` 只是降权目标）；② 判据是 entrypoint 源码而非镜像名（`wordpress` 的条件式 `chown` + `\|\| true` 不算，`roundcube` 因 `:=` 默认值必执行则算）。 |
 | 2026-10-16 | 属主待验证清单补入 `fn-neko`（镜像内 `neko` 用户固定 uid 1000，与包用户 uid 9xx 不匹配）。该应用归「初始化强依赖 root」例外（supervisord），故运行身份保持原样；其 `/home/neko`（`0700`）的写入能力待真机确认。 |

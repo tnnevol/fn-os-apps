@@ -222,7 +222,7 @@ lastVerified: 2026-10-09
 
 - **工具链级**：`pnpm install` → `pnpm run check -- --all`（SDD 结构校验 + VitePress 构建）、`pnpm run lint`。
 - **应用级**：`fnpack build` 产物包含 `manifest`、`app/`、`cmd/`、`config/`、`wizard/`、两个图标；compose 能被 `docker compose config` 解析。
-- **目标 NAS 验收**：`appcenter-cli install-local` 或 `appcenter-cli install-fpk` 安装，验证启动、桌面入口、重启保留、卸载保留数据、升级读取旧数据；证据写入 `docs/validation/`（目标 NAS 路径不能替代本地构建结论）。
+- **目标 NAS 验收**：`appcenter-cli install-local` 或 `appcenter-cli install-fpk` 安装；**设备端 CLI 因 RPC 权限不可用时，改用 Midscene 驱动 fnOS Web UI 的「手动安装」**（两条通道结论等效，判定口径不变，见[测试用例规范](/testing/index)的「目标环境验证工具」与[环境与脚本](/development/environment-and-scripts)的「真机验收通道」）。验证启动、桌面入口、重启保留、卸载保留数据、升级读取旧数据；证据写入 `docs/validation/`（目标 NAS 路径不能替代本地构建结论）。
 - **文档**：`pnpm run build -- --docs`；新增应用必须同时更新 `docs/apps/index.md` 与 `.vitepress/config.mts` 导航（`check` 不校验导航，需人工确认）。
 - **发布**：按批次提交，走现有 `v<版本号>` tag 流程；应用版本与项目版本由 `pnpm run version` 统一处理。
 - **回滚**：应用出问题时从 Release 撤下对应 FPK；已安装用户通过应用中心卸载，卸载向导默认保留数据，禁止在回滚流程中删除用户数据。
@@ -253,7 +253,7 @@ lastVerified: 2026-10-09
 | 阶段 | 状态 | 说明 |
 | --- | --- | --- |
 | 阶段 0 转换准备 | 待完成 | 转换清单（14/98/74/46/33）与转换规约已完成；图标管线 `scripts/generate-icons.mjs` 已交付并通过本地验证。**本机 `appcenter-cli` 因权限不可用，无法执行 `appcenter-cli install-local` 做安装回归，故阶段 0 维持「待完成」而非「已完成」** |
-| 阶段 1 T0 批次（14） | 待完成（真机验收未完成） | **14 个应用全部产出**：首批 3 个（`fn-it-tools`/`fn-linux-command`/`fn-adminer`）+ 本轮 11 个（`fn-browserless`、`fn-chatgpt-next-web`、`fn-cloudflared`、`fn-cyberchef`、`fn-llama-cpp`、`fn-lobe-chat`、`fn-memcached`、`fn-web-check`、`fn-wechatmarkdowneditor`、`fn-yesplaymusic`、`fn-zabbix-agent`），逐个构建通过并由 Lead 独立复验 11/11；静态规范核对（图标四件套、权限、向导字段同名、入口 ID ≤32 且前缀正确、无上游残留）全量通过。**覆盖范围提示**：正式测试用例目前只覆盖首批 3 个应用（[T0 第一轮报告](/testing/FNOS-001-t0-round1-report)），11 个新应用尚未用例化。**真机验证（2026-10-10）**：`fn-it-tools` 安装成功、端口正常服务、启停与卸载（删除数据）全通过，**04-AC-02 通过**、**04-AC-03 部分通过**；**04-AC-06、05-AC-01、06-AC-01 仍未执行**。阶段状态维持「待完成」——本地构建完成不等于批次完成 |
+| 阶段 1 T0 批次（14） | 待完成（真机验收未完成） | **14 个应用全部产出**：首批 3 个（`fn-it-tools`/`fn-linux-command`/`fn-adminer`）+ 本轮 11 个（`fn-browserless`、`fn-chatgpt-next-web`、`fn-cloudflared`、`fn-cyberchef`、`fn-llama-cpp`、`fn-lobe-chat`、`fn-memcached`、`fn-web-check`、`fn-wechatmarkdowneditor`、`fn-yesplaymusic`、`fn-zabbix-agent`），逐个构建通过并由 Lead 独立复验 11/11；静态规范核对（图标四件套、权限、向导字段同名、入口 ID ≤32 且前缀正确、无上游残留）全量通过。**覆盖范围提示**：正式测试用例目前只覆盖首批 3 个应用（[T0 第一轮报告](/testing/FNOS-001-t0-round1-report)），11 个新应用尚未用例化。**真机验证（2026-10-10，fnos-nas）**：`fn-it-tools` 安装成功、端口正常服务、启停与卸载（删除数据）全通过，**04-AC-02 通过**、**04-AC-03 部分通过**；**04-AC-06、05-AC-01、06-AC-01 仍未执行**。**真机验证（2026-10-20，fnos-mi，Midscene Web UI 通道）**：04-AC-02、04-AC-05、04-AC-06、04-AC-03（卸载分支）、04-AC-07（打包期）通过，**04-AC-03 保留数据分支、05-AC-01、06-AC-01 仍未执行**。阶段状态维持「待完成」——本地构建完成不等于批次完成 |
 | 阶段 2 T1 批次（125） | **已完成**（124/125） | **124 个已交付**，唯一未转换的是 `deepseek-harness`——它是本仓库自己的应用，按边界**不转换**。分组实施：A 单挂载 / B 多挂载 / C 含单文件挂载 / D 用户可见数据四组，其中 **D 组 6 个**（`audiobookshelf`、`calibre-web`、`ezbookkeeping`、`music-tag-web`、`navidrome`、`xiaomusic`）按[转换规约](/development/1panel-conversion)「模式 B-2」落**共享目录**而非 `TRIM_PKGVAR`。**全部仅通过本地构建 + 静态核对，未做真机验证** |
 | 阶段 3 T2 批次（47） | **已完成**（47/47） | **全部交付**。数据库字段按上游实际消费方式分为**合并**（整串拼 URL）、**分离**（host/port/name 独立）、**DSN 特例**（上游 `init.sh` 生成、fnOS 无钩子）三类；**死字段不生成**（上游声明但 compose 不引用的）、**值域只给合法选项**（如 `forgejo` 的 `mariadb`、`roundcube` 的 `postgresql`、`neko` 的 4 个不存在 tag 均被收敛）。**全部仅通过本地构建 + 静态核对，未做真机验证** |
 
@@ -286,3 +286,4 @@ lastVerified: 2026-10-09
 | 2026-10-10 | 在「实现范围和边界」登记入口约束：入口键须以 `appname` 为前缀且 ≤32 字符、无 Web UI 应用 `app/ui/config` 为 `{}`；完成状态补「测试用例目前只覆盖首批 3 个应用」的覆盖范围提示，避免把 11 个新应用的构建通过读成用例化验收。 |
 | 2026-10-10 | T1 批次启动：确定 A/B/C/D 四组实施分组；第 1 组 14 个应用完成（14/14 构建通过）。新增三条裁决（PUID→`TRIM_UID`、向导字段取舍、上游落盘缺陷修正）。`excalidraw` 移出 T1（无状态 + `latest` 镜像）。`T02-02` 的权限要求细化为使用 `TRIM_UID`/`TRIM_GID`。 |
 | 2026-10-19 | **同步完成状态至实际交付**：阶段 2（T1）与阶段 3（T2）由「规划中/未开始」改为**已完成**——T1 交付 124/125（`deepseek-harness` 按边界不转换）、T2 交付 47/47。新增「交付总览」表：可转换范围 186、已交付 185、仓库应用 193（= 清单内 185 + 清单外用户既有 8 个）。明确标注**本轮不做真机验证**，并列出发行前风险最高的三项待验证项。阶段 1 维持「待完成」并注明原因是**真机验收未完成**（本地构建完成不等于批次完成）。 |
+| 2026-10-20 | **引入 Midscene Web UI 验证通道并补做 T0 真机复验**：「目标 NAS 验收」条款补上「设备端 `appcenter-cli` 权限不可用时改用 Midscene 驱动应用中心 Web UI」，两条通道**结论等效**、判定口径不变。阶段 1 完成状态补记 fnos-mi（目标测试设备）复验结果：04-AC-02、04-AC-05、**04-AC-06（端口占用 → 应用中心显示「启用」= 未运行，红线未触碰）**、04-AC-03（卸载分支，卸载向导提供「保留数据/删除所有数据」二选一且默认保留）、04-AC-07（打包期）通过；04-AC-03 保留数据分支、05-AC-01、06-AC-01 仍未执行，覆盖应用 2/14，阶段状态维持「待完成」。证据见 [fnos-mi 验收记录](/validation/FNOS-001-fnos-mi-2026-10-20)。 |
