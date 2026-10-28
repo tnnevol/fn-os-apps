@@ -2,4 +2,42 @@
 
 ### This script is called after the user installs the application.
 
+# 镜像 squidfunk/mkdocs-material 启动即执行 `mkdocs serve`，要求 /docs 下存在 mkdocs.yml，
+# 缺失会直接退出（Config file 'mkdocs.yml' does not exist.）并进入重启循环。
+# 数据目录首次安装时是空的，这里按种子文件铺一份最小可用站点。
+if [ -z "${TRIM_PKGVAR}" ]; then
+    echo "TRIM_PKGVAR is not set; cannot prepare application data directory" >"${TRIM_TEMP_LOGFILE}"
+    exit 1
+fi
+
+DATA_DIR="${TRIM_PKGVAR}/data"
+SEED_DIR="${TRIM_APPDEST}/seed/data"
+
+mkdir -p "${DATA_DIR}/docs"
+
+# 只补缺失的文件：升级或重装时不覆盖用户已经写好的配置与文档。
+if [ ! -s "${DATA_DIR}/mkdocs.yml" ]; then
+    if [ -f "${SEED_DIR}/mkdocs.yml" ]; then
+        cp "${SEED_DIR}/mkdocs.yml" "${DATA_DIR}/mkdocs.yml"
+        echo "Seeded config: mkdocs.yml"
+    else
+        echo "Seed file missing: ${SEED_DIR}/mkdocs.yml" >"${TRIM_TEMP_LOGFILE}"
+        exit 1
+    fi
+fi
+
+if [ ! -s "${DATA_DIR}/docs/index.md" ]; then
+    if [ -f "${SEED_DIR}/docs/index.md" ]; then
+        cp "${SEED_DIR}/docs/index.md" "${DATA_DIR}/docs/index.md"
+        echo "Seeded page: docs/index.md"
+    else
+        echo "Seed file missing: ${SEED_DIR}/docs/index.md" >"${TRIM_TEMP_LOGFILE}"
+        exit 1
+    fi
+fi
+
+chmod -R 770 "${DATA_DIR}" 2>/dev/null || true
+
+echo "Prepared application data directory: ${DATA_DIR}"
+
 exit 0

@@ -2,4 +2,33 @@
 
 ### This script is called after the user installs the application.
 
+# Node-RED 首次启动会把镜像内的默认配置 settings.js 复制到数据目录 /data，
+# 之后流程（flows.json）、凭据与会话也都写在 /data。
+# 容器按 config/privilege 以「包用户」运行（compose 里 user: ${TRIM_UID}:${TRIM_GID}），
+# 若 /data 归 root 所有，这一步就 Permission denied，容器进入无限重启。
+#
+# 保持非 root：回调本身即以包用户身份执行，把数据目录建出来并确认可写即可。
+if [ -z "${TRIM_PKGVAR}" ]; then
+    echo "TRIM_PKGVAR is not set; cannot prepare application data directory" >"${TRIM_TEMP_LOGFILE}"
+    exit 1
+fi
+
+DATA_DIR="${TRIM_PKGVAR}/data"
+
+# 由包用户创建，属主自然就是包用户；已存在时不动内容（升级/重装保留既有流程）。
+mkdir -p "${DATA_DIR}"
+
+# 属主对齐只在有权限时生效，失败不阻断启动。
+chown -R "${TRIM_USERNAME:-${TRIM_UID}}:${TRIM_GROUPNAME:-${TRIM_GID}}" "${DATA_DIR}" 2>/dev/null || true
+chmod 770 "${DATA_DIR}" 2>/dev/null || true
+
+# 自检：确认当前身份确实能写，避免装完才发现又掉进重启循环。
+if touch "${DATA_DIR}/.write_check" 2>/dev/null; then
+    rm -f "${DATA_DIR}/.write_check"
+    echo "Prepared Node-RED data directory (writable): ${DATA_DIR}"
+else
+    echo "Node-RED data directory is not writable by the package user: ${DATA_DIR}" >"${TRIM_TEMP_LOGFILE}"
+    exit 1
+fi
+
 exit 0

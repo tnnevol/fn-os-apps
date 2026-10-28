@@ -5,7 +5,10 @@ services:
     # 按裁决 B：镜像层默认 root（config.User 为 null），加 user: 以包用户运行。
     # 本镜像为 Apache 系（apachectl -D FOREGROUND）：端口 8089 非特权端口，
     # 但 pid/日志目录在非 root 下的写入行为需真机确认（已登记为待验证项）。
-    user: "${TRIM_UID}:${TRIM_GID}"
+    #
+    # 真机结论（2026-10）：entrypoint.sh 第 7 行要改写 /etc/apache2/sites-enabled/000-default.conf，
+    # 该目录归 root 所有；以包用户启动会 Permission denied 并无限重启（Restarting (1)）。
+    # 该镜像必须 root 起，故去掉 user:（数据目录仍经 TRIM_PKGVAR 挂载，权限由宿主持有）。
     environment:
       # WEB_PORT 是容器内的监听端口，宿主映射为 ${APP_PORT}:8089。
       # 用户改 APP_PORT 只影响宿主侧，容器内始终监听 8089、映射也对 8089，因此无需同步。

@@ -5,7 +5,8 @@ services:
     environment:
       # 上游由 1Panel 服务选择器注入 PANEL_DB_*，fnOS 改为向导显式填写
       - LANGFLOW_DATABASE_URL=postgresql://${DB_USERNAME}:${DB_PASSWORD}@${DB_HOST}
-      - LANGFLOW_CONFIG_DIR=app/langflow
+      # 必须用绝对路径：进程 cwd 是 /app，相对值会被拼成 /app/app，落盘时 PermissionError 起不来
+      - LANGFLOW_CONFIG_DIR=/app/langflow
     ports:
       - "${APP_PORT}:7860"
     restart: always

@@ -9,10 +9,19 @@ if [ -z "${TRIM_PKGVAR}" ]; then
     exit 1
 fi
 
-mkdir -p "${TRIM_PKGVAR}/data"
+DATA_DIR="${TRIM_PKGVAR}/data"
+mkdir -p "${DATA_DIR}"
 
-chmod -R 770 "${TRIM_PKGVAR}/data" 2>/dev/null || true
+# 镜像内进程固定以 uid=1000 / gid=0 运行（langflowai/langflow 的 Dockerfile 里 USER user），
+# 与 fnOS 的包用户无关。宿主侧目录若归 root/包用户所有，容器写 /app/langflow/secret_key
+# 会 Permission denied，容器起不来。这里把属主对齐到镜像内 UID，是唯一不依赖宿主组的做法。
+if [ "$(id -u)" = "0" ]; then
+    chown -R 1000:0 "${DATA_DIR}" 2>/dev/null || true
+else
+    # 无 root 权限时退化为「全员可写」，至少保证容器内能落盘
+    chmod -R 777 "${DATA_DIR}" 2>/dev/null || true
+fi
 
-echo "Prepared application data directory: ${TRIM_PKGVAR}/data"
+echo "Prepared application data directory: ${DATA_DIR}"
 
 exit 0

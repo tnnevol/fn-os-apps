@@ -1,0 +1,24 @@
+# MkDocs 站点配置（随应用包提供的初始版本）。
+# 用户可在应用数据目录中直接修改本站点配置与 docs/ 下的文档。
+site_name: 我的文档
+site_description: 由飞牛 fnOS 应用部署的 MkDocs Material 站点
+docs_dir: docs
+site_dir: site
+
+theme:
+  name: material
+  language: zh
+  features:
+    - navigation.instant
+    - navigation.top
+    - content.code.copy
+
+nav:
+  - 首页: index.md
+
+markdown_extensions:
+  - admonition
+  - toc:
+      permalink: true
+  - pymdownx.highlight
+  - pymdownx.superfences
