@@ -147,7 +147,28 @@ async function getBridgeModule() {
 async function ensureBridge() {
   if (bridge) return bridge;
   const { AgentOverChromeBridge } = await getBridgeModule();
-  const agent = new AgentOverChromeBridge({ enableWaterFlowAnimation: false, serverListeningTimeout: 60000 });
+
+  // 桥接固定监听 127.0.0.1:3766。上一个实例刚退出时该端口可能仍在 TIME_WAIT，
+  // 立即监听会抛 EADDRINUSE 并把整批带走（实测反复发生）。这里改为重试若干次，
+  // 让「上一个进程还没完全放手」变成一个可自愈的短暂状态。
+  let agent = null;
+  let lastErr = null;
+  for (let attempt = 0; attempt < 6 && !agent; attempt++) {
+    try {
+      agent = new AgentOverChromeBridge({ enableWaterFlowAnimation: false, serverListeningTimeout: 60000 });
+      // 触发一次真实握手，端口冲突会在这里暴露
+      await agent.getBrowserTabList();
+    } catch (e) {
+      lastErr = e;
+      const portBusy = /EADDRINUSE/.test(String(e && e.message));
+      if (agent) { await agent.destroy().catch(() => {}); agent = null; }
+      if (!portBusy) throw e;
+      console.error(`[bridge] 端口被占用，等待后重试 (${attempt + 1}/6)`);
+      await sleep(10000);
+    }
+  }
+  if (!agent) throw lastErr || new Error('桥接初始化失败');
+
   const findTab = async () => {
     const tabs = await agent.getBrowserTabList();
     return tabs.find((t) => String(t.url || '').includes(HOST));
@@ -377,6 +398,8 @@ function verdict(rec) {
   if (rec.appStatus !== 'running') {
     if (/address already in use|port is already allocated/i.test(`${rec.log || ''}`)) return 'BLOCKED';
     if (rec.needsExternal) return 'BLOCKED';
+    // 仍处于过渡态（start / installing …）说明只是没等到就绪，不能当成「原生应用装完即终态」
+    if (rec.notReady) return 'FAIL';
     // 原生应用（没有任何对外服务端口）装完不常驻 running 是正常形态：
     // 安装成功即说明转换可用，不能因为没有 running 记成失败。
     if (!rec.service || !rec.service.port) return 'PASS';
@@ -504,11 +527,15 @@ async function testOne(app) {
       // 应用中心报「已安装」不代表容器已就绪：重镜像（数据库迁移、初始化）要跑一阵才转 running
       }, { tries: 90, gap: 2000, label: 'running' });
     } catch (e) {
-      // 超时也接受：只要应用已出现在「已安装」列表里，就交给入口探测去判定是否可用
+      // 超时也接受：只要应用已出现在「已安装」列表里，就交给入口探测去判定是否可用。
+      // 但必须记下当时的状态——start/installing 之类是过渡态，不能当成「已就绪」，
+      // 否则会像 fn-dashy 那样：还在启动就因为没有服务端口被判成 PASS。
       const l = await callInstalledList().catch(() => null);
       item = (l || []).find((x) => x.appName === appName) || null;
       if (!item) throw e;
       rec.statusTimeout = true;
+      rec.statusAtTimeout = item.status;
+      rec.notReady = !['running', 'stopped', 'nostart'].includes(String(item.status));
     }
     rec.appStatus = item.status;
     rec.service = item.appServiceInfo ? {
@@ -554,6 +581,24 @@ async function testOne(app) {
               const s2 = String(insp || '').trim();
               if (s2) rec.containerState = s2.slice(0, 300);
             }
+
+            // 绑定挂载取证：宿主侧目录是否存在、属主与权限是谁。
+            // 容器内进程能否写入挂载点完全取决于这一项，而应用一卸载就查不到了，
+            // 所以必须趁容器还在的时候取。
+            try {
+              const { stdout: mj } = await ssh(`docker inspect '${first}' --format '{{json .Mounts}}' 2>/dev/null || true`);
+              const mounts = JSON.parse(String(mj || '[]').trim() || '[]');
+              const rows = [];
+              for (const m of mounts) {
+                if (!m || m.Type !== 'bind' || !m.Source) continue;
+                const { stdout: st2 } = await ssh(`stat -c '%U:%G %a' '${m.Source}' 2>/dev/null || echo MISSING`);
+                rows.push(`${m.Source} -> ${m.Destination} [${String(st2 || '').trim()}]`);
+              }
+              if (rows.length) rec.mounts = rows.join(' | ').slice(0, 1500);
+              // 容器内进程身份：与挂载点属主对照即可判断能不能写
+              const { stdout: uidOut } = await ssh(`docker inspect '${first}' --format '{{.Config.User}}' 2>/dev/null || true`);
+              if (String(uidOut || '').trim()) rec.containerUser = String(uidOut).trim().slice(0, 40);
+            } catch { /* 忽略 */ }
           }
         } catch { /* 忽略 */ }
       }
