@@ -54,3 +54,6 @@ docs/.vitepress/dist/
 
 .pnpm-store
 .batch/
+
+# Midscene 运行产物（每次自动化的截图、报告、日志），属于测试临时文件
+midscene_run/

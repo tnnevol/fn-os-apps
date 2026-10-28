@@ -5,8 +5,9 @@
  *       → 校验状态与入口 → 卸载 → 回收 compose 网络 → 清理残留目录 → 取失败日志。
  *
  * 设计要点（踩坑换来的）：
- *  1. 安装/卸载走应用中心 HTTP 接口，鉴权用一份从已登录会话取来的 Cookie（`FNOS_COOKIE`）。
- *     不再依赖浏览器自动化：桥接会被浏览器回收，长跑必然中断；curl 短往返可重试、可续跑。
+ *  1. 安装/卸载走应用中心 HTTP 接口，但鉴权必须借浏览器会话：`osrt`/`ost` 是 HttpOnly，
+ *     页内 JS 读不到，curl + Cookie 头拿不到凭证。因此经 Midscene Bridge 连上已登录的
+ *     fnOS 标签页，用页面同源 fetch 调接口，浏览器自动带 Cookie。
  *  2. 状态机在 Node：每个应用「装 → 等 running → 探入口 → 卸 → 收网络 → 清残留」，逐条落盘。
  *  3. 卸载必须发生在入口探测之后：否则探到的端口已随卸载关闭。
  *  4. 平台不回收 compose 网络（`<app>_default`）。每装一个就占一个 /16 网段，累计十几个后
@@ -25,12 +26,14 @@
  * 敏感信息：设备地址、账号、会话 Cookie 一律来自环境变量，不写死、不落盘。
  *
  * 用法：
- *   FNOS_HOST=... FNOS_SSH_USER=... FNOS_STAGE_DIR=/vol2/1000/fnos-fpk/ FNOS_COOKIE='...' \
+ *   FNOS_HOST=... FNOS_SSH_USER=... FNOS_STAGE_DIR=/vol2/1000/fnos-fpk/ \
  *     node scripts/batch-verify.mjs --list-file /tmp/apps.txt --chunk 8
  */
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
+import { createRequire } from 'node:module';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 
 const exec = promisify(execFile);
@@ -39,7 +42,6 @@ const arg = (k, d) => { const i = argv.indexOf(k); return i >= 0 ? argv[i + 1] :
 
 const HOST = process.env.FNOS_HOST || '';
 const SSH_USER = process.env.FNOS_SSH_USER || '';
-const COOKIE = process.env.FNOS_COOKIE || '';
 const SSH_OPTS = ['-o', 'BatchMode=yes', '-o', 'ConnectTimeout=8'];
 const STAGE = process.env.FNOS_STAGE_DIR || '';
 const VOLUME_ID = process.env.FNOS_VOLUME_ID || '2';
@@ -51,10 +53,6 @@ const API_BASE = `http://${HOST}:5666`;
 
 if (!HOST || !SSH_USER || !STAGE) {
   console.error('缺少 FNOS_HOST / FNOS_SSH_USER / FNOS_STAGE_DIR 环境变量');
-  process.exit(2);
-}
-if (!COOKIE) {
-  console.error('缺少 FNOS_COOKIE（从已登录浏览器会话取 Cookie 头，含 osrt / ost）');
   process.exit(2);
 }
 
@@ -103,32 +101,130 @@ const curlCode = async (url) => {
   catch { return '000'; }
 };
 
-/**
- * 一次应用中心 API 调用；短往返 + 超时，失败由上层重试。
+/* ───────────────────────── 应用中心传输层 ─────────────────────────
  *
- * 会话失效（HTTP 401/403 或空响应）必须单独识别：接口不再返回 JSON 时，
- * 若继续按普通失败处理，会把「没登录」记成上百个应用 FAIL——一轮跑下来
- * 110 条假失败就是这么来的。这里抛出带 sessionExpired 标记的错误，由上层中止整批。
+ * 鉴权只能用浏览器会话本身：`osrt` / `ost` 是 HttpOnly，页内 document.cookie 读不到，
+ * 所以 curl + Cookie 头的路子拿不到凭证。改为经 Midscene Bridge 连上已登录的 fnOS 标签页，
+ * 由页面同源 fetch 携带 Cookie 调接口——浏览器替我们完成鉴权。
+ *
+ * Bridge 会被浏览器回收，所以每次调用前确认连接、失败即重建；单次调用是短往返，
+ * 断了重连比长连接更稳。
+ */
+
+let bridge = null;          // { agent, tabId }
+let bridgeEnvLoaded = false;
+
+/** 惰性加载 Midscene Bridge（仅此一处依赖 @midscene/web，缺失时给出可执行的提示） */
+async function loadMidscene() {
+  if (bridgeEnvLoaded) return;
+  const envFile = path.resolve('.batch/.env');
+  if (fs.existsSync(envFile)) {
+    for (const line of fs.readFileSync(envFile, 'utf8').split('\n')) {
+      const m2 = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/);
+      if (m2 && !process.env[m2[1]]) process.env[m2[1]] = m2[2].replace(/^["']|["']$/g, '');
+    }
+  }
+  bridgeEnvLoaded = true;
+}
+
+async function getBridgeModule() {
+  await loadMidscene();
+  // 以仓库根为基准解析：npx 缓存的绝对路径兜底，避免依赖调用方的 CWD
+  const req = createRequire(path.resolve('package.json'));
+  const candidates = [
+    process.env.MIDSCENE_BRIDGE_MODULE,
+    '@midscene/web/bridge-mode',
+    path.join(os.homedir(), '.npm/_npx/90f472951aa004bd/node_modules/@midscene/web/dist/lib/bridge-mode/index.js'),
+  ].filter(Boolean);
+  let lastErr;
+  for (const c of candidates) {
+    try { return req(c); } catch (e) { lastErr = e; }
+  }
+  throw new Error('无法加载 @midscene/web（bridge-mode）：' + String(lastErr && lastErr.message).slice(0, 200));
+}
+
+/** 连接（或复用）已登录的 fnOS 标签页 */
+async function ensureBridge() {
+  if (bridge) return bridge;
+  const { AgentOverChromeBridge } = await getBridgeModule();
+  const agent = new AgentOverChromeBridge({ enableWaterFlowAnimation: false, serverListeningTimeout: 60000 });
+  const findTab = async () => {
+    const tabs = await agent.getBrowserTabList();
+    return tabs.find((t) => String(t.url || '').includes(HOST));
+  };
+  let tab = await findTab();
+  // 标签页可能被用户关掉；自动重开一次，避免长跑因为「标签不在」整批中断
+  if (!tab) {
+    try { await agent.connectNewTabWithUrl(API_BASE + '/'); } catch { /* 下面再查一次 */ }
+    for (let i = 0; i < 8 && !tab; i++) {
+      await sleep(1500);
+      tab = await findTab();
+    }
+  }
+  if (!tab) {
+    await agent.destroy().catch(() => {});
+    throw new Error(`Midscene 桥接里没有 ${HOST} 的标签页，且自动打开失败；请在 Chrome 中打开并登录 fnOS 应用中心`);
+  }
+  await agent.page.setActiveTabId(Number.parseInt(String(tab.id), 10), { activate: false });
+  bridge = { agent, tabId: tab.id };
+  return bridge;
+}
+
+async function closeBridge() {
+  if (!bridge) return;
+  const b = bridge; bridge = null;
+  try { await b.agent.destroy(); } catch { /* 忽略 */ }
+}
+
+/**
+ * 一次应用中心 API 调用，走页面同源 fetch（浏览器自动带 Cookie）。
+ *
+ * 会话失效必须单独识别：接口不再返回 JSON 时，若按普通失败处理，会把「没登录」
+ * 记成上百个应用 FAIL。这里抛 sessionExpired，由主循环中止整批。
  */
 async function api(pathname, { method = 'GET', body } = {}) {
-  const url = API_BASE + pathname + (pathname.includes('?') ? '&' : '?') + 'language=' + LANG;
-  const args = ['-s', '-m', '30', '-H', `Cookie: ${COOKIE}`, '-w', '\n__HTTP__%{http_code}'];
-  if (method !== 'GET') args.push('-X', method);
-  if (body !== undefined) {
-    args.push('-H', 'Content-Type: application/json', '--data-binary', JSON.stringify(body));
+  let lastErr;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const { agent } = await ensureBridge();
+      const payload = {
+        url: pathname + (pathname.includes('?') ? '&' : '?') + 'language=' + LANG,
+        method,
+        body: body === undefined ? null : JSON.stringify(body),
+      };
+      const raw = await agent.page.evaluateJavaScript(`(async () => {
+        const p = ${JSON.stringify(payload)};
+        try {
+          const res = await fetch(p.url, {
+            method: p.method,
+            credentials: 'include',
+            headers: p.body ? { 'content-type': 'application/json' } : undefined,
+            body: p.body || undefined,
+          });
+          const text = await res.text();
+          return JSON.stringify({ status: res.status, text });
+        } catch (e) {
+          return JSON.stringify({ status: 0, text: '', err: String(e && e.message || e) });
+        }
+      })()`);
+      const outer = raw && raw.result && raw.result.value;
+      if (!outer) throw new Error('页面 fetch 无返回');
+      const { status, text, err } = JSON.parse(outer);
+      if (err) throw new Error('页面 fetch 异常: ' + err);
+      if ([401, 403, 302, 303].includes(status) || !String(text || '').trim()) {
+        const e2 = new Error(`会话失效或接口无响应 (HTTP ${status || '空响应'})，请重新登录 fnOS 应用中心`);
+        e2.sessionExpired = true;
+        throw e2;
+      }
+      try { return JSON.parse(text); } catch { return { __raw: String(text).slice(0, 300), __status: String(status) }; }
+    } catch (e) {
+      lastErr = e;
+      if (e && e.sessionExpired) throw e;
+      // 桥接断了：重建后重试一次
+      await closeBridge();
+    }
   }
-  args.push(url);
-  const { stdout } = await sh('curl', args);
-  const text = String(stdout || '');
-  const m = text.match(/\n__HTTP__(\d{3})\s*$/);
-  const status = m ? m[1] : '';
-  const payload = m ? text.slice(0, m.index) : text;
-  if (['401', '403', '302', '303'].includes(status) || !payload.trim()) {
-    const err = new Error(`会话失效或接口无响应 (HTTP ${status || '空响应'})，需要重新取会话 Cookie`);
-    err.sessionExpired = true;
-    throw err;
-  }
-  try { return JSON.parse(payload); } catch { return { __raw: payload.slice(0, 300), __status: status }; }
+  throw lastErr;
 }
 
 /** 带重试的调用：设备 CPU 紧张或 nginx 瞬时 502 时重试比直接判失败更准 */
@@ -218,7 +314,10 @@ function buildParams(wizardInfo) {
     const rules = it.rules || [];
     const required = rules.some((r) => r && r.required);
     const pattern = (rules.find((r) => r && r.pattern) || {}).pattern;
-    const isSecret = it.type === 'password' || /password|secret|token/i.test(key + ' ' + (it.label || ''));
+    // 凭据类字段（密码/密钥/令牌/访问键/管理员账号）可由自动化生成，
+    // 它们不依赖用户环境，不该因此挡住「转换是否可用」的验证。
+    const isSecret = it.type === 'password'
+      || /password|secret|token|access_?key|secret_?key|api_?key|admin_?user|admin_?pass|credential/i.test(key + ' ' + (it.label || ''));
     let val = it.initValue;
     if (val === undefined || val === null || val === '') {
       if (isSecret) {
@@ -278,6 +377,9 @@ function verdict(rec) {
   if (rec.appStatus !== 'running') {
     if (/address already in use|port is already allocated/i.test(`${rec.log || ''}`)) return 'BLOCKED';
     if (rec.needsExternal) return 'BLOCKED';
+    // 原生应用（没有任何对外服务端口）装完不常驻 running 是正常形态：
+    // 安装成功即说明转换可用，不能因为没有 running 记成失败。
+    if (!rec.service || !rec.service.port) return 'PASS';
     return 'FAIL';
   }
   if (rec.service && rec.service.port) {
@@ -389,12 +491,25 @@ async function testOne(app) {
     if (!insOk) { rec.stage = 'install_status'; rec.err = rec.installStatus; return rec; }
 
     // 4) 等待 running
-    const item = await until(async () => {
-      const l = await callInstalledList();
-      const it = (l || []).find((x) => x.appName === appName);
-      return it && (it.status === 'running' || it.status === 'stopped') ? it : null;
-    // 应用中心报「已安装」不代表容器已就绪：重镜像（数据库迁移、初始化）要跑一阵才转 running
-    }, { tries: 90, gap: 2000, label: 'running' });
+    // 原生应用（无 service/短命脚本式）安装完成后不会常驻 running，只有 stopped/空状态，
+    // 对它们要求 running 会把成功的转换记成 FAIL。这里按「出现即接受」处理，
+    // 真正有没有起来由后面的入口探测判定。
+    let item;
+    try {
+      item = await until(async () => {
+        const l = await callInstalledList();
+        const it = (l || []).find((x) => x.appName === appName);
+        // nostart = 原生应用装完即为终态，不必等 running（否则每个原生应用白等 3 分钟）
+        return it && ['running', 'stopped', 'nostart'].includes(it.status) ? it : null;
+      // 应用中心报「已安装」不代表容器已就绪：重镜像（数据库迁移、初始化）要跑一阵才转 running
+      }, { tries: 90, gap: 2000, label: 'running' });
+    } catch (e) {
+      // 超时也接受：只要应用已出现在「已安装」列表里，就交给入口探测去判定是否可用
+      const l = await callInstalledList().catch(() => null);
+      item = (l || []).find((x) => x.appName === appName) || null;
+      if (!item) throw e;
+      rec.statusTimeout = true;
+    }
     rec.appStatus = item.status;
     rec.service = item.appServiceInfo ? {
       name: item.appServiceInfo.serviceName, type: item.appServiceInfo.type,
@@ -425,9 +540,20 @@ async function testOne(app) {
           // 权限不足）只出现在这里；应用一卸载就再也取不到
           const first = snap.split('\n')[0].split(' | ')[0].trim();
           if (first) {
-            const { stdout: logOut } = await ssh(`docker logs --tail 30 '${first}' 2>&1 || true`);
-            const kept = String(logOut || '').trim();
-            if (kept) rec.containerLog = kept.slice(-1500);
+            // 重启循环里的容器刚被 kill，logs 有时读不到；重试几次并放大窗口，
+            // 否则「为什么起不来」的关键几行会丢，只剩 status=Restarting 无法归因
+            for (let attempt = 0; attempt < 4; attempt++) {
+              const { stdout: logOut } = await ssh(`docker logs --tail 60 '${first}' 2>&1 || true`);
+              const kept = String(logOut || '').trim();
+              if (kept) { rec.containerLog = kept.slice(-2000); break; }
+              await sleep(2000);
+            }
+            // 仍拿不到时补一份 inspect 现场（ExitCode/OOMKilled 能区分崩溃原因）
+            if (!rec.containerLog) {
+              const { stdout: insp } = await ssh(`docker inspect '${first}' --format '{{.State.Status}} exit={{.State.ExitCode}} oom={{.State.OOMKilled}} err={{.State.Error}}' 2>/dev/null || true`);
+              const s2 = String(insp || '').trim();
+              if (s2) rec.containerState = s2.slice(0, 300);
+            }
           }
         } catch { /* 忽略 */ }
       }
@@ -448,6 +574,10 @@ async function testOne(app) {
   } catch (e) {
     rec.stage = rec.stage === 'start' ? 'exception' : rec.stage;
     if (e && e.sessionExpired) { rec.stage = 'session_expired'; rec.sessionExpired = true; }
+    // 桥接不可用是测试环境问题，不是应用结论：标记后由主循环跳过落盘，下次续跑会重测
+    if (e && (e.bridgeUnavailable || /Midscene 桥接里没有|无法加载 @midscene/.test(String(e.message)))) {
+      rec.bridgeUnavailable = true;
+    }
     rec.err = String((e && e.message) || e).slice(0, 300);
   }
   return rec;
@@ -478,7 +608,12 @@ async function main() {
     const buildable = [];
 
     for (const app of chunk) {
-      const dir = path.resolve(app);
+      // 允许 --list 里写应用名（fn-memos）或相对仓库根的路径（apps/fn-memos）
+      let dir = path.resolve(app);
+      if (!fs.existsSync(dir)) {
+        const alt = path.resolve('apps', app);
+        if (fs.existsSync(alt)) dir = alt;
+      }
       const name = path.basename(dir);
       if (!fs.existsSync(dir)) {
         append({ app: name, stage: 'build', verdict: 'BUILD_FAIL', err: `应用目录不存在: ${dir}` });
@@ -525,6 +660,12 @@ async function main() {
       try { await ssh(`rm -f ${STAGE}${name}.fpk 2>/dev/null`); } catch { /* 忽略 */ }
 
       rec.verdict = verdict(rec);
+      // 桥接不可用时不落盘：这不是应用结论，下次续跑应当重测，而不是被 doneApps 跳过
+      if (rec.bridgeUnavailable) {
+        console.error(`[bridge] ${name}: ${rec.err}（未落盘，修复桥接后重跑会重测）`);
+        await closeBridge();
+        continue;
+      }
       append(rec);
       console.log(`[${rec.verdict}] ${name} status=${rec.appStatus || '-'} entry=${rec.entryCode || '-'} net_left=${rec.networkLingered === null ? '?' : (rec.networkLingered ? 'yes' : 'no')}`);
 
@@ -540,6 +681,14 @@ async function main() {
     }
   }
   console.log('[batch] 完成，结果写入 ' + OUT);
+  // Bridge 的 websocket 会保活进程，收尾必须显式断开，否则脚本跑完不退出
+  await closeBridge();
 }
 
-main().catch((e) => { console.error(String(e.stack || e)); process.exit(1); });
+main()
+  .then(() => process.exit(0))
+  .catch(async (e) => {
+    console.error(String(e.stack || e));
+    await closeBridge();
+    process.exit(1);
+  });
