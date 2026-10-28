@@ -5,6 +5,11 @@ services:
     ports:
       - "${APP_PORT}:8000"
     restart: always
+    # 镜像层默认以 nobody 运行，而挂载进来的数据目录属主是 fnOS 包用户（770），
+    # 两边身份不一致导致启动即失败：
+    #   Unable to read the config file: open ./config.json: permission denied
+    # 显式指定以包用户运行，与挂载目录属主对齐。
+    user: "${TRIM_UID}:${TRIM_GID}"
     volumes:
     # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
       # 单文件挂载：文件由 cmd/install_callback 预创建，保持文件形态（不能挂成目录）

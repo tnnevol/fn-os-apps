@@ -31,6 +31,19 @@
                         "message": "请输入时区"
                     }
                 ]
+            },
+            {
+                "type": "text",
+                "field": "SERVER_NAME",
+                "label": "Matrix 服务器名",
+                "initValue": "localhost",
+                "helpText": "Matrix 用户 ID 中 @ 之后的部分，例如 example.com。安装后不可更改（它编进了用户 ID 与房间 ID）。",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请填写服务器名"
+                    }
+                ]
             }
         ]
     }

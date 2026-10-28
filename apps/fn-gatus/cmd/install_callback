@@ -2,4 +2,29 @@
 
 ### This script is called after the user installs the application.
 
+# Gatus 启动即读取 /config/config.yaml，文件不存在会直接 panic（configuration file not found）。
+# 两个挂载目录首次安装时都不存在，需要预建；配置文件按种子铺入。
+if [ -z "${TRIM_PKGVAR}" ]; then
+    echo "TRIM_PKGVAR is not set; cannot prepare application data directory" >"${TRIM_TEMP_LOGFILE}"
+    exit 1
+fi
+
+mkdir -p "${TRIM_PKGVAR}/data/config"
+mkdir -p "${TRIM_PKGVAR}/data/data"
+
+SEED_DIR="${TRIM_APPDEST}/seed/data"
+if [ ! -s "${TRIM_PKGVAR}/data/config/config.yaml" ]; then
+    if [ -f "${SEED_DIR}/config/config.yaml" ]; then
+        cp "${SEED_DIR}/config/config.yaml" "${TRIM_PKGVAR}/data/config/config.yaml"
+        echo "Seeded config: config/config.yaml"
+    else
+        echo "Seed file missing: ${SEED_DIR}/config/config.yaml" >"${TRIM_TEMP_LOGFILE}"
+        exit 1
+    fi
+fi
+
+chmod -R 770 "${TRIM_PKGVAR}/data" 2>/dev/null || true
+
+echo "Prepared application data directory: ${TRIM_PKGVAR}/data"
+
 exit 0

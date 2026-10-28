@@ -2,4 +2,32 @@
 
 ### This script is called after the user installs the application.
 
+# NodeBB 镜像内置用户是 uid=1001(nodebb)，与 fnOS 包用户（9xx）不同。
+# 四个挂载目录（build / node_modules / uploads / config）首次安装时不存在，
+# 由 Docker 以 root 建出来，容器内的 1001 写不进去，启动即报
+#   Error: No write permission for directory /opt/config
+# 这里预建目录，并用 ACL 把访问权授予镜像内 uid，同时设置默认 ACL，
+# 让容器后续新建的子目录也带权限（否则 node_modules 里装的包事后删不掉）。
+IMAGE_UID=1001
+
+if [ -z "${TRIM_PKGVAR}" ]; then
+    echo "TRIM_PKGVAR is not set; cannot prepare application data directory" >"${TRIM_TEMP_LOGFILE}"
+    exit 1
+fi
+
+for sub in build node_modules uploads config; do
+    DIR="${TRIM_PKGVAR}/data/${sub}"
+    mkdir -p "${DIR}"
+    chmod 775 "${DIR}" 2>/dev/null || true
+    setfacl -m "u:${IMAGE_UID}:rwx" "${DIR}" 2>/dev/null || true
+    setfacl -m "d:u:${IMAGE_UID}:rwx" "${DIR}" 2>/dev/null || true
+    setfacl -m "d:u:${TRIM_RUN_UID:-${TRIM_UID}}:rwx" "${DIR}" 2>/dev/null || true
+done
+
+# 让容器也能在数据根目录下继续建东西
+chmod 775 "${TRIM_PKGVAR}/data" 2>/dev/null || true
+setfacl -m "u:${IMAGE_UID}:rwx" "${TRIM_PKGVAR}/data" 2>/dev/null || true
+
+echo "Prepared NodeBB data directories with ACL for image uid ${IMAGE_UID}: ${TRIM_PKGVAR}/data"
+
 exit 0

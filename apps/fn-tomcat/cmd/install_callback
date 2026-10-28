@@ -2,4 +2,35 @@
 
 ### This script is called after the user installs the application.
 
+# bitnami/tomcat 镜像内置用户是 uid=1001 / gid=0，与 fnOS 包用户（9xx）不同。
+# 挂载目录 /bitnami/tomcat 由平台以 root 建出，容器内的 1001 无法创建
+# webapps / conf / logs 等子目录，启动即：
+#   mkdir: cannot create directory '/bitnami/tomcat/webapps': Permission denied
+# 这里预建必要子目录，并用 ACL 把访问权授予镜像内 uid；同时设默认 ACL，
+# 让容器后续新建的目录与文件也保留权限。
+IMAGE_UID=1001
+
+if [ -z "${TRIM_PKGVAR}" ]; then
+    echo "TRIM_PKGVAR is not set; cannot prepare application data directory" >"${TRIM_TEMP_LOGFILE}"
+    exit 1
+fi
+
+DATA_DIR="${TRIM_PKGVAR}/data"
+mkdir -p "${DATA_DIR}"
+
+for sub in webapps conf logs temp work; do
+    mkdir -p "${DATA_DIR}/${sub}"
+    chmod 775 "${DATA_DIR}/${sub}" 2>/dev/null || true
+    setfacl -m "u:${IMAGE_UID}:rwx" "${DATA_DIR}/${sub}" 2>/dev/null || true
+    setfacl -m "d:u:${IMAGE_UID}:rwx" "${DATA_DIR}/${sub}" 2>/dev/null || true
+    setfacl -m "d:u:${TRIM_RUN_UID:-${TRIM_UID}}:rwx" "${DATA_DIR}/${sub}" 2>/dev/null || true
+done
+
+chmod 775 "${DATA_DIR}" 2>/dev/null || true
+setfacl -m "u:${IMAGE_UID}:rwx" "${DATA_DIR}" 2>/dev/null || true
+setfacl -m "d:u:${IMAGE_UID}:rwx" "${DATA_DIR}" 2>/dev/null || true
+setfacl -m "d:u:${TRIM_RUN_UID:-${TRIM_UID}}:rwx" "${DATA_DIR}" 2>/dev/null || true
+
+echo "Prepared Tomcat data directory with ACL for image uid ${IMAGE_UID}: ${DATA_DIR}"
+
 exit 0

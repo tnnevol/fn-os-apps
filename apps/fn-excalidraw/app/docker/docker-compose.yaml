@@ -2,8 +2,19 @@ services:
   excalidraw:
     container_name: fn-excalidraw
     image: excalidraw/excalidraw:latest
-    # 按裁决 B：镜像层默认 root（config.User 为 null），加 user: 以包用户运行
+    # 按裁决 B：镜像层默认 root（config.User 为 null），加 user: 以包用户运行。
+    #
+    # 但该镜像用 nginx 提供静态资源，nginx 启动时要自己创建 /var/cache/nginx/client_temp
+    # 等运行期目录（在镜像层里归 root），以包用户运行直接失败：
+    #   mkdir() "/var/cache/nginx/client_temp" failed (13: Permission denied)
+    #
+    # 这些目录只放临时缓存，重启即可丢弃，因此用 tmpfs 提供：不涉及宿主目录属主，
+    # 挂载后任何 UID 都可写，既保住「不以 root 运行」，也不需要提权改权限。
     user: "${TRIM_UID}:${TRIM_GID}"
     ports:
       - "${APP_PORT}:80"
     restart: unless-stopped
+    tmpfs:
+      - /var/cache/nginx:mode=1777
+      - /var/run:mode=1777
+      - /tmp:mode=1777

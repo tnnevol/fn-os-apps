@@ -1,0 +1,38 @@
+# Verdaccio 最小可用配置（随应用包提供）。
+# 私有 npm 仓库的存储、插件目录均落在应用数据目录下。
+# 需要账号与访问控制时，请在本文件（应用数据目录 data/config/config.yaml）中
+# 按官方文档补充 htpasswd 与 packages 段落，然后重启应用。
+
+storage: /verdaccio/storage
+
+plugins: /verdaccio/plugins
+
+# 监听端口必须与应用端口一致：容器以 VERDACCIO_PORT 传入应用端口，
+# 这里用同一个变量取值，避免写死后与映射端口不一致导致入口打不开。
+listen:
+  - 0.0.0.0:${VERDACCIO_PORT}
+
+# 上游公共源
+uplinks:
+  npmjs:
+    url: https://registry.npmjs.org/
+
+packages:
+  '@*/*':
+    access: $all
+    publish: $authenticated
+    proxy: npmjs
+
+  '**':
+    access: $all
+    publish: $authenticated
+    proxy: npmjs
+
+middlewares:
+  audit:
+    enabled: true
+
+log:
+  type: stdout
+  format: pretty
+  level: warn

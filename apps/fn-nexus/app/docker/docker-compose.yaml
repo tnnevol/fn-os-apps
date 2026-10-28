@@ -2,6 +2,9 @@ services:
   nexus:
     container_name: fn-nexus
     image: sonatype/nexus3:3.96.4
+    # 镜像内置用户是 nexus（uid 200）。挂载进来的 /nexus-data 属主是 fnOS 包用户，
+    # 身份不一致导致启动即失败。显式以包用户运行，与数据目录属主对齐。
+    user: "${TRIM_UID}:${TRIM_GID}"
     environment:
       - TZ=${TIME_ZONE}
     ports:
@@ -10,3 +13,7 @@ services:
     volumes:
       # 制品库与配置，落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）
       - "${TRIM_PKGVAR}/data:/nexus-data"
+      # logback 的日志目录固定写 /opt/sonatype/sonatype-work（在镜像层，归 nexus 用户），
+      # 以包用户运行时无法创建，启动即报 Failed to create parent directories for .../log/nexus.log。
+      # 把这一路径也挂到数据目录下，属主随宿主，非 root 也能写。
+      - "${TRIM_PKGVAR}/work:/opt/sonatype/sonatype-work"

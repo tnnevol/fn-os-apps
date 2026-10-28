@@ -2,4 +2,25 @@
 
 ### This script is called after the user installs the application.
 
+# 两个挂载目录首次安装时都不存在，必须先建出来，否则 Docker 会以 root 建出，
+# 容器内的包用户写不进去（nexus 会因日志目录创建失败而退不出去）。
+if [ -z "${TRIM_PKGVAR}" ]; then
+    echo "TRIM_PKGVAR is not set; cannot prepare application data directory" >"${TRIM_TEMP_LOGFILE}"
+    exit 1
+fi
+
+mkdir -p "${TRIM_PKGVAR}/data"
+mkdir -p "${TRIM_PKGVAR}/work/log"
+mkdir -p "${TRIM_PKGVAR}/work/tmp"
+
+chmod -R 775 "${TRIM_PKGVAR}/data" "${TRIM_PKGVAR}/work" 2>/dev/null || true
+
+if touch "${TRIM_PKGVAR}/work/log/.write_check" 2>/dev/null; then
+    rm -f "${TRIM_PKGVAR}/work/log/.write_check"
+    echo "Prepared Nexus data and work directories: ${TRIM_PKGVAR}"
+else
+    echo "Nexus work log directory is not writable: ${TRIM_PKGVAR}/work/log" >"${TRIM_TEMP_LOGFILE}"
+    exit 1
+fi
+
 exit 0

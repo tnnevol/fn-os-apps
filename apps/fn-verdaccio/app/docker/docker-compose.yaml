@@ -4,6 +4,10 @@ services:
     image: verdaccio/verdaccio:6.10.5
     environment:
       - VERDACCIO_PORT=${APP_PORT}
+    # 镜像内置用户是 uid=10001。挂载进来的配置目录属主是 fnOS 包用户，
+    # 身份不一致导致配置文件读不到（cannot open config file /verdaccio/conf/config.yaml）。
+    # 显式以包用户运行，与挂载目录属主对齐。
+    user: "${TRIM_UID}:${TRIM_GID}"
     ports:
       - "${APP_PORT}:${APP_PORT}"
     restart: always

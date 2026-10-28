@@ -2,8 +2,10 @@ services:
   huginn:
     container_name: fn-huginn
     image: ghcr.io/huginn/huginn:latest
-    # 运行身份：镜像层已是非 root（config.User = 1001），按裁决 B 无需再加 user:。
-    # 注意：该固定 uid(1001) 与 fnOS 包用户 uid(9xx) 不同，属已登记的待验证项。
+    # 镜像内置用户是 uid=1001，而挂载的 /var/lib/mysql 属主是 fnOS 包用户，
+    # 身份不一致导致 bootstrap 失败（mv: cannot create ...: Permission denied）。
+    # 显式以包用户运行，与数据目录属主对齐。
+    user: "${TRIM_UID}:${TRIM_GID}"
     ports:
       - "${APP_PORT}:3000"
     restart: always

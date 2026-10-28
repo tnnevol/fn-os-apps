@@ -1,0 +1,18 @@
+# Gatus 最小可用配置（随应用包提供）。
+# 后续可在应用数据目录的 data/config/config.yaml 中按需增删监控项。
+metrics: true
+
+storage:
+  type: sqlite
+  path: /data/data.db
+
+web:
+  port: 8080
+
+endpoints:
+  - name: Gatus 自身
+    group: 系统
+    url: "http://localhost:8080/health"
+    interval: 5m
+    conditions:
+      - "[STATUS] == 200"

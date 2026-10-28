@@ -14,3 +14,7 @@ services:
       - "${TRIM_APPDEST_VOL}/@appshare/fn-xiaomusic/music:/app/music"
 # 应用私有数据：用户不可见，不与共享目录混用
       - "${TRIM_PKGVAR}/data/conf:/app/conf"
+      # 日志固定写到 /app/xiaomusic.log.txt，该路径在镜像层（归 root），
+      # 以包用户运行时启动即 PermissionError。用单文件挂载把它落到数据目录，
+      # 文件由 cmd/install_callback 预创建。
+      - "${TRIM_PKGVAR}/data/xiaomusic.log.txt:/app/xiaomusic.log.txt"

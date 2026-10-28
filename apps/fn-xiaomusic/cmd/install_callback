@@ -27,7 +27,21 @@ mkdir -p "${SHARE_ROOT}/music"
 # 应用私有数据目录
 mkdir -p "${TRIM_PKGVAR}/data/conf"
 
+# 单文件挂载要求源文件在容器启动前就存在（Docker 不会替你建文件）。
+# 容器把日志固定写到 /app/xiaomusic.log.txt，这里预建对应的宿主文件并保证可写。
+LOG_FILE="${TRIM_PKGVAR}/data/xiaomusic.log.txt"
+touch "${LOG_FILE}"
+chown "${TRIM_USERNAME:-${TRIM_UID}}:${TRIM_GROUPNAME:-${TRIM_GID}}" "${LOG_FILE}" 2>/dev/null || true
+chmod 660 "${LOG_FILE}" 2>/dev/null || true
+
 chmod -R 770 "${TRIM_PKGVAR}/data" 2>/dev/null || true
+
+if touch "${TRIM_PKGVAR}/data/.write_check" 2>/dev/null; then
+    rm -f "${TRIM_PKGVAR}/data/.write_check"
+else
+    echo "Application data directory is not writable: ${TRIM_PKGVAR}/data" >"${TRIM_TEMP_LOGFILE}"
+    exit 1
+fi
 
 echo "Prepared application data directory: ${TRIM_PKGVAR}/data"
 

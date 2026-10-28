@@ -2,6 +2,17 @@
 
 COMPOSE_DIR="$(dirname "${TRIM_APPDEST}/docker/docker-compose.yaml")"
 
+# 绑定挂载的宿主目录必须**在容器创建之前**存在。
+# install_callback 在容器创建之后才执行，靠它建目录来不及：Docker 会先把不存在的
+# 挂载源以 root 建出来，容器内的包用户随即写不进去（nginx 起不来的真因）。
+# 因此在拉起容器前自己兜一次。
+ensure_mount_dirs() {
+    [ -n "${TRIM_PKGVAR}" ] || return 0
+    mkdir -p "${TRIM_PKGVAR}/data" \
+        "${TRIM_PKGVAR}/nginx/logs" \
+        "${TRIM_PKGVAR}/nginx/tmp" 2>/dev/null || true
+}
+
 # 检查 compose 项目下是否有 running 状态的容器
 is_docker_running() {
     local RUNNING
@@ -21,6 +32,7 @@ ensure_containers_created() {
     fi
 
     echo "[DEBUG] running: docker compose -p $TRIM_APPNAME up -d"
+    ensure_mount_dirs
     docker compose -p "$TRIM_APPNAME" up -d 2>&1
     if [ $? -ne 0 ]; then
         echo "[DEBUG] docker compose up -d FAILED"

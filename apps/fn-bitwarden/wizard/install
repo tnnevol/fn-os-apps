@@ -6,12 +6,16 @@
                 "type": "text",
                 "field": "DOMAIN",
                 "label": "域名",
-                "initValue": "",
-                "helpText": "Bitwarden 服务器的域名地址，如 https://bitwarden.example.com。留空则使用 IP 访问。",
+                "initValue": "http://127.0.0.1",
+                "helpText": "Bitwarden 服务器的访问地址，必须带协议头，如 https://bitwarden.example.com 。该值直接传给容器，留空或省略协议头容器会拒绝启动（DOMAIN variable needs to contain the protocol）。",
                 "rules": [
                     {
-                        "pattern": "^(https?://.*)?$",
-                        "message": "域名格式不正确，需以 http:// 或 https:// 开头，或留空"
+                        "required": true,
+                        "message": "请填写访问地址"
+                    },
+                    {
+                        "pattern": "^https?://.+$",
+                        "message": "需以 http:// 或 https:// 开头，例如 https://bitwarden.example.com"
                     }
                 ]
             },
