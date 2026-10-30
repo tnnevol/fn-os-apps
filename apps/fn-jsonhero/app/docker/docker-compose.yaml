@@ -2,21 +2,10 @@ services:
   jsonhero:
     container_name: fn-jsonhero
     image: henryclw/jsonhero-web:latest
-    # 按裁决 B：镜像层默认 root（config.User 为 null），加 user: 以包用户运行。
-    #
-    # 该镜像启动时会用 npm 重新构建前端，需要写入镜像层（归 root）的路径：
-    #   npm ERR! Log files were not written ... /.npm/_logs
-    #   EACCES: permission denied, open '/app/build/index.js'
-    #   EACCES: permission denied, open './app/tailwind.css'
-    # 把 npm 的缓存与家目录移到可写的 tmpfs，可解掉第一条；
-    # 后面两条要写镜像内的 /app，以非 root 无法满足——不为了跑起来就退回 root 运行，
-    # 该应用暂按「需要 root 才能启动」登记，待确认上游是否提供预构建镜像。
-    user: "${TRIM_UID}:${TRIM_GID}"
-    environment:
-      - HOME=/tmp
-      - npm_config_cache=/tmp/.npm
+    # 与 1Panel 上游保持一致：不指定 user，使用镜像自带用户。
+    # 该镜像启动时会用 npm 重新构建前端，需要写 /app/build、./app/tailwind.css
+    # 与 /.npm（均在镜像层）。自行加 user: 降权会 Permission denied；
+    # 上游没有降权，这里同样不覆盖。
     ports:
       - "${APP_PORT}:8787"
     restart: always
-    tmpfs:
-      - /tmp:mode=1777

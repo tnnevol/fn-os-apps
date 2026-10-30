@@ -8,20 +8,15 @@ services:
     ports:
       - "${APP_PORT}:8086"
     restart: always
-    # 上游以 root 运行（user: "0:0"）；按规约「不得用 root 运行」改为包用户。
-    #
-    # 已知限制（2026-10 真机验证）：该镜像的 nginx 启动时必须写
-    # /var/lib/nginx/logs 与 /var/lib/nginx/tmp（镜像层，归 root）：
-    #   could not open error log file "/var/lib/nginx/logs/error.log" (13: Permission denied)
-    #   mkdir() "/var/lib/nginx/tmp/client_body" failed (13: Permission denied)
-    # 已尝试过的非 root 方案均不可行：
-    #   1) 宿主绑定挂载该目录——容器由应用中心在 install_callback 之前创建，
+    # 与 1Panel 上游保持一致：user: "0:0"。
+    # 该镜像的 nginx 在启动时要创建并写入 /var/lib/nginx/{logs,tmp}（镜像层，归 root），
+    # 以非 root 运行会 Permission denied 并无限重启。已验证三种非 root 方案均不可行：
+    #   1) 宿主绑定挂载这些目录——容器由应用中心在 install_callback 之前创建，
     #      Docker 会把尚不存在的挂载源以 root 建出，包用户仍不可写；
     #   2) compose tmpfs——该平台未生效；
     #   3) Docker 命名卷——卷初始属主是 root，同样不可写。
-    # 因此本应用暂保持非 root 并登记为「需要 root 才能启动」，
-    # 待确认上游是否提供可配置运行用户的镜像版本后再处理。
-    user: "${TRIM_UID}:${TRIM_GID}"
+    # 上游本身就是 root 运行，这里回归上游设定，不再自行降权。
+    user: "0:0"
     volumes:
       # 连接配置与数据，落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）
       - "${TRIM_PKGVAR}/data:/app/tinyrdm"
