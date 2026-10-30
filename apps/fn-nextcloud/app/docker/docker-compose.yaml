@@ -8,7 +8,10 @@ services:
       - PUID=${TRIM_UID}
       - PGID=${TRIM_GID}
     ports:
-      - "${APP_PORT}:443"
+      # 容器内 nginx 同时监听 80 与 443。原来映射到 443，但应用入口走 http://，
+      # 浏览器与探针都会拿明文去连 TLS 端口，服务端直接回 400。
+      # 改映射 80：HTTP 入口可用，443 仍由容器内部提供（需要 HTTPS 时自行反代）。
+      - "${APP_PORT}:80"
     restart: always
     volumes:
     # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
