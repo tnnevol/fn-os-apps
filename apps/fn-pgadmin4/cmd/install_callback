@@ -2,4 +2,35 @@
 
 ### This script is called after the user installs the application.
 
+# pgAdmin4 以容器内置用户 uid=5050(pgadmin) / gid=0 运行，与 fnOS 包用户（9xx）不同。
+# 挂载进来的 ${TRIM_PKGVAR}/data 属主是包用户，它无法在其下创建运行期目录，启动即报：
+#   ERROR: Failed to create the directory /var/lib/pgadmin/sessions:
+#          [Errno 13] Permission denied
+# 处理：预建 sessions/storage/azure 等目录，并用 ACL 授予镜像内 UID，
+# 同时设默认 ACL，让容器后续新建的会话文件与 SQLite 库也归属可写。
+IMAGE_UID=5050
+
+if [ -z "${TRIM_PKGVAR}" ]; then
+    echo "TRIM_PKGVAR is not set; cannot prepare application data directory" >"${TRIM_TEMP_LOGFILE}"
+    exit 1
+fi
+
+DATA_DIR="${TRIM_PKGVAR}/data"
+mkdir -p "${DATA_DIR}"
+
+for sub in sessions storage azure; do
+    mkdir -p "${DATA_DIR}/${sub}"
+    chmod 775 "${DATA_DIR}/${sub}" 2>/dev/null || true
+    setfacl -m "u:${IMAGE_UID}:rwx" "${DATA_DIR}/${sub}" 2>/dev/null || true
+    setfacl -d -m "u:${IMAGE_UID}:rwx" "${DATA_DIR}/${sub}" 2>/dev/null || true
+    setfacl -d -m "u:${TRIM_RUN_UID:-${TRIM_UID}}:rwx" "${DATA_DIR}/${sub}" 2>/dev/null || true
+done
+
+chmod 775 "${DATA_DIR}" 2>/dev/null || true
+setfacl -m "u:${IMAGE_UID}:rwx" "${DATA_DIR}" 2>/dev/null || true
+setfacl -d -m "u:${IMAGE_UID}:rwx" "${DATA_DIR}" 2>/dev/null || true
+setfacl -d -m "u:${TRIM_RUN_UID:-${TRIM_UID}}:rwx" "${DATA_DIR}" 2>/dev/null || true
+
+echo "Prepared pgAdmin4 data directory with ACL for image uid ${IMAGE_UID}: ${DATA_DIR}"
+
 exit 0

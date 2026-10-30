@@ -76,7 +76,16 @@ const crashLog = (tag, e) => {
   try { fs.appendFileSync(OUT + '.crash', msg + '\n'); } catch { /* 忽略 */ }
 };
 process.on('uncaughtException', (e) => { crashLog('uncaughtException', e); process.exit(70); });
-process.on('unhandledRejection', (e) => { crashLog('unhandledRejection', e); process.exit(71); });
+process.on('unhandledRejection', (e) => {
+  // 桥接端口冲突（EADDRINUSE）是上一个实例还没完全释放 3766 造成的，属可恢复的瞬态，
+  // 交给 ensureBridge 的重试逻辑处理。这里若直接退进程，会把整批带走。
+  if (/EADDRINUSE/.test(String((e && e.message) || e))) {
+    crashLog('unhandledRejection:eaddrinuse(ignored)', e);
+    return;
+  }
+  crashLog('unhandledRejection', e);
+  process.exit(71);
+});
 
 // 单实例锁：多实例并行会互相抢占端口并污染结果文件
 const LOCK = OUT + '.lock';
@@ -318,13 +327,33 @@ function buildParams(wizardInfo) {
   // 可选：给「站点地址 / 邮箱 / 路径」这类必填项填占位值，使转换本身仍可验证。
   // 默认关闭——UNVERIFIED 是诚实结论；开启后结果记录 placeholderFilled，便于与真实填写区分。
   const fillPlaceholders = process.env.FNOS_FILL_PLACEHOLDERS === '1';
+
+  // 占位值的取值原则：能指向测试主机的就指向测试主机（地址类字段），
+  // 必须是域名/邮箱形态的用约定占位值。目的是验证「FPK 装得上、容器起得来」，
+  // 不追求业务可用；所有用到占位值的记录都会带 placeholderFilled 标记。
+  const PLACEHOLDER_DOMAIN = process.env.FNOS_PLACEHOLDER_DOMAIN || 'example.com';
+  const PLACEHOLDER_EMAIL = process.env.FNOS_PLACEHOLDER_EMAIL || `admin@${PLACEHOLDER_DOMAIN}`;
+  const PLACEHOLDER_PATH = process.env.FNOS_PLACEHOLDER_PATH || '/vol2/1000';
   const candidatesFor = (key) => {
     const n = String(key).toUpperCase();
-    if (/EMAIL/.test(n)) return ['admin@example.com'];
-    if (/(?:^|_)(?:URL|URI)(?:$|_)/.test(n)) return ['http://example.com', 'https://example.com', 'example.com'];
-    if (/(?:^|_)(?:HOST|DOMAIN)(?:$|_)/.test(n)) return ['example.com', 'http://example.com'];
-    if (/PATH/.test(n)) return ['/vol2/1000'];
-    return ['example.com', 'http://example.com', '/vol2/1000', 'admin@example.com'];
+    const hostUrl = `http://${HOST}`;
+    // 邮箱类：只要形态合法即可
+    if (/E?MAIL/.test(n)) return [PLACEHOLDER_EMAIL, `admin@${PLACEHOLDER_DOMAIN}`];
+    // 路径类：用设备上真实存在的目录，否则容器挂载会失败
+    if (/PATH|DIR/.test(n)) return [PLACEHOLDER_PATH, '/vol2/1000', '/tmp'];
+    // 端口区间（如 SCREEGO_TURN_PORT_RANGE）形如 40000:41000，冒号是硬性要求
+    if (/RANGE/.test(n)) return ['40000:41000', '50000:51000'];
+    // 纯 IP 类字段用测试主机地址
+    if (/(?:^|_)(?:IP|ADDR|ADDRESS)(?:$|_)/.test(n)) return [HOST, '127.0.0.1'];
+    // URL 类：优先指向测试主机，其次占位域名（部分字段要求可解析域名）
+    if (/(?:^|_)(?:URL|URI|ENDPOINT|ORIGIN|BASE)(?:$|_)/.test(n)) {
+      return [`${hostUrl}:8080`, hostUrl, `https://${PLACEHOLDER_DOMAIN}`, PLACEHOLDER_DOMAIN];
+    }
+    // 主机/域名类：先给测试主机 IP，再退到占位域名
+    if (/(?:^|_)(?:HOST|DOMAIN|HOSTNAME|SERVER)(?:$|_)/.test(n)) {
+      return [HOST, PLACEHOLDER_DOMAIN, `http://${HOST}`, `http://${PLACEHOLDER_DOMAIN}`];
+    }
+    return [HOST, `${hostUrl}:8080`, PLACEHOLDER_DOMAIN, PLACEHOLDER_EMAIL, PLACEHOLDER_PATH];
   };
   const matches = (pattern, v) => {
     if (!pattern) return true;
@@ -552,11 +581,14 @@ async function testOne(app) {
     if (rec.service && rec.service.port) {
       const url = 'http://' + HOST + ':' + rec.service.port + '/';
       rec.entryUrl = url;
-      // 应用中心报 running 不等于容器已监听：首次安装还要拉镜像，探针窗口要给足
-      // （12 × 15s ≈ 3 分钟；镜像已缓存时立即返回）
+      // 应用中心报 running 不等于容器已在提供服务：首次安装还要拉镜像、初始化数据库。
+      // 探针窗口给足（12 × 15s ≈ 3 分钟；镜像已缓存时立即返回）。
+      // 注意 5xx 也要继续等：Jellyfin 首启在初始化数据库期间会持续回 503，
+      // 若把 503 当成终态会误判成「入口不可用」（实测容器已就绪、直连是 302）。
+      const notReady = (code) => !code || code === '000' || /^5\d\d$/.test(code);
       for (let i = 0; i < 12; i++) {
         rec.entryCode = await curlCode(url);
-        if (rec.entryCode && rec.entryCode !== '000') break;
+        if (!notReady(rec.entryCode)) break;
         await sleep(15000);
       }
       console.log(`  [verify] ${app} ${url} -> ${rec.entryCode}`);

@@ -4,8 +4,13 @@ services:
     image: ghcr.io/screego/server:1.12.6
     environment:
       - SCREEGO_EXTERNAL_IP=${SCREEGO_EXTERNAL_IP}
-      # 上游把该值写死为 50000:50200；此处由向导字段驱动（格式 起始:结束）
-      - SCREEGO_TURN_PORT_RANGE=${SCREEGO_TURN_PORT_RANGE}
+      # 容器要求「起始:结束」（必须含一个冒号，否则直接 FATAL 退出：
+      #   invalid SCREEGO_TURN_PORT_RANGE: must include one colon），
+      # 而 compose 的端口范围映射只接受「起始-结束」（连字符）。
+      # 两者格式相反，共用一个变量必然有一方报错，因此向导拆成两个字段：
+      #   SCREEGO_TURN_PORT_RANGE          连字符，供下面的 ports 使用
+      #   SCREEGO_TURN_PORT_RANGE_CONTAINER 冒号，供容器校验
+      - SCREEGO_TURN_PORT_RANGE=${SCREEGO_TURN_PORT_RANGE_CONTAINER}
     ports:
       - "${APP_PORT}:5050"
       - "${TURN_PORT}:3478"
