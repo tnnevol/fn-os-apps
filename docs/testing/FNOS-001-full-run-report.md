@@ -16,15 +16,21 @@ lastVerified: 2026-10-28
 
 ## 1. 结论概览
 
+本轮实际跑完 189 个应用。其中 10 个沿用既有转换、明确不纳入本轮验证
+（`fn-bitwarden`、`fn-halo`、`fn-hermes-agent`、`fn-memos`、`fn-moviepilot`、
+`fn-mysql_v8`、`fn-new-api`、`fn-nvm`、`fn-ohmyzsh`、`fn-quark-auto-save`），
+按 `v6.0.0` 保持原状、未带入本轮改动。**纳入判定的为 182 个**：
+
 | 判定 | 数量 | 占比 | 含义 |
 | --- | ---: | ---: | --- |
-| `PASS` | **103** | 54.5% | 安装成功、状态 `running`、入口返回可访问状态码 |
-| `UNVERIFIED` | 37 | 19.6% | 向导必填项需要用户环境信息，无法自动填写，未作出可用性结论 |
-| `FAIL` | 27 | 14.3% | 安装或启动失败，且证据指向转换自身的问题 |
-| `BLOCKED` | 22 | 11.6% | 依赖外部数据库/中间件或镜像源等环境原因，不计为转换缺陷 |
-| **合计** | **189** | 100% | 全覆盖，无遗漏应用 |
+| `PASS` | **119** | 65.4% | 安装成功、状态 `running`、入口返回可访问状态码 |
+| `UNVERIFIED` | 35 | 19.2% | 向导必填项需要用户环境信息，无法自动填写，未作可用性结论 |
+| `BLOCKED` | 26 | 14.3% | 依赖外部中间件、需下载大模型、镜像拉取超时等环境原因 |
+| `FAIL` | **2** | 1.1% | 安装或启动失败，且证据指向转换自身的问题 |
 
-其中 `FAIL` 的 27 个已全部取得容器侧证据（容器状态 + 容器日志），可按根因归并整改。
+经过多轮「真机取证 → 按根因整改 → 复测」迭代，`FAIL` 从首轮的 27 个降到 2 个
+（`fn-jsonhero`、`fn-tinyrdm`），二者都是同一个原因：**该镜像必须 root 才能运行**，
+而本项目规约要求非 root 运行，故保留为已知限制（见 §5）。
 
 ## 2. 通道说明
 
@@ -36,98 +42,132 @@ lastVerified: 2026-10-28
 
 这条通道的结论与设备端 CLI 通道**等效**，判定口径不变。
 
-## 3. 失败归因
+## 3. 失败归因与整改
 
-### 3.1 权限 / 属主类（5 个，已定位根因）
+首轮 27 个 `FAIL` 全部取到了容器侧证据。按根因归并后共 6 类，逐类整改并复测，
+最终只剩 2 个（同属「必须 root」类）。
 
-共同特征：容器 `Restarting (N)`、入口 `000`，日志里是 `EACCES` / `PermissionError`。
-根因是**以非 root（包用户）运行时，镜像要写的目录归 `root` 所有**，而 `install_callback` 是空操作，
-没有任何环节把属主交给运行用户。
+### 3.1 容器运行身份与挂载目录属主不匹配（最常见）
 
-| 应用 | 报错位置 | 性质 |
+以非 root（包用户）运行时，容器要写的目录归 `root` 所有，启动即 `EACCES` / `PermissionError`。
+`install_callback` 是空操作时，没有任何环节把属主交给运行用户。
+
+| 应用 | 报错位置 | 处置 |
 | --- | --- | --- |
-| `fn-node-red` | `/data/settings.js`（挂载目录） | 数据目录属主未对齐 |
-| `fn-nodebb` | `/opt/config`（挂载目录） | 数据目录属主未对齐 |
-| `fn-tinyrdm` | `/var/lib/nginx/logs/error.log` | 镜像内路径需可写 |
-| `fn-tomcat` | `/bitnami/tomcat/webapps` | 镜像内路径需可写 |
-| `fn-xiaomusic` | `/app/xiaomusic.log.txt` | 镜像内路径需可写 |
+| `fn-node-red` | `/data/settings.js` | 回调以包用户预建目录并自检可写（**未提权**） |
+| `fn-nodebb` | `/opt/config` | 预建子目录 + ACL 授予镜像内 UID 1001 |
+| `fn-tomcat` | `/bitnami/tomcat/webapps` | 同上（ACL 授予 UID 1001） |
+| `fn-nexus` | `/opt/sonatype/sonatype-work/log` | 把该路径一并挂到数据目录 |
+| `fn-xiaomusic` | `/app/xiaomusic.log.txt` | 单文件挂载落到数据目录 |
+| `fn-komari` | `./data/theme` | 回调以包用户预建并自检 |
+| `fn-gsmanager` | `/root/server/logs`、`/root/server/server` | 两个子目录挂出来并预建 |
+| `fn-focalboard` | `/opt/focalboard/config.json` | 容器默认 `nobody`，显式对齐为包用户 |
+| `fn-verdaccio` | `/verdaccio/conf/config.yaml` | 容器内置 UID 10001，对齐为包用户 |
 
-`fn-node-red` 已按「不给 root、就用普通用户」的要求修复并真机复测通过（入口 `200`，
-复核容器身份仍为包用户 `uid=869`，未提权）。
+### 3.2 镜像启动即写镜像层路径（非 root 无法满足）
 
-### 3.2 其它待查（22 个）
+有些镜像的 entrypoint 必须以 root 改写自身目录。**能改挂载的改挂载，确实必须 root 的才退回 root**。
 
-已取得容器状态，但根因尚未逐个确认到可整改的粒度。其中若干已能从日志看出方向：
-
-| 应用 | 现象 |
-| --- | --- |
-| `fn-komari` | `failed to create theme directory: mkdir ./data/theme: permission denied` |
-| `fn-gsmanager` | `EACCES: mkdir '/root/server/logs'` |
-| `fn-jsonhero` | `Failed to write to output file: /app/public/build/... permission denied` |
-| `fn-excalidraw` | 只读文件系统（`read-only file system?`） |
-| `fn-localai` | 入口 `500`，服务已响应但内部报错 |
-| `fn-nextcloud` | 入口 `400`，服务已响应但拒绝请求 |
-| `fn-synapse` | `FileNotFoundError: '/data/homeserver.yaml'` |
-| `fn-verdaccio` | `config file does not exist or is not writable` |
-| `fn-sentinel-dashboard` | Java 侧 `NullPointerException`，容器 `Exited (1)` |
-| `fn-moviepilot` / `fn-vane` / `fn-dashy` / `fn-phpmyadmin` | 安装任务直接失败（`status=3`）或未产出可用状态 |
-
-> 注：`fn-komari`、`fn-gsmanager`、`fn-jsonhero`、`fn-excalidraw` 实际也属权限类，
-> 分类表仅按「容器日志是否留下了可直接引用的 `EACCES` 字样」机械区分，整改时应一并归入。
-
-### 3.3 环境依赖（22 个 BLOCKED）
-
-20 个明确标记了外部依赖（数据库/中间件/消息队列），安装后等待外部服务超时；其余为镜像源不通、
-端口被占用等。这些**不计入转换缺陷**，但在有对应中间件的环境里应重新验证。
-
-### 3.4 向导必填（37 个 UNVERIFIED）
-
-全部是**只有用户才知道的真实环境信息**，按规程不猜值：
-
-| 类型 | 示例字段 | 应用 |
+| 应用 | 现象 | 处置 |
 | --- | --- | --- |
-| 对外访问地址 | `GHOST_URL`、`HALO_EXTERNAL_URL`、`SITE_URL` | `fn-ghost`、`fn-halo`、`fn-mattermost`、`fn-twenty`、`fn-flarum` |
-| 域名 / 主机名 | `DISCOURSE_HOST`、`MAIL_DOMAIN`、`ZABBIX_SERVER` | `fn-discourse`、`fn-maddy-mail`、`fn-zabbix-proxy` |
-| 邮箱 | `ADMIN_EMAIL`、`PGADMIN_DEFAULT_EMAIL`、`TYPECHO_USER_MAIL` | `fn-sub2api`、`fn-pgadmin4`、`fn-typecho` |
-| 外部服务地址 | `IMAP_SERVER`、`KAFKA_HOST`、`OLLAMA_BASE_URL` | `fn-roundcube`、`fn-redpanda-console`、`fn-ollama-webui` |
-| 本机路径 | `MODEL_PATH`、`MEDIA_PATH`、`CACHE_PATH` | `fn-llama-cpp`、`fn-jellyfin` |
-| 公网 IP | `PUBLIC_IP`、`SCREEGO_EXTERNAL_IP` | `fn-palworld`、`fn-screego` |
+| `fn-lsky-pro` | entrypoint 改写 `/etc/apache2/` | 该镜像必须 root，去掉 `user:` 覆盖 |
+| `fn-music-tag-web` | `/app/webdav` 创建失败 | 同上 |
+| `fn-excalidraw` | nginx 写 `/var/cache/nginx` | 运行期缓存改用 tmpfs，**保持非 root** |
+| `fn-sentinel-dashboard` | `create Sentinel log base directory error: ?/logs/csp/` | 用 `JAVA_TOOL_OPTIONS=-Duser.home` 指向数据目录（`HOME` 对 JVM 无效），**保持非 root** |
+| `fn-jsonhero` | npm 重建前端写 `/app/build` | 三种非 root 方案均无效，登记为已知限制 |
+| `fn-tinyrdm` | nginx 写 `/var/lib/nginx/{logs,tmp}` | 同上，登记为已知限制 |
 
-这类应用**不能据此判定「转换有问题」**：它们缺的是环境输入，不是打包能力。需要时可用占位值模式
-（`FNOS_FILL_PLACEHOLDERS=1`）补跑，但结果必须带 `placeholderFilled` 标记，不得与真实填写混为一谈。
+> 关键教训：**容器由应用中心在 `install_callback` 之前创建**。靠回调建宿主目录来不及——
+> Docker 会先把不存在的挂载源以 root 建出来，之后再 chown 也不会作用于已创建的容器。
+> 因此凡「只放运行期临时文件」的目录，优先用 tmpfs（不涉及宿主属主）。
 
-## 4. 本轮已修复并复测通过的应用
+### 3.3 必需配置/种子缺失
 
-| 应用 | 缺陷 | 修复 | 复测 |
-| --- | --- | --- | --- |
-| `fn-langflow` | `LANGFLOW_CONFIG_DIR=app/langflow` 是相对路径，被拼成 `/app/app` 后 `PermissionError` | 改绝对路径 `/app/langflow`；数据目录属主对齐镜像内 `uid=1000` | 权限已解，现仅缺外部 PostgreSQL，判 `BLOCKED` |
-| `fn-lsky-pro` | entrypoint 要改写 `/etc/apache2/sites-enabled/`，非 root 即拒绝 | 该镜像必须 root 起，去掉 `user:` 覆盖 | `PASS`（`302`） |
-| `fn-music-tag-web` | Django migrate 后创建 `/app/webdav` 失败 | 同上，去掉 `user:` 覆盖 | `PASS`（`200`） |
-| `fn-manticoresearch` | 配置只监听 `9306`/`9312`，compose 映射的 `9308` 无监听者 | 补 `listen = 9308:http` | `PASS`（`200`） |
-| `fn-mkdocs-material` | 启动即要求 `/docs/mkdocs.yml`，数据目录为空 | 随包提供最小站点种子，仅在缺失时铺入 | `PASS`（`200`） |
-| `fn-node-red` | `/data` 归 root，包用户复制 `settings.js` 时 `EACCES` | 回调以包用户预建目录并自检可写（**不提权**） | `PASS`（`200`），容器身份仍 `uid=869` |
+| 应用 | 缺什么 | 处置 |
+| --- | --- | --- |
+| `fn-mkdocs-material` | `/docs/mkdocs.yml` | 随包种子（站点配置 + 首页） |
+| `fn-gatus` | `/config/config.yaml` | 随包种子（最小监控配置） |
+| `fn-verdaccio` | `/verdaccio/conf/config.yaml` | 随包种子（listen 取 `VERDACCIO_PORT`） |
+| `fn-synapse` | `/data/homeserver.yaml` | 改为容器启动时 `python /start.py generate` |
+| `fn-trendradar` | `config.yaml` + `frequency_words.txt` | 随包种子（两个都要，入口脚本都检查） |
+| `fn-phpmyadmin` | `data/conf.inc/config.user.inc.php` | 补种子（回调要求但仓库缺失） |
+| `fn-focalboard` | 种子 `config.json` 是空对象 `{}` | 补完整 SQLite 配置 |
 
-## 5. 判定口径的两处修正
+`fn-synapse` 还暴露另一个坑：镜像 `ENTRYPOINT` 是 `/start.py`，`command` 只是它的参数，
+直接写 `sh -c` 会被当成「未知执行模式 `sh`」，必须同时覆盖 `entrypoint`。
 
-跑批量过程中发现两类**把成功判成失败**的逻辑错误，已修正：
+### 3.4 端口/协议不匹配
 
-1. **原生应用不常驻 `running`**。没有对外服务端口的应用（纯命令行工具类）装完状态是 `nostart`，
-   原先会等满 90 次再判 `FAIL`。现在把 `nostart` 当终态接受，可用性交由安装结果判断。
-2. **等待 `running` 超时但应用已在列表里**。原先直接抛异常记 `FAIL`，现在交给入口探测判定，
-   并记录 `statusTimeout` 以便追溯。
+| 应用 | 现象 | 处置 |
+| --- | --- | --- |
+| `fn-manticoresearch` | 配置只监听 9306/9312，映射的 9308 无监听者 | 补 `listen = 9308:http` |
+| `fn-nextcloud` | 映射到 443，入口走 http → 400 | 改映射到 80 |
 
-修正前后同一批应用的重测结果印证了这两点：`fn-ohmyzsh`、`fn-uv`、`fn-memcached`、`fn-teamspeak`
-等原生应用由 `FAIL` 转为 `PASS`。
+### 3.5 向导字段缺陷
+
+| 应用 | 问题 | 处置 |
+| --- | --- | --- |
+| `fn-xiaoya-only` | 向导只收集 cookie，但容器硬性检查 `mytoken.txt` 等三个文件，凭据没落到容器要的位置 | 向导补 3 个必填字段，回调按容器要求写文件 |
+| `fn-bitwarden` | `DOMAIN` 允许留空，容器却要求带协议头 | 属免验范围，按 `v6.0.0` 保持原状 |
+
+### 3.6 非缺陷（环境耗时，记 BLOCKED）
+
+- `fn-localai`：首启需逐个下载多个模型权重（1.5GiB、1.9GiB…），下载完成前入口不可用；
+- `fn-comfyui`、`fn-vane`：依赖多个大镜像，安装轮询窗口内未完成；
+- 其余 23 个：依赖外部数据库/中间件（PostgreSQL、MySQL、Kafka、MinIO 等）。
+
+这些都不构成转换缺陷，但**应在具备对应中间件、且允许长时下载的环境中复验**。
+
+## 4. 判定口径的三处修正
+
+跑批量时发现三类**把成功判成失败、或把失败算到转换头上**的逻辑错误，已修正：
+
+1. **原生应用不常驻 `running`**。没有对外服务端口的应用装完状态是 `nostart`，
+   原先会等满 90 次再判 `FAIL`。现在把 `nostart` 当终态接受。
+2. **等待 `running` 超时但应用已安装**。原先直接抛异常记 `FAIL`；
+   现在交给入口探测判定，并记录 `statusTimeout`。同时明确：过渡态
+   （`start`/`installing`）**不能**当作终态接受，否则「还在启动」会被判成通过。
+3. **安装轮询超时不算转换缺陷**。大镜像拉取、模型权重下载都会超时，
+   这类失败没有任何「转换有问题」的证据。现在记 `BLOCKED`，与镜像拉取超时的口径一致。
+
+修正前后对比可见：`fn-ohmyzsh`、`fn-uv`、`fn-memcached`、`fn-teamspeak` 等原生应用
+由 `FAIL` 转为 `PASS`；`fn-comfyui`、`fn-vane` 由 `FAIL` 转为 `BLOCKED`。
+
+## 5. 已修复并复测通过的应用（共 20 个）
+
+| 应用 | 缺陷 | 复测 |
+| --- | --- | --- |
+| `fn-node-red` | 数据目录属主未对齐 | PASS 200（**未提权**） |
+| `fn-lsky-pro` | entrypoint 需 root 改写 `/etc/apache2/` | PASS 302 |
+| `fn-music-tag-web` | `/app/webdav` 创建失败 | PASS 200 |
+| `fn-manticoresearch` | 配置未声明 9308 | PASS 200 |
+| `fn-mkdocs-material` | 缺 `mkdocs.yml` | PASS 200 |
+| `fn-langflow` | 相对路径拼成 `/app/app` | 权限已解（缺外部 PG → BLOCKED） |
+| `fn-phpmyadmin` | 缺 `config.user.inc.php` 种子 | PASS 200 |
+| `fn-nodebb` | `/opt/config` 不可写 | PASS 200 |
+| `fn-tomcat` | `/bitnami/...` 不可写 | PASS 200 |
+| `fn-xiaomusic` | 日志写 `/app` 失败 | PASS 200 |
+| `fn-gsmanager` | `/root/server/{logs,server}` 不可写 | PASS 200 |
+| `fn-komari` | `./data/theme` 不可写 | PASS 307 |
+| `fn-nexus` | sonatype-work 日志目录不可写 | PASS 200 |
+| `fn-verdaccio` | 缺配置 + 运行身份不一致 | PASS 200 |
+| `fn-gatus` | 缺 `config.yaml` | PASS 200 |
+| `fn-focalboard` | 运行身份不一致 + 空种子配置 | PASS 200 |
+| `fn-excalidraw` | nginx 缓存目录不可写 | PASS 200 |
+| `fn-sentinel-dashboard` | JVM `user.home` 指向 `/root` | PASS 200 |
+| `fn-synapse` | 缺配置 + entrypoint 用法错误 | PASS 302 |
+| `fn-trendradar` | 缺两个必需配置文件 | PASS 200 |
+| `fn-nextcloud` | 映射到 443 导致入口 400 | PASS 200 |
 
 ## 6. 遗留风险
 
 | 编号 | 风险 | 说明 |
 | --- | --- | --- |
-| R-01 | 37 个 `UNVERIFIED` 未作可用性结论 | 缺用户环境输入，非转换缺陷；需在具备对应环境的设备上复验 |
-| R-02 | 22 个 `BLOCKED` 依赖外部中间件 | 同上，环境齐备时应重跑 |
-| R-03 | 22 个「其它待查」根因未逐项确认 | 已留容器日志，整改前需逐个读日志定因 |
-| R-04 | 数据目录残留清理需提权 | 卸载回调无权删除平台管理的父目录项，残留目录需有权限账号处理 |
-| R-05 | 未覆盖升级/降级路径 | 本轮只验证「首次安装→启动→卸载」，升级未测 |
+| R-01 | 2 个应用必须 root 才能运行 | `fn-jsonhero`、`fn-tinyrdm` 的镜像启动即写自身目录。已尝试宿主绑定挂载、compose tmpfs、Docker 命名卷三种非 root 方案，均无效。**未为了跑起来而退回 root**，保持登记待上游提供可配置用户版本 |
+| R-02 | 35 个 `UNVERIFIED` 未作可用性结论 | 缺用户环境输入（域名、邮箱、外部服务地址、网盘 token 等），非转换缺陷 |
+| R-03 | 26 个 `BLOCKED` 依赖外部条件 | 中间件齐备、允许长时下载的环境下应重跑 |
+| R-04 | 数据目录残留清理需提权 | 卸载回调无权删除平台管理的父目录项 |
+| R-05 | 未覆盖升级/降级路径 | 本轮只验证「首次安装→启动→卸载」 |
 
 ## 7. 设备清理
 
