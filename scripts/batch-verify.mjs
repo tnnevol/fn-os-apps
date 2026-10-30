@@ -387,6 +387,10 @@ function verdict(rec) {
   // 服务端忙/安装队列被占：重试后仍被拒，属于设备状态，不是转换缺陷
   if (rec.busy) return 'BLOCKED';
   if (ENV_BLOCKER.test(blob)) return 'ENV_BLOCKED';
+  // 安装轮询超时：没拿到任何失败证据，只是没在窗口内完成。
+  // 大镜像首次拉取、模型权重下载（个别应用首启要下几个 GB）都会走到这里，
+  // 属于「跑得慢」而不是「转换有问题」，记 BLOCKED 并在下一步用更长窗口复验。
+  if (rec.stage === 'exception' && /轮询超时/.test(String(rec.err || ''))) return 'BLOCKED';
   // 需要外部数据库/中间件的应用：失败是环境问题，不是转换缺陷
   if (rec.needsExternal && rec.installed !== true) return 'BLOCKED';
   if (!rec.installed) {
