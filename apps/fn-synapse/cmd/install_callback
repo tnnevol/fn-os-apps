@@ -2,12 +2,10 @@
 
 ### This script is called after the user installs the application.
 
-# Synapse 启动命令固定读取 /data/homeserver.yaml，缺失会直接失败：
-#   FileNotFoundError: [Errno 2] No such file or directory: '/data/homeserver.yaml'
-#
-# 不能在这里用 `docker run ... generate` 生成：install_callback 以包用户身份执行，
-# 无权访问 /var/run/docker.sock（permission denied）。改为写一份最小可用配置，
-# 签名密钥与 secret 用 openssl 现场生成（容器内会按其 UID 读取）。
+# 配置生成已交给容器自己的启动命令（见 compose：缺 homeserver.yaml 时先跑
+# /start.py generate 再启动）。原因：容器由应用中心在回调之前创建，
+# 在回调里写配置赶不上首次启动，容器会以「配置不存在」进入重启循环。
+# 回调只负责把数据目录建出来，避免 Docker 以 root 建出属主错误的目录。
 if [ -z "${TRIM_PKGVAR}" ]; then
     echo "TRIM_PKGVAR is not set; cannot prepare application data directory" >"${TRIM_TEMP_LOGFILE}"
     exit 1
@@ -16,118 +14,7 @@ fi
 DATA_DIR="${TRIM_PKGVAR}/data"
 mkdir -p "${DATA_DIR}"
 
-SERVER_NAME="${SERVER_NAME:-localhost}"
-HS="${DATA_DIR}/homeserver.yaml"
-
-if [ ! -s "${HS}" ]; then
-    gen_secret() {
-        if command -v openssl >/dev/null 2>&1; then
-            openssl rand -hex 32
-        else
-            head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n'
-        fi
-    }
-
-    echo "Writing minimal Synapse configuration for server name: ${SERVER_NAME}"
-    cat >"${HS}" <<YAML
-# Synapse 最小可用配置（首次安装生成）。
-# 修改后需重启应用生效；数据库为 SQLite，适合单机小规模使用。
-server_name: "${SERVER_NAME}"
-pid_file: /data/homeserver.pid
-web_view: false
-
-listeners:
-  - port: 8008
-    tls: false
-    type: http
-    x_forwarded: true
-    bind_addresses: ["0.0.0.0"]
-    resources:
-      - names: [client, federation]
-        compress: false
-
-database:
-  name: sqlite3
-  args:
-    database: /data/homeserver.db
-
-log_config: "/data/${SERVER_NAME}.log.config"
-media_store_path: /data/media_store
-registration_shared_secret: "$(gen_secret)"
-report_stats: false
-macaroon_secret_key: "$(gen_secret)"
-form_secret: "$(gen_secret)"
-signing_key_path: "/data/${SERVER_NAME}.signing.key"
-
-trusted_key_servers:
-  - server_name: "matrix.org"
-YAML
-
-    # 签名密钥必须是有效的 ed25519 密钥文件，Synapse 启动时会直接读取。
-    # 除「不存在」外还要校验格式：首行必须是 `ed25519 <key id>` 三段，
-    # 第二行必须是 32 字节公钥的 Base64。格式不对就重建，
-    # 否则升级时会把历史遗留的坏密钥一直带下去（expected 3, got 2 就是这个原因）。
-    SIGNING_KEY="${DATA_DIR}/${SERVER_NAME}.signing.key"
-    key_is_valid() {
-        [ -s "${SIGNING_KEY}" ] || return 1
-        local first second
-        first="$(sed -n '1p' "${SIGNING_KEY}")"
-        second="$(sed -n '2p' "${SIGNING_KEY}")"
-        # 首行必须恰好三段
-        [ "$(echo "${first}" | awk '{print NF}')" = "3" ] || return 1
-        echo "${first}" | grep -q '^ed25519 ' || return 1
-        # 第二行必须是 44 字符的 Base64（32 字节 + padding）
-        [ "${#second}" = "44" ] || return 1
-        return 0
-    }
-
-    if ! key_is_valid; then
-        # Synapse 的 ed25519 密钥是两行：
-        #   第一行 `ed25519 a_<key id>`（按空格切分需 3 段，少一段会报 expected 3, got 2）
-        #   第二行是 Base64 的公钥（原始 32 字节，不是 DER，也不带 PEM 头）
-        # 必须是真的 ed25519 密钥对，随机字节会在握手时失败，所以用 openssl 生成后取公钥。
-        KEY_ID="a_$(head -c 4 /dev/urandom | od -An -tx1 | tr -d ' \n')"
-        TMP_PEM="$(mktemp)"
-        if openssl genpkey -algorithm ED25519 -out "${TMP_PEM}" 2>/dev/null; then
-            PUB_B64="$(openssl pkey -in "${TMP_PEM}" -pubout -outform DER 2>/dev/null | tail -c 32 | base64 | tr -d '\n')"
-            {
-                echo "ed25519 ${KEY_ID}"
-                echo "${PUB_B64}"
-            } >"${DATA_DIR}/${SERVER_NAME}.signing.key"
-            # 私钥一并保留，便于日后运维核对
-            cp "${TMP_PEM}" "${DATA_DIR}/${SERVER_NAME}.signing.pem" 2>/dev/null || true
-        else
-            echo "openssl 无法生成 ED25519 密钥，Synapse 签名密钥生成失败" >"${TRIM_TEMP_LOGFILE}"
-            rm -f "${TMP_PEM}"
-            exit 1
-        fi
-        rm -f "${TMP_PEM}"
-        echo "Generated signing key: ${SERVER_NAME}.signing.key"
-    fi
-
-    # 日志配置同样必需，缺少时启动报错
-    if [ ! -s "${DATA_DIR}/${SERVER_NAME}.log.config" ]; then
-        cat >"${DATA_DIR}/${SERVER_NAME}.log.config" <<LOGCONF
-version: 1
-formatters:
-  precise:
-    format: '%(asctime)s - %(name)s - %(lineno)d - %(levelname)s - %(message)s'
-handlers:
-  console:
-    class: logging.StreamHandler
-    formatter: precise
-loggers:
-  synapse.storage.SQL:
-    level: INFO
-root:
-  level: INFO
-  handlers: [console]
-LOGCONF
-    fi
-
-    echo "Synapse configuration written: ${HS}"
-fi
-
+chown -R "${TRIM_USERNAME:-${TRIM_UID}}:${TRIM_GROUPNAME:-${TRIM_GID}}" "${DATA_DIR}" 2>/dev/null || true
 chmod -R 770 "${DATA_DIR}" 2>/dev/null || true
 
 echo "Prepared application data directory: ${DATA_DIR}"

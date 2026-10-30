@@ -2,12 +2,29 @@ services:
   synapse:
     container_name: fn-synapse
     image: matrixdotorg/synapse:v1.162.0
-    command: run -m synapse.app.homeserver --config-path=/data/homeserver.yaml
+    # 容器由应用中心在 install_callback 之前创建，回调写的 homeserver.yaml 赶不上首次启动，
+    # 于是以「配置不存在」失败并进入重启循环。把「缺配置就先生成」放进容器自己的启动命令，
+    # 不依赖外部时序：镜像自带 /start.py，支持 generate 子命令。
+    # 镜像 ENTRYPOINT 是 /start.py，command 只是它的参数（所以直接写 sh -c 会被当成
+    # 「未知执行模式」）。这里覆盖 entrypoint，才能自己决定先生成配置再启动。
+    entrypoint:
+      - sh
+      - -c
+    command:
+      - |
+        if [ ! -s /data/homeserver.yaml ]; then
+          echo "homeserver.yaml 不存在，生成初始配置（server_name=${SYNAPSE_SERVER_NAME:-localhost}）"
+          python /start.py generate || exit 1
+        fi
+        exec python -m synapse.app.homeserver --config-path=/data/homeserver.yaml
     environment:
       # TRIM_UID/TRIM_GID 由 fnOS 注入，指向本应用的包用户；上游硬编码的 1000 在目标 NAS 上通常是登录用户
       - UID=${TRIM_UID}
       - GID=${TRIM_GID}
       - TZ=${TIME_ZONE}
+      # generate 子命令必需：服务器名与是否上报统计
+      - SYNAPSE_SERVER_NAME=${SERVER_NAME:-localhost}
+      - SYNAPSE_REPORT_STATS=no
     logging:
       options:
         max-size: "10m"

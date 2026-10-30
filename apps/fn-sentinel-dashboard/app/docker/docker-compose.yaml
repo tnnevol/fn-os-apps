@@ -3,10 +3,25 @@ services:
     container_name: fn-sentinel-dashboard
     image: bladex/sentinel-dashboard:1.8.10
     # 镜像层未设置 USER（默认 root），且无 PUID/PGID 类变量可注入。
-    # 按规约「运行身份优先非 root」显式指定包用户；该应用无挂载、无状态，
-    # 非 root 下仅需能绑定端口（容器内 8858/8719 均 >1024，无特权需求）。
+    # 按规约「运行身份优先非 root」显式指定包用户；8858/8719 均 >1024，无特权端口需求。
+    #
+    # 但该应用**是有状态的**：Sentinel 客户端把日志写到 ${user.home}/logs/csp/。
+    # 以包用户运行时 HOME 仍指向 /root（镜像内 700 root），路径解析失败，启动即报：
+    #   create Sentinel log base directory error: ?/logs/csp/
+    #   NoSuchFileException: ?/logs/csp/sentinel-record.log...lck
+    # 因此把 HOME 指到数据目录并把日志目录挂出来，保持非 root 运行。
     user: "${TRIM_UID}:${TRIM_GID}"
+    environment:
+      - HOME=/appdata
+      # JVM 的 user.home 取的是系统属性，不读 HOME 环境变量。Sentinel 用
+      # System.getProperty("user.home") + "/logs/csp" 拼日志目录，所以必须用
+      # JAVA_TOOL_OPTIONS 把它指到可写的数据目录（JVM 启动时自动读取该变量）。
+      - JAVA_TOOL_OPTIONS=-Duser.home=/appdata
+      - TZ=${TIME_ZONE}
     ports:
       - "${APP_PORT}:8858"
       - "${COMMUNICATION_PORT}:8719"
     restart: always
+    volumes:
+      # Sentinel 的 $HOME/logs/csp 落在这里
+      - "${TRIM_PKGVAR}/data:/appdata"

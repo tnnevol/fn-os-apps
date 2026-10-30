@@ -2,4 +2,41 @@
 
 ### This script is called after the user installs the application.
 
+# 容器把 /app/config 以**只读**方式挂载，自己无法生成配置；而启动时缺配置会直接
+# 打印「配置文件缺失」并退出。因此必须由回调把种子配置铺进去。
+if [ -z "${TRIM_PKGVAR}" ]; then
+    echo "TRIM_PKGVAR is not set; cannot prepare application data directory" >"${TRIM_TEMP_LOGFILE}"
+    exit 1
+fi
+
+CFG_DIR="${TRIM_PKGVAR}/data/config"
+OUT_DIR="${TRIM_PKGVAR}/data/output"
+mkdir -p "${CFG_DIR}" "${OUT_DIR}"
+
+SEED_DIR="${TRIM_APPDEST}/seed/data"
+if [ ! -s "${CFG_DIR}/config.yaml" ]; then
+    if [ -f "${SEED_DIR}/config/config.yaml" ]; then
+        cp "${SEED_DIR}/config/config.yaml" "${CFG_DIR}/config.yaml"
+        echo "Seeded config: config/config.yaml"
+    else
+        echo "Seed file missing: ${SEED_DIR}/config/config.yaml" >"${TRIM_TEMP_LOGFILE}"
+        exit 1
+    fi
+fi
+
+# 入口脚本同时要求 frequency_words.txt，缺它同样打印「配置文件缺失」并退出。
+if [ ! -s "${CFG_DIR}/frequency_words.txt" ]; then
+    if [ -f "${SEED_DIR}/config/frequency_words.txt" ]; then
+        cp "${SEED_DIR}/config/frequency_words.txt" "${CFG_DIR}/frequency_words.txt"
+        echo "Seeded config: config/frequency_words.txt"
+    else
+        echo "Seed file missing: ${SEED_DIR}/config/frequency_words.txt" >"${TRIM_TEMP_LOGFILE}"
+        exit 1
+    fi
+fi
+
+chmod -R 770 "${TRIM_PKGVAR}/data" 2>/dev/null || true
+
+echo "Prepared application data directory: ${TRIM_PKGVAR}/data"
+
 exit 0

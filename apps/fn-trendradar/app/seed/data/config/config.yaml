@@ -1,0 +1,49 @@
+# TrendRadar 最小可用配置（随应用包提供）
+#
+# 该文件以只读方式挂载到容器内 /app/config/config.yaml，因此必须事先存在，
+# 否则容器启动即打印「配置文件缺失」并退出。
+# 后续按需修改应用数据目录下的 data/config/config.yaml 后重启应用即可生效。
+#
+# 需要接收推送时，请填写下方 notification 段落（企业微信/钉钉/Telegram 等任选其一）。
+
+# 监控的热榜平台（按需增删）
+platforms:
+  - id: "weibo"
+    name: "微博热搜"
+  - id: "zhihu"
+    name: "知乎热榜"
+  - id: "douyin"
+    name: "抖音热点"
+  - id: "bilibili-hot-search"
+    name: "B站热搜"
+
+# 关注的关键词；空列表表示只抓取榜单不筛选
+keywords:
+  - "AI"
+  - "开源"
+
+# 抓取设置
+crawler:
+  # 请求间隔（秒），过小容易被限流
+  request_interval: 2
+  # 单次抓取超时（秒）
+  timeout: 30
+  # 是否使用无头浏览器（部分平台需要）
+  use_browser: false
+
+# 推送通知；不配置则不推送，仅保存到 output 目录
+notification:
+  enabled: false
+  # 支持的类型：wecom / dingtalk / telegram / feishu / email
+  type: "wecom"
+  webhook_url: ""
+  # telegram 额外需要：
+  # bot_token: ""
+  # chat_id: ""
+
+# 报告设置
+report:
+  # 每次抓取后是否生成 HTML 报告
+  generate_html: true
+  # 报告中最多展示多少条
+  max_items: 50
