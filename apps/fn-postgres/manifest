@@ -11,3 +11,4 @@ distributor_url       = https://github.com/tnnevol/fn-os-apps
 os_min_version        = 1.1.8
 desktop_uidir         = ui
 desktop_applaunchname = fn-postgres.Application
+disable_authorization_path = true
