@@ -33,6 +33,10 @@ catalog:
   vitepress: 1.6.4
   mermaid: 11.17.2
   dayjs: 1.11.23
+  # mermaid 的运行时依赖，纯 CommonJS（无 module / exports 字段）。
+  # 在 docs 里显式声明，Vite 才能从 docs 根解析到它并做 CJS→ESM 预打包；
+  # 否则开发态会报 "does not provide an export named 'default'"。
+  fastdom: 1.0.12
   vitepress-mermaid-plugin: 3.0.0
   vitest: ^4.1.8
 

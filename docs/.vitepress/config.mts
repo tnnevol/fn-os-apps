@@ -346,6 +346,14 @@ export default withMermaid(defineConfig({
         replacement: 'dayjs/esm/index'
       }]
     },
+    // mermaid 11 依赖 fastdom（CommonJS，没有 ESM 的 default 导出）。
+    // 开发态下 Vite 若把它当外部 ESM 直接交给浏览器，会报
+    //   does not provide an export named 'default'
+    // 显式列进 optimizeDeps 让它走 esbuild 预打包，由 esbuild 生成 interop 后的
+    // default 导出；另外两个是 mermaid 的 CJS 传递依赖，一并预打包更稳。
+    optimizeDeps: {
+      include: ['fastdom', 'mermaid', 'vitepress-mermaid-plugin > dayjs']
+    },
     server: {
       port: 9876
     }
