@@ -1,0 +1,7 @@
+{
+    "defaults": {
+        "run-as": "package"
+    },
+    "username": "docker-fn-postgres",
+    "groupname": "docker-fn-postgres"
+}

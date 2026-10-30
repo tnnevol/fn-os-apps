@@ -364,12 +364,19 @@ function buildParams(wizardInfo) {
 
   // 测试设备上已就绪的中间件端口（由环境变量覆盖，缺省用本设备的实际值）。
   // 这些是 fnOS 原生应用，跑在宿主上；容器里必须用宿主局域网 IP + 该端口访问。
+  // 设备上同时备有 MySQL（43306）与 PostgreSQL（55432，测试实例）。
+  // DB_PORT 取哪个由 DB_TYPE 决定：postgres/postgresql 走 PG 端口，其余走 MySQL。
+  const dbType = String(process.env.FNOS_DB_TYPE || 'mysql').toLowerCase();
+  const isPg = /postgres/.test(dbType);
+  const portForDbType = isPg
+    ? (process.env.FNOS_PG_PORT || '55432')
+    : (process.env.FNOS_DB_PORT || '43306');
   const PORT_MAP = {
-    DB_PORT: process.env.FNOS_DB_PORT || '43306',
+    DB_PORT: portForDbType,
     MYSQL_PORT: process.env.FNOS_DB_PORT || '43306',
     REDIS_PORT: process.env.FNOS_REDIS_PORT || '6379',
     MONGO_PORT: process.env.FNOS_MONGO_PORT || '27017',
-    POSTGRES_PORT: process.env.FNOS_PG_PORT || '5432',
+    POSTGRES_PORT: process.env.FNOS_PG_PORT || '55432',
     MINIO_API_PORT: process.env.FNOS_MINIO_PORT || '9000',
     MINIO_CONSOLE_PORT: process.env.FNOS_MINIO_CONSOLE_PORT || '9001',
     KAFKA_PORT: process.env.FNOS_KAFKA_PORT || '9092',
@@ -424,10 +431,14 @@ function buildParams(wizardInfo) {
     // 靠它连库必然失败，而这属于部署差异、不是转换缺陷。
     if (process.env.FNOS_MIDDLEWARE_READY === '1') {
       const kUp = String(key).toUpperCase();
+      // 应用声明的数据库类型决定用哪套凭据：PG 与 MySQL 是不同实例。
+      const pgMode = /postgres/.test(String(process.env.FNOS_DB_TYPE || '').toLowerCase());
       if (/(?:DB|MYSQL|MARIADB|POSTGRES)_(?:USER|USERNAME)$/.test(kUp) && process.env.FNOS_DB_USER) {
-        val = process.env.FNOS_DB_USER; filled.push(key);
+        val = pgMode ? (process.env.FNOS_PG_USER || process.env.FNOS_DB_USER) : process.env.FNOS_DB_USER;
+        filled.push(key);
       } else if (/(?:DB|MYSQL|MARIADB|POSTGRES)_(?:PASSWORD|PASS)$/.test(kUp) && process.env.FNOS_DB_PASSWORD) {
-        val = process.env.FNOS_DB_PASSWORD; filled.push(key);
+        val = pgMode ? (process.env.FNOS_PG_PASSWORD || process.env.FNOS_DB_PASSWORD) : process.env.FNOS_DB_PASSWORD;
+        filled.push(key);
       } else if (/^DB_TYPE$/.test(kUp) && process.env.FNOS_DB_TYPE) {
         // 下拉项按设备实际可用的数据库类型选择（本设备是 MySQL 8.4）。
         // 默认值若是 mariadb，会因驱动/版本校验不一致而启动失败。
@@ -498,7 +509,8 @@ function buildParams(wizardInfo) {
 const ENV_BLOCKER = /all predefined address pools have been fully subnetted|cannot connect to the Docker daemon|permission denied while trying to connect to the Docker daemon|no space left on device/i;
 
 function verdict(rec) {
-  const blob = `${rec.err || ''} ${rec.installStatus || ''} ${rec.installOutputTail || ''} ${rec.log || ''}`;
+  // 把生命周期日志也纳入判定依据：端口占用、compose 失败等真因只出现在这里。
+  const blob = `${rec.err || ''} ${rec.installStatus || ''} ${rec.installOutputTail || ''} ${rec.log || ''} ${rec.lifecycleLog || ''}`;
   if (rec.stage === 'build') return 'BUILD_FAIL';
   if (rec.stage === 'wizard_unsolvable') return 'UNVERIFIED';
   // 会话失效：整批都做不了，结果不能算作应用结论
@@ -516,7 +528,9 @@ function verdict(rec) {
   const mwReady = process.env.FNOS_MIDDLEWARE_READY === '1';
   if (rec.needsExternal && !mwReady && rec.installed !== true) return 'BLOCKED';
   if (!rec.installed) {
-    if (/address already in use|port is already allocated|端口/i.test(blob)) return 'BLOCKED';
+    // 端口占用属于设备环境冲突（默认端口被系统服务或其他应用占用），易换成别的端口，
+    // 不计为转换缺陷；但要保留 lifecycleLog 供定位是哪个端口。
+    if (/address already in use|port is already allocated|failed to bind host port|端口/i.test(blob)) return 'BLOCKED';
     // 镜像拉取失败/超时属于环境问题（镜像源、限流、磁盘），不计入转换缺陷
     if (/Pulling|Already exists|Waiting|Downloading|extracting|error pulling|failed to resolve|manifest unknown|toomanyrequests|timeout/i.test(blob)) return 'BLOCKED';
     return 'FAIL';
@@ -826,13 +840,16 @@ async function main() {
 
     for (const name of buildable) {
       const rec = await testOne(name);
-      // 失败取日志
-      if (rec.installed !== true || rec.appStatus !== 'running' || (rec.entryCode && !['200', '301', '302', '401', '403'].includes(rec.entryCode))) {
-        try {
-          const { stdout } = await ssh(`cat /var/log/apps/${name}.log 2>/dev/null | tail -25`);
-          rec.log = String(stdout).slice(0, 2500);
-        } catch { rec.log = ''; }
-      }
+      // 生命周期日志 /var/log/apps/<app>.log **必须每次都读**：
+      // 容器起不来时真正的报错往往只出现在这里（install_callback 的输出、
+      // compose up 的失败原因，例如端口被占用）。此前只在「判定为失败」时才读，
+      // 一旦判定口径放宽就会漏掉关键证据，导致把「端口冲突」误读成「docker 不可用」。
+      // 因此无条件采集，并保留较长的尾部。
+      try {
+        const { stdout } = await ssh(`cat /var/log/apps/${name}.log 2>/dev/null | tail -80`);
+        const txt = String(stdout || '').trim();
+        if (txt) rec.lifecycleLog = txt.slice(-4000);
+      } catch { /* 读取失败不影响判定 */ }
       // 网络回收（同时取证平台是否留下 compose 网络）
       rec.networkLingered = await reclaimNetwork(name);
       // 卸载残留清理：包用户无权删除其父目录下的目录项，需由有权限的账号清

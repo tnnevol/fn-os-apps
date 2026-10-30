@@ -1,7 +1,7 @@
 services:
   logto:
     container_name: fn-logto
-    image: svhd/logto:1.44.0
+    image: svhd/logto:1.45.0
     entrypoint: ["sh", "-c", "npm run cli db seed -- --swe && npm run alteration deploy latest && npm start"]
     environment:
       - TRUST_PROXY_HEADER=1

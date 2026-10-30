@@ -1,7 +1,7 @@
 services:
   emlog:
     container_name: fn-emlog
-    image: emlog/emlog:pro-latest-php8.2-nginx
+    image: emlog/emlog:pro-latest
     # 按裁决 B：镜像层默认 root（config.User 为 null）。
     #
     # 真机结论（2026-10）：不能加 user: 覆盖。镜像的 /usr/bin/init_emlog 首启会写

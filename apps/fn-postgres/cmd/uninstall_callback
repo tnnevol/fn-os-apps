@@ -1,0 +1,24 @@
+#!/bin/bash
+
+### This script is called after the user uninstalls the application.
+
+# 只清理应用自己创建的数据内容；框架目录（TRIM_PKGVAR 等）本身由平台管理，
+# 不删除目录本身，避免出现「谎报删除」与越权 unlink 父目录的问题。
+if [ "$wizard_data_action" = "delete" ]; then
+    echo "Deleting application data..."
+    for d in "${TRIM_PKGVAR:-}" "${TRIM_PKGHOME:-}"; do
+        [ -n "$d" ] || continue
+        [ -d "$d" ] || continue
+        rm -rf "$d"/* "$d"/.[!.]* 2>/dev/null
+        left="$(ls -A "$d" 2>/dev/null | wc -l | tr -d ' ')"
+        if [ "${left:-0}" = "0" ]; then
+            echo "Application data deleted: $d"
+        else
+            echo "Some application data in $d could not be removed; the platform keeps this directory."
+        fi
+    done
+else
+    echo "Keeping application data for future reinstallation."
+fi
+
+exit 0

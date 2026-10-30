@@ -94,12 +94,20 @@ HTTP 接口完成安装、启动、卸载，并把 UI 通道与设备端 CLI 通
 
 ## 5. 失败取证
 
+**`/var/log/apps/<app>.log` 是每次安装都必须读的**，不是「失败时才读」。它是生命周期脚本的
+stdout/stderr 汇总，容器起不来时真正的报错往往只出现在这里（`install_callback` 的输出、
+`docker compose up` 的失败原因）。踩过的坑：某数据库应用安装后一直停在 `start`，界面只显示
+「docker 不可用」，实际是默认端口 5432 被系统内置服务占用，该报错只在这份日志里
+（`failed to bind host port ... address already in use`）。若把它归成「docker 不可用」，
+整改方向会完全跑偏。
+
 | 场景 | 取证方式 |
 | --- | --- |
 | 安装/启动失败 | SSH 读 `/var/log/apps/<app>.log` 尾部（生命周期脚本的 stdout/stderr 汇总） |
 | 入口不可访问 | 同上 + 应用中心返回的 `status`、`appServiceInfo`，以及 `docker ps -a` 的容器状态与端口映射 |
 | 容器崩溃循环 | `docker logs --tail 30 <容器名>`：缺依赖、配置解析失败、权限不足等真因只出现在容器日志里 |
 | 卸载后残留 | 查 `/vol2/@appdata/<app>`、`/vol2/@apphome/<app>` 是否仍在 |
+| 端口被占用 | 生命周期日志里 `failed to bind host port ... address already in use`；再 `ss -ltn` 确认占用者。默认端口撞系统服务时属环境冲突，改端口即可，不计转换缺陷 |
 | 地址池耗尽 | `docker network ls` 与 `ip route` 对照：Docker 数据库里已无记录但内核仍占着网段，即孤儿网桥 |
 
 日志读取不需要提权：应用生命周期日志对普通账号可读。**日志里出现 `exit status 1: open

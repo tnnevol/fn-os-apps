@@ -1,0 +1,27 @@
+services:
+  postgres:
+    container_name: fn-postgres
+    # 版本选型：1Panel 上游 postgresql 提供 12.22/13.23/14.24/15.19/16.15/17.11/18.6 七个版本，
+    # fnOS 一个应用只能对应一个镜像版本，这里取 16.15-alpine：
+    #   - 16 系列是目前兼容性最广的稳定大版本（多数应用声明支持 13+）；
+    #   - 相比 17/18 尚未成为主流，避免旧客户端驱动不兼容；
+    #   - 标签与上游同名版本完全一致，便于对照与升级。
+    image: postgres:16.15-alpine
+    restart: always
+    environment:
+      - POSTGRES_USER=${DB_ROOT_USER}
+      - POSTGRES_PASSWORD=${DB_ROOT_PASSWORD}
+    # 端口说明：1Panel 上游默认映射宿主 5432。本设备 5432 已被系统内置服务占用
+    # （仅监听 127.0.0.1），故默认改用 55432，避免安装即失败。
+    # 容器内仍为标准 5432，客户端连接串里的端口按用户填写值填写。
+    ports:
+      - "${APP_PORT}:5432"
+    volumes:
+      # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）
+      - "${TRIM_PKGVAR}/data:/var/lib/postgresql/data"
+    healthcheck:
+      test: ["CMD", "pg_isready", "-h", "127.0.0.1", "-p", "5432", "-q", "-U", "${DB_ROOT_USER}"]
+      start_period: 20s
+      interval: 30s
+      retries: 5
+      timeout: 5s

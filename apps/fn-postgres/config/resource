@@ -1,0 +1,20 @@
+{
+  "docker-project": {
+    "projects": [
+      {
+        "name": "fn-postgres",
+        "path": "docker"
+      }
+    ]
+  },
+  "data-share": {
+    "shares": [
+      {
+        "name": "fn-postgres"
+      },
+      {
+        "name": "fn-postgres/data"
+      }
+    ]
+  }
+}

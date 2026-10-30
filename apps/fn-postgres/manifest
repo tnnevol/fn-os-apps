@@ -1,0 +1,13 @@
+appname               = fn-postgres
+version               = 6.0.0
+display_name          = PostgreSQL
+desc                  = PostgreSQL 是功能强大的开源关系型数据库，支持复杂查询、外键、触发器与事务完整性，广泛用于 Web 与企业级应用。
+platform              = x86
+source                = thirdparty
+maintainer            = PostgreSQL Global Development Group
+maintainer_url        = https://www.postgresql.org/
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+os_min_version        = 1.1.8
+desktop_uidir         = ui
+desktop_applaunchname = fn-postgres.Application

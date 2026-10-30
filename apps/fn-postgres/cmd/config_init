@@ -1,0 +1,11 @@
+#!/bin/bash
+
+### This script is called before the user change environment variables in application setting page.
+
+# 保存前的轻量校验：端口必填且为数字。真正的重名/越界检查交给数据库自身。
+if [ -n "${APP_PORT}" ] && ! echo "${APP_PORT}" | grep -qE '^[0-9]+$'; then
+    echo "端口必须是数字" >"${TRIM_TEMP_LOGFILE}"
+    exit 1
+fi
+
+exit 0

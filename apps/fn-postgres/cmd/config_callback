@@ -1,0 +1,29 @@
+#!/bin/bash
+
+### This script is called after the user change environment variables in application setting page.
+
+# 用户在「应用设置」里改了超级用户密码后，需要真正落到数据库里，否则重启后
+# 新密码不生效（容器只在首次初始化时读取 POSTGRES_PASSWORD）。
+# 端口改动由 appcenter 重建容器时按新的 APP_PORT 生效，这里只处理密码。
+if [ -z "${TRIM_PKGVAR}" ]; then
+    exit 0
+fi
+
+CONTAINER="fn-postgres"
+
+# 容器未运行则跳过：此时无法执行 SQL，等下次启动由用户重新保存配置。
+if ! docker inspect "${CONTAINER}" --format '{{.State.Running}}' 2>/dev/null | grep -q true; then
+    echo "容器未运行，跳过密码同步（下次启动后重新保存配置即可生效）"
+    exit 0
+fi
+
+if [ -n "${DB_ROOT_PASSWORD}" ] && [ -n "${DB_ROOT_USER}" ]; then
+    if docker exec -i "${CONTAINER}" psql -U "${DB_ROOT_USER}" -d postgres \
+        -c "ALTER USER \"${DB_ROOT_USER}\" WITH PASSWORD '${DB_ROOT_PASSWORD}';" >/dev/null 2>&1; then
+        echo "已更新数据库超级用户密码"
+    else
+        echo "更新密码失败：请确认当前密码可登录，或稍后重试" >"${TRIM_TEMP_LOGFILE}"
+    fi
+fi
+
+exit 0
