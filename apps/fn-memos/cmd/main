@@ -25,10 +25,44 @@ log_msg() {
     echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >>"${LOG_FILE}"
 }
 
+# 按可执行文件路径找残留进程。
+# 只依赖 PID 文件是不够的：PID 文件丢失（升级、异常退出、被清理）后，
+# 仍在运行的 memos 会变成孤儿进程，继续占着端口。下次启动就报「端口被占用」，
+# 而且 stop 什么也停不掉 —— 这正是「重启后仍提示端口被占用」的成因。
+find_orphans() {
+    pgrep -f "${MEMOS_BIN} --port" 2>/dev/null || true
+}
+
+cleanup_orphans() {
+    local pids
+    pids="$(find_orphans)"
+    [ -z "$pids" ] && return 0
+    log_msg "发现残留 memos 进程：$(echo "$pids" | tr '\n' ' ')，先清理"
+    for pid in $pids; do
+        # 排除当前脚本自身
+        [ "$pid" = "$$" ] && continue
+        kill -TERM "$pid" 2>/dev/null || true
+    done
+    local count=0
+    while [ -n "$(find_orphans)" ] && [ $count -lt 10 ]; do
+        sleep 1
+        count=$((count + 1))
+    done
+    for pid in $(find_orphans); do
+        log_msg "残留进程未响应 TERM，强制结束 pid=$pid"
+        kill -KILL "$pid" 2>/dev/null || true
+    done
+    rm -f "${PID_FILE}"
+    return 0
+}
+
 start_process() {
     if status; then
         return 0
     fi
+
+    # PID 文件可能已失效但进程仍在，先兜底清理，避免撞端口
+    cleanup_orphans
 
     log_msg "Starting Memos (storage: ${wizard_storage_type:-local}) ..."
     bash -c "${CMD}" >>"${LOG_FILE}" 2>&1 &
@@ -69,6 +103,9 @@ stop_process() {
         rm -f "${PID_FILE}"
     fi
 
+    # 无论 PID 文件是否可用，都按可执行路径兜底清理一次
+    cleanup_orphans
+
     return 0
 }
 
@@ -89,6 +126,12 @@ status() {
         else
             rm -f "${PID_FILE}"
         fi
+    fi
+
+    # PID 文件缺失/失效时，按可执行路径兜底判断：进程其实在跑就不能报「未运行」，
+    # 否则框架会反复拉起新实例，而每一个都会因端口被自己占用而失败。
+    if [ -n "$(find_orphans)" ]; then
+        return 0
     fi
 
     return 1
