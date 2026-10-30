@@ -2,9 +2,12 @@ services:
   emlog:
     container_name: fn-emlog
     image: emlog/emlog:pro-latest-php8.2-nginx
-    # 按裁决 B：镜像层默认 root（config.User 为 null），加 user: 以包用户运行。
-    # 挂载 /app 的属主即包用户，与 TRIM_UID 一致（Apache/Nginx 的 pid/日志目录风险见文档）。
-    user: "${TRIM_UID}:${TRIM_GID}"
+    # 按裁决 B：镜像层默认 root（config.User 为 null）。
+    #
+    # 真机结论（2026-10）：不能加 user: 覆盖。镜像的 /usr/bin/init_emlog 首启会写
+    # /usr/local/etc/php/conf.d/custom.ini（镜像层，归 root），以包用户运行直接失败：
+    #   init_emlog: line 12: /usr/local/etc/php/conf.d/custom.ini: Permission denied
+    # 随后无限重启。该镜像必须 root 起；业务数据仍落在 TRIM_PKGVAR 挂载的 /app 下。
     environment:
       # 上游由 1Panel 服务选择器注入 PANEL_DB_*，fnOS 改为向导显式填写（上游无 DB 类型/端口变量）
       - EMLOG_DB_HOST=${DB_HOST}

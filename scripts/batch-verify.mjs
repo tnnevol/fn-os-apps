@@ -42,6 +42,9 @@ const arg = (k, d) => { const i = argv.indexOf(k); return i >= 0 ? argv[i + 1] :
 
 const HOST = process.env.FNOS_HOST || '';
 const SSH_USER = process.env.FNOS_SSH_USER || '';
+// 会话 Cookie（含 HttpOnly 的 osrt/ost）。提供时走 curl，否则回退浏览器桥接。
+// 取法：用 chrome-devtools MCP 打开已登录页面，读任一 /app-center 请求的 cookie 头。
+const COOKIE = process.env.FNOS_COOKIE || '';
 const SSH_OPTS = ['-o', 'BatchMode=yes', '-o', 'ConnectTimeout=8'];
 const STAGE = process.env.FNOS_STAGE_DIR || '';
 const VOLUME_ID = process.env.FNOS_VOLUME_ID || '2';
@@ -212,7 +215,38 @@ async function closeBridge() {
  * 会话失效必须单独识别：接口不再返回 JSON 时，若按普通失败处理，会把「没登录」
  * 记成上百个应用 FAIL。这里抛 sessionExpired，由主循环中止整批。
  */
+/**
+ * 直接用 curl 调应用中心接口。
+ *
+ * 鉴权靠一份从已登录浏览器会话里取来的 Cookie（含 HttpOnly 的 osrt/ost）。
+ * 相比浏览器桥接：短往返、可重试、不依赖扩展存活，长跑更稳。
+ * 会话失效必须单独识别——接口不再返回 JSON 时若按普通失败处理，
+ * 会把「没登录」记成上百个应用 FAIL。
+ */
+async function apiViaCurl(pathname, { method = 'GET', body } = {}) {
+  const url = API_BASE + pathname + (pathname.includes('?') ? '&' : '?') + 'language=' + LANG;
+  const args = ['-s', '-m', '30', '-H', `Cookie: ${COOKIE}`, '-w', '\n__HTTP__%{http_code}'];
+  if (method !== 'GET') args.push('-X', method);
+  if (body !== undefined) args.push('-H', 'Content-Type: application/json', '--data-binary', JSON.stringify(body));
+  args.push(url);
+  const { stdout } = await sh('curl', args);
+  const text = String(stdout || '');
+  const m = text.match(/\n__HTTP__(\d{3})\s*$/);
+  const status = m ? m[1] : '';
+  const payload = m ? text.slice(0, m.index) : text;
+  if (['401', '403', '302', '303'].includes(status) || !payload.trim()) {
+    const err = new Error(`会话失效或接口无响应 (HTTP ${status || '空响应'})，需要重新从浏览器取 Cookie`);
+    err.sessionExpired = true;
+    throw err;
+  }
+  try { return JSON.parse(payload); } catch { return { __raw: payload.slice(0, 300), __status: status }; }
+}
+
 async function api(pathname, { method = 'GET', body } = {}) {
+  // 有会话 Cookie 时优先走 curl：比浏览器桥接轻得多，也不会因为扩展休眠而断线。
+  // Cookie 来源见文件头说明（chrome-devtools MCP 从已登录请求头里取）。
+  if (COOKIE) return apiViaCurl(pathname, { method, body });
+
   let lastErr;
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
@@ -328,6 +362,21 @@ function buildParams(wizardInfo) {
   // 默认关闭——UNVERIFIED 是诚实结论；开启后结果记录 placeholderFilled，便于与真实填写区分。
   const fillPlaceholders = process.env.FNOS_FILL_PLACEHOLDERS === '1';
 
+  // 测试设备上已就绪的中间件端口（由环境变量覆盖，缺省用本设备的实际值）。
+  // 这些是 fnOS 原生应用，跑在宿主上；容器里必须用宿主局域网 IP + 该端口访问。
+  const PORT_MAP = {
+    DB_PORT: process.env.FNOS_DB_PORT || '43306',
+    MYSQL_PORT: process.env.FNOS_DB_PORT || '43306',
+    REDIS_PORT: process.env.FNOS_REDIS_PORT || '6379',
+    MONGO_PORT: process.env.FNOS_MONGO_PORT || '27017',
+    POSTGRES_PORT: process.env.FNOS_PG_PORT || '5432',
+    MINIO_API_PORT: process.env.FNOS_MINIO_PORT || '9000',
+    MINIO_CONSOLE_PORT: process.env.FNOS_MINIO_CONSOLE_PORT || '9001',
+    KAFKA_PORT: process.env.FNOS_KAFKA_PORT || '9092',
+  };
+  // 形如 DB_HOST=<某个值> 的字段，记录一下便于结果里体现「连的是哪个宿主」
+  const pendingExternalHosts = [];
+
   // 占位值的取值原则：能指向测试主机的就指向测试主机（地址类字段），
   // 必须是域名/邮箱形态的用约定占位值。目的是验证「FPK 装得上、容器起得来」，
   // 不追求业务可用；所有用到占位值的记录都会带 placeholderFilled 标记。
@@ -369,8 +418,43 @@ function buildParams(wizardInfo) {
     const isSecret = it.type === 'password'
       || /password|secret|token|access_?key|secret_?key|api_?key|admin_?user|admin_?pass|credential/i.test(key + ' ' + (it.label || ''));
     let val = it.initValue;
+
+    // 中间件就绪时，DB 账号/密码/库名一律以环境变量为准：
+    // 向导里的默认值（如 DB_USERNAME=emlog）在目标设备上并不存在，
+    // 靠它连库必然失败，而这属于部署差异、不是转换缺陷。
+    if (process.env.FNOS_MIDDLEWARE_READY === '1') {
+      const kUp = String(key).toUpperCase();
+      if (/(?:DB|MYSQL|MARIADB|POSTGRES)_(?:USER|USERNAME)$/.test(kUp) && process.env.FNOS_DB_USER) {
+        val = process.env.FNOS_DB_USER; filled.push(key);
+      } else if (/(?:DB|MYSQL|MARIADB|POSTGRES)_(?:PASSWORD|PASS)$/.test(kUp) && process.env.FNOS_DB_PASSWORD) {
+        val = process.env.FNOS_DB_PASSWORD; filled.push(key);
+      } else if (/^DB_TYPE$/.test(kUp) && process.env.FNOS_DB_TYPE) {
+        // 下拉项按设备实际可用的数据库类型选择（本设备是 MySQL 8.4）。
+        // 默认值若是 mariadb，会因驱动/版本校验不一致而启动失败。
+        val = process.env.FNOS_DB_TYPE; filled.push(key);
+      } else if (/(?:DB|MYSQL|MARIADB|POSTGRES)_HOST$/.test(kUp)) {
+        val = HOST; filled.push(key); needsExternal = true;
+      } else if (/(?:DB|MYSQL|MARIADB|POSTGRES)_PORT$/.test(kUp) && PORT_MAP.DB_PORT) {
+        // 本测试设备只提供 MySQL（8.4.9，端口由 FNOS_DB_PORT 指定）。
+        // DB_TYPE 声明为 postgres 的应用在这个端口上必然连不上——那是环境缺口，
+        // 不是转换缺陷；这里仍指向同一端口，让它在日志里明确暴露出来。
+        val = PORT_MAP.DB_PORT; filled.push(key);
+      } else if (/(?:REDIS)_HOST$/.test(kUp)) {
+        val = HOST; filled.push(key); needsExternal = true;
+      }
+    }
+
     if (val === undefined || val === null || val === '') {
-      if (isSecret) {
+      // 设备上已备好中间件时，DB 账号密码必须用真实凭据，随机值连不上；
+      // 由环境变量注入（FNOS_DB_USER / FNOS_DB_PASSWORD），缺省才回退随机生成。
+      const isDbCred = /(?:DB|MYSQL|MARIADB|POSTGRES)_(?:USER|USERNAME|PASSWORD|PASS)$/i.test(key)
+        || /^(?:DB|MYSQL|MARIADB|POSTGRES)_US(?:ER|ERNAME)$/i.test(key);
+      if (isDbCred && process.env.FNOS_MIDDLEWARE_READY === '1' && process.env.FNOS_DB_PASSWORD) {
+        // 设备上的 MySQL 只有 root 账号，按应用名自动建库、统一用 root 连，
+        // 避免为每个应用手工建用户（那属于部署噪音，不是转换问题）。
+        val = /USER/i.test(key) ? (process.env.FNOS_DB_USER || 'root') : process.env.FNOS_DB_PASSWORD;
+        filled.push(key);
+      } else if (isSecret) {
         // helpText 常写明位数要求（如「32 位随机字符串」），按其生成，否则服务端会拒绝
         const lenMatch = (it.helpText || '').match(/(?:\d{2,3})\s*位/);
         const len = lenMatch ? Number(lenMatch[1]) : 32;
@@ -378,9 +462,13 @@ function buildParams(wizardInfo) {
         let s2 = '';
         for (let k = 0; k < len; k++) s2 += alphabet[Math.floor(Math.random() * alphabet.length)];
         val = s2;
-      } else if (required && /(?:^|_)(?:DB|REDIS|MONGO|POSTGRES|MYSQL|MARIADB|ELASTIC)(?:$|_)/i.test(key)) {
-        // 外部依赖类地址：填本地默认，让「转换本身」仍能被验证（安装、容器起、入口加载）
-        val = '127.0.0.1'; needsExternal = true;
+      } else if (required && /(?:^|_)(?:DB|REDIS|MONGO|POSTGRES|MYSQL|MARIADB|ELASTIC|KAFKA|MINIO)(?:$|_)/i.test(key)) {
+        // 外部中间件地址：dev 设备上 MySQL/Redis 等以 **fnOS 原生应用**运行在宿主，
+        // 容器内的 127.0.0.1 指向容器自身，填它必然连不上（实测 ECONNREFUSED）。
+        // 必须填宿主机的局域网 IP，容器才能经 docker0 转发访问到宿主服务。
+        val = (/PORT$/.test(key) && PORT_MAP[key]) ? String(PORT_MAP[key]) : HOST;
+        needsExternal = true;
+        if (!/PORT$/.test(key)) pendingExternalHosts.push(key);
       } else if (required && fillPlaceholders) {
         const pick = candidatesFor(key).find((c) => matches(pattern, c));
         if (pick === undefined) { unsolved.push(key + '(required)'); continue; }
@@ -397,7 +485,9 @@ function buildParams(wizardInfo) {
       val = pick;
       if (!filled.includes(key)) filled.push(key);
     }
-    params.push({ key, value: val });
+    // 落盘时保留实际填值以便追溯；密码类只留长度，避免凭据进结果文件
+    const traceVal = /PASSWORD|PASS$|SECRET|TOKEN/i.test(key) ? `<${String(val).length} chars>` : String(val);
+    params.push({ key, value: val, trace: traceVal });
   }
   return { params, unsolved, needsExternal, filled };
 }
@@ -421,7 +511,10 @@ function verdict(rec) {
   // 属于「跑得慢」而不是「转换有问题」，记 BLOCKED 并在下一步用更长窗口复验。
   if (rec.stage === 'exception' && /轮询超时/.test(String(rec.err || ''))) return 'BLOCKED';
   // 需要外部数据库/中间件的应用：失败是环境问题，不是转换缺陷
-  if (rec.needsExternal && rec.installed !== true) return 'BLOCKED';
+  // 设备上已备好中间件时（FNOS_MIDDLEWARE_READY=1），依赖类应用应按实际结果判定，
+  // 不再一律记 BLOCKED——否则「有 DB 也验不出结论」，失去验证意义。
+  const mwReady = process.env.FNOS_MIDDLEWARE_READY === '1';
+  if (rec.needsExternal && !mwReady && rec.installed !== true) return 'BLOCKED';
   if (!rec.installed) {
     if (/address already in use|port is already allocated|端口/i.test(blob)) return 'BLOCKED';
     // 镜像拉取失败/超时属于环境问题（镜像源、限流、磁盘），不计入转换缺陷
@@ -430,7 +523,7 @@ function verdict(rec) {
   }
   if (rec.appStatus !== 'running') {
     if (/address already in use|port is already allocated/i.test(`${rec.log || ''}`)) return 'BLOCKED';
-    if (rec.needsExternal) return 'BLOCKED';
+    if (rec.needsExternal && !mwReady) return 'BLOCKED';
     // 仍处于过渡态（start / installing …）说明只是没等到就绪，不能当成「原生应用装完即终态」
     if (rec.notReady) return 'FAIL';
     // 原生应用（没有任何对外服务端口）装完不常驻 running 是正常形态：
@@ -445,7 +538,7 @@ function verdict(rec) {
       if (rec.entryCode === '404') rec.entryNote = '根路径返回 404，服务已响应，UI 可能在子路径';
       return 'PASS';
     }
-    if (rec.needsExternal) return 'BLOCKED';
+    if (rec.needsExternal && !mwReady) return 'BLOCKED';
     return 'FAIL';
   }
   return 'PASS';
@@ -512,6 +605,8 @@ async function testOne(app) {
       return rec;
     }
     rec.params = params.map((p) => p.key);
+    // 记录实际填入的值（密码已脱敏），便于复现「到底拿什么连的」
+    rec.paramValues = params.map((p) => `${p.key}=${p.trace}`);
 
     // 3) 安装
     // 10500 = 服务端忙/上一个应用仍在启动流程（实测：前面有应用卡在 start 时会拒绝新任务），
@@ -558,7 +653,9 @@ async function testOne(app) {
         // nostart = 原生应用装完即为终态，不必等 running（否则每个原生应用白等 3 分钟）
         return it && ['running', 'stopped', 'nostart'].includes(it.status) ? it : null;
       // 应用中心报「已安装」不代表容器已就绪：重镜像（数据库迁移、初始化）要跑一阵才转 running
-      }, { tries: 90, gap: 2000, label: 'running' });
+      // 首启要做数据库迁移与初始化的应用（如 memos）会长时间停在 start，
+      // 180 秒不够；给到约 6 分钟，避免把「还在初始化」记成失败。
+      }, { tries: 180, gap: 2000, label: 'running' });
     } catch (e) {
       // 超时也接受：只要应用已出现在「已安装」列表里，就交给入口探测去判定是否可用。
       // 但必须记下当时的状态——start/installing 之类是过渡态，不能当成「已就绪」，
@@ -569,6 +666,19 @@ async function testOne(app) {
       rec.statusTimeout = true;
       rec.statusAtTimeout = item.status;
       rec.notReady = !['running', 'stopped', 'nostart'].includes(String(item.status));
+      // 等待就绪超时同样是「为什么起不来」的关键场景（依赖库连不上、初始化失败，
+      // 应用会长期停在 start）。这里趁容器还在立刻取现场，否则卸载后无从复现。
+      try {
+        const { stdout: snap } = await ssh(`docker ps -a --format '{{.Names}} | {{.Status}} | {{.Ports}}' 2>/dev/null | grep -E '^${appName}' || true`);
+        const line = String(snap || '').trim().split('\n')[0] || '';
+        if (line) rec.containers = line.slice(0, 800);
+        const cname = line.split(' | ')[0].trim();
+        if (cname) {
+          const { stdout: lg } = await ssh(`docker logs --tail 40 '${cname}' 2>&1 | tail -40 || true`);
+          const kept = String(lg || '').trim();
+          if (kept) rec.containerLog = kept.slice(-2000);
+        }
+      } catch { /* 取证失败不影响判定 */ }
     }
     rec.appStatus = item.status;
     rec.service = item.appServiceInfo ? {

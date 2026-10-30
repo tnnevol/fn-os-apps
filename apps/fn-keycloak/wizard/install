@@ -25,8 +25,8 @@
                 "type": "select",
                 "field": "DB_TYPE",
                 "label": "数据库类型",
-                "initValue": "mariadb",
-                "helpText": "所使用的数据库类型，需与下方连接信息一致。",
+                "initValue": "mysql",
+                "helpText": "数据库类型。本应用默认使用 mysql；若你的数据库是 MariaDB，请选 MariaDB（两者驱动与版本校验不同，选错会因 quarkus 版本检查失败而无法启动）。",
                 "options": [
                     {
                         "label": "MariaDB",

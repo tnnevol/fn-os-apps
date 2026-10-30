@@ -6,7 +6,13 @@ services:
     environment:
       - TRUST_PROXY_HEADER=1
       # 上游由 1Panel 服务选择器注入 PANEL_DB_*，fnOS 改为向导显式填写
-      - DB_URL=postgres://${DB_USERNAME}:${DB_PASSWORD}@${DB_HOST}
+      # 原写法有两处问题：
+      #   1) 缺数据库名——Logto 启动即报 fatal Error: Database name is required in URL；
+      #   2) 协议硬编码 postgres——向导里 DB_TYPE 可选 mysql/postgres，选 mysql 时
+      #      协议与实际驱动不符，连接必然失败。
+      # 这里按 DB_TYPE 选择协议并补上库名；DB_TYPE 缺省按 postgres 处理，
+      # 与上游 1Panel 的默认一致。
+      - DB_URL=${DB_TYPE:-postgresql}://${DB_USERNAME}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT:-5432}/${DB_NAME}
       - ENDPOINT=${LOGTO_ENDPOINT_URL}
       - ADMIN_ENDPOINT=${LOGTO_ADMIN_ENDPOINT_URL}
     ports:

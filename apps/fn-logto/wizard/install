@@ -26,7 +26,7 @@
                 "field": "DB_TYPE",
                 "label": "数据库类型",
                 "initValue": "postgresql",
-                "helpText": "所使用的数据库类型，需与下方连接信息一致。",
+                "helpText": "数据库类型。Logto 上游只支持 PostgreSQL（其 db 迁移使用 pg 驱动），请填写可用的 PostgreSQL 地址。",
                 "options": [
                     {
                         "label": "PostgreSQL",
@@ -54,6 +54,32 @@
                     {
                         "pattern": "^.+:\\d+/.+$",
                         "message": "格式不正确，应为 地址:端口/数据库名"
+                    }
+                ]
+            },
+            {
+                "type": "text",
+                "field": "DB_PORT",
+                "label": "数据库端口",
+                "initValue": "5432",
+                "helpText": "数据库端口。PostgreSQL 默认 5432，MySQL 默认 3306，请按实际填写。",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请填写数据库端口"
+                    }
+                ]
+            },
+            {
+                "type": "text",
+                "field": "DB_NAME",
+                "label": "数据库名",
+                "initValue": "logto",
+                "helpText": "Logto 使用的数据库名，需提前在数据库中创建。容器会把它拼进 DB_URL，缺失时启动报「Database name is required in URL」。",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请填写数据库名"
                     }
                 ]
             },
