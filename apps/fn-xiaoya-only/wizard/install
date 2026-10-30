@@ -29,6 +29,42 @@
                 "field": "pan115_key",
                 "label": "115 删除转存密码",
                 "helpText": "用于删除115转存文件的密码"
+            },
+            {
+                "type": "text",
+                "field": "pan115_token",
+                "label": "115 我的 token（mytoken）",
+                "helpText": "115 网盘的 mytoken，对应容器内 /data/mytoken.txt。获取方式见小雅文档；留空则容器会因缺少 token 反复重启。",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请填写 115 mytoken"
+                    }
+                ]
+            },
+            {
+                "type": "text",
+                "field": "pan115_opentoken",
+                "label": "115 Open token（myopentoken）",
+                "helpText": "115 网盘的 myopentoken，对应 /data/myopentoken.txt，用于转存。",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请填写 115 myopentoken"
+                    }
+                ]
+            },
+            {
+                "type": "text",
+                "field": "pan115_folder_id",
+                "label": "115 转存目录 ID",
+                "helpText": "115 网盘里用于接收转存文件的目录 ID，对应 /data/temp_transfer_folder_id.txt。",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请填写转存目录 ID"
+                    }
+                ]
             }
         ]
     },

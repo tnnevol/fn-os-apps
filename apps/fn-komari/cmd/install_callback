@@ -2,4 +2,29 @@
 
 ### This script is called after the user installs the application.
 
+# 容器以包用户运行（见 compose 的 user:），而数据目录首次安装时不存在，
+# Docker 会以 root 建出来，包用户随即无法创建子目录：
+#   server startup failed at "bootstrap": failed to create theme directory:
+#   mkdir ./data/theme: permission denied
+# 这里以包用户预建目录（属主自然正确），并预先建出应用启动时要用的子目录。
+if [ -z "${TRIM_PKGVAR}" ]; then
+    echo "TRIM_PKGVAR is not set; cannot prepare application data directory" >"${TRIM_TEMP_LOGFILE}"
+    exit 1
+fi
+
+DATA_DIR="${TRIM_PKGVAR}/data"
+mkdir -p "${DATA_DIR}"
+mkdir -p "${DATA_DIR}/theme"
+
+chown -R "${TRIM_USERNAME:-${TRIM_UID}}:${TRIM_GROUPNAME:-${TRIM_GID}}" "${DATA_DIR}" 2>/dev/null || true
+chmod -R 775 "${DATA_DIR}" 2>/dev/null || true
+
+if touch "${DATA_DIR}/theme/.write_check" 2>/dev/null; then
+    rm -f "${DATA_DIR}/theme/.write_check"
+    echo "Prepared Komari data directory: ${DATA_DIR}"
+else
+    echo "Komari data directory is not writable: ${DATA_DIR}" >"${TRIM_TEMP_LOGFILE}"
+    exit 1
+fi
+
 exit 0

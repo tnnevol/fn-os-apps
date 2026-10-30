@@ -24,6 +24,13 @@ services:
       - "${TRIM_PKGVAR}/data/data:/root/.local"
       - "${TRIM_PKGVAR}/data/file:/root/steam/games"
       - "${TRIM_PKGVAR}/data/gsm3:/root/server/data"
+      # 应用启动即 mkdir /root/server/logs，该路径在镜像层（归 root），
+      # 以包用户运行会 EACCES（errno -13, path '/root/server/logs'）。挂到数据目录。
+      - "${TRIM_PKGVAR}/data/logs:/root/server/logs"
+      # TaskManager.ensureDataDir 还会建 /root/server/server（游戏服务端安装目录）。
+      # /root/server 本身装着应用代码（start.sh、modules/），不能整目录覆盖，
+      # 只把这一个子目录挂出来。
+      - "${TRIM_PKGVAR}/data/server:/root/server/server"
     environment:
       - SERVER_PORT=3001
       - TZ=${TIME_ZONE}

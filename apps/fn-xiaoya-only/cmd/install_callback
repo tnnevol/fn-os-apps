@@ -2,7 +2,16 @@
 
 ### This script is called after the user installs the application.
 
+if [ -z "${TRIM_APPDEST_VOL}" ]; then
+    echo "TRIM_APPDEST_VOL is empty; shared directories cannot be prepared" >"${TRIM_TEMP_LOGFILE}"
+    exit 1
+fi
+
 DATA_DIR="${TRIM_APPDEST_VOL}/@appshare/fn-xiaoya-only/alist/data"
+# 共享目录下按用途建子目录；Docker 不会自动创建绑定挂载的宿主目录。
+mkdir -p "${DATA_DIR}"
+mkdir -p "${TRIM_APPDEST_VOL}/@appshare/fn-xiaoya-only/alist/opt/alist/data"
+mkdir -p "${TRIM_APPDEST_VOL}/@appshare/fn-xiaoya-only/alist/www/data"
 
 # guestpass.txt — 小雅密码
 if [ -n "${xiaoya_pass}" ]; then
@@ -44,6 +53,22 @@ media_dir=${emby_media_path}
 resilio=no
 version=4.9.0.42
 EOF
+fi
+
+# ── 115 token 三件套 ──────────────────────────────────────────────
+# 容器启动脚本会硬性检查这三个文件，缺任何一个都会打印
+#   「请检查已正确配置 mytoken.txt myopentoken.txt temp_transfer_folder_id.txt 后再重启容器」
+# 然后退出并无限重启。向导里对应字段为 pan115_token / pan115_opentoken / pan115_folder_id。
+if [ -n "${pan115_token}" ]; then
+    printf '%s' "${pan115_token}" >"${DATA_DIR}/mytoken.txt"
+fi
+
+if [ -n "${pan115_opentoken}" ]; then
+    printf '%s' "${pan115_opentoken}" >"${DATA_DIR}/myopentoken.txt"
+fi
+
+if [ -n "${pan115_folder_id}" ]; then
+    printf '%s' "${pan115_folder_id}" >"${DATA_DIR}/temp_transfer_folder_id.txt"
 fi
 
 exit 0

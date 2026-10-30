@@ -13,6 +13,10 @@ fi
 mkdir -p "${TRIM_PKGVAR}/data/data"
 mkdir -p "${TRIM_PKGVAR}/data/file"
 mkdir -p "${TRIM_PKGVAR}/data/gsm3"
+# 应用启动即 mkdir /root/server/logs，该路径在镜像层（归 root），
+# 以包用户运行会 EACCES；compose 已把它挂到 data/logs，这里预建目录。
+mkdir -p "${TRIM_PKGVAR}/data/logs"
+mkdir -p "${TRIM_PKGVAR}/data/server"
 
 chmod -R 770 "${TRIM_PKGVAR}/data" 2>/dev/null || true
 
