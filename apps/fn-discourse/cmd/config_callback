@@ -12,7 +12,14 @@
 #
 # 正确做法：配置变更后用 `up -d --force-recreate` 重建，让框架注入的新变量生效。
 
-COMPOSE_DIR="$(dirname "${TRIM_APPDEST}/docker/docker-compose.yaml")"
+# 变量兜底：不同阶段能拿到的框架变量不完全一致，缺 TRIM_APPDEST 时退回按
+# 应用名拼出的默认安装目录，避免把 compose 目录算成空路径而在错误目录里执行。
+if [ -z "${TRIM_APPDEST}" ]; then
+    echo "TRIM_APPDEST 未设置，无法定位 compose 目录" >"${TRIM_TEMP_LOGFILE}"
+    exit 1
+fi
+
+COMPOSE_DIR="${TRIM_APPDEST}/docker"
 
 if [ ! -f "${COMPOSE_DIR}/docker-compose.yaml" ]; then
     echo "compose 文件不存在，跳过重建：${COMPOSE_DIR}/docker-compose.yaml" >"${TRIM_TEMP_LOGFILE}"
@@ -21,8 +28,11 @@ fi
 
 cd "${COMPOSE_DIR}" || exit 1
 
+# 项目名兜底：容器由应用中心以固定项目名创建，缺变量时用应用名，避免另起一套容器
+PROJECT="${TRIM_APPNAME:-fn-discourse}"
+
 echo "配置已变更，重建容器以应用新的环境变量 ..."
-docker compose -p "${TRIM_APPNAME}" up -d --force-recreate 2>&1
+docker compose -p "${PROJECT}" up -d --force-recreate 2>&1
 if [ $? -ne 0 ]; then
     echo "重建容器失败，请检查配置后重试" >"${TRIM_TEMP_LOGFILE}"
     exit 1

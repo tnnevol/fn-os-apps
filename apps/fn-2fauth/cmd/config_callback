@@ -2,4 +2,37 @@
 
 ### This script is called after the user change environment variables in application setting page.
 
+# 配置保存后必须让容器按新环境变量重建，否则改了等于没改。
+#
+# 背景：cmd/main 用的是 `docker compose up -d`，该命令对「环境变量变了、
+# 但镜像与配置模板没变」的容器**不会重建**，容器会一直沿用旧的 env。
+# 实测 fn-discourse 把 DB_USERNAME 改掉后保存重启，docker inspect 里仍是旧值，
+# 应用因此始终连不上数据库。框架契约（见 fnnas-docs/framework 的配置流程）
+# 要求 config_callback 负责「更新文件、重启服务」这类后续动作，这里补上重建。
+
+if [ -z "${TRIM_APPDEST}" ]; then
+    echo "TRIM_APPDEST 未设置，无法定位 compose 目录" >"${TRIM_TEMP_LOGFILE}"
+    exit 1
+fi
+
+COMPOSE_DIR="${TRIM_APPDEST}/docker"
+
+if [ ! -f "${COMPOSE_DIR}/docker-compose.yaml" ]; then
+    echo "compose 文件不存在，跳过重建：${COMPOSE_DIR}/docker-compose.yaml" >"${TRIM_TEMP_LOGFILE}"
+    exit 1
+fi
+
+cd "${COMPOSE_DIR}" || exit 1
+
+# 项目名兜底：容器由应用中心以固定项目名创建，缺变量时用应用名，避免另起一套容器
+PROJECT="${TRIM_APPNAME:-fn-2fauth}"
+
+echo "配置已变更，重建容器以应用新的环境变量 ..."
+docker compose -p "${PROJECT}" up -d --force-recreate 2>&1
+if [ $? -ne 0 ]; then
+    echo "重建容器失败，请检查配置后重试" >"${TRIM_TEMP_LOGFILE}"
+    exit 1
+fi
+
+echo "容器已按新配置重建完成"
 exit 0
