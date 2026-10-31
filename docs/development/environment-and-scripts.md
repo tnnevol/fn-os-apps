@@ -156,13 +156,41 @@ npx -y @midscene/web@1 --bridge connect --url "http://<设备 IP>:5666/"
 
 | 步骤 | UI 位置 | 观察点 |
 | --- | --- | --- |
-| 1 | 应用中心 → 左侧「手动安装」 | 弹窗内选「从电脑上传」，注入本地 `.fpk` |
+| 1 | 应用中心 → 左侧「手动安装」 | **直接给隐藏的 `input[type=file]` 塞文件**，不要点「从电脑上传」 |
 | 2 | 「未经经验证应用的安全提示」 | 弹窗显示应用名，来源为「手动安装」 |
 | 3 | 安装向导「端口配置」 | 端口默认值与取值范围说明（1—65535） |
 | 4 | 安装向导「下一步」 | 安装进度条 |
 | 5 | 应用中心 → 「已安装」 | 卡片按钮为「打开」= 运行中，「启用」= 未运行 |
 | 6 | 桌面图标 / 「打开」 | 入口实际地址应等于向导填写的端口 |
 | 7 | 应用详情 → 卸载 | 卸载向导提供「保留数据 / 删除所有数据」二选一 |
+
+### 上传 `.fpk`：直接塞 input，不要点「从电脑上传」
+
+「手动安装」弹窗打开后，页面上就有两个常驻的隐藏 `input[type=file][accept=".fpk"]`。
+**不要点「从电脑上传」**——那会拉起系统文件选择器，自动化脚本无法操作，等于走进死路。
+
+正确做法是把文件内容做成 `File` 再赋给 input 的 `files`：
+
+```js
+const blob = await (await fetch(fpUrl)).blob();          // fpUrl 指向已构建好的 fpk
+const file = new File([blob], '<app>.fpk', { type: 'application/octet-stream' });
+const dt = new DataTransfer();
+dt.items.add(file);
+
+for (const inp of document.querySelectorAll('input[type="file"][accept=".fpk"]')) {
+  inp.files = dt.files;
+  inp.dispatchEvent(new Event('input',  { bubbles: true, composed: true }));
+  inp.dispatchEvent(new Event('change', { bubbles: true, composed: true }));
+}
+```
+
+要点：
+
+- **两个 input 都要塞**：页面上同时存在两个，无法事先判断哪个被当前弹窗使用，两个都写最省事。
+- **`input` 与 `change` 两个事件都要派发**：只发 `change` 时受控组件可能不更新；加上 `input`（并带 `composed: true`）才能触达框架的监听。
+- 塞入成功后页面立刻弹出「未经验证应用的安全提示」，弹窗里会显示应用名——**看到应用名才算成功**，否则说明文件没进去。
+- 文件来源可以是本地静态服务（页面跨域 `fetch`，需要服务端带 `Access-Control-Allow-Origin`）。
+  MCP 的文件上传工具有 workspace root 限制，未必能直接指向构建产物；用静态服务绕开更稳。
 
 **测试结束后必须清理**：验证完成后，用同一条通道把为测试而安装的应用卸载掉，别把测试残留留在
 设备上：
