@@ -354,6 +354,15 @@ async function until(fn, { tries = 240, gap = 1000, label = '' } = {}) {
 /** 由向导 schema 生成参数 */
 function buildParams(wizardInfo) {
   const items = (wizardInfo.wizardContent || []).flatMap((s) => (s && s.items) || []);
+
+  // 该应用声明的数据库类型（取 DB_TYPE 字段的值），决定用哪套凭据与端口。
+  // 注意必须**先全表扫一遍**再逐字段处理：之前误用了循环中当前字段的 initValue，
+  // 导致对所有字段都判成「非 postgres」，PostgreSQL 应用被套上 MySQL 的账号与端口。
+  const dbTypeField = items.find((i) => /^DB_TYPE$/i.test(String(i.field || i.key || '')));
+  const appDbType = String(
+    (dbTypeField && dbTypeField.initValue) || process.env.FNOS_DB_TYPE || 'mysql',
+  ).toLowerCase();
+  const appIsPg = /postgres/.test(appDbType);
   const params = [];
   const unsolved = [];
   const filled = [];
@@ -431,25 +440,29 @@ function buildParams(wizardInfo) {
     // 靠它连库必然失败，而这属于部署差异、不是转换缺陷。
     if (process.env.FNOS_MIDDLEWARE_READY === '1') {
       const kUp = String(key).toUpperCase();
-      // 应用声明的数据库类型决定用哪套凭据：PG 与 MySQL 是不同实例。
-      const pgMode = /postgres/.test(String(process.env.FNOS_DB_TYPE || '').toLowerCase());
+      // 决定用哪套凭据的，是**该应用自己声明的数据库类型**，不是全局环境变量。
+      // 之前用 FNOS_DB_TYPE 判断，导致本来要 PostgreSQL 的应用（discourse）
+      // 被强制套上 MySQL 的账号密码，连库必然失败。
+      // 优先级：向导里的 initValue → 环境变量兜底。
+      const pgMode = appIsPg;
       if (/(?:DB|MYSQL|MARIADB|POSTGRES)_(?:USER|USERNAME)$/.test(kUp) && process.env.FNOS_DB_USER) {
         val = pgMode ? (process.env.FNOS_PG_USER || process.env.FNOS_DB_USER) : process.env.FNOS_DB_USER;
         filled.push(key);
       } else if (/(?:DB|MYSQL|MARIADB|POSTGRES)_(?:PASSWORD|PASS)$/.test(kUp) && process.env.FNOS_DB_PASSWORD) {
         val = pgMode ? (process.env.FNOS_PG_PASSWORD || process.env.FNOS_DB_PASSWORD) : process.env.FNOS_DB_PASSWORD;
         filled.push(key);
-      } else if (/^DB_TYPE$/.test(kUp) && process.env.FNOS_DB_TYPE) {
-        // 下拉项按设备实际可用的数据库类型选择（本设备是 MySQL 8.4）。
-        // 默认值若是 mariadb，会因驱动/版本校验不一致而启动失败。
-        val = process.env.FNOS_DB_TYPE; filled.push(key);
+      } else if (/^DB_TYPE$/.test(kUp)) {
+        // 只在应用没声明类型时才用环境变量兜底；应用已声明（如 discourse 的 postgres）
+        // 就必须尊重，否则会把它指向错误的数据库引擎。
+        if (!it.initValue && process.env.FNOS_DB_TYPE) {
+          val = process.env.FNOS_DB_TYPE; filled.push(key);
+        }
       } else if (/(?:DB|MYSQL|MARIADB|POSTGRES)_HOST$/.test(kUp)) {
         val = HOST; filled.push(key); needsExternal = true;
-      } else if (/(?:DB|MYSQL|MARIADB|POSTGRES)_PORT$/.test(kUp) && PORT_MAP.DB_PORT) {
-        // 本测试设备只提供 MySQL（8.4.9，端口由 FNOS_DB_PORT 指定）。
-        // DB_TYPE 声明为 postgres 的应用在这个端口上必然连不上——那是环境缺口，
-        // 不是转换缺陷；这里仍指向同一端口，让它在日志里明确暴露出来。
-        val = PORT_MAP.DB_PORT; filled.push(key);
+      } else if (/(?:DB|MYSQL|MARIADB|POSTGRES)_PORT$/.test(kUp)) {
+        // 端口跟着引擎走：PostgreSQL 实例在 FNOS_PG_PORT，MySQL 在 FNOS_DB_PORT。
+        val = pgMode ? (process.env.FNOS_PG_PORT || '55432') : (process.env.FNOS_DB_PORT || '43306');
+        filled.push(key);
       } else if (/(?:REDIS)_HOST$/.test(kUp)) {
         val = HOST; filled.push(key); needsExternal = true;
       }
