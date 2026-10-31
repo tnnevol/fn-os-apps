@@ -1,3 +1,11 @@
+# 已知问题（上游镜像缺陷，非转换引起）：
+#   bitnamilegacy/discourse:3.5.0 的 lib/tasks/ 下保留了 annotate_rb.rake、rspec.rake，
+#   但镜像里并没有对应的 gem，于是任何 rake 任务（含 db:migrate）都会 LoadError 退出：
+#     LoadError: cannot load such file -- annotate_rb
+#     LoadError: cannot load such file -- rspec/core/rake_task
+#   表现为容器连上数据库后停在「Populating database」并无限重启（Exit=1、非 OOM）。
+#   1Panel 上游 apps/discourse 用的就是同一个镜像标签，同样无法启动，因此这不是本次
+#   转换引入的问题。待上游修复或换用可用的 Discourse 镜像后再验证。
 services:
   discourse:
     container_name: fn-discourse
@@ -21,6 +29,12 @@ services:
       - DISCOURSE_DATABASE_NAME=${DB_NAME}
       - DISCOURSE_REDIS_HOST=${REDIS_HOST}
       - DISCOURSE_REDIS_PASSWORD=${REDIS_PASSWORD}
+      # 镜像默认拒绝「Redis 密码为空」，会报
+      #   The DISCOURSE_REDIS_PASSWORD environment variable is empty or not set
+      # 并无限重启。而向导里该字段是非必填的（用户的 Redis 可能本来就没设密码），
+      # 两者冲突会让「留空」变成装得上、起不来。这里显式放行空密码：
+      # 有密码时该变量不起作用，无密码时避免启动失败。
+      - ALLOW_EMPTY_PASSWORD=yes
       # 已删除上游的 DISCOURSE_SMTP_* 测试占位值（test/0）：它们指向不存在的邮件服务，
       # 会让发信静默失败。如需邮件功能，请在应用后台或此处按实际 SMTP 参数配置。
 
@@ -43,3 +57,9 @@ services:
       - DISCOURSE_DATABASE_NAME=${DB_NAME}
       - DISCOURSE_REDIS_HOST=${REDIS_HOST}
       - DISCOURSE_REDIS_PASSWORD=${REDIS_PASSWORD}
+      # 镜像默认拒绝「Redis 密码为空」，会报
+      #   The DISCOURSE_REDIS_PASSWORD environment variable is empty or not set
+      # 并无限重启。而向导里该字段是非必填的（用户的 Redis 可能本来就没设密码），
+      # 两者冲突会让「留空」变成装得上、起不来。这里显式放行空密码：
+      # 有密码时该变量不起作用，无密码时避免启动失败。
+      - ALLOW_EMPTY_PASSWORD=yes
