@@ -497,6 +497,40 @@ services:
 - 两个端口分别建向导字段；`APP_SSH_PORT` 是 SSH 端口，只进向导不进桌面入口。
 - 数据库初始化（建库、建用户）由用户在向导里填已有实例，**不要**在 `cmd/install_callback` 里尝试连接并建库；连接失败时应用能启动但功能页报错，向导 `helpText` 必须说明这一点。
 
+### 模式 D：配置保存后必须重建容器（所有 Docker 应用）
+
+`cmd/main` 启动容器用的是 `docker compose up -d`。这条命令对「环境变量变了，
+但镜像与配置模板没变」的容器**不会重建**，容器会一直沿用旧的 env —— 于是用户
+在「应用设置 → 运行设置」里改完保存，变化根本没进容器。
+
+框架把「更新文件、重启服务、通知进程」这类动作交给 `cmd/config_callback`
+（见 fnnas-docs/framework 的配置流程）。因此每个 Docker 应用的
+`config_callback` 都必须做一次重建：
+
+```bash
+if [ -z "${TRIM_APPDEST}" ]; then
+    echo "TRIM_APPDEST 未设置，无法定位 compose 目录" >"${TRIM_TEMP_LOGFILE}"
+    exit 1
+fi
+
+COMPOSE_DIR="${TRIM_APPDEST}/docker"
+[ -f "${COMPOSE_DIR}/docker-compose.yaml" ] || exit 1
+cd "${COMPOSE_DIR}" || exit 1
+
+PROJECT="${TRIM_APPNAME:-fn-<app>}"
+docker compose -p "${PROJECT}" up -d --force-recreate
+```
+
+要点：
+
+- **必须加 `--force-recreate`**：不加就只是 `up -d`，环境变量变化不会触发重建。
+- 项目名用 `TRIM_APPNAME`（取自 `manifest.appname`）；变量缺失时按应用名兜底，
+  否则会与平台已建的 compose 项目名不一致，另起一套容器。
+- 空操作（只有 `exit 0`）等于「配置改了不生效」，属于缺陷。
+
+真机验证方式：记下 `docker inspect <容器> --format '{{.Id}}'`，改一次配置并保存，
+**容器 ID 变化**才说明重建成功（`Recreated` + `Started` 是日志里的判定依据）。
+
 ## 配置文件模板
 
 ### manifest
