@@ -2,4 +2,31 @@
 
 ### This script is called after the user change environment variables in application setting page.
 
+# 配置保存后必须让容器用新环境变量重建，否则改了等于没改。
+#
+# 踩过的坑：此脚本原本是空操作（只有 exit 0），而 cmd/main 里用的是
+# `docker compose up -d`——它对「环境变量变了但镜像/配置模板没变」的容器
+# **不会重建**，于是容器一直沿用旧 env。实测把 DB_USERNAME 从 fntest 改成
+# postgres 并保存重启后，`docker inspect` 里仍是 DISCOURSE_DATABASE_USER=fntest，
+# 应用因此始终连不上数据库。
+#
+# 正确做法：配置变更后用 `up -d --force-recreate` 重建，让框架注入的新变量生效。
+
+COMPOSE_DIR="$(dirname "${TRIM_APPDEST}/docker/docker-compose.yaml")"
+
+if [ ! -f "${COMPOSE_DIR}/docker-compose.yaml" ]; then
+    echo "compose 文件不存在，跳过重建：${COMPOSE_DIR}/docker-compose.yaml" >"${TRIM_TEMP_LOGFILE}"
+    exit 1
+fi
+
+cd "${COMPOSE_DIR}" || exit 1
+
+echo "配置已变更，重建容器以应用新的环境变量 ..."
+docker compose -p "${TRIM_APPNAME}" up -d --force-recreate 2>&1
+if [ $? -ne 0 ]; then
+    echo "重建容器失败，请检查配置后重试" >"${TRIM_TEMP_LOGFILE}"
+    exit 1
+fi
+
+echo "容器已按新配置重建完成"
 exit 0
