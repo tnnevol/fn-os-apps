@@ -75,6 +75,8 @@ const TAG_TO_CATEGORY = {
 /** 应用名 → 分类的手工覆盖：上游 tags 缺失或明显不准时使用。 */
 const CATEGORY_OVERRIDES = {
   'fn-mysql_v8': ['编程开发'],
+  // PostgreSQL 与 fn-mysql_v8 同类，上游 postgresql 没有可映射的 tags，按数据库归类
+  'fn-postgres': ['编程开发'],
   'fn-zentao': ['编程开发'],
   'fn-moviepilot': ['影音娱乐'],
   'fn-new-api': ['AI赋能'],
@@ -104,6 +106,36 @@ function parseManifest(file) {
 }
 
 /**
+ * 上游 appstore 的候选检出位置。
+ *
+ * 文档约定的是工作区旁的同级目录（`../appstore`），但实际检出位置因人而异：
+ * 有人放在仓库内的 `appstore/`，也有人按 `tmp/` 约定克隆。
+ * 逐个尝试，避免「找不到上游 → 分类静默全部回退成系统工具」这种难发现的偏差。
+ */
+const UPSTREAM_APPSTORE_ROOTS = [
+  path.join(ROOT, '..', 'appstore'),
+  path.join(ROOT, 'appstore'),
+  path.join(ROOT, 'tmp', '1panel-appstore'),
+]
+
+let upstreamRootWarned = false
+
+/** 返回第一个存在且带 apps/ 的上游根目录，找不到返回 null。 */
+function resolveUpstreamRoot() {
+  for (const root of UPSTREAM_APPSTORE_ROOTS) {
+    if (fs.existsSync(path.join(root, 'apps'))) return root
+  }
+  if (!upstreamRootWarned) {
+    upstreamRootWarned = true
+    console.warn(
+      `警告：未找到上游 appstore 检出（已尝试：${UPSTREAM_APPSTORE_ROOTS.join('、')}）。\n` +
+        '     所有应用的分类将回退为「系统工具」，请先检出 1Panel-dev/appstore 再重新生成。',
+    )
+  }
+  return null
+}
+
+/**
  * 读取上游 data.yml 的 tags 与 name，用于补分类。
  *
  * 只解析 additionalProperties 段内 `- xxx` 列表形式的 tags——
@@ -112,8 +144,10 @@ function parseManifest(file) {
 function upstreamMeta(appname) {
   const key = appname.replace(/^fn-/, '')
   const candidates = [key, key.replace(/_/g, '-')]
+  const upstreamRoot = resolveUpstreamRoot()
+  if (!upstreamRoot) return { tags: [] }
   for (const c of candidates) {
-    const file = path.join(ROOT, '..', 'appstore', 'apps', c, 'data.yml')
+    const file = path.join(upstreamRoot, 'apps', c, 'data.yml')
     if (!fs.existsSync(file)) continue
     const tags = parseUpstreamTags(fs.readFileSync(file, 'utf-8'))
     return { tags }

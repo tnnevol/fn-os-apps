@@ -4223,6 +4223,37 @@
       "distributor": "tnnevol",
       "distributor_url": "https://github.com/tnnevol/fn-os-apps"
     },
+    "fn-postgres": {
+      "display_name": "PostgreSQL",
+      "desc": "PostgreSQL 是功能强大的开源关系型数据库，支持复杂查询、外键、触发器与事务完整性，广泛用于 Web 与企业级应用。",
+      "platform": [
+        "x86"
+      ],
+      "categories": [
+        "编程开发"
+      ],
+      "icon_url": "./fn-postgres/ICON.PNG",
+      "readme_url": "./fn-postgres/README.md",
+      "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
+      "maintainer": "PostgreSQL Global Development Group",
+      "run_as": "package",
+      "install_type": "",
+      "is_docker": true,
+      "service_port": "${APP_PORT}",
+      "releases": {
+        "6.0.0": {
+          "packages": {
+            "x86": {
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-postgres-v6.0.0.fpk"
+            }
+          },
+          "os_min_version": "1.1.8"
+        }
+      },
+      "maintainer_url": "https://www.postgresql.org/",
+      "distributor": "tnnevol",
+      "distributor_url": "https://github.com/tnnevol/fn-os-apps"
+    },
     "fn-qbittorrent": {
       "display_name": "qBittorrent",
       "desc": "qBittorrent 是功能完整的 BT 下载客户端，支持 Web 管理界面",
