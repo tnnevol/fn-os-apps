@@ -30,7 +30,11 @@ log_msg() {
 # 仍在运行的 memos 会变成孤儿进程，继续占着端口。下次启动就报「端口被占用」，
 # 而且 stop 什么也停不掉 —— 这正是「重启后仍提示端口被占用」的成因。
 find_orphans() {
-    pgrep -f "${MEMOS_BIN} --port" 2>/dev/null || true
+    # 用 ^ 锚定命令行**开头**：memos 进程的 cmdline 就是
+    # "<二进制路径> --port ..."。不锚定的话，任何命令行里恰好提到这个路径的
+    # shell（例如运维手敲的 pgrep、或 `bash -c "<二进制> --port ..."` 的包装进程）
+    # 都会被当成孤儿，导致清理列表被污染、等待循环永远退不出去。
+    pgrep -f "^${MEMOS_BIN} --port" 2>/dev/null || true
 }
 
 cleanup_orphans() {
@@ -41,7 +45,7 @@ cleanup_orphans() {
     for pid in $pids; do
         # 排除当前脚本自身
         [ "$pid" = "$$" ] && continue
-        kill -TERM "$pid" 2>/dev/null || true
+        kill -TERM "$pid" 2>>"${LOG_FILE}" || log_msg "TERM 发送失败 pid=$pid"
     done
     local count=0
     while [ -n "$(find_orphans)" ] && [ $count -lt 10 ]; do
@@ -50,7 +54,11 @@ cleanup_orphans() {
     done
     for pid in $(find_orphans); do
         log_msg "残留进程未响应 TERM，强制结束 pid=$pid"
-        kill -KILL "$pid" 2>/dev/null || true
+        # 不吞错误：跨用户（脚本身份与被清理进程身份不同）时 kill 会失败，
+        # 静默忽略会让人以为已经清理干净，实际端口仍被占着。
+        if ! kill -KILL "$pid" 2>>"${LOG_FILE}"; then
+            log_msg "无法结束 pid=$pid（权限不足？请确认生命周期脚本以应用所属用户运行）"
+        fi
     done
     rm -f "${PID_FILE}"
     return 0
@@ -58,6 +66,18 @@ cleanup_orphans() {
 
 start_process() {
     if status; then
+        # 进程其实在跑（常见于 PID 文件丢失/被清理）。此时**不能**再起一个实例，
+        # 否则第二个会因端口被自己占用而失败，表现成「重启后仍提示端口被占用」。
+        # 顺手把在跑进程的 PID 补回 PID 文件，让后续 stop/status 精确可控，
+        # 不必每次都依赖兜底扫描。
+        if [ ! -r "${PID_FILE}" ]; then
+            local existing
+            existing="$(find_orphans | head -n 1)"
+            if [ -n "${existing}" ]; then
+                printf "%s" "${existing}" >"${PID_FILE}"
+                log_msg "PID 文件缺失但进程已在运行，接管 pid=${existing}"
+            fi
+        fi
         return 0
     fi
 
