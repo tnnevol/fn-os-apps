@@ -2,34 +2,33 @@
 
 ### This script is called after the user change environment variables in application setting page.
 
-# 用户在「应用设置」里改了超级用户密码后，需要真正落到数据库里，否则重启后
-# 新密码不生效（容器只在首次初始化时读取 POSTGRES_PASSWORD）。
-# 端口改动由 cmd/main 的 `docker compose up -d` 生效，这里只处理密码。
+# 用户在「应用设置」里改了超级用户密码后，新密码必须真正落到数据库里：
+# PostgreSQL 只在**首次初始化**时读取 POSTGRES_PASSWORD，容器重建也不会改已有数据的密码。
 #
-# 已知限制（2026-11-02 真机取证）：本脚本以包用户身份运行，没有 /var/run/docker.sock
-# 权限，下面的 docker 命令会被拒绝并走「跳过」分支 —— 即改密码不会真正同步到数据库。
-# 这里保留 docker 路径（若将来以 root 生命周期运行即可用），且全程 exit 0：
-# 平台会检查回调退出码，非 0 会让「保存并重启」整体失败。
-# 彻底解决需要改用 psql 直连宿主端口，或把密码同步挪到以 root 运行的 cmd/main。
-if [ -z "${TRIM_PKGVAR}" ]; then
+# 但本脚本以**包用户**身份运行，没有 /var/run/docker.sock 权限（该 socket 属 root:docker），
+# 无法 `docker exec` 进容器执行 ALTER USER。所以这里只落一个标记文件，
+# 由以 **root** 运行的 cmd/main 在下次状态检查时读取标记并执行 ALTER USER。
+#
+# 标记文件放在 TRIM_PKGVAR（包用户对该目录有写权限），权限 600，
+# 生效后由 cmd/main 立即删除，不长期留存明文。
+#
+# 端口改动不在这里处理：由 cmd/main 的 `docker compose up -d` 生效。
+#
+# 全程 exit 0：平台会检查回调退出码，非 0 会让「保存并重启」整体失败。
+
+if [ -z "${TRIM_PKGVAR}" ] || [ -z "${DB_ROOT_PASSWORD}" ]; then
     exit 0
 fi
 
-CONTAINER="fn-postgres"
+MARKER="${TRIM_PKGVAR}/.pg_root_password_pending"
 
-# 容器未运行则跳过：此时无法执行 SQL，等下次启动由用户重新保存配置。
-if ! docker inspect "${CONTAINER}" --format '{{.State.Running}}' 2>/dev/null | grep -q true; then
-    echo "容器未运行，跳过密码同步（下次启动后重新保存配置即可生效）"
-    exit 0
-fi
-
-if [ -n "${DB_ROOT_PASSWORD}" ] && [ -n "${DB_ROOT_USER}" ]; then
-    if docker exec -i "${CONTAINER}" psql -U "${DB_ROOT_USER}" -d postgres \
-        -c "ALTER USER \"${DB_ROOT_USER}\" WITH PASSWORD '${DB_ROOT_PASSWORD}';" >/dev/null 2>&1; then
-        echo "已更新数据库超级用户密码"
-    else
-        echo "更新密码失败：请确认当前密码可登录，或稍后重试" >"${TRIM_TEMP_LOGFILE}"
-    fi
+umask 077
+if printf '%s' "${DB_ROOT_PASSWORD}" >"${MARKER}" 2>/dev/null; then
+    chmod 600 "${MARKER}" 2>/dev/null || true
+    echo "已记录密码变更，将在下次状态检查时写入数据库"
+else
+    echo "无法记录密码变更（${MARKER} 不可写），本次修改未生效"
+    [ -n "${TRIM_TEMP_LOGFILE}" ] && echo "无法记录密码变更（${MARKER} 不可写），本次修改未生效" >"${TRIM_TEMP_LOGFILE}"
 fi
 
 exit 0
