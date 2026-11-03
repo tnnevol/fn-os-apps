@@ -16,8 +16,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-2fauth/ICON.PNG",
-      "readme_url": "./fn-2fauth/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-2fauth/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Bubka",
       "run_as": "package",
@@ -47,8 +46,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-adguardhome/ICON.PNG",
-      "readme_url": "./fn-adguardhome/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-adguardhome/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "AdGuard",
       "run_as": "package",
@@ -78,8 +76,7 @@
       "categories": [
         "编程开发"
       ],
-      "icon_url": "./fn-adminer/ICON.PNG",
-      "readme_url": "./fn-adminer/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-adminer/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Adminer",
       "run_as": "package",
@@ -109,8 +106,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-affine/ICON.PNG",
-      "readme_url": "./fn-affine/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-affine/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "TOEVERYTHING",
       "run_as": "package",
@@ -140,8 +136,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-ai-gateway/ICON.PNG",
-      "readme_url": "./fn-ai-gateway/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-ai-gateway/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "1Panel",
       "run_as": "package",
@@ -171,8 +166,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-ai-portal/ICON.PNG",
-      "readme_url": "./fn-ai-portal/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-ai-portal/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "1Panel",
       "run_as": "package",
@@ -202,8 +196,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-alist/ICON.PNG",
-      "readme_url": "./fn-alist/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-alist/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Xhofe",
       "run_as": "package",
@@ -233,8 +226,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-answer/ICON.PNG",
-      "readme_url": "./fn-answer/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-answer/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "answerdev",
       "run_as": "package",
@@ -264,8 +256,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-archivebox/ICON.PNG",
-      "readme_url": "./fn-archivebox/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-archivebox/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "ArchiveBox",
       "run_as": "package",
@@ -295,8 +286,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-artalk/ICON.PNG",
-      "readme_url": "./fn-artalk/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-artalk/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "ArtalkJS",
       "run_as": "package",
@@ -326,8 +316,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-astrbot/ICON.PNG",
-      "readme_url": "./fn-astrbot/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-astrbot/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Soulter",
       "run_as": "package",
@@ -357,8 +346,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-audiobookshelf/ICON.PNG",
-      "readme_url": "./fn-audiobookshelf/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-audiobookshelf/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "advplyr",
       "run_as": "package",
@@ -388,8 +376,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-beszel/ICON.PNG",
-      "readme_url": "./fn-beszel/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-beszel/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "henrygd",
       "run_as": "package",
@@ -419,8 +406,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-bettafish/ICON.PNG",
-      "readme_url": "./fn-bettafish/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-bettafish/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "666GHJ",
       "run_as": "package",
@@ -450,8 +436,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-bililive-go/ICON.PNG",
-      "readme_url": "./fn-bililive-go/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-bililive-go/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "hr3lxphr6j",
       "run_as": "package",
@@ -481,8 +466,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-bitwarden/ICON.PNG",
-      "readme_url": "./fn-bitwarden/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-bitwarden/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "bitwarden",
       "run_as": "package",
@@ -512,8 +496,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-blinko/ICON.PNG",
-      "readme_url": "./fn-blinko/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-blinko/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Blinko",
       "run_as": "package",
@@ -543,8 +526,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-browserless/ICON.PNG",
-      "readme_url": "./fn-browserless/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-browserless/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Browserless",
       "run_as": "package",
@@ -574,8 +556,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-bytebase/ICON.PNG",
-      "readme_url": "./fn-bytebase/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-bytebase/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Bytebase",
       "run_as": "package",
@@ -605,8 +586,7 @@
       "categories": [
         "影音娱乐"
       ],
-      "icon_url": "./fn-calibre-web/ICON.PNG",
-      "readme_url": "./fn-calibre-web/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-calibre-web/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "LinuxServer.io",
       "run_as": "package",
@@ -636,8 +616,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-casdoor/ICON.PNG",
-      "readme_url": "./fn-casdoor/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-casdoor/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Casbin",
       "run_as": "package",
@@ -667,8 +646,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-certd/ICON.PNG",
-      "readme_url": "./fn-certd/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-certd/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Greper",
       "run_as": "package",
@@ -698,8 +676,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-certimate/ICON.PNG",
-      "readme_url": "./fn-certimate/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-certimate/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "usual2970",
       "run_as": "package",
@@ -729,8 +706,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-changedetectionio/ICON.PNG",
-      "readme_url": "./fn-changedetectionio/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-changedetectionio/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "dgtlmoon",
       "run_as": "package",
@@ -760,8 +736,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-chatgpt-next-web/ICON.PNG",
-      "readme_url": "./fn-chatgpt-next-web/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-chatgpt-next-web/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Yidadaa",
       "run_as": "package",
@@ -791,8 +766,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-clawswarm/ICON.PNG",
-      "readme_url": "./fn-clawswarm/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-clawswarm/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "1Panel",
       "run_as": "package",
@@ -822,8 +796,7 @@
       "categories": [
         "编程开发"
       ],
-      "icon_url": "./fn-cloudbeaver/ICON.PNG",
-      "readme_url": "./fn-cloudbeaver/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-cloudbeaver/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "DBeaver",
       "run_as": "package",
@@ -853,8 +826,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-cloudflared/ICON.PNG",
-      "readme_url": "./fn-cloudflared/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-cloudflared/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Cloudflare",
       "run_as": "package",
@@ -884,8 +856,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-cloudreve/ICON.PNG",
-      "readme_url": "./fn-cloudreve/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-cloudreve/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Cloudreve",
       "run_as": "package",
@@ -915,8 +886,7 @@
       "categories": [
         "编程开发"
       ],
-      "icon_url": "./fn-code-server/ICON.PNG",
-      "readme_url": "./fn-code-server/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-code-server/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Coder",
       "run_as": "package",
@@ -946,8 +916,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-comfyui/ICON.PNG",
-      "readme_url": "./fn-comfyui/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-comfyui/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Comfy-Org",
       "run_as": "package",
@@ -977,8 +946,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-convertx/ICON.PNG",
-      "readme_url": "./fn-convertx/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-convertx/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "C4illin",
       "run_as": "package",
@@ -1008,8 +976,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-copaw/ICON.PNG",
-      "readme_url": "./fn-copaw/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-copaw/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "AgentScope",
       "run_as": "package",
@@ -1039,8 +1006,7 @@
       "categories": [
         "生活服务"
       ],
-      "icon_url": "./fn-cordys-crm/ICON.PNG",
-      "readme_url": "./fn-cordys-crm/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-cordys-crm/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Cordys",
       "run_as": "package",
@@ -1070,8 +1036,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-cyberchef/ICON.PNG",
-      "readme_url": "./fn-cyberchef/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-cyberchef/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "GCHQ",
       "run_as": "package",
@@ -1101,8 +1066,7 @@
       "categories": [
         "生活服务"
       ],
-      "icon_url": "./fn-dashy/ICON.PNG",
-      "readme_url": "./fn-dashy/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-dashy/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Lissy93",
       "run_as": "package",
@@ -1132,8 +1096,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-dataease/ICON.PNG",
-      "readme_url": "./fn-dataease/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-dataease/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "DataEase",
       "run_as": "package",
@@ -1163,8 +1126,7 @@
       "categories": [
         "AI赋能"
       ],
-      "icon_url": "./fn-dbhub/ICON.PNG",
-      "readme_url": "./fn-dbhub/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-dbhub/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Bytebase",
       "run_as": "package",
@@ -1194,8 +1156,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-dbx/ICON.PNG",
-      "readme_url": "./fn-dbx/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-dbx/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "t8y2",
       "run_as": "package",
@@ -1225,8 +1186,7 @@
       "categories": [
         "生活服务"
       ],
-      "icon_url": "./fn-discuz/ICON.PNG",
-      "readme_url": "./fn-discuz/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-discuz/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Tencent",
       "run_as": "package",
@@ -1256,8 +1216,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-domain-admin/ICON.PNG",
-      "readme_url": "./fn-domain-admin/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-domain-admin/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "mouday",
       "run_as": "package",
@@ -1287,8 +1246,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-dosgame/ICON.PNG",
-      "readme_url": "./fn-dosgame/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-dosgame/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "rwv",
       "run_as": "package",
@@ -1318,8 +1276,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-drawio/ICON.PNG",
-      "readme_url": "./fn-drawio/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-drawio/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "JGraph",
       "run_as": "package",
@@ -1349,8 +1306,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-dvwa/ICON.PNG",
-      "readme_url": "./fn-dvwa/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-dvwa/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "DigiNinja",
       "run_as": "package",
@@ -1380,8 +1336,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-easyimage2/ICON.PNG",
-      "readme_url": "./fn-easyimage2/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-easyimage2/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "ddsderek",
       "run_as": "package",
@@ -1411,8 +1366,7 @@
       "categories": [
         "生活服务"
       ],
-      "icon_url": "./fn-emlog/ICON.PNG",
-      "readme_url": "./fn-emlog/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-emlog/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Emlog",
       "run_as": "package",
@@ -1442,8 +1396,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-excalidraw/ICON.PNG",
-      "readme_url": "./fn-excalidraw/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-excalidraw/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Excalidraw",
       "run_as": "package",
@@ -1473,8 +1426,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-ezbookkeeping/ICON.PNG",
-      "readme_url": "./fn-ezbookkeeping/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-ezbookkeeping/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "mayswind",
       "run_as": "package",
@@ -1504,8 +1456,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-filebrowser/ICON.PNG",
-      "readme_url": "./fn-filebrowser/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-filebrowser/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "filebrowser",
       "run_as": "package",
@@ -1535,8 +1486,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-filecodebox/ICON.PNG",
-      "readme_url": "./fn-filecodebox/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-filecodebox/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "vastsa",
       "run_as": "package",
@@ -1566,8 +1516,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-firefly-iii/ICON.PNG",
-      "readme_url": "./fn-firefly-iii/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-firefly-iii/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Firefly III",
       "run_as": "package",
@@ -1597,8 +1546,7 @@
       "categories": [
         "生活服务"
       ],
-      "icon_url": "./fn-flarum/ICON.PNG",
-      "readme_url": "./fn-flarum/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-flarum/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "crazy-max",
       "run_as": "package",
@@ -1628,8 +1576,7 @@
       "categories": [
         "编程开发"
       ],
-      "icon_url": "./fn-focalboard/ICON.PNG",
-      "readme_url": "./fn-focalboard/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-focalboard/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Mattermost",
       "run_as": "package",
@@ -1659,8 +1606,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-forgejo/ICON.PNG",
-      "readme_url": "./fn-forgejo/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-forgejo/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Forgejo",
       "run_as": "package",
@@ -1690,8 +1636,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-freshrss/ICON.PNG",
-      "readme_url": "./fn-freshrss/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-freshrss/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "FreshRSS",
       "run_as": "package",
@@ -1721,8 +1666,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-gatus/ICON.PNG",
-      "readme_url": "./fn-gatus/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-gatus/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "TwinProduction",
       "run_as": "package",
@@ -1752,8 +1696,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-ghost/ICON.PNG",
-      "readme_url": "./fn-ghost/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-ghost/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Ghost Foundation",
       "run_as": "package",
@@ -1783,8 +1726,7 @@
       "categories": [
         "编程开发"
       ],
-      "icon_url": "./fn-gitea/ICON.PNG",
-      "readme_url": "./fn-gitea/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-gitea/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "CommitGo",
       "run_as": "package",
@@ -1814,8 +1756,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-glance/ICON.PNG",
-      "readme_url": "./fn-glance/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-glance/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Glance",
       "run_as": "package",
@@ -1845,8 +1786,7 @@
       "categories": [
         "编程开发"
       ],
-      "icon_url": "./fn-gotify/ICON.PNG",
-      "readme_url": "./fn-gotify/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-gotify/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "gotify",
       "run_as": "package",
@@ -1876,8 +1816,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-gsmanager/ICON.PNG",
-      "readme_url": "./fn-gsmanager/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-gsmanager/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "xiaozhu674",
       "run_as": "package",
@@ -1907,8 +1846,7 @@
       "categories": [
         "编程开发"
       ],
-      "icon_url": "./fn-halo/ICON.PNG",
-      "readme_url": "./fn-halo/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-halo/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "halo",
       "run_as": "package",
@@ -1938,8 +1876,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-heimdall/ICON.PNG",
-      "readme_url": "./fn-heimdall/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-heimdall/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "LinuxServer.io",
       "run_as": "package",
@@ -1969,8 +1906,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-hermes-agent/ICON.PNG",
-      "readme_url": "./fn-hermes-agent/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-hermes-agent/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "NousResearch",
       "run_as": "package",
@@ -2000,8 +1936,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-huginn/ICON.PNG",
-      "readme_url": "./fn-huginn/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-huginn/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Huginn",
       "run_as": "package",
@@ -2031,8 +1966,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-it-tools/ICON.PNG",
-      "readme_url": "./fn-it-tools/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-it-tools/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Corentin Th",
       "run_as": "package",
@@ -2062,8 +1996,7 @@
       "categories": [
         "影音娱乐"
       ],
-      "icon_url": "./fn-jellyfin/ICON.PNG",
-      "readme_url": "./fn-jellyfin/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-jellyfin/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Jellyfin Contributors",
       "run_as": "package",
@@ -2093,8 +2026,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-jsonhero/ICON.PNG",
-      "readme_url": "./fn-jsonhero/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-jsonhero/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Henry",
       "run_as": "package",
@@ -2124,8 +2056,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-jupyter-notebook/ICON.PNG",
-      "readme_url": "./fn-jupyter-notebook/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-jupyter-notebook/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Project Jupyter",
       "run_as": "package",
@@ -2155,8 +2086,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-keycloak/ICON.PNG",
-      "readme_url": "./fn-keycloak/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-keycloak/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Red Hat",
       "run_as": "package",
@@ -2186,8 +2116,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-kibana/ICON.PNG",
-      "readme_url": "./fn-kibana/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-kibana/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Elastic",
       "run_as": "package",
@@ -2217,8 +2146,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-kirara-agent/ICON.PNG",
-      "readme_url": "./fn-kirara-agent/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-kirara-agent/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "lss233",
       "run_as": "package",
@@ -2248,8 +2176,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-kkfileview/ICON.PNG",
-      "readme_url": "./fn-kkfileview/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-kkfileview/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "kekingcn",
       "run_as": "package",
@@ -2279,8 +2206,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-kodbox/ICON.PNG",
-      "readme_url": "./fn-kodbox/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-kodbox/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "kodcloud",
       "run_as": "package",
@@ -2310,8 +2236,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-koishi/ICON.PNG",
-      "readme_url": "./fn-koishi/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-koishi/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Koishi",
       "run_as": "package",
@@ -2341,8 +2266,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-komari/ICON.PNG",
-      "readme_url": "./fn-komari/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-komari/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "komari-monitor",
       "run_as": "package",
@@ -2372,8 +2296,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-komga/ICON.PNG",
-      "readme_url": "./fn-komga/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-komga/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Gotson",
       "run_as": "package",
@@ -2403,8 +2326,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-koodo-reader/ICON.PNG",
-      "readme_url": "./fn-koodo-reader/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-koodo-reader/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Koodo Reader",
       "run_as": "package",
@@ -2434,8 +2356,7 @@
       "categories": [
         "AI赋能"
       ],
-      "icon_url": "./fn-langbot/ICON.PNG",
-      "readme_url": "./fn-langbot/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-langbot/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "RockChinQ",
       "run_as": "package",
@@ -2465,8 +2386,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-langflow/ICON.PNG",
-      "readme_url": "./fn-langflow/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-langflow/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "LangFlow",
       "run_as": "package",
@@ -2496,8 +2416,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-laya-server/ICON.PNG",
-      "readme_url": "./fn-laya-server/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-laya-server/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "1Panel",
       "run_as": "package",
@@ -2527,8 +2446,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-linkding/ICON.PNG",
-      "readme_url": "./fn-linkding/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-linkding/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "sissbruecker",
       "run_as": "package",
@@ -2558,8 +2476,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-linux-command/ICON.PNG",
-      "readme_url": "./fn-linux-command/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-linux-command/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "jaywcjlove",
       "run_as": "package",
@@ -2589,8 +2506,7 @@
       "categories": [
         "AI赋能"
       ],
-      "icon_url": "./fn-llama-cpp/ICON.PNG",
-      "readme_url": "./fn-llama-cpp/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-llama-cpp/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "ggml-org",
       "run_as": "package",
@@ -2620,8 +2536,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-lobe-chat/ICON.PNG",
-      "readme_url": "./fn-lobe-chat/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-lobe-chat/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "LobeHub",
       "run_as": "package",
@@ -2651,8 +2566,7 @@
       "categories": [
         "AI赋能"
       ],
-      "icon_url": "./fn-localai/ICON.PNG",
-      "readme_url": "./fn-localai/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-localai/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "LocalAI",
       "run_as": "package",
@@ -2682,8 +2596,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-logto/ICON.PNG",
-      "readme_url": "./fn-logto/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-logto/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Silverhand",
       "run_as": "package",
@@ -2713,8 +2626,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-lsky-pro/ICON.PNG",
-      "readme_url": "./fn-lsky-pro/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-lsky-pro/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "HalcyonAzure",
       "run_as": "package",
@@ -2744,8 +2656,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-maddy-mail/ICON.PNG",
-      "readme_url": "./fn-maddy-mail/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-maddy-mail/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "FoxCpp",
       "run_as": "package",
@@ -2775,8 +2686,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-manticoresearch/ICON.PNG",
-      "readme_url": "./fn-manticoresearch/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-manticoresearch/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Manticore Software",
       "run_as": "package",
@@ -2806,8 +2716,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-mattermost/ICON.PNG",
-      "readme_url": "./fn-mattermost/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-mattermost/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Mattermost",
       "run_as": "package",
@@ -2837,8 +2746,7 @@
       "categories": [
         "AI赋能"
       ],
-      "icon_url": "./fn-maxkb/ICON.PNG",
-      "readme_url": "./fn-maxkb/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-maxkb/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "1Panel",
       "run_as": "package",
@@ -2868,8 +2776,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-mblog/ICON.PNG",
-      "readme_url": "./fn-mblog/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-mblog/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "kingwrcy",
       "run_as": "package",
@@ -2899,8 +2806,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-mcsmanager-web/ICON.PNG",
-      "readme_url": "./fn-mcsmanager-web/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-mcsmanager-web/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "MCSManager",
       "run_as": "package",
@@ -2930,8 +2836,7 @@
       "categories": [
         "编程开发"
       ],
-      "icon_url": "./fn-memcached/ICON.PNG",
-      "readme_url": "./fn-memcached/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-memcached/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "memcached",
       "run_as": "package",
@@ -2961,8 +2866,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-memos/ICON.PNG",
-      "readme_url": "./fn-memos/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-memos/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Memos Team",
       "run_as": "package",
@@ -2992,8 +2896,7 @@
       "categories": [
         "生活服务"
       ],
-      "icon_url": "./fn-metabase/ICON.PNG",
-      "readme_url": "./fn-metabase/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-metabase/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Metabase",
       "run_as": "package",
@@ -3023,8 +2926,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-miniflux/ICON.PNG",
-      "readme_url": "./fn-miniflux/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-miniflux/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Miniflux",
       "run_as": "package",
@@ -3054,8 +2956,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-mkdocs-material/ICON.PNG",
-      "readme_url": "./fn-mkdocs-material/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-mkdocs-material/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "squidfunk",
       "run_as": "package",
@@ -3085,8 +2986,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-mliev-dwz/ICON.PNG",
-      "readme_url": "./fn-mliev-dwz/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-mliev-dwz/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Mliev",
       "run_as": "package",
@@ -3116,8 +3016,7 @@
       "categories": [
         "编程开发"
       ],
-      "icon_url": "./fn-mongo-express/ICON.PNG",
-      "readme_url": "./fn-mongo-express/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-mongo-express/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Mongo Express",
       "run_as": "package",
@@ -3147,8 +3046,7 @@
       "categories": [
         "影音娱乐"
       ],
-      "icon_url": "./fn-moviepilot/ICON.PNG",
-      "readme_url": "./fn-moviepilot/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-moviepilot/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "jxxghp",
       "run_as": "package",
@@ -3178,8 +3076,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-music-tag-web/ICON.PNG",
-      "readme_url": "./fn-music-tag-web/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-music-tag-web/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "xhongc",
       "run_as": "package",
@@ -3209,8 +3106,7 @@
       "categories": [
         "编程开发"
       ],
-      "icon_url": "./fn-mysql_v8/ICON.PNG",
-      "readme_url": "./fn-mysql_v8/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-mysql_v8/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Oracle",
       "run_as": "package",
@@ -3240,8 +3136,7 @@
       "categories": [
         "AI赋能"
       ],
-      "icon_url": "./fn-n8n/ICON.PNG",
-      "readme_url": "./fn-n8n/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-n8n/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "n8n",
       "run_as": "package",
@@ -3271,8 +3166,7 @@
       "categories": [
         "影音娱乐"
       ],
-      "icon_url": "./fn-navidrome/ICON.PNG",
-      "readme_url": "./fn-navidrome/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-navidrome/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Deluan",
       "run_as": "package",
@@ -3302,8 +3196,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-neko/ICON.PNG",
-      "readme_url": "./fn-neko/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-neko/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "m1k1o",
       "run_as": "package",
@@ -3333,8 +3226,7 @@
       "categories": [
         "AI赋能"
       ],
-      "icon_url": "./fn-new-api/ICON.PNG",
-      "readme_url": "./fn-new-api/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-new-api/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "QuantumNous",
       "run_as": "package",
@@ -3364,8 +3256,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-newsnow/ICON.PNG",
-      "readme_url": "./fn-newsnow/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-newsnow/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "ourongxing",
       "run_as": "package",
@@ -3395,8 +3286,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-nextcloud/ICON.PNG",
-      "readme_url": "./fn-nextcloud/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-nextcloud/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Nextcloud",
       "run_as": "package",
@@ -3426,8 +3316,7 @@
       "categories": [
         "编程开发"
       ],
-      "icon_url": "./fn-nexus/ICON.PNG",
-      "readme_url": "./fn-nexus/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-nexus/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Sonatype",
       "run_as": "package",
@@ -3457,8 +3346,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-nezha/ICON.PNG",
-      "readme_url": "./fn-nezha/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-nezha/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "nezhahq",
       "run_as": "package",
@@ -3488,8 +3376,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-nginx-proxy-manager/ICON.PNG",
-      "readme_url": "./fn-nginx-proxy-manager/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-nginx-proxy-manager/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "jc21",
       "run_as": "package",
@@ -3519,8 +3406,7 @@
       "categories": [
         "编程开发"
       ],
-      "icon_url": "./fn-nocobase/ICON.PNG",
-      "readme_url": "./fn-nocobase/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-nocobase/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "NocoBase",
       "run_as": "package",
@@ -3550,8 +3436,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-nocodb/ICON.PNG",
-      "readme_url": "./fn-nocodb/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-nocodb/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "NocoDB",
       "run_as": "package",
@@ -3581,8 +3466,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-node-red/ICON.PNG",
-      "readme_url": "./fn-node-red/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-node-red/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "OpenJS Foundation",
       "run_as": "package",
@@ -3612,8 +3496,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-nodebb/ICON.PNG",
-      "readme_url": "./fn-nodebb/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-nodebb/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "NodeBB",
       "run_as": "package",
@@ -3643,8 +3526,7 @@
       "categories": [
         "编程开发"
       ],
-      "icon_url": "./fn-ntfy/ICON.PNG",
-      "readme_url": "./fn-ntfy/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-ntfy/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "binwiederhier",
       "run_as": "package",
@@ -3674,8 +3556,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-nvm/ICON.PNG",
-      "readme_url": "./fn-nvm/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-nvm/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "nvm-sh",
       "run_as": "package",
@@ -3705,8 +3586,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-obsidian-livesync/ICON.PNG",
-      "readme_url": "./fn-obsidian-livesync/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-obsidian-livesync/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "vrtmrz",
       "run_as": "package",
@@ -3736,8 +3616,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-octop/ICON.PNG",
-      "readme_url": "./fn-octop/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-octop/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Tencent Cloud",
       "run_as": "package",
@@ -3767,8 +3646,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-odoo/ICON.PNG",
-      "readme_url": "./fn-odoo/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-odoo/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Odoo",
       "run_as": "package",
@@ -3798,8 +3676,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-ohmyzsh/ICON.PNG",
-      "readme_url": "./fn-ohmyzsh/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-ohmyzsh/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "ohmyzsh",
       "run_as": "package",
@@ -3829,8 +3706,7 @@
       "categories": [
         "AI赋能"
       ],
-      "icon_url": "./fn-ollama/ICON.PNG",
-      "readme_url": "./fn-ollama/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-ollama/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Ollama",
       "run_as": "package",
@@ -3860,8 +3736,7 @@
       "categories": [
         "AI赋能"
       ],
-      "icon_url": "./fn-ollama-webui/ICON.PNG",
-      "readme_url": "./fn-ollama-webui/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-ollama-webui/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Open WebUI",
       "run_as": "package",
@@ -3891,8 +3766,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-onlyoffice/ICON.PNG",
-      "readme_url": "./fn-onlyoffice/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-onlyoffice/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "ONLYOFFICE",
       "run_as": "package",
@@ -3922,8 +3796,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-openclaw/ICON.PNG",
-      "readme_url": "./fn-openclaw/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-openclaw/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "1Panel",
       "run_as": "package",
@@ -3953,8 +3826,7 @@
       "categories": [
         "编程开发"
       ],
-      "icon_url": "./fn-opengist/ICON.PNG",
-      "readme_url": "./fn-opengist/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-opengist/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "thomiceli",
       "run_as": "package",
@@ -3984,8 +3856,7 @@
       "categories": [
         "编程开发"
       ],
-      "icon_url": "./fn-openldap/ICON.PNG",
-      "readme_url": "./fn-openldap/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-openldap/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "OpenLDAP",
       "run_as": "package",
@@ -4015,8 +3886,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-openlist/ICON.PNG",
-      "readme_url": "./fn-openlist/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-openlist/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "OpenList Team",
       "run_as": "package",
@@ -4046,8 +3916,7 @@
       "categories": [
         "游戏地带"
       ],
-      "icon_url": "./fn-palworld/ICON.PNG",
-      "readme_url": "./fn-palworld/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-palworld/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "thijsvanloef",
       "run_as": "package",
@@ -4077,8 +3946,7 @@
       "categories": [
         "游戏地带"
       ],
-      "icon_url": "./fn-palworld-server-tool/ICON.PNG",
-      "readme_url": "./fn-palworld-server-tool/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-palworld-server-tool/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "jokerwho",
       "run_as": "package",
@@ -4108,8 +3976,7 @@
       "categories": [
         "编程开发"
       ],
-      "icon_url": "./fn-pgadmin4/ICON.PNG",
-      "readme_url": "./fn-pgadmin4/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-pgadmin4/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "pgAdmin",
       "run_as": "package",
@@ -4139,8 +4006,7 @@
       "categories": [
         "影音娱乐"
       ],
-      "icon_url": "./fn-photoprism/ICON.PNG",
-      "readme_url": "./fn-photoprism/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-photoprism/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "PhotoPrism",
       "run_as": "package",
@@ -4170,8 +4036,7 @@
       "categories": [
         "编程开发"
       ],
-      "icon_url": "./fn-phpmyadmin/ICON.PNG",
-      "readme_url": "./fn-phpmyadmin/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-phpmyadmin/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "phpMyAdmin",
       "run_as": "package",
@@ -4201,8 +4066,7 @@
       "categories": [
         "编程开发"
       ],
-      "icon_url": "./fn-planka/ICON.PNG",
-      "readme_url": "./fn-planka/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-planka/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Planka",
       "run_as": "package",
@@ -4232,8 +4096,7 @@
       "categories": [
         "编程开发"
       ],
-      "icon_url": "./fn-postgres/ICON.PNG",
-      "readme_url": "./fn-postgres/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-postgres/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "PostgreSQL Global Development Group",
       "run_as": "package",
@@ -4263,8 +4126,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-qbittorrent/ICON.PNG",
-      "readme_url": "./fn-qbittorrent/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-qbittorrent/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "LinuxServer.io",
       "run_as": "package",
@@ -4294,8 +4156,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-qiandao/ICON.PNG",
-      "readme_url": "./fn-qiandao/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-qiandao/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "a76yyyy",
       "run_as": "package",
@@ -4325,8 +4186,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-qinglong/ICON.PNG",
-      "readme_url": "./fn-qinglong/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-qinglong/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "whyour",
       "run_as": "package",
@@ -4356,8 +4216,7 @@
       "categories": [
         "生活服务"
       ],
-      "icon_url": "./fn-quark-auto-save/ICON.PNG",
-      "readme_url": "./fn-quark-auto-save/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-quark-auto-save/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Cp0204",
       "run_as": "package",
@@ -4387,8 +4246,8 @@
       "categories": [
         "教育学习"
       ],
-      "icon_url": "./fn-reader/ICON.PNG",
-      "readme_url": "./fn-reader/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-reader/ICON.PNG",
+      "readme_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-reader/README.md",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "hectorqin",
       "run_as": "package",
@@ -4418,8 +4277,7 @@
       "categories": [
         "编程开发"
       ],
-      "icon_url": "./fn-redis-commander/ICON.PNG",
-      "readme_url": "./fn-redis-commander/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-redis-commander/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Redis Commander",
       "run_as": "package",
@@ -4449,8 +4307,7 @@
       "categories": [
         "编程开发"
       ],
-      "icon_url": "./fn-redpanda-console/ICON.PNG",
-      "readme_url": "./fn-redpanda-console/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-redpanda-console/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Redpanda Data",
       "run_as": "package",
@@ -4480,8 +4337,7 @@
       "categories": [
         "编程开发"
       ],
-      "icon_url": "./fn-rocketmq/ICON.PNG",
-      "readme_url": "./fn-rocketmq/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-rocketmq/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Apache RocketMQ",
       "run_as": "package",
@@ -4511,8 +4367,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-roundcube/ICON.PNG",
-      "readme_url": "./fn-roundcube/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-roundcube/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Roundcube",
       "run_as": "package",
@@ -4542,8 +4397,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-rsshub/ICON.PNG",
-      "readme_url": "./fn-rsshub/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-rsshub/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "DIYgod",
       "run_as": "package",
@@ -4573,8 +4427,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-rustdesk/ICON.PNG",
-      "readme_url": "./fn-rustdesk/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-rustdesk/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "RustDesk",
       "run_as": "package",
@@ -4604,8 +4457,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-rustfs/ICON.PNG",
-      "readme_url": "./fn-rustfs/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-rustfs/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "RustFS",
       "run_as": "package",
@@ -4635,8 +4487,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-screego/ICON.PNG",
-      "readme_url": "./fn-screego/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-screego/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "screego",
       "run_as": "package",
@@ -4666,8 +4517,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-sentinel-dashboard/ICON.PNG",
-      "readme_url": "./fn-sentinel-dashboard/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-sentinel-dashboard/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "BladeX",
       "run_as": "package",
@@ -4697,8 +4547,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-sftpgo/ICON.PNG",
-      "readme_url": "./fn-sftpgo/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-sftpgo/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "drakkan",
       "run_as": "package",
@@ -4728,8 +4577,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-showdoc/ICON.PNG",
-      "readme_url": "./fn-showdoc/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-showdoc/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "star7th",
       "run_as": "package",
@@ -4759,8 +4607,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-siyuan/ICON.PNG",
-      "readme_url": "./fn-siyuan/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-siyuan/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "b3log",
       "run_as": "package",
@@ -4790,8 +4637,7 @@
       "categories": [
         "编程开发"
       ],
-      "icon_url": "./fn-sonarqube/ICON.PNG",
-      "readme_url": "./fn-sonarqube/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-sonarqube/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "SonarSource",
       "run_as": "package",
@@ -4821,8 +4667,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-sqlbot/ICON.PNG",
-      "readme_url": "./fn-sqlbot/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-sqlbot/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "DataEase",
       "run_as": "package",
@@ -4852,8 +4697,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-stalwart-mail/ICON.PNG",
-      "readme_url": "./fn-stalwart-mail/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-stalwart-mail/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Stalwart Labs",
       "run_as": "package",
@@ -4883,8 +4727,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-stirling-pdf/ICON.PNG",
-      "readme_url": "./fn-stirling-pdf/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-stirling-pdf/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Stirling-Tools",
       "run_as": "package",
@@ -4914,8 +4757,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-sub2api/ICON.PNG",
-      "readme_url": "./fn-sub2api/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-sub2api/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "WeiShaw",
       "run_as": "package",
@@ -4945,8 +4787,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-sun-panel/ICON.PNG",
-      "readme_url": "./fn-sun-panel/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-sun-panel/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "hslr",
       "run_as": "package",
@@ -4976,8 +4817,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-synapse/ICON.PNG",
-      "readme_url": "./fn-synapse/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-synapse/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Matrix.org",
       "run_as": "package",
@@ -5007,8 +4847,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-tailchat/ICON.PNG",
-      "readme_url": "./fn-tailchat/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-tailchat/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Moonrailgun",
       "run_as": "package",
@@ -5038,8 +4877,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-teable/ICON.PNG",
-      "readme_url": "./fn-teable/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-teable/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Teable",
       "run_as": "package",
@@ -5069,8 +4907,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-teamspeak/ICON.PNG",
-      "readme_url": "./fn-teamspeak/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-teamspeak/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "TeamSpeak Systems",
       "run_as": "package",
@@ -5100,8 +4937,7 @@
       "categories": [
         "编程开发"
       ],
-      "icon_url": "./fn-tinyrdm/ICON.PNG",
-      "readme_url": "./fn-tinyrdm/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-tinyrdm/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "tiny-craft",
       "run_as": "package",
@@ -5131,8 +4967,7 @@
       "categories": [
         "编程开发"
       ],
-      "icon_url": "./fn-tomcat/ICON.PNG",
-      "readme_url": "./fn-tomcat/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-tomcat/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Apache",
       "run_as": "package",
@@ -5162,8 +4997,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-trendradar/ICON.PNG",
-      "readme_url": "./fn-trendradar/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-trendradar/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "wangyucode",
       "run_as": "package",
@@ -5193,8 +5027,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-trilium/ICON.PNG",
-      "readme_url": "./fn-trilium/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-trilium/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "TriliumNext",
       "run_as": "package",
@@ -5224,8 +5057,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-twenty/ICON.PNG",
-      "readme_url": "./fn-twenty/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-twenty/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Twenty",
       "run_as": "package",
@@ -5255,8 +5087,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-twikoo/ICON.PNG",
-      "readme_url": "./fn-twikoo/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-twikoo/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "imaegoo",
       "run_as": "package",
@@ -5286,8 +5117,7 @@
       "categories": [
         "生活服务"
       ],
-      "icon_url": "./fn-typecho/ICON.PNG",
-      "readme_url": "./fn-typecho/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-typecho/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Typecho",
       "run_as": "package",
@@ -5317,8 +5147,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-umami/ICON.PNG",
-      "readme_url": "./fn-umami/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-umami/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Umami",
       "run_as": "package",
@@ -5348,8 +5177,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-upage/ICON.PNG",
-      "readme_url": "./fn-upage/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-upage/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Halo",
       "run_as": "package",
@@ -5379,8 +5207,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-uptime-kuma/ICON.PNG",
-      "readme_url": "./fn-uptime-kuma/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-uptime-kuma/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Louis Lam",
       "run_as": "package",
@@ -5410,8 +5237,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-uv/ICON.PNG",
-      "readme_url": "./fn-uv/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-uv/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "astral-sh",
       "run_as": "package",
@@ -5441,8 +5267,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-vane/ICON.PNG",
-      "readme_url": "./fn-vane/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-vane/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "ItzCrazyKns",
       "run_as": "package",
@@ -5472,8 +5297,7 @@
       "categories": [
         "编程开发"
       ],
-      "icon_url": "./fn-verdaccio/ICON.PNG",
-      "readme_url": "./fn-verdaccio/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-verdaccio/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Verdaccio",
       "run_as": "package",
@@ -5503,8 +5327,7 @@
       "categories": [
         "编程开发"
       ],
-      "icon_url": "./fn-vexdb/ICON.PNG",
-      "readme_url": "./fn-vexdb/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-vexdb/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Shuzhiyinhang",
       "run_as": "package",
@@ -5534,8 +5357,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-waline/ICON.PNG",
-      "readme_url": "./fn-waline/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-waline/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "walinejs",
       "run_as": "package",
@@ -5565,8 +5387,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-wallos/ICON.PNG",
-      "readme_url": "./fn-wallos/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-wallos/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "ellite",
       "run_as": "package",
@@ -5596,8 +5417,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-web-check/ICON.PNG",
-      "readme_url": "./fn-web-check/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-web-check/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Lissy93",
       "run_as": "package",
@@ -5627,8 +5447,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-wechatmarkdowneditor/ICON.PNG",
-      "readme_url": "./fn-wechatmarkdowneditor/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-wechatmarkdowneditor/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "doocs",
       "run_as": "package",
@@ -5658,8 +5477,7 @@
       "categories": [
         "生活服务"
       ],
-      "icon_url": "./fn-wikijs/ICON.PNG",
-      "readme_url": "./fn-wikijs/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-wikijs/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Requarks",
       "run_as": "package",
@@ -5689,8 +5507,7 @@
       "categories": [
         "生活服务"
       ],
-      "icon_url": "./fn-wordpress/ICON.PNG",
-      "readme_url": "./fn-wordpress/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-wordpress/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "WordPress",
       "run_as": "package",
@@ -5720,8 +5537,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-xiaomusic/ICON.PNG",
-      "readme_url": "./fn-xiaomusic/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-xiaomusic/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Hanxi",
       "run_as": "package",
@@ -5751,8 +5567,8 @@
       "categories": [
         "影音娱乐"
       ],
-      "icon_url": "./fn-xiaoya-only/ICON.PNG",
-      "readme_url": "./fn-xiaoya-only/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-xiaoya-only/ICON.PNG",
+      "readme_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-xiaoya-only/README.md",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "xiaoya",
       "run_as": "package",
@@ -5782,8 +5598,7 @@
       "categories": [
         "影音娱乐"
       ],
-      "icon_url": "./fn-yesplaymusic/ICON.PNG",
-      "readme_url": "./fn-yesplaymusic/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-yesplaymusic/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "qier222",
       "run_as": "package",
@@ -5813,8 +5628,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-yourls/ICON.PNG",
-      "readme_url": "./fn-yourls/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-yourls/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "YOURLS",
       "run_as": "package",
@@ -5844,8 +5658,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-zabbix-agent/ICON.PNG",
-      "readme_url": "./fn-zabbix-agent/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-zabbix-agent/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Zabbix",
       "run_as": "package",
@@ -5875,8 +5688,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-zabbix-proxy/ICON.PNG",
-      "readme_url": "./fn-zabbix-proxy/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-zabbix-proxy/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Zabbix",
       "run_as": "package",
@@ -5906,8 +5718,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-zabbix-server/ICON.PNG",
-      "readme_url": "./fn-zabbix-server/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-zabbix-server/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "Zabbix",
       "run_as": "package",
@@ -5937,8 +5748,7 @@
       "categories": [
         "编程开发"
       ],
-      "icon_url": "./fn-zentao/ICON.PNG",
-      "readme_url": "./fn-zentao/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-zentao/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "禅道软件（杭州）有限公司",
       "run_as": "package",
@@ -5968,8 +5778,7 @@
       "categories": [
         "系统工具"
       ],
-      "icon_url": "./fn-zfile/ICON.PNG",
-      "readme_url": "./fn-zfile/README.md",
+      "icon_url": "https://raw.githubusercontent.com/tnnevol/fn-os-apps/main/apps/fn-zfile/ICON.PNG",
       "bug_report_url": "https://github.com/tnnevol/fn-os-apps/issues",
       "maintainer": "zhaojun1998",
       "run_as": "package",

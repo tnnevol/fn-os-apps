@@ -27,6 +27,17 @@ const PROJECT_VERSION = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json
 const RELEASE_TAG = `v${PROJECT_VERSION}`
 const RELEASE_BASE = 'https://github.com/tnnevol/fn-os-apps'
 
+/**
+ * 图标与 README 的静态资源基址。
+ *
+ * FnDepot 客户端直接取这两个 URL 展示，必须是可公网访问的完整地址：
+ * 相对路径（如 `./fn-xxx/ICON.PNG`）在客户端上下文里无从解析，且应用实际位于
+ * 仓库的 `apps/<appname>/` 下，写 `./<appname>/...` 本身就是错的。
+ * 固定指向 main 分支——图标与 README 属于文档性资源，跟随主分支即可；
+ * FPK 包本身仍用 `releases/latest/download` 保证取到最新发布。
+ */
+const RAW_BASE = 'https://raw.githubusercontent.com/tnnevol/fn-os-apps/main'
+
 const SOURCE_INFO = {
   name: '飞牛 fnOS 应用 Monorepo',
   author: 'tnnevol',
@@ -247,17 +258,19 @@ for (const appname of appDirs) {
   }
 
   const platform = manifest.platform === 'arm' ? ['arm'] : ['x86']
-  const iconRel = `./${appname}/ICON.PNG`
   const iconAbs = path.join(APPS_DIR, appname, 'ICON.PNG')
   if (!fs.existsSync(iconAbs)) problems.push(`${appname}: 缺少 ICON.PNG`)
+  const readmeAbs = path.join(APPS_DIR, appname, 'README.md')
+  // README 只有少数应用提供；缺失时不写该字段，避免客户端展示一个必然 404 的链接。
+  const hasReadme = fs.existsSync(readmeAbs)
 
   const app = {
     display_name: manifest.display_name ?? '',
     desc: manifest.desc ?? '',
     platform,
     categories: pickCategories(appname),
-    icon_url: iconRel,
-    readme_url: `./${appname}/README.md`,
+    icon_url: `${RAW_BASE}/apps/${appname}/ICON.PNG`,
+    ...(hasReadme ? { readme_url: `${RAW_BASE}/apps/${appname}/README.md` } : {}),
     bug_report_url: 'https://github.com/tnnevol/fn-os-apps/issues',
     maintainer: manifest.maintainer ?? 'tnnevol',
     run_as: 'package',
