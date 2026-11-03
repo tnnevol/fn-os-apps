@@ -1,5 +1,5 @@
 appname               = fn-dosgame
-version               = 6.0.0
+version               = 7.0.0
 display_name          = 中文 DOS 游戏
 desc                  = 中文 DOS 游戏合集，可在浏览器中直接游玩
 platform              = x86

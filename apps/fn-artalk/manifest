@@ -1,5 +1,5 @@
 appname               = fn-artalk
-version               = 6.0.0
+version               = 7.0.0
 display_name          = Artalk
 desc                  = 一款简洁的自托管评论系统，可嵌入任意网站使用
 platform              = x86

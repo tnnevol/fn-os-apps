@@ -1,5 +1,5 @@
 appname               = fn-mongo-express
-version               = 6.0.0
+version               = 7.0.0
 display_name          = Mongo Express
 desc                  = Mongo Express 是基于 Web 的 MongoDB 管理界面，用于浏览集合与执行查询
 platform              = x86

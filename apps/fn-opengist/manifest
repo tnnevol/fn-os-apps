@@ -1,5 +1,5 @@
 appname               = fn-opengist
-version               = 6.0.0
+version               = 7.0.0
 display_name          = Opengist
 desc                  = Opengist 是自托管的代码片段分享服务，基于 Git 存储
 platform              = x86

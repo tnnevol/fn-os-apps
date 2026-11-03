@@ -1,5 +1,5 @@
 appname               = fn-firefly-iii
-version               = 6.0.0
+version               = 7.0.0
 display_name          = Firefly III
 desc                  = Firefly III 是自托管的个人财务管理工具，记录收支并生成报表
 platform              = x86

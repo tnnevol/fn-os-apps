@@ -1,5 +1,5 @@
 appname               = fn-wechatmarkdowneditor
-version               = 6.0.0
+version               = 7.0.0
 display_name          = WeChat Markdown Editor
 desc                  = 一款高度简洁的微信 Markdown 编辑器，支持实时预览与一键复制排版结果
 platform              = x86

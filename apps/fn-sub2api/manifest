@@ -1,5 +1,5 @@
 appname               = fn-sub2api
-version               = 6.0.0
+version               = 7.0.0
 display_name          = Sub2API
 desc                  = Sub2API 把多个上游 API 订阅聚合为统一接口，并提供用量与配额管理
 platform              = x86

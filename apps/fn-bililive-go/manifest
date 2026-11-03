@@ -1,5 +1,5 @@
 appname               = fn-bililive-go
-version               = 6.0.0
+version               = 7.0.0
 display_name          = Bililive-go
 desc                  = 支持多种直播平台的直播录制工具
 platform              = x86

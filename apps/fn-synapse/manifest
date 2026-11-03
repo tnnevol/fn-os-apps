@@ -1,5 +1,5 @@
 appname               = fn-synapse
-version               = 6.0.0
+version               = 7.0.0
 display_name          = Synapse
 desc                  = Synapse 是 Matrix 协议的参考实现，用于搭建自有即时通讯服务器
 platform              = x86

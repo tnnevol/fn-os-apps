@@ -1,5 +1,5 @@
 appname               = fn-certimate
-version               = 6.0.0
+version               = 7.0.0
 display_name          = Certimate
 desc                  = 一个安全、简便的 SSL 证书管理解决方案，支持自动申请与续期
 platform              = x86

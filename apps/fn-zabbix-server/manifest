@@ -1,5 +1,5 @@
 appname               = fn-zabbix-server
-version               = 6.0.0
+version               = 7.0.0
 display_name          = Zabbix Server
 desc                  = Zabbix Server 是监控系统服务端，负责采集、计算与告警
 platform              = x86

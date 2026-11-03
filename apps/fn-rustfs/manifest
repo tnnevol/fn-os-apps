@@ -1,5 +1,5 @@
 appname               = fn-rustfs
-version               = 6.0.0
+version               = 7.0.0
 display_name          = RustFS
 desc                  = RustFS 是分布式对象存储系统，兼容 S3 协议并提供管理控制台
 platform              = x86

@@ -1,5 +1,5 @@
 appname               = fn-mattermost
-version               = 6.0.0
+version               = 7.0.0
 display_name          = Mattermost
 desc                  = Mattermost 是面向团队的自托管协作平台，提供频道、私信与文件共享
 platform              = x86

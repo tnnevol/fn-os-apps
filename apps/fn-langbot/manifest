@@ -1,5 +1,5 @@
 appname               = fn-langbot
-version               = 6.0.0
+version               = 7.0.0
 display_name          = LangBot
 desc                  = LangBot 是面向大模型的即时通讯机器人平台，支持多平台接入与插件
 platform              = x86

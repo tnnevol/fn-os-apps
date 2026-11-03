@@ -1,5 +1,5 @@
 appname               = fn-tinyrdm
-version               = 6.0.0
+version               = 7.0.0
 display_name          = Tiny RDM
 desc                  = Tiny RDM 是现代轻量的 Redis 桌面/网页客户端，支持多种数据类型管理
 platform              = x86

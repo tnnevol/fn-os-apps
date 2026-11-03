@@ -1,5 +1,5 @@
 appname               = fn-emlog
-version               = 6.0.0
+version               = 7.0.0
 display_name          = Emlog Pro
 desc                  = Emlog Pro 是轻量的 PHP 博客系统，提供文章、分类与插件管理
 platform              = x86

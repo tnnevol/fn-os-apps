@@ -1,5 +1,5 @@
 appname               = fn-navidrome
-version               = 6.0.0
+version               = 7.0.0
 display_name          = Navidrome
 desc                  = Navidrome 是轻量音乐服务器，支持按标签自动整理音乐库与多端播放
 platform              = x86

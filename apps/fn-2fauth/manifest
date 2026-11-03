@@ -1,5 +1,5 @@
 appname               = fn-2fauth
-version               = 6.0.0
+version               = 7.0.0
 display_name          = 2FAuth
 desc                  = 管理双因素身份验证（2FA）帐户并生成安全代码的 Web 应用程序
 platform              = x86

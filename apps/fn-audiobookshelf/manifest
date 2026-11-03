@@ -1,5 +1,5 @@
 appname               = fn-audiobookshelf
-version               = 6.0.0
+version               = 7.0.0
 display_name          = Audiobookshelf
 desc                  = Audiobookshelf 是有声书与播客服务器，支持多端同步收听进度
 platform              = x86

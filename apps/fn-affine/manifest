@@ -1,5 +1,5 @@
 appname               = fn-affine
-version               = 6.0.0
+version               = 7.0.0
 display_name          = AFFiNE
 desc                  = AFFiNE 是集成文档、白板与数据库的知识管理平台
 platform              = x86

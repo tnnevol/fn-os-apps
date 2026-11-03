@@ -1,5 +1,5 @@
 appname               = fn-roundcube
-version               = 6.0.0
+version               = 7.0.0
 display_name          = Roundcube
 desc                  = Roundcube 是基于浏览器的 Webmail 客户端，支持 IMAP 与 SMTP
 platform              = x86

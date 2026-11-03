@@ -1,5 +1,5 @@
 appname               = fn-ollama-webui
-version               = 6.0.0
+version               = 7.0.0
 display_name          = Open WebUI
 desc                  = Open WebUI 是自托管的 AI 对话界面，可对接 Ollama 或兼容 OpenAI 的服务
 platform              = x86

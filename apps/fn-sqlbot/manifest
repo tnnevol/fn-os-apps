@@ -1,5 +1,5 @@
 appname               = fn-sqlbot
-version               = 6.0.0
+version               = 7.0.0
 display_name          = SQLBot
 desc                  = SQLBot 是基于大模型的数据库问答工具，用自然语言查询数据库
 platform              = x86

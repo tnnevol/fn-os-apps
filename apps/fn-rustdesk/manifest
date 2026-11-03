@@ -1,5 +1,5 @@
 appname               = fn-rustdesk
-version               = 6.0.0
+version               = 7.0.0
 display_name          = RustDesk Server
 desc                  = RustDesk 是开源自托管远程桌面服务，包含 ID/中继与 WebSocket 服务
 platform              = x86

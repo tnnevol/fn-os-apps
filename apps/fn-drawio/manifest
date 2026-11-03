@@ -1,5 +1,5 @@
 appname               = fn-drawio
-version               = 6.0.0
+version               = 7.0.0
 display_name          = draw.io
 desc                  = draw.io 是开源的在线图表工具，用于绘制流程图、架构图与思维导图
 platform              = x86

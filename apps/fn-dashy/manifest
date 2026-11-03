@@ -1,5 +1,5 @@
 appname               = fn-dashy
-version               = 6.0.0
+version               = 7.0.0
 display_name          = Dashy
 desc                  = Dashy 是可自托管的个人导航面板，集中整理常用服务入口
 platform              = x86

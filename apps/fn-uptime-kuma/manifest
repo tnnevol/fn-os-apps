@@ -1,5 +1,5 @@
 appname               = fn-uptime-kuma
-version               = 6.0.0
+version               = 7.0.0
 display_name          = Uptime Kuma
 desc                  = 精美的自托管监控工具，跟踪服务在线状态与响应时间
 platform              = x86

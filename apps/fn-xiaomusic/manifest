@@ -1,5 +1,5 @@
 appname               = fn-xiaomusic
-version               = 6.0.0
+version               = 7.0.0
 display_name          = xiaomusic
 desc                  = xiaomusic 把小米音箱接入音乐服务，用语音或网页控制播放
 platform              = x86

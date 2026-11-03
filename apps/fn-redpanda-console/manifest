@@ -1,5 +1,5 @@
 appname               = fn-redpanda-console
-version               = 6.0.0
+version               = 7.0.0
 display_name          = Redpanda Console
 desc                  = Redpanda Console 是 Kafka / Redpanda 的 Web 管理界面，用于查看主题与消费组
 platform              = x86

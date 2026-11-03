@@ -1,5 +1,5 @@
 appname               = fn-nexus
-version               = 6.0.0
+version               = 7.0.0
 display_name          = Nexus Repository
 desc                  = Sonatype Nexus 是制品仓库管理器，支持 Maven、npm、Docker 等多种格式
 platform              = x86

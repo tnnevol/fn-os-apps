@@ -1,5 +1,5 @@
 appname               = fn-ntfy
-version               = 6.0.0
+version               = 7.0.0
 display_name          = ntfy
 desc                  = ntfy 是通过 HTTP 推送通知的自托管服务，支持手机与桌面客户端订阅
 platform              = x86

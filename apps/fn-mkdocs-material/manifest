@@ -1,5 +1,5 @@
 appname               = fn-mkdocs-material
-version               = 6.0.0
+version               = 7.0.0
 display_name          = MkDocs Material
 desc                  = MkDocs Material 是用于构建文档站点的主题镜像，支持热重载预览
 platform              = x86

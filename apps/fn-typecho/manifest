@@ -1,5 +1,5 @@
 appname               = fn-typecho
-version               = 6.0.0
+version               = 7.0.0
 display_name          = Typecho
 desc                  = Typecho 是轻量简洁的博客程序，支持 Markdown 与插件扩展
 platform              = x86

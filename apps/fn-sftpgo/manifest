@@ -1,5 +1,5 @@
 appname               = fn-sftpgo
-version               = 6.0.0
+version               = 7.0.0
 display_name          = SFTPGo
 desc                  = SFTPGo 是功能完整的文件传输服务，支持 SFTP、FTP、WebDAV 与网页管理
 platform              = x86

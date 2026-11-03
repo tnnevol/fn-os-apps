@@ -1,5 +1,5 @@
 appname               = fn-astrbot
-version               = 6.0.0
+version               = 7.0.0
 display_name          = AstrBot
 desc                  = AstrBot 是多平台聊天机器人框架，支持接入 QQ、微信、企业微信等渠道
 platform              = x86

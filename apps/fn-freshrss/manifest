@@ -1,5 +1,5 @@
 appname               = fn-freshrss
-version               = 6.0.0
+version               = 7.0.0
 display_name          = FreshRSS
 desc                  = 自托管的 RSS 和 Atom 源聚合器，支持多用户与全文抓取
 platform              = x86

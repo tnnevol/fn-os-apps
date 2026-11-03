@@ -1,5 +1,5 @@
 appname               = fn-lobe-chat
-version               = 6.0.0
+version               = 7.0.0
 display_name          = LobeChat
 desc                  = 现代化设计的开源 ChatGPT/LLMs 聊天应用与开发框架，支持多模型接入与插件扩展
 platform              = x86

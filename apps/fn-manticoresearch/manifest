@@ -1,5 +1,5 @@
 appname               = fn-manticoresearch
-version               = 6.0.0
+version               = 7.0.0
 display_name          = Manticore Search
 desc                  = Manticore Search 是高性能全文搜索引擎，兼容 Sphinx 并支持 SQL 查询
 platform              = x86

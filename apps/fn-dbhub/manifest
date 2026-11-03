@@ -1,5 +1,5 @@
 appname               = fn-dbhub
-version               = 6.0.0
+version               = 7.0.0
 display_name          = DBHub
 desc                  = DBHub 是数据库通用网关，为多种数据库提供统一的连接与访问入口
 platform              = x86

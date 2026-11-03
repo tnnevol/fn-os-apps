@@ -1,5 +1,5 @@
 appname               = fn-copaw
-version               = 6.0.0
+version               = 7.0.0
 display_name          = CoPaw
 desc                  = CoPaw 是面向大模型的智能体协作平台，提供 Web 管理界面
 platform              = x86

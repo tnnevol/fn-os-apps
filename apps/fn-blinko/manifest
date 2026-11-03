@@ -1,5 +1,5 @@
 appname               = fn-blinko
-version               = 6.0.0
+version               = 7.0.0
 display_name          = Blinko
 desc                  = Blinko 是注重隐私的快速笔记工具，支持 AI 增强检索与标签整理
 platform              = x86

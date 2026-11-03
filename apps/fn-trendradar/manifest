@@ -1,5 +1,5 @@
 appname               = fn-trendradar
-version               = 6.0.0
+version               = 7.0.0
 display_name          = TrendRadar
 desc                  = TrendRadar 聚合多个平台的热榜，按关键词筛选后推送到通知渠道
 platform              = x86

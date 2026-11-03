@@ -1,5 +1,5 @@
 appname               = fn-maxkb
-version               = 6.0.0
+version               = 7.0.0
 display_name          = MaxKB
 desc                  = 强大易用的企业级智能体平台，支持知识库问答与大模型接入
 platform              = x86

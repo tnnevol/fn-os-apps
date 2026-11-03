@@ -1,5 +1,5 @@
 appname               = fn-chatgpt-next-web
-version               = 6.0.0
+version               = 7.0.0
 display_name          = ChatGPT-Next-Web
 desc                  = 一键拥有你自己的跨平台 ChatGPT/Gemini 应用，支持自定义 API 地址与访问密码
 platform              = x86

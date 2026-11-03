@@ -1,5 +1,5 @@
 appname               = fn-komari
-version               = 6.0.0
+version               = 7.0.0
 display_name          = Komari Monitor
 desc                  = Komari 是轻量的服务器监控面板，可汇总多台主机的运行状态
 platform              = x86

@@ -1,5 +1,5 @@
 appname               = fn-lsky-pro
-version               = 6.0.0
+version               = 7.0.0
 display_name          = 兰空图床
 desc                  = 兰空图床（Lsky Pro）是自托管的图片托管与图床系统，支持多种存储策略
 platform              = x86

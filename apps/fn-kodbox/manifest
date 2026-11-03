@@ -1,5 +1,5 @@
 appname               = fn-kodbox
-version               = 6.0.0
+version               = 7.0.0
 display_name          = Kodbox
 desc                  = 可道云 Kodbox 是可私有化部署的在线文件管理与协作平台
 platform              = x86

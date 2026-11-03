@@ -1,5 +1,5 @@
 appname               = fn-stalwart-mail
-version               = 6.0.0
+version               = 7.0.0
 display_name          = Stalwart Mail Server
 desc                  = Stalwart 是现代化的一体化邮件服务器，支持 SMTP、IMAP、POP3 与 JMAP
 platform              = x86

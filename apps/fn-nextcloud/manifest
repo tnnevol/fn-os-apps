@@ -1,5 +1,5 @@
 appname               = fn-nextcloud
-version               = 6.0.0
+version               = 7.0.0
 display_name          = Nextcloud
 desc                  = Nextcloud 是自托管的网盘与协作平台，提供文件同步、共享与在线协作
 platform              = x86

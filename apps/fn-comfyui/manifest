@@ -1,5 +1,5 @@
 appname               = fn-comfyui
-version               = 6.0.0
+version               = 7.0.0
 display_name          = ComfyUI
 desc                  = 具备可视化节点图界面的强大模块化 AI 创作引擎
 platform              = x86

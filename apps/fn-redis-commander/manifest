@@ -1,5 +1,5 @@
 appname               = fn-redis-commander
-version               = 6.0.0
+version               = 7.0.0
 display_name          = Redis Commander
 desc                  = Redis Commander 是基于 Web 的 Redis 管理界面，用于浏览键值与执行命令
 platform              = x86

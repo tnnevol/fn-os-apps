@@ -1,5 +1,5 @@
 appname               = fn-dataease
-version               = 6.0.0
+version               = 7.0.0
 display_name          = DataEase
 desc                  = DataEase 是开源的数据可视化分析平台，拖拽式制作图表与仪表板
 platform              = x86

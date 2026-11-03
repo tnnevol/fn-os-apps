@@ -1,5 +1,5 @@
 appname               = fn-web-check
-version               = 6.0.0
+version               = 7.0.0
 display_name          = Web-Check
 desc                  = 用于分析任何网站的多合一 OSINT 工具，汇总 DNS、SSL、头部与威胁情报等信息
 platform              = x86

@@ -1,5 +1,5 @@
 appname               = fn-cloudflared
-version               = 6.0.0
+version               = 7.0.0
 display_name          = cloudflared
 desc                  = Cloudflare Tunnel 客户端，把内网服务通过隧道发布到公网而无需开放入站端口
 platform              = x86

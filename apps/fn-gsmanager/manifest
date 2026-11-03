@@ -1,5 +1,5 @@
 appname               = fn-gsmanager
-version               = 6.0.0
+version               = 7.0.0
 display_name          = GSManager
 desc                  = GSManager 是游戏服务端管理面板，可视化管理 Steam 等游戏服务器
 platform              = x86

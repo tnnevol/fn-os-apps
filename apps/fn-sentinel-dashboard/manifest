@@ -1,5 +1,5 @@
 appname               = fn-sentinel-dashboard
-version               = 6.0.0
+version               = 7.0.0
 display_name          = Sentinel Dashboard
 desc                  = Sentinel Dashboard 是流量控制与熔断降级的实时监控控制台
 platform              = x86
