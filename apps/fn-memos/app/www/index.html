@@ -8,34 +8,51 @@
   </head>
   <body>
     <div class="container">
-      <h1>Memos 管理</h1>
+      <div class="header">
+        <h1 data-i18n="heading">Memos 管理</h1>
+        <div class="lang-switch">
+          <select
+            id="langSelect"
+            class="lang-select"
+            data-i18n-title="language"
+          ></select>
+        </div>
+      </div>
 
       <div class="info-card">
         <div class="info-row">
-          <span class="info-label">当前版本</span>
+          <span class="info-label" data-i18n="currentVersion">当前版本</span>
           <span class="info-value current" id="currentVersion">
-            <span class="spinner"></span> 检测中...
+            <span class="spinner"></span>
+            <span data-i18n="detecting">检测中...</span>
           </span>
         </div>
         <div class="info-row">
-          <span class="info-label">最新版本</span>
+          <span class="info-label" data-i18n="latestVersion">最新版本</span>
           <span class="info-value latest" id="latestVersion">
-            <span class="spinner"></span> 检测中...
+            <span class="spinner"></span>
+            <span data-i18n="detecting">检测中...</span>
           </span>
         </div>
         <div class="info-row" id="statusRow" style="display: none">
-          <span class="info-label">状态</span>
+          <span class="info-label" data-i18n="status">状态</span>
           <span id="upgradeStatus"></span>
         </div>
       </div>
 
       <div class="btn-group">
-        <button class="btn btn-check" id="checkBtn" onclick="checkVersion()">
+        <button
+          class="btn btn-check"
+          id="checkBtn"
+          data-i18n="checkUpdate"
+          onclick="checkVersion()"
+        >
           检查更新
         </button>
         <button
           class="btn btn-primary"
           id="upgradeBtn"
+          data-i18n="upgrade"
           onclick="doUpgrade()"
           disabled
         >
@@ -46,6 +63,7 @@
       <div class="log-panel" id="logArea" style="display: none"></div>
     </div>
 
+    <script src="i18n.js"></script>
     <script src="index.js"></script>
   </body>
 </html>

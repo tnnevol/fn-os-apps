@@ -26,10 +26,17 @@ body {
   padding: 32px;
 }
 
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
 h1 {
   font-size: 22px;
   font-weight: 600;
-  margin-bottom: 24px;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -42,6 +49,52 @@ h1::before {
   height: 22px;
   background: #4a90d9;
   border-radius: 2px;
+  flex: 0 0 auto;
+}
+
+/* 语言切换：与 .btn-check 同一套配色与圆角，避免出现游离于整体风格之外的控件 */
+.lang-switch {
+  flex: 0 0 auto;
+}
+
+.lang-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  padding: 6px 28px 6px 10px;
+  font-size: 13px;
+  font-family: inherit;
+  color: #666;
+  background-color: #f8fafc;
+  /* 右侧箭头用内联 SVG，颜色与主色一致，避免不同系统默认箭头样式不一 */
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%234a90d9' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 9px center;
+  border: 1px solid #e8ecf1;
+  border-radius: 6px;
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    background-color 0.2s,
+    color 0.2s;
+}
+
+.lang-select:hover {
+  border-color: #d6e4ff;
+  background-color: #f0f5ff;
+  color: #4a90d9;
+}
+
+.lang-select:focus {
+  outline: none;
+  border-color: #4a90d9;
+  background-color: #fff;
+  box-shadow: 0 0 0 2px rgba(74, 144, 217, 0.12);
+}
+
+.lang-select option {
+  color: #333;
+  background: #fff;
 }
 
 .info-card {
