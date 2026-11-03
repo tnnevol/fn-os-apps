@@ -45,7 +45,9 @@ const SSH_USER = process.env.FNOS_SSH_USER || '';
 // 会话 Cookie（含 HttpOnly 的 osrt/ost）。提供时走 curl，否则回退浏览器桥接。
 // 取法：用 chrome-devtools MCP 打开已登录页面，读任一 /app-center 请求的 cookie 头。
 const COOKIE = process.env.FNOS_COOKIE || '';
-const SSH_OPTS = ['-o', 'BatchMode=yes', '-o', 'ConnectTimeout=8'];
+// SSH 端口可由 FNOS_SSH_PORT 指定：设备可能把 SSH 放在非 22 端口（如 1022）。
+const SSH_PORT = process.env.FNOS_SSH_PORT || '';
+const SSH_OPTS = ['-o', 'BatchMode=yes', '-o', 'ConnectTimeout=8', ...(SSH_PORT ? ['-p', SSH_PORT] : [])];
 const STAGE = process.env.FNOS_STAGE_DIR || '';
 const VOLUME_ID = process.env.FNOS_VOLUME_ID || '2';
 const LANG = 'zh-CN';
@@ -106,7 +108,7 @@ process.on('exit', () => { try { fs.unlinkSync(LOCK); } catch { /* 忽略 */ } }
 
 const sh = (cmd, args, opts) => exec(cmd, args, Object.assign({ maxBuffer: 64 * 1024 * 1024, timeout: 900000 }, opts || {}));
 const ssh = (cmd) => sh('ssh', [...SSH_OPTS, `${SSH_USER}@${HOST}`, cmd]);
-const scp = (local, remote) => sh('scp', ['-q', '-o', 'BatchMode=yes', local, `${SSH_USER}@${HOST}:${remote}`]);
+const scp = (local, remote) => sh('scp', ['-q', '-o', 'BatchMode=yes', ...(SSH_PORT ? ['-P', SSH_PORT] : []), local, `${SSH_USER}@${HOST}:${remote}`]);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const curlCode = async (url) => {
   try { const { stdout } = await sh('curl', ['-s', '-o', '/dev/null', '-w', '%{http_code}', '-m', '10', url]); return stdout.trim(); }
