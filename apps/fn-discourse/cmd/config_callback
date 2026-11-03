@@ -2,41 +2,8 @@
 
 ### This script is called after the user change environment variables in application setting page.
 
-# 配置保存后必须让容器用新环境变量重建，否则改了等于没改。
-#
-# 踩过的坑：此脚本原本是空操作（只有 exit 0），而 cmd/main 里用的是
-# `docker compose up -d`——它对「环境变量变了但镜像/配置模板没变」的容器
-# **不会重建**，于是容器一直沿用旧 env。实测把 DB_USERNAME 从 fntest 改成
-# postgres 并保存重启后，`docker inspect` 里仍是 DISCOURSE_DATABASE_USER=fntest，
-# 应用因此始终连不上数据库。
-#
-# 正确做法：配置变更后用 `up -d --force-recreate` 重建，让框架注入的新变量生效。
-
-# 变量兜底：不同阶段能拿到的框架变量不完全一致，缺 TRIM_APPDEST 时退回按
-# 应用名拼出的默认安装目录，避免把 compose 目录算成空路径而在错误目录里执行。
-if [ -z "${TRIM_APPDEST}" ]; then
-    echo "TRIM_APPDEST 未设置，无法定位 compose 目录" >"${TRIM_TEMP_LOGFILE}"
-    exit 1
-fi
-
-COMPOSE_DIR="${TRIM_APPDEST}/docker"
-
-if [ ! -f "${COMPOSE_DIR}/docker-compose.yaml" ]; then
-    echo "compose 文件不存在，跳过重建：${COMPOSE_DIR}/docker-compose.yaml" >"${TRIM_TEMP_LOGFILE}"
-    exit 1
-fi
-
-cd "${COMPOSE_DIR}" || exit 1
-
-# 项目名兜底：容器由应用中心以固定项目名创建，缺变量时用应用名，避免另起一套容器
-PROJECT="${TRIM_APPNAME:-fn-discourse}"
-
-echo "配置已变更，重建容器以应用新的环境变量 ..."
-docker compose -p "${PROJECT}" up -d --force-recreate 2>&1
-if [ $? -ne 0 ]; then
-    echo "重建容器失败，请检查配置后重试" >"${TRIM_TEMP_LOGFILE}"
-    exit 1
-fi
-
-echo "容器已按新配置重建完成"
+# 本脚本以**包用户**身份运行（真机取证 uid=813，不在 docker 组），
+# 在这里执行 docker 命令一律 permission denied；而且平台会检查退出码，
+# 失败会让「保存并重启」直接返回 code:10000。配置变更生效由 cmd/main 负责，
+# 那里以 root 运行、可操作 Docker，且同样能拿到新的向导值。
 exit 0

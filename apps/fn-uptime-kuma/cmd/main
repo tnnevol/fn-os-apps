@@ -13,13 +13,23 @@ is_docker_running() {
 # 确保 compose 中容器已创建并启动
 ensure_containers_created() {
     cd "$COMPOSE_DIR" || return 1
-    local EXISTS
-    EXISTS=$(docker compose -p "$TRIM_APPNAME" ps -a --format '{{.Name}}' 2>/dev/null | wc -l)
-    if [ "$EXISTS" -gt 0 ]; then
-        echo "[DEBUG] ensure_containers_created: all containers already exist"
-        return 0
-    fi
-
+    # 不要先判断「容器已存在」就 return —— 那样 `up -d` 永远不会被执行，
+    # 用户在「应用设置 → 运行设置」里改的端口、数据库地址等进不了容器，
+    # 表现为「保存了但没生效」。
+    #
+    # 真机取证（2026-11-02，fnOS 1.2.0800）：
+    #   - 配置未变时 `docker compose up -d` 只输出 "Container xxx Running"、
+    #     容器 ID 不变，是幂等的，可安全用于每 30 秒一次的状态检查；
+    #   - 向导值变化时（实测 APP_PORT 8080→8092）同一条命令输出
+    #     Recreate / Recreated 并让新端口生效 —— compose 自行比对期望状态，
+    #     只重建有差异的容器，无需 --force-recreate；
+    #   - 经应用中心「停用」后平台不再调用 status（日志行数 100 秒内零增长），
+    #     因此这里不会把用户主动停用的容器误启动。
+    #
+    # 为什么写在 cmd/main 而不是 config_callback：config_callback 以包用户身份
+    # 运行（实测 uid=813，不在 docker 组），执行 docker 一律 permission denied，
+    # 且平台会检查其退出码；而 cmd/main 以 root 运行（实测 uid=0，docker 可用），
+    # 并且同样能拿到保存后的新向导值。
     echo "[DEBUG] running: docker compose -p $TRIM_APPNAME up -d"
     docker compose -p "$TRIM_APPNAME" up -d 2>&1
     if [ $? -ne 0 ]; then
