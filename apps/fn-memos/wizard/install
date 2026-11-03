@@ -6,7 +6,7 @@
                 "type": "text",
                 "field": "wizard_port",
                 "label": "服务端口",
-                "helpText": "设置 Memos 服务监听的端口号",
+                "helpText": "Memos 监听端口，修改后需重启生效。",
                 "initValue": "5230",
                 "rules": [
                     {
@@ -43,18 +43,16 @@
                         "required": true,
                         "message": "请选择数据存储方式"
                     }
-                ]
+                ],
+                "helpText": "选 MySQL / PostgreSQL 后必须填写下方 DSN，对应库需事先创建。"
             },
             {
                 "type": "text",
                 "field": "wizard_dsn",
                 "label": "数据库连接字符串（DSN）",
                 "initValue": "",
+                "helpText": "本地 SQLite 留空即可。外部数据库填连接串：MySQL 用 user:password@tcp(host:port)/db?charset=utf8mb4&parseTime=True&loc=Local；PostgreSQL 用 postgres://user:password@host:port/db?sslmode=disable，或键值对 host=… port=… user=… password=… dbname=… sslmode=disable。库在本机时 host 填 127.0.0.1；密码含 @ : / ? # 需 URL 编码；Memos 只连接不建库，库与账号需事先创建；修改后需重启生效。",
                 "rules": []
-            },
-            {
-                "type": "tips",
-                "helpText": "本地 SQLite 模式 DSN 留空即可。<br/>MySQL 格式：<code>user:password@tcp(host:port)/dbname</code><br/>PostgreSQL 格式：<code>postgres://user:password@host:port/dbname?sslmode=disable</code><br/><strong>密码中不可包含以下字符：</strong> @ ( ) : / \\ — 如包含请修改数据库用户密码"
             }
         ]
     }
