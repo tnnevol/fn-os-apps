@@ -354,7 +354,7 @@ async function until(fn, { tries = 240, gap = 1000, label = '' } = {}) {
 }
 
 /** 由向导 schema 生成参数 */
-function buildParams(wizardInfo) {
+function buildParams(wizardInfo, appName) {
   const items = (wizardInfo.wizardContent || []).flatMap((s) => (s && s.items) || []);
 
   // 该应用声明的数据库类型（取 DB_TYPE 字段的值），决定用哪套凭据与端口。
@@ -460,7 +460,20 @@ function buildParams(wizardInfo) {
           val = process.env.FNOS_DB_TYPE; filled.push(key);
         }
       } else if (/(?:DB|MYSQL|MARIADB|POSTGRES)_HOST$/.test(kUp)) {
-        val = HOST; filled.push(key); needsExternal = true;
+        // 有些应用的 DB_HOST 是**合并字段**：向导要求填「地址:端口/数据库名」
+        // （rules.pattern 同时约束了冒号与斜杠），compose 里直接接在 user:pass@ 之后。
+        // 这种字段只填裸 IP 会连到默认端口/默认库而失败，现象是容器起不来、入口 000，
+        // 看着像应用缺陷，实际是填参没按应用自己的契约来。
+        const patternText = String(pattern || '');
+        const wantsCombined = patternText.includes(':') && patternText.includes('/');
+        if (wantsCombined) {
+          const dbName = String(appName || '').replace(/^fn-/, '') || 'appdb';
+          const dbPort = pgMode ? (process.env.FNOS_PG_PORT || '55432') : (process.env.FNOS_DB_PORT || '43306');
+          val = `${HOST}:${dbPort}/${dbName}`;
+        } else {
+          val = HOST;
+        }
+        filled.push(key); needsExternal = true;
       } else if (/(?:DB|MYSQL|MARIADB|POSTGRES)_PORT$/.test(kUp)) {
         // 端口跟着引擎走：PostgreSQL 实例在 FNOS_PG_PORT，MySQL 在 FNOS_DB_PORT。
         val = pgMode ? (process.env.FNOS_PG_PORT || '55432') : (process.env.FNOS_DB_PORT || '43306');
@@ -492,7 +505,21 @@ function buildParams(wizardInfo) {
         // 外部中间件地址：dev 设备上 MySQL/Redis 等以 **fnOS 原生应用**运行在宿主，
         // 容器内的 127.0.0.1 指向容器自身，填它必然连不上（实测 ECONNREFUSED）。
         // 必须填宿主机的局域网 IP，容器才能经 docker0 转发访问到宿主服务。
-        val = (/PORT$/.test(key) && PORT_MAP[key]) ? String(PORT_MAP[key]) : HOST;
+        //
+        // 有些应用的 DB_HOST 是**合并字段**：向导要求填「地址:端口/数据库名」
+        // （rules.pattern 形如 ^.+:\d+/.+$），compose 里直接接在 user:pass@ 之后。
+        // 这种字段必须按应用自己的契约填完整，只填裸 IP 会连到默认端口/默认库而失败，
+        // 而失败现象（容器起不来、入口 000）看起来像应用缺陷 —— 实际是填参不符契约。
+        // 判断依据是「该字段的正则同时约束了冒号与斜杠」，即要求 地址:端口/库名。
+        // 注意不能拿 /\d/ 去测正则**字符串**：模式里的 \d 是两个字符，不含真实数字。
+        const patternText = String(pattern || '');
+        const wantsCombined = patternText.includes(':') && patternText.includes('/');
+        if (wantsCombined && /(?:HOST|ADDR|ADDRESS|CONN|DSN|URL|URI)/i.test(key)) {
+          const dbName = String(appName || '').replace(/^fn-/, '') || 'appdb';
+          val = `${HOST}:${portForDbType}/${dbName}`;
+        } else {
+          val = (/PORT$/.test(key) && PORT_MAP[key]) ? String(PORT_MAP[key]) : HOST;
+        }
         needsExternal = true;
         if (!/PORT$/.test(key)) pendingExternalHosts.push(key);
       } else if (required && fillPlaceholders) {
@@ -625,7 +652,7 @@ async function testOne(app) {
     if (!info || info.code !== 0 || !info.data || !info.data.wizardInfo) {
       rec.stage = 'install_info'; rec.err = JSON.stringify(info).slice(0, 300); return rec;
     }
-    const { params, unsolved, needsExternal, filled } = buildParams(info.data.wizardInfo);
+    const { params, unsolved, needsExternal, filled } = buildParams(info.data.wizardInfo, app);
     if (filled.length) rec.placeholderFilled = filled;
     rec.needsExternal = needsExternal;
     if (unsolved.length) {
