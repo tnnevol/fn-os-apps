@@ -497,39 +497,72 @@ services:
 - 两个端口分别建向导字段；`APP_SSH_PORT` 是 SSH 端口，只进向导不进桌面入口。
 - 数据库初始化（建库、建用户）由用户在向导里填已有实例，**不要**在 `cmd/install_callback` 里尝试连接并建库；连接失败时应用能启动但功能页报错，向导 `helpText` 必须说明这一点。
 
-### 模式 D：配置保存后必须重建容器（所有 Docker 应用）
+### 模式 D：配置变更后靠 `cmd/main` 的 `up -d` 生效（所有 Docker 应用）
 
-`cmd/main` 启动容器用的是 `docker compose up -d`。这条命令对「环境变量变了，
-但镜像与配置模板没变」的容器**不会重建**，容器会一直沿用旧的 env —— 于是用户
-在「应用设置 → 运行设置」里改完保存，变化根本没进容器。
+用户在「应用设置 → 运行设置」改完保存后，变化必须进容器。此前本节给出的方案是
+错的，这里按真机取证更正。
 
-框架把「更新文件、重启服务、通知进程」这类动作交给 `cmd/config_callback`
-（见 fnnas-docs/framework 的配置流程）。因此每个 Docker 应用的
-`config_callback` 都必须做一次重建：
+**生命周期脚本的执行身份不同，这是选型的关键**（2026-11-02 真机取证，fnOS 1.2.0800）：
+
+| 脚本 | 执行身份 | 能否执行 docker | 能否拿到新向导值 |
+| --- | --- | --- | --- |
+| `cmd/config_callback` | 包用户（实测 `uid=813`，不在 docker 组） | **否**，一律 `permission denied` | 能 |
+| `cmd/main` | **root**（实测 `uid=0`） | **能** | 能 |
+
+因此**不能**在 `config_callback` 里跑 docker 命令。两个原因：
+
+1. 包用户没有 `/var/run/docker.sock` 权限（该 socket 属 `root:docker`）；
+2. 平台会检查回调退出码，失败会让「保存并重启」整体返回
+   `{"code":10000,"msg":"15002:exit code: 1"}` —— 等于把配置保存功能弄坏。
+
+正确做法是改 `cmd/main`：**去掉「容器已存在就提前 return」的判断**，让
+`docker compose up -d` 每次状态检查都执行。
 
 ```bash
-if [ -z "${TRIM_APPDEST}" ]; then
-    echo "TRIM_APPDEST 未设置，无法定位 compose 目录" >"${TRIM_TEMP_LOGFILE}"
-    exit 1
-fi
-
-COMPOSE_DIR="${TRIM_APPDEST}/docker"
-[ -f "${COMPOSE_DIR}/docker-compose.yaml" ] || exit 1
-cd "${COMPOSE_DIR}" || exit 1
-
-PROJECT="${TRIM_APPNAME:-fn-<app>}"
-docker compose -p "${PROJECT}" up -d --force-recreate
+ensure_containers_created() {
+    cd "$COMPOSE_DIR" || return 1
+    # 不要先判断「容器已存在」就 return：那样 up -d 永远不会被执行，
+    # 用户改的端口、数据库地址等就进不了容器。
+    docker compose -p "$TRIM_APPNAME" up -d 2>&1 || return 1
+}
 ```
 
-要点：
+为什么这样就够了 —— `up -d` 自身会比对期望状态并只重建有差异的容器：
 
-- **必须加 `--force-recreate`**：不加就只是 `up -d`，环境变量变化不会触发重建。
-- 项目名用 `TRIM_APPNAME`（取自 `manifest.appname`）；变量缺失时按应用名兜底，
-  否则会与平台已建的 compose 项目名不一致，另起一套容器。
-- 空操作（只有 `exit 0`）等于「配置改了不生效」，属于缺陷。
+- **配置未变**：输出 `Container xxx Running`，容器 ID 不变，**幂等**，
+  可安全用于平台每 30 秒一次的状态轮询；
+- **配置变更**：实测把 `APP_PORT` 从 8080 改成 8092 后，同一条命令输出
+  `Recreate` / `Recreated`，新端口随即生效（`8092 -> 302`、`8080 -> 000`）。
+  **不需要 `--force-recreate`**。
 
-真机验证方式：记下 `docker inspect <容器> --format '{{.Id}}'`，改一次配置并保存，
-**容器 ID 变化**才说明重建成功（`Recreated` + `Started` 是日志里的判定依据）。
+也不要担心它会把用户停用的容器误启动：经应用中心「停用」后，平台**不再调用
+`status`**（实测日志行数 100 秒内零增长，容器保持 `Exited`）。
+注意这与手动 `docker stop` 不同 —— 后者之后平台仍会轮询并把它拉起来。
+
+`config_callback` 保持空操作即可（只留注释说明为何不在此处重建）：
+
+```bash
+#!/bin/bash
+
+### This script is called after the user change environment variables in application setting page.
+
+# 本脚本以包用户身份运行，没有 Docker 权限；配置变更生效由 cmd/main 负责。
+exit 0
+```
+
+真机验证方式：改一次配置并保存，**容器 ID 变化**且新配置在入口上生效，才算通过。
+
+```bash
+# 保存前记下容器 ID
+docker inspect <容器名> --format '{{.Id}}'
+# 保存后（等一次状态轮询）再取一次：ID 变了说明按新配置重建过
+docker inspect <容器名> --format '{{.Id}}'
+docker port <容器名>          # 新端口是否已映射
+```
+
+> 注意：双花括号形式（Go 模板的 format 串）只能写在围栏代码块里。
+> 放进行内反引号会被 VitePress 当作 Vue 插值解析，导致
+> `pnpm run build -- --docs` 构建失败。
 
 ## 配置文件模板
 
