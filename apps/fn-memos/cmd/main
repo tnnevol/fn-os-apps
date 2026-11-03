@@ -8,18 +8,30 @@ MEMOS_BIN="${TRIM_APPDEST}/bin/memos"
 MEMOS_PORT="${wizard_port:-5230}"
 DATA_DIR="${TRIM_PKGVAR}/data"
 
-# Build start command based on storage type
-case "${wizard_storage_type}" in
-mysql)
-    CMD="${MEMOS_BIN} --port ${MEMOS_PORT} --data ${DATA_DIR} --driver mysql --dsn \"${wizard_dsn}\""
-    ;;
-postgres)
-    CMD="${MEMOS_BIN} --port ${MEMOS_PORT} --data ${DATA_DIR} --driver postgres --dsn \"${wizard_dsn}\""
-    ;;
-*)
-    CMD="${MEMOS_BIN} --port ${MEMOS_PORT} --data ${DATA_DIR}"
-    ;;
-esac
+# 启动 memos。
+#
+# 这里**不能**把整条命令拼成一个字符串再交给 `bash -c`：DSN 里的密码常含 `$`、
+# 反引号、反斜杠等字符，二次解析会把它们展开掉。实测密码 `pa$$w0rd` 经
+# `bash -c "${CMD}"` 后被替换成 `pa<当前PID>w0rd`，连接串被静默改坏，
+# 表现为「填的 DSN 没错却连不上数据库」。
+# 直接以参数形式启动，每个变量各自加引号，shell 不会再解释其内容。
+start_memos() {
+    case "${wizard_storage_type}" in
+    mysql)
+        "${MEMOS_BIN}" --port "${MEMOS_PORT}" --data "${DATA_DIR}" \
+            --driver mysql --dsn "${wizard_dsn}" >>"${LOG_FILE}" 2>&1 &
+        ;;
+    postgres)
+        "${MEMOS_BIN}" --port "${MEMOS_PORT}" --data "${DATA_DIR}" \
+            --driver postgres --dsn "${wizard_dsn}" >>"${LOG_FILE}" 2>&1 &
+        ;;
+    *)
+        # 本地 SQLite：不传 --driver/--dsn，数据库落在数据目录
+        "${MEMOS_BIN}" --port "${MEMOS_PORT}" --data "${DATA_DIR}" >>"${LOG_FILE}" 2>&1 &
+        ;;
+    esac
+    MEMOS_PID=$!
+}
 
 log_msg() {
     echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >>"${LOG_FILE}"
@@ -85,9 +97,14 @@ start_process() {
     cleanup_orphans
 
     log_msg "Starting Memos (storage: ${wizard_storage_type:-local}) ..."
-    bash -c "${CMD}" >>"${LOG_FILE}" 2>&1 &
-    printf "%s" "$!" >"${PID_FILE}"
-    log_msg "Memos started with pid $!"
+    MEMOS_PID=""
+    start_memos
+    if [ -z "${MEMOS_PID}" ]; then
+        log_msg "启动失败：未能获得进程号"
+        return 1
+    fi
+    printf "%s" "${MEMOS_PID}" >"${PID_FILE}"
+    log_msg "Memos started with pid ${MEMOS_PID}"
     return 0
 }
 
