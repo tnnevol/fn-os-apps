@@ -1,9 +1,0 @@
-#!/bin/bash
-
-### This script is called after the user change environment variables in application setting page.
-
-# 本脚本以**包用户**身份运行（真机取证 uid=813，不在 docker 组），
-# 在这里执行 docker 命令一律 permission denied；而且平台会检查退出码，
-# 失败会让「保存并重启」直接返回 code:10000。配置变更生效由 cmd/main 负责，
-# 那里以 root 运行、可操作 Docker，且同样能拿到新的向导值。
-exit 0

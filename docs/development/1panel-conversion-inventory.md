@@ -249,7 +249,6 @@ description: 1Panel 应用商店 265 个应用的 fnOS 转换分级、改造点�
 | P3 | `blinko` | Blinko | `blinkospace/blinko:1.8.8` | 状态落 `./data`；服务选择器联动；外部数据库 | 1 |
 | P3 | `casdoor` | Casdoor | `casbin/casdoor:4.18.0` | 状态落 `./data`；服务选择器联动；外部数据库 | 1 |
 | P3 | `cloudreve` | Cloudreve | `cloudreve/cloudreve:4.19.1` | 状态落 `./data`；服务选择器联动；外部数据库；Redis | 1 |
-| P3 | `discourse` | Discourse | `bitnamilegacy/discourse:3.5.0` | 状态落 `./data`；服务选择器联动；外部数据库；Redis；多容器×2 | 1 |
 | P3 | `dvwa` | DVWA | `ghcr.io/digininja/dvwa:latest` | 服务选择器联动；外部数据库；仅 amd64 | 1 |
 | P3 | `emlog` | emlog | `emlog/emlog:pro-latest-php8.2-nginx` | 状态落 `./data`；服务选择器联动；外部数据库 | 1 |
 | P3 | `firefly-iii` | Firefly III | `fireflyiii/core:version-6.4.2` | 状态落 `./data`；服务选择器联动；外部数据库 | 1 |

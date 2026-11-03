@@ -151,7 +151,7 @@ lastVerified: 2026-10-09
 | PLAN-FNOS-001-T03-01 | 数据库联动方案：把上游 `type: apps`/`service` 联动字段拆成 fnOS 向导的显式连接字段（参考 [fn-halo](/apps/fn-halo) 的 `DB_TYPE`/`DB_HOST`/`DB_USERNAME`/`DB_PASSWORD`） |
 | PLAN-FNOS-001-T03-02 | Redis 类：`manifest` 声明 `install_dep_apps=redis`，连接串由向导提供（参考 [fn-new-api](/apps/fn-new-api)） |
 | PLAN-FNOS-001-T03-03 | 多端口应用（`nginx-proxy-manager`、`sftpgo`、`adguardhome`、`openlist`）拆成独立向导字段与入口，非 HTTP 端口默认不暴露桌面入口 |
-| PLAN-FNOS-001-T03-04 | 多容器应用（`affine`、`discourse`、`tailchat`、`twenty`、`zabbix-server`、`rocketmq`、`langbot`）确认 compose 内服务互通与数据卷归属 |
+| PLAN-FNOS-001-T03-04 | 多容器应用（`affine`、`tailchat`、`twenty`、`zabbix-server`、`rocketmq`、`langbot`）确认 compose 内服务互通与数据卷归属 |
 | PLAN-FNOS-001-T03-05 | 试点 5 个：`umami`(350)、`nginx-proxy-manager`(90)、`sftpgo`(80)、`openlist`(65)、`gitea`(53)；试点通过后再排剩余 68 个 |
 
 前置条件：`zabbix-agent`、`zabbix-proxy`、`zabbix-server`、`gitea` 这类应用在 1Panel 里靠「服务选择器」自动填数据库地址，fnOS 没有等价能力，必须先在交互上验证「手填连接串 + 连接失败提示」是可接受的用户路径。

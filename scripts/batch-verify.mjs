@@ -443,7 +443,7 @@ function buildParams(wizardInfo) {
     if (process.env.FNOS_MIDDLEWARE_READY === '1') {
       const kUp = String(key).toUpperCase();
       // 决定用哪套凭据的，是**该应用自己声明的数据库类型**，不是全局环境变量。
-      // 之前用 FNOS_DB_TYPE 判断，导致本来要 PostgreSQL 的应用（discourse）
+      // 之前用 FNOS_DB_TYPE 判断，导致声明 PostgreSQL 的应用
       // 被强制套上 MySQL 的账号密码，连库必然失败。
       // 优先级：向导里的 initValue → 环境变量兜底。
       const pgMode = appIsPg;
@@ -454,7 +454,7 @@ function buildParams(wizardInfo) {
         val = pgMode ? (process.env.FNOS_PG_PASSWORD || process.env.FNOS_DB_PASSWORD) : process.env.FNOS_DB_PASSWORD;
         filled.push(key);
       } else if (/^DB_TYPE$/.test(kUp)) {
-        // 只在应用没声明类型时才用环境变量兜底；应用已声明（如 discourse 的 postgres）
+        // 只在应用没声明类型时才用环境变量兜底；应用已声明（如 postgres）
         // 就必须尊重，否则会把它指向错误的数据库引擎。
         if (!it.initValue && process.env.FNOS_DB_TYPE) {
           val = process.env.FNOS_DB_TYPE; filled.push(key);
