@@ -9,8 +9,16 @@
     return I18N ? I18N.t(key) : key;
   }
 
-  // 记住最近一次检测结果，语言切换后据此重绘状态徽标（避免丢失「可升级 / 已是最新」）
-  var lastState = { hasUpdate: null, hasBoth: false, checking: false, upgrading: false };
+  // 记住最近一次检测结果，语言切换后据此重绘状态徽标与占位文案
+  // （避免丢失「可升级 / 已是最新」，也避免「无法获取」这类兜底文案停留在旧语言）
+  var lastState = {
+    hasUpdate: null,
+    hasBoth: false,
+    checking: false,
+    upgrading: false,
+    currentVersion: null, // null = 还没检测完（显示 spinner）
+    latestVersion: null,
+  };
 
   // --- Dialog ---
 
@@ -89,6 +97,11 @@
     return s.outerHTML + " " + label;
   }
 
+  /** 渲染版本号；取不到时用当前语言的兜底文案（fallbackKey） */
+  function renderVersion(value, fallbackKey) {
+    return value && String(value).length ? String(value) : t(fallbackKey);
+  }
+
   // --- API ---
 
   async function api(action) {
@@ -107,6 +120,8 @@
     var statusRow = $("statusRow");
 
     lastState.checking = true;
+    lastState.currentVersion = null;
+    lastState.latestVersion = null;
     checkBtn.disabled = true;
     setEl("checkBtn", spinnerHtml(t("checking")));
     statusRow.style.display = "none";
@@ -114,8 +129,12 @@
     var data = await api("check");
 
     lastState.checking = false;
-    setEl("currentVersion", data.current_version || t("notDetected"));
-    setEl("latestVersion", data.latest_version || t("fetchFailed"));
+    // 只存原始值（可能为 undefined），兜底文案在渲染时按当前语言取，
+    // 这样切换语言后「无法获取 / 未检测到」也能跟着变。
+    lastState.currentVersion = data.current_version || "";
+    lastState.latestVersion = data.latest_version || "";
+    setEl("currentVersion", renderVersion(lastState.currentVersion, "notDetected"));
+    setEl("latestVersion", renderVersion(lastState.latestVersion, "fetchFailed"));
 
     if (data.error) {
       createDialog(t("checkFailedTitle"), data.error, {
@@ -231,13 +250,18 @@
       setEl("upgradeBtn", t("upgrade"));
     }
 
-    var cur = $("currentVersion");
-    if (cur && cur.querySelector(".spinner")) {
+    // 版本号区域：检测中显示 spinner，检测完按原始值 + 当前语言重绘
+    // （「无法获取 / 未检测到」这类兜底文案必须跟着语言走）
+    if (lastState.checking || lastState.currentVersion === null) {
       setEl("currentVersion", spinnerHtml(t("detecting")));
+    } else {
+      setEl("currentVersion", renderVersion(lastState.currentVersion, "notDetected"));
     }
-    var lat = $("latestVersion");
-    if (lat && lat.querySelector(".spinner")) {
+
+    if (lastState.checking || lastState.latestVersion === null) {
       setEl("latestVersion", spinnerHtml(t("detecting")));
+    } else {
+      setEl("latestVersion", renderVersion(lastState.latestVersion, "fetchFailed"));
     }
 
     if (lastState.hasUpdate === true) {
