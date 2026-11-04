@@ -1,0 +1,48 @@
+[common]
+displayName="Memos"
+desc="Memos est un outil de prise de notes léger et auto-hébergé, avec prise en charge de Markdown, gestion des tags et synchronisation multi-appareils."
+changelog="Memos mis à jour vers 0.31.0 ; panneau de l'application localisé pour Fygo OS."
+
+[entry]
+title="Memos"
+desc="Rédiger, organiser et synchroniser vos notes."
+adminTitle="Administration de Memos"
+adminDesc="Gérer le service Memos et sa configuration."
+
+[install]
+stepTitle="Configuration de base de Memos"
+portLabel="Port du service"
+portHelpText="Port d'écoute de Memos. Un redémarrage est nécessaire après modification."
+portRequiredMessage="Veuillez saisir le port du service"
+portPatternMessage="Le port doit être un entier positif"
+storageLabel="Stockage des données"
+storageHelpText="Avec MySQL ou PostgreSQL, la DSN ci-dessous est obligatoire et la base de données cible doit déjà exister."
+storageOptionLocal="SQLite local (par défaut, aucune configuration supplémentaire)"
+storageOptionMysql="MySQL"
+storageOptionPostgres="PostgreSQL"
+storageRequiredMessage="Veuillez choisir un mode de stockage"
+dsnLabel="Chaîne de connexion à la base de données (DSN)"
+dsnHelpText="Laisser vide pour SQLite local. Pour une base externe, utiliser user:password@tcp(host:port)/db?charset=utf8mb4&parseTime=True&loc=Local avec MySQL, ou postgres://user:password@host:port/db?sslmode=disable (ou les paires clé-valeur host=... port=... user=... password=... dbname=... sslmode=disable) avec PostgreSQL. Si la base est sur cet appareil, indiquer 127.0.0.1 comme host. Les caractères @ : / ? # du mot de passe doivent être encodés en URL. Memos ne fait que se connecter : il ne crée ni la base ni le compte. Un redémarrage est nécessaire après modification."
+
+[uninstall]
+stepTitle="Confirmer la désinstallation"
+tipsHelpText="Vous êtes sur le point de désinstaller Memos. Choisissez le traitement des données de l'application :"
+dataLabel="Conservation des données"
+dataRequiredMessage="Veuillez choisir une option de conservation des données"
+optionKeepLabel="Conserver les données (recommandé) - restaurées lors d'une réinstallation"
+optionDeleteLabel="Supprimer toutes les données - cette action est irréversible !"
+warningHelpText="<strong>Avertissement :</strong> en choisissant de supprimer les données, toutes les notes et configurations seront définitivement perdues et irrécupérables."
+
+[config]
+stepTitle="Configuration de base de Memos"
+portLabel="Port du service"
+portHelpText="Port d'écoute de Memos. Un redémarrage est nécessaire après modification."
+portRequiredMessage="Veuillez saisir le port du service"
+portPatternMessage="Le port doit être un entier positif"
+storageLabel="Stockage des données"
+storageHelpText="Avec MySQL ou PostgreSQL, la DSN ci-dessous est obligatoire et la base de données cible doit déjà exister."
+storageOptionLocal="SQLite local (par défaut)"
+storageOptionMysql="MySQL"
+storageOptionPostgres="PostgreSQL"
+dsnLabel="Chaîne de connexion à la base de données (DSN)"
+dsnHelpText="Laisser vide pour SQLite local. Pour une base externe, utiliser user:password@tcp(host:port)/db?charset=utf8mb4&parseTime=True&loc=Local avec MySQL, ou postgres://user:password@host:port/db?sslmode=disable (ou les paires clé-valeur host=... port=... user=... password=... dbname=... sslmode=disable) avec PostgreSQL. Si la base est sur cet appareil, indiquer 127.0.0.1 comme host. Les caractères @ : / ? # du mot de passe doivent être encodés en URL. Memos ne fait que se connecter : il ne crée ni la base ni le compte. Un redémarrage est nécessaire après modification."

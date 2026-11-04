@@ -1,0 +1,48 @@
+[common]
+displayName="Memos"
+desc="Memos ist ein leichtes, selbst gehostetes Notizwerkzeug mit Markdown-Unterstützung, Tag-Verwaltung und Synchronisierung über mehrere Geräte."
+changelog="Memos auf 0.31.0 aktualisiert; App-Panel für Fygo OS lokalisiert."
+
+[entry]
+title="Memos"
+desc="Notizen schreiben, organisieren und synchronisieren."
+adminTitle="Memos Verwaltung"
+adminDesc="Memos-Dienst und dessen Konfiguration verwalten."
+
+[install]
+stepTitle="Memos Grundeinstellungen"
+portLabel="Dienstport"
+portHelpText="Port, auf dem Memos lauscht. Nach einer Änderung ist ein Neustart erforderlich."
+portRequiredMessage="Bitte den Dienstport eingeben"
+portPatternMessage="Der Port muss eine positive Ganzzahl sein"
+storageLabel="Datenspeicherung"
+storageHelpText="Bei MySQL oder PostgreSQL muss die DSN unten angegeben werden; die Zieldatenbank muss bereits existieren."
+storageOptionLocal="Lokales SQLite (Standard, keine weitere Konfiguration)"
+storageOptionMysql="MySQL"
+storageOptionPostgres="PostgreSQL"
+storageRequiredMessage="Bitte eine Speichermethode auswählen"
+dsnLabel="Datenbank-Verbindungszeichenfolge (DSN)"
+dsnHelpText="Für lokales SQLite leer lassen. Für eine externe Datenbank bei MySQL user:password@tcp(host:port)/db?charset=utf8mb4&parseTime=True&loc=Local verwenden, bei PostgreSQL postgres://user:password@host:port/db?sslmode=disable (oder Schlüssel-Wert-Paare host=... port=... user=... password=... dbname=... sslmode=disable). Läuft die Datenbank auf diesem Gerät, als host 127.0.0.1 eintragen. Zeichen wie @ : / ? # im Passwort müssen URL-kodiert werden. Memos verbindet sich nur und legt weder Datenbank noch Benutzerkonto an. Nach einer Änderung ist ein Neustart erforderlich."
+
+[uninstall]
+stepTitle="Deinstallation bestätigen"
+tipsHelpText="Sie sind dabei, Memos zu deinstallieren. Bitte wählen Sie den Umgang mit den Anwendungsdaten:"
+dataLabel="Datenaufbewahrung"
+dataRequiredMessage="Bitte eine Option zur Datenaufbewahrung auswählen"
+optionKeepLabel="Daten behalten (empfohlen) - nach Neuinstallation wiederherstellbar"
+optionDeleteLabel="Alle Daten löschen - dieser Vorgang kann nicht rückgängig gemacht werden!"
+warningHelpText="<strong>Warnung:</strong> Wenn Sie das Löschen der Daten wählen, gehen alle Notizen und Konfigurationen dauerhaft verloren und können nicht wiederhergestellt werden."
+
+[config]
+stepTitle="Memos Grundeinstellungen"
+portLabel="Dienstport"
+portHelpText="Port, auf dem Memos lauscht. Nach einer Änderung ist ein Neustart erforderlich."
+portRequiredMessage="Bitte den Dienstport eingeben"
+portPatternMessage="Der Port muss eine positive Ganzzahl sein"
+storageLabel="Datenspeicherung"
+storageHelpText="Bei MySQL oder PostgreSQL muss die DSN unten angegeben werden; die Zieldatenbank muss bereits existieren."
+storageOptionLocal="Lokales SQLite (Standard)"
+storageOptionMysql="MySQL"
+storageOptionPostgres="PostgreSQL"
+dsnLabel="Datenbank-Verbindungszeichenfolge (DSN)"
+dsnHelpText="Für lokales SQLite leer lassen. Für eine externe Datenbank bei MySQL user:password@tcp(host:port)/db?charset=utf8mb4&parseTime=True&loc=Local verwenden, bei PostgreSQL postgres://user:password@host:port/db?sslmode=disable (oder Schlüssel-Wert-Paare host=... port=... user=... password=... dbname=... sslmode=disable). Läuft die Datenbank auf diesem Gerät, als host 127.0.0.1 eintragen. Zeichen wie @ : / ? # im Passwort müssen URL-kodiert werden. Memos verbindet sich nur und legt weder Datenbank noch Benutzerkonto an. Nach einer Änderung ist ein Neustart erforderlich."

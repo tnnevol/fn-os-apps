@@ -1,0 +1,48 @@
+[common]
+displayName="Memos"
+desc="Memos es una herramienta de notas ligera y autoalojada, con compatibilidad con Markdown, gestión de etiquetas y sincronización entre dispositivos."
+changelog="Memos actualizado a 0.31.0; panel de la aplicación localizado para Fygo OS."
+
+[entry]
+title="Memos"
+desc="Escribe, organiza y sincroniza tus notas."
+adminTitle="Administración de Memos"
+adminDesc="Gestiona el servicio Memos y su configuración."
+
+[install]
+stepTitle="Configuración básica de Memos"
+portLabel="Puerto del servicio"
+portHelpText="Puerto en el que escucha Memos. Es necesario reiniciar tras modificarlo."
+portRequiredMessage="Introduce el puerto del servicio"
+portPatternMessage="El puerto debe ser un número entero positivo"
+storageLabel="Almacenamiento de datos"
+storageHelpText="Con MySQL o PostgreSQL es obligatorio indicar el DSN de abajo, y la base de datos de destino debe existir previamente."
+storageOptionLocal="SQLite local (predeterminado, sin configuración adicional)"
+storageOptionMysql="MySQL"
+storageOptionPostgres="PostgreSQL"
+storageRequiredMessage="Selecciona un método de almacenamiento"
+dsnLabel="Cadena de conexión a la base de datos (DSN)"
+dsnHelpText="Déjalo vacío para SQLite local. Para una base de datos externa usa user:password@tcp(host:port)/db?charset=utf8mb4&parseTime=True&loc=Local con MySQL, o postgres://user:password@host:port/db?sslmode=disable (o los pares clave-valor host=... port=... user=... password=... dbname=... sslmode=disable) con PostgreSQL. Si la base de datos está en este equipo, indica 127.0.0.1 como host. Los caracteres @ : / ? # de la contraseña deben codificarse en URL. Memos solo se conecta: no crea la base de datos ni la cuenta. Es necesario reiniciar tras modificarlo."
+
+[uninstall]
+stepTitle="Confirmar desinstalación"
+tipsHelpText="Vas a desinstalar Memos. Elige cómo tratar los datos de la aplicación:"
+dataLabel="Conservación de datos"
+dataRequiredMessage="Selecciona una opción de conservación de datos"
+optionKeepLabel="Conservar los datos (recomendado) - se restauran al reinstalar"
+optionDeleteLabel="Eliminar todos los datos - ¡esta acción no se puede deshacer!"
+warningHelpText="<strong>Aviso:</strong> si eliges eliminar los datos, todas las notas y la configuración se perderán de forma permanente y no podrán recuperarse."
+
+[config]
+stepTitle="Configuración básica de Memos"
+portLabel="Puerto del servicio"
+portHelpText="Puerto en el que escucha Memos. Es necesario reiniciar tras modificarlo."
+portRequiredMessage="Introduce el puerto del servicio"
+portPatternMessage="El puerto debe ser un número entero positivo"
+storageLabel="Almacenamiento de datos"
+storageHelpText="Con MySQL o PostgreSQL es obligatorio indicar el DSN de abajo, y la base de datos de destino debe existir previamente."
+storageOptionLocal="SQLite local (predeterminado)"
+storageOptionMysql="MySQL"
+storageOptionPostgres="PostgreSQL"
+dsnLabel="Cadena de conexión a la base de datos (DSN)"
+dsnHelpText="Déjalo vacío para SQLite local. Para una base de datos externa usa user:password@tcp(host:port)/db?charset=utf8mb4&parseTime=True&loc=Local con MySQL, o postgres://user:password@host:port/db?sslmode=disable (o los pares clave-valor host=... port=... user=... password=... dbname=... sslmode=disable) con PostgreSQL. Si la base de datos está en este equipo, indica 127.0.0.1 como host. Los caracteres @ : / ? # de la contraseña deben codificarse en URL. Memos solo se conecta: no crea la base de datos ni la cuenta. Es necesario reiniciar tras modificarlo."

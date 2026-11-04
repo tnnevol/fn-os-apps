@@ -1,0 +1,48 @@
+[common]
+displayName="Memos"
+desc="Memos는 가벼운 자체 호스팅 메모 도구로, Markdown 작성, 태그 관리, 여러 기기 간 동기화를 지원합니다."
+changelog="Memos를 0.31.0으로 업데이트하고 Fygo OS 패널 다국어를 적용했습니다."
+
+[entry]
+title="Memos"
+desc="메모를 작성하고 정리하고 동기화합니다."
+adminTitle="Memos 관리"
+adminDesc="Memos 서비스와 설정을 관리합니다."
+
+[install]
+stepTitle="Memos 기본 설정"
+portLabel="서비스 포트"
+portHelpText="Memos가 수신하는 포트입니다. 변경 후에는 재시작해야 적용됩니다."
+portRequiredMessage="서비스 포트를 입력하세요"
+portPatternMessage="포트는 양의 정수여야 합니다"
+storageLabel="데이터 저장 방식"
+storageHelpText="MySQL / PostgreSQL을 선택하면 아래 DSN을 반드시 입력해야 하며, 대상 데이터베이스는 미리 생성되어 있어야 합니다."
+storageOptionLocal="로컬 SQLite (기본, 추가 설정 불필요)"
+storageOptionMysql="MySQL"
+storageOptionPostgres="PostgreSQL"
+storageRequiredMessage="데이터 저장 방식을 선택하세요"
+dsnLabel="데이터베이스 연결 문자열(DSN)"
+dsnHelpText="로컬 SQLite는 비워 두세요. 외부 데이터베이스는 MySQL의 경우 user:password@tcp(host:port)/db?charset=utf8mb4&parseTime=True&loc=Local, PostgreSQL의 경우 postgres://user:password@host:port/db?sslmode=disable(또는 host=... port=... user=... password=... dbname=... sslmode=disable 키-값 형식)을 사용합니다. 데이터베이스가 이 기기에 있으면 host에 127.0.0.1을 입력하세요. 비밀번호에 @ : / ? # 가 포함되면 URL 인코딩해야 합니다. Memos는 연결만 하며 데이터베이스와 계정은 생성하지 않습니다. 변경 후에는 재시작해야 적용됩니다."
+
+[uninstall]
+stepTitle="제거 확인"
+tipsHelpText="Memos를 제거하려고 합니다. 애플리케이션 데이터 처리 방법을 선택하세요:"
+dataLabel="데이터 보존"
+dataRequiredMessage="데이터 보존 옵션을 선택하세요"
+optionKeepLabel="데이터 보존(권장) - 재설치 시 복원 가능"
+optionDeleteLabel="모든 데이터 삭제 - 이 작업은 되돌릴 수 없습니다!"
+warningHelpText="<strong>경고:</strong> 데이터 삭제를 선택하면 모든 메모와 설정이 영구적으로 사라지며 복구할 수 없습니다."
+
+[config]
+stepTitle="Memos 기본 설정"
+portLabel="서비스 포트"
+portHelpText="Memos가 수신하는 포트입니다. 변경 후에는 재시작해야 적용됩니다."
+portRequiredMessage="서비스 포트를 입력하세요"
+portPatternMessage="포트는 양의 정수여야 합니다"
+storageLabel="데이터 저장 방식"
+storageHelpText="MySQL / PostgreSQL을 선택하면 아래 DSN을 반드시 입력해야 하며, 대상 데이터베이스는 미리 생성되어 있어야 합니다."
+storageOptionLocal="로컬 SQLite (기본)"
+storageOptionMysql="MySQL"
+storageOptionPostgres="PostgreSQL"
+dsnLabel="데이터베이스 연결 문자열(DSN)"
+dsnHelpText="로컬 SQLite는 비워 두세요. 외부 데이터베이스는 MySQL의 경우 user:password@tcp(host:port)/db?charset=utf8mb4&parseTime=True&loc=Local, PostgreSQL의 경우 postgres://user:password@host:port/db?sslmode=disable(또는 host=... port=... user=... password=... dbname=... sslmode=disable 키-값 형식)을 사용합니다. 데이터베이스가 이 기기에 있으면 host에 127.0.0.1을 입력하세요. 비밀번호에 @ : / ? # 가 포함되면 URL 인코딩해야 합니다. Memos는 연결만 하며 데이터베이스와 계정은 생성하지 않습니다. 변경 후에는 재시작해야 적용됩니다."

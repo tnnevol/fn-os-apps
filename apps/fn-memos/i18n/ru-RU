@@ -1,0 +1,48 @@
+[common]
+displayName="Memos"
+desc="Memos — лёгкий инструмент для заметок с самостоятельным хостингом, поддержкой Markdown, управлением тегами и синхронизацией между устройствами."
+changelog="Memos обновлён до 0.31.0; панель приложения локализована для Fygo OS."
+
+[entry]
+title="Memos"
+desc="Пишите, упорядочивайте и синхронизируйте заметки."
+adminTitle="Управление Memos"
+adminDesc="Управление службой Memos и её настройками."
+
+[install]
+stepTitle="Базовая настройка Memos"
+portLabel="Порт службы"
+portHelpText="Порт, на котором слушает Memos. После изменения требуется перезапуск."
+portRequiredMessage="Введите порт службы"
+portPatternMessage="Порт должен быть положительным целым числом"
+storageLabel="Хранение данных"
+storageHelpText="При выборе MySQL или PostgreSQL обязательно заполните DSN ниже; целевая база данных должна быть создана заранее."
+storageOptionLocal="Локальный SQLite (по умолчанию, без дополнительной настройки)"
+storageOptionMysql="MySQL"
+storageOptionPostgres="PostgreSQL"
+storageRequiredMessage="Выберите способ хранения данных"
+dsnLabel="Строка подключения к базе данных (DSN)"
+dsnHelpText="Для локального SQLite оставьте пустым. Для внешней базы используйте user:password@tcp(host:port)/db?charset=utf8mb4&parseTime=True&loc=Local для MySQL или postgres://user:password@host:port/db?sslmode=disable (либо пары host=... port=... user=... password=... dbname=... sslmode=disable) для PostgreSQL. Если база данных находится на этом устройстве, укажите в host 127.0.0.1. Символы @ : / ? # в пароле нужно кодировать в URL. Memos только подключается и не создаёт базу данных или учётную запись. После изменения требуется перезапуск."
+
+[uninstall]
+stepTitle="Подтверждение удаления"
+tipsHelpText="Вы собираетесь удалить Memos. Выберите, что делать с данными приложения:"
+dataLabel="Сохранение данных"
+dataRequiredMessage="Выберите вариант сохранения данных"
+optionKeepLabel="Сохранить данные (рекомендуется) - можно восстановить при повторной установке"
+optionDeleteLabel="Удалить все данные - это действие необратимо!"
+warningHelpText="<strong>Внимание:</strong> при выборе удаления данных все заметки и настройки будут безвозвратно утеряны."
+
+[config]
+stepTitle="Базовая настройка Memos"
+portLabel="Порт службы"
+portHelpText="Порт, на котором слушает Memos. После изменения требуется перезапуск."
+portRequiredMessage="Введите порт службы"
+portPatternMessage="Порт должен быть положительным целым числом"
+storageLabel="Хранение данных"
+storageHelpText="При выборе MySQL или PostgreSQL обязательно заполните DSN ниже; целевая база данных должна быть создана заранее."
+storageOptionLocal="Локальный SQLite (по умолчанию)"
+storageOptionMysql="MySQL"
+storageOptionPostgres="PostgreSQL"
+dsnLabel="Строка подключения к базе данных (DSN)"
+dsnHelpText="Для локального SQLite оставьте пустым. Для внешней базы используйте user:password@tcp(host:port)/db?charset=utf8mb4&parseTime=True&loc=Local для MySQL или postgres://user:password@host:port/db?sslmode=disable (либо пары host=... port=... user=... password=... dbname=... sslmode=disable) для PostgreSQL. Если база данных находится на этом устройстве, укажите в host 127.0.0.1. Символы @ : / ? # в пароле нужно кодировать в URL. Memos только подключается и не создаёт базу данных или учётную запись. После изменения требуется перезапуск."

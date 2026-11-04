@@ -1,7 +1,7 @@
 appname               = fn-memos
 version               = 7.0.0
-display_name          = Memos
-desc                  = Memos 是一款轻量级、自托管的笔记工具，支持 Markdown 编写、标签管理和多端同步。
+display_name          = ${common.displayName}
+desc                  = ${common.desc}
 platform             = x86
 source                = thirdparty
 maintainer            = Memos Team
@@ -14,4 +14,4 @@ desktop_applaunchname = fn-memos.main
 service_port          = 5230
 disable_authorization_path = true
 checkport             = true
-changelog             = 同步升级 Memos 至 0.31.0；适配 fygopack 面板国际化
+changelog             = ${common.changelog}

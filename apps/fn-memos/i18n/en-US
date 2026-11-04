@@ -1,0 +1,48 @@
+[common]
+displayName="Memos"
+desc="Memos is a lightweight, self-hosted note-taking tool with Markdown support, tag management, and multi-device sync."
+changelog="Synced Memos to 0.31.0; localized the app panel for Fygo OS."
+
+[entry]
+title="Memos"
+desc="Write, organize, and sync your notes."
+adminTitle="Memos Admin"
+adminDesc="Manage the Memos service and its configuration."
+
+[install]
+stepTitle="Memos basic settings"
+portLabel="Service port"
+portHelpText="The port Memos listens on. A restart is required after changing it."
+portRequiredMessage="Enter the service port"
+portPatternMessage="The port must be a positive integer"
+storageLabel="Data storage"
+storageHelpText="MySQL and PostgreSQL require the DSN below, and the target database must already exist."
+storageOptionLocal="Local SQLite (default, no extra configuration)"
+storageOptionMysql="MySQL"
+storageOptionPostgres="PostgreSQL"
+storageRequiredMessage="Select a data storage method"
+dsnLabel="Database connection string (DSN)"
+dsnHelpText="Leave empty for local SQLite. For an external database, use user:password@tcp(host:port)/db?charset=utf8mb4&parseTime=True&loc=Local for MySQL, or postgres://user:password@host:port/db?sslmode=disable (or key-value pairs host=... port=... user=... password=... dbname=... sslmode=disable) for PostgreSQL. Use 127.0.0.1 as host when the database runs on this device. URL-encode @ : / ? # in passwords. Memos only connects and never creates the database or account. A restart is required after changing it."
+
+[uninstall]
+stepTitle="Confirm uninstallation"
+tipsHelpText="You are about to uninstall Memos. Choose how to handle the application data:"
+dataLabel="Data retention"
+dataRequiredMessage="Select a data retention option"
+optionKeepLabel="Keep data (recommended) - can be restored after reinstalling"
+optionDeleteLabel="Delete all data - this cannot be undone!"
+warningHelpText="<strong>Warning:</strong> After choosing to delete data, all notes and configuration are permanently lost and cannot be recovered."
+
+[config]
+stepTitle="Memos basic settings"
+portLabel="Service port"
+portHelpText="The port Memos listens on. A restart is required after changing it."
+portRequiredMessage="Enter the service port"
+portPatternMessage="The port must be a positive integer"
+storageLabel="Data storage"
+storageHelpText="MySQL and PostgreSQL require the DSN below, and the target database must already exist."
+storageOptionLocal="Local SQLite (default)"
+storageOptionMysql="MySQL"
+storageOptionPostgres="PostgreSQL"
+dsnLabel="Database connection string (DSN)"
+dsnHelpText="Leave empty for local SQLite. For an external database, use user:password@tcp(host:port)/db?charset=utf8mb4&parseTime=True&loc=Local for MySQL, or postgres://user:password@host:port/db?sslmode=disable (or key-value pairs host=... port=... user=... password=... dbname=... sslmode=disable) for PostgreSQL. Use 127.0.0.1 as host when the database runs on this device. URL-encode @ : / ? # in passwords. Memos only connects and never creates the database or account. A restart is required after changing it."

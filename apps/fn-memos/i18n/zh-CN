@@ -1,0 +1,48 @@
+[common]
+displayName="Memos"
+desc="Memos 是一款轻量级、自托管的笔记工具，支持 Markdown 编写、标签管理和多端同步。"
+changelog="同步升级 Memos 至 0.31.0；适配 Fygo OS 面板国际化。"
+
+[entry]
+title="Memos"
+desc="编写、整理并同步你的笔记。"
+adminTitle="Memos 管理"
+adminDesc="管理 Memos 服务及其配置。"
+
+[install]
+stepTitle="Memos 基础配置"
+portLabel="服务端口"
+portHelpText="Memos 监听端口，修改后需重启生效。"
+portRequiredMessage="请输入服务端口"
+portPatternMessage="端口号必须为正整数"
+storageLabel="数据存储方式"
+storageHelpText="选 MySQL / PostgreSQL 后必须填写下方 DSN，对应库需事先创建。"
+storageOptionLocal="本地 SQLite（默认，无需额外配置）"
+storageOptionMysql="MySQL"
+storageOptionPostgres="PostgreSQL"
+storageRequiredMessage="请选择数据存储方式"
+dsnLabel="数据库连接字符串（DSN）"
+dsnHelpText="本地 SQLite 留空即可。外部数据库填连接串：MySQL 用 user:password@tcp(host:port)/db?charset=utf8mb4&parseTime=True&loc=Local；PostgreSQL 用 postgres://user:password@host:port/db?sslmode=disable，或键值对 host=... port=... user=... password=... dbname=... sslmode=disable。库在本机时 host 填 127.0.0.1；密码含 @ : / ? # 需 URL 编码；Memos 只连接不建库，库与账号需事先创建；修改后需重启生效。"
+
+[uninstall]
+stepTitle="确认卸载"
+tipsHelpText="您即将卸载 Memos。请选择如何处理应用数据："
+dataLabel="数据保留选项"
+dataRequiredMessage="请选择数据保留选项"
+optionKeepLabel="保留数据（推荐） - 将来重新安装时可恢复"
+optionDeleteLabel="删除所有数据 - 此操作不可恢复！"
+warningHelpText="<strong>警告：</strong> 选择删除数据后，所有笔记和配置数据将永久丢失，无法恢复。"
+
+[config]
+stepTitle="Memos 基础配置"
+portLabel="服务端口"
+portHelpText="Memos 监听端口，修改后需重启生效。"
+portRequiredMessage="请输入服务端口"
+portPatternMessage="端口号必须为正整数"
+storageLabel="数据存储方式"
+storageHelpText="选 MySQL / PostgreSQL 后必须填写下方 DSN，对应库需事先创建。"
+storageOptionLocal="本地 SQLite（默认）"
+storageOptionMysql="MySQL"
+storageOptionPostgres="PostgreSQL"
+dsnLabel="数据库连接字符串（DSN）"
+dsnHelpText="本地 SQLite 留空即可。外部数据库填连接串：MySQL 用 user:password@tcp(host:port)/db?charset=utf8mb4&parseTime=True&loc=Local；PostgreSQL 用 postgres://user:password@host:port/db?sslmode=disable，或键值对 host=... port=... user=... password=... dbname=... sslmode=disable。库在本机时 host 填 127.0.0.1；密码含 @ : / ? # 需 URL 编码；Memos 只连接不建库，库与账号需事先创建；修改后需重启生效。"

@@ -1,0 +1,48 @@
+[common]
+displayName="Memos"
+desc="Memos は軽量なセルフホスト型メモツールです。Markdown での作成、タグ管理、複数端末間の同期に対応しています。"
+changelog="Memos を 0.31.0 に更新、Fygo OS 向けにパネルの多言語対応を追加しました。"
+
+[entry]
+title="Memos"
+desc="メモを書き、整理し、同期します。"
+adminTitle="Memos 管理"
+adminDesc="Memos サービスと設定を管理します。"
+
+[install]
+stepTitle="Memos 基本設定"
+portLabel="サービスポート"
+portHelpText="Memos が待ち受けるポートです。変更後は再起動が必要です。"
+portRequiredMessage="サービスポートを入力してください"
+portPatternMessage="ポートは正の整数で指定してください"
+storageLabel="データ保存方式"
+storageHelpText="MySQL / PostgreSQL を選ぶ場合は下の DSN が必須です。対象のデータベースは事前に作成してください。"
+storageOptionLocal="ローカル SQLite（既定、追加設定不要）"
+storageOptionMysql="MySQL"
+storageOptionPostgres="PostgreSQL"
+storageRequiredMessage="データ保存方式を選択してください"
+dsnLabel="データベース接続文字列（DSN）"
+dsnHelpText="ローカル SQLite の場合は空欄にします。外部データベースの場合、MySQL は user:password@tcp(host:port)/db?charset=utf8mb4&parseTime=True&loc=Local、PostgreSQL は postgres://user:password@host:port/db?sslmode=disable（または host=... port=... user=... password=... dbname=... sslmode=disable のキーと値の組）を指定します。データベースが本機にある場合は host に 127.0.0.1 を指定します。パスワードに @ : / ? # が含まれる場合は URL エンコードしてください。Memos は接続のみを行い、データベースやアカウントは作成しません。変更後は再起動が必要です。"
+
+[uninstall]
+stepTitle="アンインストールの確認"
+tipsHelpText="Memos をアンインストールしようとしています。アプリデータの扱いを選択してください:"
+dataLabel="データの保持"
+dataRequiredMessage="データの保持方法を選択してください"
+optionKeepLabel="データを保持（推奨） - 再インストール時に復元できます"
+optionDeleteLabel="すべてのデータを削除 - この操作は元に戻せません！"
+warningHelpText="<strong>警告:</strong> データの削除を選ぶと、すべてのメモと設定が完全に失われ、復元できません。"
+
+[config]
+stepTitle="Memos 基本設定"
+portLabel="サービスポート"
+portHelpText="Memos が待ち受けるポートです。変更後は再起動が必要です。"
+portRequiredMessage="サービスポートを入力してください"
+portPatternMessage="ポートは正の整数で指定してください"
+storageLabel="データ保存方式"
+storageHelpText="MySQL / PostgreSQL を選ぶ場合は下の DSN が必須です。対象のデータベースは事前に作成してください。"
+storageOptionLocal="ローカル SQLite（既定）"
+storageOptionMysql="MySQL"
+storageOptionPostgres="PostgreSQL"
+dsnLabel="データベース接続文字列（DSN）"
+dsnHelpText="ローカル SQLite の場合は空欄にします。外部データベースの場合、MySQL は user:password@tcp(host:port)/db?charset=utf8mb4&parseTime=True&loc=Local、PostgreSQL は postgres://user:password@host:port/db?sslmode=disable（または host=... port=... user=... password=... dbname=... sslmode=disable のキーと値の組）を指定します。データベースが本機にある場合は host に 127.0.0.1 を指定します。パスワードに @ : / ? # が含まれる場合は URL エンコードしてください。Memos は接続のみを行い、データベースやアカウントは作成しません。変更後は再起動が必要です。"

@@ -1,7 +1,8 @@
 {
   ".url": {
     "fn-memos.main": {
-      "title": "Memos",
+      "title": "${entry.title}",
+      "desc": "${entry.desc}",
       "icon": "images/icon_{0}.png",
       "type": "iframe",
       "protocol": "http",
@@ -10,7 +11,8 @@
       "allUsers": false
     },
     "fn-memos.upgrade": {
-      "title": "Memos 管理",
+      "title": "${entry.adminTitle}",
+      "desc": "${entry.adminDesc}",
       "icon": "images/icon_{0}.png",
       "type": "iframe",
       "protocol": "http",
