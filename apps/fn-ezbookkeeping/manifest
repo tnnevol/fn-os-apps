@@ -1,5 +1,5 @@
 appname               = fn-ezbookkeeping
-version               = 7.0.0
+version               = 7.0.1
 display_name          = ezBookkeeping
 desc                  = ezBookkeeping 是轻量记账工具，支持多账户、多币种与报表统计
 platform              = x86

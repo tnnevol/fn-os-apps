@@ -1,5 +1,5 @@
 appname               = fn-mliev-dwz
-version               = 7.0.0
+version               = 7.0.1
 display_name          = DWZ
 desc                  = DWZ 是短链接服务，支持自定义短码与访问统计
 platform              = x86

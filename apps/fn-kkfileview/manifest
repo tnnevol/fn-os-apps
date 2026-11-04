@@ -1,5 +1,5 @@
 appname               = fn-kkfileview
-version               = 7.0.0
+version               = 7.0.1
 display_name          = kkFileView
 desc                  = kkFileView 是文件在线预览服务，支持 office、pdf、图片等多种格式
 platform              = x86

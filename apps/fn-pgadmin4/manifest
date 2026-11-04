@@ -1,5 +1,5 @@
 appname               = fn-pgadmin4
-version               = 7.0.0
+version               = 7.0.1
 display_name          = pgAdmin 4
 desc                  = pgAdmin 是 PostgreSQL 的图形化管理工具，通过浏览器管理数据库
 platform              = x86

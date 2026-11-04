@@ -1,5 +1,5 @@
 appname               = fn-logto
-version               = 7.0.0
+version               = 7.0.1
 display_name          = Logto
 desc                  = Logto 是面向开发者的身份认证服务，提供 OIDC 登录、用户管理与多租户
 platform              = x86

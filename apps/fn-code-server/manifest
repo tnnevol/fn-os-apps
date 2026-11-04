@@ -1,5 +1,5 @@
 appname               = fn-code-server
-version               = 7.0.0
+version               = 7.0.1
 display_name          = code-server
 desc                  = 浏览器中的 VS Code，可在任意设备上通过网页使用完整的开发环境
 platform              = x86

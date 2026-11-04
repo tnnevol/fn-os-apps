@@ -1,5 +1,5 @@
 appname               = fn-cloudreve
-version               = 7.0.0
+version               = 7.0.1
 display_name          = Cloudreve
 desc                  = Cloudreve 是自托管的网盘系统，支持多种存储策略与离线下载
 platform              = x86

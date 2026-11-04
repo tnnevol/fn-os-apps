@@ -1,5 +1,5 @@
 appname               = fn-answer
-version               = 7.0.0
+version               = 7.0.1
 display_name          = Answer
 desc                  = 适用于任何规模团队的问答平台软件，支持提问、回答与内容协作
 platform              = x86

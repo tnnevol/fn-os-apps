@@ -1,6 +1,6 @@
 {
   "name": "@tnnevol/fn-os-apps-docs",
-  "version": "7.0.0",
+  "version": "7.0.1",
   "private": true,
   "description": "VitePress documentation for fn-os-apps.",
   "scripts": {

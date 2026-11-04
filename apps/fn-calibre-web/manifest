@@ -1,5 +1,5 @@
 appname               = fn-calibre-web
-version               = 7.0.0
+version               = 7.0.1
 display_name          = Calibre-Web
 desc                  = Calibre-Web 是基于浏览器的电子书库，管理 Calibre 书库并提供在线阅读
 platform              = x86

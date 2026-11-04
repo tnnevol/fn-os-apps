@@ -1,5 +1,5 @@
 appname               = fn-sonarqube
-version               = 7.0.0
+version               = 7.0.1
 display_name          = SonarQube
 desc                  = SonarQube 是代码质量分析平台，检测缺陷、漏洞与代码异味
 platform              = x86

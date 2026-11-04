@@ -1,5 +1,5 @@
 appname               = fn-wordpress
-version               = 7.0.0
+version               = 7.0.1
 display_name          = WordPress
 desc                  = WordPress 是广泛使用的内容管理系统，用于搭建博客与网站
 platform              = x86

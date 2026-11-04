@@ -1,5 +1,5 @@
 appname               = fn-wikijs
-version               = 7.0.0
+version               = 7.0.1
 display_name          = Wiki.js
 desc                  = Wiki.js 是现代化的知识库系统，支持 Markdown 编辑与细粒度权限
 platform              = x86

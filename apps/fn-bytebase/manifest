@@ -1,5 +1,5 @@
 appname               = fn-bytebase
-version               = 7.0.0
+version               = 7.0.1
 display_name          = Bytebase
 desc                  = 开源数据库 DevOps 解决方案，面向团队提供数据库变更与权限管理
 platform              = x86

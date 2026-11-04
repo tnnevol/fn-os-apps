@@ -1,5 +1,5 @@
 appname               = fn-casdoor
-version               = 7.0.0
+version               = 7.0.1
 display_name          = Casdoor
 desc                  = Casdoor 是基于 OAuth 2.0 / OIDC 的身份认证与单点登录平台
 platform              = x86

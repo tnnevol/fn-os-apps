@@ -1,5 +1,5 @@
 appname               = fn-filebrowser
-version               = 7.0.0
+version               = 7.0.1
 display_name          = File Browser
 desc                  = 网页文件浏览器，可在指定目录下管理、上传与预览文件
 platform              = x86

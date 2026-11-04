@@ -1,5 +1,5 @@
 appname               = fn-jupyter-notebook
-version               = 7.0.0
+version               = 7.0.1
 display_name          = Jupyter Notebook
 desc                  = Jupyter Notebook 是交互式计算环境，用于数据分析、科学计算与教学演示
 platform              = x86

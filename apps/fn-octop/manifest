@@ -1,5 +1,5 @@
 appname               = fn-octop
-version               = 7.0.0
+version               = 7.0.1
 display_name          = Octop
 desc                  = 腾讯云 Octop 是面向企业的运维自动化与作业编排平台
 platform              = x86

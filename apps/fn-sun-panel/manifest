@@ -1,5 +1,5 @@
 appname               = fn-sun-panel
-version               = 7.0.0
+version               = 7.0.1
 display_name          = Sun-Panel
 desc                  = 服务器与 NAS 导航面板，可自定义首页快捷入口
 platform              = x86

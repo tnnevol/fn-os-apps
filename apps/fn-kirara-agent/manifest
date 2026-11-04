@@ -1,5 +1,5 @@
 appname               = fn-kirara-agent
-version               = 7.0.0
+version               = 7.0.1
 display_name          = Kirara Agent
 desc                  = Kirara Agent Framework 提供可编排的 AI 智能体运行时
 platform              = x86

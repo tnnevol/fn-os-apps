@@ -1,5 +1,5 @@
 appname               = fn-heimdall
-version               = 7.0.0
+version               = 7.0.1
 display_name          = Heimdall
 desc                  = Heimdall 是应用仪表盘，把常用服务入口集中整理到一个页面
 platform              = x86

@@ -1,5 +1,5 @@
 appname               = fn-nezha
-version               = 7.0.0
+version               = 7.0.1
 display_name          = Nezha
 desc                  = 哪吒监控是轻量的服务器监控与探针管理面板
 platform              = x86

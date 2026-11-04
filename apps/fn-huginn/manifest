@@ -1,5 +1,5 @@
 appname               = fn-huginn
-version               = 7.0.0
+version               = 7.0.1
 display_name          = Huginn
 desc                  = Huginn 是自动化代理平台，把网站与 API 的变化转化为可编程的事件流
 platform              = x86

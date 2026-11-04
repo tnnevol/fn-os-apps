@@ -1,5 +1,5 @@
 appname               = fn-zabbix-proxy
-version               = 7.0.0
+version               = 7.0.1
 display_name          = Zabbix Proxy
 desc                  = Zabbix Proxy 是 Zabbix 的代理端，代服务器采集监控数据
 platform              = x86

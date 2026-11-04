@@ -1,5 +1,5 @@
 appname               = fn-palworld-server-tool
-version               = 7.0.0
+version               = 7.0.1
 display_name          = 幻兽帕鲁服务器工具
 desc                  = Palworld Server Tool 用于查看与管理帕鲁服务器存档与玩家数据
 platform              = x86

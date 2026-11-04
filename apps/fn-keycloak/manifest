@@ -1,5 +1,5 @@
 appname               = fn-keycloak
-version               = 7.0.0
+version               = 7.0.1
 display_name          = Keycloak
 desc                  = Keycloak 是开源的身份与访问管理平台，提供单点登录与权限管理
 platform              = x86

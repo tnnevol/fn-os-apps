@@ -1,5 +1,5 @@
 appname               = fn-zabbix-agent
-version               = 7.0.0
+version               = 7.0.1
 display_name          = Zabbix Agent
 desc                  = 面向 IT 和 OT 的通用开源可观测性方案客户端，把本机指标上报给 Zabbix Server
 platform              = x86

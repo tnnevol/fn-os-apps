@@ -1,5 +1,5 @@
 appname               = fn-jellyfin
-version               = 7.0.0
+version               = 7.0.1
 display_name          = Jellyfin
 desc                  = 开源媒体系统，用于集中管理和流式播放影音库
 platform              = x86

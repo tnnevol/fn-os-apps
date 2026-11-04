@@ -1,5 +1,5 @@
 appname               = fn-excalidraw
-version               = 7.0.0
+version               = 7.0.1
 display_name          = Excalidraw
 desc                  = Excalidraw 是手绘风格的在线白板，用于画流程图、架构图与草图
 platform              = x86

@@ -1,5 +1,5 @@
 appname               = fn-nocobase
-version               = 7.0.0
+version               = 7.0.1
 display_name          = NocoBase
 desc                  = NocoBase 是面向开发者的无代码平台，用插件与数据模型快速搭建业务系统
 platform              = x86

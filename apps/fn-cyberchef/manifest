@@ -1,5 +1,5 @@
 appname               = fn-cyberchef
-version               = 7.0.0
+version               = 7.0.1
 display_name          = CyberChef
 desc                  = 浏览器中的数据编码、解码与分析工具，无需上传数据即可完成转换
 platform              = x86

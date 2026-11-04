@@ -1,5 +1,5 @@
 appname               = fn-linkding
-version               = 7.0.0
+version               = 7.0.1
 display_name          = linkding
 desc                  = 一款自托管的书签管理器，设计简洁、快速且易于部署
 platform              = x86

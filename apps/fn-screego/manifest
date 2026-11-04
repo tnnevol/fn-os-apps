@@ -1,5 +1,5 @@
 appname               = fn-screego
-version               = 7.0.0
+version               = 7.0.1
 display_name          = screego
 desc                  = screego 是面向开发者的屏幕共享工具，基于 WebRTC 提供低延迟画面
 platform              = x86

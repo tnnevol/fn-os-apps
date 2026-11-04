@@ -1,5 +1,5 @@
 appname               = fn-metabase
-version               = 7.0.0
+version               = 7.0.1
 display_name          = Metabase
 desc                  = Metabase 是开源 BI 工具，无需 SQL 即可做数据查询与可视化看板
 platform              = x86

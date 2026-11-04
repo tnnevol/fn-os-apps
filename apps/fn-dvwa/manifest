@@ -1,5 +1,5 @@
 appname               = fn-dvwa
-version               = 7.0.0
+version               = 7.0.1
 display_name          = DVWA
 desc                  = DVWA 是故意的漏洞演练靶场，用于在隔离环境中练习渗透测试
 platform              = x86

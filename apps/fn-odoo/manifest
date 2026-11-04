@@ -1,5 +1,5 @@
 appname               = fn-odoo
-version               = 7.0.0
+version               = 7.0.1
 display_name          = Odoo
 desc                  = Odoo 是开源 ERP，覆盖销售、库存、财务、人事等企业管理模块
 platform              = x86

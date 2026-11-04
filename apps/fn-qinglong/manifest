@@ -1,5 +1,5 @@
 appname               = fn-qinglong
-version               = 7.0.0
+version               = 7.0.1
 display_name          = 青龙
 desc                  = 定时任务管理平台，支持在线编写和运行 Python3、JavaScript、Shell 等脚本
 platform              = x86

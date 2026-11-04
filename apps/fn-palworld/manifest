@@ -1,5 +1,5 @@
 appname               = fn-palworld
-version               = 7.0.0
+version               = 7.0.1
 display_name          = Palworld Server
 desc                  = 幻兽帕鲁专用服务器，提供游戏联机、RCON 远程管理与 REST 接口
 platform              = x86

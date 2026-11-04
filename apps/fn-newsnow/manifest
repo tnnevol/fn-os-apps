@@ -1,5 +1,5 @@
 appname               = fn-newsnow
-version               = 7.0.0
+version               = 7.0.1
 display_name          = NewsNow
 desc                  = 优雅地阅读实时热门新闻
 platform              = x86

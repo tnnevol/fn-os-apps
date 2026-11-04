@@ -1,5 +1,5 @@
 appname               = fn-gatus
-version               = 7.0.0
+version               = 7.0.1
 display_name          = Gatus
 desc                  = 面向开发者的健康监控面板，用声明式配置持续探测服务可用性
 platform              = x86

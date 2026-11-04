@@ -1,5 +1,5 @@
 appname               = fn-yesplaymusic
-version               = 7.0.0
+version               = 7.0.1
 display_name          = YesPlayMusic
 desc                  = 高颜值的第三方网易云音乐播放器，支持登录、歌单与歌词显示
 platform              = x86

@@ -1,5 +1,5 @@
 appname               = fn-mblog
-version               = 7.0.0
+version               = 7.0.1
 display_name          = MBlog
 desc                  = 简洁的个人博客系统，支持 Markdown 写作与标签分类
 platform              = x86

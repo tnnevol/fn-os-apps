@@ -1,5 +1,5 @@
 appname               = fn-bettafish
-version               = 7.0.0
+version               = 7.0.1
 display_name          = BettaFish
 desc                  = BettaFish（微舆）是多 Agent 舆情分析助手，从公开信息中还原舆情走向
 platform              = x86

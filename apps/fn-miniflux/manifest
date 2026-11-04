@@ -1,5 +1,5 @@
 appname               = fn-miniflux
-version               = 7.0.0
+version               = 7.0.1
 display_name          = Miniflux
 desc                  = Miniflux 是极简的 RSS 阅读器，专注阅读体验与低资源占用
 platform              = x86

@@ -1,5 +1,5 @@
 appname               = fn-glance
-version               = 7.0.0
+version               = 7.0.1
 display_name          = Glance
 desc                  = Glance 是可自托管的仪表盘，把订阅源、服务状态与书签汇总到一页
 platform              = x86

@@ -1,5 +1,5 @@
 appname               = fn-discuz
-version               = 7.0.0
+version               = 7.0.1
 display_name          = Discuz!
 desc                  = Discuz! 是经典的社区论坛系统，支持版块、用户组与插件扩展
 platform              = x86

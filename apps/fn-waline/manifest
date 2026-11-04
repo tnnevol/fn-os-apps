@@ -1,5 +1,5 @@
 appname               = fn-waline
-version               = 7.0.0
+version               = 7.0.1
 display_name          = Waline
 desc                  = Waline 是带后端的评论系统，支持多站点与多种存储后端
 platform              = x86

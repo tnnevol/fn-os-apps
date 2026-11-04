@@ -1,5 +1,5 @@
 appname               = fn-it-tools
-version               = 7.0.0
+version               = 7.0.1
 display_name          = IT-Tools
 desc                  = 为开发人员提供方便的在线工具集合，涵盖加密、转换、Web、开发等常用小工具
 platform              = x86

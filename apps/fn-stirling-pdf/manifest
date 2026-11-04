@@ -1,5 +1,5 @@
 appname               = fn-stirling-pdf
-version               = 7.0.0
+version               = 7.0.1
 display_name          = Stirling PDF
 desc                  = 本地托管的 PDF 工具箱，支持合并、拆分、转换与 OCR
 platform              = x86

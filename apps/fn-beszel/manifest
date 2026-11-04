@@ -1,5 +1,5 @@
 appname               = fn-beszel
-version               = 7.0.0
+version               = 7.0.1
 display_name          = Beszel
 desc                  = 轻量易用的服务器监控，提供资源占用与历史趋势面板
 platform              = x86

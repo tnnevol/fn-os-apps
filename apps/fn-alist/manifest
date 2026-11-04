@@ -1,5 +1,5 @@
 appname               = fn-alist
-version               = 7.0.0
+version               = 7.0.1
 display_name          = AList
 desc                  = AList 是多存储文件列表程序，把本地与云盘统一到一个界面管理
 platform              = x86

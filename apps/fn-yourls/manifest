@@ -1,5 +1,5 @@
 appname               = fn-yourls
-version               = 7.0.0
+version               = 7.0.1
 display_name          = YOURLS
 desc                  = YOURLS 是自托管的短链接服务，支持自定义短码与访问统计
 platform              = x86

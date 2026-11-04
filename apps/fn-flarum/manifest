@@ -1,5 +1,5 @@
 appname               = fn-flarum
-version               = 7.0.0
+version               = 7.0.1
 display_name          = Flarum
 desc                  = Flarum 是简洁现代的论坛程序，主打快速与移动端体验
 platform              = x86

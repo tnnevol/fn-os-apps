@@ -1,5 +1,5 @@
 appname               = fn-music-tag-web
-version               = 7.0.0
+version               = 7.0.1
 display_name          = Music Tag Web
 desc                  = Music Tag Web 是音乐标签编辑器，批量整理音频元数据与封面
 platform              = x86

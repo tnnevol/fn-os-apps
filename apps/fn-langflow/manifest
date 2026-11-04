@@ -1,5 +1,5 @@
 appname               = fn-langflow
-version               = 7.0.0
+version               = 7.0.1
 display_name          = LangFlow
 desc                  = LangFlow 是可视化的大模型应用编排工具，用拖拽方式搭建 Agent 流程
 platform              = x86

@@ -1,5 +1,5 @@
 appname               = fn-koodo-reader
-version               = 7.0.0
+version               = 7.0.1
 display_name          = Koodo Reader
 desc                  = Koodo Reader 是多格式电子书阅读器，支持 EPUB、PDF、MOBI 等格式的云端书库
 platform              = x86

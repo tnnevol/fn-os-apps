@@ -19,7 +19,7 @@ apps/<appname>/
 
 ```ini
 appname               = fn-memos
-version               = 7.0.0
+version               = 7.0.1
 display_name          = Memos
 desc                  = Memos 是一款轻量级、自托管的笔记工具。
 platform              = x86

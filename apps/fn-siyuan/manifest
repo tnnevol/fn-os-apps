@@ -1,5 +1,5 @@
 appname               = fn-siyuan
-version               = 7.0.0
+version               = 7.0.1
 display_name          = 思源笔记
 desc                  = 思源笔记是本地优先的隐私知识管理工具，支持块级引用与双向链接
 platform              = x86

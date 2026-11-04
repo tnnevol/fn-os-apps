@@ -1,5 +1,5 @@
 appname               = fn-convertx
-version               = 7.0.0
+version               = 7.0.1
 display_name          = ConvertX
 desc                  = 自托管在线文件转换器，支持多种文档与媒体格式互转
 platform              = x86

@@ -1,5 +1,5 @@
 appname               = fn-dbx
-version               = 7.0.0
+version               = 7.0.1
 display_name          = DBX
 desc                  = DBX 是轻量的数据库管理工具，通过浏览器连接并管理数据库
 platform              = x86

@@ -1,5 +1,5 @@
 appname               = fn-postgres
-version               = 7.0.0
+version               = 7.0.1
 display_name          = PostgreSQL
 desc                  = PostgreSQL 是功能强大的开源关系型数据库，支持复杂查询、外键、触发器与事务完整性，广泛用于 Web 与企业级应用。
 platform              = x86

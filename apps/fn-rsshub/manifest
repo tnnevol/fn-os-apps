@@ -1,5 +1,5 @@
 appname               = fn-rsshub
-version               = 7.0.0
+version               = 7.0.1
 display_name          = RSSHub
 desc                  = RSSHub 为几乎所有网站生成 RSS 订阅源，把动态内容接入阅读器
 platform              = x86

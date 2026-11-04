@@ -1,5 +1,5 @@
 appname               = fn-zfile
-version               = 7.0.0
+version               = 7.0.1
 display_name          = ZFile
 desc                  = 基于 Java 的在线网盘程序，把多种存储源统一到一个网页中浏览
 platform              = x86

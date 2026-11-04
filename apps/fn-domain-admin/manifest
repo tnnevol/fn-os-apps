@@ -1,5 +1,5 @@
 appname               = fn-domain-admin
-version               = 7.0.0
+version               = 7.0.1
 display_name          = Domain Admin
 desc                  = 域名与 SSL 证书监测平台，到期前提醒续期
 platform              = x86

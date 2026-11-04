@@ -1,5 +1,5 @@
 appname               = fn-localai
-version               = 7.0.0
+version               = 7.0.1
 display_name          = LocalAI
 desc                  = LocalAI 是兼容 OpenAI 接口的本地推理服务，可在自有硬件上运行多种模型
 platform              = x86

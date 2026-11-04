@@ -1,5 +1,5 @@
 appname               = fn-qbittorrent
-version               = 7.0.0
+version               = 7.0.1
 display_name          = qBittorrent
 desc                  = qBittorrent 是功能完整的 BT 下载客户端，支持 Web 管理界面
 platform              = x86

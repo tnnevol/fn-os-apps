@@ -1,5 +1,5 @@
 appname               = fn-trilium
-version               = 7.0.0
+version               = 7.0.1
 display_name          = Trilium Notes
 desc                  = 大纲式笔记应用，用层级结构组织笔记，支持双链与附件
 platform              = x86

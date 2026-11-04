@@ -1,5 +1,5 @@
 appname               = fn-cloudbeaver
-version               = 7.0.0
+version               = 7.0.1
 display_name          = CloudBeaver
 desc                  = 云数据库管理器，通过浏览器统一管理多种数据库
 platform              = x86

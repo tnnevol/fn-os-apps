@@ -1,5 +1,5 @@
 appname               = fn-certd
-version               = 7.0.0
+version               = 7.0.1
 display_name          = Certd
 desc                  = Certd 是自动化证书管理平台，为域名自动申请与续期 SSL 证书
 platform              = x86
