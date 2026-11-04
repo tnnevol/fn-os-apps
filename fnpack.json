@@ -24,10 +24,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-2fauth-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-2fauth-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -54,10 +54,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-adguardhome-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-adguardhome-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -84,10 +84,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-adminer-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-adminer-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -114,10 +114,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-affine-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-affine-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -144,10 +144,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-ai-gateway-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-ai-gateway-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -174,10 +174,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-ai-portal-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-ai-portal-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -204,10 +204,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-alist-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-alist-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -234,10 +234,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-answer-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-answer-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -264,10 +264,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-archivebox-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-archivebox-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -294,10 +294,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-artalk-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-artalk-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -324,10 +324,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-astrbot-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-astrbot-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -354,10 +354,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-audiobookshelf-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-audiobookshelf-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -384,10 +384,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-beszel-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-beszel-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -414,10 +414,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-bettafish-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-bettafish-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -444,10 +444,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-bililive-go-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-bililive-go-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -474,10 +474,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-bitwarden-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-bitwarden-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -504,10 +504,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-blinko-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-blinko-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -534,10 +534,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-browserless-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-browserless-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -564,10 +564,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-bytebase-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-bytebase-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -594,10 +594,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-calibre-web-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-calibre-web-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -624,10 +624,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-casdoor-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-casdoor-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -654,10 +654,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-certd-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-certd-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -684,10 +684,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-certimate-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-certimate-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -714,10 +714,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-changedetectionio-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-changedetectionio-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -744,10 +744,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-chatgpt-next-web-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-chatgpt-next-web-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -774,10 +774,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-clawswarm-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-clawswarm-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -804,10 +804,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-cloudbeaver-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-cloudbeaver-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -834,10 +834,10 @@
       "is_docker": true,
       "service_port": "",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-cloudflared-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-cloudflared-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -864,10 +864,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-cloudreve-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-cloudreve-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -894,10 +894,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-code-server-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-code-server-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -924,10 +924,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-comfyui-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-comfyui-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -954,10 +954,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-convertx-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-convertx-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -984,10 +984,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-copaw-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-copaw-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -1014,10 +1014,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-cordys-crm-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-cordys-crm-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -1044,10 +1044,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-cyberchef-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-cyberchef-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -1074,10 +1074,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-dashy-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-dashy-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -1104,10 +1104,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-dataease-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-dataease-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -1134,10 +1134,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-dbhub-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-dbhub-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -1164,10 +1164,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-dbx-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-dbx-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -1194,10 +1194,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-discuz-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-discuz-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -1224,10 +1224,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-domain-admin-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-domain-admin-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -1254,10 +1254,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-dosgame-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-dosgame-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -1284,10 +1284,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-drawio-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-drawio-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -1314,10 +1314,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-dvwa-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-dvwa-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -1344,10 +1344,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-easyimage2-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-easyimage2-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -1374,10 +1374,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-emlog-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-emlog-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -1404,10 +1404,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-excalidraw-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-excalidraw-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -1434,10 +1434,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-ezbookkeeping-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-ezbookkeeping-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -1464,10 +1464,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-filebrowser-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-filebrowser-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -1494,10 +1494,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-filecodebox-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-filecodebox-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -1524,10 +1524,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-firefly-iii-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-firefly-iii-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -1554,10 +1554,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-flarum-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-flarum-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -1584,10 +1584,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-focalboard-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-focalboard-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -1614,10 +1614,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-forgejo-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-forgejo-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -1644,10 +1644,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-freshrss-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-freshrss-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -1674,10 +1674,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-gatus-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-gatus-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -1704,10 +1704,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-ghost-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-ghost-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -1734,10 +1734,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-gitea-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-gitea-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -1764,10 +1764,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-glance-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-glance-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -1794,10 +1794,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-gotify-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-gotify-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -1824,10 +1824,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-gsmanager-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-gsmanager-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -1854,10 +1854,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-halo-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-halo-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -1884,10 +1884,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-heimdall-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-heimdall-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -1914,10 +1914,10 @@
       "is_docker": false,
       "service_port": "${dashboard_port}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-hermes-agent-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-hermes-agent-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -1944,10 +1944,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-huginn-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-huginn-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -1974,10 +1974,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-it-tools-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-it-tools-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -2004,10 +2004,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-jellyfin-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-jellyfin-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -2034,10 +2034,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-jsonhero-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-jsonhero-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -2064,10 +2064,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-jupyter-notebook-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-jupyter-notebook-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -2094,10 +2094,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-keycloak-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-keycloak-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -2124,10 +2124,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-kibana-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-kibana-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -2154,10 +2154,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-kirara-agent-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-kirara-agent-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -2184,10 +2184,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-kkfileview-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-kkfileview-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -2214,10 +2214,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-kodbox-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-kodbox-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -2244,10 +2244,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-koishi-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-koishi-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -2274,10 +2274,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-komari-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-komari-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -2304,10 +2304,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-komga-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-komga-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -2334,10 +2334,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-koodo-reader-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-koodo-reader-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -2364,10 +2364,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-langbot-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-langbot-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -2394,10 +2394,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-langflow-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-langflow-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -2424,10 +2424,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-laya-server-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-laya-server-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -2454,10 +2454,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-linkding-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-linkding-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -2484,10 +2484,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-linux-command-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-linux-command-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -2514,10 +2514,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-llama-cpp-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-llama-cpp-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -2544,10 +2544,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-lobe-chat-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-lobe-chat-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -2574,10 +2574,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-localai-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-localai-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -2604,10 +2604,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-logto-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-logto-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -2634,10 +2634,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-lsky-pro-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-lsky-pro-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -2664,10 +2664,10 @@
       "is_docker": true,
       "service_port": "",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-maddy-mail-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-maddy-mail-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -2694,10 +2694,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-manticoresearch-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-manticoresearch-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -2724,10 +2724,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-mattermost-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-mattermost-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -2754,10 +2754,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-maxkb-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-maxkb-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -2784,10 +2784,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-mblog-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-mblog-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -2814,10 +2814,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-mcsmanager-web-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-mcsmanager-web-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -2844,10 +2844,10 @@
       "is_docker": true,
       "service_port": "",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-memcached-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-memcached-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -2874,10 +2874,10 @@
       "is_docker": false,
       "service_port": "5230",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-memos-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-memos-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -2904,10 +2904,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-metabase-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-metabase-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -2934,10 +2934,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-miniflux-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-miniflux-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -2964,10 +2964,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-mkdocs-material-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-mkdocs-material-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -2994,10 +2994,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-mliev-dwz-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-mliev-dwz-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -3024,10 +3024,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-mongo-express-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-mongo-express-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -3054,10 +3054,10 @@
       "is_docker": false,
       "service_port": "${wizard_nginx_port}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-moviepilot-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-moviepilot-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -3084,10 +3084,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-music-tag-web-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-music-tag-web-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -3114,10 +3114,10 @@
       "is_docker": false,
       "service_port": "",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-mysql_v8-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-mysql_v8-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -3144,10 +3144,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-n8n-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-n8n-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -3174,10 +3174,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-navidrome-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-navidrome-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -3204,10 +3204,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-neko-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-neko-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -3234,10 +3234,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-new-api-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-new-api-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -3264,10 +3264,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-newsnow-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-newsnow-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -3294,10 +3294,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-nextcloud-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-nextcloud-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -3324,10 +3324,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-nexus-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-nexus-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -3354,10 +3354,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-nezha-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-nezha-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -3384,10 +3384,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-nginx-proxy-manager-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-nginx-proxy-manager-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -3414,10 +3414,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-nocobase-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-nocobase-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -3444,10 +3444,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-nocodb-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-nocodb-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -3474,10 +3474,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-node-red-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-node-red-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -3504,10 +3504,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-nodebb-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-nodebb-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -3534,10 +3534,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-ntfy-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-ntfy-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -3564,10 +3564,10 @@
       "is_docker": false,
       "service_port": "",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-nvm-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-nvm-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -3594,10 +3594,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-obsidian-livesync-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-obsidian-livesync-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -3624,10 +3624,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-octop-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-octop-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -3654,10 +3654,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-odoo-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-odoo-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -3684,10 +3684,10 @@
       "is_docker": false,
       "service_port": "",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-ohmyzsh-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-ohmyzsh-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -3714,10 +3714,10 @@
       "is_docker": true,
       "service_port": "",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-ollama-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-ollama-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -3744,10 +3744,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-ollama-webui-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-ollama-webui-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -3774,10 +3774,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-onlyoffice-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-onlyoffice-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -3804,10 +3804,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-openclaw-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-openclaw-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -3834,10 +3834,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-opengist-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-opengist-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -3864,10 +3864,10 @@
       "is_docker": true,
       "service_port": "",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-openldap-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-openldap-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -3894,10 +3894,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-openlist-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-openlist-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -3924,10 +3924,10 @@
       "is_docker": true,
       "service_port": "",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-palworld-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-palworld-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -3954,10 +3954,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-palworld-server-tool-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-palworld-server-tool-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -3984,10 +3984,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-pgadmin4-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-pgadmin4-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -4014,10 +4014,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-photoprism-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-photoprism-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -4044,10 +4044,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-phpmyadmin-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-phpmyadmin-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -4074,10 +4074,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-planka-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-planka-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -4104,10 +4104,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-postgres-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-postgres-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -4134,10 +4134,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-qbittorrent-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-qbittorrent-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -4164,10 +4164,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-qiandao-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-qiandao-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -4194,10 +4194,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-qinglong-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-qinglong-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -4224,10 +4224,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-quark-auto-save-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-quark-auto-save-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -4255,10 +4255,10 @@
       "is_docker": true,
       "service_port": "4396",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-reader-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-reader-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -4285,10 +4285,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-redis-commander-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-redis-commander-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -4315,10 +4315,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-redpanda-console-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-redpanda-console-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -4345,10 +4345,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-rocketmq-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-rocketmq-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -4375,10 +4375,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-roundcube-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-roundcube-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -4405,10 +4405,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-rsshub-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-rsshub-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -4435,10 +4435,10 @@
       "is_docker": true,
       "service_port": "",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-rustdesk-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-rustdesk-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -4465,10 +4465,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-rustfs-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-rustfs-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -4495,10 +4495,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-screego-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-screego-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -4525,10 +4525,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-sentinel-dashboard-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-sentinel-dashboard-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -4555,10 +4555,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-sftpgo-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-sftpgo-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -4585,10 +4585,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-showdoc-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-showdoc-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -4615,10 +4615,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-siyuan-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-siyuan-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -4645,10 +4645,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-sonarqube-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-sonarqube-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -4675,10 +4675,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-sqlbot-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-sqlbot-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -4705,10 +4705,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-stalwart-mail-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-stalwart-mail-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -4735,10 +4735,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-stirling-pdf-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-stirling-pdf-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -4765,10 +4765,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-sub2api-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-sub2api-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -4795,10 +4795,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-sun-panel-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-sun-panel-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -4825,10 +4825,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-synapse-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-synapse-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -4855,10 +4855,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-tailchat-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-tailchat-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -4885,10 +4885,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-teable-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-teable-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -4915,10 +4915,10 @@
       "is_docker": true,
       "service_port": "",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-teamspeak-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-teamspeak-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -4945,10 +4945,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-tinyrdm-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-tinyrdm-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -4975,10 +4975,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-tomcat-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-tomcat-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -5005,10 +5005,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-trendradar-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-trendradar-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -5035,10 +5035,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-trilium-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-trilium-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -5065,10 +5065,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-twenty-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-twenty-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -5095,10 +5095,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-twikoo-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-twikoo-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -5125,10 +5125,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-typecho-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-typecho-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -5155,10 +5155,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-umami-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-umami-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -5185,10 +5185,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-upage-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-upage-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -5215,10 +5215,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-uptime-kuma-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-uptime-kuma-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -5245,10 +5245,10 @@
       "is_docker": false,
       "service_port": "",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-uv-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-uv-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -5275,10 +5275,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-vane-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-vane-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -5305,10 +5305,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-verdaccio-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-verdaccio-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -5335,10 +5335,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-vexdb-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-vexdb-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -5365,10 +5365,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-waline-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-waline-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -5395,10 +5395,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-wallos-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-wallos-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -5425,10 +5425,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-web-check-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-web-check-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -5455,10 +5455,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-wechatmarkdowneditor-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-wechatmarkdowneditor-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -5485,10 +5485,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-wikijs-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-wikijs-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -5515,10 +5515,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-wordpress-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-wordpress-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -5545,10 +5545,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-xiaomusic-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-xiaomusic-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -5576,10 +5576,10 @@
       "is_docker": true,
       "service_port": "5678",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-xiaoya-only-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-xiaoya-only-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -5606,10 +5606,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-yesplaymusic-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-yesplaymusic-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -5636,10 +5636,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-yourls-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-yourls-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -5666,10 +5666,10 @@
       "is_docker": true,
       "service_port": "",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-zabbix-agent-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-zabbix-agent-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -5696,10 +5696,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-zabbix-proxy-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-zabbix-proxy-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -5726,10 +5726,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-zabbix-server-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-zabbix-server-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -5756,10 +5756,10 @@
       "is_docker": true,
       "service_port": "${ZENTAO_HTTP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-zentao-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-zentao-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
@@ -5786,10 +5786,10 @@
       "is_docker": true,
       "service_port": "${APP_PORT}",
       "releases": {
-        "7.0.0": {
+        "7.0.1": {
           "packages": {
             "x86": {
-              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-zfile-v7.0.0.fpk"
+              "download_url": "https://github.com/tnnevol/fn-os-apps/releases/latest/download/fn-zfile-v7.0.1.fpk"
             }
           },
           "os_min_version": "1.1.8"
