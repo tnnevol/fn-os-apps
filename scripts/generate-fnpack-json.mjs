@@ -117,6 +117,69 @@ function parseManifest(file) {
 }
 
 /**
+ * 面板文案国际化后，manifest 的 display_name / desc 可能是 `${section.key}` 占位符。
+ *
+ * FnDepot 客户端直接展示这两个字段，不能把占位符原样透出，因此按 i18n/ 语言文件
+ * 还原成实际文本。取值顺序与 fn-apps-cli 的 workspace 解析保持一致（中文优先，
+ * en-US 兜底），两处逻辑需要同步维护。
+ */
+const LOCALE_PRIORITY = ['zh-CN', 'en-US', 'en']
+const MANIFEST_PLACEHOLDER = /^\$\{([A-Za-z0-9_]+)\.([A-Za-z0-9_]+)\}$/
+
+/** 把 INI 语言文件解析成 `section.key` → 文本。 */
+function parseLocaleFile(file) {
+  const values = new Map()
+  let section
+  for (const raw of fs.readFileSync(file, 'utf-8').split(/\r?\n/)) {
+    const line = raw.trim()
+    if (!line || line.startsWith('#') || line.startsWith(';')) continue
+    const header = /^\[(.+)\]$/.exec(line)
+    if (header) {
+      section = header[1]
+      continue
+    }
+    const eq = line.indexOf('=')
+    if (section === undefined || eq <= 0) continue
+    const value = line.slice(eq + 1).trim().replace(/^["']|["']$/g, '')
+    values.set(`${section}.${line.slice(0, eq).trim()}`, value)
+  }
+  return values
+}
+
+/** 按优先级合并 i18n/ 下所有语言文件，先出现的语言优先。 */
+function readLocaleValues(appname) {
+  const dir = path.join(APPS_DIR, appname, 'i18n')
+  const values = new Map()
+  if (!fs.existsSync(dir)) return values
+  const names = fs
+    .readdirSync(dir, { withFileTypes: true })
+    .filter(entry => entry.isFile())
+    .map(entry => entry.name)
+  const ordered = [
+    ...LOCALE_PRIORITY.filter(name => names.includes(name)),
+    ...names.filter(name => !LOCALE_PRIORITY.includes(name)).sort(),
+  ]
+  for (const name of ordered) {
+    for (const [key, value] of parseLocaleFile(path.join(dir, name))) {
+      if (!values.has(key)) values.set(key, value)
+    }
+  }
+  return values
+}
+
+/** 占位符还原成实际文本；不是占位符时返回原值，还原不出来时标记 unresolved。 */
+function resolveLocalizedText(appname, rawValue) {
+  if (!rawValue) return { value: rawValue ?? '', unresolved: false }
+  const value = rawValue.trim().replace(/^["']|["']$/g, '')
+  const match = MANIFEST_PLACEHOLDER.exec(value)
+  if (!match) return { value, unresolved: false }
+  const resolved = readLocaleValues(appname).get(`${match[1]}.${match[2]}`)
+  if (resolved === undefined) return { value, unresolved: true }
+  return { value: resolved, unresolved: false }
+}
+
+
+/**
  * 上游 appstore 的候选检出位置。
  *
  * 文档约定的是工作区旁的同级目录（`../appstore`），但实际检出位置因人而异：
@@ -243,6 +306,8 @@ for (const appname of appDirs) {
     continue
   }
   const manifest = parseManifest(manifestFile)
+  const displayName = resolveLocalizedText(appname, manifest.display_name)
+  const description = resolveLocalizedText(appname, manifest.desc)
 
   if (manifest.appname !== appname) {
     problems.push(`${appname}: manifest.appname=${manifest.appname} 与目录名不一致`)
@@ -256,6 +321,12 @@ for (const appname of appDirs) {
   if (!manifest.desc) {
     problems.push(`${appname}: manifest 缺少 desc`)
   }
+  if (displayName.unresolved) {
+    problems.push(`${appname}: display_name 的占位符在 i18n/ 里找不到对应语言文本`)
+  }
+  if (description.unresolved) {
+    problems.push(`${appname}: desc 的占位符在 i18n/ 里找不到对应语言文本`)
+  }
 
   const platform = manifest.platform === 'arm' ? ['arm'] : ['x86']
   const iconAbs = path.join(APPS_DIR, appname, 'ICON.PNG')
@@ -265,8 +336,8 @@ for (const appname of appDirs) {
   const hasReadme = fs.existsSync(readmeAbs)
 
   const app = {
-    display_name: manifest.display_name ?? '',
-    desc: manifest.desc ?? '',
+    display_name: displayName.value,
+    desc: description.value,
     platform,
     categories: pickCategories(appname),
     icon_url: `${RAW_BASE}/apps/${appname}/ICON.PNG`,
