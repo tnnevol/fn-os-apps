@@ -52,9 +52,17 @@ export const repositoryRoot
       && existsSync(resolve(directory, 'pnpm-workspace.yaml')),
   ) ?? resolve(scriptsPackageDirectory, '..', '..')
 
+/**
+ * 版本升级需要同步的文件。
+ *
+ * `fnpack.json` 是 FnDepot 外部源索引，里面的 `download_url` 带 `v<项目版本>`
+ * 的 release tag，必须跟着版本一起改；列入这里是为了让 bumpp 把它算进本次
+ * release 提交，而不是留成工作区里的未提交改动。
+ */
 export const projectVersionFiles = [
   'package.json',
   'docs/package.json',
   'apps/**/manifest',
   'docs/development/manifest.md',
+  'fnpack.json',
 ]

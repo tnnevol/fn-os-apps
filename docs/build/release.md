@@ -17,6 +17,10 @@ chore: release v5.0.7
 v5.0.7
 ```
 
+版本升级会同步 `fnpack.json`（FnDepot 外部源索引）里的 `download_url`，并在同一个
+release 提交里一并提交，命令结束后工作区应当是干净的。索引重生成失败时命令会中止，
+不产生提交和 Tag，修正后重跑即可。
+
 ## 推送并触发构建
 
 ```bash

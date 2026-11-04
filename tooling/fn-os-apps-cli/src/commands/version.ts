@@ -1,4 +1,5 @@
 import { type OptionValues } from 'commander'
+import { execFile } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
@@ -75,29 +76,35 @@ async function versionProject(options: ReturnType<typeof parseVersionOptions>): 
     push: false,
     ignoreScripts: true,
     confirm: options.confirm,
+    // bumpp 的顺序是「改版本 → execute → commit → tag」，索引必须放在这里重生成，
+    // 才能和其他版本文件一起进同一个 release 提交。放在 versionBump 之后会变成
+    // 提交之外的游离改动，Tag 也会漏掉它。
+    execute: async () => {
+      await regenerateFnDepotIndex()
+    },
   })
   console.log(`${current.name}: ${result.currentVersion} -> ${result.newVersion}`)
-  await regenerateFnDepotIndex()
 }
 
 /**
- * 重生成 FnDepot 源索引。
+ * 重生成 FnDepot 源索引，使它带上本次版本的 release tag。
  *
  * 索引里的 `download_url` 带 `v<项目版本>` 的 release tag，版本递增后旧 URL
  * 会指向上一版的资产包——不同步就会让客户端装到过期的 FPK。
+ *
+ * 失败时直接抛出：这里已经是 release 提交的组装阶段，索引没更新就提交等于
+ * 发布一个指向旧包的源，宁可中止本次 version 让调用方重试。
  */
 async function regenerateFnDepotIndex(): Promise<void> {
   const script = join(repositoryRoot, 'scripts', 'generate-fnpack-json.mjs')
   if (!existsSync(script)) return
-  try {
-    const { execFile } = await import('node:child_process')
-    const { promisify } = await import('node:util')
-    await promisify(execFile)(process.execPath, [script], { cwd: repositoryRoot })
-    console.log('已同步 fnpack.json（download_url 指向新的 release tag）')
-  } catch (error) {
-    // 索引同步失败不应让版本提交回滚，但必须显式提示，避免源文件静默过期。
-    console.warn(`警告：fnpack.json 同步失败，请手动执行 pnpm run fnpack：${String(error)}`)
-  }
+  await new Promise<void>((resolve, reject) => {
+    execFile(process.execPath, [script], { cwd: repositoryRoot }, (error) => {
+      if (error === null) resolve()
+      else reject(error)
+    })
+  })
+  console.log('已同步 fnpack.json（download_url 指向新的 release tag）')
 }
 
 export async function runVersion(args: string[]): Promise<void> {
