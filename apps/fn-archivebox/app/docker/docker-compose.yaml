@@ -2,9 +2,7 @@ services:
   archivebox:
     container_name: fn-archivebox
     image: archivebox/archivebox:0.9.77
-    # 运行身份对齐包用户：镜像层默认 root，以 root 写数据会让卸载「删除所有数据」后残留；
-    # 容器以包用户运行，运行期写入的文件属主才与卸载回调一致。
-    user: "${TRIM_UID}:${TRIM_GID}"
+    # USER-EXCEPTION: entrypoint 内置固定 uid=960 gid=955 并在内部 chown，与 TRIM_UID 不一致时无法写 /opt/archivebox 与 /data（真机日志："archivebox user (uid=960 gid=955) cannot write ... Current owner is "），故不覆盖运行身份
     environment:
       - ADMIN_USERNAME=${ADMIN_USERNAME}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}

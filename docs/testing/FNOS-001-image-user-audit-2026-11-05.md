@@ -148,9 +148,16 @@ lastVerified: 2026-11-05
 第 2 批（5 个）：`fn-clawswarm` PASS(200)、`fn-kkfileview` PASS(302)、`fn-certd` PASS(200)、
 `fn-bililive-go` PASS(200)、`fn-ai-portal` PASS(200)——后三者首轮 FAIL，按下表修好后复测通过。
 
-第 3 批（5 个）：`fn-adguardhome` PASS(302)；`fn-koishi` / `fn-archivebox` / `fn-laya-server`
-属**安装轮询超时**（镜像拉取慢，非应用缺陷），预拉镜像后重测；`fn-llama-cpp` 判定 **BLOCKED**：
-容器日志 `failed to load model '/models/model.gguf'`——该应用需要用户自备模型文件，属环境依赖。
+第 3 批（5 个）：`fn-adguardhome` PASS(302)；`fn-koishi` / `fn-archivebox` / `fn-laya-server` 首轮属**安装轮询超时**（镜像拉取慢）；
+`fn-laya-server` 预拉镜像后复测 **PASS(200)**；`fn-koishi` / `fn-archivebox` 每次卸载都会删镜像，
+而这两个镜像（archivebox ~1GB、koishi ~0.8GB）在本网络下单次 `docker pull` 240 秒仍拉不完，
+反复 BLOCKED，**登记为待补测**（环境限制，非应用缺陷）；`fn-llama-cpp` 判定 **BLOCKED**：
+容器日志 `failed to load model '/models/model.gguf'`——该应用需用户自备模型文件。
+
+`fn-archivebox` 另有一条真机结论：其 entrypoint 内置**固定 uid=960 gid=955** 并内部 chown，
+与 `TRIM_UID` 不一致时报
+`archivebox user (uid=960 gid=955) cannot write to /opt/archivebox. Current owner is 911:911`，
+因此**不该覆盖运行身份**，已撤销 `user:` 并标 `# USER-EXCEPTION`（属 C 类「镜像自带固定 uid」）。
 
 ### 本轮新增的 root 例外（真机证据）
 
