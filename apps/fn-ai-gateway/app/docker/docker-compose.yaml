@@ -2,6 +2,11 @@ services:
   ai-gateway:
     container_name: fn-ai-gateway
     image: 1panel/ai-gateway:v1.5.1
+    # 运行身份对齐包用户：镜像层默认 root，以 root 写入数据目录时文件属主是 root，
+    # 卸载回调（以包用户运行）无权删除，选「删除所有数据」后仍留残留。
+    # TRIM_UID/TRIM_GID 是 fnOS 注入的应用用户 ID（官方环境变量文档），
+    # 容器以包用户身份写数据，卸载即可删干净。
+    user: "${TRIM_UID}:${TRIM_GID}"
     # 1.5.1 上游新增的启动契约：显式入口、清空 CMD、给健康检查留 70s 优雅停机
     entrypoint: ["/usr/bin/ai-gateway"]
     command: []

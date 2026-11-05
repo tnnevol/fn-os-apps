@@ -2,6 +2,9 @@ services:
   dataease:
     container_name: fn-dataease
     image: registry.cn-qingdao.aliyuncs.com/dataease/dataease:v3.1.0
+    # 运行身份对齐包用户：镜像层默认 root，以 root 写入数据目录时文件属主是 root，
+    # 卸载回调（以包用户运行）无权删除，选「删除所有数据」后仍留残留。
+    user: "${TRIM_UID}:${TRIM_GID}"
     stop_signal: SIGTERM
     stop_grace_period: 15s
     environment:

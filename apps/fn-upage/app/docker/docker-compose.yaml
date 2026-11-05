@@ -2,24 +2,39 @@ services:
   upage:
     container_name: fn-upage
     image: halohub/upage:2.0.0
+    # 运行身份对齐包用户：镜像层默认 root，以 root 写入数据目录时文件属主是 root，
+    # 卸载回调（以包用户运行）无权删除，选「删除所有数据」后仍留残留。
+    user: "${TRIM_UID}:${TRIM_GID}"
     environment:
       - LLM_PROVIDER=${LLM_PROVIDER}
       - PROVIDER_API_KEY=${PROVIDER_API_KEY}
-      - PROVIDER_BASE_URL=${PROVIDER_BASE_URL}
+      # 可选字段统一用 ${VAR:-} 兜底：这几项的「空」本身就是语义
+      # （模型接口地址留空=用官方地址；视觉/联网留空=不启用），
+      # 但变量必须始终有定义，否则 docker compose 会输出
+      # `variable is not set. Defaulting to a blank string` 告警，让生命周期日志看起来像出错。
+      - PROVIDER_BASE_URL=${PROVIDER_BASE_URL:-}
       - LLM_DEFAULT_MODEL=${LLM_DEFAULT_MODEL}
       - LLM_MINOR_MODEL=${LLM_MINOR_MODEL}
-      # 2.0.0 新增：视觉模型与联网能力（可选，留空即使用镜像默认值）
-      - LLM_VISION_PROVIDER=${LLM_VISION_PROVIDER}
-      - LLM_VISION_MODEL=${LLM_VISION_MODEL}
-      - VISION_PROVIDER_BASE_URL=${VISION_PROVIDER_BASE_URL}
-      - VISION_PROVIDER_API_KEY=${VISION_PROVIDER_API_KEY}
-      - SERPER_API_KEY=${SERPER_API_KEY}
-      - WEATHER_API_KEY=${WEATHER_API_KEY}
+      # 2.0.0 新增：视觉模型与联网能力（可选，留空即不启用）
+      - LLM_VISION_PROVIDER=${LLM_VISION_PROVIDER:-}
+      - LLM_VISION_MODEL=${LLM_VISION_MODEL:-}
+      - VISION_PROVIDER_BASE_URL=${VISION_PROVIDER_BASE_URL:-}
+      - VISION_PROVIDER_API_KEY=${VISION_PROVIDER_API_KEY:-}
+      - SERPER_API_KEY=${SERPER_API_KEY:-}
+      - WEATHER_API_KEY=${WEATHER_API_KEY:-}
       - MAX_UPLOAD_SIZE_MB=${MAX_UPLOAD_SIZE_MB}
       # 2.0.0 上游固定值，不暴露为向导字段
       - USAGE_LOG_FILE=true
       - OPERATING_ENV=production
       - LOG_LEVEL=debug
+      # 以包用户（非 root）运行时，容器内默认 HOME 指向不可写的 /，
+      # 镜像 entrypoint 调 corepack/pnpm 做数据库迁移会报
+      # `EACCES: permission denied, mkdir '/.cache/node/corepack/v1'` 并反复重启。
+      # 这里把 HOME 与各缓存目录指到已挂载、属主为包用户的 /app/storage。
+      - HOME=/app/storage
+      - XDG_CACHE_HOME=/app/storage/.cache
+      - COREPACK_HOME=/app/storage/.corepack
+      - npm_config_cache=/app/storage/.npm
     ports:
       - "${APP_PORT}:3000"
     restart: always
@@ -30,3 +45,7 @@ services:
       - "${TRIM_PKGVAR}/data/data:/app/data"
       - "${TRIM_PKGVAR}/data/logs:/app/logs"
       - "${TRIM_PKGVAR}/data/storage:/app/storage"
+      # 应用启动时要在 /app/public/uploads 建目录（镜像内无此目录，属运行期产物）。
+      # 容器以包用户运行、镜像层 /app 属 root，不挂出来就会 `EACCES: mkdir '/app/public/uploads'` 反复重启。
+      # 只挂 uploads 子目录，避免遮蔽镜像自带的 /app/public 静态资源（favicon、logo、icons 等）。
+      - "${TRIM_PKGVAR}/data/uploads:/app/public/uploads"
