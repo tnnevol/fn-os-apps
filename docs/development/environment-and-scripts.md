@@ -164,33 +164,58 @@ npx -y @midscene/web@1 --bridge connect --url "http://<设备 IP>:5666/"
 | 6 | 桌面图标 / 「打开」 | 入口实际地址应等于向导填写的端口 |
 | 7 | 应用详情 → 卸载 | 卸载向导提供「保留数据 / 删除所有数据」二选一 |
 
-### 上传 `.fpk`：直接塞 input，不要点「从电脑上传」
+### 上传 `.fpk`：拦截 `input.click()` 注入文件，不要点「从电脑上传」
 
-「手动安装」弹窗打开后，页面上就有两个常驻的隐藏 `input[type=file][accept=".fpk"]`。
-**不要点「从电脑上传」**——那会拉起系统文件选择器，自动化脚本无法操作，等于走进死路。
+「手动安装」弹窗打开后，页面上确实有两个常驻的隐藏 `input[type=file][accept=".fpk"]`（其中一个是
+`webkitdirectory` 的目录选择框）。**不要点「从电脑上传」**——那会拉起系统文件选择器，自动化脚本无法
+操作，等于走进死路。
 
-正确做法是把文件内容做成 `File` 再赋给 input 的 `files`：
+但**只把文件赋给这两个常驻 input 是无效的**（2026-11-05 在 fnOS 1.2.x 上复核）：它们的
+`__reactProps` 里**没有 `onChange`**，派发 `input`/`change` 事件不会触发任何上传动作（现象：事件能
+派发到元素、`files` 也确实写进去了，但页面无反应、没有任何网络请求）。真正可用的做法是**拦截
+`HTMLInputElement.prototype.click`**：应用在点「从电脑上传」时才动态创建一个 input、绑定
+`change` 监听、再调用 `click()` 拉起系统对话框；把这次 `click()` 换成就地灌入文件，应用自己的
+监听就会照常处理。
 
 ```js
-const blob = await (await fetch(fpUrl)).blob();          // fpUrl 指向已构建好的 fpk
-const file = new File([blob], '<app>.fpk', { type: 'application/octet-stream' });
+// 1) 先把 fpk 取成 File（fpUrl 指向已构建好的 fpk，由带 CORS 的本地静态服务提供）
+const blob = await (await fetch(fpUrl)).blob();
 const dt = new DataTransfer();
-dt.items.add(file);
+dt.items.add(new File([blob], '<app>.fpk', { type: 'application/octet-stream' }));
+window.__fpkDT = dt;
 
-for (const inp of document.querySelectorAll('input[type="file"][accept=".fpk"]')) {
-  inp.files = dt.files;
-  inp.dispatchEvent(new Event('input',  { bubbles: true, composed: true }));
-  inp.dispatchEvent(new Event('change', { bubbles: true, composed: true }));
+// 2) 只补一次：拦截动态 file input 的 click
+if (!window.__origFileClick) {
+  window.__origFileClick = HTMLInputElement.prototype.click;
+  HTMLInputElement.prototype.click = function () {
+    if (this && this.type === 'file' && window.__fpkDT) {
+      this.files = window.__fpkDT.files;
+      this.dispatchEvent(new Event('input',  { bubbles: true, composed: true }));
+      this.dispatchEvent(new Event('change', { bubbles: true, composed: true }));
+      return;                       // 不再拉起系统文件选择器
+    }
+    return window.__origFileClick.apply(this, arguments);
+  };
 }
+
+// 3) 点「从电脑上传」按钮（此时不会弹系统对话框，而是直接把文件交给应用）
+[...document.querySelectorAll('button, [role="button"], div, span')]
+  .find(e => (e.innerText || '').trim() === '从电脑上传' && e.children.length === 0)
+  .click();
 ```
 
 要点：
 
-- **两个 input 都要塞**：页面上同时存在两个，无法事先判断哪个被当前弹窗使用，两个都写最省事。
-- **`input` 与 `change` 两个事件都要派发**：只发 `change` 时受控组件可能不更新；加上 `input`（并带 `composed: true`）才能触达框架的监听。
-- 塞入成功后页面立刻弹出「未经验证应用的安全提示」，弹窗里会显示应用名——**看到应用名才算成功**，否则说明文件没进去。
-- 文件来源可以是本地静态服务（页面跨域 `fetch`，需要服务端带 `Access-Control-Allow-Origin`）。
-  MCP 的文件上传工具有 workspace root 限制，未必能直接指向构建产物；用静态服务绕开更稳。
+- **判定成功的唯一标志是「未经验证应用的安全提示」弹窗里出现了应用名**（例如 `UPage`/`DataEase`）。
+  没有弹窗就是文件没进去，不要继续往下走。
+- **拦截要保留原函数**，只在 `type === 'file'` 且已备好 `DataTransfer` 时接管，其余点击照旧，
+  否则会影响同一页面上其它按钮的行为。
+- `input` 与 `change` 两个事件都要派发（带 `composed: true`），只发 `change` 时部分受控组件不更新。
+- 文件来源用**本地静态服务**（页面跨域 `fetch`，服务端需带 `Access-Control-Allow-Origin: *`）。
+  MCP 自带的文件上传工具有 workspace root 限制，指向仓库构建产物会被拒；用静态服务绕开更稳。
+- **口令类向导字段不要写进工具调用参数**：让静态服务额外提供一个仅回环可读的
+  `/_bootstrap/params.json`（从环境变量取值），由页面脚本自己 `fetch` 后填表，凭据不进对话记录与
+  文档。
 
 **测试结束后必须清理**：验证完成后，用同一条通道把为测试而安装的应用卸载掉，别把测试残留留在
 设备上：
