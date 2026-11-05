@@ -37,6 +37,19 @@ lastVerified: 2026-11-05
 
 判定说明：`fn-dataease` 的最终判定取**修复后复测**的结果，缺陷本身另记 D-01，未合并进判定值。
 
+## 2.1 追加轮次复测（运行身份整改后，三应用全部复测）
+
+处置见 §5：三个应用都改为以包用户运行（`user: "${TRIM_UID}:${TRIM_GID}"`），`fn-upage` 另修了非 root 启动所需的两处
+（`HOME`/缓存目录、`/app/public/uploads` 挂载）。
+
+| 应用 | 运行身份（实测） | 入口 | 重启 | 数据属主 | 卸载（删除所有数据） |
+| --- | --- | --- | --- | --- | --- |
+| `fn-ai-gateway` | `Config.User=963:958`，`docker exec id` → `uid=963` | `200` | 0 | `ai-gateway.db` 属包用户 | `Application data deleted`，残留条目 **0** |
+| `fn-upage` | `800:793` | `200` | 0 | `upage.db` 属包用户 | `Application data deleted`，残留条目 **0** |
+| `fn-dataease` | `933:928` | `200` | 0 | 缓存/配置目录属包用户 | `Application data deleted`，残留条目 **0**；复测仍完成建表 **111 张** |
+
+三个应用卸载后均无容器、无 `<app>_default` 网络，入口端口回到 `000`。
+
 ## 3. 配置改动实测口径
 
 不只「装上了」，而是逐项核对本轮真正改动的东西：
@@ -69,12 +82,37 @@ lastVerified: 2026-11-05
 | 复测 | 重新 `fnpack build` → 重装：种子铺入 `@appdata/fn-dataease/conf/application.yml`（1432 B，属主 `docker-fn-dataease`）、容器 `healthy`、0 重启、入口 `200`、`de` 库 111 张表 |
 | 与同步报告的关系 | 对应其「风险与后续事项」第 2 条，本轮把它从**待确认**升级为**已确认为缺陷并修复** |
 
-## 5. 遗留风险与观察（未在本轮修改）
+## 5. 追加整改（2026-11-05 同日，用户裁定后复测）
+
+首轮测试登记的两条问题已定位根因并修复，下表为追加轮次的结论。
+
+| 编号 | 原登记 | 根因 | 处置与复测 |
+| --- | --- | --- | --- |
+| R-01（已解决） | 卸载选「删除所有数据」后仍残留数据文件 | compose **没写 `user:`**，容器以镜像默认 root 把数据写进挂载目录；残留文件/子目录属主 `root:root`（子目录常为 `700`），卸载回调以**包用户**运行，无权递归删除 | 三个应用都加 `user: "${TRIM_UID}:${TRIM_GID}"`，并在 `install_callback` 里由包用户预建挂载源目录。`fn-ai-gateway` 复测：`Config.User=963:958`、`docker exec id` → `uid=963`、`ai-gateway.db` 属主为包用户、入口 `200`、卸载日志 `Application data deleted` 且**无 `RESIDUAL_COUNT`**、目录条目数为 0 |
+| R-01 反例（重要） | — | 先按字面改成固定 `user: "1000:1000"` **无效** | 实测：容器确实能写（文件属主变 uid 1000），但 uid 1000 是设备上的**管理员人类账号**，且容器新建子目录的 `700` 会把继承 ACL 的 `mask` 压成 `---`，包用户**仍删不掉**，卸载照旧报 `RESIDUAL_COUNT`。包用户 uid 是安装时动态分配的（同机见过 787、963、800），写死任何 uid 都会错位——必须用平台注入的 `TRIM_UID`/`TRIM_GID` |
+| R-02（已解决） | 可选向导字段留空时 compose 报 `variable is not set` | 平台不把空的向导字段传给 compose，变量因此**未定义** | 口径（用户裁定）：有意义的默认值补进 `wizard/install` 与 `wizard/config`；「空本身是语义」的字段（模型接口地址留空=官方地址、视觉/联网留空=不启用、可选第三方密钥）在 compose 写成 `${VAR:-}`。`fn-upage` 已按此改，安装日志中**本轮 0 条** `variable is not set` |
+| R-05（新增） | `fn-upage` 非 root 启动失败 | 镜像 entrypoint 调 corepack/pnpm 做数据库迁移，默认 `HOME=/`，非 root 无法 `mkdir /.cache/node/corepack/v1` → `EACCES` 反复重启、入口 `000` | 补 `HOME`/`XDG_CACHE_HOME`/`COREPACK_HOME`/`npm_config_cache` 到已挂载、属主为包用户的 `/app/storage`，复测结果见下节 |
+
+### 全仓同类问题（登记为后续任务，本轮只改 3 个应用）
+
+按「compose 引用了 `${VAR}`、向导字段可选且 `initValue` 为空」审计全仓：
+
+| 类别 | 规模 | 说明 |
+| --- | --- | --- |
+| ① 向导可选且默认空、compose 直接引用 | **25 个应用 / 58 个变量** | 会触发 `variable is not set`。含 `fn-neko`（14 个 `NEKO_*`）、`fn-lobe-chat`（3 个）、`fn-certimate`（3 个代理变量）等 |
+| ② compose 引用但完全没有向导字段 | 5 个应用 / 6 个变量 | `fn-cordys-crm`(`CONTAINER_NAME`)、`fn-forgejo`(`IMAGE`)、`fn-sentinel-dashboard`(`TIME_ZONE`)、`fn-sqlbot`(`SECRET_KEY`)、`fn-xiaomusic`(`HOST_IP`/`PORT`)；其中 `CONTAINER_NAME` 与 `IMAGE` 属规约明令必须解析的写法，单列核查 |
+
+本轮按用户裁定**只修 3 个应用**，其余 22 个应用按下表登记为后续批次，未做未经验证的批量替换：
+
+| 后续任务 | 范围 | 验收 |
+| --- | --- | --- |
+| 空值口径批量整改 | 类别 ① 的 25 个应用、58 个变量 | 逐个应用安装后，生命周期日志中 `variable is not set` 计数为 0 |
+| 无向导字段变量核查 | 类别 ② 的 5 个应用 | `CONTAINER_NAME`/`IMAGE` 改为字面量或解析后的真实值，其余补向导字段或 `:-` 兜底 |
+
+## 5.1 原始观察（首轮记录，保留以便对照）
 
 | 编号 | 内容 | 说明 |
 | --- | --- | --- |
-| R-01 | 卸载选「删除所有数据」后仍残留数据目录 | 三个应用均命中：`uninstall_callback` **如实上报** `RESIDUAL_COUNT`（如 `fn-ai-gateway` 报 `1`、`fn-dataease` 报 `2`），残留内容是容器以 **root** 写入的文件（`ai-gateway.db`、`upage.db`、`dataease` 的 `cache/`、`logs/`，属主 `root:root`），而回调以包用户运行、无权 unlink。属已知缺陷类「卸载谎报删除」的变体，本轮未改动脚本，测试后由有权限的会话手工清除 |
-| R-02 | 可选向导字段留空时 compose 告警 | `fn-upage` 的 `SERPER_API_KEY`、`WEATHER_API_KEY` 未填时，`docker compose` 输出 `variable is not set. Defaulting to a blank string.`；容器仍正常启动，属噪声但会让生命周期日志看起来像有错误。是否改用 `${VAR:-}` 写法留待评估 |
 | R-03 | `fn-upage` 上游自身告警 | 容器日志出现 `ERR_ERL_PERMISSIVE_TRUST_PROXY`（`express-rate-limit` 对 `trust proxy` 配置的校验告警），请求仍返回 `200`，属上游应用行为，不计转换缺陷 |
 | R-04 | 内部应用数据源真机未覆盖 | 三个应用均只验证到「安装 → 运行 → 入口可访问」；`fn-upage` 的模型调用链路使用**占位值**填参（`LLM_DEFAULT_MODEL`/`LLM_MINOR_MODEL` 填占位模型名、`PROVIDER_API_KEY` 为随机值），标记 `placeholderFilled`，**不能据此认为模型功能可用**；`fn-dataease` 未做登录后的仪表板操作 |
 
@@ -100,7 +138,13 @@ lastVerified: 2026-11-05
 | --- | --- |
 | `apps/fn-dataease/app/seed/conf/application.yml` | 新增：自写的最小数据源配置（种子） |
 | `apps/fn-dataease/cmd/install_callback` | 增加「缺失时铺入种子配置」逻辑 |
+| `apps/fn-dataease/app/docker/docker-compose.yaml` | 加 `user: "${TRIM_UID}:${TRIM_GID}"` |
+| `apps/fn-ai-gateway/app/docker/docker-compose.yaml` | 加 `user: "${TRIM_UID}:${TRIM_GID}"` |
+| `apps/fn-ai-gateway/cmd/install_callback` | 由空实现改为预建挂载源目录（包用户属主） |
+| `apps/fn-upage/app/docker/docker-compose.yaml` | 加 `user:`；可选变量改 `${VAR:-}`；补 `HOME`/缓存目录环境变量；补 `/app/public/uploads` 挂载 |
+| `apps/fn-upage/cmd/install_callback` | 由空实现改为预建四个挂载源目录 |
 | `docs/apps/fn-dataease.md` | 补充 3.1.0 起必须的外置配置说明，并修正「缺配置」时的实际表现 |
+| `docs/development/1panel-conversion.md` | 新增「运行身份与删除残留（真机定案）」与「compose 环境变量不得留空未定义」两节 |
 | `docs/development/environment-and-scripts.md` | 把「塞隐藏 input」改写为本轮实测有效的「拦截 `input.click()`」做法，并补口令注入纪律 |
 
 ## 8. 变更记录
@@ -108,3 +152,4 @@ lastVerified: 2026-11-05
 | 日期 | 变更 |
 | --- | --- |
 | 2026-11-05 | 建立本报告：覆盖 2026-11-04 同步批次中 3 个配置改动应用的安装测试；登记缺陷 D-01（`fn-dataease` 缺外置数据源配置）与修复复测结果；登记 4 项遗留风险；设备已恢复原状。 |
+| 2026-11-05 | **追加轮次（用户裁定后）**：R-01 卸载残留定位为「容器以 root 写数据」并改用 `user: "${TRIM_UID}:${TRIM_GID}"` 修复，三应用复测均 `Application data deleted`、残留 0；记录固定 `user: "1000:1000"` 的实测反例。R-02 按「有默认值补向导、空有语义用 `${VAR:-}`」口径处理。新增 R-05（`fn-upage` 非 root 启动需 `HOME` 与 `/app/public/uploads` 挂载）并修复复测。登记全仓同类 25 个应用/58 个变量为后续任务。 |

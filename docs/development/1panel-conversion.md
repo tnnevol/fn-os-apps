@@ -846,6 +846,43 @@ fi
 **必须先做、与权限无关的一项**：把「删除失败却打印 `Application data deleted.`」改成**如实上报**——
 在这之前不得宣称「删除所有数据」已实现。
 
+### 运行身份与「删除所有数据」残留（2026-11-05 真机定案）
+
+**现象**：`fn-ai-gateway`/`fn-upage`/`fn-dataease` 卸载选「删除所有数据」后仍残留数据文件，回调如实报
+`RESIDUAL_COUNT`。残留文件属主是 `root:root`——容器没写 `user:`，以镜像默认（root）身份把数据写进挂载目录，
+而回调以包用户运行，对 root 创建的子目录（常为 `700`）无权递归删除。
+
+**正解：`user: "${TRIM_UID}:${TRIM_GID}"`，真机已实证变量可展开**：
+
+| 观测点 | 实测值（`fn-ai-gateway`） |
+| --- | --- |
+| 容器运行身份 | `docker inspect` 的 `Config.User=963:958`，与本次安装的包用户一致 |
+| 容器内身份 | `docker exec fn-ai-gateway id` → `uid=963 gid=958` |
+| 数据文件属主 | `ai-gateway.db` 属主 `docker-fn-ai-gateway`（即包用户），不再是 `root` |
+| 入口 | `http=200`，功能正常 |
+| 卸载（删除所有数据） | 日志 `Application data deleted: /vol2/@appdata/fn-ai-gateway`，**无 `RESIDUAL_COUNT`**；目录条目数为 0 |
+| 补充要求 | 挂载源目录须在 `install_callback` 里由包用户 `mkdir -p` 先建好，否则 Docker 会以 root 建目录 |
+
+**为什么不是固定 `1000:1000`**（同一轮实测反例）：写死 `1000:1000` 时容器确实能写（文件属主变成 uid 1000），
+但 **uid 1000 在设备上是管理员人类账号**，且容器新建子目录的 `700` 会把继承来的 ACL `mask` 压成 `---`，
+包用户**仍然删不掉** —— 卸载日志照旧出现 `RESIDUAL_COUNT`。包用户 uid 是**安装时动态分配**（同一台设备上见过
+787、963），任何写死的 uid 都会与它错位，因此必须用平台注入的 `TRIM_UID`/`TRIM_GID`。
+
+### compose 环境变量不得留空未定义（2026-11-05）
+
+**现象**：可选向导字段留空时，平台不会把它们传给 compose，于是 `docker compose` 打印
+`The "X" variable is not set. Defaulting to a blank string.`，让生命周期日志看起来像出错（`fn-upage` 一次安装出现 5 条）。
+
+**规则**（两条择一，按「空是否有语义」判断）：
+
+| 情形 | 做法 |
+| --- | --- |
+| 该字段有**有意义的默认值** | 在 `wizard/install` 与 `wizard/config` 里把 `initValue` 填成该默认值 |
+| 该字段的「空」本身是语义（官方地址、不启用某功能、可选的第三方密钥） | compose 写成 `${VAR:-}`，保证变量**始终有定义**且值为空 |
+
+不要给密钥类字段编默认值（那等于内置一个假凭据）；也不要把「空即不启用」的字段强行填成默认开启。
+批量审计口径：compose 引用的 `${VAR}` 中，若向导字段可选且 `initValue` 为空，即命中本规则。
+
 ## 待确认
 
 以下事实尚未确认，转换时遇到对应场景应先暂停并上报，不要按猜测实现：
