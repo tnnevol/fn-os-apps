@@ -2,6 +2,10 @@ services:
   gotify:
     container_name: fn-gotify
     image: gotify/server:3.1.1
+    # 运行身份对齐包用户：镜像层默认 root，以 root 运行会让运行期写入的文件属 root，
+    # 卸载回调（包用户）删不掉，选「删除所有数据」后仍留残留。
+    user: "${TRIM_UID}:${TRIM_GID}"
+
     environment:
       - TZ=${TIME_ZONE}
       # 容器内监听端口，与下方端口映射保持一致

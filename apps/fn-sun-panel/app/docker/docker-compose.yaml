@@ -2,6 +2,10 @@ services:
   sun-panel:
     container_name: fn-sun-panel
     image: hslr/sun-panel:1.8.1
+    # 运行身份对齐包用户：镜像层默认 root，以 root 运行会让运行期写入的文件属 root，
+    # 卸载回调（包用户）删不掉，选「删除所有数据」后仍留残留。
+    user: "${TRIM_UID}:${TRIM_GID}"
+
     ports:
       - "${APP_PORT}:3002"
     restart: always
@@ -10,3 +14,9 @@ services:
       - "${TRIM_PKGVAR}/data/conf:/app/conf"
       - "${TRIM_PKGVAR}/data/uploads:/app/uploads"
       - "${TRIM_PKGVAR}/data/database:/app/database"
+      # 应用启动时在 WorkDir(/app) 下的 ./runtime/runlog 写日志，镜像层该目录属 root；
+      # 以包用户运行会 panic: failed to create log file ./runtime/runlog/running.log。
+      # 镜像内该目录为空，单独挂出来即可（不遮蔽任何静态资源）。
+      - "${TRIM_PKGVAR}/data/runtime:/app/runtime"
+      # 语言文件同样在启动时导出到 WorkDir 下的 ./lang（镜像内没有该目录，属运行期产物）
+      - "${TRIM_PKGVAR}/data/lang:/app/lang"
