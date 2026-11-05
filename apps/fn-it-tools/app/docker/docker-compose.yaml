@@ -8,3 +8,8 @@ services:
     ports:
       - "${APP_PORT}:80"
     restart: always
+    volumes:
+      # nginx 以非 root 运行时要写 /var/cache/nginx（临时目录）与 /var/run（pid），
+      # 两者都在镜像层且归 root；不挂出来会 mkdir 失败并重启循环（真机复现）。
+      - "${TRIM_PKGVAR}/cache:/var/cache/nginx"
+      - "${TRIM_PKGVAR}/run:/var/run"

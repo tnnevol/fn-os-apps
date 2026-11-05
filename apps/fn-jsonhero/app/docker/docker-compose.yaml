@@ -2,9 +2,7 @@ services:
   jsonhero:
     container_name: fn-jsonhero
     image: henryclw/jsonhero-web:latest
-    # 运行身份对齐包用户：镜像层默认 root，以 root 写数据会让卸载「删除所有数据」后残留；
-    # 容器以包用户运行，运行期写入的文件属主才与卸载回调一致。
-    user: "${TRIM_UID}:${TRIM_GID}"
+    # USER-EXCEPTION: 启动时用 npm 重建前端，需要写 /app/build、./app/tailwind.css 与 /.npm（均镜像层），非 root Permission denied
     # 与 1Panel 上游保持一致：不指定 user，使用镜像自带用户。
     # 该镜像启动时会用 npm 重新构建前端，需要写 /app/build、./app/tailwind.css
     # 与 /.npm（均在镜像层）。自行加 user: 降权会 Permission denied；

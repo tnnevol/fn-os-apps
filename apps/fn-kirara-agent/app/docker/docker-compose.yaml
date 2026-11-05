@@ -11,3 +11,6 @@ services:
     volumes:
       # 智能体数据，落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）
       - "${TRIM_PKGVAR}/data:/app/data"
+      # 应用启动时在工作目录下建 logs 目录（相对路径），镜像层不可写；
+      # 不挂出来会 PermissionError: [Errno 13] Permission denied 并重启循环（真机复现）。
+      - "${TRIM_PKGVAR}/logs:/app/logs"

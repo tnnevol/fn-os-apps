@@ -111,6 +111,38 @@ lastVerified: 2026-11-05
 | `@appconf/<app>` 空目录不回收 | 设备上累计 **195 个**（每个装过的应用一个，均为 0 条目） | 框架创建后不随卸载删除；属平台侧行为，批量整改时需确认是否可安全清理 |
 | `@appdata/<app>` 父目录保留 | 卸载「删除所有数据」后父目录仍在、条目数 **0** | 与既有结论一致：平台保留目录，应用只删内容 |
 
+## A 类批量推进与第 1 批真机结果（2026-11-05 下午）
+
+机械改造：76 个应用加 `user: "${TRIM_UID}:${TRIM_GID}"`，35 个 `install_callback` 补「由包用户预建挂载源目录」。
+排除 10 个自带降权变量的镜像（`PUID/PGID/NB_UID/CHOWN_HOME`）。
+
+第 1 批（6 个无外部依赖应用，逐装-探-卸）：
+
+| 应用 | 判定 | 说明 |
+| --- | --- | --- |
+| `fn-beszel` / `fn-gatus` / `fn-artalk` | **PASS** | 入口 200 / 200 / 302 |
+| `fn-it-tools` | FAIL → **PASS** | nginx 非 root 建不了 `/var/cache/nginx/client_temp`；补挂 `cache`+`run` 后 200 |
+| `fn-kirara-agent` | FAIL → **PASS** | Python 在工作目录建 `logs` 被拒；补挂 `logs` 后 200 |
+| `fn-jsonhero` | FAIL → **PASS** | 该镜像需要 root 重建前端（原注释已写），撤销 `user:` 并标 `# USER-EXCEPTION`，200 |
+
+### 教训：批量脚本会覆盖「已记录的例外」
+
+`fn-jsonhero`/`fn-emlog`/`fn-lsky-pro`/`fn-music-tag-web` 四个应用的 compose 里**原本就有真机结论**
+写明「必须 root、加 `user:` 会 Permission denied」。机械改造把它们一起改了。已全部撤销并补
+`# USER-EXCEPTION: <原因>` 标记（check 现在会放行带标记的例外）。
+
+**因此在批量整改前应先扫一遍「注释里已有 root 结论」的应用**，判据是 compose 注释含
+「不指定 user / 需要 root / Permission denied / 降权失败」等字样——本次用这条规则找回了 4 个。
+
+### 加 `user:` 后常见的两类补救（真机验证）
+
+| 现象（容器日志） | 原因 | 补救 |
+| --- | --- | --- |
+| `mkdir() "/var/cache/nginx/client_temp" failed (13: Permission denied)` | nginx 临时目录在镜像层、归 root | 挂 `${TRIM_PKGVAR}/cache:/var/cache/nginx`、`${TRIM_PKGVAR}/run:/var/run` |
+| `PermissionError: [Errno 13] Permission denied: 'logs'`（相对路径） | 应用在 WorkDir 建目录 | 挂 `${TRIM_PKGVAR}/logs:<对应路径>` |
+| `EACCES ... /.npm` / `HOME` 不可写 | Home 指向 `/` | 设 `HOME`/`XDG_CACHE_HOME`/`npm_config_cache` 到已挂载的可写目录 |
+| s6/supervisord 初始化失败 | 镜像初始化强依赖 root | 不加 `user:`，标 `# USER-EXCEPTION` |
+
 ## 明细## 明细
 
 ### A 类：镜像默认 root 且 compose 未写 `user:`（96 个）
