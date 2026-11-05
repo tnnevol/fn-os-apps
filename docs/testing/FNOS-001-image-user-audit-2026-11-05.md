@@ -143,6 +143,36 @@ lastVerified: 2026-11-05
 | `EACCES ... /.npm` / `HOME` 不可写 | Home 指向 `/` | 设 `HOME`/`XDG_CACHE_HOME`/`npm_config_cache` 到已挂载的可写目录 |
 | s6/supervisord 初始化失败 | 镜像初始化强依赖 root | 不加 `user:`，标 `# USER-EXCEPTION` |
 
+## 第 2、3 批真机结果（2026-11-05 晚）
+
+第 2 批（5 个）：`fn-clawswarm` PASS(200)、`fn-kkfileview` PASS(302)、`fn-certd` PASS(200)、
+`fn-bililive-go` PASS(200)、`fn-ai-portal` PASS(200)——后三者首轮 FAIL，按下表修好后复测通过。
+
+第 3 批（5 个）：`fn-adguardhome` PASS(302)；`fn-koishi` / `fn-archivebox` / `fn-laya-server`
+属**安装轮询超时**（镜像拉取慢，非应用缺陷），预拉镜像后重测；`fn-llama-cpp` 判定 **BLOCKED**：
+容器日志 `failed to load model '/models/model.gguf'`——该应用需要用户自备模型文件，属环境依赖。
+
+### 本轮新增的 root 例外（真机证据）
+
+| 应用 | 容器日志 | 结论 |
+| --- | --- | --- |
+| `fn-bililive-go` | `chown: .../opt/bililive: Operation not permitted` + `failed switching to "0:0"` | entrypoint 必须 root chown 后 gosu 切换 |
+| `fn-koishi` | `chown: /koishi: Operation not permitted` | 启动要 chown 应用目录 |
+| `fn-ai-portal` | `su: must be suid to work properly`（反复） | 镜像 entrypoint 内部用 `su` 降权 |
+| `fn-adguardhome` | `is the first launch of adguard home; you must run it as administrator` | 首启要求管理员身份 |
+| `fn-jsonhero`/`fn-emlog`/`fn-lsky-pro`/`fn-music-tag-web` | 见上节 | 批量前已存在的既有结论，被我误改后回滚 |
+
+以上均按规则撤销 `user:` 并加 `# USER-EXCEPTION: <原因>`，`check --apps` 放行。
+
+### 可修的失败（非例外）
+
+| 应用 | 日志 | 补救 |
+| --- | --- | --- |
+| `fn-certd` | `EACCES ... open 'logs/app.log'`（log4js） | 挂 `${TRIM_PKGVAR}/logs:/app/logs` |
+| `fn-archivebox` | `archivebox user cannot write to /data ... Current owner is 0:0` | 历史残留（改造前以 root 建目录）；清掉 `@appdata/fn-archivebox` 重装即通过预建 |
+| `fn-it-tools` | nginx 缓存目录 | 见上节 |
+| `fn-kirara-agent` | `logs` 相对目录 | 见上节 |
+
 ## 明细## 明细
 
 ### A 类：镜像默认 root 且 compose 未写 `user:`（96 个）

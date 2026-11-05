@@ -12,3 +12,6 @@ services:
     volumes:
     # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
       - "${TRIM_PKGVAR}/data/certd:/app/data"
+      # log4js 启动时要写工作目录下的 logs/app.log，镜像层不可写；
+      # 不挂出来会 EACCES: permission denied, open 'logs/app.log' 并重启循环（真机复现）。
+      - "${TRIM_PKGVAR}/logs:/app/logs"

@@ -2,9 +2,7 @@ services:
   app:
     container_name: fn-ai-portal
     image: 1panel/ai-portal:v1.0.10
-    # 运行身份对齐包用户：镜像层默认 root，以 root 写数据会让卸载「删除所有数据」后残留；
-    # 容器以包用户运行，运行期写入的文件属主才与卸载回调一致。
-    user: "${TRIM_UID}:${TRIM_GID}"
+    # USER-EXCEPTION: 镜像 entrypoint 内部用 su 降权，非 root 起会反复报 "su: must be suid to work properly" 并重启循环
     environment:
       - INIT_ADMIN_PASSWORD=${INIT_ADMIN_PASSWORD}
       - PANEL_BASE_URL=${PANEL_BASE_URL}
