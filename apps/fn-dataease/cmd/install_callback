@@ -27,6 +27,21 @@ mkdir -p "${TRIM_PKGVAR}/logs"
 
 chmod -R 770 "${TRIM_PKGVAR}/data" 2>/dev/null || true
 
+# 数据源配置必须落成文件：镜像不读 PANEL_DB_*，改由 /opt/apps/config/application.yml 的
+# spring.datasource 引用这些环境变量。缺这份文件时 Spring 会连默认的 localhost:3306，
+# 容器进入重启循环、入口不可访问（真机已复现）。
+# 种子随包放在 ${TRIM_APPDEST}/seed/，仅在缺失时铺入，用户改过的不覆盖。
+SEED_DIR="${TRIM_APPDEST}/seed"
+if [ ! -s "${TRIM_PKGVAR}/conf/application.yml" ]; then
+    if [ -f "${SEED_DIR}/conf/application.yml" ]; then
+        cp "${SEED_DIR}/conf/application.yml" "${TRIM_PKGVAR}/conf/application.yml"
+        echo "Seeded config: conf/application.yml"
+    else
+        echo "Seed file missing: ${SEED_DIR}/conf/application.yml" >"${TRIM_TEMP_LOGFILE}"
+        exit 1
+    fi
+fi
+
 echo "Prepared application data directory: ${TRIM_PKGVAR}/data"
 
 exit 0

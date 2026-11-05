@@ -1,0 +1,34 @@
+# DataEase 3.x 最小可用配置（本项目自写，随应用包提供）
+#
+# 为什么需要这份文件：dataease 镜像不会自己读 PANEL_DB_* 环境变量，
+# 它把数据源交给 Spring Boot 的 spring.datasource 配置；没有外置配置时
+# Spring 会用默认值连 localhost:3306，表现为容器重启循环、入口不可访问。
+# 这里只写「让应用连上向导填写的数据库并完成建表」所需的最小集合。
+spring:
+  datasource:
+    driver-class-name: org.mariadb.jdbc.Driver
+    url: jdbc:mariadb://${PANEL_DB_HOST}:${PANEL_DB_PORT}/${PANEL_DB_NAME}?useUnicode=true&characterEncoding=UTF-8&characterSetResults=UTF-8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowPublicKeyRetrieval=true
+    username: ${PANEL_DB_USER}
+    password: ${PANEL_DB_USER_PASSWORD}
+    hikari:
+      maximum-pool-size: 20
+  flyway:
+    enabled: false
+  jpa:
+    hibernate:
+      ddl-auto: update
+      naming:
+        # 镜像内自带该策略类；不显式指定会让 Hibernate 退回默认命名，建出的列名与应用预期不一致
+        physical-strategy: io.dataease.config.DynamicCaseNamingStrategy
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+        jdbc:
+          batch_size: 1000
+        temp:
+          use_jdbc_metadata_defaults: false
+    show-sql: false
+  servlet:
+    multipart:
+      max-file-size: 500MB
+      max-request-size: 500MB
