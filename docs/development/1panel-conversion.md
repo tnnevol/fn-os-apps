@@ -771,6 +771,7 @@ disable_authorization_path = true
 - [ ] `app/ui/config` 的 `port` 与向导字段同名（`${APP_PORT}`，不写死）；非 HTTP 端口没有桌面入口（`app/ui/config` 写 `{}` 且 `manifest` 不含 `desktop_*` 两行）。
 - [ ] **入口 ID ≤ 32 字符**（`<app>` ≥ 18 字符时用 `<appname>.main`），且入口键以 `appname` 为前缀、与 `manifest.desktop_applaunchname` 逐字符一致。
 - [ ] 镜像标签不是 `latest`，也没有未解析的变量插值。
+- [ ] **compose 需要 `user:` 时写 `${TRIM_UID}:${TRIM_GID}`**，没有写死数字 uid / `root` / `"0:0"`；确需 root 的镜像已在 `user:` 上方标注 `# USER-EXCEPTION: <原因>`（`pnpm run check -- --apps` 会拦）。挂载源目录已在 `install_callback` 里由包用户预创建，否则 Docker 会以 root 建目录。
 - [ ] 文档内没有开发机绝对路径，设备端路径已注明指向目标 NAS。
 - [ ] `bash -n apps/fn-<app>/cmd/*` 通过；`pnpm run check -- --all`、`pnpm run lint`、`git diff --check` 通过。
 
@@ -847,6 +848,16 @@ fi
 在这之前不得宣称「删除所有数据」已实现。
 
 ### 运行身份与「删除所有数据」残留（2026-11-05 真机定案）
+
+> **强制规则（后续任何应用都按此执行）**
+>
+> 1. compose **只要需要写 `user:`，一律写 `user: "${TRIM_UID}:${TRIM_GID}"`**，不要写死任何数字 uid、
+>    不要写 `root`、不要写 `"0:0"`。
+> 2. 镜像层默认 root 且不写 `user:` 的，视为**缺陷**：容器会以 root 写数据，导致卸载删不干净（见下）。
+> 3. 确需 root 的镜像（初始化强依赖 root，见「裁决 B 例外表」）必须保留 `user: "0:0"` 时，
+>    在 `user:` 上方加一行 `# USER-EXCEPTION: <原因>`，把「为什么必须 root」写在旁边。
+> 4. 这项由 `pnpm run check -- --apps` 机器校验（`--all` 已包含，PR 的 `sdd-check.yml` 会拦截）：
+>    `user:` 值不是 `${TRIM_UID}:${TRIM_GID}` 且没有 `# USER-EXCEPTION:` 标记即报错。
 
 **现象**：`fn-ai-gateway`/`fn-upage`/`fn-dataease` 卸载选「删除所有数据」后仍残留数据文件，回调如实报
 `RESIDUAL_COUNT`。残留文件属主是 `root:root`——容器没写 `user:`，以镜像默认（root）身份把数据写进挂载目录，
@@ -958,3 +969,5 @@ fi
 | 2026-10-16 | **裁决 B 例外条款按现象改写**：原写「s6-overlay 类镜像（`Entrypoint: ["/init"]`）」是**按实现**判定；实测 `neko` 用 **supervisord** 但机制相同（`user=root` 启动 + `%(ENV_USER)s` 降权 + `chown=root:neko`），故改为「**镜像初始化强依赖 root**」这一现象。另补两个易错点：① 镜像层 `USER` 环境变量 ≠ 可注入的 uid 机制（`neko` 的 `USER=neko` 只是降权目标）；② 判据是 entrypoint 源码而非镜像名（`wordpress` 的条件式 `chown` + `\|\| true` 不算，`roundcube` 因 `:=` 默认值必执行则算）。 |
 | 2026-10-16 | 属主待验证清单补入 `fn-neko`（镜像内 `neko` 用户固定 uid 1000，与包用户 uid 9xx 不匹配）。该应用归「初始化强依赖 root」例外（supervisord），故运行身份保持原样；其 `/home/neko`（`0700`）的写入能力待真机确认。 |
 | 2026-10-16 | task-23（`openlist`/`gsmanager`/`neko`）交付。`neko` 的 `IMAGE_NAME` 选项由 **17 删至 13**（`vncviewer`/`arm-*` 实测 tag 不存在）；`openlist` 镜像写死 `v4.2.6`（取自上游 `init.sh`）、删 `PRE_INSTALLED` 死字段、`user: "0:0"` 改包用户；`gsmanager` 加 `user:` 并改 `container_name`。**另删除 `apps/docker-ui-application-sample/`** —— 那是 `fnpack` 内置示例模板的残留（git 未跟踪、无任何引用），它的存在使全量 lint 失败 10 项。 |
+| 2026-11-05 | **运行身份定案（真机复测）**：compose 只要需要写 `user:`，一律 `user: "${TRIM_UID}:${TRIM_GID}"`——实测该变量在 compose 中可展开（`Config.User` 与本次安装的包用户一致），三个应用（`fn-ai-gateway`/`fn-upage`/`fn-dataease`）卸载「删除所有数据」后残留条目均为 0。**记录反例**：写死 `"1000:1000"` 无效——uid 1000 在设备上是管理员人类账号，容器新建子目录的 `700` 会把继承 ACL 的 `mask` 压成 `---`，包用户仍删不掉；包用户 uid 还是安装时动态分配的（同机见过 787/800/933/963）。确需 root 的镜像（如 `fn-tinyrdm`：镜像 nginx 必须写镜像层 `/var/lib/nginx/{logs,tmp}`）保留 `user: "0:0"` 并加 `# USER-EXCEPTION: <原因>`。新增 `pnpm run check -- --apps` 机器校验并纳入 `--all`（PR 的 `sdd-check.yml` 会拦），自检清单同步加一条。 |
+| 2026-11-05 | **compose 环境变量不得留空未定义**：可选向导字段留空时平台不传变量，`docker compose` 会打印 `variable is not set` 告警。口径：有意义的默认值补进 `wizard/install` 与 `wizard/config`；「空本身是语义」的字段（模型接口地址=官方地址、视觉/联网=不启用、可选第三方密钥）在 compose 写 `${VAR:-}`，保证变量始终有定义且值为空；密钥类不得编默认值。全仓审计出 25 个应用/58 个变量属此口径，本轮只改 `fn-upage` 等 3 个应用，其余登记为后续批次。 |

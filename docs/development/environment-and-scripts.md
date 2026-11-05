@@ -329,9 +329,16 @@ pnpm run build -- --docs
 # 文档或规格改动
 pnpm run check -- --sdd --docs
 
-# 完整门禁
+# 只查应用编排规则（compose 运行身份）
+pnpm run check -- --apps
+
+# 完整门禁（SDD + 文档构建 + 应用编排规则）
 pnpm run check -- --all
 ```
+
+`--apps` 校验 `apps/*/app/docker/docker-compose.yaml` 的运行身份写法：`user:` 只允许
+`"${TRIM_UID}:${TRIM_GID}"`，写死数字 uid（含 `"1000:1000"`、`"0:0"`）一律报错；确需 root 的镜像必须在
+`user:` 上方加 `# USER-EXCEPTION: <原因>` 才放行。`--all` 已包含该项，PR 的 `sdd-check.yml` 会自动拦截。
 
 涉及 FPK、权限、Docker、网关或生命周期的改动，还必须在真实 fnOS 设备上完成安装、启动、停止、升级和卸载验证。
 
