@@ -8,6 +8,7 @@ services:
     ports:
       - "${APP_PORT}:8086"
     restart: always
+    # USER-EXCEPTION: 镜像 nginx 必须写镜像层 /var/lib/nginx/{logs,tmp}，非 root 必然 Permission denied
     # 与 1Panel 上游保持一致：user: "0:0"。
     # 该镜像的 nginx 在启动时要创建并写入 /var/lib/nginx/{logs,tmp}（镜像层，归 root），
     # 以非 root 运行会 Permission denied 并无限重启。已验证三种非 root 方案均不可行：

@@ -2,7 +2,7 @@ import { cancel, isCancel, multiselect } from '@clack/prompts'
 import type { FpkApp } from '../config/workspace.js'
 
 export type BuildSelection = 'fpk' | 'docs'
-export type CheckSelection = 'sdd' | 'docs'
+export type CheckSelection = 'sdd' | 'docs' | 'apps'
 
 /**
  * 多选提示，只有一个可选值时跳过询问。
@@ -35,6 +35,7 @@ export async function askCheckSelection(): Promise<CheckSelection[] | undefined>
   return await chooseMany('选择检查任务（可多选）', [
     { value: 'sdd', label: 'SDD 文档', hint: '校验需求、计划、编号和内部链接' },
     { value: 'docs', label: '项目文档', hint: '构建 VitePress 文档站点' },
+    { value: 'apps', label: '应用编排规则', hint: '校验 compose 的运行身份写法' },
   ], '已取消检查') as CheckSelection[] | undefined
 }
 
