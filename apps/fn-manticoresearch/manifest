@@ -9,6 +9,4 @@ maintainer_url        = https://github.com/manticoresoftware/manticoresearch
 distributor           = tnnevol
 distributor_url       = https://github.com/tnnevol/fn-os-apps
 os_min_version        = 1.1.8
-desktop_uidir         = ui
-desktop_applaunchname = fn-manticoresearch.Application
 disable_authorization_path = true

@@ -1,13 +1,1 @@
-{
-  ".url": {
-    "fn-postgres.Application": {
-      "title": "PostgreSQL",
-      "icon": "images/icon_{0}.png",
-      "type": "url",
-      "protocol": "tcp",
-      "port": "${APP_PORT}",
-      "url": "/",
-      "allUsers": false
-    }
-  }
-}
+{}
