@@ -1,7 +1,7 @@
 services:
   dataease:
     container_name: fn-dataease
-    image: registry.cn-qingdao.aliyuncs.com/dataease/dataease:v2.10.27
+    image: registry.cn-qingdao.aliyuncs.com/dataease/dataease:v3.1.0
     stop_signal: SIGTERM
     stop_grace_period: 15s
     environment:
@@ -18,11 +18,18 @@ services:
     restart: always
     volumes:
     # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
-      # 容器内目标路径取自所选版本 v2.10.27 的上游编排（该版本是 dataease2.0 路径，不是 3.0）
+      # 容器内目标路径取自 v3.1.0 的上游编排：3.x 系列使用 /opt/dataease3.0/，
+      # 与 2.x 的 /opt/dataease2.0/ 不同，且新增 6 个用途目录；宿主侧路径保持不变，升级不丢数据。
       - "${TRIM_PKGVAR}/conf:/opt/apps/config"
-      - "${TRIM_PKGVAR}/logs:/opt/dataease2.0/logs"
-      - "${TRIM_PKGVAR}/data/static-resource:/opt/dataease2.0/data/static-resource"
-      - "${TRIM_PKGVAR}/cache:/opt/dataease2.0/cache"
-      - "${TRIM_PKGVAR}/data/geo:/opt/dataease2.0/data/geo"
-      - "${TRIM_PKGVAR}/data/exportData:/opt/dataease2.0/data/exportData"
-      - "${TRIM_PKGVAR}/data/font:/opt/dataease2.0/data/font"
+      - "${TRIM_PKGVAR}/logs:/opt/dataease3.0/logs"
+      - "${TRIM_PKGVAR}/data/static-resource:/opt/dataease3.0/data/static-resource"
+      - "${TRIM_PKGVAR}/cache:/opt/dataease3.0/cache"
+      - "${TRIM_PKGVAR}/data/geo:/opt/dataease3.0/data/geo"
+      - "${TRIM_PKGVAR}/data/map:/opt/dataease3.0/data/map"
+      - "${TRIM_PKGVAR}/data/appearance:/opt/dataease3.0/data/appearance"
+      - "${TRIM_PKGVAR}/data/exportData:/opt/dataease3.0/data/exportData"
+      - "${TRIM_PKGVAR}/data/plugin:/opt/dataease3.0/data/plugin"
+      - "${TRIM_PKGVAR}/data/font:/opt/dataease3.0/data/font"
+      - "${TRIM_PKGVAR}/data/driver:/opt/dataease3.0/data/driver"
+      - "${TRIM_PKGVAR}/data/i18n:/opt/dataease3.0/data/i18n"
+      - "${TRIM_PKGVAR}/data/report:/opt/dataease3.0/data/report"

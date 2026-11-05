@@ -1,18 +1,32 @@
 services:
   upage:
     container_name: fn-upage
-    image: halohub/upage:1.0.1
+    image: halohub/upage:2.0.0
     environment:
       - LLM_PROVIDER=${LLM_PROVIDER}
       - PROVIDER_API_KEY=${PROVIDER_API_KEY}
       - PROVIDER_BASE_URL=${PROVIDER_BASE_URL}
       - LLM_DEFAULT_MODEL=${LLM_DEFAULT_MODEL}
       - LLM_MINOR_MODEL=${LLM_MINOR_MODEL}
+      # 2.0.0 新增：视觉模型与联网能力（可选，留空即使用镜像默认值）
+      - LLM_VISION_PROVIDER=${LLM_VISION_PROVIDER}
+      - LLM_VISION_MODEL=${LLM_VISION_MODEL}
+      - VISION_PROVIDER_BASE_URL=${VISION_PROVIDER_BASE_URL}
+      - VISION_PROVIDER_API_KEY=${VISION_PROVIDER_API_KEY}
+      - SERPER_API_KEY=${SERPER_API_KEY}
+      - WEATHER_API_KEY=${WEATHER_API_KEY}
+      - MAX_UPLOAD_SIZE_MB=${MAX_UPLOAD_SIZE_MB}
+      # 2.0.0 上游固定值，不暴露为向导字段
+      - USAGE_LOG_FILE=true
+      - OPERATING_ENV=production
+      - LOG_LEVEL=debug
     ports:
       - "${APP_PORT}:3000"
     restart: always
     volumes:
     # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
+    # 上游 2.0.0 把宿主源从 ./data/data 等改为 ./data 等，容器目标 /app/{data,logs,storage} 未变；
+    # 这里保留既有宿主子目录，避免升级后用户数据与生成产物看起来消失。
       - "${TRIM_PKGVAR}/data/data:/app/data"
       - "${TRIM_PKGVAR}/data/logs:/app/logs"
       - "${TRIM_PKGVAR}/data/storage:/app/storage"

@@ -8,11 +8,20 @@ if [ -z "${TRIM_PKGVAR}" ]; then
     exit 1
 fi
 
+# 目录清单与 app/docker/docker-compose.yaml 的挂载源一一对应；
+# v3.1.0 新增 map / appearance / plugin / driver / i18n / report 六个用途目录，
+# 不预创建时 Docker 会以 root 建出属主错误的目录，容器以包用户运行将无权写入。
 mkdir -p "${TRIM_PKGVAR}/cache"
 mkdir -p "${TRIM_PKGVAR}/conf"
+mkdir -p "${TRIM_PKGVAR}/data/appearance"
+mkdir -p "${TRIM_PKGVAR}/data/driver"
 mkdir -p "${TRIM_PKGVAR}/data/exportData"
 mkdir -p "${TRIM_PKGVAR}/data/font"
 mkdir -p "${TRIM_PKGVAR}/data/geo"
+mkdir -p "${TRIM_PKGVAR}/data/i18n"
+mkdir -p "${TRIM_PKGVAR}/data/map"
+mkdir -p "${TRIM_PKGVAR}/data/plugin"
+mkdir -p "${TRIM_PKGVAR}/data/report"
 mkdir -p "${TRIM_PKGVAR}/data/static-resource"
 mkdir -p "${TRIM_PKGVAR}/logs"
 

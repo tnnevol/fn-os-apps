@@ -38,6 +38,19 @@
                         "message": "请填写初始管理员密码"
                     }
                 ]
+            },
+            {
+                "type": "text",
+                "field": "TIME_ZONE",
+                "label": "时区",
+                "initValue": "Asia/Shanghai",
+                "helpText": "容器时区，例如 Asia/Shanghai。上游通过挂载宿主 /etc/localtime 生效，fnOS 改用 TZ 环境变量。",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请输入时区"
+                    }
+                ]
             }
         ]
     }

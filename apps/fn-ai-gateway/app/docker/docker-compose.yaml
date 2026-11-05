@@ -1,12 +1,17 @@
 services:
   ai-gateway:
     container_name: fn-ai-gateway
-    image: 1panel/ai-gateway:v1.3.0
+    image: 1panel/ai-gateway:v1.5.1
+    # 1.5.1 上游新增的启动契约：显式入口、清空 CMD、给健康检查留 70s 优雅停机
+    entrypoint: ["/usr/bin/ai-gateway"]
+    command: []
+    stop_grace_period: 70s
     environment:
       - AI_GATEWAY_DATABASE_DRIVER=sqlite
       - AI_GATEWAY_DATABASE_SQLITE_PATH=/opt/ai-gateway/data/db/ai-gateway.db
       - AI_GATEWAY_INITIAL_ADMIN_USERNAME=${AI_GATEWAY_INITIAL_ADMIN_USERNAME}
       - AI_GATEWAY_INITIAL_ADMIN_PASSWORD=${AI_GATEWAY_INITIAL_ADMIN_PASSWORD}
+      - TZ=${TIME_ZONE}
     healthcheck:
       test:
         - CMD-SHELL
@@ -23,3 +28,5 @@ services:
       - "${TRIM_PKGVAR}/data:/opt/ai-gateway/data"
       # 已删除上游的 /etc/1panel:/opt/ai-gateway/1panel 宿主挂载：
       # fnOS 上不存在 /etc/1panel，该路径为 1Panel 平台专属（见转换规约「存储与挂载」）。
+      # 1.5.1 上游另加了 /etc/localtime:/etc/localtime:ro，同为宿主绝对路径绑定挂载，
+      # 按转换规约一并删除，改用 TZ 环境变量的等价方案，不依赖宿主 /etc 目录。
