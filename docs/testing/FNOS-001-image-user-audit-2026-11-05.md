@@ -64,23 +64,54 @@ lastVerified: 2026-11-05
 
 **本轮未改动 A 类的任何应用**：批量改 96 个应用必须配同样的批量真机验证，否则等于用未验证的改动替换已验证的漏洞。
 
-## 第一批样例（已真机验证）
+## 第一批样例（已真机验证，4 个应用 / 3 种形态）
 
-从 A 类里挑一个形态最简单的应用先行验证「加 `user:` 后是否仍可用、卸载是否归零」，避免批量改完才发现方案不成立。
+按「先跑不同形态」的原则，从 A 类里挑了 4 个：单容器 Web、带上传目录、带 SQLite 库、带**外部 MySQL**。
 
-| 项 | 结果 |
-| --- | --- |
-| 应用 | `fn-glance`（Go 单二进制 + 单文件挂载 `glance.yml`） |
-| 改动 | 仅加 `user: "${TRIM_UID}:${TRIM_GID}"`，其余不动 |
-| 运行身份 | `docker inspect` → `Config.User=914:909`、`docker exec id` → `uid=914`（即本次安装的包用户） |
-| 入口 | `http://${FNOS_HOST}:8080/` → `200`，0 重启 |
-| 卸载（删除所有数据） | 日志 `Application data deleted: /vol2/@appdata/fn-glance`，**无 `RESIDUAL_COUNT`**；目录条目数 **0**；容器/网络已回收；入口回到 `000` |
+| 应用 | 形态 | 改动 | 结果 |
+| --- | --- | --- | --- |
+| `fn-glance` | Go 单二进制 + 单文件挂载 | 只加 `user:` | 包用户运行、入口 `200`、卸载残留 **0** |
+| `fn-gotify` | 带上传目录（`data/images`）+ SQLite | 加 `user:` + `install_callback` 预建 `data` | 包用户运行（`User=913:908`）、入口 `200`、`gotify.db`/`images`/`plugins` 全属包用户、卸载残留 **0** |
+| `fn-mblog` | 带 SQLite 数据库 | 加 `user:` + 预建 `data` | 包用户运行（`889:882`）、入口 `200`、`data.sqlite` 属包用户、卸载残留 **0** |
+| `fn-sun-panel` | 多目录（`conf`/`uploads`/`database`） | 见下方「变体一」 | 包用户运行（`843:836`）、入口 `200`、卸载残留 **0** |
 
-结论：A 类里「不依赖 root 初始化」的应用，只加一行 `user:` 即可修掉残留，不需要别的改动。
-其余 A 类应用按同样口径分批推进：先跑不同形态（带数据库、带上传目录、带 `HOME` 依赖）的少量应用，
-全部通过后再扩展。
+### 变体一：应用会往**镜像层目录**写东西（`fn-sun-panel`）
 
-## 明细
+加了 `user:` 后容器反复重启，日志依次报：
+
+1. `panic: failed to create log file ./runtime/runlog/running.log` —— 应用在 WorkDir(`/app`) 下的 `./runtime/runlog` 写日志；
+2. 补挂 `/app/runtime` 后改为 `ERROR lang/lang.go:23 输出语言文件出错: mkdir lang: permission denied` —— 它还要在 `/app/lang` 导出语言文件。
+
+两者在镜像里都属 `root`（`runtime/runlog` 存在、`lang` 不存在），非 root 写不了。处置：把这两处也挂到应用数据目录并预创建
+
+```yaml
+- "${TRIM_PKGVAR}/data/runtime:/app/runtime"
+- "${TRIM_PKGVAR}/data/lang:/app/lang"
+```
+
+**教训**：给「镜像层默认 root」的应用加 `user:` 时，要先看它启动时往镜像层哪些路径写。`/app/runtime`、`/app/lang` 这类**运行期产物目录**单独挂出来即可（镜像内为空，不遮蔽静态资源）；一旦发现，批量整改时同类应用要一并处理。
+
+### 变体二：镜像**自己降权**，不需要也不应该加 `user:`（`fn-flarum`）
+
+`fn-flarum` 在 A 类名单里（镜像 `config.User` 为空），但 compose 里已有：
+
+```yaml
+- PUID=${TRIM_UID}
+- PGID=${TRIM_GID}
+```
+
+真机验证：容器虽以 root 启动，但镜像内的 s6 初始化按 `PUID/PGID` 降权，**写入的文件属主全是包用户**（`/vol2/@appdata/fn-flarum/data/{assets,extensions,storage}` 均属 `docker-fn-flarum`）。所以它**不会**产生「卸载删不掉」的残留，也没有改 compose；这类镜像加 `user:` 反而会打断 s6 初始化。
+
+**结论**：审计只能筛出「可疑」，最终定性要看镜像是否自带降权机制（`PUID/PGID`、`NB_UID`、s6/supervisord 内部 `runuser` 等）。判定顺序与[转换规约](/development/1panel-conversion)的「裁决 B」一致。
+
+### 同时观测到的两类目录残留（与本轮改动无关）
+
+| 现象 | 实测 | 说明 |
+| --- | --- | --- |
+| `@appconf/<app>` 空目录不回收 | 设备上累计 **195 个**（每个装过的应用一个，均为 0 条目） | 框架创建后不随卸载删除；属平台侧行为，批量整改时需确认是否可安全清理 |
+| `@appdata/<app>` 父目录保留 | 卸载「删除所有数据」后父目录仍在、条目数 **0** | 与既有结论一致：平台保留目录，应用只删内容 |
+
+## 明细## 明细
 
 ### A 类：镜像默认 root 且 compose 未写 `user:`（96 个）
 
