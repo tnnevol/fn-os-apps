@@ -1,7 +1,7 @@
 services:
   stalwart-mail:
     container_name: fn-stalwart-mail
-    image: stalwartlabs/stalwart:v0.16.25-alpine
+    image: stalwartlabs/stalwart:v1.0.1-alpine
     ports:
       - "${HTTPS_PORT}:443"
       - "${APP_PORT}:8080"

@@ -1,7 +1,7 @@
 services:
   verdaccio:
     container_name: fn-verdaccio
-    image: verdaccio/verdaccio:6.10.5
+    image: verdaccio/verdaccio:7.0.2
     environment:
       - VERDACCIO_PORT=${APP_PORT}
     # 镜像内置用户是 uid=10001。挂载进来的配置目录属主是 fnOS 包用户，

@@ -1,7 +1,7 @@
 services:
   dbx:
     container_name: fn-dbx
-    image: t8y2/dbx:0.6.35
+    image: t8y2/dbx:0.6.61
     environment:
       # 上游把该字段归在 PANEL_DB_* 命名空间下，但它只是本应用自身的访问密码，不是外部数据库凭据
       - DBX_PASSWORD=${ACCESS_PASSWORD}

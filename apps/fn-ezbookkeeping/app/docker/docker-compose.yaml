@@ -1,7 +1,7 @@
 services:
   ezbookkeeping:
     container_name: fn-ezbookkeeping
-    image: mayswind/ezbookkeeping:2.0.1
+    image: mayswind/ezbookkeeping:2.1.1
     # 运行身份：镜像层已是非 root（config.User = "1000:1000"），按裁决 B 无需再加 user:。
     # 注意：该固定 uid(1000:1000) 与 fnOS 包用户 uid(9xx) 不同，属已登记的待验证项。
     ports:

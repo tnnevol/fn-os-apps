@@ -1,7 +1,7 @@
 services:
   miniflux:
     container_name: fn-miniflux
-    image: miniflux/miniflux:2.3.3
+    image: miniflux/miniflux:2.3.4
     environment:
       # 上游由 1Panel 服务选择器注入 PANEL_DB_*，fnOS 改为向导显式填写
       - DATABASE_URL=postgres://${DB_USERNAME}:${DB_PASSWORD}@${DB_HOST}?sslmode=disable

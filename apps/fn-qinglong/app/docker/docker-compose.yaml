@@ -1,7 +1,7 @@
 services:
   qinglong:
     container_name: fn-qinglong
-    image: whyour/qinglong:2.22.0-debian
+    image: whyour/qinglong:2.24.0-debian
     ports:
       - "${APP_PORT}:5700"
     restart: always

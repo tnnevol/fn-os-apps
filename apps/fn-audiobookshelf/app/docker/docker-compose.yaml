@@ -1,7 +1,7 @@
 services:
   audiobookshelf:
     container_name: fn-audiobookshelf
-    image: advplyr/audiobookshelf:2.37.1
+    image: advplyr/audiobookshelf:2.37.2
     # 按裁决 B：镜像层默认 root（config.User 为 null，Entrypoint 为 tini），加 user: 以包用户运行
     user: "${TRIM_UID}:${TRIM_GID}"
     ports:

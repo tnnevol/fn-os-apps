@@ -1,7 +1,7 @@
 services:
   openclaw:
     container_name: fn-openclaw
-    image: 1panel/openclaw:2026.9.8
+    image: 1panel/openclaw:2026.10.9
     init: true
     environment:
       - HOME=/home/node

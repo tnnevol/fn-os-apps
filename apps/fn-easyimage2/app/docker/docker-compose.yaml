@@ -1,7 +1,7 @@
 services:
   easyimage:
     container_name: fn-easyimage2
-    image: ddsderek/easyimage:v2.8.6
+    image: ddsderek/easyimage:v2.8.7
     environment:
       - TZ=${TIME_ZONE}
       - DEBUG=false

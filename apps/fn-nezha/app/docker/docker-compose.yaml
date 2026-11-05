@@ -1,7 +1,7 @@
 services:
   dashboard:
     container_name: fn-nezha
-    image: ghcr.io/nezhahq/nezha:v2.3.18
+    image: ghcr.io/nezhahq/nezha:v2.6.1
     ports:
       - "${APP_PORT}:8008"
     restart: always

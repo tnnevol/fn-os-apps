@@ -1,7 +1,7 @@
 services:
   alist:
     container_name: fn-alist
-    image: xhofe/alist:v3.64.0
+    image: xhofe/alist:v3.66.0
     environment:
       # TRIM_UID/TRIM_GID 由 fnOS 注入，指向本应用的包用户；
       # 上游默认 PUID=0/PGID=0（即 root），按规约改为包用户运行。

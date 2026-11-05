@@ -1,7 +1,7 @@
 services:
   app:
     container_name: fn-ai-portal
-    image: 1panel/ai-portal:v1.0.8
+    image: 1panel/ai-portal:v1.0.10
     environment:
       - INIT_ADMIN_PASSWORD=${INIT_ADMIN_PASSWORD}
       - PANEL_BASE_URL=${PANEL_BASE_URL}

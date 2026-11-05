@@ -1,7 +1,7 @@
 services:
   wordpress:
     container_name: fn-wordpress
-    image: wordpress:7.1.3
+    image: wordpress:7.1.4
     # 镜像层未设置 USER（默认 root），无 PUID/PGID 类变量可用，按规约
     # 「运行身份优先非 root」显式指定包用户：挂载 `${TRIM_PKGVAR}/data` 的属主
     # 即包用户，指定后两者一致，避免 Apache 以 root 建出属主错误的文件。

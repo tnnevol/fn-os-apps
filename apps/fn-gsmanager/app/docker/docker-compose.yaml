@@ -1,7 +1,7 @@
 services:
   management_panel:
     container_name: fn-gsmanager
-    image: xiaozhu674/gameservermanager:3.14.0
+    image: xiaozhu674/gameservermanager:3.14.2
     # 按裁决 B：上游显式写了 user: root，改为 fnOS 包用户。
     # 依据：镜像内 /root 是 0775、/root/start.sh 是 0755（作者有意支持非 root 运行），
     # 且 SteamCMD 官方建议以非 root 运行。

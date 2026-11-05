@@ -1,7 +1,7 @@
 services:
   2fauth:
     container_name: fn-2fauth
-    image: 2fauth/2fauth:8.0.2
+    image: 2fauth/2fauth:9.0.0
     environment:
       - APP_NAME=${APP_NAME}
       - APP_KEY=${APP_KEY}

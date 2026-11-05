@@ -1,7 +1,7 @@
 services:
   dashy:
     container_name: fn-dashy
-    image: lissy93/dashy:4.7.19
+    image: lissy93/dashy:4.9.8
     environment:
       - NODE_ENV=production
       # TRIM_UID/TRIM_GID 由 fnOS 注入，指向本应用的包用户；上游硬编码的 1000 在目标 NAS 上通常是登录用户

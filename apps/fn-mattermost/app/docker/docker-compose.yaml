@@ -1,7 +1,7 @@
 services:
   mattermost:
     container_name: fn-mattermost
-    image: mattermost/mattermost-team-edition:11.11.1
+    image: mattermost/mattermost-team-edition:12.0.1
     security_opt:
       - no-new-privileges:true
     read_only: false

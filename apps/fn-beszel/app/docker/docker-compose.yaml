@@ -1,7 +1,7 @@
 services:
   beszel:
     container_name: fn-beszel
-    image: henrygd/beszel:0.21.0
+    image: henrygd/beszel:0.21.1
     ports:
       - "${APP_PORT}:8090"
     restart: unless-stopped

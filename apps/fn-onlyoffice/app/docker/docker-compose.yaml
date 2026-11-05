@@ -1,7 +1,7 @@
 services:
   onlyoffice:
     container_name: fn-onlyoffice
-    image: onlyoffice/documentserver:9.4.0.1
+    image: onlyoffice/documentserver:10.0.0.1
     environment:
       - JWT_SECRET=${JWT_SECRET}
     ports:

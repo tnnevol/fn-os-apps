@@ -1,7 +1,7 @@
 services:
   langbot_plugin_runtime:
     container_name: fn-langbot-plugin-runtime
-    image: rockchin/langbot:v4.10.11
+    image: rockchin/langbot:v4.11.4
     restart: unless-stopped
     command: ["uv", "run", "-m", "langbot_plugin.cli.__init__", "rt"]
     environment:
@@ -12,7 +12,7 @@ services:
 
   langbot:
     container_name: fn-langbot
-    image: rockchin/langbot:v4.10.11
+    image: rockchin/langbot:v4.11.4
     restart: unless-stopped
     environment:
       - TZ=${TIME_ZONE}

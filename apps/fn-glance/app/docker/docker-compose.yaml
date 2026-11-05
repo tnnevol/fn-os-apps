@@ -1,7 +1,7 @@
 services:
   glance:
     container_name: fn-glance
-    image: glanceapp/glance:v0.8.6
+    image: glanceapp/glance:v0.8.7
     ports:
       - "${APP_PORT}:8080"
     restart: always

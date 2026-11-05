@@ -1,7 +1,7 @@
 services:
   browserless:
     container_name: fn-browserless
-    image: ghcr.io/browserless/chrome:v2.57.0
+    image: ghcr.io/browserless/chrome:v2.58.0
     ports:
       - "${APP_PORT}:3000"
     restart: always

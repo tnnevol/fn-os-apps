@@ -1,7 +1,7 @@
 services:
   rustfs:
     container_name: fn-rustfs
-    image: rustfs/rustfs:1.0.1
+    image: rustfs/rustfs:1.0.4
     environment:
       - RUSTFS_ACCESS_KEY=${RUSTFS_ACCESS_KEY}
       - RUSTFS_SECRET_KEY=${RUSTFS_SECRET_KEY}

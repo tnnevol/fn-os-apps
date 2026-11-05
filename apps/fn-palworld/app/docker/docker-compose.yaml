@@ -1,6 +1,6 @@
 services:
   palworld-server:
-    image: thijsvanloef/palworld-server-docker:v2.8.0
+    image: thijsvanloef/palworld-server-docker:v2.8.1
     container_name: fn-palworld
     restart: always
     ports:

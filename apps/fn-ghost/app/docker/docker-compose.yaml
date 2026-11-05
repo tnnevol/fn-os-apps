@@ -1,7 +1,7 @@
 services:
   ghost:
     container_name: fn-ghost
-    image: ghost:6.69.0
+    image: ghost:6.73.0
     environment:
       - url=${GHOST_URL}
       - database__client=mysql

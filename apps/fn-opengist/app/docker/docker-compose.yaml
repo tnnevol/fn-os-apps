@@ -1,7 +1,7 @@
 services:
   opengist:
     container_name: fn-opengist
-    image: ghcr.io/thomiceli/opengist:1.15.2
+    image: ghcr.io/thomiceli/opengist:1.15.3
     ports:
       - "${APP_PORT}:6157"
     restart: unless-stopped

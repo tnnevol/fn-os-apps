@@ -1,7 +1,7 @@
 services:
   sub2api:
     container_name: fn-sub2api
-    image: weishaw/sub2api:0.2.14
+    image: weishaw/sub2api:0.2.19
     environment:
       - TZ=${TIME_ZONE}
       - AUTO_SETUP=true

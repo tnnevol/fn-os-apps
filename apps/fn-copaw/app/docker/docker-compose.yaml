@@ -1,7 +1,7 @@
 services:
   copaw:
     container_name: fn-copaw
-    image: agentscope/qwenpaw:v2.2.1
+    image: agentscope/qwenpaw:v2.2.2
     init: true
     environment:
       - QWENPAW_AUTH_ENABLED=true

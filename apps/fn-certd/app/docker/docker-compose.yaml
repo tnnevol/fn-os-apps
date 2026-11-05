@@ -1,7 +1,7 @@
 services:
   certd:
     container_name: fn-certd
-    image: greper/certd:1.45.0
+    image: greper/certd:1.46.0
     ports:
       - "${APP_PORT}:7001"
       - "${HTTPS_PORT}:7002"

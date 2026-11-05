@@ -1,7 +1,7 @@
 services:
   wallos:
     container_name: fn-wallos
-    image: bellamy/wallos:5.8.3
+    image: bellamy/wallos:5.10.2
     environment:
       - TZ=${TIME_ZONE}
     healthcheck:

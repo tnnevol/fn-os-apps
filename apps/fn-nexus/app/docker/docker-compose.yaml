@@ -1,7 +1,7 @@
 services:
   nexus:
     container_name: fn-nexus
-    image: sonatype/nexus3:3.96.4
+    image: sonatype/nexus3:3.97.3
     # 镜像内置用户是 nexus（uid 200）。挂载进来的 /nexus-data 属主是 fnOS 包用户，
     # 身份不一致导致启动即失败。显式以包用户运行，与数据目录属主对齐。
     user: "${TRIM_UID}:${TRIM_GID}"

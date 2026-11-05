@@ -34,7 +34,7 @@ Forgejo 是轻量的自托管 Git 服务，提供代码托管、Issue 与 CI 集
 
 ### 镜像版本
 
-本应用使用 `codeberg.org/forgejo/forgejo:16.0.5`，**仅提供非 rootless 版本**。
+本应用使用 `codeberg.org/forgejo/forgejo:16.0.7`，**仅提供非 rootless 版本**。
 
 上游编排通过 `${IMAGE}` 变量取镜像，该变量由其 `scripts/init.sh` 写入 `.env`；fnOS 没有该预启动钩子，因此本应用直接在编排中写死上游登记的版本标签，不依赖 `.env` 机制。
 

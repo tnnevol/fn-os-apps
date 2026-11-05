@@ -1,7 +1,7 @@
 services:
   bytebase:
     container_name: fn-bytebase
-    image: bytebase/bytebase:3.23.0
+    image: bytebase/bytebase:3.24.0
     init: true
     ports:
       - "${APP_PORT}:8080"

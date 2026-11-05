@@ -1,7 +1,7 @@
 services:
   nodebb:
     container_name: fn-nodebb
-    image: ghcr.io/nodebb/nodebb:4.16.2
+    image: ghcr.io/nodebb/nodebb:4.16.5
     ports:
       - "${APP_PORT}:4567"
     restart: unless-stopped

@@ -1,7 +1,7 @@
 services:
   cloudbeaver:
     container_name: fn-cloudbeaver
-    image: dbeaver/cloudbeaver:26.2.2
+    image: dbeaver/cloudbeaver:26.2.3
     ports:
       - "${APP_PORT}:8978"
     restart: unless-stopped

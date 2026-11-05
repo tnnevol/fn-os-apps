@@ -1,7 +1,7 @@
 services:
   freshrss:
     container_name: fn-freshrss
-    image: linuxserver/freshrss:1.30.1
+    image: linuxserver/freshrss:1.30.4
     environment:
       # TRIM_UID/TRIM_GID 由 fnOS 注入，指向本应用的包用户；
       # 不可沿用上游硬编码的 1000（目标 NAS 上 1000 通常是登录用户，会导致数据目录写不进去）

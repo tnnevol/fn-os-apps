@@ -1,7 +1,7 @@
 services:
   archivebox:
     container_name: fn-archivebox
-    image: archivebox/archivebox:0.9.73
+    image: archivebox/archivebox:0.9.77
     environment:
       - ADMIN_USERNAME=${ADMIN_USERNAME}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}

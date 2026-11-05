@@ -1,7 +1,7 @@
 services:
   nocobase:
     container_name: fn-nocobase
-    image: nocobase/nocobase:2.2.21
+    image: nocobase/nocobase:2.2.36
     environment:
       - APP_KEY=${APP_KEY}
       - TZ=${TIME_ZONE}

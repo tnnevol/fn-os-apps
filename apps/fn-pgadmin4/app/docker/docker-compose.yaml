@@ -1,7 +1,7 @@
 services:
   pgadmin4:
     container_name: fn-pgadmin4
-    image: dpage/pgadmin4:9.18
+    image: dpage/pgadmin4:9.19
     environment:
       - PGADMIN_DEFAULT_EMAIL=${PGADMIN_DEFAULT_EMAIL}
       - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_DEFAULT_PASSWORD}

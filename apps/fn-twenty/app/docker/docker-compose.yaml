@@ -1,7 +1,7 @@
 services:
   server:
     container_name: fn-twenty
-    image: twentycrm/twenty:v2.45.6
+    image: twentycrm/twenty:v2.53.1
     environment:
       - NODE_PORT=3000
       # 上游把凭据与连接整段拼成一个 URL，故走「合并」风格
@@ -20,7 +20,7 @@ services:
   # 后台任务进程（无端口），依赖 server 健康后启动
   worker:
     container_name: fn-twenty-worker
-    image: twentycrm/twenty:v2.45.6
+    image: twentycrm/twenty:v2.53.1
     command: ["yarn", "worker:prod"]
     environment:
       - PG_DATABASE_URL=postgres://${DB_USERNAME}:${DB_PASSWORD}@${DB_HOST}

@@ -1,7 +1,7 @@
 services:
   astrbot:
     container_name: fn-astrbot
-    image: soulter/astrbot:v4.28.2
+    image: soulter/astrbot:v4.29.3
     environment:
       - TZ=${TIME_ZONE}
     ports:

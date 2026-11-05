@@ -1,7 +1,7 @@
 services:
   mkdocs-material:
     container_name: fn-mkdocs-material
-    image: squidfunk/mkdocs-material:9.7.7
+    image: squidfunk/mkdocs-material:9.8.0
     ports:
       - "${APP_PORT}:8000"
     restart: always

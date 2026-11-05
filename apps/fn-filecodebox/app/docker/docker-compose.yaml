@@ -1,7 +1,7 @@
 services:
   filecodebox:
     container_name: fn-filecodebox
-    image: lanol/filecodebox:2.7.1
+    image: lanol/filecodebox:2.8.5
     ports:
       - "${APP_PORT}:12345"
     restart: always

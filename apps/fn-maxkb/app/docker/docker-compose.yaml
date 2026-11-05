@@ -1,7 +1,7 @@
 services:
   maxkb:
     container_name: fn-maxkb
-    image: 1panel/maxkb:v2.10.6-lts
+    image: 1panel/maxkb:v2.10.8-lts
     ports:
       - "${APP_PORT}:8080"
     restart: unless-stopped

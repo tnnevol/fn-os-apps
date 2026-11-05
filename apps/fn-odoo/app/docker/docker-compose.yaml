@@ -1,7 +1,7 @@
 services:
   odoo:
     container_name: fn-odoo
-    image: odoo:18.0
+    image: odoo:19.0
     environment:
       # 上游只传了 HOST/USER/PASSWORD，未提供端口（隐含 5432）。
       # 镜像 entrypoint 会读取 PORT 并写入 odoo.conf 的 db_port（已核实镜像内 entrypoint 脚本），

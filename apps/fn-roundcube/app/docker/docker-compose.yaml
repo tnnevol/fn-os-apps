@@ -1,7 +1,7 @@
 services:
   roundcube:
     container_name: fn-roundcube
-    image: roundcube/roundcubemail:1.7.4-apache
+    image: roundcube/roundcubemail:1.7.5-apache
     environment:
       # 上游各配置项分别消费 host/port/name/user/password，故走「分离」风格
       - ROUNDCUBEMAIL_DB_TYPE=${DB_TYPE}

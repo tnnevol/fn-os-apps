@@ -1,7 +1,7 @@
 services:
   umami:
     container_name: fn-umami
-    image: ghcr.io/umami-software/umami:3.4.0
+    image: ghcr.io/umami-software/umami:3.4.1
     environment:
       - DATABASE_TYPE=${DB_TYPE}
       # 上游由 1Panel 服务选择器注入 PANEL_DB_*，fnOS 改为向导显式填写

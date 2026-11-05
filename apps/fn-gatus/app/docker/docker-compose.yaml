@@ -1,7 +1,7 @@
 services:
   gatus:
     container_name: fn-gatus
-    image: twinproduction/gatus:v5.37.0
+    image: twinproduction/gatus:v5.38.0
     ports:
       - "${APP_PORT}:8080"
     restart: always

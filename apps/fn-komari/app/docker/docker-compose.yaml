@@ -1,7 +1,7 @@
 services:
   dashboard:
     container_name: fn-komari
-    image: ghcr.io/komari-monitor/komari:1.5.1
+    image: ghcr.io/komari-monitor/komari:1.6.1
     ports:
       - "${APP_PORT}:25774"
     restart: always

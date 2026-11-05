@@ -1,7 +1,7 @@
 services:
   casdoor:
     container_name: fn-casdoor
-    image: casbin/casdoor:4.18.0
+    image: casbin/casdoor:v4.25.0
     environment:
       - RUNNING_IN_DOCKER=true
       # 上游用 CASDOOR_DRIVER_NAME / CASDOOR_DATASOURCE_NAME，由 1Panel 的 scripts/init.sh 生成；

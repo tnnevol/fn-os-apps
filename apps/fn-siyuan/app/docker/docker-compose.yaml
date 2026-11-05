@@ -1,7 +1,7 @@
 services:
   siyuan:
     container_name: fn-siyuan
-    image: b3log/siyuan:v3.8.6
+    image: b3log/siyuan:v3.8.9
     command: ["serve", "--workspace=/siyuan/workspace/", "--accessAuthCode=${ACCESS_AUTH_CODE}"]
     environment:
       # TRIM_UID/TRIM_GID 由 fnOS 注入，指向本应用的包用户；上游硬编码的 1000 在目标 NAS 上通常是登录用户

@@ -1,7 +1,7 @@
 services:
   certimate:
     container_name: fn-certimate
-    image: certimate/certimate:v0.4.34
+    image: certimate/certimate:v0.4.36
     environment:
       - http_proxy=${HTTP_PROXY}
       - https_proxy=${HTTPS_PROXY}
