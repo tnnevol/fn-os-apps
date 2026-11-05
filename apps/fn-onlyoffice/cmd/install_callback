@@ -2,4 +2,19 @@
 
 ### This script is called after the user installs the application.
 
+# 挂载源必须先存在：Docker 对不存在的绑定挂载源会以 root 建目录，
+# 而容器以包用户运行（compose 的 user: ${TRIM_UID}:${TRIM_GID}），
+# 这里由包用户自己创建，属主才与容器运行身份一致，卸载时也才删得掉。
+if [ -z "${TRIM_PKGVAR}" ]; then
+    echo "TRIM_PKGVAR is not set; cannot prepare application data directory" >"${TRIM_TEMP_LOGFILE}"
+    exit 1
+fi
+
+mkdir -p "${TRIM_PKGVAR}/data/data"
+mkdir -p "${TRIM_PKGVAR}/data/db"
+mkdir -p "${TRIM_PKGVAR}/data/lib"
+mkdir -p "${TRIM_PKGVAR}/data/logs"
+
+echo "Prepared application data directory: ${TRIM_PKGVAR}"
+
 exit 0

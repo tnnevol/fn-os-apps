@@ -5,6 +5,9 @@ services:
     # fnOS 没有该预启动钩子，故直接写死上游登记的版本标签，不依赖 .env 机制。
     # 仅提供非 rootless 版本（rootless 变体为 :16.0.7-rootless，属另一 tag，且 fnOS 以包用户运行无需该变体）。
     image: codeberg.org/forgejo/forgejo:16.0.7
+    # 运行身份对齐包用户：镜像层默认 root，以 root 写数据会让卸载「删除所有数据」后残留；
+    # 容器以包用户运行，运行期写入的文件属主才与卸载回调一致。
+    user: "${TRIM_UID}:${TRIM_GID}"
     environment:
       # TRIM_UID/TRIM_GID 由 fnOS 注入，指向本应用的包用户；上游硬编码的 1000 在目标 NAS 上通常是登录用户
       - USER_UID=${TRIM_UID}

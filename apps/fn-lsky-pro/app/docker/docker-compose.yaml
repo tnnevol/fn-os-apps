@@ -2,6 +2,9 @@ services:
   lskypro:
     container_name: fn-lsky-pro
     image: halcyonazure/lsky-pro-docker:latest
+    # 运行身份对齐包用户：镜像层默认 root，以 root 写数据会让卸载「删除所有数据」后残留；
+    # 容器以包用户运行，运行期写入的文件属主才与卸载回调一致。
+    user: "${TRIM_UID}:${TRIM_GID}"
     # 按裁决 B：镜像层默认 root（config.User 为 null），加 user: 以包用户运行。
     # 本镜像为 Apache 系（apachectl -D FOREGROUND）：端口 8089 非特权端口，
     # 但 pid/日志目录在非 root 下的写入行为需真机确认（已登记为待验证项）。

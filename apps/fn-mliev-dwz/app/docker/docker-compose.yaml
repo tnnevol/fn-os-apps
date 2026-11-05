@@ -2,6 +2,9 @@ services:
   dwz-server:
     container_name: fn-mliev-dwz
     image: docker.cnb.cool/mliev/dwz/dwz-server:v2.24.1
+    # 运行身份对齐包用户：镜像层默认 root，以 root 写数据会让卸载「删除所有数据」后残留；
+    # 容器以包用户运行，运行期写入的文件属主才与卸载回调一致。
+    user: "${TRIM_UID}:${TRIM_GID}"
     environment:
       - TZ=${TIME_ZONE}
       # 上游由 1Panel 服务选择器注入 PANEL_DB_* / PANEL_REDIS_*，fnOS 改为向导显式填写

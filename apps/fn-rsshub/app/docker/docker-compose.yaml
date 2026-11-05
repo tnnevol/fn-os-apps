@@ -2,6 +2,9 @@ services:
   rsshub:
     container_name: fn-rsshub
     image: diygod/rsshub:chromium-bundled-2026-04-19
+    # 运行身份对齐包用户：镜像层默认 root，以 root 写数据会让卸载「删除所有数据」后残留；
+    # 容器以包用户运行，运行期写入的文件属主才与卸载回调一致。
+    user: "${TRIM_UID}:${TRIM_GID}"
     environment:
       - NODE_ENV=production
       - CACHE_TYPE=redis

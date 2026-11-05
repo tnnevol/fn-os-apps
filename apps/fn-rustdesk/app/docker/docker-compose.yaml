@@ -2,6 +2,9 @@ services:
   rustdesk-server:
     container_name: fn-rustdesk
     image: rustdesk/rustdesk-server-s6:1.1.16
+    # 运行身份对齐包用户：镜像层默认 root，以 root 写数据会让卸载「删除所有数据」后残留；
+    # 容器以包用户运行，运行期写入的文件属主才与卸载回调一致。
+    user: "${TRIM_UID}:${TRIM_GID}"
     environment:
       # 上游默认 HOST_ADDRESS=172.17.0.1（Docker 网桥地址），在 fnOS 上不可用，改为向导填写实际 IP
       - "RELAY=${HOST_ADDRESS}:${HBBR_PORT}"

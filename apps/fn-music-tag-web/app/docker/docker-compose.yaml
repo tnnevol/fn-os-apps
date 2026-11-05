@@ -2,6 +2,9 @@ services:
   music-tag-web:
     container_name: fn-music-tag-web
     image: xhongc/music_tag_web:2.8.0
+    # 运行身份对齐包用户：镜像层默认 root，以 root 写数据会让卸载「删除所有数据」后残留；
+    # 容器以包用户运行，运行期写入的文件属主才与卸载回调一致。
+    user: "${TRIM_UID}:${TRIM_GID}"
     # 按裁决 B：镜像层默认 root（config.User 为 null），加 user: 以包用户运行
     #
     # 真机结论（2026-10）：/start 在 Django migrate 后要创建 /app/webdav，

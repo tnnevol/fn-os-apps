@@ -2,6 +2,9 @@ services:
   cordys-crm:
     container_name: fn-cordys-crm
     image: 1panel/cordys-crm:v1.9.6
+    # 运行身份对齐包用户：镜像层默认 root，以 root 写数据会让卸载「删除所有数据」后残留；
+    # 容器以包用户运行，运行期写入的文件属主才与卸载回调一致。
+    user: "${TRIM_UID}:${TRIM_GID}"
     environment:
       # 上游写 jdbc:mysql://${CONTAINER_NAME}:3306/... 指向容器自身，但其 compose 未包含 MySQL，
       # 在 1Panel 下依赖平台另行提供的 MySQL；fnOS 改为向导显式填写外部数据库连接（见转换规约裁决 3）。

@@ -2,6 +2,9 @@ services:
   emlog:
     container_name: fn-emlog
     image: emlog/emlog:pro-latest
+    # 运行身份对齐包用户：镜像层默认 root，以 root 写数据会让卸载「删除所有数据」后残留；
+    # 容器以包用户运行，运行期写入的文件属主才与卸载回调一致。
+    user: "${TRIM_UID}:${TRIM_GID}"
     # 按裁决 B：镜像层默认 root（config.User 为 null）。
     #
     # 真机结论（2026-10）：不能加 user: 覆盖。镜像的 /usr/bin/init_emlog 首启会写
