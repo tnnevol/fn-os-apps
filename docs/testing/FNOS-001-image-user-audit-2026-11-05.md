@@ -141,7 +141,34 @@ lastVerified: 2026-11-05
 | `mkdir() "/var/cache/nginx/client_temp" failed (13: Permission denied)` | nginx 临时目录在镜像层、归 root | 挂 `${TRIM_PKGVAR}/cache:/var/cache/nginx`、`${TRIM_PKGVAR}/run:/var/run` |
 | `PermissionError: [Errno 13] Permission denied: 'logs'`（相对路径） | 应用在 WorkDir 建目录 | 挂 `${TRIM_PKGVAR}/logs:<对应路径>` |
 | `EACCES ... /.npm` / `HOME` 不可写 | Home 指向 `/` | 设 `HOME`/`XDG_CACHE_HOME`/`npm_config_cache` 到已挂载的可写目录 |
+| `cp: cannot create regular file '/app/.env': Permission denied`（反复重启） | 镜像启动脚本要把生成的配置写回**镜像层目录**，而该目录属镜像内用户/root，包用户不在其组 | 把该文件改成**宿主持久文件的单文件挂载**，由 `cmd/install_callback` 首次生成内容（见下） |
 | s6/supervisord 初始化失败 | 镜像初始化强依赖 root | 不加 `user:`，标 `# USER-EXCEPTION` |
+
+**「镜像要回写配置到镜像层」这一类怎么修**（`fn-huginn` 实测）：镜像的 `/scripts/setup_env`
+末尾会 `cp /tmp/.env /app/.env && chmod ugo+r /app/.env`，而 `/app` 属 `default:root(775)`，
+容器以包用户运行时不在 root 组 → 每次启动都 `Permission denied` → `Restarting` 死循环，
+应用中心只显示「启用」。修法不是加回 root，而是把那个文件变成宿主持久文件：
+
+```yaml
+volumes:
+  - "${TRIM_PKGVAR}/data:/var/lib/mysql"
+  # 镜像启动脚本要写 /app/.env（属 default:root，包用户不可写），改为挂宿主持久文件
+  - "${TRIM_PKGVAR}/data/dot-env:/app/.env"
+```
+
+`cmd/install_callback` 负责在安装时**生成一次**该文件（存在则复用，避免重启后会话失效）：
+
+```bash
+ENV_FILE="${TRIM_PKGVAR}/data/dot-env"
+if [ ! -f "${ENV_FILE}" ]; then
+    SECRET="$(dd if=/dev/urandom bs=36 count=1 2>/dev/null | base64 | tr -d '\n')"
+    printf 'APP_SECRET_TOKEN=%s\n' "${SECRET}" >"${ENV_FILE}"
+    chmod 660 "${ENV_FILE}"
+fi
+```
+
+要点：单文件挂载的**源文件必须在容器启动前已存在**（Docker 不会为 `-v file:file` 自动建文件，
+且会以 root 建出错误属主），所以生成动作必须放在 `install_callback`，不能只在 compose 里写路径。
 
 ## 第 2、3 批真机结果（2026-11-05 晚）
 
@@ -226,6 +253,37 @@ lastVerified: 2026-11-05
 
 > **判定口径补充**：卸载后目录壳仍在属**平台行为**（每个应用安装都会建、卸载不回收），
 > 判定残留要看**目录内条目数**，不能只看目录是否存在。
+
+### `fn-huginn` 首轮 FAIL（真缺陷）→ 已修，复测 ENV_BLOCKED
+
+GUI 安装后应用中心显示「启用」（= 未运行），入口 `3000` 三次探测均 `000`。这是本轮**唯一
+一个由 GUI 流程确认的真实缺陷**，而且正是「加 `user:` 之后才暴露」的那一类：
+
+```
+cp: cannot create regular file '/app/.env': Permission denied   （重复 9 次后崩溃重启）
+```
+
+| 项 | 值 |
+| --- | --- |
+| 容器状态 | `Restarting (1)`，反复重启 |
+| `Config.User` | `910:905`（包用户，`user:` 已生效） |
+| 镜像内 `/app` | `drwxrwxr-x default root` —— 属 `default`、组 `root`、775 |
+| 根因 | `/scripts/setup_env` 末尾 `cp /tmp/.env /app/.env`；包用户 `910:905` 既不是 `default`(1001) 也不在 `root`(0) 组，无权写镜像层 |
+
+修复（不走回 root 例外）：
+
+- `app/docker/docker-compose.yaml`：新增单文件挂载 `${TRIM_PKGVAR}/data/dot-env:/app/.env`；
+- `cmd/install_callback`：首次安装生成该文件（`dd if=/dev/urandom bs=36 count=1 | base64` 写入
+  `APP_SECRET_TOKEN`，已存在则复用，chmod 660）。单文件挂载源必须预先存在，否则 Docker 会以
+  root 建出错误属主。
+
+**复测结论：ENV_BLOCKED（不是应用缺陷）**。修好后的 FPK（81635 字节）两次 GUI 安装都停在
+`progress=80` 超过 25 分钟：`docker image ls` 始终没有 `ghcr.io/huginn/huginn:latest`，
+`docker pull` 直接跑也只停在 `Waiting`——本网络下拉不完该多架构镜像。按判据记环境限制，
+待网络条件允许时重跑（修复本身未在真机跑到「容器 Up」那一刻，所以不能记 PASS）。
+
+> 这一条同时说明**应用中心把拉取镜像失败渲染成「卡在 80%」**，不报错、不超时、不给失败原因；
+> 遇到长时间 80% 应先查设备 `docker image ls`，而不是怀疑 compose。
 
 ## 明细## 明细
 
@@ -450,3 +508,4 @@ lastVerified: 2026-11-05
 | --- | --- |
 | 2026-11-05 | 建立本审计：186 个 Docker 应用按镜像 `config.User` 与 compose `user:` 交叉分类；登记 A 类 96 个为缺陷候选并给出分批整改方案，说明本轮不改动的原因。 |
 | 2026-11-09 | 补第 6 批：`fn-nezha` 全程 GUI 安装验证 PASS，并首次实测「删除所有数据」——三个应用目录条目数归零；标记验收器假阴性缺陷已修（`142849e8`），补充「残留看目录内条目数」的判定口径。 |
+| 2026-11-09 | 补 `fn-huginn`：GUI 流程确认真实缺陷（镜像要回写 `/app/.env`，包用户无权写镜像层）并修好；复测因 ghcr 镜像拉不完记 ENV_BLOCKED。新增「回写配置到镜像层」这一类补救方案。 |

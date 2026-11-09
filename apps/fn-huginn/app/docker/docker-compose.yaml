@@ -13,3 +13,6 @@ services:
     # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
       # 容器内自带的 MySQL 数据目录（本应用不使用外部数据库）
       - "${TRIM_PKGVAR}/data:/var/lib/mysql"
+      # 镜像启动脚本要把生成的 .env 写到 /app（属 default:root，包用户不可写），
+      # 改成挂一个宿主持久文件；内容由 cmd/install_callback 首次安装时生成。
+      - "${TRIM_PKGVAR}/data/dot-env:/app/.env"

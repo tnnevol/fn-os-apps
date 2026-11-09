@@ -15,4 +15,21 @@ chmod -R 770 "${TRIM_PKGVAR}/data" 2>/dev/null || true
 
 echo "Prepared application data directory: ${TRIM_PKGVAR}/data"
 
+# 镜像的 /scripts/setup_env 在启动末尾会 `cp /tmp/.env /app/.env` 并 `chmod`。
+# /app 属镜像内 default:root(775)，容器以包用户运行时不在 root 组，写不进去，
+# 启动即 `cp: cannot create regular file '/app/.env': Permission denied` 并反复重启。
+# 把 /app/.env 换成宿主持久文件（compose 里单文件挂载）即可绕过写镜像层：
+#   - 首次安装在这里生成一次 APP_SECRET_TOKEN，之后重启沿用，会话不会失效；
+#   - 挂载源必须是已存在的普通文件，Docker 才不会再以 root 建出错误属主。
+ENV_FILE="${TRIM_PKGVAR}/data/dot-env"
+if [ ! -f "${ENV_FILE}" ]; then
+    # 用 /dev/urandom + base64 生成 36 字节随机串，与镜像自身生成逻辑一致
+    SECRET="$(dd if=/dev/urandom bs=36 count=1 2>/dev/null | base64 | tr -d '\n')"
+    printf 'APP_SECRET_TOKEN=%s\n' "${SECRET}" >"${ENV_FILE}"
+    chmod 660 "${ENV_FILE}"
+    echo "Generated app secret at ${ENV_FILE}"
+else
+    echo "Reusing existing app secret at ${ENV_FILE}"
+fi
+
 exit 0
