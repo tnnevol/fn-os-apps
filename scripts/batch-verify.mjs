@@ -621,14 +621,22 @@ async function testOne(app) {
   const rec = { app, stage: 'start' };
   try {
     // 上一轮残留：测试前先确保未安装
+    // 注意：这一步只是「清理前置状态」，失败不应覆盖本次安装的判定。
+    // 实测踩过：fn-mkdocs-material 前置清超时后整条被判 BLOCKED，但容器其实已经
+    // 起来且入口 200——属假阴性。这里改为非致命：超时只记录，继续往下装。
     const pre = await callInstalledList();
     if ((pre || []).some((x) => x.appName === app)) {
-      await callUninstall(app);
-      await until(async () => {
-        const l = await callInstalledList();
-        return !(l || []).some((x) => x.appName === app);
-      }, { tries: 30, gap: 2000, label: 'pre-uninstall' });
-      rec.preUninstalled = true;
+      await callUninstall(app).catch(() => {});
+      try {
+        await until(async () => {
+          const l = await callInstalledList();
+          return !(l || []).some((x) => x.appName === app);
+        }, { tries: 30, gap: 2000, label: 'pre-uninstall' });
+        rec.preUninstalled = true;
+      } catch {
+        rec.preUninstallTimeout = true;
+        rec.stage = 'pre-uninstall-slow';
+      }
     }
     // 中断安装留下的 Created 容器会让后续安装被拒（10500），先清掉
     const leftovers = await preCleanContainers(app);
