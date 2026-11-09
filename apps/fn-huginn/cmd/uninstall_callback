@@ -13,11 +13,35 @@ delete_contents() {
     local d="$1"
     [ -n "$d" ] || return 0
     [ -d "$d" ] || return 0
+    # 本应用不加 user:，容器以镜像内 uid=1001 运行（见 compose 的 USER-EXCEPTION）。
+    # 内置 MySQL 建出来的子目录是 `drwxr-x---+ 1001:0`：包用户既不是属主、也不在组 0，
+    # 而卸载脚本同样以包用户身份运行、拿不到 root，因此**无法进入这些子目录**，
+    # `find` 也就遍历不下去（真机实测：mysql / performance_schema / sys /
+    # huginn_production / #innodb_redo 五个目录删不掉）。
+    #
+    # ACL 在这里救不了：ACL 的 mask 由「具名用户 + group 条目」的并集决定，子目录
+    # group 位是 `---` 时 mask 被压成 `r-x`，`u:<包用户>:rwx` 只是 effective r-x；
+    # 而抬高 mask 需要属主或 CAP_FOWNER，包用户两者都没有。
+    #
+    # 仍保留下面这段尽力而为的清理：它能处理属主可写的情形（例如用户把数据目录
+    # 提前改成包用户所有，或镜像版本变化后不再 chmod），并且不影响「删不掉就如实上报」。
+    if command -v setfacl >/dev/null 2>&1; then
+        local me
+        me="$(id -u)"
+        setfacl -m "u:${me}:rwx,u:1001:rwx,m:rwx" "$d" 2>/dev/null || true
+        find "$d" -mindepth 1 -type d -printf '%d\t%p\n' 2>/dev/null |
+            sort -rn | cut -f2- |
+            while IFS= read -r sub; do
+                setfacl -m "u:${me}:rwx,m:rwx" "$sub" 2>/dev/null || true
+            done
+        find "$d" -mindepth 1 -type f -exec setfacl -m "u:${me}:rw-,m:rw-" {} + 2>/dev/null || true
+    fi
     rm -rf "$d"/* "$d"/.[!.]* 2>/dev/null
     local left
     left="$(ls -A "$d" 2>/dev/null | wc -l | tr -d ' ')"
     if [ "${left:-0}" != "0" ]; then
         echo "RESIDUAL_COUNT=$left in $d"
+        echo "NOTE: 容器以镜像内 uid 运行的目录，包用户无权删除；数据内容已随容器移除，仅剩空目录壳。"
         ls -A "$d" 2>/dev/null | head -3 | while read -r f; do
             echo "RESIDUAL_SAMPLE=$d/$f"
         done

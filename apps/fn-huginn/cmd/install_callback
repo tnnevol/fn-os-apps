@@ -2,34 +2,42 @@
 
 ### This script is called after the user installs the application.
 
-# 单文件挂载要求源文件在容器启动前就已存在且内容可用（Docker 不会自动创建文件）；
-# 目录型挂载源同样需要预创建（否则 Docker 会以 root 建出属主错误的目录）。
 if [ -z "${TRIM_PKGVAR}" ]; then
     echo "TRIM_PKGVAR is not set; cannot prepare application data directory" >"${TRIM_TEMP_LOGFILE}"
     exit 1
 fi
 
-mkdir -p "${TRIM_PKGVAR}/data"
+DATA_DIR="${TRIM_PKGVAR}/data"
+mkdir -p "${DATA_DIR}"
 
-chmod -R 770 "${TRIM_PKGVAR}/data" 2>/dev/null || true
-
-echo "Prepared application data directory: ${TRIM_PKGVAR}/data"
-
-# 镜像的 /scripts/setup_env 在启动末尾会 `cp /tmp/.env /app/.env` 并 `chmod`。
-# /app 属镜像内 default:root(775)，容器以包用户运行时不在 root 组，写不进去，
-# 启动即 `cp: cannot create regular file '/app/.env': Permission denied` 并反复重启。
-# 把 /app/.env 换成宿主持久文件（compose 里单文件挂载）即可绕过写镜像层：
-#   - 首次安装在这里生成一次 APP_SECRET_TOKEN，之后重启沿用，会话不会失效；
-#   - 挂载源必须是已存在的普通文件，Docker 才不会再以 root 建出错误属主。
-ENV_FILE="${TRIM_PKGVAR}/data/dot-env"
-if [ ! -f "${ENV_FILE}" ]; then
-    # 用 /dev/urandom + base64 生成 36 字节随机串，与镜像自身生成逻辑一致
-    SECRET="$(dd if=/dev/urandom bs=36 count=1 2>/dev/null | base64 | tr -d '\n')"
-    printf 'APP_SECRET_TOKEN=%s\n' "${SECRET}" >"${ENV_FILE}"
-    chmod 660 "${ENV_FILE}"
-    echo "Generated app secret at ${ENV_FILE}"
+# 本应用沿用镜像自带身份（uid=1001，见 compose 的 USER-EXCEPTION），而 TRIM_PKGVAR 归
+# fnOS 包用户所有，两者 uid 不同 → 镜像 bootstrap 里的 `mv -f /tmp/mysql/* /var/lib/mysql/`
+# 会 Permission denied（真机日志）。
+#
+# 这里不改属主（包用户没有 chown 权限），而是用 ACL 双向授权：
+#   1. `u:1001:rwx`      —— 让容器（uid 1001）能写这个目录；
+#   2. **default ACL**   —— 让容器后续新建的子目录/文件自动继承包用户权限，
+#                          否则卸载时包用户进不去 uid 1001 的子目录，
+#                          「删除所有数据」会留下 mysql/performance_schema 等残留。
+# 实测：只加第 1 条时卸载后残留 5 个目录；补上 default ACL 才能清干净。
+IMAGE_UID=1001
+SELF_UID="$(id -u)"
+if command -v setfacl >/dev/null 2>&1; then
+    setfacl -m "u:${IMAGE_UID}:rwx" "${DATA_DIR}" 2>/dev/null ||
+        echo "WARN: setfacl failed on ${DATA_DIR}" >"${TRIM_TEMP_LOGFILE}"
+    setfacl -R -m "u:${IMAGE_UID}:rwx" "${DATA_DIR}" 2>/dev/null || true
+    # 关键：默认 ACL，保证容器新建的子目录对包用户可读写，卸载时删得掉。
+    # group 必须给 rwx —— ACL 的 mask 由「所有具名用户条目 + group 条目」的并集决定；
+    # 若这里给 r-x，容器建出来的子目录会是 `drwxr-x---+ mask::r-x`，把
+    # `user:docker-fn-huginn:rwx` 压成 `r-x`，包用户连目录都进不去，卸载时删不掉
+    # （真机实测：残留 5 个 mysql/performance_schema 目录，且 `sudo -u #910 ls` 被拒）。
+    setfacl -m "d:u::rwx,d:u:${IMAGE_UID}:rwx,d:u:${SELF_UID}:rwx,d:g::rwx,d:m::rwx,d:o::---" \
+        "${DATA_DIR}" 2>/dev/null ||
+        echo "WARN: default ACL failed on ${DATA_DIR}" >"${TRIM_TEMP_LOGFILE}"
 else
-    echo "Reusing existing app secret at ${ENV_FILE}"
+    echo "WARN: setfacl not available; ${DATA_DIR} may not be writable by uid ${IMAGE_UID}" >"${TRIM_TEMP_LOGFILE}"
 fi
+
+echo "Prepared application data directory: ${DATA_DIR} (granted uid ${IMAGE_UID})"
 
 exit 0

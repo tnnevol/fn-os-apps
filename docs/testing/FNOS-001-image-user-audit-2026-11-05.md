@@ -349,6 +349,48 @@ cp: cannot create regular file '/app/.env': Permission denied   （重复 9 次�
 > 这一条同时说明**应用中心把拉取镜像失败渲染成「卡在 80%」**，不报错、不超时、不给失败原因；
 > 遇到长时间 80% 应先查设备 `docker image ls`，而不是怀疑 compose。
 
+### `fn-huginn` 最终结论：PASS（回归），卸载残留 5 个空目录记为已知限制
+
+镜像通路按「预拉代理 + 重打 tag」解决后，GUI 闭环跑通：
+
+| 步骤 | 结果 |
+| --- | --- |
+| 镜像准备 | `docker pull ghcr.dockerproxy.net/huginn/huginn:latest` → `docker tag … ghcr.io/huginn/huginn:latest` |
+| 安装 | 容器 `Up`，`RestartCount=0`，Rails 迁移正常执行完 |
+| 运行身份 | `User=[1001]`（镜像自带），不再是包用户 |
+| 入口 | `http://${FNOS_HOST}:3000/` 连测三次 **200** |
+| 卸载 | 详情页「打开 ▾」→「卸载」→「删除所有数据」 |
+| 清理 | 容器、镜像、端口均释放 |
+
+**为什么最终放弃 `user: ${TRIM_UID}:${TRIM_GID}`**：镜像把整个 Rails 运行目录建成
+`default(1001):root` 所有，`/app` 是 775、而 `/app/tmp`、`/app/db`、`/app/log`、
+`/app/vendor/bundle` 全是 755。启动链要写这些路径：
+
+```
+cp: cannot create regular file '/app/.env': Permission denied
+Permission denied @ rb_sysopen - /app/vendor/bundle/ruby/4.0.0/bin/dotenv.lock
+```
+
+先试过「单文件挂载 `/app/.env`」，只解决了第一行；Bundler 锁文件暴露了第二个写入点。
+逐个挂载既覆盖不全、又会随镜像内部路径变动失效，因此按 `USER-EXCEPTION` 沿用镜像身份
+（与 `fn-archivebox` 同类），数据目录通过 ACL 授权给容器 uid。
+
+**已知限制：卸载选「删除所有数据」会残留 5 个空目录**
+（`mysql`、`performance_schema`、`sys`、`huginn_production`、`#innodb_redo`）。
+
+- 这些目录由容器以 **uid=1001** 创建并 `chmod 750`，属 `1001:0`；
+- 卸载脚本以**包用户**（如 `910:905`）运行，既不是属主也不在组 0，**进不去目录**，
+  `find` 无法遍历，`rm -rf` 失败；
+- ACL 救不了：ACL mask 由「具名用户 + group 条目」的并集决定，group 位是 `---` 时
+  mask 被压成 `r-x`，`u:<包用户>:rwx` 只有 effective `r-x`；而**抬高 mask 需要属主或
+  `CAP_FOWNER`**，包用户两者都没有（实测 root 抬高 mask 后可正常删除）。
+
+`cmd/install_callback` 已设置 default ACL、`cmd/uninstall_callback` 已尽力清理并**如实上报**
+`RESIDUAL_COUNT`，不会谎报成功。**数据内容本身随容器移除**，只剩空目录壳。
+
+> 待办（本轮未做）：若要彻底消除残留，需让容器进程成为包用户组成员（`group_add`）
+> 或改用外部数据库；两者都会改变运行时形态，需单独评估。
+
 ## 明细## 明细
 
 ### A 类：镜像默认 root 且 compose 未写 `user:`（96 个）
@@ -574,3 +616,4 @@ cp: cannot create regular file '/app/.env': Permission denied   （重复 9 次�
 | 2026-11-09 | 补第 6 批：`fn-nezha` 全程 GUI 安装验证 PASS，并首次实测「删除所有数据」——三个应用目录条目数归零；标记验收器假阴性缺陷已修（`142849e8`），补充「残留看目录内条目数」的判定口径。 |
 | 2026-11-09 | 补 `fn-huginn`：GUI 流程确认真实缺陷（镜像要回写 `/app/.env`，包用户无权写镜像层）并修好；复测因 ghcr 镜像拉不完记 ENV_BLOCKED。新增「回写配置到镜像层」这一类补救方案。 |
 | 2026-11-09 | 重测网络：关闭 Clash 后确认 DNS 污染 + 设备无 IPv6 出网；逐源实测出 3 个可用 Hub 镜像源（daocloud 1030MB/141s）与 1 个可用 ghcr 代理（huginn 3.02GB/134s）；纠正上一版「daocloud/hub.rat.dev 超时」的结论。 |
+| 2026-11-09 | `fn-huginn` 最终 PASS（改走镜像自带身份 + ACL 授权数据目录）；登记已知限制：卸载「删除所有数据」残留 5 个空目录（容器 uid 创建的 750 目录，包用户无权删除，ACL mask 无法抬起）。 |
