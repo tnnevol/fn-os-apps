@@ -219,6 +219,70 @@ fi
 `docker.1panel.live` / `proxy.1panel.live` / `dockerproxy.cn` 不可达。
 批量的可用前置条件：镜像能拉下来。拉取受限时一律判 BLOCKED，不计应用缺陷。
 
+> 上面这段是**关闭 Clash 之前**的记录，结论已被后面的复测推翻（当时是代理策略在干扰）。
+> 以下是 2026-11-09 关闭 Clash 后的重新实测，以本节为准。
+
+#### 关闭 Clash 后的复测（2026-11-09 12:30 起）
+
+关掉 Clash 后症状没有消失，反而定位到两个独立问题：
+
+**问题一：DNS 污染，且设备没有 IPv6 出网能力。** 设备上已无任何 `clash`/`mihomo` 进程，
+但 `registry-1.docker.io` 仍被解析到 `2a03:2880:f1xx:83:face:b00c:0:25de`（Facebook 的 IPv6
+网段）与 `202.160.128.238`；而设备**没有 IPv6 全局地址、也没有 IPv6 默认路由**
+（`ip -6 route show default` 为空）。公共 DNS 全部返回同样的污染结果：
+
+| DNS | registry-1.docker.io 解析结果 |
+| --- | --- |
+| 223.5.5.5 | `108.160.166.137` + `2a03:2880:f12d:83:face:b00c:0:25de` |
+| 119.29.29.29 | `31.13.85.2` + `2a03:2880:f127:83:face:b00c:0:25de` |
+| 8.8.8.8 | `199.59.149.235` + `2a03:2880:f107:83:face:b00c:0:25de` |
+
+所以直连 Hub 必然 `context deadline exceeded`。**结论：Docker Hub 直连在该网络下不可用，
+必须走镜像源。**
+
+**问题二：`registry-mirrors` 只对 Docker Hub 生效，不覆盖 ghcr.io。** 这是本轮最容易踩的坑：
+把 `registry-mirrors` 换成可用源之后，Hub 镜像确实快了（无前缀 `docker pull busybox` 7s），
+但 huginn（`ghcr.io/huginn/huginn:latest`）依旧卡在安装进度 80% —— 因为 ghcr 域名**根本不经过**
+`registry-mirrors`。设备上 `docker compose create` 进程会一直挂着等镜像，应用中心只是显示 80%，
+**不报错、不超时、不给原因**。
+
+**实测可用的源（关 Clash 后，2026-11-09）**
+
+| 用途 | 源 | 验证结果 |
+| --- | --- | --- |
+| Docker Hub | `docker.m.daocloud.io` | busybox 4s；**metabase 1030MB / 141s（≈7.3MB/s）** |
+| Docker Hub | `docker.1ms.run` | busybox 5s，连续 3/3 成功 |
+| Docker Hub | `hub.rat.dev` | busybox 5s，连续 3/3 成功 |
+| ghcr.io | `ghcr.dockerproxy.net` | **huginn 3.02GB / 134s** |
+| ghcr.io | `ghcr.io` 直连 | 240s 仍卡在 `Verifying Checksum`，不可用 |
+| ghcr.io | `ghcr.nju.edu.cn` | 300s 未完成，不可用 |
+| 不可用 | `docker.fnnas.com`（fnOS 默认） | `/v2/` 回 401 但拉取返回 openresty 错误页 |
+| 不可用 | `registry.hub.docker.com`（fnOS 默认） | 超时 |
+| 不可用 | `docker.aityp.com` / `docker.amingg.com` / `dockerproxy.link` / `docker.xuanyuan.me` / `docker.1panel.top` / `dockerpull.org` | 全部 0/2 |
+
+`registry-mirrors` 生效后的配置（`/etc/docker/daemon.json`，改完必须
+`sudo systemctl restart docker`）：
+
+```json
+"registry-mirrors":[
+  "https://docker.m.daocloud.io",
+  "https://docker.1ms.run",
+  "https://hub.rat.dev"
+]
+```
+
+> 保留 fnOS 自带的 `docker.fnnas.com`、`registry.hub.docker.com` 只会让最终失败多等约 30s，
+> 建议删掉。
+
+**ghcr.io 镜像怎么办**：`registry-mirrors` 帮不上，三条现实路径（按推荐度）：
+1. **设备上预拉代理地址并重打 tag**（不改仓库、不影响用户）：
+   `docker pull ghcr.dockerproxy.net/huginn/huginn:latest && docker tag … ghcr.io/huginn/huginn:latest`
+   —— 但卸载会删镜像，每次验证都要重来，且**发布给最终用户无效**；
+2. **在应用侧加国内 ghcr 代理**：把 compose 的 `image:` 改成代理地址，属于打包层面的取舍，
+   需要逐个评估代理稳定性，不适合作为默认；
+3. 用户自备代理 / 等网络条件改善。
+
+
 **`fn-mkdocs-material` 实测 PASS**：容器 `running`、以包用户 `883:876` 运行、
 宿主端口 `8000/tcp → 8111` 绑定正确、入口 `http://${FNOS_HOST}:8111/` 连测三次 `200`。
 
@@ -509,3 +573,4 @@ cp: cannot create regular file '/app/.env': Permission denied   （重复 9 次�
 | 2026-11-05 | 建立本审计：186 个 Docker 应用按镜像 `config.User` 与 compose `user:` 交叉分类；登记 A 类 96 个为缺陷候选并给出分批整改方案，说明本轮不改动的原因。 |
 | 2026-11-09 | 补第 6 批：`fn-nezha` 全程 GUI 安装验证 PASS，并首次实测「删除所有数据」——三个应用目录条目数归零；标记验收器假阴性缺陷已修（`142849e8`），补充「残留看目录内条目数」的判定口径。 |
 | 2026-11-09 | 补 `fn-huginn`：GUI 流程确认真实缺陷（镜像要回写 `/app/.env`，包用户无权写镜像层）并修好；复测因 ghcr 镜像拉不完记 ENV_BLOCKED。新增「回写配置到镜像层」这一类补救方案。 |
+| 2026-11-09 | 重测网络：关闭 Clash 后确认 DNS 污染 + 设备无 IPv6 出网；逐源实测出 3 个可用 Hub 镜像源（daocloud 1030MB/141s）与 1 个可用 ghcr 代理（huginn 3.02GB/134s）；纠正上一版「daocloud/hub.rat.dev 超时」的结论。 |
