@@ -180,6 +180,26 @@ lastVerified: 2026-11-05
 | `fn-it-tools` | nginx 缓存目录 | 见上节 |
 | `fn-kirara-agent` | `logs` 相对目录 | 见上节 |
 
+## 第 5 批与网络恢复后的补测（2026-11-09）
+
+第 5 批（5 个，镜像不在 Docker Hub 的应用）：`fn-newsnow` **PASS(200)**；
+`fn-nezha` / `fn-opengist` / `fn-octop` 因 ghcr 拉取超时 BLOCKED；`fn-forgejo` 当时 BLOCKED。
+
+**网络问题的定性**：设备上运行 Clash(mihomo)，用 `198.18.0.x` fake-IP 劫持 DNS。实测
+`registry-1.docker.io` 被解析成 IPv6 fake-IP 后连接超时（`000`），`ghcr.io` 时通时不通。
+逐源实测：`docker.1ms.run` 可用（小镜像能拉完，大镜像 420s 拉不完）、
+`docker.1panel.top` / `docker.m.daocloud.io` / `hub.rat.dev` 均超时、
+`docker.1panel.live` / `proxy.1panel.live` / `dockerproxy.cn` 不可达。
+批量的可用前置条件：镜像能拉下来。拉取受限时一律判 BLOCKED，不计应用缺陷。
+
+**`fn-mkdocs-material` 实测 PASS**：容器 `running`、以包用户 `883:876` 运行、
+宿主端口 `8000/tcp → 8111` 绑定正确、入口 `http://${FNOS_HOST}:8111/` 连测三次 `200`。
+
+> **验收器缺陷（待修）**：该应用被批量器判成 `BLOCKED`，`stage=pre-uninstall`、
+> `err=轮询超时: pre-uninstall`，但当时容器已经 `Up` 且入口可访问。原因是卸载前置清理阶段
+> 轮询超时后被判整条失败，**没有回退到「容器在跑就探入口」**。这条会造成假阴性，
+> 下次修 `scripts/batch-verify.mjs` 时应把「安装已成功但清理阶段超时」与应用判定解耦。
+
 ## 明细## 明细
 
 ### A 类：镜像默认 root 且 compose 未写 `user:`（96 个）
