@@ -5,6 +5,16 @@ services:
     # 运行身份对齐包用户：镜像层默认 root，以 root 写数据会让卸载「删除所有数据」后残留；
     # 容器以包用户运行，运行期写入的文件属主才与卸载回调一致。
     user: "${TRIM_UID}:${TRIM_GID}"
+    environment:
+      # 必须用「容器内路径」而不是 ${TRIM_PKGVAR}（那是宿主路径，容器里不存在）：
+      # 之前误写成 HOME=${TRIM_PKGVAR}/data，容器内解析成 /vol2/... 并不存在，
+      # ollama 于是 mkdir /vol2 失败并无限重启：
+      #   Error: could not create directory mkdir /vol2: permission denied
+      # 镜像默认 HOME=/root（0700、属 root），包用户同样进不去，所以两者都不能用。
+      # 这里把数据目录挂到 /data，HOME 与模型目录都指向它，属主即包用户。
+      - HOME=/data
+      - OLLAMA_MODELS=/data/.ollama/models
+      - OLLAMA_HOST=0.0.0.0:11434
     ports:
       - "${APP_PORT}:11434"
     restart: unless-stopped
@@ -12,4 +22,4 @@ services:
     volumes:
       # 模型文件与应用状态，落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；
       # 模型文件较大（单个数 GB），请注意所选存储空间的容量
-      - "${TRIM_PKGVAR}/data:/root/.ollama"
+      - "${TRIM_PKGVAR}/data:/data"

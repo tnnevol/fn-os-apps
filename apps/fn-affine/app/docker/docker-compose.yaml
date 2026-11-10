@@ -22,6 +22,10 @@ services:
     # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
       - "${TRIM_PKGVAR}/data/storage:/root/.affine/storage"
       - "${TRIM_PKGVAR}/data/config:/root/.affine/config"
+      # NestJS 启动时要生成 GraphQL schema 到工作目录下的 src/schema.gql，
+      # 而镜像里 /app 属 root、根本没有 /app/src，以包用户运行会
+      # `EACCES: permission denied, mkdir '/app/src'` 并无限重启。
+      - "${TRIM_PKGVAR}/data/src:/app/src"
 
   # 首次启动执行数据库迁移的一次性任务（上游用 “_migration_job” 命名，此处改为连字符以符合命名规约）
   affine_migration:
@@ -38,3 +42,7 @@ services:
     # 数据落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）；容器内路径保持上游原样
       - "${TRIM_PKGVAR}/data/storage:/root/.affine/storage"
       - "${TRIM_PKGVAR}/data/config:/root/.affine/config"
+      # NestJS 启动时要生成 GraphQL schema 到工作目录下的 src/schema.gql，
+      # 而镜像里 /app 属 root、根本没有 /app/src，以包用户运行会
+      # `EACCES: permission denied, mkdir '/app/src'` 并无限重启。
+      - "${TRIM_PKGVAR}/data/src:/app/src"

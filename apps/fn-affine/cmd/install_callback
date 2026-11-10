@@ -11,6 +11,9 @@ fi
 
 mkdir -p "${TRIM_PKGVAR}/data/config"
 mkdir -p "${TRIM_PKGVAR}/data/storage"
+# NestJS 要把 GraphQL schema 生成到 /app/src，该路径在镜像里不存在且 /app 属 root，
+# 容器以包用户运行会 mkdir 失败，故挂到数据目录下的 src（这里预先建好，属主即包用户）。
+mkdir -p "${TRIM_PKGVAR}/data/src"
 
 chmod -R 770 "${TRIM_PKGVAR}/data" 2>/dev/null || true
 
