@@ -391,6 +391,51 @@ Permission denied @ rb_sysopen - /app/vendor/bundle/ruby/4.0.0/bin/dotenv.lock
 > 待办（本轮未做）：若要彻底消除残留，需让容器进程成为包用户组成员（`group_add`）
 > 或改用外部数据库；两者都会改变运行时形态，需单独评估。
 
+## 第 7 批：ghcr.io 应用（2026-11-09～11-10）
+
+`registry-mirrors` 不覆盖 ghcr.io，这一批统一走「**代理预拉 + 重打 tag**」：
+`docker pull <代理>/<repo>:<tag>` → `docker tag … ghcr.io/<repo>:<tag>`，
+之后 GUI 安装就用 compose 里原本的 ghcr 名字，仓库无需改动。
+
+**可用的 ghcr 代理（实测）**
+
+| 代理 | 结果 |
+| --- | --- |
+| `ghcr.nju.edu.cn` | 稳定可用（opengist、affine 等小中镜像均通过） |
+| `ghcr.dockerproxy.net` | 时好时坏，频繁 `TLS handshake timeout`；huginn 3.02GB 曾成功 |
+| `ghcr.m.daocloud.io` | `pull access denied`，不可用 |
+| `ghcr.io` 直连 | 240s 卡 `Verifying Checksum`，不可用 |
+
+### 结果汇总
+
+| 应用 | 结果 | 关键观察 |
+| --- | --- | --- |
+| `fn-affine` | **PASS（302）** | 需 PostgreSQL + Redis；修复 `/app/src` 挂载后 `RestartCount=0`，`schema.gql` 正常生成 |
+| `fn-octop` | **PASS（200）** | `Up (healthy)`、`User=865:858`，卸载残留 0 |
+| `fn-bettafish` | **PASS（200）** | 4 个入口端口全释放、残留 0；日志有 `Fontconfig error: No writable cache directories` 警告但不影响运行 |
+| `fn-ollama` | **PASS（API 200）** | 修复 `HOME` 后 `RestartCount=0`，`/api/version` 返回 `0.40.13`，卸载残留 0 |
+| `fn-ollama-webui` | 未测 | 依赖 Ollama 服务；Ollama 已验证可用，但 WebUI 本身本轮未安装 |
+
+### 本轮新增的两个「镜像要写运行目录」缺陷
+
+都已按「挂载到包用户可写目录」修好，与 huginn 属同一类，但修复点不同：
+
+| 应用 | 失败日志 | 修复 |
+| --- | --- | --- |
+| `fn-affine` | `EACCES: permission denied, mkdir '/app/src'` | 挂 `${TRIM_PKGVAR}/data/src:/app/src`（NestJS 生成 `src/schema.gql` 用） |
+| `fn-ollama` | `could not create directory mkdir /.ollama` | 数据挂 `/data`，`HOME=/data`、`OLLAMA_MODELS=/data/.ollama/models` |
+
+> **ollama 的坑值得记住**：`environment` 里写 `HOME=${TRIM_PKGVAR}/data` 是错的——
+> `TRIM_PKGVAR` 是**宿主路径**，容器内没有 `/vol2/...`，于是 ollama 去 `mkdir /vol2` 并失败
+> （真机 `RestartCount=937`）。环境变量里只能用**容器内路径**，宿主路径只用于 `volumes:` 左侧。
+
+### 环境补充：数据库与 Redis 凭据
+
+`fn-affine` / `fn-bettafish` 需要外部 PostgreSQL；设备上已有 `fn-postgres`（宿主 `55432`），
+另外 `fn-affine` 还需要 Redis（`6379`，密码在 `/vol2/@appconf/redis/extra.conf` 的 `requirepass`）。
+口令一律通过本地静态服务的 `/_bootstrap/params.json` 注入页面脚本填表，**不进对话记录与文档**。
+
+
 ## 明细## 明细
 
 ### A 类：镜像默认 root 且 compose 未写 `user:`（96 个）
@@ -617,3 +662,4 @@ Permission denied @ rb_sysopen - /app/vendor/bundle/ruby/4.0.0/bin/dotenv.lock
 | 2026-11-09 | 补 `fn-huginn`：GUI 流程确认真实缺陷（镜像要回写 `/app/.env`，包用户无权写镜像层）并修好；复测因 ghcr 镜像拉不完记 ENV_BLOCKED。新增「回写配置到镜像层」这一类补救方案。 |
 | 2026-11-09 | 重测网络：关闭 Clash 后确认 DNS 污染 + 设备无 IPv6 出网；逐源实测出 3 个可用 Hub 镜像源（daocloud 1030MB/141s）与 1 个可用 ghcr 代理（huginn 3.02GB/134s）；纠正上一版「daocloud/hub.rat.dev 超时」的结论。 |
 | 2026-11-09 | `fn-huginn` 最终 PASS（改走镜像自带身份 + ACL 授权数据目录）；登记已知限制：卸载「删除所有数据」残留 5 个空目录（容器 uid 创建的 750 目录，包用户无权删除，ACL mask 无法抬起）。 |
+| 2026-11-10 | 补第 7 批（ghcr）：`fn-affine` / `fn-octop` / `fn-bettafish` / `fn-ollama` 全部 PASS 且残留为 0；实测出可用 ghcr 代理为 `ghcr.nju.edu.cn`；新增 affine `/app/src`、ollama `HOME` 两处挂载修复，并记下「environment 只能用容器内路径」这一坑。 |
