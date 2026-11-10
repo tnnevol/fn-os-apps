@@ -416,6 +416,27 @@ Permission denied @ rb_sysopen - /app/vendor/bundle/ruby/4.0.0/bin/dotenv.lock
 | `fn-ollama` | **PASS（API 200）** | 修复 `HOME` 后 `RestartCount=0`，`/api/version` 返回 `0.40.13`，卸载残留 0 |
 | `fn-ollama-webui` | 未测 | 依赖 Ollama 服务；Ollama 已验证可用，但 WebUI 本身本轮未安装 |
 
+### 附：`fn-stirling-pdf`（Docker Hub，同批验证）
+
+**PASS（200）**，但走了不同的处置：`Up (healthy)`、`RestartCount=0`、入口三次 200。
+
+- 失败日志：`ln: failed to create symbolic link '/usr/local/bin/diagnostics': Permission denied`
+  （`RestartCount=13`，日志只有这一行）；
+- 根因：`/scripts/init-without-ocr.sh` 用 `set -euo pipefail`，无条件给
+  `/scripts/stirling-diagnostics.sh` 建 5 个软链到 `/usr/local/bin`（属 root 755），
+  包用户必失败并因 `set -e` 当场终止；
+- **无法按「挂载可写目录」修**：`/usr/local/bin` 里有 32MB 的 `gs` 及 `ocrmypdf`、
+  `unoconvert` 等必需二进制，整目录覆盖会丢工具；镜像内也没有 `sudo`/`su`/`gosu` 可提权；
+  该段无任何环境变量开关；
+- 处置：撤销 `user:` 并标 `# USER-EXCEPTION: <原因>`，与 `fn-certd`、`fn-it-tools` 同类。
+- **已知限制**：容器内 uid 1000 创建的 `data/extraConfigs` 卸载后删不掉（残留 1 项），
+  `uninstall_callback` 如实上报 `RESIDUAL_COUNT`。
+
+> 这一类（init 脚本 `set -e` + 硬编码写系统目录）说明：**不是所有「加 `user:` 后失败」
+> 都能靠挂载解决**。判定顺序应是——能挂可写目录就挂；挂载会破坏镜像自带工具、
+> 或镜像内无提权手段、或无开关跳过时，按 `USER-EXCEPTION` 撤回 `user:` 并如实登记残留。
+
+
 ### 本轮新增的两个「镜像要写运行目录」缺陷
 
 都已按「挂载到包用户可写目录」修好，与 huginn 属同一类，但修复点不同：
@@ -663,3 +684,4 @@ Permission denied @ rb_sysopen - /app/vendor/bundle/ruby/4.0.0/bin/dotenv.lock
 | 2026-11-09 | 重测网络：关闭 Clash 后确认 DNS 污染 + 设备无 IPv6 出网；逐源实测出 3 个可用 Hub 镜像源（daocloud 1030MB/141s）与 1 个可用 ghcr 代理（huginn 3.02GB/134s）；纠正上一版「daocloud/hub.rat.dev 超时」的结论。 |
 | 2026-11-09 | `fn-huginn` 最终 PASS（改走镜像自带身份 + ACL 授权数据目录）；登记已知限制：卸载「删除所有数据」残留 5 个空目录（容器 uid 创建的 750 目录，包用户无权删除，ACL mask 无法抬起）。 |
 | 2026-11-10 | 补第 7 批（ghcr）：`fn-affine` / `fn-octop` / `fn-bettafish` / `fn-ollama` 全部 PASS 且残留为 0；实测出可用 ghcr 代理为 `ghcr.nju.edu.cn`；新增 affine `/app/src`、ollama `HOME` 两处挂载修复，并记下「environment 只能用容器内路径」这一坑。 |
+| 2026-11-10 | 补 `fn-stirling-pdf`（Hub）：`ln -sf /usr/local/bin/diagnostics` 在 `set -e` 下致命，且无法用挂载修（会丢 `gs` 等工具），按 USER-EXCEPTION 撤回 `user:` 后 PASS；记下「并非所有加 user: 失败都能靠挂载解决」的判定顺序。另移除 `fn-alist`（用户决定不适配）。 |
