@@ -202,7 +202,7 @@ description: 1Panel 应用商店 265 个应用的 fnOS 转换分级、改造点�
 | P2 | `openlist` | OpenList | `（变量镜像）` | 状态落 `./data`；多端口×2 | 1 |
 | P2 | `cordys-crm` | Cordys CRM | `1panel/cordys-crm:v1.9.3` | 状态落 `./data`；外部数据库；多端口×2；仅 amd64 | 1 |
 | P3 | `adguardhome` | AdGuardHome | `adguard/adguardhome:v0.107.79` | 状态落 `./data`；多端口×14 | 1 |
-| P3 | `alist` | AList | `xhofe/alist:v3.64.0` | 状态落 `./data`；多端口×2 | 1 |
+| P3 | ~~`alist`~~ | AList | `xhofe/alist:v3.64.0` | 状态落 `./data`；多端口×2 —— **不做适配（永久移除）**，见[不做适配清单](/requirements/FNOS-001-1panel-app-conversion#不做适配清单-终态-不再评估) | 0 |
 | P3 | `astrbot` | AstrBot | `soulter/astrbot:v4.28.2` | 状态落 `./data`；多端口×6 | 1 |
 | P3 | `certd` | Certd | `greper/certd:1.45.0` | 状态落 `./data`；多端口×2 | 1 |
 | P3 | `discuz` | Discuz! | `tencentci/discuz:v3.4` | 多端口×2；仅 amd64 | 1 |

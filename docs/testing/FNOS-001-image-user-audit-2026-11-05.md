@@ -445,7 +445,7 @@ Permission denied @ rb_sysopen - /app/vendor/bundle/ruby/4.0.0/bin/dotenv.lock
 | `fn-adguardhome` | `adguard/adguardhome:v0.107.79` |
 | `fn-affine` | `ghcr.io/toeverything/affine:0.27.4` |
 | `fn-ai-portal` | `1panel/ai-portal:v1.0.10` |
-| `fn-alist` | `xhofe/alist:v3.66.0` |
+| ~~`fn-alist`~~ | `xhofe/alist:v3.66.0` —— 已按用户决定**永久移除**（见需求文档「不做适配清单」），实测镜像 `Config.User` 为空即以 root 运行、compose 无 `user:`，A 类判定本身正确 |
 | `fn-answer` | `apache/answer:2.0.3` |
 | `fn-archivebox` | `archivebox/archivebox:0.9.77` |
 | `fn-artalk` | `artalk/artalk-go:2.10` |
