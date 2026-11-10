@@ -2,9 +2,14 @@ services:
   stirling-pdf:
     container_name: fn-stirling-pdf
     image: frooodle/s-pdf:3.2.2
-    # 运行身份对齐包用户：镜像层默认 root，以 root 写数据会让卸载「删除所有数据」后残留；
-    # 容器以包用户运行，运行期写入的文件属主才与卸载回调一致。
-    user: "${TRIM_UID}:${TRIM_GID}"
+    # USER-EXCEPTION: 镜像的 /scripts/init-without-ocr.sh 用 `set -euo pipefail`，
+    # 其中无条件执行 `ln -sf /scripts/stirling-diagnostics.sh /usr/local/bin/diagnostics`
+    # （以及 diag/debug/diagnostic 四个别名）。/usr/local/bin 属 root(755)，容器以包用户
+    # 运行时该 ln 必然 Permission denied，又因 set -e 直接终止启动、容器反复重启
+    # （真机 RestartCount=13，日志只有 `ln: failed to create symbolic link`）。
+    # 该段没有任何环境变量开关可跳过，镜像内也没有 sudo/su/gosu 可提权，
+    # 而 /usr/local/bin 里有 32MB 的 gs 等必需二进制，不能整目录覆盖。
+    # 因此沿用镜像默认身份，由 uninstall_callback 如实上报可能的数据残留。
     environment:
       - DOCKER_ENABLE_SECURITY=false
     ports:
