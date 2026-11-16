@@ -2,9 +2,13 @@ services:
   vexdb:
     container_name: fn-vexdb
     image: shuzhiyinhang/vexdb:3.0.0.28146
-    # 运行身份对齐包用户：镜像层默认 root，以 root 写数据会让卸载「删除所有数据」后残留；
-    # 容器以包用户运行，运行期写入的文件属主才与卸载回调一致。
-    user: "${TRIM_UID}:${TRIM_GID}"
+    # USER-EXCEPTION: 镜像 entrypoint 首段硬编码检查并 source /home/postgres/.bashrc，
+    # 缺文件就 `exit 2`（真机 RestartCount=12，日志只有 13 行
+    # `file does not exist: /home/postgres/.bashrc`）。该目录属镜像内 postgres(1000):1000
+    # 且权限 0700，包用户既非属主也无法进入，于是「文件不存在」恒成立。
+    # 后面还要 `chown -R postgres:postgres` 多处、并以 postgres 身份起 openGauss，
+    # 都需要 root；实测以 root 运行可正常进入数据库启动流程。
+    # 因此沿用镜像默认身份，由 uninstall_callback 如实上报可能的数据残留。
     environment:
       # 这是容器内自带 PostgreSQL 实例的初始化凭据（该应用不使用外部数据库）
       - GS_USERNAME=${DB_ROOT_USERNAME}
