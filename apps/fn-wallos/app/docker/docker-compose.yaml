@@ -2,11 +2,17 @@ services:
   wallos:
     container_name: fn-wallos
     image: bellamy/wallos:5.10.2
-    # 运行身份对齐包用户：镜像层默认 root，以 root 写数据会让卸载「删除所有数据」后残留；
-    # 容器以包用户运行，运行期写入的文件属主才与卸载回调一致。
-    user: "${TRIM_UID}:${TRIM_GID}"
+    # USER-EXCEPTION: 镜像的 /var/www/html/startup.sh 用 `set -euo pipefail`，首行就
+    # `echo ... > /var/log/startup.log`，而 /var/log 属 root(755)——以包用户运行必然失败并当场
+    # 退出（真机 RestartCount=13、日志全是 can't create /var/log/startup.log、入口 000）。
+    # 之后还要 groupmod/usermod 改 www-data 的 uid/gid、chown -R /var/www/html 与 /tmp、
+    # 以及按需 sed 改 nginx 配置，全部依赖 root。
+    # 该镜像的设计是「root 启动 + 内部降权」，故改用它的 PUID/PGID 机制：
+    # 服务进程最终仍以 www-data(=包用户 uid/gid) 运行，容器主进程保留 root 做初始化。
     environment:
       - TZ=${TIME_ZONE}
+      - PUID=${TRIM_UID}
+      - PGID=${TRIM_GID}
     healthcheck:
       test: ["NONE"]
     ports:
