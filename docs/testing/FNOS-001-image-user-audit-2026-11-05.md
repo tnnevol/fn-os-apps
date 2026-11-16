@@ -551,9 +551,41 @@ linuxserver 系列（`fn-qbittorrent`、`fn-calibre-web`、`fn-code-server`、`f
 `fn-uptime-kuma`、`fn-vexdb`、`fn-waline`、`fn-wallos`、`fn-web-check`、
 `fn-wechatmarkdowneditor`、`fn-yesplaymusic`、`fn-yourls`、`fn-zfile`、`fn-neko`（变量镜像，需单独判）。
 
-> 待办：这 21 个尚未逐个改造+复测；`fn-twikoo` 只做了「确证缺陷」的验证，**没有修**。
-> 修正方式与前面几批一致（补 `user: ${TRIM_UID}:${TRIM_GID}` + `install_callback` 预建目录），
-> 或对确需 root 的补 `# USER-EXCEPTION: <原因>`。
+### 整改结果（2026-11-16，提交 `fd0c154b`）
+
+**19 个已改**（排除 `fn-neko` 变量镜像、`fn-postgres` 用户自建应用）：
+
+- 每个应用补 `user: "${TRIM_UID}:${TRIM_GID}"`；
+- `install_callback` 预建 compose 里所有 `${TRIM_PKGVAR}` **目录型**挂载源（单文件挂载跳过，
+  避免把 `conf/local.ini` 之类当目录建），并统一补上 `TRIM_PKGVAR` 空值护栏。
+
+**`fn-twikoo` 修复前后对照（同一设备、同一用例）**
+
+| 观察点 | 修复前 | 修复后 |
+| --- | --- | --- |
+| `Config.User` | `[]`（默认 root） | **`835:828`** |
+| 容器内进程 | `uid=0(root)` | **`uid=835 gid=828`** |
+| `data/db.json` 属主 | **`0:0`** | **`835:828`** |
+| 入口 | 200 | 200 |
+| 卸载后 `@appdata`/`@appconf`/`@apphome` | **1 项残留**（root 的 `db.json`） | **均为 0 项** |
+
+> 附带发现：修复后重新安装时，**上一次遗留的 root 残留也被新容器改写成了包用户属主**，
+> 卸载时一并清除。说明「先装旧版留下残留 → 再装修复版」能自愈历史残留，
+> 但不必作为标准流程（正常路径是修好后一次装对）。
+
+**告警数**：71 → **52**。剩余 52 条中，经镜像身份核对仍属「镜像自带非 root」的占多数，
+真正待复核的是 `fn-neko`（变量镜像）与少量未核查项。
+
+### 第二批真机复测（2026-11-16）
+
+| 应用 | 结果 | 关键数据 |
+| --- | --- | --- |
+| `fn-twikoo` | **PASS** | 修复前 `data/db.json` 属 `0:0`、卸载残留 1 项；修复后 `Config.User=835:828`、容器内 `uid=835`、`db.json` 属 `835:828`、入口 200、**卸载残留 0** |
+| `fn-uptime-kuma` | **PASS** | `Up (healthy)`、`Config.User=833:826`（与包用户一致）、`data` 属主 `833:826`、入口 **302**、**卸载残留 0**、端口已释放 |
+
+两个应用的 `@appdata`/`@appconf`/`@apphome` 卸载后条目数均为 **0**，确认批量补 `user:` 的做法有效。
+
+
 
 
 
@@ -787,3 +819,4 @@ linuxserver 系列（`fn-qbittorrent`、`fn-calibre-web`、`fn-code-server`、`f
 | 2026-11-10 | 补第 7 批（ghcr）：`fn-affine` / `fn-octop` / `fn-bettafish` / `fn-ollama` 全部 PASS 且残留为 0；实测出可用 ghcr 代理为 `ghcr.nju.edu.cn`；新增 affine `/app/src`、ollama `HOME` 两处挂载修复，并记下「environment 只能用容器内路径」这一坑。 |
 | 2026-11-10 | 补 `fn-stirling-pdf`（Hub）：`ln -sf /usr/local/bin/diagnostics` 在 `set -e` 下致命，且无法用挂载修（会丢 `gs` 等工具），按 USER-EXCEPTION 撤回 `user:` 后 PASS；记下「并非所有加 user: 失败都能靠挂载解决」的判定顺序。另移除 `fn-alist`（用户决定不适配）。 |
 | 2026-11-16 | 补第 8 批：`fn-qbittorrent` 真机证明 PUID/PGID 与 `user:` 等效（残留 0）；`fn-twikoo` 真机确证无降权时 data 子目录与文件属 0:0、卸载残留 1 项。`check --apps` 补上「未写 user:」盲区并改为「error 阻塞 / warn 不阻塞」两级，检出 71 条告警（其中 21 个为真缺陷）。 |
+| 2026-11-16 | 19 个应用批量补 `user:` + 预建挂载目录（`fd0c154b`）；`fn-twikoo`、`fn-uptime-kuma` 真机复测 PASS 且卸载残留 0，验证批量改法有效。告警 71→52。 |
