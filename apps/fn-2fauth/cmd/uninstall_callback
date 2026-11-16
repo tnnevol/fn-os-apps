@@ -13,6 +13,17 @@ delete_contents() {
     local d="$1"
     [ -n "$d" ] || return 0
     [ -d "$d" ] || return 0
+    # 容器以镜像自带 uid 1000 运行（见 compose 的 USER-EXCEPTION），它创建的文件/目录
+    # 属 1000:1000，包用户不一定删得掉。包用户无权 chown，但可以对自己可写的目录 setfacl，
+    # 先尽力授予自身权限再删；删不掉时下面的 RESIDUAL_COUNT 会如实上报。
+    if command -v setfacl >/dev/null 2>&1; then
+        local me
+        me="$(id -u)"
+        setfacl -m "u:${me}:rwx,m:rwx" "$d" 2>/dev/null || true
+        find "$d" -mindepth 1 -type d -printf '%d\t%p\n' 2>/dev/null | sort -rn | cut -f2- |
+            while IFS= read -r sub; do setfacl -m "u:${me}:rwx,m:rwx" "$sub" 2>/dev/null || true; done
+        find "$d" -mindepth 1 -type f -exec setfacl -m "u:${me}:rw-,m:rw-" {} + 2>/dev/null || true
+    fi
     rm -rf "$d"/* "$d"/.[!.]* 2>/dev/null
     local left
     left="$(ls -A "$d" 2>/dev/null | wc -l | tr -d ' ')"

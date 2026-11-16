@@ -2,9 +2,13 @@ services:
   2fauth:
     container_name: fn-2fauth
     image: 2fauth/2fauth:9.0.0
-    # 运行身份对齐包用户：镜像层默认 root，以 root 写数据会让卸载「删除所有数据」后残留；
-    # 容器以包用户运行，运行期写入的文件属主才与卸载回调一致。
-    user: "${TRIM_UID}:${TRIM_GID}"
+    # USER-EXCEPTION: 镜像自带 Config.User=1000:1000，且 entrypoint 权限是
+    # `-r-x------ 1000:1000`——只有 uid 1000 能读。覆盖成包用户后直接失败：
+    #   /bin/sh: can't open '/usr/local/bin/entrypoint.sh': Permission denied
+    # （真机 RestartCount=12、入口 000）。
+    # 本应用的 cmd/install_callback 本来就是按「镜像 uid 1000」做 ACL 授权的
+    # （见其中的 IMAGE_UID=1000），与覆盖 user: 自相矛盾；正确做法是沿用镜像身份，
+    # 由 ACL 把包用户可写的目录授权给 1000。属主不同的遗留数据由卸载回调如实上报。
     environment:
       - APP_NAME=${APP_NAME}
       - APP_KEY=${APP_KEY}
