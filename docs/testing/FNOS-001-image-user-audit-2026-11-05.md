@@ -820,3 +820,46 @@ linuxserver 系列（`fn-qbittorrent`、`fn-calibre-web`、`fn-code-server`、`f
 | 2026-11-10 | 补 `fn-stirling-pdf`（Hub）：`ln -sf /usr/local/bin/diagnostics` 在 `set -e` 下致命，且无法用挂载修（会丢 `gs` 等工具），按 USER-EXCEPTION 撤回 `user:` 后 PASS；记下「并非所有加 user: 失败都能靠挂载解决」的判定顺序。另移除 `fn-alist`（用户决定不适配）。 |
 | 2026-11-16 | 补第 8 批：`fn-qbittorrent` 真机证明 PUID/PGID 与 `user:` 等效（残留 0）；`fn-twikoo` 真机确证无降权时 data 子目录与文件属 0:0、卸载残留 1 项。`check --apps` 补上「未写 user:」盲区并改为「error 阻塞 / warn 不阻塞」两级，检出 71 条告警（其中 21 个为真缺陷）。 |
 | 2026-11-16 | 19 个应用批量补 `user:` + 预建挂载目录（`fd0c154b`）；`fn-twikoo`、`fn-uptime-kuma` 真机复测 PASS 且卸载残留 0，验证批量改法有效。告警 71→52。 |
+
+### 全量复测（2026-11-16，按「抽样问题率高则全量」的规则执行）
+
+抽样 3 个中 2 个有问题，据此转全量复测 19 个。逐项结果：
+
+| 应用 | 结果 | 关键观察 |
+| --- | --- | --- |
+| `fn-twikoo` | **PASS** | 修复前后对照见上节 |
+| `fn-uptime-kuma` | **PASS（302）** | `Up (healthy)`、`Config.User=833:826`、残留 0 |
+| `fn-obsidian-livesync` | **PASS（200）** | 单文件挂载 `local.ini` 保持文件形态（111B），属 866:859 |
+| `fn-trendradar` | **PASS（200）** | seed 配置正确铺好（`config.yaml`/`frequency_words.txt` 属包用户） |
+| `fn-wechatmarkdowneditor` | **PASS（200）** | `doocs/md` 虽是 nginx 镜像但无 `/var/cache/nginx` 依赖，直接可用 |
+| `fn-yesplaymusic` | **PASS（200，修复）** | 见下「nginx 缓存目录」 |
+| `fn-waline` | **PASS（200，修复）** | 见下「应用运行目录」 |
+| `fn-2fauth` | **PASS（200，修复）** | 见下「entrypoint 自身权限」 |
+| `fn-vexdb` | **PASS（healthy，例外）** | 见下「硬依赖 root」 |
+| `fn-wallos` | **PASS（302，修复）** | 见下「启动脚本写系统目录」 |
+
+#### 全量复测新发现的 4 类缺陷
+
+| 类型 | 代表应用 | 失败日志 | 修复方式 |
+| --- | --- | --- | --- |
+| **nginx 缓存/pid 目录不可写** | `fn-yesplaymusic` | `nginx: [emerg] mkdir() "/var/cache/nginx/client_temp" failed (13: Permission denied)`；容器里只剩 node 的 3000，映射却指向 80，入口 000 | 挂 `${TRIM_PKGVAR}/cache`→`/var/cache/nginx`、`/run`→`/var/run` |
+| **应用运行目录不可写** | `fn-waline` | `Error: ENOENT: no such file or directory, open '/app/runtime/config/production.json'`（ThinkJS） | 挂 `${TRIM_PKGVAR}/data/runtime`→`/app/runtime` |
+| **entrypoint 自身权限属镜像 uid** | `fn-2fauth` | `/bin/sh: can't open '/usr/local/bin/entrypoint.sh': Permission denied`（`-r-x------ 1000:1000`） | **撤销 `user:`** 并登记 USER-EXCEPTION（该应用本就按镜像 uid 1000 设计） |
+| **启动脚本写系统目录** | `fn-wallos` | `can't create /var/log/startup.log: Permission denied`（`set -euo pipefail` 当场退出，RestartCount=13） | **撤销 `user:` 改用 PUID/PGID**（root 初始化 + 内部降权到 www-data=包用户） |
+| **镜像 HOME 0700** | `fn-vexdb` | `file does not exist: /home/postgres/.bashrc` → `exit 2` | USER-EXCEPTION（entrypoint 多处 `chown` 依赖 root） |
+
+> **判定顺序（复测后固化）**：
+> 1. 能挂可写目录就挂（nginx 缓存、应用 runtime、HOME 数据目录）；
+> 2. 挂载会破坏镜像自带工具、或镜像内无提权手段、或无开关跳过时 → USER-EXCEPTION 撤销 `user:`；
+> 3. 若镜像本身是「root 启动 + 内部降权」设计（有 PUID/PGID），优先用它而不是撤销降权
+>    ——服务进程仍以包用户 uid 运行，数据属主正确、卸载无残留（`fn-wallos` 实测残留 0）。
+
+#### 受阻用例（环境限制，非应用缺陷）
+
+| 应用 | 阻塞原因 |
+| --- | --- |
+| `fn-ghost` / `fn-typecho` / `fn-yourls` | 依赖外部 MySQL；设备 `fn-mysql_v8` 在跑（43306），但测试账号 `fntest` 在 `192.168.124.181` 网段无授权（`ERROR 1045`） |
+| `fn-mongo-express` / `fn-tailchat` / `fn-teamspeak` | 设备上没有对应依赖服务（MongoDB / Teamspeak 服务器） |
+| `fn-synapse` / `fn-web-check` / `fn-zfile` | 镜像不在当前镜像源白名单内，拉取失败 |
+
+| 2026-11-16 | 全量复测 19 个（抽样 3 中 2 有问题故转全量）：10 个 PASS（其中 6 个需先修）、6 个受阻。新发现 4 类「加 user: 后才暴露」的缺陷（nginx 缓存目录、应用 runtime 目录、entrypoint 自身权限、启动脚本写系统目录），并固化「挂载 → USER-EXCEPTION → 优先 PUID/PGID」的判定顺序。 |
