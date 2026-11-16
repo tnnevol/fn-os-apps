@@ -20,3 +20,8 @@ services:
     volumes:
       # SQLite 数据库，落在目标 NAS 的应用数据目录（TRIM_PKGVAR 由 fnOS 注入）
       - "${TRIM_PKGVAR}/data:/app/data"
+      # ThinkJS 启动时要把编译后的配置写到 /app/runtime/config/production.json，
+      # 而镜像里根本没有 /app/runtime、/app 又归 root(755)，以包用户运行必失败：
+      #   Error: ENOENT: no such file or directory, open '/app/runtime/config/production.json'
+      # （真机：容器 Up 但立即抛错，入口 000）。挂到包用户可写目录即可。
+      - "${TRIM_PKGVAR}/data/runtime:/app/runtime"
