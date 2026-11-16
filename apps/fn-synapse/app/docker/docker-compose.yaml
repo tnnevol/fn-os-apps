@@ -2,6 +2,9 @@ services:
   synapse:
     container_name: fn-synapse
     image: matrixdotorg/synapse:v1.164.1
+    # 运行身份对齐包用户：镜像层默认 root，以 root 写数据会让卸载「删除所有数据」后残留；
+    # 容器以包用户运行，运行期写入的文件属主才与卸载回调一致。
+    user: "${TRIM_UID}:${TRIM_GID}"
     # 容器由应用中心在 install_callback 之前创建，回调写的 homeserver.yaml 赶不上首次启动，
     # 于是以「配置不存在」失败并进入重启循环。把「缺配置就先生成」放进容器自己的启动命令，
     # 不依赖外部时序：镜像自带 /start.py，支持 generate 子命令。

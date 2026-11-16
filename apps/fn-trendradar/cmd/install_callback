@@ -11,6 +11,8 @@ fi
 
 CFG_DIR="${TRIM_PKGVAR}/data/config"
 OUT_DIR="${TRIM_PKGVAR}/data/output"
+mkdir -p "${TRIM_PKGVAR}/data/config"
+mkdir -p "${TRIM_PKGVAR}/data/output"
 mkdir -p "${CFG_DIR}" "${OUT_DIR}"
 
 SEED_DIR="${TRIM_APPDEST}/seed/data"

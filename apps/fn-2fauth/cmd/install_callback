@@ -22,4 +22,6 @@ else
     exit 1
 fi
 
+mkdir -p "${TRIM_PKGVAR}/data"
+
 exit 0

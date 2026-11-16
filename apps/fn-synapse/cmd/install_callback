@@ -12,6 +12,7 @@ if [ -z "${TRIM_PKGVAR}" ]; then
 fi
 
 DATA_DIR="${TRIM_PKGVAR}/data"
+mkdir -p "${TRIM_PKGVAR}/data"
 mkdir -p "${DATA_DIR}"
 
 chown -R "${TRIM_USERNAME:-${TRIM_UID}}:${TRIM_GROUPNAME:-${TRIM_GID}}" "${DATA_DIR}" 2>/dev/null || true
