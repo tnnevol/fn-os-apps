@@ -456,6 +456,107 @@ Permission denied @ rb_sysopen - /app/vendor/bundle/ruby/4.0.0/bin/dotenv.lock
 另外 `fn-affine` 还需要 Redis（`6379`，密码在 `/vol2/@appconf/redis/extra.conf` 的 `requirepass`）。
 口令一律通过本地静态服务的 `/_bootstrap/params.json` 注入页面脚本填表，**不进对话记录与文档**。
 
+## 第 8 批：`PUID/PGID` 方案是否可以替代 `user:`（2026-11-16）
+
+### 起因：审计与校验都漏了「没写 `user:`」的应用
+
+linuxserver 系列（`fn-qbittorrent`、`fn-calibre-web`、`fn-code-server`、`fn-freshrss`、
+`fn-heimdall`、`fn-nextcloud` 等）的 compose **没有 `user:`**，而是用镜像约定的
+`PUID=${TRIM_UID}` / `PGID=${TRIM_GID}` 让服务进程降权。这类写法的问题：
+
+- `check --apps` 只校验「写了 `user:` 的行」，**完全不检查没写 `user:` 的应用**，
+  所以它们能通过校验；
+- 镜像 `Config.User` 为空（默认 root），按审计口径属 A 类，但用 PUID 又确实降了权——
+  判定上处于灰区，**必须真机确认残留**才能定性。
+
+### 真机结论：`fn-qbittorrent` 与 `user:` 等效，残留为 0
+
+| 观察点 | 结果 |
+| --- | --- |
+| 容器状态 | `Up About a minute`、`RestartCount=0` |
+| 主进程 | `s6-svscan` 以 **root** 运行（`Config.User=[]`） |
+| 服务进程 | `qbittorrent-nox` 以 **abc** 运行，即 `PUID=856`/`PGID=849` 生效 |
+| 数据目录属主 | `@appdata/fn-qbittorrent`、`data`、`config`、`downloads`、`config/qBittorrent` **全部 856:849**，无 root 属主文件 |
+| 入口 | `http://${FNOS_HOST}:8181/` 连测三次 **200** |
+| 卸载后 | 容器已删、镜像已删、`@appdata`/`@appconf`/`@apphome` **条目数均为 0**、`8181`/`48181` 均已释放 |
+
+**判定**：`PUID`/`PGID` 与 `user:` 在本用例上**等效**——都让写文件的进程以包用户身份运行，
+因此卸载时包用户能删干净自己创建的文件。s6 主进程仍是 root，但它不写用户数据。
+
+> 与 `fn-huginn` 的对比很关键：huginn 残留 5 个空目录，是因为写文件的是**镜像内固定的
+> uid 1001**、不是包用户；而 PUID 方案把那个 uid **换成了包用户**，所以没有残留。
+> 真正的判据不是「有没有 `user:`」，而是「**写数据目录的进程 uid 是不是包用户**」。
+
+### 由此定下的校验规则（`check --apps`）
+
+一个 Docker 应用必须满足以下**任一**条件才算通过：
+
+1. `user: "${TRIM_UID}:${TRIM_GID}"`；或
+2. `# USER-EXCEPTION: <原因>` 标记（确需 root 的镜像）；或
+3. **同时**声明 `PUID=${TRIM_UID}` 与 `PGID=${TRIM_GID}`（linuxserver/s6 类镜像的官方降权方式）。
+
+三条都不满足时报警，提示补 `user:`、补 PUID/PGID 或写例外原因。
+
+**分级策略（2026-11-16 定）**：校验结果分两级，避免存量问题阻塞 CI——
+
+| 级别 | 触发条件 | 行为 |
+| --- | --- | --- |
+| **error**（阻塞） | 写了 `user:` 但值不是 `${TRIM_UID}:${TRIM_GID}`，且上方无 `# USER-EXCEPTION` | `exit 1`，属「写错了」，必须当场改 |
+| **warn**（不阻塞） | 没写 `user:`，也没 PUID/PGID 或例外 | 只打印 `[warn]` 清单，`exit 0` |
+
+之所以把后者降为告警：修复它必须先确认**镜像默认身份**（要联网查 registry）再逐个真机复测，
+属于分批推进的存量问题；直接硬失败会让整条 CI 红掉而无法继续提交其它改动。
+当前告警数是 71，其中经镜像身份核对**只有 21 个是真缺陷**（其余镜像自带非 root），
+清单与证据见下一节。等这些改完，可再把告警调回硬失败。
+
+### 规则上线后暴露的真实缺陷：21 个应用以 root 写数据（`fn-twikoo` 真机确证）
+
+新规则一上线就报出 **71 个应用不合格**。逐层筛掉误报后，真实待处理是 **21 个**：
+
+| 筛选步骤 | 数量 | 说明 |
+| --- | --- | --- |
+| 规则初次报错 | 71 | 只看 compose，不看镜像身份，误报多 |
+| 减去镜像自带非 root | −44 | 容器本来就不以 root 运行，无需改（如 `2fauth`=`1000:1000`、`cyberchef`=`101`、`umami`=`nextjs`） |
+| 减去受保护的既有应用 | −6 | `fn-bitwarden`/`fn-halo`/`fn-new-api` 等 14 个既有应用不改 |
+| **真实待处理** | **21** | 镜像默认 root + 无 `user:` + 无 PUID/PGID + 无 USER-EXCEPTION |
+
+**真机确证（`fn-twikoo`，最简结构：单挂载 + 单端口）**
+
+| 观察点 | 结果 |
+| --- | --- |
+| 镜像 `Config.User` | 空（默认 root） |
+| 容器内进程 | `uid=0(root)` |
+| 入口 | `http://${FNOS_HOST}:40063/` → **200**，`RestartCount=0` |
+| 包用户 | `835:828` |
+| `@appdata/fn-twikoo`（平台建） | **835:828** ✅ |
+| `@appdata/fn-twikoo/data`（**容器建**） | **0:0（root）** ❌ |
+| `data/db.json` 等 5 个文件 | **0:0（root）** ❌ |
+| 卸载（删除所有数据）后 | `@appdata` **残留 1 项**，`db.json` 仍为 `0:0` |
+
+> 这条证据链把「为什么必须让写数据目录的进程用包用户身份」坐实了：平台建的目录属主是对的，
+> 但**容器自己 mkdir 出来的子目录和文件是 root**，卸载回调以包用户运行删不掉，用户就会看到
+> 「选了删除所有数据却还有残留」。
+
+**与 PUID 方案的对比**（`fn-qbittorrent`，同一天验证）：
+
+| | `fn-twikoo`（无降权） | `fn-qbittorrent`（PUID/PGID） |
+| --- | --- | --- |
+| 容器内写数据的进程 | `root` | `abc`（= 包用户 856） |
+| `data` 子目录属主 | **0:0** | **856:849** |
+| 卸载后残留 | **1 项**（`db.json`） | **0 项** |
+
+21 个待处理清单（镜像默认 root，需逐个补 `user:` 或 PUID/PGID，或写例外原因）：
+`fn-2fauth`、`fn-ghost`、`fn-mongo-express`、`fn-obsidian-livesync`、`fn-postgres`、
+`fn-synapse`、`fn-tailchat`、`fn-teamspeak`、`fn-trendradar`、`fn-twikoo`、`fn-typecho`、
+`fn-uptime-kuma`、`fn-vexdb`、`fn-waline`、`fn-wallos`、`fn-web-check`、
+`fn-wechatmarkdowneditor`、`fn-yesplaymusic`、`fn-yourls`、`fn-zfile`、`fn-neko`（变量镜像，需单独判）。
+
+> 待办：这 21 个尚未逐个改造+复测；`fn-twikoo` 只做了「确证缺陷」的验证，**没有修**。
+> 修正方式与前面几批一致（补 `user: ${TRIM_UID}:${TRIM_GID}` + `install_callback` 预建目录），
+> 或对确需 root 的补 `# USER-EXCEPTION: <原因>`。
+
+
+
 
 ## 明细## 明细
 
@@ -685,3 +786,4 @@ Permission denied @ rb_sysopen - /app/vendor/bundle/ruby/4.0.0/bin/dotenv.lock
 | 2026-11-09 | `fn-huginn` 最终 PASS（改走镜像自带身份 + ACL 授权数据目录）；登记已知限制：卸载「删除所有数据」残留 5 个空目录（容器 uid 创建的 750 目录，包用户无权删除，ACL mask 无法抬起）。 |
 | 2026-11-10 | 补第 7 批（ghcr）：`fn-affine` / `fn-octop` / `fn-bettafish` / `fn-ollama` 全部 PASS 且残留为 0；实测出可用 ghcr 代理为 `ghcr.nju.edu.cn`；新增 affine `/app/src`、ollama `HOME` 两处挂载修复，并记下「environment 只能用容器内路径」这一坑。 |
 | 2026-11-10 | 补 `fn-stirling-pdf`（Hub）：`ln -sf /usr/local/bin/diagnostics` 在 `set -e` 下致命，且无法用挂载修（会丢 `gs` 等工具），按 USER-EXCEPTION 撤回 `user:` 后 PASS；记下「并非所有加 user: 失败都能靠挂载解决」的判定顺序。另移除 `fn-alist`（用户决定不适配）。 |
+| 2026-11-16 | 补第 8 批：`fn-qbittorrent` 真机证明 PUID/PGID 与 `user:` 等效（残留 0）；`fn-twikoo` 真机确证无降权时 data 子目录与文件属 0:0、卸载残留 1 项。`check --apps` 补上「未写 user:」盲区并改为「error 阻塞 / warn 不阻塞」两级，检出 71 条告警（其中 21 个为真缺陷）。 |
