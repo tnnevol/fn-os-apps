@@ -858,8 +858,34 @@ linuxserver 系列（`fn-qbittorrent`、`fn-calibre-web`、`fn-code-server`、`f
 
 | 应用 | 阻塞原因 |
 | --- | --- |
-| `fn-ghost` / `fn-typecho` / `fn-yourls` | 依赖外部 MySQL；设备 `fn-mysql_v8` 在跑（43306），但测试账号 `fntest` 在 `192.168.124.181` 网段无授权（`ERROR 1045`） |
 | `fn-mongo-express` / `fn-tailchat` / `fn-teamspeak` | 设备上没有对应依赖服务（MongoDB / Teamspeak 服务器） |
 | `fn-synapse` / `fn-web-check` / `fn-zfile` | 镜像不在当前镜像源白名单内，拉取失败 |
 
+> 早前把 `fn-ghost` / `fn-typecho` / `fn-yourls` 记为「MySQL 凭据失效」是**误判**：
+> 实际是检查时环境变量没在远端 shell 里展开，导致用空密码连接而报 `ERROR 1045`。
+> `fn-mysql_v8` 的测试账号一直可用，三个应用随后全部验证通过（见下节）。
+
+#### 三个 MySQL 应用的补测（2026-11-17）
+
+为避免影响已有数据，测试前各自建了独立库（`ghosttest` / `typechostest` 形态，测完删除），
+验证已有业务库未被触碰。
+
+| 应用 | 结果 | 关键观察 |
+| --- | --- | --- |
+| `fn-yourls` | **PASS** | `/admin/` 200；走完 YOURLS 安装向导，建 `yourls_url`/`yourls_options`/`yourls_log` 三表。根路径 403 属**应用设计**（Token 式短链服务无 `index.php`，Apache 禁目录列表），非缺陷 |
+| `fn-ghost` | **PASS（200）** | `Ghost booted in 46.137s`、`User=814:807`、`RestartCount=0`、数据库自动迁移；卸载残留 0 |
+| `fn-typecho` | **PASS（200，修复）** | 修复后日志显示「安装成功」、建 7 表、`RestartCount=0`；见下「chown 类」 |
+
+**新发现的第 6 类缺陷：命令里 chown 到其它用户**
+
+| 应用 | 失败日志 | 修复 |
+| --- | --- | --- |
+| `fn-typecho` | `chown: changing ownership of '/app/admin/...': Operation not permitted`（`RestartCount=12`、入口 000） | **撤销 `user:`** 并登记 USER-EXCEPTION——compose 的 `command` 里逐项 `chown -R www-data:www-data`，chown 到别的用户需要 root，而这是镜像初始化流程的一部分、不能删 |
+
+> 这一类与「PUID/PGID 内部降权」的区别：PUID 是镜像**自带**的降权开关，
+> 而这里是与镜像自带流程**冲突**的强制 chown——只能放弃覆盖 `user:`。
+> 代价：chown 会把挂载目录整棵树改成 www-data(33:33)，卸载时包用户删不掉
+> （实测残留 1 项，即 `/app` 的程序文件），由 `uninstall_callback` 如实上报。
+
 | 2026-11-16 | 全量复测 19 个（抽样 3 中 2 有问题故转全量）：10 个 PASS（其中 6 个需先修）、6 个受阻。新发现 4 类「加 user: 后才暴露」的缺陷（nginx 缓存目录、应用 runtime 目录、entrypoint 自身权限、启动脚本写系统目录），并固化「挂载 → USER-EXCEPTION → 优先 PUID/PGID」的判定顺序。 |
+| 2026-11-17 | 补测 3 个 MySQL 应用：`fn-yourls`/`fn-ghost` PASS、`fn-typecho` 修复后 PASS。纠正早前「MySQL 凭据失效」的误判（实为远端 shell 变量未展开）。新归纳第 6 类缺陷：compose 命令里 chown 到其它用户需 root，只能 USER-EXCEPTION。测试均用独立库并在测完删除，已确认既有业务库未被触碰。 |
