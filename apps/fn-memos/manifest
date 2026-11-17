@@ -1,5 +1,5 @@
 appname               = fn-memos
-version               = 7.0.1
+version               = 7.2.0
 display_name          = ${common.displayName}
 desc                  = ${common.desc}
 platform             = x86
