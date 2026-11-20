@@ -39,17 +39,19 @@
         <ElButton :loading="acting" :disabled="!status?.running" @click="act('stop')"
           >停止</ElButton
         >
-        <ElButton :loading="acting" @click="act('restart')">重启</ElButton>
-        <ElButton :loading="acting" @click="act('update')">更新镜像并重建</ElButton>
-      </div>
-
-      <!--
-        不再写「http://NAS地址:5678」这种占位文本：地址是可推导的，
-        而且走统一网关后不该让用户去拼端口。
-        改为直接给可点击的入口，默认走应用自己的网关路径。
-      -->
-      <div class="alist__open">
-        <ElDropdown split-button type="primary" :disabled="!openEntries.length" @click="openFirst" @command="openEntry">
+        <!--
+          打开入口紧跟「停止」：它和启停一样是"对当前容器做的事"，
+          放在最右侧、又需要先看状态，反而不连贯。
+          不再写 http://NAS地址:5678 这类占位文本：地址可推导，
+          走统一网关后也不该让用户去拼端口。
+        -->
+        <ElDropdown
+          split-button
+          type="primary"
+          :disabled="!openEntries.length"
+          @click="openFirst"
+          @command="openEntry"
+        >
           <span class="alist__open-label">打开</span>
           <template #dropdown>
             <ElDropdownMenu>
@@ -59,6 +61,8 @@
             </ElDropdownMenu>
           </template>
         </ElDropdown>
+        <ElButton :loading="acting" @click="act('restart')">重启</ElButton>
+        <ElButton :loading="acting" @click="act('update')">更新</ElButton>
         <span class="alist__open-hint">{{ openHint }}</span>
       </div>
     </GlassPanel>
@@ -362,15 +366,7 @@
       margin-top: 16px;
     }
 
-    // 「打开」入口：下拉按钮与说明同行，窄屏时说明换到下一行
-    &__open {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      align-items: center;
-      margin-top: 16px;
-    }
-
+    // 说明跟在操作行末尾；窄屏时随 flex-wrap 换到下一行
     &__open-hint {
       font-size: 12px;
       color: var(--art-text-gray-500, var(--el-text-color-secondary));
