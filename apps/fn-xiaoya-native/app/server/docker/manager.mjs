@@ -10,7 +10,8 @@ import { spawn } from 'node:child_process'
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { isAbsolute, join, relative } from 'node:path'
 import { alistContainer, composeDir, composeProject, configDir, embyConfigDir, ensureDirs, mediaRoot } from '../paths.mjs'
-import { AppError, badRequest, serverError } from '../http/respond.mjs'
+import { readConfig } from '../config/store.mjs'
+import { AppError, badRequest, conflict, serverError } from '../http/respond.mjs'
 
 /** 允许的容器动作：路由只能从这里选，不接受任意命令。 */
 export const ALIST_ACTIONS = new Set(['start', 'stop', 'restart', 'update'])
@@ -102,8 +103,32 @@ ${portLines}
 `
 }
 
-/** 端口固定：与脚本一致，且避免用户改端口后配置地址失效。 */
-const ALIST_PORTS = ['5678:80', '2345:2345', '2346:2346', '2347:2347']
+/**
+ * 端口映射。
+ *
+ * 5678 是小雅面板，任何场景都要有。
+ * 2345-2347 只服务 Emby（2345 客户端直连、2347 走服务端流量），
+ * 用户不装 Emby 时暴露它们只是白占宿主端口、扩大暴露面，
+ * 因此由 embyPorts 开关控制，默认不映射。
+ */
+const BASE_PORT = '5678:80'
+const EMBY_PORTS = ['2345:2345', '2346:2346', '2347:2347']
+
+/** 当前应映射哪个宿主端口，用于启动前的冲突检查。 */
+export function alistHostPorts(includeEmby) {
+  return includeEmby ? [5678, 2345, 2346, 2347] : [5678]
+}
+
+/** 读取「是否暴露 Emby 端口」开关。 */
+function readEmbyPortsSwitch() {
+  try {
+    return readConfig().switches?.embyPorts === true
+  }
+  catch {
+    // 读不到就按关闭处理：少开端口比多开安全
+    return false
+  }
+}
 
 /**
  * 写入 compose 文件。
@@ -115,7 +140,9 @@ export function writeCompose(image = 'xiaoyaliu/alist:latest') {
   ensureDirs()
   const safeImage = allowedImagePattern.test(image) ? image : 'xiaoyaliu/alist:latest'
   const path = join(composeDir, 'docker-compose.yaml')
-  writeFileSync(path, composeYaml({ image: safeImage, ports: ALIST_PORTS }), { mode: 0o644 })
+  const includeEmby = readEmbyPortsSwitch()
+  const ports = includeEmby ? [BASE_PORT, ...EMBY_PORTS] : [BASE_PORT]
+  writeFileSync(path, composeYaml({ image: safeImage, ports }), { mode: 0o644 })
   return { path, image: safeImage }
 }
 
@@ -313,9 +340,25 @@ export async function alistAction(action) {
     throw badRequest(`不支持的操作：${action}`, '仅支持启动、停止、重启、更新')
   }
   switch (action) {
-    case 'start':
+    case 'start': {
+      const current = await alistStatus()
+      // 容器已经在跑时端口本来就属于它，跳过冲突检查
+      if (!current.running) {
+        const check = await checkPorts(alistHostPorts(readEmbyPortsSwitch()))
+        if (!check.ok) {
+          throw conflict(
+            `端口被占用：${check.occupied.join('、')}`,
+            '请先停止占用这些端口的程序（常见是另一个小雅或 Emby），再重试启动',
+          )
+        }
+      }
+      const address = ensureDockerAddress(localAddress())
       await runCompose('up', ['-d'])
-      return { action, message: '小雅已启动' }
+      return {
+        action,
+        message: address.written ? `小雅已启动，对外地址已写入 ${address.address}` : '小雅已启动',
+      }
+    }
     case 'stop':
       await runCompose('stop')
       return { action, message: '小雅已停止' }
@@ -323,6 +366,7 @@ export async function alistAction(action) {
       await runCompose('restart')
       return { action, message: '小雅已重启' }
     case 'update':
+      ensureDockerAddress(localAddress())
       await runCompose('pull')
       await runCompose('up', ['-d', '--force-recreate'])
       return { action, message: '镜像已更新并重建容器' }

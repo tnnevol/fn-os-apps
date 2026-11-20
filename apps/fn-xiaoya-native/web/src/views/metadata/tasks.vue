@@ -8,10 +8,10 @@
   <div class="tasks">
     <GlassPanel title="任务列表" description="同一时间只运行一个任务，刷新页面不影响执行">
       <template #header>
-        <ElButton size="small" :loading="loading" @click="load">刷新</ElButton>
+        <ElButton size="small" :loading="manualLoading" @click="doRefresh">刷新</ElButton>
       </template>
 
-      <ElEmpty v-if="!loading && tasks.length === 0" description="还没有任务记录" />
+      <ElEmpty v-if="tasks.length === 0" description="还没有任务记录" />
 
       <ElTable v-else :data="tasks" size="small" row-key="id" @row-click="openDetail">
         <ElTableColumn prop="label" label="元数据包" min-width="130" />
@@ -53,11 +53,11 @@
               size="small"
               type="danger"
               plain
-              @click.stop="cancel(row)"
+              @click.stop="cancel(asTask(row))"
             >
               取消
             </ElButton>
-            <ElButton size="small" @click.stop="openDetail(row)">日志</ElButton>
+            <ElButton size="small" @click.stop="openDetail(asTask(row))">日志</ElButton>
           </template>
         </ElTableColumn>
       </ElTable>
@@ -105,6 +105,11 @@
   defineOptions({ name: 'MetadataTasks' })
 
   const tasks = ref<MetadataTask[]>([])
+
+  /** 插槽行收敛：ElTable 的 row 是 DefaultRow，无法从 :data 反推元素类型。 */
+  function asTask(row: unknown): MetadataTask {
+    return row as MetadataTask
+  }
   const drawer = ref(false)
   const detail = ref<MetadataTask | null>(null)
   /** 是否已经加载过：用于区分「首次加载中」与「后台静默刷新」 */

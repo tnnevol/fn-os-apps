@@ -117,7 +117,7 @@
               size="small"
               :disabled="busy"
               :loading="submitting === `${row.name}:download`"
-              @click="submit(row, 'download')"
+              @click="submit(asPackage(row), 'download')"
             >
               下载
             </ElButton>
@@ -125,7 +125,7 @@
               size="small"
               :disabled="busy || !row.downloaded || row.incomplete"
               :loading="submitting === `${row.name}:extract`"
-              @click="submit(row, 'extract')"
+              @click="submit(asPackage(row), 'extract')"
             >
               解压
             </ElButton>
@@ -134,24 +134,16 @@
               type="primary"
               :disabled="busy"
               :loading="submitting === `${row.name}:download_extract`"
-              @click="submit(row, 'download_extract')"
+              @click="submit(asPackage(row), 'download_extract')"
             >
               下载并解压
-            </ElButton>
-            <ElButton
-              v-if="row.dirs.length > 0"
-              size="small"
-              :disabled="busy || !row.downloaded || row.incomplete"
-              @click="openDirs(row)"
-            >
-              指定目录
             </ElButton>
             <ElButton
               size="small"
               type="danger"
               plain
               :disabled="busy || (!row.downloaded && !row.incomplete)"
-              @click="remove(row)"
+              @click="remove(asPackage(row))"
             >
               删除包
             </ElButton>
@@ -164,28 +156,6 @@
       </p>
     </GlassPanel>
 
-    <!-- 指定目录解压：脚本里是让用户输入多个编号，这里改成多选 -->
-    <ElDialog
-      v-model="dirDialog"
-      :title="`选择要解压的目录 — ${active?.label ?? ''}`"
-      width="520px"
-    >
-      <ElAlert
-        type="info"
-        show-icon
-        :closable="false"
-        title="多选会依次解压"
-        description="选择越多耗时越长、磁盘占用越大。解压过程可在任务页查看进度。"
-        style="margin-bottom: 12px"
-      />
-      <ElCheckboxGroup v-model="selectedDirs">
-        <ElCheckbox v-for="dir in active?.dirs ?? []" :key="dir" :label="dir" :value="dir" />
-      </ElCheckboxGroup>
-      <template #footer>
-        <ElButton @click="dirDialog = false">取消</ElButton>
-        <ElButton type="primary" :loading="submittingDirs" @click="submitDirs">开始解压</ElButton>
-      </template>
-    </ElDialog>
   </div>
 </template>
 
@@ -213,6 +183,16 @@
   const router = useRouter()
 
   const packages = ref<MetadataPackage[]>([])
+
+  /**
+   * 插槽行收敛。
+   *
+   * ElTable 的 #default 插槽把 row 推成 DefaultRow，无法从 :data 反推元素类型；
+   * 这里显式断言一次，避免每处模板都写类型守卫。
+   */
+  function asPackage(row: unknown): MetadataPackage {
+    return row as MetadataPackage
+  }
   /** 当前生效的元数据目录；为空时不展示文件管理面板 */
   const mediaRoot = ref('')
   const capacity = ref<CapacityInfo | null>(null)

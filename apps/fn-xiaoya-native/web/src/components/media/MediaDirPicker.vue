@@ -32,7 +32,7 @@
       </div>
       <div class="media-dir__buttons">
         <ElButton type="primary" :loading="picking" @click="pickFolder"> 选择目录 </ElButton>
-        <ElButton v-if="state.authAvailable" :loading="loadingRoots" @click="loadRoots">
+        <ElButton v-if="state.authAvailable" :loading="loadingRoots" @click="openRoots">
           已有授权目录
         </ElButton>
       </div>

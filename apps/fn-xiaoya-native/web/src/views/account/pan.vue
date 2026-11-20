@@ -26,10 +26,10 @@
 
     <GlassPanel title="阿里云盘">
       <ElRow :gutter="24">
-        <ElCol :xs="24" :md="12">
+        <ElCol :xs="24" :md="8">
           <div class="pan__scan">
             <template v-if="ali.qr !== null">
-              <QrCanvas :content="ali.qr" :size="184" />
+              <QrCanvas :content="ali.qr" :size="160" />
               <p class="pan__state">{{ aliStatusText }}</p>
               <div class="pan__actions">
                 <ElButton size="small" :loading="ali.polling" @click="pollAli">刷新状态</ElButton>
@@ -45,11 +45,58 @@
                 生成二维码
               </ElButton>
             </template>
-            <p class="pan__hint">二维码 5 分钟内有效；过期后重新生成即可。</p>
           </div>
         </ElCol>
 
-        <ElCol :xs="24" :md="12">
+        <!--
+          Open Token 与 Refresh Token 是两套独立授权，但操作方式一样，
+          并排放比上下两张卡更容易理解「这是同一件事的两种凭据」。
+        -->
+        <ElCol :xs="24" :md="8">
+          <div class="pan__scan">
+            <p class="pan__scan-title">
+              Open Token
+              <ElTag
+                v-if="health?.openToken"
+                :type="healthTagType(health.openToken.status)"
+                effect="light"
+                size="small"
+                :title="health.openToken.message"
+              >
+                {{ healthLabel(health.openToken.status) }}
+              </ElTag>
+            </p>
+            <template v-if="openToken.qrImage !== '' || openToken.qr !== null">
+              <img
+                v-if="openToken.qrImage !== ''"
+                :src="openToken.qrImage"
+                alt="Open Token 授权二维码"
+                class="pan__qr-image"
+              >
+              <QrCanvas v-else :content="openToken.qr ?? ''" :size="160" />
+              <p class="pan__state">{{ openTokenStatusText }}</p>
+              <div class="pan__actions">
+                <ElButton size="small" :loading="openToken.polling" @click="pollOpenToken">
+                  刷新状态
+                </ElButton>
+                <ElButton size="small" text @click="resetOpenToken"> 重新生成 </ElButton>
+              </div>
+            </template>
+            <template v-else>
+              <div class="pan__placeholder">
+                <ElIcon :size="24">
+                  <Key />
+                </ElIcon>
+                <p>扫码获取 Open Token</p>
+              </div>
+              <ElButton type="primary" :loading="openToken.loading" @click="startOpenToken">
+                生成二维码
+              </ElButton>
+            </template>
+          </div>
+        </ElCol>
+
+        <ElCol :xs="24" :md="8">
           <h4 class="pan__label">
             当前状态
             <!-- 进入页面时查一次的有效性结果；不轮询 -->
@@ -70,7 +117,7 @@
           <!-- 用 ElTable 承载：与面板其它页面的表格视觉一致，且支持行分隔 -->
           <ElTable :data="aliRows" size="small" border class="pan__table">
             <ElTableColumn prop="label" label="字段" width="130" />
-            <ElTableColumn label="值" min-width="220">
+            <ElTableColumn label="值" min-width="180">
               <template #default="{ row }">
                 <EditableValue
                   :label="row.label"
@@ -86,35 +133,22 @@
               </template>
             </ElTableColumn>
           </ElTable>
-          <h4 class="pan__label pan__label--spaced">手工填写</h4>
-          <ElInput
-            v-model="manual.refreshToken"
-            class="pan__textarea"
-            placeholder="粘贴 32 位 Refresh Token"
-            show-password
-            clearable
-          />
-          <div class="pan__actions pan__actions--left">
-            <ElButton
-              type="primary"
-              :loading="saving.refreshToken"
-              @click="saveToken('refreshToken')"
-            >
-              保存
+          <!-- 按钮只表达动作，选完写到哪里由旁边一句说明，不塞进按钮文案 -->
+          <div class="pan__browse">
+            <ElButton size="small" type="primary" plain @click="folderVisible = true">
+              选择转存目录
             </ElButton>
-            <ElButton
-              v-if="config.secrets.refreshToken?.configured"
-              text
-              @click="clearToken('refreshToken')"
-            >
-              清除
-            </ElButton>
+            <span class="pan__hint">选完自动填入上面的「转存目录 ID」</span>
           </div>
-          <p class="pan__hint">
-            已有 Token 平台不会因扫码失效；令牌过期时二选一：重新扫码，或粘贴新的 Token。
-          </p>
         </ElCol>
       </ElRow>
+
+      <ElDialog v-model="folderVisible" title="选择转存目录" width="600px" append-to-body>
+        <AliyunFolderPicker @picked="onFolderPicked" />
+        <template #footer>
+          <ElButton @click="folderVisible = false">取消</ElButton>
+        </template>
+      </ElDialog>
     </GlassPanel>
 
     <GlassPanel title="115 网盘">
@@ -137,7 +171,7 @@
               </ElSelect>
             </div>
             <template v-if="pan.qr !== null">
-              <QrCanvas :content="pan.qr" :size="184" />
+              <QrCanvas :content="pan.qr" :size="160" />
               <p class="pan__state">{{ panStatusText }}</p>
               <div class="pan__actions">
                 <ElButton size="small" :loading="pan.polling" @click="poll115">刷新状态</ElButton>
@@ -177,27 +211,6 @@
               </template>
             </ElTableColumn>
           </ElTable>
-          <h4 class="pan__label pan__label--spaced">手工填写</h4>
-          <ElInput
-            v-model="manual.cookie115"
-            type="textarea"
-            :rows="3"
-            class="pan__textarea"
-            placeholder="粘贴 115 Cookie（需包含 UID / CID / SEID）"
-          />
-          <div class="pan__actions pan__actions--left">
-            <ElButton type="primary" :loading="saving.cookie115" @click="saveToken('cookie115')">
-              保存
-            </ElButton>
-            <ElButton
-              v-if="config.secrets.cookie115?.configured"
-              text
-              @click="clearToken('cookie115')"
-            >
-              清除
-            </ElButton>
-          </div>
-          <p class="pan__hint">配置 115 Cookie 后可解锁 115 相关分享。</p>
         </ElCol>
       </ElRow>
     </GlassPanel>
@@ -213,7 +226,7 @@
     >
       <ElRow :gutter="24">
         <ElCol :xs="24" :md="12">
-          <h4 class="pan__label">夸克网盘<span class="pan__hint-inline">双击数值可编辑</span></h4>
+          <h4 class="pan__label">夸克网盘</h4>
           <ElTable :data="quarkRows" size="small" border class="pan__table">
             <ElTableColumn prop="label" label="字段" width="120" />
             <ElTableColumn label="值" min-width="180">
@@ -235,7 +248,7 @@
         </ElCol>
 
         <ElCol :xs="24" :md="12">
-          <h4 class="pan__label">UC 网盘<span class="pan__hint-inline">双击数值可编辑</span></h4>
+          <h4 class="pan__label">UC 网盘</h4>
           <ElTable :data="ucRows" size="small" border class="pan__table">
             <ElTableColumn prop="label" label="字段" width="120" />
             <ElTableColumn label="值" min-width="180">
@@ -454,6 +467,22 @@
    * 与 Refresh Token 的扫码分开：那是 Web 端登录，这是开放平台 OAuth，
    * 两步拿到的凭据用途完全不同，混在一起会让人以为扫一次就够了。
    */
+  /** 转存目录选择对话框 */
+  const folderVisible = ref(false)
+
+  /** 选中目录后写入 transferFolderId 并关闭对话框。 */
+  async function onFolderPicked(id: string, name: string) {
+    try {
+      await saveConfig({ values: { transferFolderId: id } })
+      ElMessage.success(`已设置转存目录：${name}`)
+      folderVisible.value = false
+      await loadConfig()
+    }
+    catch (error) {
+      ElMessage.error(error instanceof Error ? error.message : '保存目录失败')
+    }
+  }
+
   const openToken = reactive({
     /** 官方二维码图片（data URL），优先展示 */
     qrImage: '',
@@ -530,92 +559,6 @@
     openToken.qr = null
     openToken.sessionId = ''
     openToken.status = 'idle'
-  }
-
-  /* ── 手工填写 / 粘贴（避免重复走手机授权） ───────────── */
-
-  /**
-   * 粘贴框内容；只保存在内存，保存成功后立即清空。
-   *
-   * 阿里云盘与 115 保留手工入口：令牌过期时重扫要再走一次手机登录，
-   * 而手头已有新 token 的用户只想贴进去。
-   */
-  const manual = reactive({
-    refreshToken: '',
-    cookie115: '',
-    cookieQuark: '',
-    cookieUc: '',
-  })
-  const saving = reactive({
-    refreshToken: false,
-    cookie115: false,
-    quark: false,
-    uc: false,
-  })
-
-  const TOKEN_FIELD = {
-    refreshToken: 'refreshToken',
-    cookie115: 'cookie115',
-    quark: 'cookieQuark',
-    uc: 'cookieUc',
-  } as const
-  const TOKEN_LABEL = {
-    refreshToken: 'Refresh Token',
-    cookie115: '115 Cookie',
-    quark: '夸克 Cookie',
-    uc: 'UC Cookie',
-  } as const
-
-  type ManualKind = keyof typeof TOKEN_FIELD
-
-  /**
-   * 保存手工填写的凭据。
-   *
-   * 格式校验统一交给后端（Token 位数、Cookie 必含字段），
-   * 前端只做「非空」判断，避免两套规则不一致。
-   */
-  async function saveToken(kind: ManualKind) {
-    const value = manual[TOKEN_FIELD[kind]].trim()
-    if (value === '') {
-      ElMessage.warning(`请先填写${TOKEN_LABEL[kind]}`)
-      return
-    }
-    saving[kind] = true
-    try {
-      await saveConfig({ values: { [TOKEN_FIELD[kind]]: value } })
-      ElMessage.success(`${TOKEN_LABEL[kind]} 已保存`)
-      manual[TOKEN_FIELD[kind]] = ''
-      await loadConfig()
-    }
-    finally {
-      saving[kind] = false
-    }
-  }
-
-  /** 清除已保存的凭据：写空串即删除对应文件。 */
-  async function clearToken(kind: ManualKind) {
-    try {
-      await ElMessageBox.confirm(
-        `清除后小雅将无法访问对应网盘，需要重新授权。确定清除${TOKEN_LABEL[kind]}？`,
-        `清除${TOKEN_LABEL[kind]}`,
-        { type: 'warning', confirmButtonText: '清除', cancelButtonText: '取消' },
-      )
-    }
-    catch {
-      return
-    }
-    await saveConfig({ values: { [TOKEN_FIELD[kind]]: '' } })
-    ElMessage.success('已清除')
-    await loadConfig()
-  }
-
-  /** 兼容模板里按夸克/UC 命名的旧调用点。 */
-  function saveCookie(kind: 'quark' | 'uc') {
-    return saveToken(kind)
-  }
-
-  function clearCookie(kind: 'quark' | 'uc') {
-    return clearToken(kind)
   }
 
   async function loadConfig() {
@@ -825,6 +768,14 @@
       color: var(--el-text-color-primary);
     }
 
+    &__browse {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+
     &__app-picker {
       display: flex;
       gap: 8px;
@@ -848,17 +799,6 @@
       // 用框架的填充色变量：浅色是浅灰、深色是深灰，不会再在深色主题下露出亮块
       background: var(--el-fill-color-light);
       border-radius: 12px;
-    }
-
-    // 官方二维码图片与 QrCanvas 保持同样尺寸，避免两块卡片里的码大小不一致。
-    // 官方图是 430x430 的 JPEG，必须显式限宽，否则会按原尺寸撑开。
-    &__qr-image {
-      width: 184px;
-      height: 184px;
-      object-fit: contain;
-      // 二维码需要白底才能被扫描器正确识别
-      background: #fff;
-      border-radius: 8px;
     }
 
     &__placeholder {
@@ -911,19 +851,15 @@
       margin-top: 20px;
     }
 
+    // 官方二维码图片与 QrCanvas 保持同样尺寸，避免三列里的码大小不一致。
+    // 官方图是 430x430 的 JPEG，必须显式限宽，否则会按原尺寸撑开。
     &__qr-image {
       width: 160px;
       height: 160px;
       object-fit: contain;
+      // 二维码需要白底才能被扫描器正确识别
       background: #fff;
       border-radius: 8px;
-    }
-
-    &__hint-inline {
-      margin-left: 8px;
-      font-size: 12px;
-      font-weight: 400;
-      color: var(--el-text-color-secondary);
     }
 
     &__table {

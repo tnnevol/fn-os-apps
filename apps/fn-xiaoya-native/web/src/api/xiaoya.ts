@@ -327,7 +327,8 @@ export interface SyncConfig {
   strmTo: string
   count: number
   nfo: boolean
-  cron: string
+  /** 定时策略：mode 为 off 表示不定时 */
+  schedule: ScheduleConfig
 }
 
 /** 同步状态。 */
@@ -346,7 +347,21 @@ export interface SyncState {
 }
 
 export function fetchSync() {
-  return request.get<ApiEnvelope<{ config: SyncConfig; availablePaths: string[]; state: SyncState }>>({
+  return request.get<ApiEnvelope<{
+    config: SyncConfig
+    availablePaths: string[]
+    state: SyncState
+    /** 设备性能算出的并发推荐值 */
+    capacity: {
+      recommended: number
+      cores: number
+      freeMb: number
+      totalMb: number
+      reason: string
+    } | null
+    /** 并发输入边界；16 只是推荐值，不是上限 */
+    limits: { min: number, max: number }
+  }>>({
     url: '/api/sync'
   })
 }

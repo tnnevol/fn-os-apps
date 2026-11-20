@@ -99,6 +99,7 @@
   import { onMounted, reactive, ref } from 'vue'
   import { ElMessage } from 'element-plus'
   import GlassPanel from '@/components/glass/GlassPanel.vue'
+  import { loadAll } from '@/utils/loadAll'
   import { fetchConfig, saveConfig, type ConfigState } from '@/api/xiaoya'
 
   defineOptions({ name: 'AccountAccess' })
@@ -111,11 +112,13 @@
   const savingRecycle = ref(false)
 
   async function load() {
-    const res = await fetchConfig()
-    config.value = res.data
-    switches.forceLogin = res.data.switches.forceLogin ?? false
-    switches.noSign = res.data.switches.noSign ?? false
-    switches.ali2115 = res.data.switches.ali2115 ?? false
+    // 页面只依赖这一个接口；仍用 loadAll 包裹，保持与其它页面一致的容错语义
+    const [res] = await loadAll([fetchConfig()])
+    if (!res.data) return
+    config.value = res.data.data
+    switches.forceLogin = res.data.data.switches.forceLogin ?? false
+    switches.noSign = res.data.data.switches.noSign ?? false
+    switches.ali2115 = res.data.data.switches.ali2115 ?? false
   }
 
   /** 开关即时生效：开关状态本身就是文件存在与否，保存即改变行为。 */

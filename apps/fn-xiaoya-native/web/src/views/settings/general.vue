@@ -103,6 +103,7 @@
   import { onMounted, ref } from 'vue'
   import { ElMessage } from 'element-plus'
   import GlassPanel from '@/components/glass/GlassPanel.vue'
+  import { loadAll } from '@/utils/loadAll'
   import MediaDirPicker from '@/components/media/MediaDirPicker.vue'
   import {
     fetchAlistImage,
@@ -133,17 +134,20 @@
   const paths = ref<PathsEnvelope['data'] | null>(null)
 
   async function load() {
-    const [imageRes, configRes, healthRes, pathsRes] = await Promise.all([
+    // 四个接口互相独立；任一失败（例如 Docker 未就绪）不应让整页白屏
+    const [imageRes, configRes, healthRes, pathsRes] = await loadAll([
       fetchAlistImage(),
       fetchConfig(),
       fetchHealth(),
       request.get<PathsEnvelope>({ url: '/api/system/paths' })
     ])
-    image.value = imageRes.data.image
-    config.value = configRes.data
-    proxy.value = configRes.data.values.proxy ?? ''
-    health.value = healthRes.data
-    paths.value = pathsRes.data
+    if (imageRes.data) image.value = imageRes.data.data.image
+    if (configRes.data) {
+      config.value = configRes.data.data
+      proxy.value = configRes.data.data.values.proxy ?? ''
+    }
+    if (healthRes.data) health.value = healthRes.data.data
+    if (pathsRes.data) paths.value = pathsRes.data.data
   }
 
   /** 切换 Emby 端口开关：需要重建 compose，提示用户重启才生效。 */

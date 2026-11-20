@@ -23,13 +23,29 @@ import {
   statSync,
   writeFileSync,
 } from 'node:fs'
-import { join } from 'node:path'
+import { isAbsolute, join, relative } from 'node:path'
 import { badRequest, conflict, notFound } from '../http/respond.mjs'
+import { extractWithGlue } from '../docker/manager.mjs'
 import { embyConfigDir, ensureDirs, mediaRoot, stateDir, tempDir, xiaoyaMediaDir } from '../paths.mjs'
 import { resolveMediaDir } from '../trim/media-dir.mjs'
 
 const LOG_LIMIT = 400
 const MAX_TASKS_KEPT = 50
+
+/**
+ * 各元数据包的最小合理体积。
+ *
+ * 照上游 `check_metadata_size`：小雅服务在未授权或容器未就绪时，
+ * 下载地址会返回一张 HTML 错误页/提示图而不是压缩包。
+ * 这些错误页通常只有几十 KB，落在门槛以下，据此可以识破
+ * 「下载成功但内容是网页」的假成功。
+ */
+const MIN_PACKAGE_BYTES = {
+  'all.mp4': 30 * 1000 * 1000,
+  '115.mp4': 16 * 1000 * 1000,
+  '蓝光原盘.mp4': 4_200_000,
+  'config.mp4': 3_200_000,
+}
 
 /** 任务表：id → 任务对象。 */
 const tasks = new Map()
@@ -433,6 +449,21 @@ async function downloadStage(task, pkg) {
   }
   if (response.body === null) throw new Error('下载响应为空，请检查小雅服务状态')
 
+  /**
+   * 下载前先按响应头判断：体积明显偏小就不必白下。
+   *
+   * 小雅未就绪时返回的是 HTML 页面，content-length 只有几十 KB。
+   */
+  const expectLength = Number(response.headers.get('content-length') ?? 0)
+  const minimumBytes = MIN_PACKAGE_BYTES[pkg.name]
+  if (minimumBytes !== undefined && expectLength > 0 && expectLength < minimumBytes) {
+    throw new Error(
+      `下载地址返回的内容只有 ${formatBytes(expectLength)}，远小于正常的 ${formatBytes(minimumBytes)}。`
+      + '实际返回的是错误页或提示图（不是压缩包），通常因小雅容器尚未就绪或账号授权失效。'
+      + '请先到「小雅服务」确认容器状态与账号授权，等容器就绪后重试',
+    )
+  }
+
   const total = existing + Number(response.headers.get('content-length') ?? 0)
   patch(task, { stage: 'downloading', totalBytes: total })
 
@@ -485,6 +516,23 @@ async function downloadStage(task, pkg) {
   if (total > 0 && received < total) {
     throw new Error(`下载不完整：已获取 ${received} / ${total} 字节，可稍后重试续传`)
   }
+
+  /**
+   * 体积门槛：挡掉「下载到的是网页」这种假成功。
+   *
+   * 那种情况 HTTP 状态是 200、字节数也收得完整，只有体积能识破。
+   */
+  const minimum = MIN_PACKAGE_BYTES[pkg.name]
+  if (minimum !== undefined && received < minimum) {
+    rmSync(partial, { force: true })
+    throw new Error(
+      `下载内容异常：${pkg.name} 只有 ${formatBytes(received)}，`
+      + `远小于正常的 ${formatBytes(minimum)}。`
+      + '实际拿到的是错误页或提示图而非压缩包，通常因小雅容器尚未就绪或账号授权失效。'
+      + '请确认「小雅服务」运行正常且账号授权有效后重新下载',
+    )
+  }
+
   renameSync(partial, archive)
   log(task, `下载完成：${received} 字节`)
   patch(task, { stage: 'downloaded', progress: 100, speed: 0, downloadedBytes: received, message: '下载完成' })
@@ -529,7 +577,14 @@ async function extractStage(task, pkg) {
       progress: Math.round((done / batches.length) * 100),
       message: `正在解压：${label}`,
     })
-    await runSevenZip(sevenZip, archive, targetRoot, dir, task)
+    if (sevenZip !== null) {
+      await runSevenZip(sevenZip, archive, targetRoot, dir, task)
+    }
+    else {
+      // 宿主机没有 7z：用官方 glue 容器解压，与上游脚本的默认路径一致。
+      // 容器内自带 7z，用户不需要额外装 p7zip。
+      await extractWithGlueContainer({ archive, mediaRoot, workdir: targetRoot, member: dir, task })
+    }
     done += 1
     patch(task, { progress: Math.round((done / batches.length) * 100) })
   }
@@ -549,6 +604,46 @@ function cleanupConfigStaging() {
       // 清理失败不影响任务结论；下次解压开始时会再试一次
     }
   }
+}
+
+/**
+ * 用官方 glue 容器解压。
+ *
+ * 容器只挂载 mediaRoot 到 /media，因此要先把「宿主机目标目录」
+ * 换算成「容器内相对路径」。
+ *
+ * @param {object} options 参数
+ * @param {string} options.archive 压缩包绝对路径
+ * @param {string} options.mediaRoot 媒体根目录
+ * @param {string} options.workdir 解压目标根（宿主机路径）
+ * @param {string|null} options.member 成员过滤
+ * @param {object} options.task 任务对象
+ */
+async function extractWithGlueContainer({ archive, mediaRoot: root, workdir, member, task }) {
+  const relTarget = relative(root, workdir)
+  if (relTarget.startsWith('..') || isAbsolute(relTarget)) {
+    throw new Error('解压目标不在媒体目录内，无法用容器解压')
+  }
+
+  log(task, `宿主机没有 7z，改用官方 glue 容器解压（目标 /media/${relTarget || '.'}）`)
+
+  const result = await extractWithGlue({
+    archive,
+    mediaRoot: root,
+    workdir: relTarget,
+    member,
+  })
+
+  if (result.code !== 0) {
+    const detail = firstLine(result.stderr) || firstLine(result.stdout) || `退出码 ${result.code}`
+    throw new Error(`容器解压失败：${detail}`)
+  }
+}
+
+/** 取文本首行，用于把容器报错压缩成一句。 */
+function firstLine(text) {
+  const line = String(text ?? '').split('\n').map(item => item.trim()).find(item => item !== '')
+  return line ?? ''
 }
 
 /** 查找 7z 可执行文件。 */
