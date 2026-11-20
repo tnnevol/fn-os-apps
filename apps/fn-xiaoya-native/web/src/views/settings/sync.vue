@@ -25,6 +25,11 @@
               用 ElTreeSelect：多选下拉 + 内嵌树，原生支持懒加载与搜索。
               比「标签 + 独立对话框」更紧凑，选中态由组件自己维护。
             -->
+            <!--
+              目录可能勾很多（一部合集就能拆出十几个），逐个平铺会把选择器
+              撑到十几行高、挤掉下面的设置项。折叠成一行 + 「+N」，
+              需要逐个确认时悬停即可看到完整列表。
+            -->
             <ElTreeSelect
               v-model="selectedPaths"
               :props="treeProps"
@@ -34,6 +39,9 @@
               show-checkbox
               filterable
               clearable
+              collapse-tags
+              collapse-tags-tooltip
+              :max-collapse-tags="3"
               lazy
               :load="loadTreeNode as any"
               placeholder="选择要同步的目录"
