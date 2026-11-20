@@ -1,0 +1,2 @@
+# 前端构建产物：vite build 输出到 app/ui/dist，打包时重新生成，不进版本库
+app/ui/dist

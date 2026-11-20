@@ -1,0 +1,136 @@
+#!/bin/bash
+#
+# main —— 应用启停与状态
+#
+# 本应用有两个进程：Node 后端与它托管的小雅容器。
+# 「应用是否运行」以 Node 后端为准：后端是用户访问面板的入口，
+# 容器挂了可以在面板里重启，后端挂了用户就完全失去控制手段。
+#
+# 后端监听 Unix Socket（生产）而不是端口：飞牛统一网关负责鉴权并转发，
+# 端口形态只用于本地开发。
+#
+set -e
+
+LOG_FILE="${TRIM_PKGVAR}/server.log"
+PID_FILE="${TRIM_PKGVAR}/server.pid"
+NODE_BIN_DIR="/var/apps/nodejs_v22/target/bin"
+SERVER_ENTRY="${TRIM_APPDEST}/server/index.mjs"
+
+log_msg() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >>"${LOG_FILE}"
+}
+
+# 按入口脚本路径匹配残留进程。
+# 只依赖 PID 文件不够：PID 文件丢失后进程仍在运行，会占住 Socket 导致启动失败。
+find_orphans() {
+    pgrep -f "^${NODE_BIN_DIR}/node ${SERVER_ENTRY}$" 2>/dev/null || true
+}
+
+# 关闭后端并清理 Socket 与 PID 文件
+stop_process() {
+    log_msg "Stopping server ..."
+
+    if [ -r "${PID_FILE}" ]; then
+        pid=$(head -n 1 "${PID_FILE}" | tr -d '[:space:]')
+        if kill -0 "${pid}" 2>/dev/null; then
+            log_msg "send TERM to pid=${pid}"
+            kill -TERM "${pid}" 2>>"${LOG_FILE}" || true
+            count=0
+            while kill -0 "${pid}" 2>/dev/null && [ "${count}" -lt 10 ]; do
+                sleep 1
+                count=$((count + 1))
+            done
+            if kill -0 "${pid}" 2>/dev/null; then
+                log_msg "send KILL to pid=${pid}"
+                kill -KILL "${pid}" 2>>"${LOG_FILE}" || true
+            fi
+        fi
+        rm -f "${PID_FILE}"
+    fi
+
+    # 兜底清理：PID 文件丢失但进程还在时也要收干净
+    for pid in $(find_orphans); do
+        [ "${pid}" = "$$" ] && continue
+        log_msg "cleaning orphan pid=${pid}"
+        kill -TERM "${pid}" 2>>"${LOG_FILE}" || true
+    done
+
+    # Socket 不清理会让下次 listen 报地址被占用
+    rm -f "${TRIM_APPDEST}/app.sock"
+    log_msg "server stopped"
+    return 0
+}
+
+start_process() {
+    if status_quiet; then
+        log_msg "server already running"
+        return 0
+    fi
+
+    # 上一轮可能残留 Socket，先清理
+    rm -f "${TRIM_APPDEST}/app.sock"
+
+    if [ ! -f "${SERVER_ENTRY}" ]; then
+        log_msg "ERROR: server entry not found: ${SERVER_ENTRY}"
+        echo "应用文件缺失：${SERVER_ENTRY}" >"${TRIM_TEMP_LOGFILE}"
+        return 1
+    fi
+
+    if [ ! -x "${NODE_BIN_DIR}/node" ]; then
+        log_msg "ERROR: node runtime missing at ${NODE_BIN_DIR}"
+        echo "Node.js 运行时缺失，请确认应用依赖 nodejs_v22 已安装" >"${TRIM_TEMP_LOGFILE}"
+        return 1
+    fi
+
+    log_msg "Starting server ..."
+    cd "${TRIM_APPDEST}" || return 1
+    HOME="${TRIM_PKGHOME}" "${NODE_BIN_DIR}/node" "${SERVER_ENTRY}" >>"${LOG_FILE}" 2>&1 &
+    printf "%s" "$!" >"${PID_FILE}"
+    log_msg "server started pid=$!"
+
+    # 等 Socket 出现再返回，避免框架立刻探测到一个还没起来的服务
+    count=0
+    while [ ! -S "${TRIM_APPDEST}/app.sock" ] && [ "${count}" -lt 15 ]; do
+        sleep 1
+        count=$((count + 1))
+    done
+    if [ ! -S "${TRIM_APPDEST}/app.sock" ]; then
+        log_msg "WARN: socket not created within 15s"
+        # 进程可能仍在初始化，状态检查会再判断一次，这里不直接失败
+    fi
+    return 0
+}
+
+# 静默状态判断：0 表示运行中
+status_quiet() {
+    if [ -f "${PID_FILE}" ]; then
+        pid=$(head -n 1 "${PID_FILE}" | tr -d '[:space:]')
+        if kill -0 "${pid}" 2>/dev/null; then
+            return 0
+        fi
+        rm -f "${PID_FILE}"
+    fi
+    if [ -n "$(find_orphans)" ]; then
+        return 0
+    fi
+    return 1
+}
+
+case "$1" in
+start)
+    start_process || exit 1
+    ;;
+stop)
+    stop_process
+    ;;
+status)
+    if status_quiet; then
+        exit 0
+    fi
+    exit 3
+    ;;
+*)
+    echo "Unknown command: $1" >&2
+    exit 1
+    ;;
+esac

@@ -1,0 +1,57 @@
+#!/bin/bash
+#
+# uninstall_callback —— 卸载清理
+#
+# 边界：
+# - 始终停止并删除本应用创建的容器与网络（按固定项目名，不碰同名相似资源）；
+# - 依据卸载向导的选择决定是否删除应用数据目录；
+# - 不删除 TRIM_* 框架目录本身，也不删除用户授权的原始媒体目录。
+#
+set -e
+
+log() {
+    echo "[uninstall_callback] $1"
+}
+
+CONFIG_DIR="${TRIM_PKGVAR}/config"
+MEDIA_DIR="${TRIM_PKGVAR}/media"
+STATE_DIR="${TRIM_PKGVAR}/state"
+COMPOSE_DIR="${TRIM_PKGVAR}/compose"
+PROJECT_NAME="fn-xiaoya-native"
+
+# 先停后端进程，避免它在清理过程中继续写状态文件
+if [ -f "${TRIM_PKGVAR}/server.pid" ]; then
+    pid=$(head -n 1 "${TRIM_PKGVAR}/server.pid" | tr -d '[:space:]')
+    if [ -n "${pid}" ] && kill -0 "${pid}" 2>/dev/null; then
+        kill -TERM "${pid}" 2>/dev/null || true
+    fi
+    rm -f "${TRIM_PKGVAR}/server.pid"
+fi
+rm -f "${TRIM_APPDEST}/app.sock"
+
+# 容器与网络：只按本应用的项目名清理
+if command -v docker >/dev/null 2>&1 && [ -d "${COMPOSE_DIR}" ]; then
+    log "清理容器与网络（项目：${PROJECT_NAME}）"
+    docker compose --project-directory "${COMPOSE_DIR}" -p "${PROJECT_NAME}" down --remove-orphans 2>&1 | sed 's/^/[docker] /' || true
+else
+    log "跳过容器清理（Docker 不可用或未初始化）"
+fi
+
+# 数据清理：只有用户在卸载向导中选择删除时才执行
+case "${wizard_data_action:-keep}" in
+delete)
+    log "按用户选择删除应用数据"
+    # 只删除应用自己创建的子目录
+    rm -rf "${CONFIG_DIR}" "${MEDIA_DIR}" "${STATE_DIR}" "${COMPOSE_DIR}"
+    log "应用数据已删除"
+    ;;
+keep)
+    log "保留应用数据：${CONFIG_DIR} 与 ${MEDIA_DIR}"
+    ;;
+*)
+    log "未知的数据处理选项：${wizard_data_action}，按保留处理"
+    ;;
+esac
+
+log "卸载清理完成"
+exit 0

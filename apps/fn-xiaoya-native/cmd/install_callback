@@ -1,0 +1,58 @@
+#!/bin/bash
+#
+# install_callback —— 安装后初始化
+#
+# 取代 all_in_one.sh 的首次安装菜单：脚本在这里逐个询问 Cookie、密码、
+# 网络模式并当场 docker run；本应用只创建目录与初始配置，
+# 具体授权和启动交给面板完成。
+#
+# 因此这里必须做到「可重复执行且不覆盖用户已有配置」：
+# 升级或重装时不能把用户填好的 Token 清掉。
+#
+set -e
+
+log() {
+    echo "[install_callback] $1"
+}
+
+CONFIG_DIR="${TRIM_PKGVAR}/config"
+MEDIA_DIR="${TRIM_PKGVAR}/media"
+STATE_DIR="${TRIM_PKGVAR}/state"
+COMPOSE_DIR="${TRIM_PKGVAR}/compose"
+
+# 目录由应用创建、应用管理；不触碰 TRIM_* 框架目录本身
+mkdir -p \
+    "${CONFIG_DIR}/data" \
+    "${CONFIG_DIR}/watch" \
+    "${MEDIA_DIR}/temp" \
+    "${MEDIA_DIR}/xiaoya" \
+    "${MEDIA_DIR}/config" \
+    "${STATE_DIR}" \
+    "${COMPOSE_DIR}"
+
+log "目录已就绪：${TRIM_PKGVAR}"
+
+# 小雅容器需要的配置文件必须存在（内容可为空），否则容器启动后行为异常。
+# 只在文件缺失时创建，绝不覆盖用户已有内容。
+for file in mytoken.txt myopentoken.txt temp_transfer_folder_id.txt; do
+    if [ ! -f "${CONFIG_DIR}/${file}" ]; then
+        : >"${CONFIG_DIR}/${file}"
+        chmod 600 "${CONFIG_DIR}/${file}"
+        log "已创建空配置文件：${file}"
+    fi
+done
+
+# 校验 docker 组：安装前查过，这里再确认一次，
+# 因为 install_init 与 install_callback 之间可能有环境变化。
+if ! getent group docker >/dev/null 2>&1; then
+    echo "系统缺少 docker 用户组，应用无法管理小雅容器" >"${TRIM_TEMP_LOGFILE}"
+    exit 1
+fi
+
+# 记录初始镜像选择，供后端生成 compose 文件时读取
+if [ ! -f "${COMPOSE_DIR}/image.txt" ]; then
+    echo "xiaoyaliu/alist:latest" >"${COMPOSE_DIR}/image.txt"
+fi
+
+log "初始化完成。请在应用面板中完成网盘授权后启动小雅。"
+exit 0

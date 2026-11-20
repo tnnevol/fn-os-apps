@@ -1,0 +1,8 @@
+{
+  "defaults": {
+    "run-as": "package"
+  },
+  "username": "fn-xiaoya-native",
+  "groupname": "fn-xiaoya-native",
+  "join-groups": ["docker"]
+}

@@ -1,0 +1,33 @@
+[
+  {
+    "stepTitle": "卸载选项",
+    "items": [
+      {
+        "type": "tips",
+        "helpText": "卸载会始终删除本应用创建的小雅容器与 Docker 网络。下面只决定应用数据是否保留。"
+      },
+      {
+        "type": "radio",
+        "field": "wizard_data_action",
+        "label": "应用数据",
+        "initValue": "keep",
+        "options": [
+          {
+            "label": "保留数据（推荐）：保留网盘授权、访问密码与已解压的元数据",
+            "value": "keep"
+          },
+          {
+            "label": "删除数据：同时删除配置与元数据目录，不可恢复",
+            "value": "delete"
+          }
+        ],
+        "rules": [
+          {
+            "required": true,
+            "message": "请选择数据处理方式"
+          }
+        ]
+      }
+    ]
+  }
+]

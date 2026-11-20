@@ -1,0 +1,14 @@
+{
+  ".url": {
+    "fn-xiaoya-native.Application": {
+      "title": "小雅 Alist",
+      "icon": "images/icon_{0}.png",
+      "type": "iframe",
+      "protocol": "",
+      "gatewayPrefix": "/app/fn-xiaoya-native",
+      "gatewaySocket": "app.sock",
+      "url": "/app/fn-xiaoya-native",
+      "allUsers": true
+    }
+  }
+}

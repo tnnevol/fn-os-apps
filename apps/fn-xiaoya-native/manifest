@@ -1,0 +1,16 @@
+appname               = fn-xiaoya-native
+version               = 1.2.42
+display_name          = 小雅 Alist
+desc                  = 把 all_in_one 脚本的核心能力重构为飞牛原生应用：以非 root 应用用户管理小雅 Alist 容器，提供账号授权、元数据下载解压与运行状态的可视化面板。
+changelog             = 首个版本：原生后端替代 all_in_one 终端脚本，仅小雅 Alist 本体使用 Docker；账号授权、元数据任务由应用自身实现
+platform              = x86
+source                = thirdparty
+maintainer            = xiaoyaDev
+maintainer_url        = https://github.com/xiaoyaDev/xiaoya-alist
+distributor           = tnnevol
+distributor_url       = https://github.com/tnnevol/fn-os-apps
+desktop_uidir         = ui
+desktop_applaunchname = fn-xiaoya-native.Application
+install_dep_apps      = nodejs_v22
+os_min_version        = 1.1.8
+micro_app             = true

@@ -1,0 +1,45 @@
+#!/bin/bash
+#
+# upgrade_callback —— 升级迁移
+#
+# 升级只做兼容性补齐，不重建用户配置：
+# - 补齐新版本需要但旧版本没有的目录与空文件；
+# - 不覆盖任何已存在的配置文件；
+# - compose 文件每次启动由后端按当前模板重写，因此这里不迁移它。
+#
+set -e
+
+log() {
+    echo "[upgrade_callback] $1"
+}
+
+CONFIG_DIR="${TRIM_PKGVAR}/config"
+MEDIA_DIR="${TRIM_PKGVAR}/media"
+STATE_DIR="${TRIM_PKGVAR}/state"
+COMPOSE_DIR="${TRIM_PKGVAR}/compose"
+
+mkdir -p \
+    "${CONFIG_DIR}/data" \
+    "${CONFIG_DIR}/watch" \
+    "${MEDIA_DIR}/temp" \
+    "${MEDIA_DIR}/xiaoya" \
+    "${MEDIA_DIR}/config" \
+    "${STATE_DIR}" \
+    "${COMPOSE_DIR}"
+
+# 旧版本的容器可能还在用旧配置，先停掉再让生命周期脚本按新模板启动
+if command -v docker >/dev/null 2>&1 && [ -d "${COMPOSE_DIR}" ]; then
+    log "停止旧容器以便按新版本模板重建"
+    docker compose --project-directory "${COMPOSE_DIR}" -p "fn-xiaoya-native" stop 2>&1 | sed 's/^/[docker] /' || true
+fi
+
+# 兼容脚本时代可能存在的配置文件：只创建缺失项，不改内容
+for file in mytoken.txt myopentoken.txt temp_transfer_folder_id.txt; do
+    if [ ! -f "${CONFIG_DIR}/${file}" ]; then
+        : >"${CONFIG_DIR}/${file}"
+        chmod 600 "${CONFIG_DIR}/${file}"
+    fi
+done
+
+log "升级迁移完成，用户配置未改动"
+exit 0

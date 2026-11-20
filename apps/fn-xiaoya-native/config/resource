@@ -1,0 +1,13 @@
+{
+  "data-share": {
+    "shares": [
+      {
+        "name": "fn-xiaoya-native/media"
+      }
+    ]
+  },
+  "api-scope": [
+    "trim.file.sharedAccess",
+    "trim.file.userAcl"
+  ]
+}

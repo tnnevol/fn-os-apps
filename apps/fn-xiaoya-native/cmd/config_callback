@@ -1,0 +1,24 @@
+#!/bin/bash
+#
+# config_callback —— 应用设置变更后
+#
+# 本应用的业务配置都存在面板里（写到 TRIM_PKGVAR 下的配置文件），
+# 不依赖飞牛的设置项。因此这里只需确保后端会重新读取配置：
+# 面板接口每次读写都直接读文件，无需重启；只有运行时依赖变化时才重启。
+#
+set -e
+
+log() {
+    echo "[config_callback] $1"
+}
+
+# 若 Node 运行时被替换（例如依赖包升级），重启后端以重新加载
+if [ -f "${TRIM_PKGVAR}/server.pid" ]; then
+    log "设置已更新，重启后端使新配置生效"
+    "${TRIM_APPDEST}/cmd/main" stop || true
+    "${TRIM_APPDEST}/cmd/main" start || true
+else
+    log "后端未运行，跳过重启"
+fi
+
+exit 0

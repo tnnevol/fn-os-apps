@@ -1,0 +1,214 @@
+{
+  "httpMsg": {
+    "unauthorized": "未授权访问，请重新登录",
+    "forbidden": "禁止访问该资源",
+    "notFound": "请求的资源不存在",
+    "methodNotAllowed": "请求方法不允许",
+    "requestTimeout": "请求超时，请稍后重试",
+    "internalServerError": "服务器内部错误，请稍后重试",
+    "badGateway": "网关错误，请稍后重试",
+    "serviceUnavailable": "服务暂时不可用，请稍后重试",
+    "gatewayTimeout": "网关超时，请稍后重试",
+    "requestCancelled": "请求已取消",
+    "networkError": "网络连接异常，请检查网络连接",
+    "requestFailed": "请求失败",
+    "requestConfigError": "请求配置错误"
+  },
+  "topBar": {
+    "search": {
+      "title": "搜索"
+    },
+    "user": {
+      "userCenter": "个人中心",
+      "docs": "使用文档",
+      "github": "Github",
+      "lockScreen": "锁定屏幕",
+      "logout": "退出登录"
+    },
+    "guide": {
+      "title": "点击这里查看",
+      "theme": "主题风格",
+      "menu": "开启顶栏菜单",
+      "description": "等更多配置"
+    }
+  },
+  "common": {
+    "tips": "提示",
+    "cancel": "取消",
+    "confirm": "确定",
+    "logOutTips": "您是否要退出登录?"
+  },
+  "search": {
+    "placeholder": "搜索页面",
+    "historyTitle": "搜索历史",
+    "switchKeydown": "切换",
+    "selectKeydown": "选择",
+    "exitKeydown": "关闭"
+  },
+  "setting": {
+    "menuType": {
+      "title": "菜单布局",
+      "list": [
+        "垂直",
+        "水平",
+        "混合",
+        "双列"
+      ]
+    },
+    "theme": {
+      "title": "主题风格",
+      "list": [
+        "浅色",
+        "深色",
+        "系统"
+      ]
+    },
+    "menu": {
+      "title": "菜单风格"
+    },
+    "color": {
+      "title": "系统主题色"
+    },
+    "box": {
+      "title": "盒子样式",
+      "list": [
+        "边框",
+        "阴影"
+      ]
+    },
+    "container": {
+      "title": "容器宽度",
+      "list": [
+        "铺满",
+        "定宽"
+      ]
+    },
+    "basics": {
+      "title": "基础配置",
+      "list": {
+        "multiTab": "开启多标签栏",
+        "accordion": "侧边栏开启手风琴模式",
+        "collapseSidebar": "显示折叠侧边栏按钮",
+        "fastEnter": "显示快速入口",
+        "reloadPage": "显示重载页面按钮",
+        "breadcrumb": "显示全局面包屑导航",
+        "language": "显示多语言选择",
+        "progressBar": "显示顶部进度条",
+        "weakMode": "色弱模式",
+        "watermark": "全局水印",
+        "menuWidth": "菜单宽度",
+        "tabStyle": "标签页风格",
+        "pageTransition": "页面切换动画",
+        "borderRadius": "自定义圆角"
+      }
+    },
+    "tabStyle": {
+      "default": "默认",
+      "card": "卡片",
+      "google": "谷歌"
+    },
+    "transition": {
+      "list": {
+        "none": "无动画",
+        "fade": "淡入淡出",
+        "slideLeft": "左侧滑入",
+        "slideBottom": "下方滑入",
+        "slideTop": "上方滑入"
+      }
+    },
+    "actions": {
+      "resetConfig": "重置配置",
+      "copyConfig": "复制配置",
+      "copySuccess": "配置已复制到剪贴板，可粘贴到 src/config/setting.ts 文件中",
+      "copyFailed": "复制失败，请重试",
+      "resetFailed": "重置失败，请刷新页面后重试"
+    }
+  },
+  "notice": {
+    "title": "通知",
+    "btnRead": "标为已读",
+    "bar": [
+      "通知",
+      "消息",
+      "代办"
+    ],
+    "text": [
+      "暂无"
+    ],
+    "viewAll": "查看全部"
+  },
+  "worktab": {
+    "btn": {
+      "refresh": "刷新",
+      "fixed": "固定",
+      "unfixed": "取消固定",
+      "closeLeft": "关闭左侧",
+      "closeRight": "关闭右侧",
+      "closeOther": "关闭其他",
+      "closeAll": "关闭全部"
+    }
+  },
+  "greeting": {
+    "dawn": "凌晨了！",
+    "morning": "上午好！",
+    "afternoon": "下午好！",
+    "evening": "晚上好！"
+  },
+  "exceptionPage": {
+    "gohome": "返回首页",
+    "403": "抱歉，您无权访问该页面",
+    "404": "抱歉，您访问的页面不存在",
+    "500": "抱歉，服务器出错了"
+  },
+  "menus": {
+    "dashboard": {
+      "console": "运行概览"
+    },
+    "account": {
+      "title": "账号配置",
+      "pan": "网盘授权",
+      "access": "访问控制"
+    },
+    "metadata": {
+      "title": "元数据",
+      "packages": "元数据包",
+      "tasks": "任务"
+    },
+    "service": {
+      "alist": "小雅服务"
+    },
+    "settings": {
+      "title": "设置",
+      "general": "常规设置",
+      "sync": "元数据同步"
+    }
+  },
+  "table": {
+    "form": {
+      "reset": "重置",
+      "submit": "提交"
+    },
+    "searchBar": {
+      "reset": "重置",
+      "search": "查询",
+      "expand": "展开",
+      "collapse": "收起",
+      "searchInputPlaceholder": "请输入",
+      "searchSelectPlaceholder": "请选择"
+    },
+    "selection": "选择",
+    "sizeOptions": {
+      "small": "紧凑",
+      "default": "默认",
+      "large": "宽松"
+    },
+    "column": {
+      "selection": "勾选",
+      "expand": "展开",
+      "index": "序号"
+    },
+    "zebra": "斑马纹",
+    "border": "边框",
+    "headerBackground": "表头背景"
+  }
+}

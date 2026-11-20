@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>授权结果 — 小雅 Alist</title>
+    <style>
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+      }
+      body {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family:
+          -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
+          'Microsoft YaHei', sans-serif;
+        background: #121212;
+        color: #e5e7eb;
+      }
+      .card {
+        max-width: 420px;
+        padding: 28px 32px;
+        text-align: center;
+        border: 1px solid rgb(255 255 255 / 10%);
+        border-radius: 14px;
+        background: rgb(255 255 255 / 4%);
+      }
+      h1 {
+        margin: 0 0 10px;
+        font-size: 17px;
+        font-weight: 600;
+      }
+      p {
+        margin: 0;
+        font-size: 13px;
+        line-height: 1.7;
+        color: #9ca3af;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1 id="title">正在处理授权结果…</h1>
+      <p id="hint">授权完成后可以关闭本页面，回到应用继续操作。</p>
+    </div>
+
+    <script type="module">
+      /**
+       * 授权回调页。
+       *
+       * 独立浏览器（isStandaloneWeb）下无法直接调 pickSharedFile，
+       * 需要 openAppAuth 打开系统授权页，授权完成后跳回这里。
+       *
+       * 本页只做两件事：
+       * 1. 用 SDK 解析 URL 上的授权结果；
+       * 2. 用 postMessage 通知原窗口，然后尝试关闭自己。
+       *
+       * 不在这里写任何业务数据：结果交由原页面拉取，
+       * 避免回调页被伪造时直接改到配置。
+       */
+      const titleEl = document.getElementById('title')
+      const hintEl = document.getElementById('hint')
+
+      /** 与发起端约定的消息类型 */
+      const MESSAGE_TYPE = 'fn-xiaoya:app-auth-result'
+
+      /**
+       * 解析回调参数。
+       *
+       * 这里刻意不 import @trimjs/web-app：本页是 public/ 下的静态文件，
+       * 不经过 Vite 打包，裸模块名浏览器解析不了（会直接 SyntaxError）。
+       * SDK 的 parseAppAuthCallback 做法就是读 URLSearchParams，
+       * 这里照着实现，参数名与官方保持一致。
+       */
+      function parseCallback(input) {
+        const params = new URL(input).searchParams
+        const rawPath = params.get('path')
+        let path
+        if (rawPath) {
+          try {
+            const parsed = JSON.parse(rawPath)
+            if (Array.isArray(parsed) && parsed.every((p) => typeof p === 'string')) {
+              path = parsed
+            }
+          } catch {
+            path = undefined
+          }
+        }
+        return {
+          status: params.get('status') || undefined,
+          error: params.get('error') || undefined,
+          method: params.get('method') || undefined,
+          appName: params.get('appName') || undefined,
+          state: params.get('state') || undefined,
+          path,
+        }
+      }
+
+      let result = null
+      try {
+        result = parseCallback(window.location.href)
+      } catch (error) {
+        result = { status: 'error', error: String(error) }
+      }
+
+      const ok = result?.status === 'success'
+      const cancelled = result?.status === 'cancel'
+      const paths = Array.isArray(result?.path) ? result.path : []
+
+      if (ok) {
+        titleEl.textContent = paths.length > 0 ? '授权成功' : '授权已完成'
+        hintEl.textContent =
+          paths.length > 0
+            ? `已授权 ${paths.length} 个目录，可以关闭本页面回到应用。`
+            : '可以关闭本页面回到应用。'
+      } else if (cancelled) {
+        titleEl.textContent = '已取消授权'
+        hintEl.textContent = '没有做任何修改，可以关闭本页面。'
+      } else {
+        titleEl.textContent = '授权未完成'
+        hintEl.textContent = result?.error === 'access_denied'
+          ? '该操作需要管理员权限，可以关闭本页面。'
+          : '可以关闭本页面，回到应用中重试。'
+      }
+
+      // 通知原窗口（同源校验由接收端负责）
+      try {
+        if (window.opener && !window.opener.closed) {
+          window.opener.postMessage({ type: MESSAGE_TYPE, result }, window.location.origin)
+        }
+      } catch {
+        // 跨窗口受限时忽略：原页面还有「刷新授权状态」按钮兜底
+      }
+
+      // 稍等片刻让用户看到结果再尝试关闭；部分浏览器不允许脚本关闭非脚本打开的窗口
+      setTimeout(() => {
+        try {
+          window.close()
+        } catch {
+          // 关不掉就留着，用户可以手动关
+        }
+      }, 1200)
+    </script>
+  </body>
+</html>

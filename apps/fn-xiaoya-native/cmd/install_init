@@ -1,0 +1,46 @@
+#!/bin/bash
+#
+# install_init —— 安装前检查
+#
+# 只做「能不能装」的判断，不做任何修改。安装阶段失败要让用户看到
+# 具体缺什么，而不是装到一半再报一个看不懂的错误。
+#
+set -e
+
+log() {
+    echo "[install_init] $1"
+}
+
+fail() {
+    echo "$1" >"${TRIM_TEMP_LOGFILE}"
+    log "ERROR: $1"
+    exit 1
+}
+
+# ── Docker 可用性 ─────────────────────────────────────────
+# 小雅本体用 Docker 运行，没有 Docker 时应用装了也没用。
+if ! command -v docker >/dev/null 2>&1; then
+    fail "未安装 Docker，请先在飞牛应用中心安装 Docker 后重试"
+fi
+
+if ! docker version >/dev/null 2>&1; then
+    fail "Docker 服务未运行或当前用户无权访问，请确认 Docker 服务已启动"
+fi
+
+# ── docker 组 ────────────────────────────────────────────
+# 应用以包用户运行，通过 docker 组取得容器管理权限。
+# 组不存在时不能静默继续：那会导致安装成功但每次启动都失败。
+if ! getent group docker >/dev/null 2>&1; then
+    fail "系统缺少 docker 用户组，请确认 Docker 已正确安装（无法在不使用 root 的前提下管理容器）"
+fi
+log "docker 用户组已存在"
+
+# ── 必需外部命令 ─────────────────────────────────────────
+# 7z 用于解压元数据。缺失时不阻断安装（用户可以只用网盘功能），
+# 但要在日志里说清楚后续会缺什么能力。
+if ! command -v 7z >/dev/null 2>&1 && ! command -v 7zz >/dev/null 2>&1; then
+    log "提示：未找到 7z，元数据解压功能将不可用（可在飞牛中安装 p7zip）"
+fi
+
+log "检查通过"
+exit 0
