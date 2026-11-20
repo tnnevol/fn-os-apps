@@ -19,16 +19,22 @@
       目录选择已移到「设置 → 常规设置」，这里只做提示与跳转，
       否则用户在本页会找不到入口、只看到操作全被禁用。
     -->
+    <!-- 按钮跟在说明文字同一行，不占独立一块：这里只是给个快捷入口，
+         不需要视觉上再开一行抢注意力 -->
     <ElAlert
       v-if="!mediaReady"
       type="warning"
       show-icon
       :closable="false"
       title="还没有选择元数据目录"
-      description="所有元数据包都要解压到这个目录。请先到「设置 → 常规设置」授权一个目录，再回来操作。"
     >
       <template #default>
-        <ElButton size="small" type="primary" plain @click="goToSettings"> 去设置目录 </ElButton>
+        <span class="packages__alert-text">
+          所有元数据包都要解压到这个目录。请先到「设置 → 常规设置」授权一个目录，再回来操作。
+          <ElButton link type="primary" class="packages__alert-link" @click="goToSettings">
+            去设置
+          </ElButton>
+        </span>
       </template>
     </ElAlert>
 
@@ -335,6 +341,17 @@
 
 <style lang="scss" scoped>
   .packages {
+    // 提示条：说明文字与「去设置」按钮同一行，按钮不换行
+    &__alert-text {
+      display: inline;
+      line-height: 1.6;
+    }
+
+    &__alert-link {
+      margin-left: 4px;
+      vertical-align: baseline;
+    }
+
     // 卡片间统一 20px 间距：由容器控制，不依赖 GlassPanel 的相邻兄弟选择器
     display: flex;
     flex-direction: column;
