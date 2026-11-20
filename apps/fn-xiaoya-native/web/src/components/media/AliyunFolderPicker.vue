@@ -19,7 +19,11 @@
       </ElButton>
     </div>
 
-    <div v-loading="loading" class="folder-picker__list">
+    <div
+      v-loading="loading"
+      class="folder-picker__list"
+      :class="{ 'folder-picker__list--scroll': items.length > 0 }"
+    >
       <div v-for="item in items" :key="item.id" class="folder-picker__item" @click="enter(item)">
         <ElIcon><Folder /></ElIcon>
         <span class="folder-picker__name">{{ item.name }}</span>
@@ -29,13 +33,6 @@
         v-if="!loading && items.length === 0"
         :description="path.length === 0 ? '网盘根目录下没有文件夹' : '这个目录下没有子文件夹'"
       />
-      <!-- 根目录为空是常见情况：小雅用的账号通常只做转存，根目录确实没有文件夹 -->
-      <p
-        v-if="!loading && items.length === 0 && path.length === 0"
-        class="folder-picker__empty-tip"
-      >
-        可以直接用「根目录」作为转存目录，或先在阿里云盘网页版建一个文件夹再来选。
-      </p>
     </div>
 
     <p class="folder-picker__hint">
@@ -152,12 +149,17 @@
       }
     }
 
+    // 只有真正有列表项时才限制高度并滚动；空状态若也套 overflow:auto，
+    // ElEmpty 的插画会把容器撑出竖向滚动条，看起来像内容被截断。
     &__list {
       min-height: 120px;
-      max-height: 320px;
-      overflow: auto;
       border: 1px solid var(--el-border-color-lighter);
       border-radius: 8px;
+
+      &--scroll {
+        max-height: 320px;
+        overflow-y: auto;
+      }
     }
 
     &__item {
@@ -180,14 +182,6 @@
       font-size: 13px;
       text-overflow: ellipsis;
       white-space: nowrap;
-    }
-
-    &__empty-tip {
-      padding: 0 12px 12px;
-      margin: 0;
-      font-size: 12px;
-      line-height: 1.7;
-      color: var(--el-text-color-secondary);
     }
 
     &__hint {
