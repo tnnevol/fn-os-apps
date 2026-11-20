@@ -667,9 +667,12 @@
       width: 100%;
     }
 
+    // 宽度由内容决定，不用固定值：标签被 collapse-tags 折成「3 个 + +N」后
+    // 固定 640px 会空出一大片（实测标签仅占 231px，右侧空了 409px）。
+    // 440px 足够放下 3 个常见目录名 + 计数徽标 + 下拉箭头。
     &__tree-select {
       width: 100%;
-      max-width: 640px;
+      max-width: 440px;
     }
 
     &__schedule {
