@@ -37,16 +37,14 @@
             </ElTag>
           </div>
           <p class="metric__hint">镜像 {{ alist?.image || alistImage || '—' }}</p>
-          <ElButton
-            v-if="!alistRunning"
-            type="primary"
-            size="small"
-            :loading="acting"
-            @click="act('start')"
-          >
-            启动
+          <!--
+            概览页只做「看得见 + 跳得过去」：启停、更新这类操作会改变
+            容器状态，需要看到日志和即时反馈，放在这里容易误点，
+            也无法展示启动失败的原因。统一到「小雅服务」页操作。
+          -->
+          <ElButton size="small" @click="go('/service/alist')">
+            {{ alistRunning ? '查看服务' : '去启动' }}
           </ElButton>
-          <ElButton v-else size="small" :loading="acting" @click="act('stop')">停止</ElButton>
         </GlassPanel>
       </ElCol>
 
@@ -140,7 +138,6 @@
   import { ElMessage } from 'element-plus'
   import GlassPanel from '@/components/glass/GlassPanel.vue'
   import {
-    alistAction,
     fetchAlistImage,
     fetchAlistStatus,
     fetchCapacity,
@@ -165,7 +162,6 @@
   const packages = ref<MetadataPackage[]>([])
   const capacity = ref<CapacityInfo | null>(null)
   const tasks = ref<MetadataTask[]>([])
-  const acting = ref(false)
 
   const alistRunning = ref(false)
   const runningTask = ref<MetadataTask | null>(null)
@@ -242,17 +238,6 @@
       loadError.value = '无法加载面板数据，请检查应用是否正常运行'
     } else {
       loadError.value = ''
-    }
-  }
-
-  async function act(action: 'start' | 'stop' | 'restart' | 'update') {
-    acting.value = true
-    try {
-      const res = await alistAction(action)
-      ElMessage.success(res.data.message)
-      await refreshAll()
-    } finally {
-      acting.value = false
     }
   }
 
