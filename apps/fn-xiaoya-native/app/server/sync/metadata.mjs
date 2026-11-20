@@ -36,7 +36,17 @@ import { detectCapacity, MAX_CONCURRENCY, MIN_CONCURRENCY } from '../system/capa
  *
  * 用户勾选哪些，就只拉哪些目录的内容；不勾选不下载，避免一次拉全站。
  */
-export const SYNC_PATHS = [
+/**
+ * 兜底目录清单。
+ *
+ * 只用于「目录树还没抓取成功」时给前端一个初始值（例如未联网、镜像全挂）。
+ * **不是**可接受路径的白名单：真实可选目录由镜像站实时抓取，
+ * 用户自建目录（如「测试」）同样合法。
+ *
+ * 曾经把它当白名单在 readSyncConfig 里过滤，导致用户选了自建目录后
+ * 保存成功、刷新却变成空——写端放行、读端静默丢弃。
+ */
+export const DEFAULT_AVAILABLE_PATHS = [
   '115',
   'PikPak',
   '动漫',
@@ -114,7 +124,11 @@ export function readSyncConfig() {
       ...raw,
       // schedule 是嵌套对象，浅合并会把缺省字段丢掉（例如旧配置只有 mode）
       schedule: { ...DEFAULTS.schedule, ...(raw?.schedule ?? {}) },
-      paths: Array.isArray(raw?.paths) ? raw.paths.filter(p => SYNC_PATHS.includes(p)) : DEFAULTS.paths,
+      // 不按白名单过滤：真实可选目录来自镜像站，用户也可能自建目录。
+      // 这里只丢掉明显不合法的值，避免脏配置把同步任务带偏。
+      paths: Array.isArray(raw?.paths)
+        ? raw.paths.filter(p => typeof p === 'string' && p !== '' && !p.startsWith('/') && !p.includes('..'))
+        : DEFAULTS.paths,
     }
   }
   catch {

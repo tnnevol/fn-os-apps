@@ -493,3 +493,25 @@ test('小雅反代：只接管 /alist 前缀，且不越界到相似路径', asy
   assert.equal(isAlistProxyPath('/alistfoo'), false)
   assert.equal(isAlistProxyPath('/api/system/health'), false)
 })
+
+test('元数据同步：自建目录能保存并回读（不按兜底清单过滤）', async () => {
+  const meta = await import('../app/server/sync/metadata.mjs')
+
+  // 「测试」不在 DEFAULT_AVAILABLE_PATHS 里，但必须能保存——
+  // 曾经在读端用白名单过滤，导致保存成功、刷新变空。
+  const saved = meta.writeSyncConfig({ paths: ['测试', '电影'] })
+  assert.deepEqual(saved.paths, ['测试', '电影'])
+
+  const read = meta.readSyncConfig()
+  assert.deepEqual(read.paths, ['测试', '电影'], '回读时不应丢弃自建目录')
+
+  // 仍然要拒绝非法路径
+  assert.throws(
+    () => meta.writeSyncConfig({ paths: ['../etc'] }),
+    (error) => error.status === 400,
+  )
+  assert.throws(
+    () => meta.writeSyncConfig({ paths: [''] }),
+    (error) => error.status === 400,
+  )
+})

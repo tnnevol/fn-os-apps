@@ -44,7 +44,7 @@ import {
   writeSchedule,
 } from '../schedule/runner.mjs'
 import { getSharedFolders, hasTrimApi } from '../trim/api.mjs'
-import { readSyncConfig, SYNC_PATHS, writeSyncConfig } from '../sync/metadata.mjs'
+import { DEFAULT_AVAILABLE_PATHS, readSyncConfig, writeSyncConfig } from '../sync/metadata.mjs'
 import { listMirrors, pickFastestMirror, resetMirrorCache } from '../sync/mirror.mjs'
 import { fetchTree } from '../sync/tree.mjs'
 import { detectCapacity, MAX_CONCURRENCY, MIN_CONCURRENCY } from '../system/capacity.mjs'
@@ -477,9 +477,14 @@ export function registerRoutes(router) {
 
   /** 同步配置 + 可用目录清单。 */
   router.get('/api/sync', async () => {
+    const config = readSyncConfig()
+    // 兜底清单只用于「目录树还没抓到时」的初始展示。
+    // 真正可选目录由 /api/sync/tree 实时抓取；这里把已保存的目录并进来，
+    // 保证用户自建目录（例如「测试」）即使不在兜底清单里也能回显。
+    const availablePaths = [...new Set([...DEFAULT_AVAILABLE_PATHS, ...config.paths])]
     return ok({
-      config: readSyncConfig(),
-      availablePaths: SYNC_PATHS,
+      config,
+      availablePaths,
       state: syncSnapshot(),
       // 面板据此展示「推荐并发」并给出调整区间
       capacity: detectCapacity(),
