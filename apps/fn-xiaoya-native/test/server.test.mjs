@@ -315,7 +315,12 @@ test('元数据同步：配置校验拒绝非法目录、并发数与时间格�
   assert.throws(() => sync.writeSyncConfig({ schedule: { mode: 'weekly', day: 9 } }), (e) => e.status === 400)
   assert.throws(() => sync.writeSyncConfig({ schedule: { mode: 'monthly', day: 0 } }), (e) => e.status === 400)
 
-  // 合法值可保存并回读
+  // 合法值可保存并回读。
+  // 开启同步需要已有元数据目录（否则定时任务无处写入），这里先建立该前提。
+  const mediaDirModule = await import('../app/server/trim/media-dir.mjs')
+  const mediaStateFile = join(paths.stateDir, 'media-dir.json')
+  writeFileSync(mediaStateFile, JSON.stringify({ root: paths.mediaRoot, subdir: 'xiaoya' }))
+
   const saved = sync.writeSyncConfig({ enabled: true, paths: ['每日更新'], count: 8, schedule: { mode: 'weekly', day: 6, hour: 5, minute: 30 } })
   assert.equal(saved.enabled, true)
   assert.deepEqual(saved.paths, ['每日更新'])
@@ -514,4 +519,25 @@ test('元数据同步：自建目录能保存并回读（不按兜底清单过�
     () => meta.writeSyncConfig({ paths: [''] }),
     (error) => error.status === 400,
   )
+})
+
+test('元数据同步：未授权目录时拒绝开启（避免定时任务每轮静默失败）', async () => {
+  const meta = await import('../app/server/sync/metadata.mjs')
+
+  // 前面的用例可能已写入目录配置，这里显式清空以复现「未授权」前提
+  const { rmSync } = await import('node:fs')
+  rmSync(join(paths.stateDir, 'media-dir.json'), { force: true })
+
+  // 未配置元数据目录时，开启应被拒绝并给出可执行的跳转指引
+  assert.throws(
+    () => meta.writeSyncConfig({ enabled: true }),
+    (error) => {
+      assert.equal(error.status, 400)
+      assert.match(error.suggestion, /常规设置/)
+      return true
+    },
+  )
+
+  // 关闭始终允许，不受目录状态影响
+  assert.equal(meta.writeSyncConfig({ enabled: false }).enabled, false)
 })

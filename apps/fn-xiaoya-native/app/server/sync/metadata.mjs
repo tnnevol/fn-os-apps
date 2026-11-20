@@ -27,6 +27,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, unlinkSync,
 import { dirname, join } from 'node:path'
 import { badRequest } from '../http/respond.mjs'
 import { stateDir } from '../paths.mjs'
+import { resolveMediaDir } from '../trim/media-dir.mjs'
 import { resolveMirror } from './mirror.mjs'
 import { detectCapacity, MAX_CONCURRENCY, MIN_CONCURRENCY } from '../system/capacity.mjs'
 
@@ -176,7 +177,18 @@ function validateSchedule(raw) {
 export function writeSyncConfig(input) {
   const next = { ...readSyncConfig() }
 
-  if (input?.enabled !== undefined) next.enabled = input.enabled === true
+  if (input?.enabled !== undefined) {
+    // 开启同步前必须已经有可写入的元数据目录：
+    // 否则定时器每轮触发都会因「尚未配置元数据目录」失败，
+    // 用户只看到同步一直不成功，却不知道根因在另一个页面。
+    if (input.enabled === true && resolveMediaDir() === null) {
+      throw badRequest(
+        '尚未授权元数据目录，无法开启同步',
+        '请先在「设置 → 常规设置」选择并授权一个目录',
+      )
+    }
+    next.enabled = input.enabled === true
+  }
 
   if (input?.paths !== undefined) {
     if (!Array.isArray(input.paths)) throw badRequest('paths 必须是数组', '请重新选择要同步的目录')

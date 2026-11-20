@@ -15,8 +15,23 @@
     <GlassPanel title="同步设置" description="从小雅元数据站按文件增量同步，只更新有变化的文件。">
       <ElForm label-width="150px" label-position="left">
         <ElFormItem label="启用同步">
-          <ElSwitch v-model="form.enabled" />
-          <span class="sync__hint">关闭后手动与定时同步都不执行。</span>
+          <div class="sync__enable">
+            <!-- 没有元数据目录时同步无处写入，允许开启只会让定时任务每轮静默失败 -->
+            <ElSwitch v-model="form.enabled" :disabled="!mediaDirReady" />
+            <span class="sync__hint">
+              {{ mediaDirReady ? '关闭后手动与定时同步都不执行。' : '需先授权元数据目录才能开启。' }}
+            </span>
+            <!-- 未配置时直接给入口，不让用户自己去翻菜单 -->
+            <ElButton
+              v-if="!mediaDirReady"
+              link
+              type="primary"
+              class="sync__enable-link"
+              @click="goToGeneral"
+            >
+              去设置
+            </ElButton>
+          </div>
         </ElFormItem>
 
         <ElFormItem label="同步目录">
@@ -195,10 +210,12 @@
 
 <script setup lang="ts">
   import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+  import { useRouter } from 'vue-router'
   import { ElMessage } from 'element-plus'
   import { Document, Folder } from '@element-plus/icons-vue'
   import GlassPanel from '@/components/glass/GlassPanel.vue'
   import {
+    fetchMediaDir,
     fetchMirrors,
     fetchSync,
     fetchSyncState,
@@ -212,6 +229,27 @@
   } from '@/api/xiaoya'
 
   defineOptions({ name: 'SettingsSync' })
+
+  const router = useRouter()
+
+  /** 元数据目录是否已授权：同步要往这个目录里写文件。 */
+  const mediaDirReady = ref(true)
+
+  /** 读一次目录授权状态；失败按「未授权」处理，宁可多拦一次也不放行无目录的同步。 */
+  async function loadMediaDir() {
+    try {
+      const res = await fetchMediaDir()
+      mediaDirReady.value = res.data.configured === true
+    }
+    catch {
+      mediaDirReady.value = false
+    }
+  }
+
+  /** 跳转到目录配置所在的常规设置页。 */
+  function goToGeneral() {
+    void router.push('/settings/general')
+  }
 
   const form = ref<SyncConfig>({
     enabled: false,
@@ -627,6 +665,8 @@
 
   onMounted(async () => {
     await load()
+    // 目录授权状态决定「启用同步」能否操作，与配置并行拉取
+    void loadMediaDir()
     // 首次进入先探一次镜像，让「当前镜像」有值；失败不影响其它功能
     void loadTree('')
       .then((nodes) => {
@@ -661,6 +701,18 @@
         margin: 6px 0 0;
         line-height: 1.6;
       }
+    }
+
+    // 启用同步：开关、说明、跳转链接排在同一行，窄屏自动换行
+    &__enable {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+
+    &__enable-link {
+      padding: 0;
     }
 
     &__dirs {

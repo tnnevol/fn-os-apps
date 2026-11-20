@@ -99,7 +99,7 @@ export function startSync() {
 
   const mediaBase = resolveMediaDir()
   if (mediaBase === null) {
-    throw badRequest('尚未配置元数据目录', '请先在「元数据包」页选择并授权目录')
+    throw badRequest('尚未配置元数据目录', '请先在「设置 → 常规设置」授权一个元数据目录')
   }
 
   const config = readSyncConfig()
