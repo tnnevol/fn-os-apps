@@ -584,8 +584,8 @@
     try {
       // 探测一次以刷新「当前镜像」信息；树内容交给组件的 lazy load
       treeData.value = await loadTree('')
-    } catch (error) {
-      ElMessage.error(error instanceof Error ? error.message : '加载目录失败')
+    } catch {
+      // 错误提示由 HTTP 层统一弹出，这里不重复
     }
   }
 

@@ -230,8 +230,8 @@
       ElMessage.success('元数据目录已设置')
       await load()
       emit('changed', state.value.path ?? '')
-    } catch (error) {
-      ElMessage.error(error instanceof Error ? error.message : '保存目录失败')
+    } catch {
+      // 错误提示由 HTTP 层统一弹出，这里不重复
     }
   })
 

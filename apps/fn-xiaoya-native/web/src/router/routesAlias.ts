@@ -1,8 +1,8 @@
 /**
  * 公共路由别名
- * 存放系统级公共路由路径，如布局容器、登录页等
+ *
+ * 只有布局容器：本应用没有账号体系，登录页与相关路由均已移除。
  */
 export enum RoutesAlias {
-  Layout = '/index/index', // 布局容器
-  Login = '/auth/login' // 登录页
+  Layout = '/index/index' // 布局容器
 }

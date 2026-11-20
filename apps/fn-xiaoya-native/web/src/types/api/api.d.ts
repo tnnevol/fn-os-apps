@@ -78,9 +78,10 @@ declare namespace Api {
     interface UserInfo {
       buttons: string[]
       roles: string[]
-      userId: number
+      /** 飞牛网关下发的 UID 是字符串（X-Trim-Userid），不是数字 */
+      userId: string
       userName: string
-      email: string
+      email?: string
       avatar?: string
     }
   }

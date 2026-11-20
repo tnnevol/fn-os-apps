@@ -530,8 +530,8 @@
       folderVisible.value = false
       await loadConfig()
     }
-    catch (error) {
-      ElMessage.error(error instanceof Error ? error.message : '保存目录失败')
+    catch {
+      // 错误提示由 HTTP 层统一弹出，这里不重复
     }
   }
 
@@ -569,8 +569,8 @@
       openToken.sessionId = res.data.sessionId
       openToken.status = 'waiting'
       void pollOpenToken()
-    } catch (error) {
-      ElMessage.error(error instanceof Error ? error.message : '生成二维码失败')
+    } catch {
+      // 错误提示由 HTTP 层统一弹出，这里只收尾
     } finally {
       openToken.loading = false
     }
@@ -598,8 +598,8 @@
         await new Promise((resolve) => setTimeout(resolve, 3000))
       }
       openToken.status = 'expired'
-    } catch (error) {
-      ElMessage.error(error instanceof Error ? error.message : '查询扫码状态失败')
+    } catch {
+      // 错误提示由 HTTP 层统一弹出，这里只收尾
     } finally {
       openToken.polling = false
     }

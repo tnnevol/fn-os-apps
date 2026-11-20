@@ -143,12 +143,19 @@ export function handleError(error: AxiosError<ErrorResponse>): never {
     })
   }
 
-  // 处理 HTTP 状态码错误
-  const message = statusCode
-    ? getErrorMessage(statusCode)
-    : errorMessage || $t('httpMsg.requestFailed')
+  // 优先用后端给的 message：本应用后端每个错误都写成「原因 + 建议」，
+  // 而 getErrorMessage 只会按状态码给一句笼统文案（「服务器内部错误」），
+  // 会把「尚未配置 Refresh Token」这类可执行信息丢掉。
+  // 只有后端没给 message 时才回退到状态码文案。
+  const backendMessage = typeof error.response?.data?.message === 'string'
+    ? error.response.data.message.trim()
+    : ''
+  const message = backendMessage !== ''
+    ? backendMessage
+    : (statusCode ? getErrorMessage(statusCode) : $t('httpMsg.requestFailed'))
   throw new HttpError(message, statusCode || ApiStatus.error, {
     data: error.response.data,
+    suggestion: error.response?.data?.suggestion,
     url: requestConfig?.url,
     method: requestConfig?.method?.toUpperCase()
   })

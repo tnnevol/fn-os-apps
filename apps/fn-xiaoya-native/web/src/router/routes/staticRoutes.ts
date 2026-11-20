@@ -18,24 +18,8 @@ export const staticRoutes: AppRouteRecordRaw[] = [
   //   component: () => import('@views/dashboard/console/index.vue'),
   //   meta: { title: 'menus.dashboard.title' }
   // },
-  {
-    path: '/auth/login',
-    name: 'Login',
-    component: () => import('@views/auth/login/index.vue'),
-    meta: { title: 'menus.login.title', isHideTab: true }
-  },
-  {
-    path: '/auth/register',
-    name: 'Register',
-    component: () => import('@views/auth/register/index.vue'),
-    meta: { title: 'menus.register.title', isHideTab: true }
-  },
-  {
-    path: '/auth/forget-password',
-    name: 'ForgetPassword',
-    component: () => import('@views/auth/forget-password/index.vue'),
-    meta: { title: 'menus.forgetPassword.title', isHideTab: true }
-  },
+  // 本应用没有账号体系：身份由飞牛统一网关（生产）或后端开发身份（开发）提供，
+  // 因此不注册 login / register / forget-password 三条路由。
   {
     path: '/403',
     name: 'Exception403',

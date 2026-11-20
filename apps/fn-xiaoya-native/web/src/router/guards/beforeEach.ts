@@ -209,13 +209,8 @@ function handleLoginStatus(
   next: NavigationGuardNext
 ): boolean {
   // 本应用没有本地登录页：身份由飞牛统一网关（生产）或后端开发身份（开发）提供。
-  // 因此这里不再把未登录用户重定向到 Login，而是直接放行，
-  // 由首次拉取用户信息的请求决定成败——失败会在下方跳 500，
+  // 这里直接放行，由首次拉取用户信息的请求决定成败——失败会跳 500，
   // 不会出现「永远停在登录页」的死循环。
-  if (to.path === RoutesAlias.Login) {
-    next({ path: '/' })
-    return false
-  }
   return true
 }
 
@@ -369,7 +364,14 @@ async function handleDynamicRoutes(
 async function fetchUserInfo(): Promise<void> {
   const userStore = useUserStore()
   const data = await fetchGetUserInfo()
-  userStore.setUserInfo(data)
+  // fetchGetUserInfo 额外带回 mode/version 供界面展示，UserInfo 只认身份字段，
+  // 这里显式收窄，避免把展示字段塞进用户态
+  userStore.setUserInfo({
+    userId: data.userId,
+    userName: data.userName,
+    roles: data.roles,
+    buttons: data.buttons
+  })
   // 身份由网关或后端开发身份代表，取到即视为已认证；
   // 脚手架其它位置（头像、菜单过滤）依赖这个标记。
   userStore.setLoginStatus(true)

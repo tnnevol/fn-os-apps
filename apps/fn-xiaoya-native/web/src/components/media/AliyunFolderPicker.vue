@@ -69,9 +69,8 @@
     try {
       const res = await fetchAliyunFolders(currentId.value)
       items.value = res.data.items
-    } catch (error) {
-      // 未配置 Refresh Token 时后端会给出明确原因，直接展示
-      ElMessage.error(error instanceof Error ? error.message : '读取目录失败')
+    } catch {
+      // 错误提示由 HTTP 层统一弹出（含后端的处理建议），这里只清理状态
       items.value = []
     } finally {
       loading.value = false
