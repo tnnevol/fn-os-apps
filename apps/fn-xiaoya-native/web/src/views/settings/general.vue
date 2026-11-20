@@ -24,7 +24,7 @@
         </ElFormItem>
         <ElFormItem label="Emby 端口">
           <ElSwitch v-model="embyPorts" :loading="savingEmby" @change="saveEmbyPorts" />
-          <span class="general__hint general__hint--inline">
+          <span class="general__hint">
             打开后额外映射 2345-2347（供 Emby 客户端直连）；不装 Emby 时无需开启。
           </span>
         </ElFormItem>
@@ -45,14 +45,9 @@
             v-model="proxy"
             placeholder="http://192.168.1.2:7890"
             clearable
-            style="max-width: 400px"
+            class="general__proxy-input"
           />
-          <ElButton
-            type="primary"
-            :loading="savingProxy"
-            style="margin-left: 12px"
-            @click="saveProxy"
-          >
+          <ElButton type="primary" :loading="savingProxy" @click="saveProxy">
             保存
           </ElButton>
         </ElFormItem>
@@ -184,15 +179,27 @@
 </script>
 
 <style lang="scss" scoped>
+  // ElFormItem 的内容区本身是 flex + align-items:center，只缺元素间距。
+  // 直接给 gap 比在每个表单项里包 flex 容器更省事，也不会破坏它原有的换行行为。
+  :deep(.el-form-item__content) {
+    gap: 12px;
+  }
+
   .general {
     // 卡片间统一 20px 间距：由容器控制，不依赖 GlassPanel 的相邻兄弟选择器
     display: flex;
     flex-direction: column;
     gap: 20px;
 
+    &__proxy-input {
+      max-width: 400px;
+    }
+
+    // 说明文字：作为行的最后一个元素时不带上边距（由容器 gap 控制间距）
     &__hint {
-      margin: 8px 0 0;
+      margin: 0;
       font-size: 12px;
+      line-height: 1.5;
       color: var(--el-text-color-secondary);
     }
   }

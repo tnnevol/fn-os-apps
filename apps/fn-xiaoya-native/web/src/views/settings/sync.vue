@@ -15,23 +15,21 @@
     <GlassPanel title="同步设置" description="从小雅元数据站按文件增量同步，只更新有变化的文件。">
       <ElForm label-width="150px" label-position="left">
         <ElFormItem label="启用同步">
-          <div class="sync__enable">
-            <!-- 没有元数据目录时同步无处写入，允许开启只会让定时任务每轮静默失败 -->
-            <ElSwitch v-model="form.enabled" :disabled="!mediaDirReady" />
-            <span class="sync__hint">
-              {{ mediaDirReady ? '关闭后手动与定时同步都不执行。' : '需先授权元数据目录才能开启。' }}
-            </span>
-            <!-- 未配置时直接给入口，不让用户自己去翻菜单 -->
-            <ElButton
-              v-if="!mediaDirReady"
-              link
-              type="primary"
-              class="sync__enable-link"
-              @click="goToGeneral"
-            >
-              去设置
-            </ElButton>
-          </div>
+          <!-- 没有元数据目录时同步无处写入，允许开启只会让定时任务每轮静默失败 -->
+          <ElSwitch v-model="form.enabled" :disabled="!mediaDirReady" />
+          <span class="sync__hint">
+            {{ mediaDirReady ? '关闭后手动与定时同步都不执行。' : '需先授权元数据目录才能开启。' }}
+          </span>
+          <!-- 未配置时直接给入口，不让用户自己去翻菜单 -->
+          <ElButton
+            v-if="!mediaDirReady"
+            link
+            type="primary"
+            class="sync__enable-link"
+            @click="goToGeneral"
+          >
+            去设置
+          </ElButton>
         </ElFormItem>
 
         <ElFormItem label="同步目录">
@@ -685,6 +683,11 @@
 </script>
 
 <style lang="scss" scoped>
+  // ElFormItem 内容区本身是 flex + align-items:center，只需补元素间距
+  :deep(.el-form-item__content) {
+    gap: 8px;
+  }
+
   .sync {
     // 卡片间统一 20px 间距：由容器控制，不依赖 GlassPanel 的相邻兄弟选择器
     display: flex;
@@ -692,8 +695,9 @@
     gap: 20px;
 
     &__hint {
-      margin-left: 12px;
+      margin: 0;
       font-size: 12px;
+      line-height: 1.5;
       color: var(--el-text-color-secondary);
 
       &--block {
@@ -703,14 +707,7 @@
       }
     }
 
-    // 启用同步：开关、说明、跳转链接排在同一行，窄屏自动换行
-    &__enable {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 8px;
-    }
-
+    // 启用同步：开关、说明、跳转链接排在同一行，窄屏自动换行。
     &__enable-link {
       padding: 0;
     }

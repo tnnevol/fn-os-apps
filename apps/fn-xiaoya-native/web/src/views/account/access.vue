@@ -18,20 +18,15 @@
         </ElFormItem>
 
         <ElFormItem label="访问密码">
-          <ElInput
+            <ElInput
             v-model="password"
             type="password"
             show-password
             clearable
             placeholder="留空表示不修改当前密码"
-            style="max-width: 360px"
+            class="access__pwd-input"
           />
-          <ElButton
-            type="primary"
-            :loading="saving"
-            style="margin-left: 12px"
-            @click="savePassword"
-          >
+          <ElButton type="primary" :loading="saving" @click="savePassword">
             保存密码
           </ElButton>
         </ElFormItem>
@@ -51,20 +46,15 @@
     >
       <ElForm label-width="140px" label-position="left">
         <ElFormItem label="回收站密码">
-          <ElInput
+            <ElInput
             v-model="recyclePassword"
             type="password"
             show-password
             clearable
             placeholder="留空表示不修改"
-            style="max-width: 360px"
+            class="access__pwd-input"
           />
-          <ElButton
-            type="primary"
-            :loading="savingRecycle"
-            style="margin-left: 12px"
-            @click="saveRecycle"
-          >
+          <ElButton type="primary" :loading="savingRecycle" @click="saveRecycle">
             保存
           </ElButton>
         </ElFormItem>
@@ -87,7 +77,7 @@
 
         </ElFormItem>
         <ElFormItem label="阿里转存 115">
-          <ElSwitch v-model="switches.ali2115" @change="saveSwitch('ali2115')" />
+            <ElSwitch v-model="switches.ali2115" @change="saveSwitch('ali2115')" />
           <span class="access__hint">需先在网盘授权页配好转存目录 ID。</span>
         </ElFormItem>
       </ElForm>
@@ -168,15 +158,25 @@
 </script>
 
 <style lang="scss" scoped>
+  // ElFormItem 内容区本身是 flex + align-items:center，只需补元素间距
+  :deep(.el-form-item__content) {
+    gap: 12px;
+  }
+
   .access {
     // 卡片间统一 20px 间距：由容器控制，不依赖 GlassPanel 的相邻兄弟选择器
     display: flex;
     flex-direction: column;
     gap: 20px;
 
+    &__pwd-input {
+      max-width: 360px;
+    }
+
     &__hint {
-      margin-left: 12px;
+      margin: 0;
       font-size: 12px;
+      line-height: 1.5;
       color: var(--el-text-color-secondary);
     }
 
