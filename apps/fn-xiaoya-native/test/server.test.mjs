@@ -472,3 +472,24 @@ test('设备性能：16 是推荐值而非上限，用户可配置到更高', as
   assert.throws(() => writeSyncConfig({ count: cap.MAX_CONCURRENCY + 1 }), (e) => e.status === 400)
   assert.throws(() => writeSyncConfig({ count: cap.MIN_CONCURRENCY - 1 }), (e) => e.status === 400)
 })
+
+test('网关前缀：剥掉 /app/fn-xiaoya-native 后可匹配内部路由', async () => {
+  const { stripGatewayPrefix, gatewayPrefix } = await import('../app/server/paths.mjs')
+
+  assert.equal(stripGatewayPrefix(gatewayPrefix), '/')
+  assert.equal(stripGatewayPrefix(`${gatewayPrefix}/api/system/health`), '/api/system/health')
+  // 直连端口时原样返回，不受影响
+  assert.equal(stripGatewayPrefix('/api/system/health'), '/api/system/health')
+  // 相似前缀不能误剥（否则 /app/fn-xiaoya-native-evil 会被当成自身路由）
+  assert.equal(stripGatewayPrefix(`${gatewayPrefix}-evil/x`), `${gatewayPrefix}-evil/x`)
+})
+
+test('小雅反代：只接管 /alist 前缀，且不越界到相似路径', async () => {
+  const { isAlistProxyPath, ALIST_PROXY_PREFIX } = await import('../app/server/http/alist-proxy.mjs')
+
+  assert.equal(isAlistProxyPath(ALIST_PROXY_PREFIX), true)
+  assert.equal(isAlistProxyPath(`${ALIST_PROXY_PREFIX}/dav/x`), true)
+  // /alistfoo 与 /alist-xxx 不属于代理范围
+  assert.equal(isAlistProxyPath('/alistfoo'), false)
+  assert.equal(isAlistProxyPath('/api/system/health'), false)
+})

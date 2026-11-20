@@ -43,14 +43,24 @@
         <ElButton :loading="acting" @click="act('update')">更新镜像并重建</ElButton>
       </div>
 
-      <ElAlert
-        type="info"
-        show-icon
-        :closable="false"
-        title="访问地址"
-        :description="`网页面板：http://NAS地址:5678　WebDAV：http://NAS地址:5678/dav（用户名 dav）`"
-        style="margin-top: 16px"
-      />
+      <!--
+        不再写「http://NAS地址:5678」这种占位文本：地址是可推导的，
+        而且走统一网关后不该让用户去拼端口。
+        改为直接给可点击的入口，默认走应用自己的网关路径。
+      -->
+      <div class="alist__open">
+        <ElDropdown split-button type="primary" :disabled="!openEntries.length" @click="openFirst" @command="openEntry">
+          <span class="alist__open-label">打开</span>
+          <template #dropdown>
+            <ElDropdownMenu>
+              <ElDropdownItem v-for="item in openEntries" :key="item.key" :command="item.key">
+                {{ item.label }}
+              </ElDropdownItem>
+            </ElDropdownMenu>
+          </template>
+        </ElDropdown>
+        <span class="alist__open-hint">{{ openHint }}</span>
+      </div>
     </GlassPanel>
 
     <GlassPanel title="容器日志" description="只读取最近 200 行，避免大日志拖慢页面">
@@ -74,7 +84,7 @@
 </template>
 
 <script setup lang="ts">
-  import { onMounted, onUnmounted, ref } from 'vue'
+  import { computed, onMounted, onUnmounted, ref } from 'vue'
   import { ElMessage } from 'element-plus'
   import GlassPanel from '@/components/glass/GlassPanel.vue'
   import { loadAll } from '@/utils/loadAll'
@@ -91,9 +101,56 @@
 
   defineOptions({ name: 'ServiceAlist' })
 
+  /** 应用在统一网关下的固定前缀（与 app/ui/config 的 gatewayPrefix 一致） */
+  const BASE_PREFIX = '/app/fn-xiaoya-native'
+
   const status = ref<AlistStatus | null>(null)
   /** 地址信息：用于拼小雅面板的直达链接 */
   const addresses = ref<AddressInfo | null>(null)
+  /**
+   * 「打开」入口列表。
+   *
+   * 默认走应用自己的网关前缀（`/app/fn-xiaoya-native/alist/`）：
+   * 统一网关只注册一个前缀，小雅面板由后端反向代理转发到 5678，
+   * 这样既带上网关登录态，公网场景也能用。
+   *
+   * 用户若在常规设置里填了对外地址（内含分享链接所需域名），
+   * 再追加一个直连端口项，便于局域网内不经过网关访问。
+   */
+  const openEntries = computed(() => {
+    if (!status.value?.running) return []
+    const list = [
+      { key: 'gateway', label: '网页面板（网关）', url: `${BASE_PREFIX}/alist/` },
+    ]
+    const direct = addresses.value?.dockerAddress ?? ''
+    if (direct !== '') {
+      list.push({ key: 'web', label: `网页面板（直连 ${direct}）`, url: direct })
+      list.push({ key: 'dav', label: 'WebDAV（直连，用户名 dav）', url: `${direct}/dav` })
+    }
+    return list
+  })
+
+  /** 下拉旁的一句说明：告诉用户「打开」实际会跳到哪里。 */
+  const openHint = computed(() => {
+    if (!status.value?.running) return '容器未运行，启动后可打开'
+    if ((addresses.value?.dockerAddress ?? '') === '') {
+      return '经统一网关访问；可在「常规设置」补对外地址后直连'
+    }
+    return '优先走网关；下拉可选直连地址'
+  })
+
+  /** 点主按钮：默认打开网关入口。 */
+  function openFirst() {
+    const first = openEntries.value[0]
+    if (first) window.open(first.url, '_blank', 'noopener,noreferrer')
+  }
+
+  /** 下拉选择某个入口。 */
+  function openEntry(key: string) {
+    const item = openEntries.value.find((entry) => entry.key === key)
+    if (item) window.open(item.url, '_blank', 'noopener,noreferrer')
+  }
+
   const image = ref('')
   const logs = ref('')
   const loading = ref(false)
@@ -303,6 +360,20 @@
       flex-wrap: wrap;
       gap: 10px;
       margin-top: 16px;
+    }
+
+    // 「打开」入口：下拉按钮与说明同行，窄屏时说明换到下一行
+    &__open {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      margin-top: 16px;
+    }
+
+    &__open-hint {
+      font-size: 12px;
+      color: var(--art-text-gray-500, var(--el-text-color-secondary));
     }
 
     &__logs {

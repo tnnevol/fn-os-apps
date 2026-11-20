@@ -59,6 +59,22 @@ export const alistContainer = 'fn-xiaoya-alist'
 /** 网关 Socket 路径（生产环境）。 */
 export const gatewaySocket = join(appDest, 'app.sock')
 
+/** 统一网关给本应用分配的前缀。 */
+export const gatewayPrefix = '/app/fn-xiaoya-native'
+
+/**
+ * 去掉网关前缀。
+ *
+ * 统一网关转发时保留原始路径（官方 Native 案例同样在 `/` 与网关前缀下各挂一次路由），
+ * 因此服务端需要自己剥掉前缀，否则 `/app/fn-xiaoya-native/api/...` 匹配不到 `/api/...`。
+ * 直接访问端口时不带前缀，函数原样返回。
+ */
+export function stripGatewayPrefix(pathname) {
+  if (pathname === gatewayPrefix) return '/'
+  if (pathname.startsWith(`${gatewayPrefix}/`)) return pathname.slice(gatewayPrefix.length)
+  return pathname
+}
+
 /** 需要预先创建的目录。 */
 const managedDirs = [
   configDir,

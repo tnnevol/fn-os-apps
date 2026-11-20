@@ -7,6 +7,8 @@
 import { createServer } from 'node:http'
 import { AppError, normalizeError, notFound } from './respond.mjs'
 import { resolveUser } from './auth.mjs'
+import { isAlistProxyPath, proxyToAlist } from './alist-proxy.mjs'
+import { stripGatewayPrefix } from '../paths.mjs'
 
 /** 请求体上限：配置项都很小，超过 1MB 一定是异常请求。 */
 const BODY_LIMIT = 1024 * 1024
@@ -99,7 +101,15 @@ function sendJson(res, status, body) {
 export function createApp({ router, staticHandler }) {
   return createServer(async (req, res) => {
     const url = new URL(req.url ?? '/', 'http://localhost')
-    const pathname = url.pathname
+    // 网关转发时保留 /app/fn-xiaoya-native 前缀，直连端口时不带
+    const pathname = stripGatewayPrefix(url.pathname)
+
+    // 小雅面板的代理入口：统一网关只给一个前缀与 Socket，
+    // 内部服务靠这里转发，用户才能从面板直接打开
+    if (isAlistProxyPath(pathname)) {
+      proxyToAlist(req, res, pathname, url.search)
+      return
+    }
 
     // API 前置于静态资源：避免 /api 被 SPA fallback 抢走
     if (pathname.startsWith('/api/')) {
