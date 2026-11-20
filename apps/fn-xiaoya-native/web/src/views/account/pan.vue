@@ -54,18 +54,6 @@
         -->
         <ElCol :xs="24" :md="8">
           <div class="pan__scan">
-            <p class="pan__scan-title">
-              Open Token
-              <ElTag
-                v-if="health?.openToken"
-                :type="healthTagType(health.openToken.status)"
-                effect="light"
-                size="small"
-                :title="health.openToken.message"
-              >
-                {{ healthLabel(health.openToken.status) }}
-              </ElTag>
-            </p>
             <template v-if="openToken.qrImage !== '' || openToken.qr !== null">
               <img
                 v-if="openToken.qrImage !== ''"
@@ -97,28 +85,33 @@
         </ElCol>
 
         <ElCol :xs="24" :md="8">
-          <h4 class="pan__label">
-            当前状态
-            <!-- 进入页面时查一次的有效性结果；不轮询 -->
-            <ElTag
-              v-if="health?.refreshToken"
-              :type="healthTagType(health.refreshToken.status)"
-              effect="light"
-              size="small"
-              class="pan__health"
-              :title="health.refreshToken.message"
-            >
-              阿里云盘：{{ healthLabel(health.refreshToken.status) }}
-            </ElTag>
-            <ElTag v-else-if="healthLoading" type="info" effect="plain" size="small" class="pan__health">
-              检测中…
-            </ElTag>
-          </h4>
+          <!-- 状态挂在各自字段行上：标题只给一个笼统结论时，
+               用户看不出到底是哪个凭据有效 -->
+          <h4 class="pan__label">当前状态</h4>
           <!-- 用 ElTable 承载：与面板其它页面的表格视觉一致，且支持行分隔 -->
           <ElTable :data="aliRows" size="small" border class="pan__table">
-            <ElTableColumn prop="label" label="字段" width="130" />
+            <ElTableColumn label="字段" width="150">
+              <template #default="{ row }">
+                <span class="pan__field">
+                  {{ row.label }}
+                  <ElTag
+                    v-if="fieldHealth(row)"
+                    :type="healthTagType(fieldHealth(row)!.status)"
+                    effect="light"
+                    size="small"
+                    :title="fieldHealth(row)!.message"
+                  >
+                    {{ healthLabel(fieldHealth(row)!.status) }}
+                  </ElTag>
+                  <ElTag v-else-if="row.healthKey && healthLoading" type="info" effect="plain" size="small">
+                    检测中…
+                  </ElTag>
+                </span>
+              </template>
+            </ElTableColumn>
             <ElTableColumn label="值" min-width="180">
               <template #default="{ row }">
+                <div class="pan__value-cell">
                 <EditableValue
                   :label="row.label"
                   :masked="row.masked"
@@ -130,16 +123,21 @@
                   :on-save="(v) => onEdit(row.key, v)"
                   :on-clear="row.configured ? () => onClear(row.key, row.label) : undefined"
                 />
+                <!-- 转存目录只能从网盘里挑，不让人手输 40 位十六进制串 -->
+                <ElButton
+                  v-if="row.key === 'transferFolderId'"
+                  size="small"
+                  type="primary"
+                  plain
+                  class="pan__pick-folder"
+                  @click="folderVisible = true"
+                >
+                  选择
+                </ElButton>
+              </div>
               </template>
             </ElTableColumn>
           </ElTable>
-          <!-- 按钮只表达动作，选完写到哪里由旁边一句说明，不塞进按钮文案 -->
-          <div class="pan__browse">
-            <ElButton size="small" type="primary" plain @click="folderVisible = true">
-              选择转存目录
-            </ElButton>
-            <span class="pan__hint">选完自动填入上面的「转存目录 ID」</span>
-          </div>
         </ElCol>
       </ElRow>
 
@@ -194,7 +192,25 @@
         <ElCol :xs="24" :md="12">
           <h4 class="pan__label">当前状态</h4>
           <ElTable :data="pan115Rows" size="small" border class="pan__table">
-            <ElTableColumn prop="label" label="字段" width="130" />
+            <ElTableColumn label="字段" width="130">
+              <template #default="{ row }">
+                <span class="pan__field">
+                  {{ row.label }}
+                  <ElTag
+                    v-if="fieldHealth(row)"
+                    :type="healthTagType(fieldHealth(row)!.status)"
+                    effect="light"
+                    size="small"
+                    :title="fieldHealth(row)!.message"
+                  >
+                    {{ healthLabel(fieldHealth(row)!.status) }}
+                  </ElTag>
+                  <ElTag v-else-if="row.healthKey && healthLoading" type="info" effect="plain" size="small">
+                    检测中…
+                  </ElTag>
+                </span>
+              </template>
+            </ElTableColumn>
             <ElTableColumn label="值" min-width="220">
               <template #default="{ row }">
                 <EditableValue
@@ -228,7 +244,25 @@
         <ElCol :xs="24" :md="12">
           <h4 class="pan__label">夸克网盘</h4>
           <ElTable :data="quarkRows" size="small" border class="pan__table">
-            <ElTableColumn prop="label" label="字段" width="120" />
+            <ElTableColumn label="字段" width="120">
+              <template #default="{ row }">
+                <span class="pan__field">
+                  {{ row.label }}
+                  <ElTag
+                    v-if="fieldHealth(row)"
+                    :type="healthTagType(fieldHealth(row)!.status)"
+                    effect="light"
+                    size="small"
+                    :title="fieldHealth(row)!.message"
+                  >
+                    {{ healthLabel(fieldHealth(row)!.status) }}
+                  </ElTag>
+                  <ElTag v-else-if="row.healthKey && healthLoading" type="info" effect="plain" size="small">
+                    检测中…
+                  </ElTag>
+                </span>
+              </template>
+            </ElTableColumn>
             <ElTableColumn label="值" min-width="180">
               <template #default="{ row }">
                 <EditableValue
@@ -250,7 +284,25 @@
         <ElCol :xs="24" :md="12">
           <h4 class="pan__label">UC 网盘</h4>
           <ElTable :data="ucRows" size="small" border class="pan__table">
-            <ElTableColumn prop="label" label="字段" width="120" />
+            <ElTableColumn label="字段" width="120">
+              <template #default="{ row }">
+                <span class="pan__field">
+                  {{ row.label }}
+                  <ElTag
+                    v-if="fieldHealth(row)"
+                    :type="healthTagType(fieldHealth(row)!.status)"
+                    effect="light"
+                    size="small"
+                    :title="fieldHealth(row)!.message"
+                  >
+                    {{ healthLabel(fieldHealth(row)!.status) }}
+                  </ElTag>
+                  <ElTag v-else-if="row.healthKey && healthLoading" type="info" effect="plain" size="small">
+                    检测中…
+                  </ElTag>
+                </span>
+              </template>
+            </ElTableColumn>
             <ElTableColumn label="值" min-width="180">
               <template #default="{ row }">
                 <EditableValue
@@ -698,6 +750,17 @@
     }
   }
 
+  /**
+   * 取该行对应的检测结果。
+   *
+   * 模板里直接 health[row.healthKey] 会因插槽 row 类型是 DefaultRow 而报索引错误，
+   * 收到一个函数里做一次收窄。
+   */
+  function fieldHealth(raw: unknown) {
+    const row = raw as CredentialRow
+    return row.healthKey ? health.value?.[row.healthKey] : undefined
+  }
+
   /** 检测结果对应的标签样式。 */
   function healthTagType(status?: string): 'success' | 'danger' | 'info' {
     if (status === 'valid') return 'success'
@@ -768,12 +831,16 @@
       color: var(--el-text-color-primary);
     }
 
-    &__browse {
+    // 值 + 行内「选择」按钮：EditableValue 根是块级 div，包一层 flex 才能同行
+    &__value-cell {
       display: flex;
       align-items: center;
-      gap: 10px;
-      margin-top: 10px;
-      flex-wrap: wrap;
+      gap: 8px;
+      width: 100%;
+    }
+
+    &__pick-folder {
+      flex: none;
     }
 
     &__app-picker {
