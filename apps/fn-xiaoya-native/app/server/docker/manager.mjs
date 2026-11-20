@@ -263,6 +263,27 @@ export async function alistStatus() {
 
   if (result.code !== 0) {
     const explained = explainDockerFailure(result.stderr, 'ps')
+
+    // Docker 本身不可用时（未安装/未启动/无权限），「容器不存在」是这个状态下的
+    // 事实描述，不该当成 500：否则概览页会弹「服务器错误」，而实际只是没装 Docker。
+    // 真正的故障信息仍通过 exists/running 之外的 dockerUnavailable 字段带出，
+    // 由前端提示「请先启动 Docker」。
+    if (/docker.*(未运行|不可用|not found|denied|permission)|Cannot connect to the Docker daemon/i.test(`${explained.message} ${result.stderr}`)
+      || result.stderr.includes('docker: not found')
+      || result.stderr.includes('/var/run/docker.sock')) {
+      return {
+        exists: false,
+        running: false,
+        state: 'absent',
+        statusText: '未创建',
+        image: readAlistImage(),
+        ports: [],
+        dockerUnavailable: true,
+        reason: explained.message,
+        suggestion: explained.suggestion,
+      }
+    }
+
     throw serverError(explained.message, explained.suggestion)
   }
 

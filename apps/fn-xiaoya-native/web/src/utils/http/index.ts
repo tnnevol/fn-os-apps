@@ -20,6 +20,9 @@ import { HttpError, handleError, showError, showSuccess } from './error'
 import { $t } from '@/locales'
 import { BaseResponse } from '@/types'
 
+/** 后端约定的成功码：0（不是脚手架的 200） */
+const API_SUCCESS_CODE = 0
+
 /** 请求配置常量 */
 const REQUEST_TIMEOUT = 15000
 const MAX_RETRIES = 0
@@ -80,10 +83,13 @@ axiosInstance.interceptors.request.use(
 /** 响应拦截器 */
 axiosInstance.interceptors.response.use(
   (response: AxiosResponse<BaseResponse>) => {
-    const { code, msg } = response.data
-    if (code === ApiStatus.success) return response
-    if (code === ApiStatus.unauthorized) handleUnauthorizedError(msg)
-    throw createHttpError(msg || $t('httpMsg.requestFailed'), code)
+    // 后端统一返回 { code, message, data }：code === 0 表示成功，
+    // 非 0 时直接就是 HTTP 状态码（400/403/404/500…）。
+    // 注意不是脚手架的 ApiStatus.success(200)，也不是 msg 字段。
+    const { code, message, suggestion } = response.data
+    if (code === API_SUCCESS_CODE) return response
+    if (code === ApiStatus.unauthorized) handleUnauthorizedError(message)
+    throw createHttpError(message || $t('httpMsg.requestFailed'), code, suggestion)
   },
   (error) => {
     if (error.response?.status === ApiStatus.unauthorized) handleUnauthorizedError()
@@ -92,8 +98,8 @@ axiosInstance.interceptors.response.use(
 )
 
 /** 统一创建HttpError */
-function createHttpError(message: string, code: number) {
-  return new HttpError(message, code)
+function createHttpError(message: string, code: number, suggestion?: string) {
+  return new HttpError(message, code, { suggestion })
 }
 
 /** 处理401错误（带防抖） */
@@ -168,11 +174,13 @@ async function request<T = any>(config: ExtendedAxiosRequestConfig): Promise<T> 
     const res = await axiosInstance.request<BaseResponse<T>>(config)
 
     // 显示成功消息
-    if (config.showSuccessMessage && res.data.msg) {
-      showSuccess(res.data.msg)
+    if (config.showSuccessMessage && res.data.message) {
+      showSuccess(res.data.message)
     }
 
-    return res.data.data as T
+    // 返回完整信封 { code, message, data }：调用方统一按 res.data 取业务数据。
+    // 不解包是因为错误分支需要 message/suggestion，且各页面已按信封取值。
+    return res.data as unknown as T
   } catch (error) {
     if (error instanceof HttpError && error.code !== ApiStatus.unauthorized) {
       const showMsg = config.showErrorMessage !== false

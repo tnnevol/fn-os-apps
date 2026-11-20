@@ -188,7 +188,7 @@ export async function pickSharedFolder(): Promise<PickResult> {
       return {
         supported: true,
         paths: [],
-        reason: result.msg || '授权失败：需要管理员权限'
+        reason: result.message || '授权失败：需要管理员权限'
       }
     }
 

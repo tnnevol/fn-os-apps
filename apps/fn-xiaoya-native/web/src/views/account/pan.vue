@@ -532,6 +532,92 @@
     openToken.status = 'idle'
   }
 
+  /* ── 手工填写 / 粘贴（避免重复走手机授权） ───────────── */
+
+  /**
+   * 粘贴框内容；只保存在内存，保存成功后立即清空。
+   *
+   * 阿里云盘与 115 保留手工入口：令牌过期时重扫要再走一次手机登录，
+   * 而手头已有新 token 的用户只想贴进去。
+   */
+  const manual = reactive({
+    refreshToken: '',
+    cookie115: '',
+    cookieQuark: '',
+    cookieUc: '',
+  })
+  const saving = reactive({
+    refreshToken: false,
+    cookie115: false,
+    quark: false,
+    uc: false,
+  })
+
+  const TOKEN_FIELD = {
+    refreshToken: 'refreshToken',
+    cookie115: 'cookie115',
+    quark: 'cookieQuark',
+    uc: 'cookieUc',
+  } as const
+  const TOKEN_LABEL = {
+    refreshToken: 'Refresh Token',
+    cookie115: '115 Cookie',
+    quark: '夸克 Cookie',
+    uc: 'UC Cookie',
+  } as const
+
+  type ManualKind = keyof typeof TOKEN_FIELD
+
+  /**
+   * 保存手工填写的凭据。
+   *
+   * 格式校验统一交给后端（Token 位数、Cookie 必含字段），
+   * 前端只做「非空」判断，避免两套规则不一致。
+   */
+  async function saveToken(kind: ManualKind) {
+    const value = manual[TOKEN_FIELD[kind]].trim()
+    if (value === '') {
+      ElMessage.warning(`请先填写${TOKEN_LABEL[kind]}`)
+      return
+    }
+    saving[kind] = true
+    try {
+      await saveConfig({ values: { [TOKEN_FIELD[kind]]: value } })
+      ElMessage.success(`${TOKEN_LABEL[kind]} 已保存`)
+      manual[TOKEN_FIELD[kind]] = ''
+      await loadConfig()
+    }
+    finally {
+      saving[kind] = false
+    }
+  }
+
+  /** 清除已保存的凭据：写空串即删除对应文件。 */
+  async function clearToken(kind: ManualKind) {
+    try {
+      await ElMessageBox.confirm(
+        `清除后小雅将无法访问对应网盘，需要重新授权。确定清除${TOKEN_LABEL[kind]}？`,
+        `清除${TOKEN_LABEL[kind]}`,
+        { type: 'warning', confirmButtonText: '清除', cancelButtonText: '取消' },
+      )
+    }
+    catch {
+      return
+    }
+    await saveConfig({ values: { [TOKEN_FIELD[kind]]: '' } })
+    ElMessage.success('已清除')
+    await loadConfig()
+  }
+
+  /** 兼容模板里按夸克/UC 命名的旧调用点。 */
+  function saveCookie(kind: 'quark' | 'uc') {
+    return saveToken(kind)
+  }
+
+  function clearCookie(kind: 'quark' | 'uc') {
+    return clearToken(kind)
+  }
+
   async function loadConfig() {
     const res = await fetchConfig()
     config.value = res.data
@@ -641,6 +727,46 @@
     } finally {
       pan.polling = false
     }
+  }
+
+  /* ── 网盘凭据健康检测 ───────────────────────────────── */
+
+  /**
+   * 各网盘的凭据有效性。
+   *
+   * 只在进入页面时查一次，不做轮询：这些检测都会打到网盘官方接口，
+   * 频繁请求会被限流；凭据有效期以天计，也没有盯着的必要。
+   */
+  const health = ref<AllCredentialsHealth | null>(null)
+  const healthLoading = ref(false)
+
+  /** 拉一次检测结果。 */
+  async function loadHealth() {
+    healthLoading.value = true
+    try {
+      const res = await fetchCredentialHealth()
+      health.value = res.data
+    }
+    catch {
+      // 检测失败不影响页面其它功能，错误提示由 HTTP 层统一弹出
+    }
+    finally {
+      healthLoading.value = false
+    }
+  }
+
+  /** 检测结果对应的标签样式。 */
+  function healthTagType(status?: string): 'success' | 'danger' | 'info' {
+    if (status === 'valid') return 'success'
+    if (status === 'invalid') return 'danger'
+    return 'info'
+  }
+
+  /** 检测结果对应的文案。 */
+  function healthLabel(status?: string): string {
+    if (status === 'valid') return '有效'
+    if (status === 'invalid') return '已失效'
+    return '未知'
   }
 
   /* ── 轮询 ───────────────────────────────────────────── */

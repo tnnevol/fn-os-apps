@@ -19,12 +19,14 @@
  * @author Art Design Pro Team
  */
 
-/** 基础 API 响应结构 */
+/** 基础 API 响应结构（与本应用后端一致：{ code, message, data }） */
 export interface BaseResponse<T = unknown> {
-  /** 状态码 */
+  /** 状态码：0 表示成功，非 0 时即 HTTP 状态码 */
   code: number
   /** 消息 */
-  msg: string
+  message: string
+  /** 处理建议：错误时后端会给出可执行的操作提示 */
+  suggestion?: string
   /** 数据 */
   data: T
 }

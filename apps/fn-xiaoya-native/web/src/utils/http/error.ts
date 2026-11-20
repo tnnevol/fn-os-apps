@@ -30,7 +30,9 @@ export interface ErrorResponse {
   /** 错误状态码 */
   code: number
   /** 错误消息 */
-  msg: string
+  message: string
+  /** 处理建议：后端会给出可执行的操作提示 */
+  suggestion?: string
   /** 错误附加数据 */
   data?: unknown
 }
@@ -60,6 +62,8 @@ export class HttpError extends Error {
   public readonly timestamp: string
   public readonly url?: string
   public readonly method?: string
+  /** 后端给出的处理建议；有值时随消息一起展示 */
+  public readonly suggestion?: string
 
   constructor(
     message: string,
@@ -68,12 +72,14 @@ export class HttpError extends Error {
       data?: unknown
       url?: string
       method?: string
+      suggestion?: string
     }
   ) {
     super(message)
     this.name = 'HttpError'
     this.code = code
     this.data = options?.data
+    this.suggestion = options?.suggestion
     this.timestamp = new Date().toISOString()
     this.url = options?.url
     this.method = options?.method
@@ -126,7 +132,7 @@ export function handleError(error: AxiosError<ErrorResponse>): never {
   }
 
   const statusCode = error.response?.status
-  const errorMessage = error.response?.data?.msg || error.message
+  const errorMessage = error.response?.data?.message || error.message
   const requestConfig = error.config
 
   // 处理网络错误
@@ -155,7 +161,8 @@ export function handleError(error: AxiosError<ErrorResponse>): never {
  */
 export function showError(error: HttpError, showMessage: boolean = true): void {
   if (showMessage) {
-    ElMessage.error(error.message)
+    // 后端的错误是「原因 + 处理建议」两段式，只显示原因会让用户不知道下一步做什么
+    ElMessage.error(error.suggestion ? `${error.message}：${error.suggestion}` : error.message)
   }
   // 记录错误日志
   console.error('[HTTP Error]', error.toLogData())

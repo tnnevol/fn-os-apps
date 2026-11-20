@@ -241,7 +241,7 @@ export function cancelTask(id: string) {
 }
 
 export function deleteArchive(name: string) {
-  return request.delete<ApiEnvelope<{ removed: string[] }>>({
+  return request.del<ApiEnvelope<{ removed: string[] }>>({
     url: `/api/metadata/packages/${encodeURIComponent(name)}`
   })
 }
@@ -311,7 +311,7 @@ export function renameMediaEntry(from: string, to: string) {
 }
 
 export function deleteMediaEntry(path: string) {
-  return request.delete<ApiEnvelope<{ path: string }>>({
+  return request.del<ApiEnvelope<{ path: string }>>({
     url: '/api/media/entry',
     params: { path }
   })
@@ -413,6 +413,8 @@ export interface OpenTokenQr {
   sessionId: string
   qrContent: string
   expiresIn: number
+  /** 官方二维码图片（data URL）；优先展示它，App 扫码才能正确识别 */
+  qrImage?: string
 }
 
 /** 扫码状态。 */
